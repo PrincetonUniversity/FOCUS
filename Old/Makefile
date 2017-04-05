@@ -2,7 +2,7 @@
 
 ###############################################################################################################################################################
 
- hfiles=manual globals initial surface rdknot rdcoils knotxx iccoil bfield bnormal torflux tlength equarcl \
+ hfiles=globals initial surface rdknot rdcoils knotxx iccoil bfield bnormal torflux tlength equarcl \
      specwid coilsep nlinear fdcheck denergy descent restart diagnos exinput identfy bnftran focus
 
  allfiles=$(hfiles)
