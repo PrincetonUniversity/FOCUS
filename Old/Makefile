@@ -13,7 +13,7 @@
 
  FC=mpif90
 
- FLAGS=-r8 -mcmodel=large -O2 -m64 -unroll0 -fno-alias -ip -traceback # -check all -debug full -D DEBUG # man ifort for information;
+ FLAGS=-r8 -mcmodel=large -O2 -m64 -unroll0 -fno-alias -ip -traceback -vec_report0 # -check all -debug full -D DEBUG # man ifort for information;
 
  DFLAGS=
 
@@ -34,13 +34,18 @@
 ###############################################################################################################################################################
 
 xfocus: $(addsuffix .o,$(allfiles)) $(MACROS) Makefile
-	$(FC) -o xfocus $(addsuffix .o,$(allfiles)) $(OCULUSFLAGS) $(NAG) $(HDF5)
+	#$(FC) -o xfocus $(addsuffix .o,$(allfiles)) $(OCULUSFLAGS) $(NAG) $(HDF5)
+	mkdir -p ../bin
+	cp -f xfocus ../bin
 	date
 	/bin/echo -e "\a"
 
 dfocus: $(addsuffix .o,$(allfiles)) $(MACROS) Makefile
 	$(FC) -o dfocus $(addsuffix .o,$(allfiles)) $(OCULUSFLAGS) $(NAG) $(HDF5)
+	mkdir -p ../bin
+	cp -f dfocus ../bin
 	date
+	mkbin
 	/bin/echo -e "\a"
 
 ###############################################################################################################################################################
@@ -136,5 +141,7 @@ else
 
 	echo "</table><a href="http://w3.pppl.gov/~$(USER)/">return to upper directory</a></body></html>" >> $(WEBDIR)/Focus/subroutines.html
 endif
+	mkdir -p ../docs
+	mv *.pdf ../docs/
 
 ###############################################################################################################################################################

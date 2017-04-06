@@ -30,12 +30,12 @@ All the Fortran90 sources are in *.h files. When *make*, *.h file will produce *
 There are several *make* options vailable in [Makefile](https://github.com/PrincetonUniversity/FOCUS/blob/Old/master/Makefile):
 * Optimized concise version (recommended)
   ```
-  make xfocus DFLAGS="-D BNORM"
+  make xfocus DFLAGS="-D BNORM" 2>&1 | tee make.log
   ```
     *If you don't have target Bn distribution (e.g. stellarator vacuum field), you can just use "make xfocus".*
 * make dfocus (debugging version)
   ```
-  make dfocus DFLAGS="-check all -debug full -D DEBUG"
+  make dfocus DFLAGS="-check all -debug full -D DEBUG" 2>&1 | tee make.log
   ```
 * produce documentated pdfs
   ```
