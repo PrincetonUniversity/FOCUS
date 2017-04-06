@@ -17,5 +17,5 @@
 .project
 bin/
 
-Old/xfocus
-Old/dfocus
+src/xfocus
+src/dfocus

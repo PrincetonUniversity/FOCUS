@@ -21,13 +21,13 @@ To get the source code, please type:
 ```
 git clone https://github.com/PrincetonUniversity/FOCUS/
 ```
-The directory [Old](https://github.com/PrincetonUniversity/FOCUS/tree/master/Old) contains all the source codes and 
+The directory [src](https://github.com/PrincetonUniversity/FOCUS/tree/master/src) contains all the source codes and
 [Tools](https://github.com/PrincetonUniversity/FOCUS/tree/master/Tools) has some useful utilities.
 
 ### Make
-All the Fortran90 sources are in *.h files. When *make*, *.h file will produce *.F90 with extracted macros (*seen in [macros](https://github.com/PrincetonUniversity/FOCUS/blob/Old/master/macros)*).
+All the Fortran90 sources are in *.h files. When *make*, *.h file will produce *.F90 with extracted macros (*seen in [macros](https://github.com/PrincetonUniversity/FOCUS/blob/src/master/macros)*).
 
-There are several *make* options vailable in [Makefile](https://github.com/PrincetonUniversity/FOCUS/blob/Old/master/Makefile):
+There are several *make* options vailable in [Makefile](https://github.com/PrincetonUniversity/FOCUS/blob/src/master/Makefile):
 * Optimized concise version (recommended)
   ```
   make xfocus DFLAGS="-D BNORM" 2>&1 | tee make.log
@@ -49,16 +49,16 @@ You can type
 ```
 mpirun -np 32 xfocus suffix
 ```
-There are three basic files needed for a run (this example can be seen in [Examples](https://github.com/PrincetonUniversity/FOCUS/tree/master/Old/Examples)).
+There are three basic files needed for a run (this example can be seen in [Examples](https://github.com/PrincetonUniversity/FOCUS/tree/master/src/Examples)).
 
 * **suffix.fo**
 
-  The input namelist file, details can been seen in [globals](https://github.com/PrincetonUniversity/FOCUS/blob/master/Old/globals.h)
+  The input namelist file, details can been seen in [globals](https://github.com/PrincetonUniversity/FOCUS/blob/master/src/globals.h)
   
 * **plasma.boundary**
 
   The plasma boundary files including Fourier harmonics for the plasma surface and Bnormal distribution.
-  See [surface](https://github.com/PrincetonUniversity/FOCUS/blob/master/Old/surface.h).
+  See [surface](https://github.com/PrincetonUniversity/FOCUS/blob/master/src/surface.h).
   
 * **intial coils**
 
@@ -68,9 +68,9 @@ There are three basic files needed for a run (this example can be seen in [Examp
   
   Linitialize =  N : N>1, intialize N circular coils toroidally surrounding the plasma;
   
-  See [rdcoils](https://github.com/PrincetonUniversity/FOCUS/blob/master/Old/rdcoils.h).
+  See [rdcoils](https://github.com/PrincetonUniversity/FOCUS/blob/master/src/rdcoils.h).
   
 ### Resulting files
-For outputs, the code will provide some basic screen outputings during the running. And it also calls [restart](https://github.com/PrincetonUniversity/FOCUS/blob/master/Old/restart.h) to save a hdf5 file for each step. The *coils* and *.fo.coil.* files are also updated for each step.
+The code will output some basic status updates to the screen when running. And it also calls [restart](https://github.com/PrincetonUniversity/FOCUS/blob/master/src/restart.h) to save a hdf5 file for each step. The *coils* and *.fo.coil.* files are also updated for each step.
   
 The [coilpy](https://github.com/PrincetonUniversity/FOCUS/blob/master/Tools/coilpy.py) contains severay python functions for plotting.
