@@ -149,7 +149,7 @@ SUBROUTINE write_plasma
 !-------------------------------------------------------------------------------
   if(myid .ne. 0) return
 
-  open(wunit, file=trim(ext)//".plasma", status='unknown', action='write')
+  open(wunit, file=trim(ext)//".boundary", status='unknown', action='write')
 
   write(wunit,*      ) "#Nfou Nfp NBnf"
   write(wunit,'(3I)' ) Nfou, Nfp, NBnf

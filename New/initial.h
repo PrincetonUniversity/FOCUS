@@ -176,7 +176,7 @@ subroutine Initial
 
   !-------------show the name list for checking----------------------------------------------------------
 
-  if(myid == 0 .and. IsQuiet <= 0) then ! Not quiet to output more informations;
+  if(myid == 0 .and. IsQuiet <= -1) then ! Not quiet to output more informations;
 
      write(ounit, *) "-----------INPUT NAMELIST------------------------------------"
 

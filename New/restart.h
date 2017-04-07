@@ -50,7 +50,6 @@ subroutine restart( irestart )
   if( myid.ne.0 ) return
 
   !SALLOCATE(perA, (1:Tdof), zero)
-  !store all the coil parameters;
 
   !store the derivatives;
   if (allocated(deriv)) then
@@ -65,12 +64,12 @@ subroutine restart( irestart )
   !calculate the new Bn
   if (allocated(bn)) call BnFTran
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+  !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   call h5open_f( hdfier ) ! initialize Fortran interface;
   FATAL( restart, hdfier.ne.0, error calling h5open_f )
 
-  call h5fcreate_f( trim(ext)//".fo.h5", H5F_ACC_TRUNC_F, file_id, hdfier ) ! create new file;
+  call h5fcreate_f( trim(ext)//".h5", H5F_ACC_TRUNC_F, file_id, hdfier ) ! create new file;
   FATAL( restart, hdfier.ne.0, error calling h5fcreate_f )
 
   !INPUT namelist;
@@ -127,15 +126,15 @@ subroutine restart( irestart )
   HWRITERA( 1+Nteta,1+Nzeta  ,   nz            ,   surf(1)%nz(0:Nteta,0:Nzeta)   )
 
   if (allocated(bn)) then
-  HWRITERA( 1+Nteta,1+Nzeta  ,   tgtBn         ,   surf(1)%tn(0:Nteta,0:Nzeta)   )
-  HWRITERA( 1+Nteta,1+Nzeta  ,   curBn         ,           bn(0:Nteta,0:Nzeta)   )
-  HWRITERA( 1+Nteta,1+Nzeta  ,   Bx            ,   surf(1)%Bx(0:Nteta,0:Nzeta)   )
-  HWRITERA( 1+Nteta,1+Nzeta  ,   By            ,   surf(1)%By(0:Nteta,0:Nzeta)   )
-  HWRITERA( 1+Nteta,1+Nzeta  ,   Bz            ,   surf(1)%Bz(0:Nteta,0:Nzeta)   )
+     HWRITERA( 1+Nteta,1+Nzeta  ,   tgtBn         ,   surf(1)%tn(0:Nteta,0:Nzeta)   )
+     HWRITERA( 1+Nteta,1+Nzeta  ,   curBn         ,           bn(0:Nteta,0:Nzeta)   )
+     HWRITERA( 1+Nteta,1+Nzeta  ,   Bx            ,   surf(1)%Bx(0:Nteta,0:Nzeta)   )
+     HWRITERA( 1+Nteta,1+Nzeta  ,   By            ,   surf(1)%By(0:Nteta,0:Nzeta)   )
+     HWRITERA( 1+Nteta,1+Nzeta  ,   Bz            ,   surf(1)%Bz(0:Nteta,0:Nzeta)   )
   endif
 
   HWRITEIV( 1                ,   itau          ,   itau                          )
-  HWRITERA( itau+1, 8        ,   evolution     ,   evolution(0:itau,0:7)         )
+  HWRITERA( itau+1, 8        ,   evolution     ,   evolution(0:itau, 0:7)        )
   HWRITERA( itau+1, Tdof     ,   coilspace     ,   coilspace(0:itau, 1:Tdof)     )
   if (allocated(deriv)) then
      HWRITERA( Ndof, 6       ,   deriv         ,   deriv(1:Ndof, 0:5)            )
@@ -159,10 +158,14 @@ subroutine restart( irestart )
   FATAL( restart, hdfier.ne.0, error calling h5close_f )
 
 
-  !--------------------------write individual coil file-----------------------------------------
+  !--------------------------write focus coil file-----------------------------------------
+  open( wunit, file=trim(ext)//".coilparameters", status="unknown" )
+  write(wunit, *), "# Total number of coils"
+  write(wunit, '(I6)'), Ncoils
+
   do icoil = 1, Ncoils
-     write(suffix,'(i3.3)') icoil
-     open( wunit, file=trim(ext)//".coil."//suffix, status="unknown" )
+
+     write(wunit, *), "#--------------------------------------------" 
      write(wunit, *), "# coil_type     coil_name"
      write(wunit,'(I3,4X, A10)'), coil(icoil)%itype, coil(icoil)%name
      write(wunit, *), "# Nseg   current  I_flag  Length L_flag target_length"
@@ -190,7 +193,7 @@ subroutine restart( irestart )
   !--------------------------write coils.ext file-----------------------------------------------  
   if( irestart == 1 ) then
 
-     open(funit,file="coils."//trim(ext), status="unknown", form="formatted" )
+     open(funit,file=trim(ext)//".coils", status="unknown", form="formatted" )
      write(funit,'("periods 1")')
      write(funit,'("begin filament")')
      write(funit,'("mirror NIL")')

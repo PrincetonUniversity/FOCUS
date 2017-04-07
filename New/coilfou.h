@@ -105,7 +105,7 @@ subroutine initfou
         write(ounit,'("coilfou : Reading coils data from coils."A)') trim(ext)
         coilsfile = 'coils.'//trim(ext)
         call readcoils(coilsfile, maxnseg)
-        write(ounit,'("coilfou : Read ",i6," coils")') Ncoils
+        write(ounit,'("coilfou : Read ",i6," coils in coils.ext;")') Ncoils
      endif
 
      IlBCAST( Ncoils   ,      1, 0 )
@@ -190,67 +190,61 @@ subroutine initfou
   case( 0 )
 
      if( myid==0 ) then  !get file number;
-        Ncoils = 0
-        do ii = 1, 999
-           write(suffix,'(i3.3)') ii
-           inquire( file=trim(ext)//".coil."//suffix, exist=exist )
-           if( exist ) Ncoils = Ncoils + 1
-        enddo
-        write(ounit,'("coilfou : identified "i3" .ext.coil.xxx files ;")') Ncoils
+        inquire( file=trim(ext)//".coilparameters", exist=exist )
+        if ( .not. exist ) then
+           call MPI_ABORT(MPI_COMM_WORLD, 1, ierr)
+           STOP "ext.coilparamters NOT existed"
+        endif
+        open( runit, file=trim(ext)//".coilparameters", status="old" )
+        read( runit,*)
+        read( runit,*) Ncoils
+        write(ounit,'("coilfou : identified "i3" coils in ext.coilparameters ;")') Ncoils
      endif
-
+                               
      IlBCAST( Ncoils        ,    1,  0 )
      allocate( FouCoil(1:Ncoils) )
      allocate(    coil(1:Ncoils) )
      allocate( DoF(1:Ncoils) )
 
-     icoil = 0 
+     if( myid==0 ) then
+        do icoil = 1, Ncoils
+           read( runit,*)
+           read( runit,*)
+           read( runit,*) coil(icoil)%itype, coil(icoil)%name
+           if(coil(icoil)%itype /= 1) then
+              call MPI_ABORT(MPI_COMM_WORLD, 1, ierr)
+              STOP " wrong coil type in coilfou"
+           endif
+           read( runit,*)
+           read( runit,*) coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, &
+                & coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo
+           FATAL( coilfou, coil(icoil)%NS < 0                        , illegal )
+           FATAL( coilfou, coil(icoil)%Ic < 0 .or. coil(icoil)%Ic > 1, illegal )
+           FATAL( coilfou, coil(icoil)%Lc < 0 .or. coil(icoil)%Lc > 2, illegal )
+           FATAL( coilfou, coil(icoil)%L  < zero                     , illegal )
+           FATAL( coilfou, coil(icoil)%Lc < zero                     , illegal )
+           FATAL( coilfou, coil(icoil)%Lo < zero                     , illegal )
+           read( runit,*)
+           read( runit,*) FouCoil(icoil)%NF
+           FATAL( coilfou, Foucoil(icoil)%NF  < 0                    , illegal )
+           SALLOCATE( FouCoil(icoil)%xc, (0:FouCoil(icoil)%NF), zero )
+           SALLOCATE( FouCoil(icoil)%xs, (0:FouCoil(icoil)%NF), zero )
+           SALLOCATE( FouCoil(icoil)%yc, (0:FouCoil(icoil)%NF), zero )
+           SALLOCATE( FouCoil(icoil)%ys, (0:FouCoil(icoil)%NF), zero )
+           SALLOCATE( FouCoil(icoil)%zc, (0:FouCoil(icoil)%NF), zero )
+           SALLOCATE( FouCoil(icoil)%zs, (0:FouCoil(icoil)%NF), zero )
+           read( runit,*)
+           read( runit,*) FouCoil(icoil)%xc(0:FouCoil(icoil)%NF)
+           read( runit,*) FouCoil(icoil)%xs(0:FouCoil(icoil)%NF)
+           read( runit,*) FouCoil(icoil)%yc(0:FouCoil(icoil)%NF)
+           read( runit,*) FouCoil(icoil)%ys(0:FouCoil(icoil)%NF)
+           read( runit,*) FouCoil(icoil)%zc(0:FouCoil(icoil)%NF)
+           read( runit,*) FouCoil(icoil)%zs(0:FouCoil(icoil)%NF)
 
-     do ii = 1, 999
+        enddo !end do icoil;
 
-        write(suffix,'(i3.3)') ii
-        inquire( file=trim(ext)//".coil."//suffix, exist=exist )
-        if( exist ) then
-           icoil = icoil + 1
-           if( myid==0 ) then
-              open( runit, file=trim(ext)//".coil."//suffix, status="old" )
-              read( runit,*)
-              read( runit,*) coil(icoil)%itype, coil(icoil)%name
-              if(coil(icoil)%itype /= 1) then
-                 call MPI_ABORT(MPI_COMM_WORLD, 1, ierr)
-                 STOP " wrong coil type in coilfou"
-              endif
-              read( runit,*)
-              read( runit,*) coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, &
-                   & coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo
-              FATAL( coilfou, coil(icoil)%NS < 0                        , illegal )
-              FATAL( coilfou, coil(icoil)%Ic < 0 .or. coil(icoil)%Ic > 1, illegal )
-              FATAL( coilfou, coil(icoil)%Lc < 0 .or. coil(icoil)%Lc > 2, illegal )
-              FATAL( coilfou, coil(icoil)%L  < zero                     , illegal )
-              FATAL( coilfou, coil(icoil)%Lc < zero                     , illegal )
-              FATAL( coilfou, coil(icoil)%Lo < zero                     , illegal )
-              read( runit,*)
-              read( runit,*) FouCoil(icoil)%NF
-              FATAL( coilfou, Foucoil(icoil)%NF  < 0                    , illegal )
-              SALLOCATE( FouCoil(icoil)%xc, (0:FouCoil(icoil)%NF), zero )
-              SALLOCATE( FouCoil(icoil)%xs, (0:FouCoil(icoil)%NF), zero )
-              SALLOCATE( FouCoil(icoil)%yc, (0:FouCoil(icoil)%NF), zero )
-              SALLOCATE( FouCoil(icoil)%ys, (0:FouCoil(icoil)%NF), zero )
-              SALLOCATE( FouCoil(icoil)%zc, (0:FouCoil(icoil)%NF), zero )
-              SALLOCATE( FouCoil(icoil)%zs, (0:FouCoil(icoil)%NF), zero )
-              read( runit,*)
-              read( runit,*) FouCoil(icoil)%xc(0:FouCoil(icoil)%NF)
-              read( runit,*) FouCoil(icoil)%xs(0:FouCoil(icoil)%NF)
-              read( runit,*) FouCoil(icoil)%yc(0:FouCoil(icoil)%NF)
-              read( runit,*) FouCoil(icoil)%ys(0:FouCoil(icoil)%NF)
-              read( runit,*) FouCoil(icoil)%zc(0:FouCoil(icoil)%NF)
-              read( runit,*) FouCoil(icoil)%zs(0:FouCoil(icoil)%NF)
-              close( runit )
-           endif ! end of if( myid==0 ) ; 14 Apr 16;
-
-        endif ! end of if( exist ) ;
-
-     enddo ! matches do ii;
+        close( runit )
+     endif ! end of if( myid==0 );
 
      do icoil = 1, Ncoils
 
