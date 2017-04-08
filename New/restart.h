@@ -159,7 +159,7 @@ subroutine restart( irestart )
 
 
   !--------------------------write focus coil file-----------------------------------------
-  open( wunit, file=trim(ext)//".coilparameters", status="unknown" )
+  open( wunit, file=trim(ext)//".focus", status="unknown" )
   write(wunit, *), "# Total number of coils"
   write(wunit, '(I6)'), Ncoils
 
