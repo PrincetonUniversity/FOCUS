@@ -34,18 +34,15 @@
 ###############################################################################################################################################################
 
 xfocus: $(addsuffix .o,$(allfiles)) $(MACROS) Makefile
-	#$(FC) -o xfocus $(addsuffix .o,$(allfiles)) $(OCULUSFLAGS) $(NAG) $(HDF5)
 	mkdir -p ../bin
-	cp -f xfocus ../bin
+	#$(FC) -o ../bin/xfocus $(addsuffix .o,$(allfiles)) $(OCULUSFLAGS) $(NAG) $(HDF5)
 	date
 	/bin/echo -e "\a"
 
 dfocus: $(addsuffix .o,$(allfiles)) $(MACROS) Makefile
-	$(FC) -o dfocus $(addsuffix .o,$(allfiles)) $(OCULUSFLAGS) $(NAG) $(HDF5)
 	mkdir -p ../bin
-	cp -f dfocus ../bin
+	$(FC) -o ../bin/dfocus $(addsuffix .o,$(allfiles)) $(OCULUSFLAGS) $(NAG) $(HDF5)
 	date
-	mkbin
 	/bin/echo -e "\a"
 
 ###############################################################################################################################################################
