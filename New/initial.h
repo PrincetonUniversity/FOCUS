@@ -108,7 +108,7 @@ subroutine Initial
      call getarg(1,ext) ! get argument from command line
      write(ounit, '("initial : machine_prec   = ", ES12.5, " ; sqrtmachprec   = ", ES12.5,   &
           & " ; ext            = ", A100)') machprec, sqrtmachprec, ext
-     inquire(file=trim(ext)//".fo", EXIST=exist) ! inquire if ext.fo existed
+     inquire(file=trim(ext)//".input", EXIST=exist) ! inquire if ext.fo existed
   endif
 
   LlBCAST( exist, 1, 0 )
