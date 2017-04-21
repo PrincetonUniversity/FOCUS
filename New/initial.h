@@ -115,7 +115,7 @@ subroutine Initial
   FATAL( initial, .not.exist, input file ext.fo not provided )
 
   if( myid == 0 ) then
-     open(runit, file=trim(ext)//".fo", status="unknown")
+     open(runit, file=trim(ext)//".input", status="unknown")
      read(runit, focusin)
      close(runit)
   endif ! end of if( myid == 0 ) ; 25 Mar 15;

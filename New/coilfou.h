@@ -195,7 +195,7 @@ subroutine initfou
            call MPI_ABORT(MPI_COMM_WORLD, 1, ierr)
            STOP "ext.coilparamters NOT existed"
         endif
-        open( runit, file=trim(ext)//".coilparameters", status="old" )
+        open( runit, file=trim(ext)//".focus", status="old" )
         read( runit,*)
         read( runit,*) Ncoils
         write(ounit,'("coilfou : identified "i3" coils in ext.coilparameters ;")') Ncoils

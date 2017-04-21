@@ -37,15 +37,18 @@
 ############################################################################################################
 
 xfocus: $(OBJS)
-	$(FC) -o xfocus $(OBJS) $(OCULUSFLAGS) $(NAG) $(HDF5)
+	mkdir -p ../bin
+	$(FC) -o ../bin/xfocus $(OBJS) $(OCULUSFLAGS) $(NAG) $(HDF5)
 	@echo "Compiling xfocus finished."
 
 dfocus: $(DOBJS)
-	$(FC) -o dfocus $(DOBJS) $(OCULUSFLAGS) $(NAG) $(HDF5)
+	mkdir -p ../bin
+	$(FC) -o ../bin/dfocus $(DOBJS) $(OCULUSFLAGS) $(NAG) $(HDF5)
 	@echo "Compiling dfocus finished."
 
 gfocus: $(DOBJS)
-	$(FC) -o gfocus $(DOBJS)
+	mkdir -p ../bin
+	$(FC) -o ../bin/gfocus $(DOBJS)
 	@echo "Compiling dfocus finished."
 
 ############################################################################################################
