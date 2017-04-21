@@ -77,7 +77,7 @@
 
 subroutine initfou
 
-  use globals, only : zero, half, one, two, pi, pi2, myid, ounit, runit, ncpu, IsQuiet, &
+  use globals, only : machprec, zero, half, one, two, pi, pi2, myid, ounit, runit, ncpu, IsQuiet, &
        case_coils, case_init, init_current, init_radius, NFcoil, Nseg, Ncoils, coil, Nfixcur, Nfixgeo, &
        IsVaryCurrent, IsVaryGeometry, target_length, ext, coilsX, coilsY, coilsZ, coilsI, coilseg, &
        coilname, FouCoil, DoF, IsNormalize, Inorm, Gnorm
@@ -367,8 +367,8 @@ subroutine initfou
      call surfcoord( zero, zeta, r1, z1)
      call surfcoord(   pi, zeta, r2, z2)
      Rmaj = half * (r1 + r2)
-     Inorm = sum(abs(coil(1:Ncoils)%I))/Ncoils !average current;
-     Gnorm = Rmaj                !major radius   ;
+     Inorm = sum(abs(coil(1:Ncoils)%I))/Ncoils + machprec !average current;
+     Gnorm = Rmaj                              + machprec !major radius   ;
      if (myid == 0) write(ounit, '("rdcoils : Currents are normalized by " ES23.15 &
           " ; Geometries are normalized by " ES23.15 " ;")'), Inorm, Gnorm
 
