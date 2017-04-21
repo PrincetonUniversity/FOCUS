@@ -74,8 +74,8 @@ SUBROUTINE BnFTran
            do jj = 0, Nzeta-1
               zeta = ( jj + half ) * pi2 / Nzeta
               arg = im*teta - in*zeta
-              Cur_Bnc(imn) = Cur_Bnc(imn) + bn(ii,jj)*cos(arg)
-              Cur_Bns(imn) = Cur_Bns(imn) + bn(ii,jj)*sin(arg)
+              Cur_Bnc(imn) = Cur_Bnc(imn) + surf(1)%bn(ii,jj)*cos(arg)
+              Cur_Bns(imn) = Cur_Bns(imn) + surf(1)%bn(ii,jj)*sin(arg)
            enddo ! end jj
         enddo ! end ii
 
@@ -110,8 +110,8 @@ SUBROUTINE BnFTran
                  zeta = ( jj + half ) * pi2 / Nzeta
                  arg = im*teta - in*zeta
 
-                 Cur_Bnc(imn) = Cur_Bnc(imn) + (bn(ii, jj))*cos(arg)
-                 Cur_Bns(imn) = Cur_Bns(imn) + (bn(ii, jj))*sin(arg)
+                 Cur_Bnc(imn) = Cur_Bnc(imn) + (surf(1)%bn(ii, jj))*cos(arg)
+                 Cur_Bns(imn) = Cur_Bns(imn) + (surf(1)%bn(ii, jj))*sin(arg)
               enddo ! end jj
            enddo ! end ii
 
