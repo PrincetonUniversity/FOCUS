@@ -25,7 +25,7 @@ subroutine restart( irestart )
 
   include "mpif.h"
 
-  !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+  !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   INTEGER, intent(in):: irestart
 
@@ -62,14 +62,14 @@ subroutine restart( irestart )
      if(allocated(t1C)) deriv(1:Ndof,5) = t1C(1:Ndof)
   endif
   !calculate the new Bn
-  if (allocated(bn)) call BnFTran
+  if (allocated(surf(1)%bn)) call BnFTran
 
-  !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+  !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   call h5open_f( hdfier ) ! initialize Fortran interface;
   FATAL( restart, hdfier.ne.0, error calling h5open_f )
 
-  call h5fcreate_f( trim(ext)//".h5", H5F_ACC_TRUNC_F, file_id, hdfier ) ! create new file;
+  call h5fcreate_f( "focus_"//trim(ext)//".h5", H5F_ACC_TRUNC_F, file_id, hdfier ) ! create new file;
   FATAL( restart, hdfier.ne.0, error calling h5fcreate_f )
 
   !INPUT namelist;
