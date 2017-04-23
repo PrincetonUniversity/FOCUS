@@ -89,6 +89,9 @@ SUBROUTINE BnFTran
      Cur_Bnc = Cur_Bnc * two / (Nteta*Nzeta)
      Cur_Bns = Cur_Bns * two / (Nteta*Nzeta)
 
+     Cur_Bnc = zero; Cur_Bns = zero
+     call twodft(surf(1)%tn, Cur_Bnc, Cur_Bns, bnim, bnin, NBnf)
+
   else
 
      NBnf = (mf+1)*(2*nf+1) ! (0:mf)*(-nf:nf)
@@ -174,3 +177,58 @@ SUBROUTINE write_plasma
 END SUBROUTINE write_plasma
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+SUBROUTINE twodft(func, hc, hs, im, in, mn)
+  !-------------------------------------------------------------------------------!
+  ! Calculate Fourier harmonics hc,hs for func(0:Nteta, 0:Nzeta);
+  ! im(1:mn), in(1:mn) stores the predefined m, n values;
+  ! Assuming there are no conjugate terms in im & in;
+  !-------------------------------------------------------------------------------!
+  use globals, only: zero, half, two, pi2, myid, ounit, Nteta, Nzeta
+  implicit none
+  include "mpif.h"
+  !-------------------------------------------------------------------------------
+  REAL   , INTENT(in ) :: func(0:Nteta, 0:Nzeta)
+  REAL   , INTENT(out) :: hc(1:mn), hs(1:mn)
+  INTEGER, INTENT(in ) :: mn, im(1:mn), in(1:mn)
+
+  INTEGER              :: m, n, imn, ii, jj, maxN, maxM, astat, ierr
+  REAL                 :: teta, zeta, arg
+  !------------------------------------------------------------------------------- 
+
+  FATAL(twodft, mn < 1, invalid size for 2D Fourier transformation)
+
+  maxN = maxval(abs(in))
+  maxM = maxval(abs(im))
+  FATAL(twodft, maxN >= Nzeta/2, toroidal grid resolution not enough)
+  FATAL(twodft, maxM >= Nteta/2, poloidal grid resolution not enough)
+
+  do imn = 1, mn
+     m = im(imn); n = in(imn)
+
+     do jj = 0, Nzeta-1
+        zeta = (jj+half)*pi2/Nzeta
+        do ii = 0, Nteta-1
+           teta = (ii+half)*pi2/Nteta
+
+           arg = m*teta - n*zeta
+           hc(imn) = hc(imn) + func(ii, jj)*cos(arg)
+           hs(imn) = hs(imn) + func(ii, jj)*sin(arg)
+
+        enddo
+     enddo
+
+     if (m==0 .and. n==0) then  ! for (0,0) term, times a half factor;
+        hc(imn) = hc(imn)*half
+        hs(imn) = hs(imn)*half
+     endif
+
+  enddo
+
+  hc = hc * two/(Nteta*Nzeta)  ! Discretizing factor;
+  hs = hs * two/(Nteta*Nzeta)  ! Discretizing factor;
+
+  return
+END SUBROUTINE twodft
