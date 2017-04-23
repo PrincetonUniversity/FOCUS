@@ -190,10 +190,10 @@ subroutine initfou
   case( 0 )
 
      if( myid==0 ) then  !get file number;
-        inquire( file=trim(ext)//".coilparameters", exist=exist )
+        inquire( file=trim(ext)//".focus", exist=exist )
         if ( .not. exist ) then
+           STOP "ext.focus NOT existed"
            call MPI_ABORT(MPI_COMM_WORLD, 1, ierr)
-           STOP "ext.coilparamters NOT existed"
         endif
         open( runit, file=trim(ext)//".focus", status="old" )
         read( runit,*)
@@ -212,8 +212,8 @@ subroutine initfou
            read( runit,*)
            read( runit,*) coil(icoil)%itype, coil(icoil)%name
            if(coil(icoil)%itype /= 1) then
-              call MPI_ABORT(MPI_COMM_WORLD, 1, ierr)
               STOP " wrong coil type in coilfou"
+              call MPI_ABORT(MPI_COMM_WORLD, 1, ierr)
            endif
            read( runit,*)
            read( runit,*) coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, &
