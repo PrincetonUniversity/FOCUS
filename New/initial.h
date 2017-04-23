@@ -112,7 +112,7 @@ subroutine Initial
   endif
 
   LlBCAST( exist, 1, 0 )
-  FATAL( initial, .not.exist, input file ext.fo not provided )
+  FATAL( initial, .not.exist, input file ext.input not provided )
 
   if( myid == 0 ) then
      open(runit, file=trim(ext)//".input", status="unknown")
