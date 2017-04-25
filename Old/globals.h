@@ -48,8 +48,8 @@ module kmodule
   
   REAL, parameter      :: pi         =  3.141592653589793238462643383279502884197
   REAL, parameter      :: pi2        =  pi * two
-  REAL, parameter      :: bsconstant =  1.0E-04 ! mu0/4pi
-  REAL, parameter      :: antibscont =  1.0E-07 / bsconstant
+  REAL                 :: bsconstant =  1.0!E-7 ! mu0/4pi
+  REAL                 :: antibscont =  1.0E-7
   REAL, parameter      :: mu0        =  2.0E-07 * pi2
   REAL, parameter      :: goldenmean =  1.618033988749895 ! golden mean = ( one + sqrt(five) ) / two ;    
   
@@ -106,6 +106,8 @@ module kmodule
   REAL                 :: xtol        =        1.000D-04 !latex \item \inputvar{xtol          =        0.000D+00} : E04LBF tolerance 10*sqrtmachprec;
   REAL                 :: eta         =        0.900D+00 !latex \item \inputvar{eta           =        0.900D+00} : E04LBF accurance rate (step ration);
   REAL                 :: stepmx      =        1.000D+05 !latex \item \inputvar{stepmx        =        1.000D+05} : E04LBF Euclidean distance between solution and starting;
+  INTEGER              :: Mpol        =       -8         !latex \item \inputvar{Mpol          =       -8        } : Fourier poloidal resolution;
+  INTEGER              :: Ntor        =        4         !latex \item \inputvar{Ntor          =        4        } : Fourier toroidal resolution;
   INTEGER              :: Lpoincare   =        0         !latex \item \inputvar{Lpoincare     =        0        } : to construct \Poincare plot;
                                                          !latex       \bi \item if \inputvar{Lpoincare} $> 0$, then the fieldline parameter 
                                                          !latex                 is the cylindrical toroidal angle, and so $B^\phi$ must not equal zero;
@@ -163,6 +165,8 @@ module kmodule
                          xtol                          , &
                          eta                           , &
                          stepmx                        , &
+                         Mpol                          , & ! 18 Apr 17;
+                         Ntor                          , & ! 18 Apr 17;
                          Lpoincare                     , &
                          odetol                        , &
                          Ppts                          , &
@@ -207,6 +211,8 @@ module kmodule
                          xtol                          , &
                          eta                           , &
                          stepmx                        , &
+                         Mpol                          , & ! 18 Apr 17;
+                         Ntor                          , & ! 18 Apr 17;
                          Lpoincare                     , &
                          odetol                        , &
                          Ppts                          , &
@@ -226,6 +232,17 @@ module kmodule
   INTEGER              :: bmn, bNfp, nbf
   INTEGER, allocatable :: bim(:), bin(:), bnim(:), bnin(:)
   REAL   , allocatable :: Rbc(:), Zbs(:), Rbs(:), Zbc(:), bnc(:), bns(:)
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+  INTEGER              :: mn  ! total number of Fourier harmonics; calculated from Mpol,Ntor;
+  INTEGER, allocatable :: im(:), in(:) ! Fourier modes;
+  INTEGER              :: Nt, Nz, Ntz
+! REAL                 :: soNtz ! one / sqrt (one*Ntz); shorthand;
+  CHARACTER            :: isr ! required for C06FUF;
+  REAL   , allocatable :: trigm(:), trign(:), trigwk(:)
+  REAL   , allocatable :: ijreal(:), ijimag(:), jireal(:), jiimag(:) ! workspace for Fourier arrays; 18 Apr 17;
+  REAL   , allocatable :: efmn(:), ofmn(:), cfmn(:), sfmn(:) ! Fourier harmonics; dummy workspace;
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -260,6 +277,7 @@ module kmodule
   type toroidalsurface
      INTEGER              :: Nteta, Nzeta
      REAL   , allocatable :: xx(:,:), yy(:,:), zz(:,:), nx(:,:), ny(:,:), nz(:,:), ds(:,:), xt(:,:), yt(:,:), zt(:,:), bnt(:,:)
+     REAL   , allocatable :: rx(:), ry(:), rz(:)
   end type toroidalsurface
 
   type(arbitrarycoil)  , allocatable :: coil(:)  

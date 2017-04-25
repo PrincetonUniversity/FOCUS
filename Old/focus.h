@@ -172,14 +172,14 @@ SUBROUTINE test
      call bfield1(icoil, iteta, jzeta, coil(icoil)%Bx(0:Cdof,0), coil(icoil)%By(0:Cdof,0), &
           coil(icoil)%Bz(0:Cdof,0))
     
-     write(ounit,*) "Bx/x = ", coil(icoil)%Bx(0:Cdof,0) !* pi2/NDcoil
-     write(ounit,*) "By/x = ", coil(icoil)%By(0:Cdof,0) !* pi2/NDcoil
-     write(ounit,*) "Bz/x = ", coil(icoil)%Bz(0:Cdof,0) !* pi2/NDcoil
+     if( myid==0 ) write(ounit,*) "Bx/x = ", coil(icoil)%Bx(0:Cdof,0) * pi2/NDcoil
+     if( myid==0 ) write(ounit,*) "By/x = ", coil(icoil)%By(0:Cdof,0) * pi2/NDcoil
+     if( myid==0 ) write(ounit,*) "Bz/x = ", coil(icoil)%Bz(0:Cdof,0) * pi2/NDcoil
 
   !endif
 
   call bnormal2(0)
-  write(ounit,*) "bnorm = ", bnorm
+  if( myid==0 ) write(ounit,*) "bnorm = ", bnorm
   !call bnormal(1)
   !write(ounit,*) "OB/x = ", t1B(1:Ncoils, 0:Cdof)
 
