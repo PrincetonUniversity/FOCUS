@@ -21,44 +21,47 @@ To get the source code, please type:
 ```
 git clone https://github.com/PrincetonUniversity/FOCUS/
 ```
-The directory [Old](https://github.com/PrincetonUniversity/FOCUS/tree/master/Old) contains all the source codes and 
-[Tools](https://github.com/PrincetonUniversity/FOCUS/tree/master/Tools) has some useful utilities.
+The directory [Old](https://github.com/PrincetonUniversity/FOCUS/tree/master/Old) contains all the sources for existing version of FOCUS, [New](https://github.com/PrincetonUniversity/FOCUS/tree/master/New) has the under-developping new version.
+When finishing the new code developping, the *Old* directory would probably be deleted.
+
+There also some python utilities in [pyfocus](https://github.com/PrincetonUniversity/FOCUS/tree/master/pyfocus) and [examples](https://github.com/PrincetonUniversity/FOCUS/tree/master/examples) contains some example cases.
+
+**The below introduction is for the old version FOCUS.**
 
 ### Make
-All the Fortran90 sources are in *.h files. When *make*, *.h file will produce *.F90 with extracted macros (*seen in [macros](https://github.com/PrincetonUniversity/FOCUS/blob/Old/master/macros)*).
+All the Fortran90 sources are in *.h files. When *make*, *.h file will produce *.F90 with extracted macros (*seen in [macros](https://github.com/PrincetonUniversity/FOCUS/tree/master/Old/macros)*).
 
-There are several *make* options vailable in [Makefile](https://github.com/PrincetonUniversity/FOCUS/blob/Old/master/Makefile):
+There are several *make* options vailable in [Makefile](https://github.com/PrincetonUniversity/FOCUS/tree/master/Old/Makefile):
 * Optimized concise version (recommended)
   ```
-  make xfocus DFLAGS="-D BNORM" 2>&1 | tee make.log
+  make xfocus [2>&1 | tee make.log]
   ```
-    *If you don't have target Bn distribution (e.g. stellarator vacuum field), you can just use "make xfocus".*
-* make dfocus (debugging version)
+* make dfocus (debugging version, with more stricted checkings)
   ```
-  make dfocus DFLAGS="-check all -debug full -D DEBUG" 2>&1 | tee make.log
+  make dfocus [2>&1 | tee make.log]
   ```
 * produce documentated pdfs
   ```
   make pdfs
   ```
-    *This will also move all pdfs to ~/w3_html/Focus/ for online viewing.*
-
+    *This will produce pdf documentations.*
+    
 ### Run the code
 Once successfully compiled the code, you will get the executable *xfocus (or dfocus)*. 
 You can type
 ```
 mpirun -np 32 xfocus suffix
 ```
-There are three basic files needed for a run (this example can be seen in [Examples](https://github.com/PrincetonUniversity/FOCUS/tree/master/Old/Examples)).
+There are three basic inputs needed for running:
 
 * **suffix.fo**
 
-  The input namelist file, details can been seen in [globals](https://github.com/PrincetonUniversity/FOCUS/blob/master/Old/globals.h)
+  The input namelist file, details can been seen in [globals](https://github.com/PrincetonUniversity/FOCUS/tree/master/Old/globals.h)
   
 * **plasma.boundary**
 
   The plasma boundary files including Fourier harmonics for the plasma surface and Bnormal distribution.
-  See [surface](https://github.com/PrincetonUniversity/FOCUS/blob/master/Old/surface.h).
+  See [surface](https://github.com/PrincetonUniversity/FOCUS/tree/master/Old/surface.h).
   
 * **intial coils**
 
@@ -68,9 +71,7 @@ There are three basic files needed for a run (this example can be seen in [Examp
   
   Linitialize =  N : N>1, intialize N circular coils toroidally surrounding the plasma;
   
-  See [rdcoils](https://github.com/PrincetonUniversity/FOCUS/blob/master/Old/rdcoils.h).
+  See [rdcoils](https://github.com/PrincetonUniversity/FOCUS/tree/master/Old/rdcoils.h).
   
 ### Resulting files
-For outputs, the code will provide some basic screen outputings during the running. And it also calls [restart](https://github.com/PrincetonUniversity/FOCUS/blob/master/Old/restart.h) to save a hdf5 file for each step. The *coils* and *.fo.coil.* files are also updated for each step.
-  
-The [coilpy](https://github.com/PrincetonUniversity/FOCUS/blob/master/Tools/coilpy.py) contains severay python functions for plotting.
+For outputs, the code will provide some basic screen outputings during the running. And it also calls [restart](https://github.com/PrincetonUniversity/FOCUS/tree/master/Old/restart.h) to save a hdf5 file for each step. The *coils* and *.fo.coil.* files are also updated for each step.
