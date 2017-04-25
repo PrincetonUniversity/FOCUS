@@ -43,7 +43,7 @@ SUBROUTINE BnFTran
   !-------------------------------------------------------------------------------
   INTEGER,parameter   :: mf=20, nf = 20  ! predefined Fourier modes size
   INTEGER             :: imn=0, ii, jj, im, in, astat, ierr, maxN, maxM
-  REAL                :: teta, zeta, arg
+  REAL                :: teta, zeta, arg, t1, t2
   !------------------------------------------------------------------------------- 
 
   FATAL(bnftran, mf .le. 0 .and. nf .le. 0, INVALID size for Fourier harmonics)
@@ -90,7 +90,16 @@ SUBROUTINE BnFTran
      Cur_Bns = Cur_Bns * two / (Nteta*Nzeta)
 
      Cur_Bnc = zero; Cur_Bns = zero
+     t1 = MPI_Wtime()
      call twodft(surf(1)%tn, Cur_Bnc, Cur_Bns, bnim, bnin, NBnf)
+     t2 = MPI_Wtime()
+     write(*, *) "twodft takes ", t2-t1
+
+     Cur_Bnc = zero; Cur_Bns = zero
+     t1 = MPI_Wtime()
+     call tfft(surf(1)%tn, Cur_Bnc, Cur_Bns, bnim, bnin, NBnf)
+     t2 = MPI_Wtime()
+     write(*, *) "tfft takes ", t2-t1
 
   else
 
@@ -176,59 +185,136 @@ SUBROUTINE write_plasma
   close(wunit)
 END SUBROUTINE write_plasma
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-SUBROUTINE twodft(func, hc, hs, im, in, mn)
-  !-------------------------------------------------------------------------------!
-  ! Calculate Fourier harmonics hc,hs for func(0:Nteta, 0:Nzeta);
-  ! im(1:mn), in(1:mn) stores the predefined m, n values;
-  ! Assuming there are no conjugate terms in im & in;
-  !-------------------------------------------------------------------------------!
-  use globals, only: zero, half, two, pi2, myid, ounit, Nteta, Nzeta
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+!latex \item \verb+tfft+
+
+subroutine tfft(func, hc, hs, im, in, mn)
+
+ !use constants
+ !use inputlist, only : Nfp
+ !use allglobal, only : pi2nfp
+
+  use globals, only : zero, one, pi2, ounit, myid, Nteta, Nzeta
+
   implicit none
-  include "mpif.h"
-  !-------------------------------------------------------------------------------
+  
   REAL   , INTENT(in ) :: func(0:Nteta, 0:Nzeta)
   REAL   , INTENT(out) :: hc(1:mn), hs(1:mn)
   INTEGER, INTENT(in ) :: mn, im(1:mn), in(1:mn)
 
-  INTEGER              :: m, n, imn, ii, jj, maxN, maxM, astat, ierr
-  REAL                 :: teta, zeta, arg
-  !------------------------------------------------------------------------------- 
+  INTEGER   :: Nt, Nz, Ntz, imn, ifail, mm, nn, NFP
+  REAL      :: ijreal(1:Nteta*Nzeta), ijimag(1:Nteta*Nzeta), trigm(2*Nteta), trign(2*Nzeta), &
+               trigwk(2*Nteta*Nzeta), efmn(1:mn), ofmn(1:mn), cfmn(1:mn), sfmn(1:mn)
+  CHARACTER :: isr
+  
+  LOGICAL   :: check=.false.
+  INTEGER   :: jj, kk, ii
+  REAL      :: jireal(1:Nteta*Nzeta), jiimag(1:Nteta*Nzeta), arg, ca, sa
 
-  FATAL(twodft, mn < 1, invalid size for 2D Fourier transformation)
+  NFP = 1 ; Nt = Nteta; Nz = Nzeta
 
-  maxN = maxval(abs(in))
-  maxM = maxval(abs(im))
-  FATAL(twodft, maxN >= Nzeta/2, toroidal grid resolution not enough)
-  FATAL(twodft, maxM >= Nteta/2, poloidal grid resolution not enough)
+  if( check ) then ; jireal=ijreal ; jiimag=ijimag
+  endif
 
-  do imn = 1, mn
-     m = im(imn); n = in(imn)
-
-     do jj = 0, Nzeta-1
-        zeta = (jj+half)*pi2/Nzeta
-        do ii = 0, Nteta-1
-           teta = (ii+half)*pi2/Nteta
-
-           arg = m*teta - n*zeta
-           hc(imn) = hc(imn) + func(ii, jj)*cos(arg)
-           hs(imn) = hs(imn) + func(ii, jj)*sin(arg)
-
-        enddo
+  Ntz=Nteta*Nzeta
+  ii = 0
+  do jj = 0, Nteta-1
+     do kk = 0, Nzeta-1
+        ii = ii+1
+        ijreal(ii) = func(jj, kk)
      enddo
-
-     if (m==0 .and. n==0) then  ! for (0,0) term, times a half factor;
-        hc(imn) = hc(imn)*half
-        hs(imn) = hs(imn)*half
-     endif
-
   enddo
 
-  hc = hc * two/(Nteta*Nzeta)  ! Discretizing factor;
-  hs = hs * two/(Nteta*Nzeta)  ! Discretizing factor;
+  TMPOUT(ijreal(1:10)) 
+  TMPOUT(ijimag(1:10))
+  ijimag = zero
+
+  isr = 'I' ; ifail = 0
+
+  call C06FUF( Nt , Nz , ijreal(1:Ntz) , ijimag(1:Ntz) , isr , trigm , trign , trigwk , ifail )
+
+  isr = 'S' ; ifail = 0
+
+ !call C06FUF( Nt , Nz , ijreal(1:Ntz) , ijimag(1:Ntz) , isr , trigm , trign , trigwk , ifail )
+  
+  !ijreal(:) = ijreal(:)/sqrt(one*Ntz) ; ijimag(:) = ijimag(:)/sqrt(one*Ntz)
+  TMPOUT(ijreal(1:10))
+  TMPOUT(ijimag(1:10))
+  
+  cfmn=zero ; sfmn=zero ; efmn=zero ; ofmn=zero
+  
+  do imn = 1,mn ; mm = im(imn) ; nn = in(imn) / Nfp
+   
+   if    ( mm.gt.0 .and. nn.gt.0 ) then
+    
+    efmn(imn) =   ijreal(1+(Nt-mm)+(   nn)*Nt) + ijreal(1+(   mm)+(Nz-nn)*Nt)
+    ofmn(imn) =   ijimag(1+(Nt-mm)+(   nn)*Nt) - ijimag(1+(   mm)+(Nz-nn)*Nt)
+    cfmn(imn) =   ijimag(1+(Nt-mm)+(   nn)*Nt) + ijimag(1+(   mm)+(Nz-nn)*Nt)
+    sfmn(imn) = - ijreal(1+(Nt-mm)+(   nn)*Nt) + ijreal(1+(   mm)+(Nz-nn)*Nt) 
+    
+   elseif( mm.gt.0 .and. nn.eq.0 ) then
+    
+    efmn(imn) =   ijreal(1+(Nt-mm)           ) + ijreal(1+(   mm)           )
+    ofmn(imn) =   ijimag(1+(Nt-mm)           ) - ijimag(1+(   mm)           )
+    cfmn(imn) =   ijimag(1+(Nt-mm)           ) + ijimag(1+(   mm)           )
+    sfmn(imn) = - ijreal(1+(Nt-mm)           ) + ijreal(1+(   mm)           )
+    
+   elseif( mm.gt.0 .and. nn.lt.0 ) then
+    
+    efmn(imn) =   ijreal(1+(Nt-mm)+(Nz+nn)*Nt) + ijreal(1+(   mm)+(  -nn)*Nt)
+    ofmn(imn) =   ijimag(1+(Nt-mm)+(Nz+nn)*Nt) - ijimag(1+(   mm)+(  -nn)*Nt)
+    cfmn(imn) =   ijimag(1+(Nt-mm)+(Nz+nn)*Nt) + ijimag(1+(   mm)+(  -nn)*Nt)
+    sfmn(imn) = - ijreal(1+(Nt-mm)+(Nz+nn)*Nt) + ijreal(1+(   mm)+(  -nn)*Nt) 
+    
+   elseif( mm.eq.0 .and. nn.gt.0 ) then
+    
+    efmn(imn) =   ijreal(1+        (Nz-nn)*Nt) + ijreal(1+        (   nn)*Nt)
+    ofmn(imn) = - ijimag(1+        (Nz-nn)*Nt) + ijimag(1+        (   nn)*Nt)
+    cfmn(imn) =   ijimag(1+        (Nz-nn)*Nt) + ijimag(1+        (   nn)*Nt)
+    sfmn(imn) =   ijreal(1+        (Nz-nn)*Nt) - ijreal(1+        (   nn)*Nt)
+    
+   elseif( mm.eq.0 .and. nn.eq.0 ) then
+    
+    efmn(imn) =   ijreal(1)
+    ofmn(imn) =     zero
+    cfmn(imn) =   ijimag(1)
+    sfmn(imn) =     zero
+    
+   endif
+   
+  enddo
+
+  hc = efmn
+  hs = ofmn
+
+  call C06GCF(ijimag, Ntz, ifail)
+  call C06FUF( Nt , Nz , ijreal(1:Ntz) , ijimag(1:Ntz) , isr , trigm , trign , trigwk , ifail )
+  call C06GCF(ijimag, Ntz, ifail)
+  TMPOUT(ijreal(1:10)) 
+  TMPOUT(ijimag(1:10))
+
+  if( .not.check ) return
+  
+  ijreal(1:Ntz)=zero ; ijimag(1:Ntz)=zero
+  
+  do jj=0,Nt-1
+   do kk=0,Nz-1
+    do imn=1,mn ; arg=im(imn)*jj*pi2/Nt-in(imn)*kk*(pi2/nfp)/Nz ; ca=cos(arg) ; sa=sin(arg)
+     
+     ijreal(1+jj+kk*Nt) = ijreal(1+jj+kk*Nt) + efmn(imn)*ca + ofmn(imn)*sa
+     ijimag(1+jj+kk*Nt) = ijimag(1+jj+kk*Nt) + cfmn(imn)*ca + sfmn(imn)*sa
+     
+    enddo
+   enddo
+  enddo
+  
+  write(ounit,'("tfft : Fourier reconstruction error = "2es15.5)')sqrt(sum((ijreal-jireal)**2)/Ntz),sqrt(sum((ijimag-jiimag)**2)/Ntz)
 
   return
-END SUBROUTINE twodft
+
+end subroutine tfft
+

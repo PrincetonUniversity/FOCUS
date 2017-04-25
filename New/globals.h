@@ -220,15 +220,30 @@ module globals
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 !latex \subsection{Optimization}
+  ! General target functions;
+  INTEGER              :: itau
   REAL                 :: totalenergy, discretefactor
-  REAL   , allocatable :: evolution(:,:), coilspace(:,:), deriv(:,:)
-  INTEGER              :: itau, isign = 1  ! sign symbol for flux
-  REAL, allocatable    :: t1E(:), t2E(:,:), t1B(:), t2B(:,:), bn(:, :), &
-                          t1F(:), t2F(:,:), t1L(:), t2L(:,:), &
-                          t1A(:), t2A(:,:), t1C(:), t2C(:,:)
-  REAL                 :: bnorm, tflux, ttlen, specw, ccsep
-  LOGICAL              :: Langrange = .false.  
-                       ! flag for whether including langrange multipiler in DoFs; 08/17/2016
+  REAL   , allocatable :: t1E(:), t2E(:,:), evolution(:,:), coilspace(:,:), deriv(:,:)
+  ! Bn surface integration;
+  REAL                 :: bnorm
+  REAL   , allocatable :: t1B(:), t2B(:,:), bn(:,:)
+  ! Bn reasonant harmoics;
+  INTEGER              :: NBmn
+  REAL                 :: bharm
+  REAL   , allocatable :: t1H(:), t2H(:,:), Bmn(:), wmn(:), Tmn(:), carg(:,:), sarg(:,:)
+  ! Tflux error;
+  INTEGER              :: isign = 1
+  REAL                 :: tflux
+  REAL   , allocatable :: t1F(:), t2F(:,:)
+  ! Length constraint
+  REAL                 :: ttlen
+  REAL   , allocatable :: t1L(:), t2L(:,:)
+  ! Coil-coil spearation
+  REAL                 :: ccsep
+  REAL   , allocatable :: t1C(:), t2C(:,:)
+  ! Spectral condensation;
+  REAL                 :: specw
+  REAL   , allocatable :: t1S(:), t2S(:,:)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

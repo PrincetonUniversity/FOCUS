@@ -7,7 +7,7 @@ subroutine costfun(ideriv)
        bnorm      , t1B, t2B, weight_bnorm,  &
        tflux      , t1F, t2F, weight_tflux, target_tflux, isign, &
        ttlen      , t1L, t2L, weight_ttlen, &
-       specw      , t1A, t2A, weight_specw, &
+       specw      , t1S, t2S, weight_specw, &
        ccsep      , t1C, t2C, weight_ccsep
 
   implicit none
@@ -185,7 +185,7 @@ subroutine AllocData(part)
        &               bnorm      , t1B, t2B, weight_bnorm, bn, &
        &               tflux      , t1F, t2F, weight_tflux, target_tflux, isign, &
        &               ttlen      , t1L, t2L, weight_ttlen, &
-       &               specw      , t1A, t2A, weight_specw, &
+       &               specw      , t1S, t2S, weight_specw, &
        &               ccsep      , t1C, t2C, weight_ccsep
   implicit none
   include "mpif.h"
