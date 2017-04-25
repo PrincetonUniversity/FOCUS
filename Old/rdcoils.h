@@ -21,13 +21,13 @@ subroutine rdcoils
   use kmodule, only : zero, half, one, two, pi, pi2, myid, ounit, lunit, ncpu, sqrtmachprec, &
        NFcoil, NDcoil, Ncoils, Ndof, coil, cmt, smt, itime, Ntauout, Tdof, &
        Linitialize, Rmaj, rmin, Ic, Io, Iw, Lc, Lo, Lw, Nfixcur, Nfixgeo,&
-       coilspace, ext, coilsX, coilsY, coilsZ, coilsI, Nseg, antibscont, &
+       coilspace, ext, coilsX, coilsY, coilsZ, coilsI, Nseg, bsconstant, antibscont, &
        Loptimize, weight_eqarc, deriv, cen_cur, cen_zmin, cen_zmax
 #else
   use kmodule, only : zero, half, one, two, pi, pi2, myid, ounit, lunit, ncpu, sqrtmachprec, &
        NFcoil, NDcoil, Ncoils, Ndof, coil, cmt, smt, itime, Ntauout, Tdof, &
        Linitialize, Itopology, Rmaj, rmin, Ic, Io, Iw, Lc, Lo, Lw, Nfixcur, Nfixgeo,&
-       coilspace, ext, coilsX, coilsY, coilsZ, coilsI, Nseg, antibscont, &
+       coilspace, ext, coilsX, coilsY, coilsZ, coilsI, Nseg, bsconstant,antibscont, &
        Loptimize, weight_eqarc, deriv
 #endif
   implicit none
@@ -48,11 +48,11 @@ subroutine rdcoils
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  case(-2 )
+  case(: -2 )
 
    FATAL( rdcoils, Itopology .ne. 1, this is for knotatron only.)
 
-   Ncoils = 30
+   Ncoils = abs(Linitialize)
    if (myid .eq. 0) then
     write(ounit,'("rdcoils : " 10x " : Initialize" I3" coils for knotatrans.")') Ncoils
    endif
@@ -178,6 +178,9 @@ subroutine rdcoils
 #else
    allocate( coil(1:Ncoils) )
 #endif
+
+   bsconstant = 1.0E-7 * coilsI(1)  ! scale currents;
+   antibscont = 1.0E-7 / bsconstant
 
    icoil = 0
    do icoil = 1, Ncoils
@@ -414,7 +417,7 @@ subroutine rdcoils
     SALLOCATE( coil(icoil)%zc, (0:NFcoil), zero )
     SALLOCATE( coil(icoil)%zs, (0:NFcoil), zero )
 
-    zeta = (icoil-1) * pi2 / Ncoils
+    zeta = (icoil-1) * pi2 / Ncoils ! +half for different initialize option; 2017/04/17 
 
     call surfcoord( zero, zeta, r1, z1)
     call surfcoord(   pi, zeta, r2, z2)
