@@ -1,27 +1,32 @@
 #!/bin/sh
 
-###############################################################################################################################################################
+############################################################################################################
 
- hfiles=globals initial surface rdknot rdcoils knotxx iccoil bfield bnormal torflux tlength equarcl \
-     specwid coilsep nlinear fdcheck denergy descent restart diagnos exinput identfy bnftran focus
+ ALLFILES= globals numrec initial surface rdknot rdcoils knotxx iccoil bfield bnormal torflux tlength \
+     equarcl specwid coilsep nlinear fdcheck denergy descent restart diagnos exinput identfy bnftran focus
 
- allfiles=$(hfiles)
+############################################################################################################
 
-###############################################################################################################################################################
+ HFILES= $(ALLFILES:=.h)
+ FFILES= $(ALLFILES:=.F90)
+ PFILES= $(ALLFILES:=.pdf)
+ OBJS=$(ALLFILES:=_r.o)
+ DOBJS=$(ALLFILES:=_d.o)
+
+############################################################################################################
 
  MACROS=macros
-
+ CC=intel # if want to use gfortran; make CC=gfortran
  FC=mpif90
+ FLAGS=-r8 -mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback -vec_report0
+ DFLAGS=-check all -check noarg_temp_created -debug full -D DEBUG
 
- FLAGS=-r8 -mcmodel=large -O2 -m64 -unroll0 -fno-alias -ip -traceback -vec_report0 # -check all -debug full -D DEBUG # man ifort for information;
-
- DFLAGS=
-
-###############################################################################################################################################################
+############################################################################################################
 
  NAG=-L$(NAG_ROOT)/lib -lnag_nag
 
- HDF5=-I$(HDF5_HOME)/include -L$(HDF5_HOME)/lib -lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran -lhdf5 -lpthread -lz -lm
+ HDF5=-I$(HDF5_HOME)/include -L$(HDF5_HOME)/lib -lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran \
+-lhdf5 -lpthread -lz -lm
 
  OCULUSVERSION=16
  OCULUSFLAGS=-L$(OCULUS) -loculus.$(OCULUSVERSION) -I$(OCULUS)
@@ -31,58 +36,33 @@
  date:=$(shell date)
  text:=$(shell date +%F)
 
-###############################################################################################################################################################
+############################################################################################################
 
-xfocus: $(addsuffix .o,$(allfiles)) $(MACROS) Makefile
-	mkdir -p ../bin
-	#$(FC) -o ../bin/xfocus $(addsuffix .o,$(allfiles)) $(OCULUSFLAGS) $(NAG) $(HDF5)
-	date
-	/bin/echo -e "\a"
+xfocus: $(OBJS)
+	$(FC) -o xfocus $(OBJS) $(OCULUSFLAGS) $(NAG) $(HDF5)
+	@echo "Compiling xfocus finished."
 
-dfocus: $(addsuffix .o,$(allfiles)) $(MACROS) Makefile
-	mkdir -p ../bin
-	$(FC) -o ../bin/dfocus $(addsuffix .o,$(allfiles)) $(OCULUSFLAGS) $(NAG) $(HDF5)
-	date
-	/bin/echo -e "\a"
+dfocus: $(DOBJS)
+	$(FC) -o dfocus $(DOBJS) $(OCULUSFLAGS) $(NAG) $(HDF5)
+	@echo "Compiling dfocus finished."
 
-###############################################################################################################################################################
+############################################################################################################
+$(OBJS): %_r.o: %.F90
+	$(FC) -c $(FLAGS) -o $@ $<  $(OCULUSFLAGS) $(NAG) $(HDF5)
 
-globals.o: globals.h $(MACROS) Makefile
-	m4 -P $(MACROS) globals.h > globals.F90
-	$(FC) $(FLAGS) $(DFLAGS) -o globals.o -c globals.F90 $(OCULUSFLAGS)
+$(DOBJS): %_d.o: %.F90
+	$(FC) -c $(FLAGS) $(DFLAGS) -o $@ $< $(OCULUSFLAGS) $(NAG) $(HDF5)
 
-###############################################################################################################################################################
+$(FFILES): %.F90: %.h
+	m4 -P $(MACROS) $< > $@
 
-restart.o: restart.h globals.o $(MACROS) Makefile
-	m4 -P $(MACROS) restart.h > $*.F90
-	$(FC) $(FLAGS) $(DFLAGS) -o restart.o -c $*.F90 $(HDF5)
-
-bfield.o: bfield.h globals.o $(MACROS) Makefile
-	m4 -P $(MACROS) bfield.h > $*.F90
-	$(FC) $(FLAGS) $(DFLAGS) -o bfield.o -c $*.F90 $(OCULUSFLAGS) $(HDF5)
-
-nlinear.o: nlinear.h globals.o $(MACROS) Makefile
-	m4 -P $(MACROS) nlinear.h > $*.F90
-	$(FC) $(FLAGS) $(DFLAGS) -o nlinear.o -c $*.F90 $(HDF5)
-
-###############################################################################################################################################################
-
-%.o: %.h globals.o $(MACROS) Makefile
-	m4 -P $(MACROS) $*.h > $*.F90
-	$(FC) $(FLAGS) $(DFLAGS) -o $*.o -c $*.F90 $(OCULUSFLAGS)
-
-%.o: %.f90 Makefile
-	$(FC) $(FLAGS) $(DFLAGS) -o $*.o -c $*
-
-%.o: %.f Makefile
-	$(FC) $(FLAGS) $(DFLAGS) -o $*.o -c $*.f
-
-###############################################################################################################################################################
+ date:=$(shell date)
+ text:=$(shell date +%F)
 
 clean:
-	rm -f *.o ; rm -f *.mod ; rm -f $(addsuffix .F90,$(allfiles)) ; rm -f *.pdf ; rm -f *.toc ; rm -f *.dvi ; rm -f *.out ; rm -f .*.date
+	rm -f *.o ; rm -f *.mod ; rm -f *.F90 ; rm -f *.pdf ; rm -f *.toc ; rm -f *.dvi ; rm -f *.out ; rm -f .*.date
 
-###############################################################################################################################################################
+############################################################################################################
 
 %.pdf: %.h head.tex end.tex Makefile
 ifeq ($(USER),shudson)
@@ -112,33 +92,33 @@ else
 	rm -f $*.tex $*.aux $*.blg $*.log $*.ps
 endif
 
-###############################################################################################################################################################
+############################################################################################################
 
-pdfs: $(addsuffix .pdf,$(allfiles)) head.html
+pdfs: $(PFILES) head.html
 ifeq ($(USER),shudson)
 
 	cat head.html > $(WEBDIR)/Focus/subroutines.html
 
-	for file in $(allfiles) ; do cp $${file}.pdf $(WEBDIR)/Focus/. ; grep "!title" $${file}.h | cut -c 7- | \
+	for file in $(ALLFILES) ; do cp $${file}.pdf $(WEBDIR)/Focus/. ; grep "!title" $${file}.h | cut -c 7- | \
 	                           awk -v file=$${file} -F!\
 	                            '{print "<tr><td><a href="file".pdf\">"file"</a></td><td>"$$1"</td><td>"$$2"</td></tr>"}' \
 	                            >> $(WEBDIR)/Focus/subroutines.html ; \
 	                          done
 
 	echo "</table><a href="http://w3.pppl.gov/~shudson/">return to Dr. S.R. Hudson</a></body></html>" >> $(WEBDIR)/Focus/subroutines.html
-else
+else ifeq ($(USER), czhu)
        
 	cat head_czhu.html > $(WEBDIR)/Focus/subroutines.html
 
-	for file in $(allfiles) ; do cp $${file}.pdf $(WEBDIR)/Focus/. ; grep "!title" $${file}.h | cut -c 7- | \
+	for file in $(ALLFILES) ; do cp $${file}.pdf $(WEBDIR)/Focus/. ; grep "!title" $${file}.h | cut -c 7- | \
 	                           awk -v file=$${file} -F!\
 	                            '{print "<tr><td><a href="file".pdf\">"file"</a></td><td>"$$1"</td><td>"$$2"</td></tr>"}' \
 	                            >> $(WEBDIR)/Focus/subroutines.html ; \
 	                          done
 
 	echo "</table><a href="http://w3.pppl.gov/~$(USER)/">return to upper directory</a></body></html>" >> $(WEBDIR)/Focus/subroutines.html
+else
+	@echo "Please read pdfs in the directory!"
 endif
-	mkdir -p ../docs
-	mv *.pdf ../docs/
 
-###############################################################################################################################################################
+############################################################################################################

@@ -55,8 +55,8 @@ subroutine diagnos
  !ii(1:1) = minloc(surf(1)%xx(0:Nteta,0)) ; lRl = surf(1)%xx(ii(1)-1,0) ; lZl = surf(1)%zz(ii(1)-1,0) ! THIS ONLY WORKS AT PHI = ZERO; 14 Apr 16;
  !ii(1:1) = maxloc(surf(1)%xx(0:Nteta,0)) ; lRu = surf(1)%xx(ii(1)-1,0) ; lZu = surf(1)%zz(ii(1)-1,0) ! THIS ONLY WORKS AT PHI = ZERO; 14 Apr 16;
 
-  lRl = surf(1)%xx(0      ,0) ; lZl = zero ; !lZl = surf(1)%zz(      0,0)
-  lRu = surf(1)%xx(Nteta/2,0) ; lZu = zero ; !lZu = surf(1)%zz(Nteta/2,0)
+  lRl = surf(1)%xx(Nteta/2,0) ; lZl = zero ; !lZl = surf(1)%zz(      0,0)
+  lRu = surf(1)%xx(Nteta  ,0) ; lZu = zero ; !lZu = surf(1)%zz(Nteta/2,0)
 
   lRl = ( lRl + lRu ) * half ! re-center to mid-point; 04 Aug 16;
   lZl = ( lZl + lZu ) * half     

@@ -153,6 +153,8 @@ subroutine restart( irestart )
   HWRITERV( 1                           ,   xtol                                    ,   xtol                                                      )
   HWRITERV( 1                           ,   eta                                     ,   eta                                                       )
   HWRITERV( 1                           ,   stepmx                                  ,   stepmx                                                    )
+  HWRITEIV( 1                           ,   Mpol                                    ,   Mpol                                                      )
+  HWRITEIV( 1                           ,   Ntor                                    ,   Ntor                                                      )
   HWRITEIV( 1                           ,   Lpoincare                               ,   Lpoincare                                                 )
   HWRITERV( 1                           ,   odetol                                  ,   odetol                                                    )
   HWRITEIV( 1                           ,   Ppts                                    ,   Ppts                                                      )
@@ -257,7 +259,7 @@ subroutine restart( irestart )
   if( irestart.eq.1 ) then
 
   open(lunit,file="coils."//trim(ext), status="unknown", form="formatted" )
-  write(lunit,'("periods 1")')
+  write(lunit,'("periods "I3)') bNfp
   write(lunit,'("begin filament")')
   write(lunit,'("mirror NIL")')
   do icoil = 1, Ncoils

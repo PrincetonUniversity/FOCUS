@@ -139,19 +139,21 @@ subroutine surface
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  if( myid.eq.0  .and. nbf .gt. 0) then
+  if( myid.eq.0 ) then
    write(ounit,'("surface : " 10x " : bmn ="  i06   " ; nbf ="  i06   )') bmn, nbf
-#ifdef DEBUG  
-  !write(ounit,'("surface : " 10x " : bim ="99i13   )') bim(1:bmn)
-  !write(ounit,'("surface : " 10x " : bin ="99i13   )') bin(1:bmn)
+#ifdef DEBUG
+   write(ounit,'("surface : " 10x " : bim ="99i13   )') bim(1:bmn)
+   write(ounit,'("surface : " 10x " : bin ="99i13   )') bin(1:bmn)
+   write(ounit,'("surface : " 10x " : Rbc ="99es13.5)') Rbc(1:bmn)
+   write(ounit,'("surface : " 10x " : Rbs ="99es13.5)') Rbs(1:bmn)
+   write(ounit,'("surface : " 10x " : Zbc ="99es13.5)') Zbc(1:bmn)
+   write(ounit,'("surface : " 10x " : Zbs ="99es13.5)') Zbs(1:bmn)
+  if (nbf .gt. 0) then
    write(ounit,'("surface : " 10x " : bnim ="99i13  )') bnim(1:nbf)
    write(ounit,'("surface : " 10x " : bnin ="99i13  )') bnin(1:nbf)
-  !write(ounit,'("surface : " 10x " : Rbc ="99es13.5)') Rbc(1:bmn)
-  !write(ounit,'("surface : " 10x " : Rbs ="99es13.5)') Rbs(1:bmn)
-  !write(ounit,'("surface : " 10x " : Zbc ="99es13.5)') Zbc(1:bmn)
-  !write(ounit,'("surface : " 10x " : Zbs ="99es13.5)') Zbs(1:bmn)
    write(ounit,'("surface : " 10x " : bnc ="99es13.5)') bnc(1:nbf)
    write(ounit,'("surface : " 10x " : bns ="99es13.5)') bns(1:nbf)
+   endif
 #endif
   endif
 

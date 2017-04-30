@@ -26,7 +26,7 @@ subroutine initial
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   LOGICAL :: exist
-  INTEGER :: ierr, astat, idof, mm, ncdof
+  INTEGER :: ierr, astat, idof, mm, ncdof, imn, nn, Nfp, ifail
   REAL    :: X02AJF
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -88,6 +88,8 @@ subroutine initial
   RlBCAST( xtol          ,    1,  0 )
   RlBCAST( eta           ,    1,  0 )
   RlBCAST( stepmx        ,    1,  0 )
+  IlBCAST( Mpol          ,    1,  0 )
+  IlBCAST( Ntor          ,    1,  0 )
   IlBCAST( Lpoincare     ,    1,  0 )
   RlBCAST( odetol        ,    1,  0 )
   IlBCAST( Ppts          ,    1,  0 )
@@ -159,7 +161,7 @@ subroutine initial
   FATAL( initial, NDcoil .le. 0, illegal )
 
   select case( Linitialize )
-  case( -2 )
+  case(:-2 )
   case( -1 )
      inquire( file="coils."//trim(ext), exist=exist )
      FATAL( initial, .not.exist, coils file coils.ext not provided )
@@ -330,8 +332,55 @@ subroutine initial
   tmpw_eqarc = weight_eqarc
   tmpw_ccsep = weight_ccsep
 
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+  
+ !Nt = max( Ndiscrete*4*Mpol, 1 ) ; Nz = max( Ndiscrete*4*Ntor, 1 ) ; Ntz = Nt*Nz ; soNtz = one / sqrt( one*Ntz ) ! exaggerated discrete resolution;
+
+  Ntz = Nteta * Nzeta
+
+  mn = 1 + Ntor + abs(Mpol) * ( 2 * Ntor + 1 ) ! Fourier resolution of interface geometry & vector potential;
+  
+  SALLOCATE( im, (1:mn), 0 )
+  SALLOCATE( in, (1:mn), 0 )
+  
+  imn = 0 ; Nfp = 1 ! TAKE CARE WITH NFP; 18 Apr 17;
+  
+  ;  mm = 0
+  ;do nn = 0, Ntor
+  ; imn = imn+1 ; im(imn) = mm ; in(imn) = nn * Nfp
+  ;enddo
+  ;
+  
+  do mm = 1, abs(Mpol)
+   do nn = -Ntor, Ntor
+    imn = imn+1 ; im(imn) = mm ; in(imn) = nn * Nfp
+   enddo
+  enddo
+
+  SALLOCATE( efmn, (1:mn), zero ) ! workspace for Fourier harmonics; 18 Apr 17;
+  SALLOCATE( ofmn, (1:mn), zero )
+  SALLOCATE( cfmn, (1:mn), zero )
+  SALLOCATE( sfmn, (1:mn), zero )
+  
+  SALLOCATE( ijreal, (1:Ntz), zero ) ! workspace for real space grid; 18 Apr 17;
+  SALLOCATE( ijimag, (1:Ntz), zero )
+  SALLOCATE( jireal, (1:Ntz), zero )
+  SALLOCATE( jiimag, (1:Ntz), zero )
+
+  SALLOCATE( trigm , (1:2*Nteta) , zero ) ! trignometric factors required for fast Fourier transform;
+  SALLOCATE( trign , (1:2*Nzeta) , zero )
+  SALLOCATE( trigwk, (1:2*Ntz), zero )
+
+  isr = 'I' ; ifail = 0
+
+  call C06FUF( Nteta, Nzeta, ijreal(1:Ntz), ijimag(1:Ntz), isr, trigm(1:2*Nteta), trign(1:2*Nzeta), trigwk(1:2*Ntz), ifail )
+
+  isr = 'S'
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
   return
 
-  !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 end subroutine initial
