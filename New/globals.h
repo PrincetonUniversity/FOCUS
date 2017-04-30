@@ -89,6 +89,7 @@ module globals
   INTEGER              :: IsNormBnormal  =        0
   INTEGER              :: IsNormWeight   =        0       
   REAL                 :: weight_bnorm   =        1.000D+00
+  REAL                 :: weight_bharm   =        0.000D+00
   REAL                 :: weight_tflux   =        0.000D+00
   REAL                 :: target_tflux   =        0.000D+00
   REAL                 :: weight_ttlen   =        0.000D+00
@@ -141,6 +142,7 @@ module globals
                         IsNormalize   , &
                         IsNormWeight  , &
                         weight_bnorm  , &
+                        weight_bharm  , &
                         weight_tflux  , &
                         target_tflux  , &
                         weight_ttlen  , &
@@ -226,11 +228,12 @@ module globals
   REAL   , allocatable :: t1E(:), t2E(:,:), evolution(:,:), coilspace(:,:), deriv(:,:)
   ! Bn surface integration;
   REAL                 :: bnorm
-  REAL   , allocatable :: t1B(:), t2B(:,:), bn(:,:)
+  REAL   , allocatable :: t1B(:), t2B(:,:), bn(:,:), dBx(:,:,:)
   ! Bn reasonant harmoics;
   INTEGER              :: NBmn
+  INTEGER, allocatable :: Bmnin(:), Bmnim(:)
   REAL                 :: bharm
-  REAL   , allocatable :: t1H(:), t2H(:,:), Bmn(:), wmn(:), Tmn(:), carg(:,:), sarg(:,:)
+  REAL   , allocatable :: t1H(:), t2H(:,:), Bmn(:), wBmn(:), tBmn(:), carg(:,:), sarg(:,:)
   ! Tflux error;
   INTEGER              :: isign = 1
   REAL                 :: tflux

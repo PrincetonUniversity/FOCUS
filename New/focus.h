@@ -92,7 +92,7 @@ PROGRAM focus
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-  INTEGER :: ierr, astat, irestart  ! for error indicators; 2017/02/16
+  INTEGER :: ierr, astat, irestart, itmp  ! for error indicators; 2017/02/16
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
@@ -138,11 +138,13 @@ PROGRAM focus
   
   select case( case_optimizer )
   case ( -1)      !finite-difference checking the first  derivatives;
-     call AllocData('costfun1')
+     itmp = 1
+     call AllocData(itmp)
      irestart = 0
-     call fdcheck(1)
+     call fdcheck(itmp)
   case(  1)       ! differential flow;
-     call AllocData('costfun1')
+     itmp = 1
+     call AllocData(itmp)
      irestart = 1
      call descent
   case default

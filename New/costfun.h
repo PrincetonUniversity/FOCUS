@@ -5,6 +5,7 @@ subroutine costfun(ideriv)
        Ncoils, deriv, Ndof, xdof, &
        totalenergy, t1E, t2E, &
        bnorm      , t1B, t2B, weight_bnorm,  &
+       bharm      , t1H, t2H, weight_bharm,  &
        tflux      , t1F, t2F, weight_tflux, target_tflux, isign, &
        ttlen      , t1L, t2L, weight_ttlen, &
        specw      , t1S, t2S, weight_specw, &
@@ -23,7 +24,8 @@ subroutine costfun(ideriv)
   iter = iter + 1
   ! if(IsQuiet .eq. -1 .and. myid .eq. 0) write(ounit,'("Costfun :"12X": begin the "I6"th run.")') iter
   if(IsQuiet <= -1) then
-   call bnormal(0)
+     call bnormal(0)
+     if (weight_bharm .gt. sqrtmachprec) call bmnharm(0)
 !!$
 !!$   if ( target_tflux .eq. 0.0 ) then
 !!$    call torflux(0)
@@ -56,6 +58,7 @@ subroutine costfun(ideriv)
 
   !call unpacking(xdof)
 
+  ! Bnormal surface intergration;
   if (weight_bnorm .gt. sqrtmachprec) then
 
    call bnormal(ideriv)
@@ -66,7 +69,19 @@ subroutine costfun(ideriv)
     t1E = t1E +  weight_bnorm * t1B
     t2E = t2E +  weight_bnorm * t2B
    endif
+  endif
 
+  ! individual Bn harmonics;
+  if (weight_bharm .gt. sqrtmachprec) then
+
+   call bmnharm(ideriv)
+   totalenergy = totalenergy + weight_bharm * bharm
+   if     ( ideriv .eq. 1 ) then
+    t1E = t1E +  weight_bharm * t1H
+   elseif ( ideriv .eq. 2 ) then
+    t1E = t1E +  weight_bharm * t1H
+    t2E = t2E +  weight_bharm * t2H
+   endif
   endif
 
 !!$  ! if(myid .eq. 0) write(ounit,'("calling bnormal used",f10.5,"seconds.")') finish-start
@@ -169,139 +184,5 @@ subroutine costfun(ideriv)
 
   return
 end subroutine costfun
-
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-subroutine AllocData(part)
-!------------------------------------------------------------------------------------------------------ 
-! DATE:  04/05/2017
-! Allocate data before using them, especially for those used several times;
-! part can be : 'dof', 'costfun0', 'costfun1'
-!------------------------------------------------------------------------------------------------------
-  use globals, only :  zero, sqrtmachprec, myid, ounit, ncpu, case_optimizer, &
-       &               coil, DoF, FouCoil, surf, Ncoils, Nteta, Nzeta, Ndof, xdof, Inorm, Gnorm, dofnorm, &
-       &               Tdof, evolution, deriv, coilspace, SD_Nout,  &
-       &               totalenergy, t1E, t2E, evolution, coilspace, deriv, &
-       &               bnorm      , t1B, t2B, weight_bnorm, bn, &
-       &               tflux      , t1F, t2F, weight_tflux, target_tflux, isign, &
-       &               ttlen      , t1L, t2L, weight_ttlen, &
-       &               specw      , t1S, t2S, weight_specw, &
-       &               ccsep      , t1C, t2C, weight_ccsep
-  implicit none
-  include "mpif.h"
-
-  CHARACTER(*) , intent(in) :: part
-
-  INTEGER                   :: ierr, astat, icoil, idof, NS, ND, NF
-
-  !-------------------------------------------------------------------------------------------
-  
-  select case (part)
-
-  !--------------------------------------------------------------------------------------------- 
-  case ('dof')
-
-     Ndof = 0; Tdof = 0
-
-     do icoil = 1, Ncoils
-        select case (coil(icoil)%itype)
-        
-        case(1)
-           ! get number of DoF for each coil and allocate arrays;
-           NF = FouCoil(icoil)%NF
-           ND = (6*NF + 3) ! total variables for geometry
-           DoF(icoil)%ND = coil(icoil)%Lc * ND !# of DoF for icoil;
-           SALLOCATE(DoF(icoil)%xdof, (1:DoF(icoil)%ND), zero)
-           SALLOCATE(DoF(icoil)%xof , (1:coil(icoil)%NS, 1:ND), zero)
-           SALLOCATE(DoF(icoil)%yof , (1:coil(icoil)%NS, 1:ND), zero)
-           SALLOCATE(DoF(icoil)%zof , (1:coil(icoil)%NS, 1:ND), zero)
-        case default
-           FATAL(AllocData, .true., not supported coil types)
-        end select
-
-        Ndof = Ndof + coil(icoil)%Ic + DoF(icoil)%ND
-        Tdof = Tdof + 1              + ND
-
-     enddo
-
-     if(Ndof == 0) then ! no DOF;
-        case_optimizer = 0
-        if(myid==0) write(ounit, *) "AllocData : No free variables; no optimization performed."
-     endif
-
-     SALLOCATE(    xdof, (1:Ndof), zero ) ! dof vector;
-     SALLOCATE( dofnorm, (1:Ndof), zero ) ! dof normalized value vector;
-     SALLOCATE( evolution, (0:SD_Nout, 0:7), zero ) !evolution array;
-     SALLOCATE( coilspace, (0:SD_Nout, 1:Tdof), zero ) ! all the coil parameters;
-     
-     idof = 0
-     do icoil = 1, Ncoils
-
-        if(coil(icoil)%Ic /= 0) then
-           dofnorm(idof+1) = Inorm
-           idof = idof + 1
-        endif
-
-        ND = DoF(icoil)%ND
-        if(coil(icoil)%Lc /= 0) then
-           dofnorm(idof+1:idof+ND) = Gnorm
-           idof = idof + ND
-        endif
-
-     enddo !end do icoil;
-     FATAL( AllocData , idof .ne. Ndof, counting error in unpacking )
-  !--------------------------------------------------------------------------------------------- 
-  case ('costfun0')
-
-     if (weight_bnorm > sqrtmachprec) then
-        SALLOCATE(         bn, (0:Nteta,0:Nzeta), zero ) !Bn from coils;        
-
-        SALLOCATE( surf(1)%bn, (0:Nteta,0:Nzeta), zero ) !total Bn;
-        SALLOCATE( surf(1)%Bx, (0:Nteta,0:Nzeta), zero ) !Bx on the surface;
-        SALLOCATE( surf(1)%By, (0:Nteta,0:Nzeta), zero ) !By on the surface;
-        SALLOCATE( surf(1)%Bz, (0:Nteta,0:Nzeta), zero ) !Bz on the surface;
-
-        do icoil = 1, Ncoils
-           ND = DoF(icoil)%ND
-           SALLOCATE( coil(icoil)%Bx, (0:ND, 0:ND), zero )
-           SALLOCATE( coil(icoil)%By, (0:ND, 0:ND), zero )
-           SALLOCATE( coil(icoil)%Bz, (0:ND, 0:ND), zero )
-        enddo
-     endif
-
-  !--------------------------------------------------------------------------------------------- 
-  case ('costfun1')
-     
-     FATAL( AllocData, Ndof < 1, INVALID Ndof value )
-     SALLOCATE( t1E, (1:Ndof), zero )
-     SALLOCATE( deriv, (1:Ndof, 0:5), zero )
-
-     if (weight_bnorm .gt. sqrtmachprec) then
-        SALLOCATE(         bn, (0:Nteta,0:Nzeta), zero ) !Bn from coils;        
-
-        SALLOCATE( surf(1)%bn, (0:Nteta,0:Nzeta), zero ) !total Bn;
-        SALLOCATE( surf(1)%Bx, (0:Nteta,0:Nzeta), zero ) !Bx on the surface;
-        SALLOCATE( surf(1)%By, (0:Nteta,0:Nzeta), zero ) !By on the surface;
-        SALLOCATE( surf(1)%Bz, (0:Nteta,0:Nzeta), zero ) !Bz on the surface;
-
-        do icoil = 1, Ncoils
-           ND = DoF(icoil)%ND
-           SALLOCATE( coil(icoil)%Bx, (0:ND, 0:ND), zero )
-           SALLOCATE( coil(icoil)%By, (0:ND, 0:ND), zero )
-           SALLOCATE( coil(icoil)%Bz, (0:ND, 0:ND), zero )
-        enddo
-
-        SALLOCATE( t1B, (1:Ndof), zero )
-     endif
-
-  !--------------------------------------------------------------------------------------------- 
-  case default
-     FATAL( AllocData, .true., unsupported allocate type )
-
-  end select
-
-
-  return
-end subroutine AllocData
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!

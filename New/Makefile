@@ -2,7 +2,7 @@
 
 ############################################################################################################
 
- ALLFILES= globals initial surface rdknot coilfou packdof bfield bnormal fdcheck costfun descent \
+ ALLFILES= globals initial datalloc surface rdknot coilfou packdof bfield bnormal fdcheck costfun descent \
            bnftran restart focus
  HFILES= $(ALLFILES:=.h)
  FFILES= $(ALLFILES:=.F90)

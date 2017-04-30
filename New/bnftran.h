@@ -1,33 +1,184 @@
-!title(bnftran) ! Transforming the Bnormal distribution into Fourier harmonics.
+!title(bnftran) ! Transform the Bnormal distribution into Fourier harmonics.
 
-!latex \briefly{Transforming former saved Bnormal data on predefined surface grid into Fourier harmonics.}
-!latex \calledby{\link{identfy}}
-!latex 
-!latex \subsection{overview}
-!latex \bi
-!latex \item[1.] Discrete Bnormal distribution on the surface grid can be represented by a two-dimensional
-!latex           Forurier series.
-!latex    \be
-!latex    \ds B_n(\t,\z) \equiv \sum_{m,n} B_{mn}^c cos(m\t-n\z) \ + \ B_{mn}^s sin(m\t-n\z)
-!latex    \ee
-!latex \item[2.] So, the Fourier harmonics $ B_{mn}^c$ and  $ B_{mn}^s$ can be computed as,
-!latex    \be
-!latex    \ds  B_{mn}^c & = & \frac{1}{2\pi^2} \int_0^{2\pi} \int_0^{2\pi} B_n(\t,\z) cos(m\t-n\z)
-!l tex                         d\t d\z \quad \\ %\text{(for (0,0) term should be $\frac{1}{4\pi^2}$)} \\
-!latex                         d\t d\z \quad     \mbox{\rm (for $(0,0)$ term should be $\frac{1}{4\pi^2}$)} \\
-!latex                  &\approx & \frac{2}{Nteta \times Nzeta} \sum_0^{Nteta-1} \sum_0^{Nzeta-1} 
-!latex                           B_n(iteta, jzeta) cos(m\t-n\z) \\
-!latex    \ds  B_{mn}^s & = &\frac{1}{2\pi^2} \int_0^{2\pi} \int_0^{2\pi} B_n(\t,\z) sin(m\t-n\z)
-!l tex                         d\t d\z quad \\ %\text{(for (0,0) term should be $\frac{1}{4\pi^2}$)} \\
-!latex                         d\t d\z quad     \mbox{(for $(0,0)$ term should be $\frac{1}{4\pi^2}$)} \\
-!latex                  &\approx & \frac{2}{Nteta \times Nzeta} \sum_0^{Nteta-1} \sum_0^{Nzeta-1} 
-!latex                           B_n(iteta, jzeta) sin(m\t-n\z)
-!latex    \ee
-!latex  \item[3.] If there exist conjugated terms (e.g. m,n and  -m,-n), the computed terms will be 
-!latex            timed with a factor of 2 or 0;
-!latex  \item[4.] What should be noted is that the maximum modes in Fouries harmonics should not be 
-!latex            less/equal than the half of surface grid resolutions.
-!latex \ei
+!latex \briefly{There are severl subroutines in this file. The main purpose is to calculate the Fourier 
+!latex harmonics of Bn on the plasma surface. Right now, the Fourier decompositions are carried out using  
+!latex normal Fourier Transformation in polar coordinates. In the future, FFT and flux coordinates capability 
+!latex will be enabled.}
+!latex \calledby{\link{costfun}}
+
+!\latex \subsection{Background}
+!\latex The width of magnetic island is proportional to the square root of resonant perturbation amplitude. 
+!\latex Directly optimizing Bn harmonics (with well-chose sensitivity matrix) rather than minimizing the 
+!\latex surface integration would be a better idea. Especially for designing RMP coils in tokamaks.
+!\latex
+!\latex \subsection{0-order cost function}
+!\latex In the flux coordinate ($\psi, \theta, \pi$), the normal magnetic field perturbation can be written
+!\latex as,
+!\latex \be
+!\latex \ds B_n(\theta, \phi) = \vec{B} \cdot \nabla{\psi} = \sum_{m,n} \delta_{mn} exp{-i(m\thta - n\phi)}\ .
+!\latex \ee
+!\latex If we define the cost function {\bf H = bharm} as,
+!\latex \be
+!\latex \ds H = \frac{1}{2} \sum_{m,n} w_mn \ ( \dalta_{mn} - \delta_{mn}^o )^2
+!\latex \ee
+!\latex Using trigonometric functions,
+!\latex \be
+!\latex \dalta_{mn} & = \sqrt{ {\dalta_{mn}^c}^2 + {\dalta_{mn}^s}^2 }
+!\latex \dalta_{mn}^c & = \frac{1}{2\pi^2} \int_0^{2\pi} \int_0^{2\pi} Bn \ \cos(m\theta-n\phi) d\theta d\phi
+!\latex \dalta_{mn}^s & = \frac{1}{2\pi^2} \int_0^{2\pi} \int_0^{2\pi} Bn \ \sin(m\theta-n\phi) d\theta d\phi
+!\latex \ee
+!\latex 
+!\latex \subsection{1st-order derivatives}
+!\latex The derivatives of $H$ with respect to coil parameters can be calculated as,
+!\latex \be
+!\latex \pdv{H}{x} & =  \sum_{m,n} w_mn  \ ( \dalta_{mn} - \delta_{mn}^o ) \pdv{\dalta_{mn}}{x}
+!\latex \pdv{\dalta_{mn}}{x} & = \frac{\dalta_{mn}^c \pdv{\dalta_{mn}^c}{x} + 
+!\latex                                \dalta_{mn}^c \pdv{\dalta_{mn}^c}{x}}{\dalta_{mn}}
+!\latex \pdv{\dalta_{mn}^c}{x} & =  \frac{1}{2\pi^2} \int_0^{2\pi} \int_0^{2\pi} 
+!\latex         [\pdv{B_x}{x} n_x + [\pdv{B_y}{y} n_y + [\pdv{B_z}{z} n_z] \ \cos(m\theta-n\phi) d\theta d\phi
+!\latex \pdv{\dalta_{mn}^s}{x} & =  \frac{1}{2\pi^2} \int_0^{2\pi} \int_0^{2\pi} 
+!\latex         [\pdv{B_x}{x} n_x + [\pdv{B_y}{y} n_y + [\pdv{B_z}{z} n_z] \ \sin(m\theta-n\phi) d\theta d\phi
+!\latex \ee
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+SUBROUTINE bmnharm( ideriv )
+  !----------------------------------------------------------------------------------------
+  ! calculate the bharm cost function
+  !----------------------------------------------------------------------------------------
+  use globals, only: zero, half, myid, Ndof, Nteta, Nzeta, surf, &
+                     dBx, bharm, t1H, Bmn, wBmn, tBmn, Bmnim, Bmnin, NBmn
+  implicit none
+  include "mpif.h"
+
+  INTEGER, INTENT(in) :: ideriv
+  !----------------------------------------------------------------------------------------
+  
+  INTEGER             :: idof, ierr, astat, imn
+  REAL, allocatable   :: Bmnc(:), Bmns(:), dBxc(:), dBxs(:) 
+
+  !--------------------------initialize and allocate arrays-------------------------------- 
+  SALLOCATE( Bmnc, (1:NBmn), zero )  ! 0-order Bmn_cos
+  SALLOCATE( Bmns, (1:NBmn), zero )  ! 0-order Bmn_sin
+  SALLOCATE( dBxc, (1:NBmn), zero )  ! temporary dBx_mn_cos
+  SALLOCATE( dBxs, (1:NBmn), zero )  ! temporary dBx_mn_sin
+
+  call bnormal(ideriv) ! calculate Bn info;
+
+  !-------------------------------calculate H--------------------------------------------- 
+  if( ideriv >= 0 ) then
+
+     call twodft( surf(1)%bn, Bmns, Bmnc, Bmnim, Bmnin, NBmn )
+     Bmn = sqrt( Bmns**2 + Bmnc**2 )
+     bharm = half * sum( wBmn * (Bmn - tBmn)**2)
+     !bharm = Bmns(2)*Bmns(2)
+
+!!$     if (myid == 0) then
+!!$        do imn = 1, NBmn
+!!$           write(*,'(2I3, 3ES23.15)') Bmnin(imn), Bmnim(imn), Bmnc(imn), Bmns(imn)
+!!$        enddo
+!!$     endif
+        
+  endif
+
+  !-------------------------------calculate H/x------------------------------------------------
+  if ( ideriv >= 1 ) then
+     ! can parallelize in Ndof direction;
+     do idof = 1, Ndof
+        call twodft( dBx(idof,  0:Nteta-1, 0:Nzeta-1), dBxs, dBxc, Bmnim, Bmnin, NBmn )
+        t1H(idof) = sum( wBmn * (Bmn - tBmn) * (Bmnc*dBxc + Bmns*dBxs)/Bmn )
+        !t1H(idof) = 2*Bmns(2)*dBxs(2)
+!!$        if (idof == 19) then
+!!$           if (myid == 0) write(*,'("1: " 6ES23.15)') Bmn(1), Bmnc(1), Bmns(1), &
+!!$                                t1H(idof), dBxc(1), dBxs(1)
+!!$        endif
+     enddo
+     
+  endif
+
+  !--------------------------------------------------------------------------------------------
+  DALLOCATE( Bmnc )
+  DALLOCATE( Bmns )
+  DALLOCATE( dBxc )
+  DALLOCATE( dBxs )
+  
+  return
+
+END SUBROUTINE bmnharm
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+SUBROUTINE readBmn
+  !----------------------------------------------------------------------------------------
+  ! read Bmn harmonics related arrays;
+  ! allocate trig functions;
+  !----------------------------------------------------------------------------------------
+  use globals, only: zero, half, pi2, myid, ounit, runit, ext, IsQuiet, Nteta, Nzeta,  &
+                     NBnf, Bnin, Bnim, NBmn, Bmnin, Bmnim, wBmn, tBmn, carg, sarg
+  implicit none
+  include "mpif.h"
+
+  INTEGER  :: ii, jj, ij, imn, ierr, astat
+  REAL     :: teta, zeta, arg
+  LOGICAL  :: exist
+
+  !----------------------------------------------------------------------------------------
+  inquire( file=trim(ext)//".harmonics", exist=exist)  
+  FATAL( readBmn, .not.exist, ext.harmonics does not exist ) 
+
+  if (myid == 0) then
+     open(runit, file=trim(ext)//".harmonics", status='old', action='read')
+     read(runit,*) ! comment line;
+     read(runit,*) NBmn !read dimensions
+  endif
+  IlBCAST( NBmn , 1, 0 )
+  FATAL( readBmn, NBmn <= 0, at leasy one harmonis)
+   
+  SALLOCATE( Bmnim, (1:NBmn), 0 )     ! n values for Bmn;
+  SALLOCATE( Bmnin, (1:NBmn), 0 )     ! m values for Bmn;
+  SALLOCATE( wBmn , (1:NBmn), zero )  ! weight for different Bmn;
+  SALLOCATE( tBmn , (1:NBmn), zero )  ! target Bmn values;
+
+  if (myid == 0) then
+     read(runit,*) ! comment line;
+     do imn = 1, NBmn
+        read(runit,*) Bmnin(imn), Bmnim(imn), wBmn(imn), tBmn(imn)
+     enddo
+  endif
+
+  IlBCAST( Bmnin, NBmn, 0 )
+  IlBCAST( Bmnim, NBmn, 0 )
+  RlBCAST( wBmn , NBmn, 0 )
+  RlBCAST( tBmn , NBmn, 0 )
+
+  if( myid == 0 .and. IsQuiet <= 0) then
+     write(ounit, *) "-----------Reading Bn harmonics weights and targets---------------------------"
+     write(ounit, '("readbmn : NBmn = "I6)') NBmn
+     if (IsQuiet <= -2) then
+        do imn=1, NBmn
+            write(ounit, '("readbmn : n = " I3 " ; m = " I3 " ; w_mn = "ES12.5" ; tBmn = "ES12.5)'), &
+                 Bmnin(imn), Bmnim(imn), wBmn(imn), tBmn(imn)
+         enddo
+      endif
+   endif
+
+  !-------------------------store trig functions-------------------------------------------
+  SALLOCATE( carg,  (1:Nteta*Nzeta, 1:NBmn), zero )
+  SALLOCATE( sarg,  (1:Nteta*Nzeta, 1:NBmn), zero )
+  ij = 0
+  do jj = 0, Nzeta-1 ; zeta = ( jj + half ) * pi2 / Nzeta
+     do ii = 0, Nteta-1 ; teta = ( ii + half ) * pi2 / Nteta
+        ij = ij + 1
+        do imn = 1, NBmn
+           arg = Bmnim(imn) * teta - Bmnin(imn) * zeta
+           carg(ij, imn) = cos(arg)
+           sarg(ij, imn) = sin(arg)
+        enddo
+     enddo
+  enddo
+
+  return
+END SUBROUTINE readBmn
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -88,18 +239,6 @@ SUBROUTINE BnFTran
 
      Cur_Bnc = Cur_Bnc * two / (Nteta*Nzeta)
      Cur_Bns = Cur_Bns * two / (Nteta*Nzeta)
-
-     Cur_Bnc = zero; Cur_Bns = zero
-     t1 = MPI_Wtime()
-     call twodft(surf(1)%tn, Cur_Bnc, Cur_Bns, bnim, bnin, NBnf)
-     t2 = MPI_Wtime()
-     write(*, *) "twodft takes ", t2-t1
-
-     Cur_Bnc = zero; Cur_Bns = zero
-     t1 = MPI_Wtime()
-     call tfft(surf(1)%tn, Cur_Bnc, Cur_Bns, bnim, bnin, NBnf)
-     t2 = MPI_Wtime()
-     write(*, *) "tfft takes ", t2-t1
 
   else
 
@@ -187,134 +326,80 @@ END SUBROUTINE write_plasma
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-!latex \item \verb+tfft+
-
-subroutine tfft(func, hc, hs, im, in, mn)
-
- !use constants
- !use inputlist, only : Nfp
- !use allglobal, only : pi2nfp
-
-  use globals, only : zero, one, pi2, ounit, myid, Nteta, Nzeta
-
+SUBROUTINE twodft(func, hs, hc, im, in, mn)
+  !-------------------------------------------------------------------------------!
+  ! 2D discrete Fourier transformation;
+  ! Calculate Fourier harmonics hc,hs for func(0:Nteta-1, 0:Nzeta-1);
+  ! im(1:mn), in(1:mn) stores the predefined m, n values;
+  ! Assuming there are no conjugate terms in im & in;
+  ! carg and sarg stored the trig functions.
+  ! Right now, it's using normal Fourier transforming, later FFT will be enabled.
+  !-------------------------------------------------------------------------------!
+  use globals, only: zero, half, two, pi2, myid, ounit, Nteta, Nzeta, carg, sarg
   implicit none
-  
-  REAL   , INTENT(in ) :: func(0:Nteta, 0:Nzeta)
+  include "mpif.h"
+  !-------------------------------------------------------------------------------
+  REAL   , INTENT(in ) :: func(1:Nteta*Nzeta) ! 2D array into 1D array;
   REAL   , INTENT(out) :: hc(1:mn), hs(1:mn)
   INTEGER, INTENT(in ) :: mn, im(1:mn), in(1:mn)
 
-  INTEGER   :: Nt, Nz, Ntz, imn, ifail, mm, nn, NFP
-  REAL      :: ijreal(1:Nteta*Nzeta), ijimag(1:Nteta*Nzeta), trigm(2*Nteta), trign(2*Nzeta), &
-               trigwk(2*Nteta*Nzeta), efmn(1:mn), ofmn(1:mn), cfmn(1:mn), sfmn(1:mn)
-  CHARACTER :: isr
-  
-  LOGICAL   :: check=.false.
-  INTEGER   :: jj, kk, ii
-  REAL      :: jireal(1:Nteta*Nzeta), jiimag(1:Nteta*Nzeta), arg, ca, sa
+  INTEGER              :: m, n, imn, maxN, maxM, astat, ierr
+  !------------------------------------------------------------------------------- 
 
-  NFP = 1 ; Nt = Nteta; Nz = Nzeta
+  FATAL(twodft, mn < 1, invalid size for 2D Fourier transformation)
 
-  if( check ) then ; jireal=ijreal ; jiimag=ijimag
-  endif
+  maxN = maxval(abs(in))
+  maxM = maxval(abs(im))
+  FATAL(twodft, maxN >= Nzeta/2, toroidal grid resolution not enough)
+  FATAL(twodft, maxM >= Nteta/2, poloidal grid resolution not enough)
 
-  Ntz=Nteta*Nzeta
-  ii = 0
-  do jj = 0, Nteta-1
-     do kk = 0, Nzeta-1
-        ii = ii+1
-        ijreal(ii) = func(jj, kk)
-     enddo
+  do imn = 1, mn
+     m = im(imn); n = in(imn)
+
+     hc(imn) = sum(func(1:Nteta*Nzeta) * carg(1:Nteta*Nzeta, imn))
+     hs(imn) = sum(func(1:Nteta*Nzeta) * sarg(1:Nteta*Nzeta, imn))
+
+     if (m==0 .and. n==0) then  ! for (0,0) term, times a half factor;
+        hc(imn) = hc(imn)*half
+        hs(imn) = hs(imn)*half
+     endif
+
   enddo
 
-  TMPOUT(ijreal(1:10)) 
-  TMPOUT(ijimag(1:10))
-  ijimag = zero
-
-  isr = 'I' ; ifail = 0
-
-  call C06FUF( Nt , Nz , ijreal(1:Ntz) , ijimag(1:Ntz) , isr , trigm , trign , trigwk , ifail )
-
-  isr = 'S' ; ifail = 0
-
- !call C06FUF( Nt , Nz , ijreal(1:Ntz) , ijimag(1:Ntz) , isr , trigm , trign , trigwk , ifail )
-  
-  !ijreal(:) = ijreal(:)/sqrt(one*Ntz) ; ijimag(:) = ijimag(:)/sqrt(one*Ntz)
-  TMPOUT(ijreal(1:10))
-  TMPOUT(ijimag(1:10))
-  
-  cfmn=zero ; sfmn=zero ; efmn=zero ; ofmn=zero
-  
-  do imn = 1,mn ; mm = im(imn) ; nn = in(imn) / Nfp
-   
-   if    ( mm.gt.0 .and. nn.gt.0 ) then
-    
-    efmn(imn) =   ijreal(1+(Nt-mm)+(   nn)*Nt) + ijreal(1+(   mm)+(Nz-nn)*Nt)
-    ofmn(imn) =   ijimag(1+(Nt-mm)+(   nn)*Nt) - ijimag(1+(   mm)+(Nz-nn)*Nt)
-    cfmn(imn) =   ijimag(1+(Nt-mm)+(   nn)*Nt) + ijimag(1+(   mm)+(Nz-nn)*Nt)
-    sfmn(imn) = - ijreal(1+(Nt-mm)+(   nn)*Nt) + ijreal(1+(   mm)+(Nz-nn)*Nt) 
-    
-   elseif( mm.gt.0 .and. nn.eq.0 ) then
-    
-    efmn(imn) =   ijreal(1+(Nt-mm)           ) + ijreal(1+(   mm)           )
-    ofmn(imn) =   ijimag(1+(Nt-mm)           ) - ijimag(1+(   mm)           )
-    cfmn(imn) =   ijimag(1+(Nt-mm)           ) + ijimag(1+(   mm)           )
-    sfmn(imn) = - ijreal(1+(Nt-mm)           ) + ijreal(1+(   mm)           )
-    
-   elseif( mm.gt.0 .and. nn.lt.0 ) then
-    
-    efmn(imn) =   ijreal(1+(Nt-mm)+(Nz+nn)*Nt) + ijreal(1+(   mm)+(  -nn)*Nt)
-    ofmn(imn) =   ijimag(1+(Nt-mm)+(Nz+nn)*Nt) - ijimag(1+(   mm)+(  -nn)*Nt)
-    cfmn(imn) =   ijimag(1+(Nt-mm)+(Nz+nn)*Nt) + ijimag(1+(   mm)+(  -nn)*Nt)
-    sfmn(imn) = - ijreal(1+(Nt-mm)+(Nz+nn)*Nt) + ijreal(1+(   mm)+(  -nn)*Nt) 
-    
-   elseif( mm.eq.0 .and. nn.gt.0 ) then
-    
-    efmn(imn) =   ijreal(1+        (Nz-nn)*Nt) + ijreal(1+        (   nn)*Nt)
-    ofmn(imn) = - ijimag(1+        (Nz-nn)*Nt) + ijimag(1+        (   nn)*Nt)
-    cfmn(imn) =   ijimag(1+        (Nz-nn)*Nt) + ijimag(1+        (   nn)*Nt)
-    sfmn(imn) =   ijreal(1+        (Nz-nn)*Nt) - ijreal(1+        (   nn)*Nt)
-    
-   elseif( mm.eq.0 .and. nn.eq.0 ) then
-    
-    efmn(imn) =   ijreal(1)
-    ofmn(imn) =     zero
-    cfmn(imn) =   ijimag(1)
-    sfmn(imn) =     zero
-    
-   endif
-   
-  enddo
-
-  hc = efmn
-  hs = ofmn
-
-  call C06GCF(ijimag, Ntz, ifail)
-  call C06FUF( Nt , Nz , ijreal(1:Ntz) , ijimag(1:Ntz) , isr , trigm , trign , trigwk , ifail )
-  call C06GCF(ijimag, Ntz, ifail)
-  TMPOUT(ijreal(1:10)) 
-  TMPOUT(ijimag(1:10))
-
-  if( .not.check ) return
-  
-  ijreal(1:Ntz)=zero ; ijimag(1:Ntz)=zero
-  
-  do jj=0,Nt-1
-   do kk=0,Nz-1
-    do imn=1,mn ; arg=im(imn)*jj*pi2/Nt-in(imn)*kk*(pi2/nfp)/Nz ; ca=cos(arg) ; sa=sin(arg)
-     
-     ijreal(1+jj+kk*Nt) = ijreal(1+jj+kk*Nt) + efmn(imn)*ca + ofmn(imn)*sa
-     ijimag(1+jj+kk*Nt) = ijimag(1+jj+kk*Nt) + cfmn(imn)*ca + sfmn(imn)*sa
-     
-    enddo
-   enddo
-  enddo
-  
-  write(ounit,'("tfft : Fourier reconstruction error = "2es15.5)')sqrt(sum((ijreal-jireal)**2)/Ntz),sqrt(sum((ijimag-jiimag)**2)/Ntz)
+  hc = hc * two/(Nteta*Nzeta)  ! Discretizing factor;
+  hs = hs * two/(Nteta*Nzeta)  ! Discretizing factor;
 
   return
+END SUBROUTINE twodft
 
-end subroutine tfft
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
+SUBROUTINE twoift(func, hs, hc, im, in, mn)
+  !-------------------------------------------------------------------------------!
+  ! 2D INVERSE discrete Fourier transformation;
+  ! Calculate Fourier harmonics func for given hc,hs harmonics;
+  ! im(1:mn), in(1:mn) stores the predefined m, n values;
+  ! carg and sarg stored the trig functions.
+  ! Right now, it's using normal Fourier transforming, later FFT will be enabled.
+  !-------------------------------------------------------------------------------!
+  use globals, only: zero, half, two, pi2, myid, ounit, Nteta, Nzeta, carg, sarg
+  implicit none
+  include "mpif.h"
+  !-------------------------------------------------------------------------------
+  REAL   , INTENT(out) :: func(1:Nteta*Nzeta) ! 2D array into 1D array;
+  REAL   , INTENT(in ) :: hc(1:mn), hs(1:mn)
+  INTEGER, INTENT(in ) :: mn, im(1:mn), in(1:mn)
+
+  INTEGER              :: itz, astat, ierr
+  !------------------------------------------------------------------------------- 
+
+  FATAL(twodft, mn < 1, invalid size for 2D Fourier transformation)
+
+  do itz = 1, Nteta*Nzeta
+     func(itz) = sum(hc(1:mn)*carg(itz, 1:mn)) + sum(hs(1:mn)*sarg(itz, 1:mn))
+  enddo
+
+  return
+END SUBROUTINE twoift
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!

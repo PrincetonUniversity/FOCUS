@@ -76,7 +76,7 @@ subroutine generic
   LOGICAL :: exist
   INTEGER :: iosta, astat, ierr, ii, jj, imn
   REAL    :: RR(0:2), ZZ(0:2), szeta, czeta, xx(1:3), xt(1:3), xz(1:3), ds(1:3), &
-             teta, zeta, arg, carg, sarg, dd, tmp
+             teta, zeta, arg, dd, tmp
   
   !-------------read plasma.boundary---------------------------------------------------------------------  
   inquire( file="plasma.boundary", exist=exist)  
@@ -185,34 +185,34 @@ subroutine generic
   surf(1)%Nteta = Nteta ! not used yet; used for multiple surfaces; 20170307;
   surf(1)%Nzeta = Nzeta ! not used yet; used for multiple surfaces; 20170307;
   
-  SALLOCATE( surf(1)%xx, (0:Nteta,0:Nzeta), zero ) !x coordinates;
-  SALLOCATE( surf(1)%yy, (0:Nteta,0:Nzeta), zero ) !y coordinates
-  SALLOCATE( surf(1)%zz, (0:Nteta,0:Nzeta), zero ) !z coordinates
-  SALLOCATE( surf(1)%nx, (0:Nteta,0:Nzeta), zero ) !unit nx;
-  SALLOCATE( surf(1)%ny, (0:Nteta,0:Nzeta), zero ) !unit ny;
-  SALLOCATE( surf(1)%nz, (0:Nteta,0:Nzeta), zero ) !unit nz;
-  SALLOCATE( surf(1)%ds, (0:Nteta,0:Nzeta), zero ) !jacobian;
-  SALLOCATE( surf(1)%xt, (0:Nteta,0:Nzeta), zero ) !dx/dtheta;
-  SALLOCATE( surf(1)%yt, (0:Nteta,0:Nzeta), zero ) !dy/dtheta;
-  SALLOCATE( surf(1)%zt, (0:Nteta,0:Nzeta), zero ) !dz/dtheta;
-  SALLOCATE( surf(1)%tn, (0:Nteta,0:Nzeta), zero ) !target Bn;
+  SALLOCATE( surf(1)%xx, (0:Nteta-1,0:Nzeta-1), zero ) !x coordinates;
+  SALLOCATE( surf(1)%yy, (0:Nteta-1,0:Nzeta-1), zero ) !y coordinates
+  SALLOCATE( surf(1)%zz, (0:Nteta-1,0:Nzeta-1), zero ) !z coordinates
+  SALLOCATE( surf(1)%nx, (0:Nteta-1,0:Nzeta-1), zero ) !unit nx;
+  SALLOCATE( surf(1)%ny, (0:Nteta-1,0:Nzeta-1), zero ) !unit ny;
+  SALLOCATE( surf(1)%nz, (0:Nteta-1,0:Nzeta-1), zero ) !unit nz;
+  SALLOCATE( surf(1)%ds, (0:Nteta-1,0:Nzeta-1), zero ) !jacobian;
+  SALLOCATE( surf(1)%xt, (0:Nteta-1,0:Nzeta-1), zero ) !dx/dtheta;
+  SALLOCATE( surf(1)%yt, (0:Nteta-1,0:Nzeta-1), zero ) !dy/dtheta;
+  SALLOCATE( surf(1)%zt, (0:Nteta-1,0:Nzeta-1), zero ) !dz/dtheta;
+  SALLOCATE( surf(1)%tn, (0:Nteta-1,0:Nzeta-1), zero ) !target Bn;
  
 ! The center point value was used to discretize grid;
-  do ii = 0, Nteta ; teta = ( ii + half ) * pi2 / Nteta
-   do jj = 0, Nzeta ; zeta = ( jj + half ) * pi2 / Nzeta
+  do ii = 0, Nteta-1; teta = ( ii + half ) * pi2 / Nteta
+   do jj = 0, Nzeta-1; zeta = ( jj + half ) * pi2 / Nzeta
     
     RR(0:2) = zero ; ZZ(0:2) = zero
     
-    do imn = 1, Nfou ; arg = bim(imn) * teta - bin(imn) * zeta ; carg = cos(arg) ; sarg = sin(arg)
+    do imn = 1, Nfou ; arg = bim(imn) * teta - bin(imn) * zeta
      
-     RR(0) =  RR(0) +     Rbc(imn) * carg + Rbs(imn) * sarg
-     ZZ(0) =  ZZ(0) +     Zbc(imn) * carg + Zbs(imn) * sarg
+     RR(0) =  RR(0) +     Rbc(imn) * cos(arg) + Rbs(imn) * sin(arg)
+     ZZ(0) =  ZZ(0) +     Zbc(imn) * cos(arg) + Zbs(imn) * sin(arg)
      
-     RR(1) =  RR(1) + ( - Rbc(imn) * sarg + Rbs(imn) * carg ) * bim(imn)
-     ZZ(1) =  ZZ(1) + ( - Zbc(imn) * sarg + Zbs(imn) * carg ) * bim(imn)
+     RR(1) =  RR(1) + ( - Rbc(imn) * sin(arg) + Rbs(imn) * cos(arg) ) * bim(imn)
+     ZZ(1) =  ZZ(1) + ( - Zbc(imn) * sin(arg) + Zbs(imn) * cos(arg) ) * bim(imn)
      
-     RR(2) =  RR(2) - ( - Rbc(imn) * sarg + Rbs(imn) * carg ) * bin(imn)
-     ZZ(2) =  ZZ(2) - ( - Zbc(imn) * sarg + Zbs(imn) * carg ) * bin(imn)
+     RR(2) =  RR(2) - ( - Rbc(imn) * sin(arg) + Rbs(imn) * cos(arg) ) * bin(imn)
+     ZZ(2) =  ZZ(2) - ( - Zbc(imn) * sin(arg) + Zbs(imn) * cos(arg) ) * bin(imn)
      
     enddo ! end of do imn; 30 Oct 15;
     
@@ -250,22 +250,16 @@ subroutine generic
 
   !calculate target Bn with input harmonics; 05 Jan 17;
   if(NBnf >  0) then
-     NBmn = NBnf ; ij = 0
-     SALLOCATE( carg, (1:Nteta*Nzeta, 1:NBmn), zero)
-     SALLOCATE( sarg, (1:Nteta*Nzeta, 1:NBmn), zero)
 
-     do ii = 0, Nteta ; teta = ( ii + half ) * pi2 / Nteta
-        do jj = 0, Nzeta ; zeta = ( jj + half ) * pi2 / Nzeta
-           ij = ij + 1
+     do jj = 0, Nzeta-1 ; zeta = ( jj + half ) * pi2 / Nzeta
+        do ii = 0, Nteta-1 ; teta = ( ii + half ) * pi2 / Nteta 
            do imn = 1, NBnf
-              arg = Bnim(imn) * teta - Bnin(imn) * zeta 
-              carg(ij, imn) = cos(arg)
-              sarg(ij, imn) = sin(arg)
+              arg = Bnim(imn) * teta - Bnin(imn) * zeta
+              surf(1)%tn(ii,jj) = surf(1)%tn(ii,jj) + Bnc(imn)*cos(arg) + Bns(imn)*sin(arg)
            enddo
         enddo
      enddo
 
-     call twodft(surf(1)%tn, Bnc, Bns, bnim, bnin, NBnf)
   endif
   
   
@@ -299,58 +293,3 @@ subroutine surfcoord( theta, zeta, r, z)
 end subroutine surfcoord
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-SUBROUTINE twodft(func, hc, hs, im, in, mn)
-  !-------------------------------------------------------------------------------!
-  ! Calculate Fourier harmonics hc,hs for func(0:Nteta, 0:Nzeta);
-  ! im(1:mn), in(1:mn) stores the predefined m, n values;
-  ! Assuming there are no conjugate terms in im & in;
-  !-------------------------------------------------------------------------------!
-  use globals, only: zero, half, two, pi2, myid, ounit, Nteta, Nzeta
-  implicit none
-  include "mpif.h"
-  !-------------------------------------------------------------------------------
-  REAL   , INTENT(in ) :: func(0:Nteta, 0:Nzeta)
-  REAL   , INTENT(out) :: hc(1:mn), hs(1:mn)
-  INTEGER, INTENT(in ) :: mn, im(1:mn), in(1:mn)
-
-  INTEGER              :: m, n, imn, ii, jj, maxN, maxM, astat, ierr
-  REAL                 :: teta, zeta, arg
-  !------------------------------------------------------------------------------- 
-
-  FATAL(twodft, mn < 1, invalid size for 2D Fourier transformation)
-
-  maxN = maxval(abs(in))
-  maxM = maxval(abs(im))
-  FATAL(twodft, maxN >= Nzeta/2, toroidal grid resolution not enough)
-  FATAL(twodft, maxM >= Nteta/2, poloidal grid resolution not enough)
-
-  do imn = 1, mn
-     m = im(imn); n = in(imn)
-
-     do jj = 0, Nzeta-1
-        zeta = (jj+half)*pi2/Nzeta
-        do ii = 0, Nteta-1
-           teta = (ii+half)*pi2/Nteta
-
-           arg = m*teta - n*zeta
-           hc(imn) = hc(imn) + func(ii, jj)*cos(arg)
-           hs(imn) = hs(imn) + func(ii, jj)*sin(arg)
-
-        enddo
-     enddo
-
-     if (m==0 .and. n==0) then  ! for (0,0) term, times a half factor;
-        hc(imn) = hc(imn)*half
-        hs(imn) = hs(imn)*half
-     endif
-
-  enddo
-
-  hc = hc * two/(Nteta*Nzeta)  ! Discretizing factor;
-  hs = hs * two/(Nteta*Nzeta)  ! Discretizing factor;
-
-  return
-END SUBROUTINE twodft
-
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
