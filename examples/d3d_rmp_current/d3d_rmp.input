@@ -26,7 +26,7 @@
  weight_specw = 0.0           ! function not enabled;
  weight_ccsep = 0.0           ! function not enabled;
  SD_tausta = 0.0              ! the start value of tau (Steepest Descent step control)
- SD_tauend = 0.001            ! the end   value of tau (Steepest Descent step control)
+ SD_tauend = 300              ! the end   value of tau (Steepest Descent step control)
  SD_tautol = 0.0001           ! tolerance of SD method;
  SD_Nout = 10                 ! total outputs for SD;
  SD_savefreq = 1              ! file saving frequence;

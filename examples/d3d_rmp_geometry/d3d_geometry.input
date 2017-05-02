@@ -1,12 +1,12 @@
  &focusin
- IsQuiet = -1                  ! -1: more info; 0: normal; 1: concise.
+ IsQuiet = -1                 ! -1: more info; 0: normal; 1: concise.
  IsSymmetric = 0              ! function not enabled; keep 0.
  case_surface = 0             ! function not enabled; keep 0.
  knotsurf = 0.2               ! function not enabled;
  Nteta = 256                  ! poloidal number for discretizing the surface
  Nzeta = 32                   ! toroidal number for discretizing the surface
- case_init =  0               ! -1: read coils.ext file; 0: read ext.focus file; 1: initialize with circular coils.
- case_coils = -1               ! function not enabled; keep 1.
+ case_init = -1               ! -1: read coils.ext file; 0: read ext.focus file; 1: initialize with circular coils.
+ case_coils = 1               ! function not enabled; keep 1.
  Ncoils = 16                  ! number of coils; only valid when case_init = 1.
  init_current = 10000000.0    ! initial coil currents (Amper); only valid when case_init = 1
  init_radius = 1.0            ! initial coil currents (Amper); only valid when case_init = 1
@@ -26,7 +26,7 @@
  weight_specw = 0.0           ! function not enabled;
  weight_ccsep = 0.0           ! function not enabled;
  SD_tausta = 0.0              ! the start value of tau (Steepest Descent step control)
- SD_tauend = 100              ! the end   value of tau (Steepest Descent step control)
+ SD_tauend = 300              ! the end   value of tau (Steepest Descent step control)
  SD_tautol = 0.0001           ! tolerance of SD method;
  SD_Nout = 100                ! total outputs for SD;
  SD_savefreq = 1              ! file saving frequence;

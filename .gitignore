@@ -10,6 +10,7 @@
 *.F90
 *.pyc
 *.log
+*.h5
 *~
 
 .cproject
