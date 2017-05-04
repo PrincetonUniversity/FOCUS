@@ -93,6 +93,7 @@ PROGRAM focus
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   INTEGER :: ierr, astat, irestart, itmp  ! for error indicators; 2017/02/16
+  INTEGER :: secs, mins, hrs
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
@@ -156,7 +157,19 @@ PROGRAM focus
 
   tstart = MPI_Wtime()
   time_optimize = tstart - tfinish
-  if( myid  ==  0 ) write(ounit,'("focus   : Optimizations take ", es23.15," seconds;")') time_optimize
+  if( myid  ==  0 ) then
+     secs = int(time_optimize)
+     hrs = secs/(60*60)
+     mins = (secs-hrs*60*60)/60
+     secs = secs-hrs*60*60-mins*60
+     if(hrs>0)then
+         write(ounit, *) "focus   : Optimization took ",hrs," hours, ", mins," minutes, ",secs," seconds"
+     elseif(mins>0)then
+         write(ounit, *) "focus   : Optimization took ", mins," minutes, ",secs," seconds"
+     else
+         write(ounit, *) "focus   : Optimization took ", secs," seconds;"
+     endif
+  endif
 
   call restart(irestart)
   !call identfy
@@ -193,7 +206,22 @@ PROGRAM focus
 
   tfinish = MPI_Wtime()
   time_postproc = tfinish - tstart
-  if( myid  ==  0 ) write(ounit,'("focus   : Post-processings takes ", es23.15," seconds;")') time_postproc
+  if( myid  ==  0 )then
+     secs = int(time_postproc)
+     hrs = secs/(60*60)
+     mins = (secs-hrs*60*60)/60
+     secs = secs-hrs*60*60-mins*60
+     if(hrs>0)then
+        write(ounit, *) "focus   : Post-processing took ",hrs," hours, ", mins," minutes, ",secs," seconds"
+     elseif(mins>0)then
+        write(ounit, *) "focus   : Post-processing took ", mins," minutes, ",secs," seconds"
+     elseif(secs > 0)then
+        write(ounit, *) "focus   : Post-processing took ", secs," seconds;"
+     else
+        write(ounit,'("focus   : Post-processing took ", es10.3," seconds;")') time_postproc
+     endif
+  endif
+
   call MPI_FINALIZE( ierr )
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
