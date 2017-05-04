@@ -16,6 +16,7 @@
 !latex  \be
 !latex  Ndof = Ncoils \ * \ (6 * NFcoil + 4) \, - \, Nfixcur \, - \, Nfixgeo \ * \ (6 * NFcoil + 3)
 !latex  \ee
+!latex  \ei
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE packdof(lxdof)

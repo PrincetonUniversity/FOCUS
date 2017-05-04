@@ -6,6 +6,7 @@
            bnftran restart focus
  HFILES= $(ALLFILES:=.h)
  FFILES= $(ALLFILES:=.F90)
+ PFILES= $(ALLFILES:=.pdf)
  OBJS=$(ALLFILES:=_r.o)
  DOBJS=$(ALLFILES:=_d.o)
 
@@ -76,61 +77,20 @@ clean:
 
 ############################################################################################################
 
-%.pdf: %.h head.tex end.tex Makefile
-ifeq ($(USER),shudson)
-	#emacs -r -fn 7x14 -g 160x80+280 $*.h
+$(PFILES): %.pdf: %.h head.tex end.tex
 	@ls --full-time $*.h | cut -c 32-50 > .$*.date
-	awk -v file=$* -v date=.$*.date 'BEGIN{getline cdate < date ; FS="!latex" ; print "\\input{head} \\code{"file"}"} \
+	@awk -v file=$* -v date=.$*.date 'BEGIN{getline cdate < date ; FS="!latex" ; print "\\input{head} \\code{"file"}"} \
 	{if(NF>1) print $$2} \
 	END{print "\\hrule \\vspace{1mm} \\footnotesize $*.h last modified on "cdate";" ; print "\\input{end}"}' $*.h > $*.tex
-	@echo "-------------------------------------------------------------------------------------------------------------------------------"
-	@echo $*
-	@echo "-------------------------------------------------------------------------------------------------------------------------------"
-	latex $* ; latex $* ; latex $*
-	dvips -P pdf -o $*.ps $*.dvi ; ps2pdf $*.ps
-	rm -f $*.tex $*.aux $*.blg $*.log $*.ps
-
-else
-	#emacs -r -fn 7x14 -g 160x80+280 $*.h
-	@ls --full-time $*.h | cut -c 32-50 > .$*.date
-	awk -v file=$* -v date=.$*.date 'BEGIN{getline cdate < date ; FS="!latex" ; print "\\input{head_czhu} \\code{"file"}"} \
-	{if(NF>1) print $$2} \
-	END{print "\\hrule \\vspace{1mm} \\footnotesize $*.h last modified on "cdate";" ; print "\\input{end_czhu}"}' $*.h > $*.tex
-	@echo "-------------------------------------------------------------------------------------------------------------------------------"
-	@echo $*
-	@echo "-------------------------------------------------------------------------------------------------------------------------------"
-	latex $* ; latex $* ; latex $*
-	dvips -P pdf -o $*.ps $*.dvi ; ps2pdf $*.ps
-	rm -f $*.tex $*.aux $*.blg $*.log $*.ps
-endif
+	@echo $*.pdf
+	@pdflatex -shell-escape -interaction=nonstopmode -file-line-error $*.tex | grep ".*:[0-9]*:.*" ||:
+	@pdflatex -shell-escape -interaction=nonstopmode -file-line-error $*.tex | grep ".*:[0-9]*:.*" ||: 
+	@pdflatex -shell-escape -interaction=nonstopmode -file-line-error $*.tex | grep ".*:[0-9]*:.*" ||: 
+	@rm -f $*.tex $*.aux $*.blg $*.log $*.ps
 
 ############################################################################################################
 
-pdfs: $(PFILES) head.html
-ifeq ($(USER),shudson)
-
-	cat head.html > $(WEBDIR)/Focus/subroutines.html
-
-	for file in $(ALLFILES) ; do cp $${file}.pdf $(WEBDIR)/Focus/. ; grep "!title" $${file}.h | cut -c 7- | \
-	                           awk -v file=$${file} -F!\
-	                            '{print "<tr><td><a href="file".pdf\">"file"</a></td><td>"$$1"</td><td>"$$2"</td></tr>"}' \
-	                            >> $(WEBDIR)/Focus/subroutines.html ; \
-	                          done
-
-	echo "</table><a href="http://w3.pppl.gov/~shudson/">return to Dr. S.R. Hudson</a></body></html>" >> $(WEBDIR)/Focus/subroutines.html
-else ifeq ($(USER), czhu)
-       
-	cat head_czhu.html > $(WEBDIR)/Focus/subroutines.html
-
-	for file in $(ALLFILES) ; do cp $${file}.pdf $(WEBDIR)/Focus/. ; grep "!title" $${file}.h | cut -c 7- | \
-	                           awk -v file=$${file} -F!\
-	                            '{print "<tr><td><a href="file".pdf\">"file"</a></td><td>"$$1"</td><td>"$$2"</td></tr>"}' \
-	                            >> $(WEBDIR)/Focus/subroutines.html ; \
-	                          done
-
-	echo "</table><a href="http://w3.pppl.gov/~$(USER)/">return to upper directory</a></body></html>" >> $(WEBDIR)/Focus/subroutines.html
-else
-	@echo "Please read pdfs in the directory!"
-endif
+pdfs: $(PFILES)
+	@echo "Please read pdfs in this directory!"
 
 ############################################################################################################

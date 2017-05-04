@@ -3,42 +3,42 @@
 !latex \briefly{There are severl subroutines in this file. The main purpose is to calculate the Fourier 
 !latex harmonics of Bn on the plasma surface. Right now, the Fourier decompositions are carried out using  
 !latex normal Fourier Transformation in polar coordinates. In the future, FFT and flux coordinates capability 
-!latex will be enabled.}
+!latex will be included.}
 !latex \calledby{\link{costfun}}
 
-!\latex \subsection{Background}
-!\latex The width of magnetic island is proportional to the square root of resonant perturbation amplitude. 
-!\latex Directly optimizing Bn harmonics (with well-chose sensitivity matrix) rather than minimizing the 
-!\latex surface integration would be a better idea. Especially for designing RMP coils in tokamaks.
-!\latex
-!\latex \subsection{0-order cost function}
-!\latex In the flux coordinate ($\psi, \theta, \pi$), the normal magnetic field perturbation can be written
-!\latex as,
-!\latex \be
-!\latex \ds B_n(\theta, \phi) = \vec{B} \cdot \nabla{\psi} = \sum_{m,n} \delta_{mn} exp{-i(m\thta - n\phi)}\ .
-!\latex \ee
-!\latex If we define the cost function {\bf H = bharm} as,
-!\latex \be
-!\latex \ds H = \frac{1}{2} \sum_{m,n} w_mn \ ( \dalta_{mn} - \delta_{mn}^o )^2
-!\latex \ee
-!\latex Using trigonometric functions,
-!\latex \be
-!\latex \dalta_{mn} & = \sqrt{ {\dalta_{mn}^c}^2 + {\dalta_{mn}^s}^2 }
-!\latex \dalta_{mn}^c & = \frac{1}{2\pi^2} \int_0^{2\pi} \int_0^{2\pi} Bn \ \cos(m\theta-n\phi) d\theta d\phi
-!\latex \dalta_{mn}^s & = \frac{1}{2\pi^2} \int_0^{2\pi} \int_0^{2\pi} Bn \ \sin(m\theta-n\phi) d\theta d\phi
-!\latex \ee
-!\latex 
-!\latex \subsection{1st-order derivatives}
-!\latex The derivatives of $H$ with respect to coil parameters can be calculated as,
-!\latex \be
-!\latex \pdv{H}{x} & =  \sum_{m,n} w_mn  \ ( \dalta_{mn} - \delta_{mn}^o ) \pdv{\dalta_{mn}}{x}
-!\latex \pdv{\dalta_{mn}}{x} & = \frac{\dalta_{mn}^c \pdv{\dalta_{mn}^c}{x} + 
-!\latex                                \dalta_{mn}^c \pdv{\dalta_{mn}^c}{x}}{\dalta_{mn}}
-!\latex \pdv{\dalta_{mn}^c}{x} & =  \frac{1}{2\pi^2} \int_0^{2\pi} \int_0^{2\pi} 
-!\latex         [\pdv{B_x}{x} n_x + [\pdv{B_y}{y} n_y + [\pdv{B_z}{z} n_z] \ \cos(m\theta-n\phi) d\theta d\phi
-!\latex \pdv{\dalta_{mn}^s}{x} & =  \frac{1}{2\pi^2} \int_0^{2\pi} \int_0^{2\pi} 
-!\latex         [\pdv{B_x}{x} n_x + [\pdv{B_y}{y} n_y + [\pdv{B_z}{z} n_z] \ \sin(m\theta-n\phi) d\theta d\phi
-!\latex \ee
+!latex \subsection{Background}
+!latex The width of magnetic island is proportional to the square root of resonant perturbation amplitude. 
+!latex Directly optimizing Bn harmonics (with well-chose sensitivity matrix) rather than minimizing the 
+!latex surface integration would be a better idea. Especially for designing RMP coils in tokamaks.
+!latex
+!latex \subsection{0-order cost function}
+!latex In the flux coordinate ($\psi, \theta, \pi$), the normal magnetic field perturbation can be written
+!latex as,
+!latex \be
+!latex \ds B_n(\theta, \phi) = \vec{B} \cdot \nabla{\psi} = \sum_{m,n} \Delta_{mn} exp^{-i(m\theta - n\phi)}\ .
+!latex \ee
+!latex If we define the cost function {\bf H = bharm} as,
+!latex \be
+!latex \ds H = \frac{1}{2} \sum_{m,n} w_{mn} \ ( \Delta_{mn} - \Delta_{mn}^o )^2
+!latex \ee
+!latex Using trigonometric functions,
+!latex \be
+!latex \Delta_{mn} & = & \sqrt{ {\Delta_{mn}^c}^2 + {\Delta_{mn}^s}^2 } \\
+!latex \Delta_{mn}^c &=& \frac{1}{2\pi^2} \int_0^{2\pi} \int_0^{2\pi} Bn \ \cos(m\theta-n\phi) d\theta d\phi \\
+!latex \Delta_{mn}^s & = & \frac{1}{2\pi^2} \int_0^{2\pi} \int_0^{2\pi} Bn \ \sin(m\theta-n\phi) d\theta d\phi
+!latex \ee
+!latex 
+!latex \subsection{1st-order derivatives}
+!latex The derivatives of $H$ with respect to coil parameters can be calculated as,
+!latex \be
+!latex \pdv{H}{x} & = & \sum_{m,n} w_mn  \ ( \Delta_{mn} - \Delta_{mn}^o ) \pdv{\Delta_{mn}}{x} \\
+!latex \pdv{\Delta_{mn}}{x} & = & \frac{\Delta_{mn}^c \pdv{\Delta_{mn}^c}{x} + 
+!latex                                \Delta_{mn}^c \pdv{\Delta_{mn}^c}{x}}{\Delta_{mn}} \\
+!latex \pdv{\Delta_{mn}^c}{x} & = & \frac{1}{2\pi^2} \int_0^{2\pi} \int_0^{2\pi} 
+!latex         [\pdv{B_x}{x} n_x + [\pdv{B_y}{y} n_y + [\pdv{B_z}{z} n_z] \ \cos(m\theta-n\phi) d\theta d\phi \\
+!latex \pdv{\Delta_{mn}^s}{x} & = &  \frac{1}{2\pi^2} \int_0^{2\pi} \int_0^{2\pi} 
+!latex         [\pdv{B_x}{x} n_x + [\pdv{B_y}{y} n_y + [\pdv{B_z}{z} n_z] \ \sin(m\theta-n\phi) d\theta d\phi
+!latex \ee
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
