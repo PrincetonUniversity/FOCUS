@@ -1,0 +1,186 @@
+% this file is a LaTeX header that is required to creat source documentation for Codes;
+
+ \listfiles
+
+ \documentclass[10pt,onecolumn,fleqn]{article} 
+
+ \usepackage{color}
+%\usepackage{docs}
+ \usepackage{bm}
+ \usepackage{graphicx}
+ \usepackage{latexsym}
+ \usepackage{pifont}
+ \usepackage{amssymb}
+ \usepackage{hyperref}
+ \usepackage{titlesec}
+ \usepackage{amsmath}
+ \usepackage{verbatim}
+ \usepackage{enumitem}
+ \usepackage{tikz}
+ \usetikzlibrary{shapes,arrows}
+
+%tikz settings
+\tikzstyle{decision} = [diamond, draw, fill=blue!20, 
+    text width=4.5em, text badly centered, node distance=3cm, inner sep=0pt]
+\tikzstyle{block} = [rectangle, draw, fill=blue!20, 
+    text width=8em, text centered, rounded corners, minimum height=4em]
+\tikzstyle{line} = [draw, -latex']
+\tikzstyle{cloud} = [draw, ellipse,fill=red!20, node distance=3cm,
+    minimum height=4em]
+\tikzstyle{io} = [rectangle, draw, fill=green!20, 
+    text width=10em, text centered, rounded corners, minimum height=4em]
+
+% COLORS
+
+ \definecolor{red}{rgb}{1.0,0.0,0.0}
+ \definecolor{gre}{rgb}{0.0,1.0,0.0}
+ \definecolor{blu}{rgb}{0.0,0.0,1.0}
+
+ \definecolor{ora}{rgb}{1.0,0.5,0.0}
+ \definecolor{gra}{rgb}{0.0,0.5,1.0}
+
+ \newcommand{\red}[1]{{\color{red} #1}}
+ \newcommand{\gre}[1]{{\color{gre} #1}}
+ \newcommand{\blu}[1]{{\color{blu} #1}}
+
+ \newcommand{\bro}[1]{{\color{bro} #1}}
+ \newcommand{\gra}[1]{{\color{red} #1}}
+ \newcommand{\ora}[1]{{\color{ora} #1}}
+
+% HEADINGS/FOOTERS;
+
+% SET LENGTHS
+
+ \renewcommand{\baselinestretch}{1.1}
+
+ \setlength{\hoffset}{-2.54cm}
+ \setlength{\voffset}{-2.54cm}
+ \setlength{\oddsidemargin}{0.50cm}
+ \setlength{\topmargin}{0.10cm}
+ \setlength{\headheight}{0.00cm}
+ \setlength{\headsep}{0.50cm}
+ \setlength{\textheight}{26.30cm}
+ \setlength{\textwidth}{20.5cm}
+ \setlength{\marginparsep}{0.00cm}
+ \setlength{\marginparwidth}{0.00cm}
+ \setlength{\footskip}{0.50cm}
+
+%\setlength{\topskip}{0.00cm}
+
+ \setlength{\evensidemargin}{0.00cm}
+ \setlength{\columnwidth}{14.0cm}
+ \setlength{\columnsep}{0.50cm}
+ \setlength{\columnseprule}{0.00cm}
+
+%\setlength{\mathindent}{0.0cm}
+ \setlength{\parindent}{0.5cm}
+
+%float separation parameters
+%\setlength{\floatsep}{1.0cm}
+%\setlength{\textfloatsep}{1.0cm}
+%\setlength{\dblfloatsep}{1.0cm}
+%\setlength{\dbltextfloatsep}{1.0cm}
+%\setlength{\intextsep}{1.0cm}
+
+%\setlength{\parskip}{1.0em plus 0.25em minus 0.25em}
+ \setlength{\topskip}{0.0cm}
+ \setlength{\partopsep}{0.0cm}
+
+%equation spacing parameters
+%\setlength{\abovedisplayskip}{-0.0em}
+%\setlength{\belowdisplayskip}{-0.0em}
+%\setlength{\abovedisplayshortskip}{-0.0em}
+%\setlength{\belowdisplayshortskip}{-0.0em}
+%\setlength{\topsep}{-0.0em}
+
+%section heading size/style parameters
+%\def\abstractname{ABSTRACT}
+ \def\contentsname{contents}
+%\def\refname{\vspace{0.0em} \hrule}
+%\def\thesection{\normalsize \arabic{section}.}
+%\def\thesubsection{\normalsize \arabic{section}\alph{subsection}.}
+%\def\figurename{\normalsize \em FIG.}
+
+ \titlespacing{\section}{2pt}{2pt}{2pt}
+ \titlespacing{\subsection}{2pt}{2pt}{2pt}
+ \titlespacing{\subsubsection}{0pt}{0pt}{0pt}
+ \titleformat{\section}[display]{\normalsize}{\hrule}{0pt}{\bf \large }
+%\titleformat{\subsubsection}[display]{\normalsize}{}{0pt}{\thesubsubsection. \quad \normalsize \em}
+
+%verbatim
+\let\oldv\verbatim
+\let\oldendv\endverbatim
+
+\def\verbatim{\par\setbox0\vbox\bgroup\oldv}
+\def\endverbatim{\oldendv\egroup\fboxsep0pt \noindent\colorbox[gray]{0.8}{\usebox0}\par}
+
+% SHORT HAND 
+
+ \newcommand{\FOCUS}{{\small FOCUS} }
+
+% COMMON SPECIAL STRINGS
+
+ \newcommand{\Poincare}{Poincar$\acute{\rm e}$ }
+ \newcommand{\iotabar}{\mbox{$\,\iota\!\!$-}}
+
+ \newfont{\fnttype}{cmtt10}
+ \newcommand{\type}[1]{\mbox{\fnttype #1}}
+
+ \newcommand{\vect}[1]{\mathbf{#1}}
+ \newcommand{\dd}[1]{d #1}
+ \newcommand{\pdv}[2]{\frac{\partial #1}{\partial #2}}
+% MATHEMATICAL SHORT HAND
+
+ \newcommand{\be}{\begin{eqnarray}}
+ \newcommand{\ee}{\end{eqnarray}}
+
+ \newcommand{\bi}{\begin{itemize}}
+ \newcommand{\ei}{\end{itemize}}
+
+ \newcommand{\braket}[3]{\left\langle #1 \left| #2 \right| #3 \right\rangle}
+
+ \newcommand{\Fig}[1]{Fig.\ref{fig:#1}}
+ \newcommand{\Tab}[1]{Table.(\ref{tab:#1})}
+ \newcommand{\Eqn}[1]{Eq.(\ref{eq:#1})}
+ \newcommand{\Sec}[1]{Sec.\ref{sec:#1}}
+
+ \newcommand{\s}{s}
+ \renewcommand{\r}{r}
+ \renewcommand{\t}{\theta}
+ \newcommand{\z}{\zeta}
+ \renewcommand{\a}{\alpha}
+ \renewcommand{\b}{\beta}
+
+ \newcommand{\boldalpha}{\mbox{\boldmath$\alpha$\unboldmath}}
+ \newcommand{\boldxi}{\mbox{\boldmath$\xi$\unboldmath}}
+ \newcommand{\boldpsi}{\mbox{\boldmath$\psi$\unboldmath}}
+ \newcommand{\boldlambda}{\mbox{\boldmath$\lambda$\unboldmath}}
+ \newcommand{\boldLambda}{\mbox{\boldmath$\Lambda$\unboldmath}}
+ \newcommand{\boldphi}{\mbox{\boldmath$\hat \phi$\unboldmath}}
+ \newcommand{\hatboldphi}{\mbox{\boldmath$\hat \phi$\unboldmath}}
+
+ \newcommand{\ds}{\displaystyle}
+
+ \newcommand{\bs}{\bar s}
+
+
+%HYPERLINKS
+
+ \newcommand{\link}[1]{\href{http://w3.pppl.gov/~czhu/Focus/#1.pdf}{\blu{#1}}}
+ \newcommand{\doilink}[2]{\href{http://dx.doi.org/#1}{\blu{#2}}}
+ \newcommand{\nag}[2]{\href{http://www.nag.co.uk/numeric/FL/manual19/html/mark18.html}{\blu{NAG}}:\href{#1}{\blu{#2}}}
+ \newcommand{\oculus}[1]{\href{http://w3.pppl.gov/~shudson/Oculus/oculus.pdf}{\blu{oculus:#1}}}
+ \newcommand{\inputvar}[1]{\href{http://w3.pppl.gov/~czhu/Focus/initial.pdf}{\type{\red{#1}}}}
+ \newcommand{\internal}[1]{\type{#1}}
+
+ \newcommand{\code}[1]{
+ \noindent \href{http://w3.pppl.gov/~czhu/Focus/subroutines.html}{\blu{\footnotesize {\bf F}ocus}}
+ \section{#1}
+ }
+
+ \newcommand{\briefly}[1]{\hrule \vspace{1mm} \noindent #1 \vspace{1mm} \hrule \vspace{1mm}}
+ \newcommand{\calledby}[1]{{\noindent \footnotesize [called by: #1.]}}
+ \newcommand{\calls}[1]{\hfill {\footnotesize [calls: #1.]}}
+ \newcommand{\subroutine}[1]{{\bf \red{#1}}}
+
+ \begin{document}
