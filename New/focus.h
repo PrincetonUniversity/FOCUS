@@ -148,7 +148,10 @@ PROGRAM focus
      irestart = 1
      call descent
   case default
-  
+!!$     itmp = 1
+!!$     call AllocData(itmp)
+!!$     irestart = 1
+!!$     call costfun(itmp)
   end select
 
   tstart = MPI_Wtime()

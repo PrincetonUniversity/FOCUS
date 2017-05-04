@@ -106,29 +106,31 @@ endif
 
 ############################################################################################################
 
-pdfs: $(addsuffix .pdf,$(allfiles)) head.html
+pdfs: $(PFILES) head.html
 ifeq ($(USER),shudson)
 
 	cat head.html > $(WEBDIR)/Focus/subroutines.html
 
-	for file in $(allfiles) ; do cp $${file}.pdf $(WEBDIR)/Focus/. ; grep "!title" $${file}.h | cut -c 7- | \
+	for file in $(ALLFILES) ; do cp $${file}.pdf $(WEBDIR)/Focus/. ; grep "!title" $${file}.h | cut -c 7- | \
 	                           awk -v file=$${file} -F!\
 	                            '{print "<tr><td><a href="file".pdf\">"file"</a></td><td>"$$1"</td><td>"$$2"</td></tr>"}' \
 	                            >> $(WEBDIR)/Focus/subroutines.html ; \
 	                          done
 
 	echo "</table><a href="http://w3.pppl.gov/~shudson/">return to Dr. S.R. Hudson</a></body></html>" >> $(WEBDIR)/Focus/subroutines.html
-else
+else ifeq ($(USER), czhu)
        
 	cat head_czhu.html > $(WEBDIR)/Focus/subroutines.html
 
-	for file in $(allfiles) ; do cp $${file}.pdf $(WEBDIR)/Focus/. ; grep "!title" $${file}.h | cut -c 7- | \
+	for file in $(ALLFILES) ; do cp $${file}.pdf $(WEBDIR)/Focus/. ; grep "!title" $${file}.h | cut -c 7- | \
 	                           awk -v file=$${file} -F!\
 	                            '{print "<tr><td><a href="file".pdf\">"file"</a></td><td>"$$1"</td><td>"$$2"</td></tr>"}' \
 	                            >> $(WEBDIR)/Focus/subroutines.html ; \
 	                          done
 
 	echo "</table><a href="http://w3.pppl.gov/~$(USER)/">return to upper directory</a></body></html>" >> $(WEBDIR)/Focus/subroutines.html
+else
+	@echo "Please read pdfs in the directory!"
 endif
 
 ############################################################################################################

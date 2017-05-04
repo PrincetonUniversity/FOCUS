@@ -50,6 +50,7 @@ subroutine bnormal( ideriv )
      do jzeta = 0, Nzeta - 1
         do iteta = 0, Nteta - 1
            if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;
+
            do icoil = 1, Ncoils
               call bfield0(icoil, iteta, jzeta, coil(icoil)%Bx(0,0), coil(icoil)%By(0,0), coil(icoil)%Bz(0,0))
               lbx(iteta, jzeta) = lbx(iteta, jzeta) + coil(icoil)%Bx( 0, 0) * coil(icoil)%I * bsconstant
@@ -59,7 +60,7 @@ subroutine bnormal( ideriv )
            lbn(iteta, jzeta) = lbx(iteta, jzeta) * surf(1)%nx(iteta,jzeta)  &
                 &            + lby(iteta, jzeta) * surf(1)%ny(iteta,jzeta)  &
                 &            + lbz(iteta, jzeta) * surf(1)%nz(iteta,jzeta)
-           surf(1)%bn(iteta, jzeta) = lbn(iteta, jzeta) - surf(1)%tn(iteta, jzeta) !coilBn - targetBn; 
+           surf(1)%bn(iteta, jzeta) = lbn(iteta, jzeta) - surf(1)%tn(iteta, jzeta) !coilBn - targetBn;
         enddo ! end do iteta
      enddo ! end do jzeta
   
@@ -111,6 +112,7 @@ subroutine bnormal( ideriv )
            if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;
 
            idof = 0
+           
            do icoil = 1, Ncoils
               ND = DoF(icoil)%ND
               if ( coil(icoil)%Ic /= 0 ) then !if current is free;
@@ -133,6 +135,7 @@ subroutine bnormal( ideriv )
 
                  idof = idof + ND
               endif
+              
            enddo
            FATAL( bnormal , idof .ne. Ndof, counting error in packing )
 

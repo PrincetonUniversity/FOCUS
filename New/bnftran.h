@@ -69,15 +69,15 @@ SUBROUTINE bmnharm( ideriv )
   if( ideriv >= 0 ) then
 
      call twodft( surf(1)%bn, Bmns, Bmnc, Bmnim, Bmnin, NBmn )
-     Bmn = sqrt( Bmns**2 + Bmnc**2 )
-     bharm = half * sum( wBmn * (Bmn - tBmn)**2)
-     !bharm = Bmns(2)*Bmns(2)
-
 !!$     if (myid == 0) then
 !!$        do imn = 1, NBmn
-!!$           write(*,'(2I3, 3ES23.15)') Bmnin(imn), Bmnim(imn), Bmnc(imn), Bmns(imn)
+!!$           write(*, '("n="I3,"m="I3, "Bmnc="ES12.5, "Bmns="ES12.5)') &
+!!$                         Bmnin(imn), Bmnim(imn), Bmnc(imn), Bmns(imn)
 !!$        enddo
 !!$     endif
+                 
+     Bmn = sqrt( Bmns**2 + Bmnc**2 )
+     bharm = half * sum( wBmn * (Bmn - tBmn)**2)
         
   endif
 
@@ -87,11 +87,6 @@ SUBROUTINE bmnharm( ideriv )
      do idof = 1, Ndof
         call twodft( dBx(idof,  0:Nteta-1, 0:Nzeta-1), dBxs, dBxc, Bmnim, Bmnin, NBmn )
         t1H(idof) = sum( wBmn * (Bmn - tBmn) * (Bmnc*dBxc + Bmns*dBxs)/Bmn )
-        !t1H(idof) = 2*Bmns(2)*dBxs(2)
-!!$        if (idof == 19) then
-!!$           if (myid == 0) write(*,'("1: " 6ES23.15)') Bmn(1), Bmnc(1), Bmns(1), &
-!!$                                t1H(idof), dBxc(1), dBxs(1)
-!!$        endif
      enddo
      
   endif
