@@ -19,7 +19,7 @@
  IsNormalize = 1              ! 0: donot normalize coil parameters; 1: normalize; I = I/I0, x = x/R0.
  IsNormBnormal = 0            ! function not enabled; keep 0.
  IsNormWeight = 0             ! 0: donot normalize the weights; 1: normalize the weights; 
- weight_bnorm = 100000.0      ! weigt for Bn error;
+ weight_bnorm = 100000.0      ! weight for Bn error;
  weight_tflux = 0.0           ! function not enabled;
  target_tflux = 0.0           ! function not enabled;
  weight_ttlen = 0.0           ! function not enabled;
@@ -28,7 +28,7 @@
  SD_tausta = 0.0              ! the start value of tau (Steepest Descent step control)
  SD_tauend = 300              ! the end   value of tau (Steepest Descent step control)
  SD_tautol = 0.0001           ! tolerance of SD method;
- SD_Nout = 10                 ! total outputs for SD;
+ SD_Nout = 100                ! total outputs for SD;
  SD_savefreq = 1              ! file saving frequence;
  NT_xtol = 0.0001             ! function not enabled;
  NT_eta = 0.9                 ! function not enabled;
