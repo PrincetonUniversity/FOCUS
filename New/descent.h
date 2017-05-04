@@ -129,7 +129,7 @@ subroutine progres( tau, lxdof )
   
   use globals, only : zero, sqrtmachprec, ounit, myid, iter, Ndof, Ncoils, Tdof, coil, FouCoil, coilspace, &
                       itau, SD_tausta, SD_tauend, SD_Nout, SD_SaveFreq, SD_tautol, &
-                      totalenergy, evolution, bnorm, tflux, ttlen, specw, ccsep, t1E, dofnorm
+                      totalenergy, evolution, bnorm, tflux, ttlen, specw, ccsep, bharm, t1E, dofnorm
   
   implicit none  
   include "mpif.h"
@@ -146,7 +146,7 @@ subroutine progres( tau, lxdof )
   call costfun(iorder)
   dE = - (t1E * dofnorm)
   sumdE = sqrt(sum(dE(1:Ndof)**2)/Ndof)
-  if( myid==0 ) write(ounit,1000) tau, totalenergy, sumdE, bnorm, tflux, ttlen, specw, ccsep
+  if( myid==0 ) write(ounit,1000) tau, totalenergy, sumdE, bnorm, tflux, ttlen, specw, ccsep, bharm
 
   FATAL(progres, itau > SD_Nout, exceeds allocation)
 
@@ -160,6 +160,7 @@ subroutine progres( tau, lxdof )
      evolution(itau,5) = ttlen
      evolution(itau,6) = specw
      evolution(itau,7) = ccsep
+     evolution(itau,8) = bharm
   endif
 
   !save all the coil parameters;
@@ -200,6 +201,7 @@ subroutine progres( tau, lxdof )
 
   return  
 
-1000 format("progres :"es11.4" : E="es15.7" ; D="es15.7" ; B="es15.7" ; F="es15.7" ; L="es15.7" ; A="es15.7" ; C="es15.7" ;")
+1000 format("progres :"es11.4" : E="es15.7" ; D="es15.7" ; B="es15.7" ; F="es15.7" ; L="es15.7 &
+                             " ; A="es15.7" ; C="es15.7" ; H="es15.7)
 
 end subroutine progres

@@ -31,13 +31,15 @@
 !latex \subsection{1st-order derivatives}
 !latex The derivatives of $H$ with respect to coil parameters can be calculated as,
 !latex \be
-!latex \pdv{H}{x} & = & \sum_{m,n} w_mn  \ ( \Delta_{mn} - \Delta_{mn}^o ) \pdv{\Delta_{mn}}{x} \\
+!latex \pdv{H}{x} & = & \sum_{m,n} w_{mn}  \ ( \Delta_{mn} - \Delta_{mn}^o ) \pdv{\Delta_{mn}}{x} \\
 !latex \pdv{\Delta_{mn}}{x} & = & \frac{\Delta_{mn}^c \pdv{\Delta_{mn}^c}{x} + 
-!latex                                \Delta_{mn}^c \pdv{\Delta_{mn}^c}{x}}{\Delta_{mn}} \\
+!latex                                  \Delta_{mn}^s \pdv{\Delta_{mn}^s}{x}}{\Delta_{mn}} \\
 !latex \pdv{\Delta_{mn}^c}{x} & = & \frac{1}{2\pi^2} \int_0^{2\pi} \int_0^{2\pi} 
-!latex         [\pdv{B_x}{x} n_x + [\pdv{B_y}{y} n_y + [\pdv{B_z}{z} n_z] \ \cos(m\theta-n\phi) d\theta d\phi \\
+!latex         \left [\pdv{B_x}{x} n_x + \pdv{B_y}{y} n_y + \pdv{B_z}{z} n_z \right ] 
+!latex         \ \cos(m\theta-n\phi) d\theta d\phi \\
 !latex \pdv{\Delta_{mn}^s}{x} & = &  \frac{1}{2\pi^2} \int_0^{2\pi} \int_0^{2\pi} 
-!latex         [\pdv{B_x}{x} n_x + [\pdv{B_y}{y} n_y + [\pdv{B_z}{z} n_z] \ \sin(m\theta-n\phi) d\theta d\phi
+!latex         \left [\pdv{B_x}{x} n_x + \pdv{B_y}{y} n_y + \pdv{B_z}{z} n_z \right ] 
+!latex         \ \sin(m\theta-n\phi) d\theta d\phi
 !latex \ee
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -109,7 +111,7 @@ SUBROUTINE readBmn
   ! allocate trig functions;
   !----------------------------------------------------------------------------------------
   use globals, only: zero, half, pi2, myid, ounit, runit, ext, IsQuiet, Nteta, Nzeta,  &
-                     NBnf, Bnin, Bnim, NBmn, Bmnin, Bmnim, wBmn, tBmn, carg, sarg
+                     NBmn, Bmnin, Bmnim, wBmn, tBmn, carg, sarg
   implicit none
   include "mpif.h"
 
@@ -118,11 +120,11 @@ SUBROUTINE readBmn
   LOGICAL  :: exist
 
   !----------------------------------------------------------------------------------------
-  inquire( file=trim(ext)//".harmonics", exist=exist)  
+  inquire( file="target.harmonics", exist=exist)  
   FATAL( readBmn, .not.exist, ext.harmonics does not exist ) 
 
   if (myid == 0) then
-     open(runit, file=trim(ext)//".harmonics", status='old', action='read')
+     open(runit, file="target.harmonics", status='old', action='read')
      read(runit,*) ! comment line;
      read(runit,*) NBmn !read dimensions
   endif
@@ -155,6 +157,7 @@ SUBROUTINE readBmn
                  Bmnin(imn), Bmnim(imn), wBmn(imn), tBmn(imn)
          enddo
       endif
+      close(runit)
    endif
 
   !-------------------------store trig functions-------------------------------------------
@@ -177,6 +180,38 @@ END SUBROUTINE readBmn
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
+SUBROUTINE writeBmn
+  !----------------------------------------------------------------------------------------
+  ! read Bmn harmonics related arrays;
+  ! allocate trig functions;
+  !----------------------------------------------------------------------------------------
+  use globals, only: zero, half, pi2, myid, ounit, wunit, ext, IsQuiet, Nteta, Nzeta,  &
+                     Bmn, NBmn, Bmnin, Bmnim, wBmn, tBmn, carg, sarg
+  implicit none
+  include "mpif.h"
+
+  INTEGER  :: ii, jj, ij, imn, ierr, astat
+  REAL     :: teta, zeta, arg
+  LOGICAL  :: exist
+
+  !----------------------------------------------------------------------------------------
+  if (myid == 0) then
+     open(wunit, file=trim(ext)//".harmonics", status='unknown', action='write')
+     write(wunit,*) "#NBmn"! comment line;
+     write(wunit,*) NBmn !write dimensions
+
+     write(wunit,*) "# n  m  wBmn  Bmn"! comment line;
+     do imn = 1, NBmn
+        write(wunit,*) Bmnin(imn), Bmnim(imn), wBmn(imn), Bmn(imn)
+     enddo
+     close(wunit)
+  endif
+
+  return
+END SUBROUTINE writeBmn
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
 SUBROUTINE BnFTran
   !-------------------------------------------------------------------------------!
   ! Calculate Fourier harmonics bnc,bns for bn(0:Nteta, 0:Nzeta);                 !
@@ -187,7 +222,7 @@ SUBROUTINE BnFTran
   implicit none
   include "mpif.h"
   !-------------------------------------------------------------------------------
-  INTEGER,parameter   :: mf=20, nf = 20  ! predefined Fourier modes size
+  INTEGER,parameter   :: mf=20, nf = 5  ! predefined Fourier modes size
   INTEGER             :: imn=0, ii, jj, im, in, astat, ierr, maxN, maxM
   REAL                :: teta, zeta, arg, t1, t2
   !------------------------------------------------------------------------------- 

@@ -60,9 +60,11 @@ subroutine restart( irestart )
      if(allocated(t1L)) deriv(1:Ndof,3) = t1L(1:Ndof)
      if(allocated(t1S)) deriv(1:Ndof,4) = t1S(1:Ndof)
      if(allocated(t1C)) deriv(1:Ndof,5) = t1C(1:Ndof)
+     if(allocated(t1H)) deriv(1:Ndof,6) = t1H(1:Ndof)
   endif
   !calculate the new Bn
   if (allocated(surf(1)%bn)) call BnFTran
+  if (allocated(Bmn)) call writeBmn
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -134,10 +136,10 @@ subroutine restart( irestart )
   endif
 
   HWRITEIV( 1                ,   itau          ,   itau                          )
-  HWRITERA( itau+1, 8        ,   evolution     ,   evolution(0:itau, 0:7)        )
+  HWRITERA( itau+1, 8        ,   evolution     ,   evolution(0:itau, 0:8)        )
   HWRITERA( itau+1, Tdof     ,   coilspace     ,   coilspace(0:itau, 1:Tdof)     )
   if (allocated(deriv)) then
-     HWRITERA( Ndof, 6       ,   deriv         ,   deriv(1:Ndof, 0:5)            )
+     HWRITERA( Ndof, 6       ,   deriv         ,   deriv(1:Ndof, 0:6)            )
   endif
 
   if (allocated(Cur_Bns)) then

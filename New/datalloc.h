@@ -47,7 +47,7 @@ subroutine AllocData(itype)
 
      SALLOCATE(    xdof, (1:Ndof), zero ) ! dof vector;
      SALLOCATE( dofnorm, (1:Ndof), zero ) ! dof normalized value vector;
-     SALLOCATE( evolution, (0:SD_Nout, 0:7), zero ) !evolution array;
+     SALLOCATE( evolution, (0:SD_Nout, 0:8), zero ) !evolution array;
      SALLOCATE( coilspace, (0:SD_Nout, 1:Tdof), zero ) ! all the coil parameters;
      
      idof = 0
@@ -102,7 +102,7 @@ subroutine AllocData(itype)
      
      FATAL( AllocData, Ndof < 1, INVALID Ndof value )
      SALLOCATE( t1E, (1:Ndof), zero )
-     SALLOCATE( deriv, (1:Ndof, 0:5), zero )
+     SALLOCATE( deriv, (1:Ndof, 0:6), zero )
 
      ! Bnorm related;
      if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec) then
