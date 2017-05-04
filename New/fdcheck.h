@@ -21,7 +21,7 @@ SUBROUTINE fdcheck( ideriv )
 !------------------------------------------------------------------------------------------------------
 
   use globals, only: zero, half, machprec, sqrtmachprec, ncpu, myid, ounit, &
-                     coil, xdof, Ndof, t1E, t2E, totalenergy
+                     coil, xdof, Ndof, t1E, t2E, totalenergy, dofnorm
                      
   implicit none
   include "mpif.h"
@@ -30,7 +30,7 @@ SUBROUTINE fdcheck( ideriv )
   !--------------------------------------------------------------------------------------------
 
   INTEGER              :: astat, ierr, idof
-  REAL                 :: tmp_xdof(1:Ndof), small=1.0E-4, fd, negvalue, posvalue, diff, rdiff
+  REAL                 :: tmp_xdof(1:Ndof), small=1.0E-6, fd, negvalue, posvalue, diff, rdiff
   REAL                 :: start, finish
   !--------------------------------------------------------------------------------------------
 
@@ -46,7 +46,7 @@ SUBROUTINE fdcheck( ideriv )
   if(myid == 0) write(ounit,'("fdcheck : Checking the first derivatives using finite-difference method")')
 
   call cpu_time(start)
-  call costfun(1)
+  call costfun(1); t1E = t1E * dofnorm
   call cpu_time(finish)
   if(myid .eq. 0) write(ounit,'("fdcheck : First order derivatives of energy function takes " &
        ES23.15 " seconds.")') finish - start
@@ -56,13 +56,13 @@ SUBROUTINE fdcheck( ideriv )
   do idof = 1, Ndof
      !backward pertubation;
      xdof(idof) = xdof(idof) - half * small
-     call unpacking
+     call unpacking(xdof)
      call costfun(0)
      negvalue = totalenergy
      xdof = tmp_xdof
      !forward pertubation;
      xdof(idof) = xdof(idof) + half * small
-     call unpacking
+     call unpacking(xdof)
      call costfun(0)
      posvalue = totalenergy
      xdof = tmp_xdof

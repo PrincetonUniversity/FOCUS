@@ -144,6 +144,7 @@ subroutine Initial
   IlBCAST( IsNormBnormal ,    1,  0 )
   IlBCAST( IsNormWeight  ,    1,  0 )
   RlBCAST( weight_bnorm  ,    1,  0 )
+  RlBCAST( weight_bharm  ,    1,  0 )
   RlBCAST( weight_tflux  ,    1,  0 )
   RlBCAST( target_tflux  ,    1,  0 )
   RlBCAST( weight_ttlen  ,    1,  0 )

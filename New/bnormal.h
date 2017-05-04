@@ -17,25 +17,25 @@ subroutine bnormal( ideriv )
 ! ideriv = 1 -> calculate the Bn surface integral and its first derivatives;
 ! ideriv = 2 -> calculate the Bn surface integral and its first & second derivatives;
 !------------------------------------------------------------------------------------------------------   
-  use globals, only: zero, half, one, pi2, bsconstant, ncpu, myid, ounit, &
+  use globals, only: zero, half, one, pi2, sqrtmachprec, bsconstant, ncpu, myid, ounit, &
        coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, &
-       bnorm, t1B, t2B, bn, Ndof
+       bnorm, t1B, t2B, bn, Ndof, dBx
 
   implicit none
   include "mpif.h"
 
   INTEGER, INTENT(in)               :: ideriv
   !--------------------------------------------------------------------------------------------
-  INTEGER                           :: astat, ierr
-  INTEGER                           :: icoil, iteta, jzeta, idof, ND, NumGrid
-  REAL                              :: lbnorm
-  REAL, dimension(0:Nteta, 0:Nzeta) :: lbx, lby, lbz, lbn         ! local Bx, By and Bz
-  REAL, allocatable                 :: l1B(:)
+  INTEGER                               :: astat, ierr
+  INTEGER                               :: icoil, iteta, jzeta, idof, ND, NumGrid
+  REAL                                  :: lbnorm
+  REAL, dimension(0:Nteta-1, 0:Nzeta-1) :: lbx, lby, lbz, lbn         ! local Bx, By and Bz
+  REAL, allocatable                     :: ldBx(:,:,:)
 
   !--------------------------initialize and allocate arrays------------------------------------- 
 
-  NumGrid = (1+Nteta)*(1+Nzeta)
-  bnorm = zero; lbnorm = zero
+  NumGrid = Nteta*Nzeta
+  bnorm = zero
   lbx = zero; lby = zero; lbz = zero; lbn =  zero        !already allocted; reset to zero;
 
   bn = zero
@@ -50,6 +50,7 @@ subroutine bnormal( ideriv )
      do jzeta = 0, Nzeta - 1
         do iteta = 0, Nteta - 1
            if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;
+
            do icoil = 1, Ncoils
               call bfield0(icoil, iteta, jzeta, coil(icoil)%Bx(0,0), coil(icoil)%By(0,0), coil(icoil)%Bz(0,0))
               lbx(iteta, jzeta) = lbx(iteta, jzeta) + coil(icoil)%Bx( 0, 0) * coil(icoil)%I * bsconstant
@@ -60,52 +61,50 @@ subroutine bnormal( ideriv )
                 &            + lby(iteta, jzeta) * surf(1)%ny(iteta,jzeta)  &
                 &            + lbz(iteta, jzeta) * surf(1)%nz(iteta,jzeta)
            surf(1)%bn(iteta, jzeta) = lbn(iteta, jzeta) - surf(1)%tn(iteta, jzeta) !coilBn - targetBn;
-           lbnorm = lbnorm +  (surf(1)%bn(iteta, jzeta))**2 * surf(1)%ds(iteta,jzeta)  
         enddo ! end do iteta
      enddo ! end do jzeta
-
-     call MPI_REDUCE( lbnorm,   bnorm,       1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )   
+  
      call MPI_REDUCE( lbn, bn        , NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
      call MPI_REDUCE( lbx, surf(1)%Bx, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
      call MPI_REDUCE( lby, surf(1)%By, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
      call MPI_REDUCE( lbz, surf(1)%Bz, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
 
-     RlBCAST( bnorm     ,       1, 0 )  ! surface integral;
      RlBCAST( bn        , NumGrid, 0 )  ! coil Bn distribution;
      RlBCAST( surf(1)%Bx, NumGrid, 0 )  ! total Bx from coils;
      RlBCAST( surf(1)%By, NumGrid, 0 )  ! total By from coils;
      RlBCAST( surf(1)%Bz, NumGrid, 0 )  ! total Bz from coils;
 
-     bnorm  = bnorm * half * discretefactor
-
      surf(1)%bn = bn - surf(1)%tn       ! total Bn;
 
+     bnorm = sum( surf(1)%bn*surf(1)%bn * surf(1)%ds ) * half * discretefactor
+
      ! mapping the last  row & column; only used for plotting;
-             bn(Nteta, 0:Nzeta-1) =         bn(0, 0:Nzeta-1)
-     surf(1)%bn(Nteta, 0:Nzeta-1) = surf(1)%bn(0, 0:Nzeta-1)
-     surf(1)%Bx(Nteta, 0:Nzeta-1) = surf(1)%Bx(0, 0:Nzeta-1)
-     surf(1)%By(Nteta, 0:Nzeta-1) = surf(1)%By(0, 0:Nzeta-1)
-     surf(1)%Bz(Nteta, 0:Nzeta-1) = surf(1)%Bz(0, 0:Nzeta-1)
-
-             bn(0:Nteta-1, Nzeta) =         bn(0:Nteta-1, 0)
-     surf(1)%bn(0:Nteta-1, Nzeta) = surf(1)%bn(0:Nteta-1, 0)
-     surf(1)%Bx(0:Nteta-1, Nzeta) = surf(1)%Bx(0:Nteta-1, 0)
-     surf(1)%By(0:Nteta-1, Nzeta) = surf(1)%By(0:Nteta-1, 0)
-     surf(1)%Bz(0:Nteta-1, Nzeta) = surf(1)%Bz(0:Nteta-1, 0)
-
-             bn(Nteta   ,  Nzeta) =         bn(0    ,     0)
-     surf(1)%bn(Nteta   ,  Nzeta) = surf(1)%bn(0    ,     0)
-     surf(1)%Bx(Nteta   ,  Nzeta) = surf(1)%Bx(0    ,     0)
-     surf(1)%By(Nteta   ,  Nzeta) = surf(1)%By(0    ,     0)
-     surf(1)%Bz(Nteta   ,  Nzeta) = surf(1)%Bz(0    ,     0) 
+!!$             bn(Nteta, 0:Nzeta-1) =         bn(0, 0:Nzeta-1)
+!!$     surf(1)%bn(Nteta, 0:Nzeta-1) = surf(1)%bn(0, 0:Nzeta-1)
+!!$     surf(1)%Bx(Nteta, 0:Nzeta-1) = surf(1)%Bx(0, 0:Nzeta-1)
+!!$     surf(1)%By(Nteta, 0:Nzeta-1) = surf(1)%By(0, 0:Nzeta-1)
+!!$     surf(1)%Bz(Nteta, 0:Nzeta-1) = surf(1)%Bz(0, 0:Nzeta-1)
+!!$
+!!$             bn(0:Nteta-1, Nzeta) =         bn(0:Nteta-1, 0)
+!!$     surf(1)%bn(0:Nteta-1, Nzeta) = surf(1)%bn(0:Nteta-1, 0)
+!!$     surf(1)%Bx(0:Nteta-1, Nzeta) = surf(1)%Bx(0:Nteta-1, 0)
+!!$     surf(1)%By(0:Nteta-1, Nzeta) = surf(1)%By(0:Nteta-1, 0)
+!!$     surf(1)%Bz(0:Nteta-1, Nzeta) = surf(1)%Bz(0:Nteta-1, 0)
+!!$
+!!$             bn(Nteta   ,  Nzeta) =         bn(0    ,     0)
+!!$     surf(1)%bn(Nteta   ,  Nzeta) = surf(1)%bn(0    ,     0)
+!!$     surf(1)%Bx(Nteta   ,  Nzeta) = surf(1)%Bx(0    ,     0)
+!!$     surf(1)%By(Nteta   ,  Nzeta) = surf(1)%By(0    ,     0)
+!!$     surf(1)%Bz(Nteta   ,  Nzeta) = surf(1)%Bz(0    ,     0) 
 
   endif
 
   !-------------------------------calculate Bn/x------------------------------------------------
   if ( ideriv >= 1 ) then
 
-     SALLOCATE( l1B, (1:Ndof), zero )
+     SALLOCATE( ldBx, (1:Ndof, 0:Nteta-1, 0:Nzeta-1), zero )
      t1B = zero
+     dBx = zero
 
      do jzeta = 0, Nzeta - 1
         do iteta = 0, Nteta - 1
@@ -113,16 +112,15 @@ subroutine bnormal( ideriv )
            if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;
 
            idof = 0
+           
            do icoil = 1, Ncoils
               ND = DoF(icoil)%ND
               if ( coil(icoil)%Ic /= 0 ) then !if current is free;
                  call bfield0(icoil, iteta, jzeta, &
                       & coil(icoil)%Bx(0,0), coil(icoil)%By(0,0), coil(icoil)%Bz(0,0))
-                 l1B(idof+1) = l1B(idof+1) + ( surf(1)%bn(iteta, jzeta) ) &
-                      &      * ( coil(icoil)%Bx(0,0)*surf(1)%nx(iteta,jzeta)   &
-                      &        + coil(icoil)%By(0,0)*surf(1)%ny(iteta,jzeta)   &
-                      &        + coil(icoil)%Bz(0,0)*surf(1)%nz(iteta,jzeta) ) & 
-                      &      * bsconstant * surf(1)%ds(iteta, jzeta)
+                 ldBx(idof+1, iteta, jzeta) = bsconstant* ( coil(icoil)%Bx(0,0)*surf(1)%nx(iteta,jzeta)   &
+                      &                                   + coil(icoil)%By(0,0)*surf(1)%ny(iteta,jzeta)   &
+                      &                                   + coil(icoil)%Bz(0,0)*surf(1)%nz(iteta,jzeta) )
                  idof = idof +1
               endif
 
@@ -130,24 +128,29 @@ subroutine bnormal( ideriv )
                  call bfield1(icoil, iteta, jzeta, &
                       &       coil(icoil)%Bx(1:ND,0), coil(icoil)%By(1:ND,0), coil(icoil)%Bz(1:ND,0), ND)
 
-                 l1B(idof+1:idof+ND) = l1B(idof+1:idof+ND) + ( surf(1)%bn(iteta, jzeta) ) &
-                      &              * ( coil(icoil)%Bx(1:ND,0)*surf(1)%nx(iteta,jzeta)   &
-                      &                + coil(icoil)%By(1:ND,0)*surf(1)%ny(iteta,jzeta)   &
-                      &                + coil(icoil)%Bz(1:ND,0)*surf(1)%nz(iteta,jzeta) ) &
-                      &              * bsconstant * coil(icoil)%I * surf(1)%ds(iteta, jzeta)
+                 ldBx(idof+1:idof+ND, iteta, jzeta) = bsconstant * coil(icoil)%I          &
+                      &                            * ( coil(icoil)%Bx(1:ND,0)*surf(1)%nx(iteta,jzeta)   &
+                      &                              + coil(icoil)%By(1:ND,0)*surf(1)%ny(iteta,jzeta)   &
+                      &                              + coil(icoil)%Bz(1:ND,0)*surf(1)%nz(iteta,jzeta) )
+
                  idof = idof + ND
               endif
+              
            enddo
            FATAL( bnormal , idof .ne. Ndof, counting error in packing )
 
         enddo
      enddo
 
-     call MPI_REDUCE( l1B, t1B, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
-     RlBCAST( t1B, Ndof, 0 )
-     t1B = t1B * discretefactor
+     call MPI_REDUCE(ldBx, dBx, Ndof*NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
+     RlBCAST( dBx, Ndof*NumGrid, 0 )
 
-     DALLOCATE(l1B)
+     do idof = 1, Ndof
+        t1B(idof) = sum( surf(1)%bn(0:Nteta-1, 0:Nzeta-1)* dBx(idof, 0:Nteta-1, 0:Nzeta-1) &
+                        * surf(1)%ds(0:Nteta-1, 0:Nzeta-1) ) * discretefactor
+     enddo
+
+     call MPI_barrier( MPI_COMM_WORLD, ierr )
 
   endif
 
