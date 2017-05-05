@@ -15,7 +15,7 @@
  target_length = 1.0          ! function not enabled;
  NFcoil = 8                   ! number of Fourier harmonics representing the coils; overwritten by ext.focus.
  Nseg = 128                   ! number of coil segments for discretizing; overwritten by ext.focus.
- case_optimizer = -1          ! -1: test the 1st derivatives; 0: not optimizations; 1: steepest descent ;
+ case_optimizer = 1           ! -1: test the 1st derivatives; 0: not optimizations; 1: steepest descent ;
  IsNormalize = 1              ! 0: donot normalize coil parameters; 1: normalize; I = I/I0, x = x/R0.
  IsNormBnormal = 0            ! function not enabled; keep 0.
  IsNormWeight = 0             ! 0: donot normalize the weights; 1: normalize the weights; 

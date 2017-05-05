@@ -233,7 +233,7 @@ module globals
   INTEGER              :: NBmn
   INTEGER, allocatable :: Bmnin(:), Bmnim(:)
   REAL                 :: bharm
-  REAL   , allocatable :: t1H(:), t2H(:,:), Bmn(:), wBmn(:), tBmn(:), carg(:,:), sarg(:,:)
+  REAL   , allocatable :: t1H(:), t2H(:,:), Bmnc(:),Bmns(:), wBmn(:), tBmnc(:), tBmns(:), carg(:,:), sarg(:,:)
   ! Tflux error;
   INTEGER              :: isign = 1
   REAL                 :: tflux

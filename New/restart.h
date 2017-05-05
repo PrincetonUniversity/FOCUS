@@ -64,7 +64,7 @@ subroutine restart( irestart )
   endif
   !calculate the new Bn
   if (allocated(surf(1)%bn)) call BnFTran
-  if (allocated(Bmn)) call writeBmn
+  if (allocated(Bmnc)) call writeBmn
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

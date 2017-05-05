@@ -92,7 +92,8 @@ subroutine AllocData(itype)
      ! Bharm needed;
      if (weight_bharm > sqrtmachprec) then
         call readbmn
-        SALLOCATE(  Bmn , (1:NBmn), zero )  ! current Bmn values;
+        SALLOCATE(  Bmnc , (1:NBmn), zero )  ! current Bmn cos values;
+        SALLOCATE(  Bmns , (1:NBmn), zero )  ! current Bmn sin values;
      endif
             
   endif

@@ -15,28 +15,31 @@
 !latex In the flux coordinate ($\psi, \theta, \pi$), the normal magnetic field perturbation can be written
 !latex as,
 !latex \be
-!latex \ds B_n(\theta, \phi) = \vec{B} \cdot \nabla{\psi} = \sum_{m,n} \Delta_{mn} exp^{-i(m\theta - n\phi)}\ .
+!latex \ds B_n(\theta,\phi) = \vec{B} \cdot \nabla{\psi} = \sum_{m,n} \Delta_{mn} \ exp^{-i(m\theta - n\phi)}\ .
 !latex \ee
 !latex If we define the cost function {\bf H = bharm} as,
 !latex \be
-!latex \ds H = \frac{1}{2} \sum_{m,n} w_{mn} \ ( \Delta_{mn} - \Delta_{mn}^o )^2
+!latex \ds H & = & \frac{1}{2} \sum_{m,n} w_{mn} \ ( \Delta_{mn} - \Delta_{mn}^o )^2 \nonumber \\
+!latex       & = & \frac{1}{2} \sum_{m,n} w_{mn} \left [ ( \Delta^c_{mn} - \Delta^{c,o}_{mn} )^2 
+!latex                                                 + ( \Delta^s_{mn} - \Delta^{s,o}_{mn} )^2 \right ]
 !latex \ee
 !latex Using trigonometric functions,
 !latex \be
-!latex \Delta_{mn} & = & \sqrt{ {\Delta_{mn}^c}^2 + {\Delta_{mn}^s}^2 } \\
-!latex \Delta_{mn}^c &=& \frac{1}{2\pi^2} \int_0^{2\pi} \int_0^{2\pi} Bn \ \cos(m\theta-n\phi) d\theta d\phi \\
-!latex \Delta_{mn}^s & = & \frac{1}{2\pi^2} \int_0^{2\pi} \int_0^{2\pi} Bn \ \sin(m\theta-n\phi) d\theta d\phi
+!      \Delta_{mn} & = & \sqrt{ {\Delta_{mn}^c}^2 + {\Delta_{mn}^s}^2 } \\
+!latex \Delta_{mn}^c &=& \frac{1}{2\pi^2} \int_0^{2\pi} \int_0^{2\pi} Bn \ \cos(m\theta-n\phi) d\t d\phi \\
+!latex \Delta_{mn}^s & = & \frac{1}{2\pi^2} \int_0^{2\pi} \int_0^{2\pi} Bn \ \sin(m\theta-n\phi) d\t d\phi
 !latex \ee
 !latex 
 !latex \subsection{1st-order derivatives}
 !latex The derivatives of $H$ with respect to coil parameters can be calculated as,
 !latex \be
-!latex \pdv{H}{x} & = & \sum_{m,n} w_{mn}  \ ( \Delta_{mn} - \Delta_{mn}^o ) \pdv{\Delta_{mn}}{x} \\
-!latex \pdv{\Delta_{mn}}{x} & = & \frac{\Delta_{mn}^c \pdv{\Delta_{mn}^c}{x} + 
-!latex                                  \Delta_{mn}^s \pdv{\Delta_{mn}^s}{x}}{\Delta_{mn}} \\
+!latex \pdv{H}{x} & = & \sum_{m,n} w_{mn} \left [ ( \Delta^c_{mn}-\Delta^{c,o}_{mn} ) \pdv{\Delta^c_{mn}}{x}
+!latex                \  + \ ( \Delta^s_{mn}-\Delta^{s,o}_{mn} ) \pdv{\Delta^s_{mn}}{x} \right ] \\
+
 !latex \pdv{\Delta_{mn}^c}{x} & = & \frac{1}{2\pi^2} \int_0^{2\pi} \int_0^{2\pi} 
 !latex         \left [\pdv{B_x}{x} n_x + \pdv{B_y}{y} n_y + \pdv{B_z}{z} n_z \right ] 
 !latex         \ \cos(m\theta-n\phi) d\theta d\phi \\
+
 !latex \pdv{\Delta_{mn}^s}{x} & = &  \frac{1}{2\pi^2} \int_0^{2\pi} \int_0^{2\pi} 
 !latex         \left [\pdv{B_x}{x} n_x + \pdv{B_y}{y} n_y + \pdv{B_z}{z} n_z \right ] 
 !latex         \ \sin(m\theta-n\phi) d\theta d\phi
@@ -49,7 +52,7 @@ SUBROUTINE bmnharm( ideriv )
   ! calculate the bharm cost function
   !----------------------------------------------------------------------------------------
   use globals, only: zero, half, myid, Ndof, Nteta, Nzeta, surf, &
-                     dBx, bharm, t1H, Bmn, wBmn, tBmn, Bmnim, Bmnin, NBmn
+                     dBx, bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn
   implicit none
   include "mpif.h"
 
@@ -57,11 +60,10 @@ SUBROUTINE bmnharm( ideriv )
   !----------------------------------------------------------------------------------------
   
   INTEGER             :: idof, ierr, astat, imn
-  REAL, allocatable   :: Bmnc(:), Bmns(:), dBxc(:), dBxs(:) 
+  REAL, allocatable   :: dBxc(:), dBxs(:) 
 
   !--------------------------initialize and allocate arrays-------------------------------- 
-  SALLOCATE( Bmnc, (1:NBmn), zero )  ! 0-order Bmn_cos
-  SALLOCATE( Bmns, (1:NBmn), zero )  ! 0-order Bmn_sin
+
   SALLOCATE( dBxc, (1:NBmn), zero )  ! temporary dBx_mn_cos
   SALLOCATE( dBxs, (1:NBmn), zero )  ! temporary dBx_mn_sin
 
@@ -78,8 +80,7 @@ SUBROUTINE bmnharm( ideriv )
 !!$        enddo
 !!$     endif
                  
-     Bmn = sqrt( Bmns**2 + Bmnc**2 )
-     bharm = half * sum( wBmn * (Bmn - tBmn)**2)
+     bharm = half * sum( wBmn * ((Bmnc - tBmnc)**2 + (Bmns - tBmns)**2) )
         
   endif
 
@@ -88,14 +89,13 @@ SUBROUTINE bmnharm( ideriv )
      ! can parallelize in Ndof direction;
      do idof = 1, Ndof
         call twodft( dBx(idof,  0:Nteta-1, 0:Nzeta-1), dBxs, dBxc, Bmnim, Bmnin, NBmn )
-        t1H(idof) = sum( wBmn * (Bmn - tBmn) * (Bmnc*dBxc + Bmns*dBxs)/Bmn )
+        t1H(idof) = sum( wBmn * ( (Bmnc - tBmnc)*dBxc + (Bmns - tBmns)*dBxs ) )
      enddo
      
   endif
 
   !--------------------------------------------------------------------------------------------
-  DALLOCATE( Bmnc )
-  DALLOCATE( Bmns )
+
   DALLOCATE( dBxc )
   DALLOCATE( dBxs )
   
@@ -111,7 +111,7 @@ SUBROUTINE readBmn
   ! allocate trig functions;
   !----------------------------------------------------------------------------------------
   use globals, only: zero, half, pi2, myid, ounit, runit, ext, IsQuiet, Nteta, Nzeta,  &
-                     NBmn, Bmnin, Bmnim, wBmn, tBmn, carg, sarg
+                     NBmn, Bmnin, Bmnim, wBmn, tBmnc, tBmns, carg, sarg
   implicit none
   include "mpif.h"
 
@@ -134,27 +134,29 @@ SUBROUTINE readBmn
   SALLOCATE( Bmnim, (1:NBmn), 0 )     ! n values for Bmn;
   SALLOCATE( Bmnin, (1:NBmn), 0 )     ! m values for Bmn;
   SALLOCATE( wBmn , (1:NBmn), zero )  ! weight for different Bmn;
-  SALLOCATE( tBmn , (1:NBmn), zero )  ! target Bmn values;
+  SALLOCATE( tBmnc, (1:NBmn), zero )  ! target Bmn cos values;
+  SALLOCATE( tBmns, (1:NBmn), zero )  ! target Bmn sin values;
 
   if (myid == 0) then
      read(runit,*) ! comment line;
      do imn = 1, NBmn
-        read(runit,*) Bmnin(imn), Bmnim(imn), wBmn(imn), tBmn(imn)
+        read(runit,*) Bmnin(imn), Bmnim(imn),tBmnc(imn), tBmns(imn), wBmn(imn)
      enddo
   endif
 
   IlBCAST( Bmnin, NBmn, 0 )
   IlBCAST( Bmnim, NBmn, 0 )
   RlBCAST( wBmn , NBmn, 0 )
-  RlBCAST( tBmn , NBmn, 0 )
+  RlBCAST( tBmnc, NBmn, 0 )
+  RlBCAST( tBmns, NBmn, 0 )
 
   if( myid == 0 .and. IsQuiet <= 0) then
      write(ounit, *) "-----------Reading Bn harmonics weights and targets---------------------------"
      write(ounit, '("readbmn : NBmn = "I6)') NBmn
      if (IsQuiet <= -2) then
         do imn=1, NBmn
-            write(ounit, '("readbmn : n = " I3 " ; m = " I3 " ; w_mn = "ES12.5" ; tBmn = "ES12.5)'), &
-                 Bmnin(imn), Bmnim(imn), wBmn(imn), tBmn(imn)
+            write(ounit, '("readbmn : n = " I3 " ; m = " I3 " ; tBmnc = "ES12.5 " ; tBmns = "ES12.5 &
+              & " ; w_mn = "ES12.5)') Bmnin(imn), Bmnim(imn), tBmnc(imn),tBmns(imn), wBmn(imn)
          enddo
       endif
       close(runit)
@@ -186,7 +188,7 @@ SUBROUTINE writeBmn
   ! allocate trig functions;
   !----------------------------------------------------------------------------------------
   use globals, only: zero, half, pi2, myid, ounit, wunit, ext, IsQuiet, Nteta, Nzeta,  &
-                     Bmn, NBmn, Bmnin, Bmnim, wBmn, tBmn, carg, sarg
+                     Bmnc, Bmns, NBmn, Bmnin, Bmnim, wBmn
   implicit none
   include "mpif.h"
 
@@ -200,9 +202,9 @@ SUBROUTINE writeBmn
      write(wunit,*) "#NBmn"! comment line;
      write(wunit,*) NBmn !write dimensions
 
-     write(wunit,*) "# n  m  wBmn  Bmn"! comment line;
+     write(wunit,*) "# n  m   Bmnc  Bmns  wBmn"! comment line;
      do imn = 1, NBmn
-        write(wunit,*) Bmnin(imn), Bmnim(imn), wBmn(imn), Bmn(imn)
+        write(wunit,*) Bmnin(imn), Bmnim(imn), Bmnc(imn), Bmns(imn), wBmn(imn)
      enddo
      close(wunit)
   endif
