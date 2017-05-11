@@ -458,56 +458,58 @@ subroutine SVD
   enddo
 
   ab = a
-  !write(ounit,'("SVD     : "10X" : "4ES23.15)') a(1,2), a(2,1), t2E(1,0,1,1), t2E(1,1,1,0)
-
-  ! get optimal work dimension
-  lwork = -1
-  call DGESVD('A','A', n, n, a, lda, s, u, ldu, vt, ldvt, dummy, lwork, info)
-  lwork = max(5*n, nint(dummy(1,1)))
-  SALLOCATE(work, (lwork), zero)
-
-  call DGESVD('A','A', n, n, a, lda, s, u, ldu, vt, ldvt, work , lwork, info)
-
-  write(ounit, '("SVD     : "10X" : INFO = "I4" ; min(abs(s))="es23.15" ;")') info, minval(abs(s)) 
-
-  isingular = 0
-  do i = 1, n
-     if (s(i) .ge. machprec) isingular = isingular + 1
-  enddo
-
-  write(ounit, '("SVD     : "10X" : Rank = " I6" ; Max = "ES23.15" ; Min = "ES23.15)') isingular, s(1), s(n)
-
-  a = ab
-  ! calculate eigenvalues and eigenvectors
-  lwork = -1; deallocate(work)
-  call F08FAF('V','U', n, a, lda, w,dummy(1,1),lwork,info)
-  lwork = max(3*n-1,nint(dummy(1,1)))
-  Allocate (work(lwork))
-  call F08FAF('V','U', n, a, lda, w,work,lwork,info)
-
-  write(ounit, '("Eigen   : "10X" : INFO = "I4" ; min(w)="es23.15" ; max(w)="es23.15" ;")') info, minval(w), maxval(w)
-  ieigen = 0 ; neigen = 0
-  do i = 1, n
-     if (w(i) .ge. machprec) then 
-        neigen = neigen + 1
-     else
-        ieigen = i
-        write(ounit, '("Eigen   : "10X" : Find a negtivie eigenvalues at " I6)') ieigen
-     endif        
-  enddo
-  write(ounit, '("Eigen   : "10X" : number of positive eigenvalues = "I6)') neigen
-
-  !test
-  b(1:n) = matmul(ab(1:n,1:n), a(1:n,ieigen)) - w(ieigen) * a(1:n,ieigen)
-  write(ounit, '("Eigen   : "10X" : The square summation of the vector is"ES23.15)') sum(b(1:n)**2)
-
-  step = 1.0E-4; nstep = 100  !evolution stepsize
-  call coilevl( a(1:n,ieigen), step, nstep )  !array for the direction; step for the stepsize  
-  write(ounit, '("Eigen   : "10X" : Writing coils evolution finished")')
-  
-  ! call inverse procedure
-  call matrinv(ab(1:n,1:n), inver(1:n,1:n), n, ifail)
-  FATAL(SVD     , ifail .ne. 0, inversing error)
+!!$  !write(ounit,'("SVD     : "10X" : "4ES23.15)') a(1,2), a(2,1), t2E(1,0,1,1), t2E(1,1,1,0)
+!!$
+!!$  ! get optimal work dimension
+!!$  lwork = -1
+!!$  call DGESVD('A','A', n, n, a, lda, s, u, ldu, vt, ldvt, dummy, lwork, info)
+!!$  lwork = max(5*n, nint(dummy(1,1)))
+!!$  SALLOCATE(work, (lwork), zero)
+!!$
+!!$  call DGESVD('A','A', n, n, a, lda, s, u, ldu, vt, ldvt, work , lwork, info)
+!!$
+!!$  write(ounit, '("SVD     : "10X" : INFO = "I4" ; min(abs(s))="es23.15" ;")') info, minval(abs(s)) 
+!!$
+!!$  isingular = 0
+!!$  do i = 1, n
+!!$     if (s(i) .ge. machprec) isingular = isingular + 1
+!!$  enddo
+!!$
+!!$  write(ounit, '("SVD     : "10X" : Rank = " I6" ; Max = "ES23.15" ; Min = "ES23.15)') isingular, s(1), s(n)
+!!$
+!!$  a = ab
+!!$  ! calculate eigenvalues and eigenvectors
+!!$  lwork = -1; deallocate(work)
+!!$  call F08FAF('V','U', n, a, lda, w,dummy(1,1),lwork,info)
+!!$  lwork = max(3*n-1,nint(dummy(1,1)))
+!!$  Allocate (work(lwork))
+!!$  call F08FAF('V','U', n, a, lda, w,work,lwork,info)
+!!$
+!!$  write(ounit, '("Eigen   : "10X" : INFO = "I4" ; min(w)="es23.15" ; max(w)="es23.15" ;")') info, minval(w), maxval(w)
+!!$  ieigen = 0 ; neigen = 0
+!!$  do i = 1, n
+!!$     if (w(i) .ge. machprec) then 
+!!$        neigen = neigen + 1
+!!$     else
+!!$        ieigen = i
+!!$        write(ounit, '("Eigen   : "10X" : Find a negtivie eigenvalues at " I6)') ieigen
+!!$     endif        
+!!$  enddo
+!!$  write(ounit, '("Eigen   : "10X" : number of positive eigenvalues = "I6)') neigen
+!!$
+!!$  !test
+!!$  !b(1:n) = matmul(ab(1:n,1:n), a(1:n,ieigen)) - w(ieigen) * a(1:n,ieigen)
+!!$  !write(ounit, '("Eigen   : "10X" : The square summation of the vector is"ES23.15)') sum(b(1:n)**2)
+!!$
+!!$  write(ounit, '("Eigen   : "10X" : The 24-th eigenvalue is"ES23.15)') w(24)
+!!$  write(ounit, '("Eigen   : "10X" : The  N-th eigenvalue is"ES23.15)') w(n)
+!!$  step = 1.0E-4; nstep = 100  !evolution stepsize
+!!$  call coilevl( a(1:n,n), step, nstep )  !array for the direction; step for the stepsize  
+!!$  write(ounit, '("Eigen   : "10X" : Writing coils evolution finished")')
+!!$  
+!!$  ! call inverse procedure
+!!$  !call matrinv(ab(1:n,1:n), inver(1:n,1:n), n, ifail)
+!!$  !FATAL(SVD     , ifail .ne. 0, inversing error)
 
   call h5open_f( hdfier ) ! initialize Fortran interface;
   FATAL( SVD    , hdfier.ne.0, error calling h5open_f )
@@ -599,7 +601,7 @@ subroutine coilevl( dir, stepsize, nstep )
 
   call wrtdir(dir)
   call pack(xdof(1:Ndof))
-  irestart = 0; call restart(irestart)
+  irestart = 1; call restart(irestart)
   do istep = 0, nstep
      xdof = xdof + stepsize*istep*dir
      call unpack(xdof(1:Ndof))

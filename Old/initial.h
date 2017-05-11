@@ -94,7 +94,7 @@ subroutine initial
   RlBCAST( odetol        ,    1,  0 )
   IlBCAST( Ppts          ,    1,  0 )
   IlBCAST( Ptrj          ,    1,  0 )
-  RlBCAST( phi           ,    1,  0 )
+  IlBCAST( iphi          ,    1,  0 )
   RlBCAST( bstol         ,    1,  0 )
   IlBCAST( bsnlimit      ,    1,  0 )
 #ifdef FASHION
@@ -127,7 +127,7 @@ subroutine initial
       endif
       
      if( Lpoincare   .eq. 0 ) write(ounit,0109) Lpoincare
-     if( Lpoincare   .ne. 0 ) write(ounit,0110) Lpoincare, odetol, Ppts, Ptrj, phi, bstol, bsnlimit
+     if( Lpoincare   .ne. 0 ) write(ounit,0110) Lpoincare, odetol, Ppts, Ptrj, iphi, bstol, bsnlimit
 
   endif
 
@@ -145,7 +145,7 @@ subroutine initial
 0108 format( 36X                               " ; weight_ttlen = "es12.5" ; weight_eqarc ="es12.5" ; weight_ccsep ="es12.5)
 
 0109 format("initial : " 10x " : Lpoincare ="i2" ;")
-0110 format("initial : " 10x " : Lpoincare ="i2" ; odetol ="es8.1" ; Ppts ="i6" ; Ptrj ="i4" ; phi ="f7.3" ; bstol ="es8.1" ; bsnlimit ="i9" ;")
+0110 format("initial : " 10x " : Lpoincare ="i2" ; odetol ="es8.1" ; Ppts ="i6" ; Ptrj ="i4" ; iphi ="i4" ; bstol ="es8.1" ; bsnlimit ="i9" ;")
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -252,11 +252,12 @@ subroutine initial
   FATAL( initial, lc .eq. 0 .and. weight_ttlen .ne. zero, conflicts between lc and weight_ttlen)
 
   if( Lpoincare.ne.0 ) then
-   FATAL( initial, odetol   .le.zero, illegal )
-   FATAL( initial, Ppts     .lt.0   , illegal )
-   FATAL( initial, Ptrj     .lt.0   , illegal )
-   FATAL( initial, bstol    .le.zero, illegal )
-   FATAL( initial, bsnlimit .le.   0, illegal )
+   FATAL( initial, odetol   .le.zero  , illegal )
+   FATAL( initial, Ppts     .lt.0     , illegal )
+   FATAL( initial, Ptrj     .lt.0     , illegal )
+   FATAL( initial, bstol    .le.zero  , illegal )
+   FATAL( initial, bsnlimit .le.   0  , illegal )
+   FATAL( initial, iphi     .gt. Nzeta, illegal )
   endif
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!

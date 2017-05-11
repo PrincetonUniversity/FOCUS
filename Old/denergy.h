@@ -656,7 +656,7 @@ end subroutine dlength
 
 subroutine costfun(nderiv)
   use kmodule, only: zero, sqrtmachprec, myid, ounit, Idisplay, iter, Loptimize, &
-       Ncoils, NFcoil, Cdof, deriv, Ndof, lc, &
+       Ncoils, NFcoil, Cdof, deriv, Ndof, lc, Inorm, Gnorm, &
        totalenergy, t1E, t2E, &
        bnorm      , t1B, t2B, weight_bnorm,  &
        tflux      , t1F, t2F, weight_tflux, target_tflux, isign, &
@@ -669,7 +669,7 @@ subroutine costfun(nderiv)
 
   INTEGER      :: nderiv
 
-  INTEGER      :: astat, ierr, ii, icl, inf
+  INTEGER      :: astat, ierr, ii, icl, inf, icoil, jcoil
 
   REAL         :: start, finish
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -805,6 +805,24 @@ subroutine costfun(nderiv)
    endif
 
   endif
+  
+  ! normalization
+  if (nderiv .eq. 1) then
+     do icoil = 1, Ncoils
+        t1E(icoil, 0) = t1E(icoil, 0)*Inorm
+        t1E(icoil, 1:Cdof) = t1E(icoil, 1:Cdof)*Gnorm
+     enddo
+  else if (nderiv .eq. 2) then
+     do icoil = 1, Ncoils
+        do jcoil = 1, Ncoils
+           t2E(icoil,      0, jcoil,      0) = t2E(icoil,      0, jcoil,      0)*Inorm*Inorm
+           t2E(icoil,      0, jcoil, 1:Cdof) = t2E(icoil,      0, jcoil, 1:Cdof)*Inorm*Gnorm
+           t2E(icoil, 1:Cdof, jcoil,      0) = t2E(icoil, 1:Cdof, jcoil,      0)*Gnorm*Inorm
+           t2E(icoil, 1:Cdof, jcoil, 1:Cdof) = t2E(icoil, 1:Cdof, jcoil, 1:Cdof)*Gnorm*Gnorm
+        enddo
+     enddo
+  endif
+  
 
   if(allocated(deriv)) then
      deriv = zero
@@ -832,7 +850,7 @@ subroutine costfun(nderiv)
   if( allocated(t2C) ) deallocate(t2C)
 
   FATAL( denergy, iter.gt.100000, too many iterations )
- !if(iter .ge. 1E5) call MPI_ABORT( MPI_COMM_WORLD, 10, ierr )
+  !if(iter .ge. 1E5) call MPI_ABORT( MPI_COMM_WORLD, 10, ierr )
 
   return
 end subroutine costfun

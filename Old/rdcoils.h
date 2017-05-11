@@ -28,15 +28,15 @@ subroutine rdcoils
        NFcoil, NDcoil, Ncoils, Ndof, coil, cmt, smt, itime, Ntauout, Tdof, &
        Linitialize, Itopology, Rmaj, rmin, Ic, Io, Iw, Lc, Lo, Lw, Nfixcur, Nfixgeo,&
        coilspace, ext, coilsX, coilsY, coilsZ, coilsI, Nseg, bsconstant,antibscont, &
-       Loptimize, weight_eqarc, deriv
+       Loptimize, weight_eqarc, deriv, norm, Inorm, Gnorm
 #endif
   implicit none
 
   include "mpif.h"
 
   LOGICAL   :: exist
-  INTEGER   :: ierr, astat, ii, icoil, mm, jj, ifail, maxnseg
-  REAL      :: zeta, tt, totalcurrent, r1, r2, z1, z2
+  INTEGER   :: ierr, astat, ii, icoil, mm, jj, ifail, maxnseg, idof
+  REAL      :: zeta, tt, totalcurrent, r1, r2, z1, z2, z0
   REAL      :: ax(1:3), at(1:3), az(1:3), xx(1:3), xt(1:3), xz(1:3) !for knotatron;
   CHARACTER :: suffix*3, coilsfile*40
 
@@ -178,9 +178,6 @@ subroutine rdcoils
 #else
    allocate( coil(1:Ncoils) )
 #endif
-
-   bsconstant = 1.0E-7 * coilsI(1)  ! scale currents;
-   antibscont = 1.0E-7 / bsconstant
 
    icoil = 0
    do icoil = 1, Ncoils
@@ -423,6 +420,7 @@ subroutine rdcoils
     call surfcoord(   pi, zeta, r2, z2)
        
     Rmaj = half * (r1 + r2)
+    z0   = half * (z1 + z2)
        
 ! shudson's representation;
 
@@ -439,8 +437,15 @@ subroutine rdcoils
     coil(icoil)%xs(0:1) = (/ 0.0             , 0.0              /)
     coil(icoil)%yc(0:1) = (/ Rmaj * sin(zeta), rmin * sin(zeta) /)
     coil(icoil)%ys(0:1) = (/ 0.0             , 0.0              /)
-    coil(icoil)%zc(0:1) = (/ 0.0             , 0.0              /)
-    coil(icoil)%zs(0:1) = (/ 0.0             , -rmin            /)
+    coil(icoil)%zc(0:1) = (/ z0              , 0.0              /)
+    coil(icoil)%zs(0:1) = (/ 0.0             , rmin             /)
+!!$
+!!$    coil(icoil)%xc(0:1) = (/ Rmaj * cos(zeta), sqrt(2.0)/2 * rmin * cos(zeta) /)
+!!$    coil(icoil)%xs(0:1) = (/ 0.0             ,-sqrt(2.0)/2 * rmin * cos(zeta) /)
+!!$    coil(icoil)%yc(0:1) = (/ Rmaj * sin(zeta), sqrt(2.0)/2 * rmin * sin(zeta) /)
+!!$    coil(icoil)%ys(0:1) = (/ 0.0             ,-sqrt(2.0)/2 * rmin * sin(zeta) /)
+!!$    coil(icoil)%zc(0:1) = (/ z0              , sqrt(2.0)/2 * rmin             /)
+!!$    coil(icoil)%zs(0:1) = (/ 0.0             , sqrt(2.0)/2 * rmin             /)
 
     SALLOCATE( coil(icoil)%xx, (0:coil(icoil)%D), zero )
     SALLOCATE( coil(icoil)%yy, (0:coil(icoil)%D), zero )
@@ -540,6 +545,47 @@ subroutine rdcoils
      SALLOCATE( coil(icoil)%lmdc, (0:NFcoil), one )
      SALLOCATE( coil(icoil)%lmds, (0:NFcoil), one )   ! initialized as one; 07/26/2016
   enddo
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+  SALLOCATE(   norm, (1:Ndof)        , zero )  !allocate normalization vector; 20170510;
+
+  totalcurrent = zero
+  do icoil = 1, Ncoils
+     totalcurrent = totalcurrent + abs(coil(icoil)%I)
+  enddo
+  Inorm = totalcurrent/Ncoils !mean of abs values;
+
+  zeta = zero
+  call surfcoord( zero, zeta, r1, z1)
+  call surfcoord(   pi, zeta, r2, z2)       
+  Gnorm = half * (r1 + r2) ! something like the major radius;
+
+  idof = 0
+  do icoil = 1, Ncoils
+     
+     if(coil(icoil)%Ic.ne. 0) then 
+        idof = idof + 1 ; norm(idof) = Inorm
+     endif
+
+     if(coil(icoil)%Lc.ne. 0) then  
+        idof = idof + 1 ; norm(idof) = Gnorm
+        idof = idof + 1 ; norm(idof) = Gnorm
+        idof = idof + 1 ; norm(idof) = Gnorm
+      do mm = 1, NFcoil 
+        idof = idof + 1 ; norm(idof) = Gnorm
+        idof = idof + 1 ; norm(idof) = Gnorm
+        idof = idof + 1 ; norm(idof) = Gnorm
+        idof = idof + 1 ; norm(idof) = Gnorm
+        idof = idof + 1 ; norm(idof) = Gnorm
+        idof = idof + 1 ; norm(idof) = Gnorm
+      enddo
+     endif
+
+  enddo
+  FATAL( rdcoils , idof .ne. Ndof, counting error in packing )
+
+  if( myid.eq.0 ) write( ounit,'("rdcoils : "10x" : currents are normalized by " ES23.15 " ; and geometry by "ES23.15 " .")') Inorm, Gnorm
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
@@ -811,7 +857,7 @@ end subroutine discretecoil
 
 subroutine pack( xdof )
 
-  use kmodule, only : NFcoil, Ncoils, coil, Ndof, myid
+  use kmodule, only : NFcoil, Ncoils, coil, Ndof, myid, norm
   implicit none
   include "mpif.h"
 
@@ -824,26 +870,27 @@ subroutine pack( xdof )
   do icoil = 1, Ncoils
      
      if(coil(icoil)%Ic.ne. 0) then 
-        idof = idof + 1 ; xdof(idof) = coil(icoil)%I
+        idof = idof + 1 ; xdof(idof) = coil(icoil)%I      / norm(idof)
      endif
 
      if(coil(icoil)%Lc.ne. 0) then  
-        idof = idof + 1 ; xdof(idof) = coil(icoil)%xc( 0)
-        idof = idof + 1 ; xdof(idof) = coil(icoil)%yc( 0)
-        idof = idof + 1 ; xdof(idof) = coil(icoil)%zc( 0)
+        idof = idof + 1 ; xdof(idof) = coil(icoil)%xc( 0) / norm(idof)
+        idof = idof + 1 ; xdof(idof) = coil(icoil)%yc( 0) / norm(idof)
+        idof = idof + 1 ; xdof(idof) = coil(icoil)%zc( 0) / norm(idof)
       do mm = 1, NFcoil 
-        idof = idof + 1 ; xdof(idof) = coil(icoil)%xc(mm)
-        idof = idof + 1 ; xdof(idof) = coil(icoil)%yc(mm)
-        idof = idof + 1 ; xdof(idof) = coil(icoil)%zc(mm)
-        idof = idof + 1 ; xdof(idof) = coil(icoil)%xs(mm)
-        idof = idof + 1 ; xdof(idof) = coil(icoil)%ys(mm)
-        idof = idof + 1 ; xdof(idof) = coil(icoil)%zs(mm)
+        idof = idof + 1 ; xdof(idof) = coil(icoil)%xc(mm) / norm(idof)
+        idof = idof + 1 ; xdof(idof) = coil(icoil)%yc(mm) / norm(idof)
+        idof = idof + 1 ; xdof(idof) = coil(icoil)%zc(mm) / norm(idof)
+        idof = idof + 1 ; xdof(idof) = coil(icoil)%xs(mm) / norm(idof)
+        idof = idof + 1 ; xdof(idof) = coil(icoil)%ys(mm) / norm(idof)
+        idof = idof + 1 ; xdof(idof) = coil(icoil)%zs(mm) / norm(idof)
       enddo
      endif
 
   enddo
 
   FATAL( pack , idof .ne. Ndof, counting error in packing )
+
   return
 
 end subroutine pack
@@ -852,7 +899,7 @@ end subroutine pack
 
 subroutine unpack( xdof )
 
-  use kmodule, only : NFcoil, Ncoils, coil, Ndof, myid, zero
+  use kmodule, only : NFcoil, Ncoils, coil, Ndof, myid, zero, norm
   implicit none
   include "mpif.h"
 
@@ -866,23 +913,23 @@ subroutine unpack( xdof )
   do icoil = 1, Ncoils
 
      if(coil(icoil)%Ic.ne. 0) then
-        idof = idof + 1 ; coil(icoil)%I      = xdof(idof)
+        idof = idof + 1 ; coil(icoil)%I      = xdof(idof) * norm(idof)
      endif
 
      if(coil(icoil)%Lc.ne. 0) then
-        idof = idof + 1 ; coil(icoil)%xc( 0) = xdof(idof)
+        idof = idof + 1 ; coil(icoil)%xc( 0) = xdof(idof) * norm(idof)
                         ; coil(icoil)%xs( 0) = zero
-        idof = idof + 1 ; coil(icoil)%yc( 0) = xdof(idof)
+        idof = idof + 1 ; coil(icoil)%yc( 0) = xdof(idof) * norm(idof)
                         ; coil(icoil)%ys( 0) = zero
-        idof = idof + 1 ; coil(icoil)%zc( 0) = xdof(idof)
+        idof = idof + 1 ; coil(icoil)%zc( 0) = xdof(idof) * norm(idof)
                         ; coil(icoil)%zs( 0) = zero        
       do mm = 1, NFcoil
-        idof = idof + 1 ; coil(icoil)%xc(mm) = xdof(idof)
-        idof = idof + 1 ; coil(icoil)%yc(mm) = xdof(idof)
-        idof = idof + 1 ; coil(icoil)%zc(mm) = xdof(idof)
-        idof = idof + 1 ; coil(icoil)%xs(mm) = xdof(idof)
-        idof = idof + 1 ; coil(icoil)%ys(mm) = xdof(idof)
-        idof = idof + 1 ; coil(icoil)%zs(mm) = xdof(idof)
+        idof = idof + 1 ; coil(icoil)%xc(mm) = xdof(idof) * norm(idof)
+        idof = idof + 1 ; coil(icoil)%yc(mm) = xdof(idof) * norm(idof)
+        idof = idof + 1 ; coil(icoil)%zc(mm) = xdof(idof) * norm(idof)
+        idof = idof + 1 ; coil(icoil)%xs(mm) = xdof(idof) * norm(idof)
+        idof = idof + 1 ; coil(icoil)%ys(mm) = xdof(idof) * norm(idof)
+        idof = idof + 1 ; coil(icoil)%zs(mm) = xdof(idof) * norm(idof)
       enddo
      endif
 

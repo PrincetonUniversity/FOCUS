@@ -48,8 +48,8 @@ module kmodule
   
   REAL, parameter      :: pi         =  3.141592653589793238462643383279502884197
   REAL, parameter      :: pi2        =  pi * two
-  REAL                 :: bsconstant =  1.0!E-7 ! mu0/4pi
-  REAL                 :: antibscont =  1.0E-7
+  REAL, parameter      :: bsconstant =  1.0E-7 ! mu0/4pi
+  REAL, parameter      :: antibscont =  1.0!E-7
   REAL, parameter      :: mu0        =  2.0E-07 * pi2
   REAL, parameter      :: goldenmean =  1.618033988749895 ! golden mean = ( one + sqrt(five) ) / two ;    
   
@@ -116,7 +116,8 @@ module kmodule
   REAL                 :: odetol      =        1.000D-10 !latex \item \inputvar{odetol      =        1.000D-10} : \Poincare plot, \link{pp00aa};
   INTEGER              :: Ppts        =      100         !latex \item \inputvar{Ppts        =      100        } : \Poincare plot, \link{pp00aa};
   INTEGER              :: Ptrj        =        8         !latex \item \inputvar{Ptrj        =        8        } : \Poincare plot, \link{pp00aa};
-  REAL                 :: phi         =        0.000D-00 !latex \item \inputvar{phi         =        0.000D-00} : \Poincare plot, \link{pp00aa};
+  REAL                 ::  phi        =        0.0       !latex \item \inputvar{ phi        =        0.0      } : REDUNDANT;
+  INTEGER              :: iphi        =        0         !latex \item \inputvar{iphi        =        0        } : \Poincare plot,
   REAL                 :: bstol       =        1.000D-06 !latex \item \inputvar{bstol       =        1.000D-06} : 
                                                          !latex       tolerance in Biot-Savart integral; passed to \oculus{bs00aa};
   INTEGER              :: bsnlimit    =   100000         !latex \item \inputvar{bsnlimit    =   100000        } : 
@@ -171,7 +172,8 @@ module kmodule
                          odetol                        , &
                          Ppts                          , &
                          Ptrj                          , &
-                         phi                           , &
+                         phi                           , & ! redundant; 27 Apr 17;
+                         iphi                          , &
                          bstol                         , &
                          bsnlimit                      
 #else
@@ -217,7 +219,8 @@ module kmodule
                          odetol                        , &
                          Ppts                          , &
                          Ptrj                          , &
-                         phi                           , &
+                         phi                           , & ! redundant; 27 Apr 17;
+                         iphi                          , &
                          bstol                         , &
                          bsnlimit  
 #endif
@@ -247,7 +250,7 @@ module kmodule
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   INTEGER              :: Ncoils, itime, iteta, jzeta, nrestart, itau, Cdof, Ndof, Tdof, Ndim, iter, nfixcur, nfixgeo
-  REAL                 :: totalenergy, discretefactor
+  REAL                 :: totalenergy, discretefactor, Inorm, Gnorm
   LOGICAL              :: Langrange = .false.           ! flag for whether including langrange multipiler in DoFs; 08/17/2016
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -258,7 +261,7 @@ module kmodule
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-  REAL   , allocatable :: cmt(:,:), smt(:,:), shudson(:), newton(:)
+  REAL   , allocatable :: cmt(:,:), smt(:,:), shudson(:), newton(:), norm(:)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -277,7 +280,7 @@ module kmodule
   type toroidalsurface
      INTEGER              :: Nteta, Nzeta
      REAL   , allocatable :: xx(:,:), yy(:,:), zz(:,:), nx(:,:), ny(:,:), nz(:,:), ds(:,:), xt(:,:), yt(:,:), zt(:,:), bnt(:,:)
-     REAL   , allocatable :: rx(:), ry(:), rz(:)
+     REAL   , allocatable :: rr(:), rz(:)
   end type toroidalsurface
 
   type(arbitrarycoil)  , allocatable :: coil(:)  

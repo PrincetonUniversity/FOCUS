@@ -16,15 +16,15 @@
 subroutine testderivs1
 
   use kmodule, only: zero, half, machprec, coil, Ncoils, Cdof, NFcoil, Ndof, t1E, totalenergy, ncpu, myid, ounit, mincc, &
-                     weight_eqarc, n1E
+                     weight_eqarc, n1E, Inorm, Gnorm
                      
   implicit none
   include "mpif.h"
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  INTEGER         :: icoil, ifd, idof, iteta, jzeta, jcoil, astat, ierr
-  REAL            :: tmpE(-1:1), diff, rdiff, xdof(Ndof), start, finish, Ax(0:Cdof), Ay(0:Cdof), Az(0:Cdof), lx, ly, lz
-  REAL, parameter :: fd = 1.0E-4
+  INTEGER         :: icoil, ifd, idof, iteta, jzeta, jcoil, astat, ierr, infou
+  REAL            :: tmpE(-1:1), diff, rdiff, xdof(Ndof), bdof(1:Ndof), start, finish, Ax(0:Cdof), Ay(0:Cdof), Az(0:Cdof), lx, ly, lz
+  REAL, parameter :: fd = 1.0E-6
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!  
   if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : Checking the first derivatives using finite-difference method")')
@@ -171,19 +171,22 @@ subroutine testderivs1
   call cpu_time(finish)
   if(myid .eq. 0) write(ounit,'("fdcheck : " 10X " : First order derivatives of energy function takes " ES23.15 " seconds.")') finish - start
 
-  call pack( xdof )  !back up the current coils data
+  call pack( bdof )  !back up the current coils data
   
-  if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : coil# : dof : dof# :   numerical value"6X" :   fd-method value"6X" :   difference"11X" :   reletive diff")')
-  
-  do icoil = 1, Ncoils
+  if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : coil# : Fourier# :      numerical value"3X" :   fd-method value"6X" :   difference"11X" :   reletive diff")')
 
-!-------current-----------------
+  do idof = 1, Ndof
+
      do ifd = -1, 1, 2
-        call unpack ( xdof ); coil(icoil)%I = coil(icoil)%I + half * fd * ifd
-        call costfun(0)     ; tmpE(ifd)     = totalenergy
+        xdof = bdof
+        xdof(idof) = xdof(idof) + half * fd * ifd
+        call unpack ( xdof )
+        call costfun(0)
+        tmpE(ifd) = totalenergy
      enddo ! end do ifd
-      
-     tmpE(0) = t1E(icoil,0) ; diff = tmpE(0)- (tmpE(1) - tmpE(-1)) / fd
+
+     call DoFconvert(idof, icoil, infou)
+     tmpE(0) = t1E(icoil,infou) ; diff = tmpE(0)- (tmpE(1) - tmpE(-1)) / fd
 
      if( abs(tmpE(0)) .lt. machprec ) then
          rdiff = 0
@@ -191,128 +194,149 @@ subroutine testderivs1
          rdiff = diff / tmpE(0)
      endif
      
-     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "4X,4(" : "ES23.15))') &
-                           icoil, 'I', tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
-        
-!-------X_COS-----------------
-     do idof = 0, NFcoil
-        do ifd = -1, 1, 2
-           call unpack ( xdof ); coil(icoil)%xc(idof) = coil(icoil)%xc(idof) + half * fd * ifd
-           call costfun(0)     ; tmpE(ifd)            = totalenergy
-        enddo ! end do ifd
-
-     tmpE(0) = t1E(icoil,idof+1); diff = tmpE(0) - (tmpE(1) - tmpE(-1)) / fd
-
-     if( abs(tmpE(0)) .lt. machprec ) then
-         rdiff = 0
-     else
-         rdiff = diff / tmpE(0)
-     endif
-     
-     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "i4,4(" : "ES23.15))') &
-                           icoil, 'XC', idof, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
-
-     enddo
-!-------X_SIN-----------------
-     do idof = 0, NFcoil
-        do ifd = -1, 1, 2
-           call unpack ( xdof ); coil(icoil)%xs(idof) = coil(icoil)%xs(idof) + half * fd * ifd
-           call costfun(0)     ; tmpE(ifd)            = totalenergy
-        enddo ! end do ifd
-
-     tmpE(0) = t1E(icoil,idof+NFcoil+2); diff = tmpE(0) - (tmpE(1) - tmpE(-1)) / fd
-
-     if( abs(tmpE(0)) .lt. machprec ) then
-         rdiff = 0
-     else
-         rdiff = diff / tmpE(0)
-     endif
-     
-     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "i4,4(" : "ES23.15))') &
-                           icoil, 'XS', idof, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
-
-     enddo
-
-!-------Y_COS-----------------
-     do idof = 0, NFcoil
-        do ifd = -1, 1, 2
-           call unpack ( xdof ); coil(icoil)%yc(idof) = coil(icoil)%yc(idof) + half * fd * ifd
-           call costfun(0)     ; tmpE(ifd)            = totalenergy
-        enddo ! end do ifd
-
-     tmpE(0) = t1E(icoil,idof+2*NFcoil+3); diff = tmpE(0) - (tmpE(1) - tmpE(-1)) / fd
-
-     if( abs(tmpE(0)) .lt. machprec ) then
-         rdiff = 0
-     else
-         rdiff = diff / tmpE(0)
-     endif
-     
-     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "i4,4(" : "ES23.15))') &
-                           icoil, 'YC', idof, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
-
-     enddo
-
-!-------Y_SIN-----------------
-     do idof = 0, NFcoil
-        do ifd = -1, 1, 2
-           call unpack ( xdof ); coil(icoil)%ys(idof) = coil(icoil)%ys(idof) + half * fd * ifd
-           call costfun(0)     ; tmpE(ifd)            = totalenergy
-        enddo ! end do ifd
-
-     tmpE(0) = t1E(icoil,idof+3*NFcoil+4); diff = tmpE(0) - (tmpE(1) - tmpE(-1)) / fd
-
-     if( abs(tmpE(0)) .lt. machprec ) then
-         rdiff = 0
-     else
-         rdiff = diff / tmpE(0)
-     endif
-     
-     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "i4,4(" : "ES23.15))') &
-                           icoil, 'YS', idof, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
-
-     enddo
-
-!-------Z_COS-----------------
-     do idof = 0, NFcoil
-        do ifd = -1, 1, 2
-           call unpack ( xdof ); coil(icoil)%zc(idof) = coil(icoil)%zc(idof) + half * fd * ifd
-           call costfun(0)     ; tmpE(ifd)            = totalenergy
-        enddo ! end do ifd
-
-     tmpE(0) = t1E(icoil,idof+4*NFcoil+5); diff = tmpE(0) - (tmpE(1) - tmpE(-1)) / fd
-
-     if( abs(tmpE(0)) .lt. machprec ) then
-         rdiff = 0
-     else
-         rdiff = diff / tmpE(0)
-     endif
-     
-     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "i4,4(" : "ES23.15))') &
-                           icoil, 'ZC', idof, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
-
-     enddo
-!-------Z_SIN-----------------
-     do idof = 0, NFcoil
-        do ifd = -1, 1, 2
-           call unpack ( xdof ); coil(icoil)%zs(idof) = coil(icoil)%zs(idof) + half * fd * ifd
-           call costfun(0)     ; tmpE(ifd)            = totalenergy
-        enddo ! end do ifd
-
-     tmpE(0) = t1E(icoil,idof+5*NFcoil+6); diff = tmpE(0) - (tmpE(1) - tmpE(-1)) / fd
-
-     if( abs(tmpE(0)) .lt. machprec ) then
-         rdiff = 0
-     else
-         rdiff = diff / tmpE(0)
-     endif
-     
-     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "i4,4(" : "ES23.15))') &
-                           icoil, 'ZS', idof, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
-
-     enddo
+     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "I8, 4(" : "ES23.15))') &
+                           icoil, infou, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
+  enddo
+ 
   
-  enddo ! end do icoil
+!!$  do icoil = 1, Ncoils
+!!$
+!!$!-------current-----------------
+!!$     do ifd = -1, 1, 2
+!!$        call unpack ( xdof ); coil(icoil)%I = coil(icoil)%I + half * fd * ifd
+!!$        call costfun(0)     ; tmpE(ifd)     = totalenergy
+!!$     enddo ! end do ifd
+!!$      
+!!$     tmpE(0) = t1E(icoil,0) ; diff = tmpE(0)- (tmpE(1) - tmpE(-1)) / fd
+!!$
+!!$     if( abs(tmpE(0)) .lt. machprec ) then
+!!$         rdiff = 0
+!!$     else
+!!$         rdiff = diff / tmpE(0)
+!!$     endif
+!!$     
+!!$     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "4X,4(" : "ES23.15))') &
+!!$                           icoil, 'I', tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
+!!$        
+!!$!-------X_COS-----------------
+!!$     do idof = 0, NFcoil
+!!$        do ifd = -1, 1, 2
+!!$           call unpack ( xdof ); coil(icoil)%xc(idof) = coil(icoil)%xc(idof) + half * fd * ifd
+!!$           call costfun(0)     ; tmpE(ifd)            = totalenergy
+!!$        enddo ! end do ifd
+!!$
+!!$     tmpE(0) = t1E(icoil,idof+1); diff = tmpE(0) - (tmpE(1) - tmpE(-1)) / fd
+!!$
+!!$     if( abs(tmpE(0)) .lt. machprec ) then
+!!$         rdiff = 0
+!!$     else
+!!$         rdiff = diff / tmpE(0)
+!!$     endif
+!!$     
+!!$     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "i4,4(" : "ES23.15))') &
+!!$                           icoil, 'XC', idof, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
+!!$
+!!$     enddo
+!!$!-------X_SIN-----------------
+!!$     do idof = 0, NFcoil
+!!$        do ifd = -1, 1, 2
+!!$           call unpack ( xdof ); coil(icoil)%xs(idof) = coil(icoil)%xs(idof) + half * fd * ifd
+!!$           call costfun(0)     ; tmpE(ifd)            = totalenergy
+!!$        enddo ! end do ifd
+!!$
+!!$     tmpE(0) = t1E(icoil,idof+NFcoil+2); diff = tmpE(0) - (tmpE(1) - tmpE(-1)) / fd
+!!$
+!!$     if( abs(tmpE(0)) .lt. machprec ) then
+!!$         rdiff = 0
+!!$     else
+!!$         rdiff = diff / tmpE(0)
+!!$     endif
+!!$     
+!!$     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "i4,4(" : "ES23.15))') &
+!!$                           icoil, 'XS', idof, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
+!!$
+!!$     enddo
+!!$
+!!$!-------Y_COS-----------------
+!!$     do idof = 0, NFcoil
+!!$        do ifd = -1, 1, 2
+!!$           call unpack ( xdof ); coil(icoil)%yc(idof) = coil(icoil)%yc(idof) + half * fd * ifd
+!!$           call costfun(0)     ; tmpE(ifd)            = totalenergy
+!!$        enddo ! end do ifd
+!!$
+!!$     tmpE(0) = t1E(icoil,idof+2*NFcoil+3); diff = tmpE(0) - (tmpE(1) - tmpE(-1)) / fd
+!!$
+!!$     if( abs(tmpE(0)) .lt. machprec ) then
+!!$         rdiff = 0
+!!$     else
+!!$         rdiff = diff / tmpE(0)
+!!$     endif
+!!$     
+!!$     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "i4,4(" : "ES23.15))') &
+!!$                           icoil, 'YC', idof, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
+!!$
+!!$     enddo
+!!$
+!!$!-------Y_SIN-----------------
+!!$     do idof = 0, NFcoil
+!!$        do ifd = -1, 1, 2
+!!$           call unpack ( xdof ); coil(icoil)%ys(idof) = coil(icoil)%ys(idof) + half * fd * ifd
+!!$           call costfun(0)     ; tmpE(ifd)            = totalenergy
+!!$        enddo ! end do ifd
+!!$
+!!$     tmpE(0) = t1E(icoil,idof+3*NFcoil+4); diff = tmpE(0) - (tmpE(1) - tmpE(-1)) / fd
+!!$
+!!$     if( abs(tmpE(0)) .lt. machprec ) then
+!!$         rdiff = 0
+!!$     else
+!!$         rdiff = diff / tmpE(0)
+!!$     endif
+!!$     
+!!$     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "i4,4(" : "ES23.15))') &
+!!$                           icoil, 'YS', idof, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
+!!$
+!!$     enddo
+!!$
+!!$!-------Z_COS-----------------
+!!$     do idof = 0, NFcoil
+!!$        do ifd = -1, 1, 2
+!!$           call unpack ( xdof ); coil(icoil)%zc(idof) = coil(icoil)%zc(idof) + half * fd * ifd
+!!$           call costfun(0)     ; tmpE(ifd)            = totalenergy
+!!$        enddo ! end do ifd
+!!$
+!!$     tmpE(0) = t1E(icoil,idof+4*NFcoil+5); diff = tmpE(0) - (tmpE(1) - tmpE(-1)) / fd
+!!$
+!!$     if( abs(tmpE(0)) .lt. machprec ) then
+!!$         rdiff = 0
+!!$     else
+!!$         rdiff = diff / tmpE(0)
+!!$     endif
+!!$     
+!!$     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "i4,4(" : "ES23.15))') &
+!!$                           icoil, 'ZC', idof, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
+!!$
+!!$     enddo
+!!$!-------Z_SIN-----------------
+!!$     do idof = 0, NFcoil
+!!$        do ifd = -1, 1, 2
+!!$           call unpack ( xdof ); coil(icoil)%zs(idof) = coil(icoil)%zs(idof) + half * fd * ifd
+!!$           call costfun(0)     ; tmpE(ifd)            = totalenergy
+!!$        enddo ! end do ifd
+!!$
+!!$     tmpE(0) = t1E(icoil,idof+5*NFcoil+6); diff = tmpE(0) - (tmpE(1) - tmpE(-1)) / fd
+!!$
+!!$     if( abs(tmpE(0)) .lt. machprec ) then
+!!$         rdiff = 0
+!!$     else
+!!$         rdiff = diff / tmpE(0)
+!!$     endif
+!!$     
+!!$     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "i4,4(" : "ES23.15))') &
+!!$                           icoil, 'ZS', idof, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
+!!$
+!!$     enddo
+!!$  
+!!$  enddo ! end do icoil
 
   if( weight_eqarc .gt. zero ) then
      call ntchdms(1)
@@ -359,7 +383,7 @@ subroutine testderivs1
 
   endif
 
-  call unpack( xdof )  !recover data
+  call unpack( bdof )  !recover data
  
   return
   
@@ -375,10 +399,10 @@ subroutine testderivs2
   include "mpif.h"
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  INTEGER         :: icoil, ifd, idof, jcoil, jdof, iteta, jzeta, astat, ierr
-  REAL            :: tmpE(-1:4), diff, rdiff, xdof(Ndof), start, finish, lbx(0:Cdof,0:Cdof),lby(0:Cdof,0:Cdof),lbz(0:Cdof,0:Cdof), &
+  INTEGER         :: icoil, ifd, idof, jcoil, jdof, iteta, jzeta, astat, ierr, infou
+  REAL            :: tmpE(-1:4), diff, rdiff, xdof(Ndof), bdof(Ndof), start, finish, lbx(0:Cdof,0:Cdof),lby(0:Cdof,0:Cdof),lbz(0:Cdof,0:Cdof), &
                      lbnorm, l1B(1:Ncoils,0:Cdof), l2B(1:Ncoils,0:Cdof,1:Ncoils,0:Cdof), lx(0:Cdof), ly(0:Cdof), lz(0:Cdof), fdvalue
-  REAL, parameter :: fd = 1.0E-4
+  REAL, parameter :: fd = 1.0E-6
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -850,19 +874,22 @@ subroutine testderivs2
   call cpu_time(finish)
   if(myid .eq. 0) write(ounit,'("fdcheck : " 10X " : Second order derivatives of energy function takes " ES23.15 " seconds.")') finish - start
 
-  call pack( xdof )  !back up the current coils data
-  
-  if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : coil# : dof : dof# :   numerical value"6X" :   fd-method value"6X" :   difference"11X" :   reletive diff")')
-  
-  do icoil = 1, Ncoils
+  call pack( bdof )  !back up the current coils data
+  if(myid .eq. 0) write(ounit,'("fdcheck : " 10X " : The 2nd derivatives is over t1E("I3" , "I3 "). ")') jcoil, jdof
+  if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : coil# : Fourier# :      numerical value"3X" :   fd-method value"6X" :   difference"11X" :   reletive diff")')
 
-!-------current-----------------
+  do idof = 1, Ndof
+
      do ifd = -1, 1, 2
-        call unpack ( xdof ); coil(icoil)%I = coil(icoil)%I + half * fd * ifd
-        call costfun(1)     ; tmpE(ifd)     = t1E(jcoil,jdof)
+        xdof = bdof
+        xdof(idof) = xdof(idof) + half * fd * ifd
+        call unpack ( xdof )
+        call costfun(1)
+        tmpE(ifd) = t1E(jcoil,jdof)
      enddo ! end do ifd
-      
-     tmpE(0) = t2E(jcoil,jdof,icoil,0) ; diff = tmpE(0)- (tmpE(1) - tmpE(-1)) / fd
+
+     call DoFconvert(idof, icoil, infou)
+     tmpE(0) = t2E(jcoil, jdof, icoil,infou) ; diff = tmpE(0)- (tmpE(1) - tmpE(-1)) / fd
 
      if( abs(tmpE(0)) .lt. machprec ) then
          rdiff = 0
@@ -870,176 +897,196 @@ subroutine testderivs2
          rdiff = diff / tmpE(0)
      endif
      
-     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "4X,4(" : "ES23.15))') &
-                           icoil, 'I', tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
-        
-!-------X_COS-----------------
-     do idof = 0, NFcoil
-        do ifd = -1, 1, 2
-           call unpack ( xdof ); coil(icoil)%xc(idof) = coil(icoil)%xc(idof) + half * fd * ifd
-           call costfun(1)     ; tmpE(ifd)            = t1E(jcoil,jdof)
-        enddo ! end do ifd
-
-     tmpE(0) = t2E(jcoil,jdof,icoil,idof+1); diff = tmpE(0) - (tmpE(1) - tmpE(-1)) / fd
-
-     if( abs(tmpE(0)) .lt. machprec ) then
-         rdiff = 0
-     else
-         rdiff = diff / tmpE(0)
-     endif
-     
-     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "i4,4(" : "ES23.15))') &
-          icoil, 'XC', idof, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
-     enddo
-
-!-------X_SIN-----------------
-     do idof = 0, NFcoil
-        do ifd = -1, 1, 2
-           call unpack ( xdof ); coil(icoil)%xs(idof) = coil(icoil)%xs(idof) + half * fd * ifd
-           call costfun(1)     ; tmpE(ifd)            = t1E(jcoil,jdof)
-        enddo ! end do ifd
-
-     tmpE(0) = t2E(jcoil,jdof,icoil,idof+NFcoil+2); diff = tmpE(0) - (tmpE(1) - tmpE(-1)) / fd
-
-     if( abs(tmpE(0)) .lt. machprec ) then
-         rdiff = 0
-     else
-         rdiff = diff / tmpE(0)
-     endif
-     
-     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "i4,4(" : "ES23.15))') &
-                           icoil, 'XS', idof, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
-
-     enddo
-
-!-------Y_COS-----------------
-     do idof = 0, NFcoil
-        do ifd = -1, 1, 2
-           call unpack ( xdof ); coil(icoil)%yc(idof) = coil(icoil)%yc(idof) + half * fd * ifd
-           call costfun(1)     ; tmpE(ifd)            = t1E(jcoil,jdof)
-        enddo ! end do ifd
-
-     tmpE(0) = t2E(jcoil,jdof,icoil,idof+2*NFcoil+3); diff = tmpE(0) - (tmpE(1) - tmpE(-1)) / fd
-
-     if( abs(tmpE(0)) .lt. machprec ) then
-         rdiff = 0
-     else
-         rdiff = diff / tmpE(0)
-     endif
-     
-     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "i4,4(" : "ES23.15))') &
-                           icoil, 'YC', idof, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
-
-     enddo
-
-!-------Y_SIN-----------------
-     do idof = 0, NFcoil
-        do ifd = -1, 1, 2
-           call unpack ( xdof ); coil(icoil)%ys(idof) = coil(icoil)%ys(idof) + half * fd * ifd
-           call costfun(1)     ; tmpE(ifd)            = t1E(jcoil,jdof)
-        enddo ! end do ifd
-
-     tmpE(0) = t2E(jcoil,jdof,icoil,idof+3*NFcoil+4); diff = tmpE(0) - (tmpE(1) - tmpE(-1)) / fd
-
-     if( abs(tmpE(0)) .lt. machprec ) then
-         rdiff = 0
-     else
-         rdiff = diff / tmpE(0)
-     endif
-     
-     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "i4,4(" : "ES23.15))') &
-                           icoil, 'YS', idof, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
-
-     enddo
-
-!-------Z_COS-----------------
-     do idof = 0, NFcoil
-        do ifd = -1, 1, 2
-           call unpack ( xdof ); coil(icoil)%zc(idof) = coil(icoil)%zc(idof) + half * fd * ifd
-           call costfun(1)     ; tmpE(ifd)            = t1E(jcoil,jdof)
-        enddo ! end do ifd
-
-     tmpE(0) = t2E(jcoil,jdof,icoil,idof+4*NFcoil+5); diff = tmpE(0) - (tmpE(1) - tmpE(-1)) / fd
-
-     if( abs(tmpE(0)) .lt. machprec ) then
-         rdiff = 0
-     else
-         rdiff = diff / tmpE(0)
-     endif
-     
-     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "i4,4(" : "ES23.15))') &
-                           icoil, 'ZC', idof, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
-
-     enddo
-!-------Z_SIN-----------------
-     do idof = 0, NFcoil
-        do ifd = -1, 1, 2
-           call unpack ( xdof ); coil(icoil)%zs(idof) = coil(icoil)%zs(idof) + half * fd * ifd
-           call costfun(1)     ; tmpE(ifd)            = t1E(jcoil,jdof)
-        enddo ! end do ifd
-
-     tmpE(0) = t2E(jcoil,jdof,icoil,idof+5*NFcoil+6); diff = tmpE(0) - (tmpE(1) - tmpE(-1)) / fd
-
-     if( abs(tmpE(0)) .lt. machprec ) then
-         rdiff = 0
-     else
-         rdiff = diff / tmpE(0)
-     endif
-     
-     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "i4,4(" : "ES23.15))') &
-                           icoil, 'ZS', idof, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
-
-     enddo
+     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "I8, 4(" : "ES23.15))') &
+                           icoil, infou, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
+  enddo
   
-  enddo ! end do icoil
-
-  if ( weight_eqarc .gt. 0.0 .and. Loptimize .eq. 3) then
-
-     call unpack ( xdof ); call costfun(2); call ntchdms(2)
-
-     do icoil = 1, Ncoils
-
-        do idof = 0, NFcoil
-           do ifd = -1, 1, 2
-              coil(icoil)%lmdc(idof) = 1.0; coil(icoil)%lmdc(idof) = coil(icoil)%lmdc(idof) + half * fd * ifd
-              call costfun(1)     ; tmpE(ifd)            = t1E(jcoil,jdof)
-           enddo ! end do ifd
-
-           tmpE(0) = n2E(jcoil,jdof,icoil,idof+6*NFcoil+7); diff = tmpE(0) - (tmpE(1) - tmpE(-1)) / fd
-
-           if( abs(tmpE(0)) .lt. machprec ) then
-              rdiff = 0
-           else
-              rdiff = diff / tmpE(0)
-           endif
-
-           if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "i4,4(" : "ES23.15))') &
-                icoil, 'LC', idof, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
-
-        enddo
-
-        do idof = 0, NFcoil
-           do ifd = -1, 1, 2
-              coil(icoil)%lmds(idof) = 1.0; coil(icoil)%lmds(idof) = coil(icoil)%lmds(idof) + half * fd * ifd
-              call costfun(1)     ; tmpE(ifd)            = t1E(jcoil,jdof)
-           enddo ! end do ifd
-
-           tmpE(0) = n2E(jcoil,jdof,icoil,idof+7*NFcoil+8); diff = tmpE(0) - (tmpE(1) - tmpE(-1)) / fd
-
-           if( abs(tmpE(0)) .lt. machprec ) then
-              rdiff = 0
-           else
-              rdiff = diff / tmpE(0)
-           endif
-
-           if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "i4,4(" : "ES23.15))') &
-                icoil, 'LS', idof, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
-
-        enddo
-
-     enddo ! end do icoil
-
-  endif
+!!$  do icoil = 1, Ncoils
+!!$
+!!$!-------current-----------------
+!!$     do ifd = -1, 1, 2
+!!$        call unpack ( xdof ); coil(icoil)%I = coil(icoil)%I + half * fd * ifd
+!!$        call costfun(1)     ; tmpE(ifd)     = t1E(jcoil,jdof)
+!!$     enddo ! end do ifd
+!!$      
+!!$     tmpE(0) = t2E(jcoil,jdof,icoil,0) ; diff = tmpE(0)- (tmpE(1) - tmpE(-1)) / fd
+!!$
+!!$     if( abs(tmpE(0)) .lt. machprec ) then
+!!$         rdiff = 0
+!!$     else
+!!$         rdiff = diff / tmpE(0)
+!!$     endif
+!!$     
+!!$     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "4X,4(" : "ES23.15))') &
+!!$                           icoil, 'I', tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
+!!$        
+!!$!-------X_COS-----------------
+!!$     do idof = 0, NFcoil
+!!$        do ifd = -1, 1, 2
+!!$           call unpack ( xdof ); coil(icoil)%xc(idof) = coil(icoil)%xc(idof) + half * fd * ifd
+!!$           call costfun(1)     ; tmpE(ifd)            = t1E(jcoil,jdof)
+!!$        enddo ! end do ifd
+!!$
+!!$     tmpE(0) = t2E(jcoil,jdof,icoil,idof+1); diff = tmpE(0) - (tmpE(1) - tmpE(-1)) / fd
+!!$
+!!$     if( abs(tmpE(0)) .lt. machprec ) then
+!!$         rdiff = 0
+!!$     else
+!!$         rdiff = diff / tmpE(0)
+!!$     endif
+!!$     
+!!$     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "i4,4(" : "ES23.15))') &
+!!$          icoil, 'XC', idof, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
+!!$     enddo
+!!$
+!!$!-------X_SIN-----------------
+!!$     do idof = 0, NFcoil
+!!$        do ifd = -1, 1, 2
+!!$           call unpack ( xdof ); coil(icoil)%xs(idof) = coil(icoil)%xs(idof) + half * fd * ifd
+!!$           call costfun(1)     ; tmpE(ifd)            = t1E(jcoil,jdof)
+!!$        enddo ! end do ifd
+!!$
+!!$     tmpE(0) = t2E(jcoil,jdof,icoil,idof+NFcoil+2); diff = tmpE(0) - (tmpE(1) - tmpE(-1)) / fd
+!!$
+!!$     if( abs(tmpE(0)) .lt. machprec ) then
+!!$         rdiff = 0
+!!$     else
+!!$         rdiff = diff / tmpE(0)
+!!$     endif
+!!$     
+!!$     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "i4,4(" : "ES23.15))') &
+!!$                           icoil, 'XS', idof, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
+!!$
+!!$     enddo
+!!$
+!!$!-------Y_COS-----------------
+!!$     do idof = 0, NFcoil
+!!$        do ifd = -1, 1, 2
+!!$           call unpack ( xdof ); coil(icoil)%yc(idof) = coil(icoil)%yc(idof) + half * fd * ifd
+!!$           call costfun(1)     ; tmpE(ifd)            = t1E(jcoil,jdof)
+!!$        enddo ! end do ifd
+!!$
+!!$     tmpE(0) = t2E(jcoil,jdof,icoil,idof+2*NFcoil+3); diff = tmpE(0) - (tmpE(1) - tmpE(-1)) / fd
+!!$
+!!$     if( abs(tmpE(0)) .lt. machprec ) then
+!!$         rdiff = 0
+!!$     else
+!!$         rdiff = diff / tmpE(0)
+!!$     endif
+!!$     
+!!$     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "i4,4(" : "ES23.15))') &
+!!$                           icoil, 'YC', idof, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
+!!$
+!!$     enddo
+!!$
+!!$!-------Y_SIN-----------------
+!!$     do idof = 0, NFcoil
+!!$        do ifd = -1, 1, 2
+!!$           call unpack ( xdof ); coil(icoil)%ys(idof) = coil(icoil)%ys(idof) + half * fd * ifd
+!!$           call costfun(1)     ; tmpE(ifd)            = t1E(jcoil,jdof)
+!!$        enddo ! end do ifd
+!!$
+!!$     tmpE(0) = t2E(jcoil,jdof,icoil,idof+3*NFcoil+4); diff = tmpE(0) - (tmpE(1) - tmpE(-1)) / fd
+!!$
+!!$     if( abs(tmpE(0)) .lt. machprec ) then
+!!$         rdiff = 0
+!!$     else
+!!$         rdiff = diff / tmpE(0)
+!!$     endif
+!!$     
+!!$     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "i4,4(" : "ES23.15))') &
+!!$                           icoil, 'YS', idof, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
+!!$
+!!$     enddo
+!!$
+!!$!-------Z_COS-----------------
+!!$     do idof = 0, NFcoil
+!!$        do ifd = -1, 1, 2
+!!$           call unpack ( xdof ); coil(icoil)%zc(idof) = coil(icoil)%zc(idof) + half * fd * ifd
+!!$           call costfun(1)     ; tmpE(ifd)            = t1E(jcoil,jdof)
+!!$        enddo ! end do ifd
+!!$
+!!$     tmpE(0) = t2E(jcoil,jdof,icoil,idof+4*NFcoil+5); diff = tmpE(0) - (tmpE(1) - tmpE(-1)) / fd
+!!$
+!!$     if( abs(tmpE(0)) .lt. machprec ) then
+!!$         rdiff = 0
+!!$     else
+!!$         rdiff = diff / tmpE(0)
+!!$     endif
+!!$     
+!!$     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "i4,4(" : "ES23.15))') &
+!!$                           icoil, 'ZC', idof, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
+!!$
+!!$     enddo
+!!$!-------Z_SIN-----------------
+!!$     do idof = 0, NFcoil
+!!$        do ifd = -1, 1, 2
+!!$           call unpack ( xdof ); coil(icoil)%zs(idof) = coil(icoil)%zs(idof) + half * fd * ifd
+!!$           call costfun(1)     ; tmpE(ifd)            = t1E(jcoil,jdof)
+!!$        enddo ! end do ifd
+!!$
+!!$     tmpE(0) = t2E(jcoil,jdof,icoil,idof+5*NFcoil+6); diff = tmpE(0) - (tmpE(1) - tmpE(-1)) / fd
+!!$
+!!$     if( abs(tmpE(0)) .lt. machprec ) then
+!!$         rdiff = 0
+!!$     else
+!!$         rdiff = diff / tmpE(0)
+!!$     endif
+!!$     
+!!$     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "i4,4(" : "ES23.15))') &
+!!$                           icoil, 'ZS', idof, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
+!!$
+!!$     enddo
+!!$  
+!!$  enddo ! end do icoil
+!!$
+!!$  if ( weight_eqarc .gt. 0.0 .and. Loptimize .eq. 3) then
+!!$
+!!$     call unpack ( xdof ); call costfun(2); call ntchdms(2)
+!!$
+!!$     do icoil = 1, Ncoils
+!!$
+!!$        do idof = 0, NFcoil
+!!$           do ifd = -1, 1, 2
+!!$              coil(icoil)%lmdc(idof) = 1.0; coil(icoil)%lmdc(idof) = coil(icoil)%lmdc(idof) + half * fd * ifd
+!!$              call costfun(1)     ; tmpE(ifd)            = t1E(jcoil,jdof)
+!!$           enddo ! end do ifd
+!!$
+!!$           tmpE(0) = n2E(jcoil,jdof,icoil,idof+6*NFcoil+7); diff = tmpE(0) - (tmpE(1) - tmpE(-1)) / fd
+!!$
+!!$           if( abs(tmpE(0)) .lt. machprec ) then
+!!$              rdiff = 0
+!!$           else
+!!$              rdiff = diff / tmpE(0)
+!!$           endif
+!!$
+!!$           if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "i4,4(" : "ES23.15))') &
+!!$                icoil, 'LC', idof, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
+!!$
+!!$        enddo
+!!$
+!!$        do idof = 0, NFcoil
+!!$           do ifd = -1, 1, 2
+!!$              coil(icoil)%lmds(idof) = 1.0; coil(icoil)%lmds(idof) = coil(icoil)%lmds(idof) + half * fd * ifd
+!!$              call costfun(1)     ; tmpE(ifd)            = t1E(jcoil,jdof)
+!!$           enddo ! end do ifd
+!!$
+!!$           tmpE(0) = n2E(jcoil,jdof,icoil,idof+7*NFcoil+8); diff = tmpE(0) - (tmpE(1) - tmpE(-1)) / fd
+!!$
+!!$           if( abs(tmpE(0)) .lt. machprec ) then
+!!$              rdiff = 0
+!!$           else
+!!$              rdiff = diff / tmpE(0)
+!!$           endif
+!!$
+!!$           if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "A3" : "i4,4(" : "ES23.15))') &
+!!$                icoil, 'LS', idof, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
+!!$
+!!$        enddo
+!!$
+!!$     enddo ! end do icoil
+!!$
+!!$  endif
 
   call unpack( xdof )  !recover data
  
