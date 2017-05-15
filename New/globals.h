@@ -181,7 +181,7 @@ module globals
   type toroidalsurface
      INTEGER              :: Nteta, Nzeta
      REAL   , allocatable :: xx(:,:), yy(:,:), zz(:,:), nx(:,:), ny(:,:), nz(:,:), &
-                             ds(:,:), xt(:,:), yt(:,:), zt(:,:), bn(:,:), tn(:,:), pb(:,:), &
+                             ds(:,:), xt(:,:), yt(:,:), zt(:,:), bn(:,:), pb(:,:), &
                              Bx(:,:), By(:,:), Bz(:,:)
   end type toroidalsurface
 
