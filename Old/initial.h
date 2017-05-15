@@ -37,7 +37,7 @@ subroutine initial
 
   if( myid.eq.0 ) then ! only the master node reads the input; 25 Mar 15;
      call getarg(1,ext)
-     write(ounit,'("initial : " 10x " : machprec ="es12.5" ; sqrtmachprec ="es12.5" ; ext = "a100)') machprec, sqrtmachprec, ext
+     write(ounit,'("initial : " 10x " : machprec ="es12.5" ; sqrtmachprec ="es12.5" ; ext = "a)') machprec, sqrtmachprec, trim(ext)
      inquire( file=trim(ext)//".fo", exist=exist )
   endif
 

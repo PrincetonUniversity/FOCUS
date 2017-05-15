@@ -426,13 +426,9 @@ subroutine SVD
   INTEGER            :: imn
   REAL               :: tvolume
 
+  if (myid .eq. 0) write(ounit,'("SVD     : "10X" : "A)') "Start to analyze the Hessian matrix using SVD (F08KBF)."
 
-  if( ncpu .gt. 1) stop "SVD only works on single node."
-  if(myid .ne. 0) return
-
-  write(ounit,'("SVD     : "10X" : "A)') "Start to analyze the Hessian matrix using SVD (F08KBF)."
-
-  write(ounit,'("SVD     : "10X" : Dimension of Hessian matrix is "I6" X " I6)') Ndof, Ndof
+  if (myid .eq. 0) write(ounit,'("SVD     : "10X" : Dimension of Hessian matrix is "I6" X " I6)') Ndof, Ndof
 
   n = Ndof; lda = n; ldu = n; ldvt = n
   
@@ -456,6 +452,9 @@ subroutine SVD
         a(i,j) = t2E(c1, n1, c2, n2)
      enddo
   enddo
+
+  !if( ncpu .gt. 1) stop "SVD only works on single node."
+  if(myid .ne. 0) return
 
   ab = a
 !!$  !write(ounit,'("SVD     : "10X" : "4ES23.15)') a(1,2), a(2,1), t2E(1,0,1,1), t2E(1,1,1,0)

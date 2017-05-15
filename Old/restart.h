@@ -187,16 +187,19 @@ subroutine restart( irestart )
   HWRITERA( 1+Nteta,1+Nzeta             ,   xsurf                                   ,   surf(1)%xx(0:Nteta,0:Nzeta)                               )
   HWRITERA( 1+Nteta,1+Nzeta             ,   ysurf                                   ,   surf(1)%yy(0:Nteta,0:Nzeta)                               )
   HWRITERA( 1+Nteta,1+Nzeta             ,   zsurf                                   ,   surf(1)%zz(0:Nteta,0:Nzeta)                               )
-  HWRITERA( 1+Nteta,1+Nzeta             ,   tgtBn                                   ,   surf(1)%bnt(0:Nteta,0:Nzeta)                              )
-  HWRITERA( 1+Nteta,1+Nzeta             ,   curBn                                   ,          tbn(0:Nteta,0:Nzeta)                               )
-
-  !HWRITERA( 1+Cdof ,1+Cdof              ,   Bdx                                     ,   coil(icoil)%Bx(0:Cdof,0:Cdof)                             )
-  HWRITERA( 1+Nteta,1+Nzeta             ,   Bx                                      ,       SaveBx(0:Nteta,0:Nzeta)                               )
-  HWRITERA( 1+Nteta,1+Nzeta             ,   By                                      ,       SaveBy(0:Nteta,0:Nzeta)                               )
-  HWRITERA( 1+Nteta,1+Nzeta             ,   Bz                                      ,       SaveBz(0:Nteta,0:Nzeta)                               )
   HWRITERA( 1+Nteta,1+Nzeta             ,   nx                                      ,   surf(1)%nx(0:Nteta,0:Nzeta)                               )
   HWRITERA( 1+Nteta,1+Nzeta             ,   ny                                      ,   surf(1)%ny(0:Nteta,0:Nzeta)                               )
   HWRITERA( 1+Nteta,1+Nzeta             ,   nz                                      ,   surf(1)%nz(0:Nteta,0:Nzeta)                               )
+
+  if (allocated(tbn)) then
+  HWRITERA( 1+Nteta,1+Nzeta             ,   tgtBn                                   ,   surf(1)%bnt(0:Nteta,0:Nzeta)                              )
+  HWRITERA( 1+Nteta,1+Nzeta             ,   curBn                                   ,           tbn(0:Nteta,0:Nzeta)                              )
+
+ !HWRITERA( 1+Cdof ,1+Cdof              ,   Bdx                                     ,   coil(icoil)%Bx(0:Cdof,0:Cdof)                             )
+  HWRITERA( 1+Nteta,1+Nzeta             ,   Bx                                      ,       SaveBx(0:Nteta,0:Nzeta)                               )
+  HWRITERA( 1+Nteta,1+Nzeta             ,   By                                      ,       SaveBy(0:Nteta,0:Nzeta)                               )
+  HWRITERA( 1+Nteta,1+Nzeta             ,   Bz                                      ,       SaveBz(0:Nteta,0:Nzeta)                               )
+  endif
 
   call h5fclose_f( file_id, hdfier ) ! terminate access;
   FATAL( restart, hdfier.ne.0, error calling h5fclose_f )
