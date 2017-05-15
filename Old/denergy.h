@@ -944,7 +944,7 @@ subroutine weightnormalize
    endif
 
    call torflux(0)
-   if (abs(tflux) .gt. sqrtmachprec) weight_tflux = weight_tflux / tflux
+   if (abs(tflux) .gt. sqrtmachprec) weight_tflux = weight_tflux / tflux * target_tflux**2
    if( myid .eq. 0 ) write(ounit, 1000) "weight_tflux", weight_tflux
    
   endif  

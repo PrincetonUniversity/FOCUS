@@ -3,7 +3,7 @@
 ############################################################################################################
 
  ALLFILES= globals numrec initial surface rdknot rdcoils knotxx iccoil bfield bnormal torflux tlength equarcl \
-     specwid coilsep nlinear fdcheck denergy descent restart diagnos exinput identfy bnftran focus
+     specwid coilsep nlinear fdcheck denergy descent restart diagnos exinput identfy bnftran congrad focus
 
 ############################################################################################################
 
