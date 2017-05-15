@@ -62,8 +62,7 @@ subroutine restart( irestart )
      if(allocated(t1C)) deriv(1:Ndof,5) = t1C(1:Ndof)
      if(allocated(t1H)) deriv(1:Ndof,6) = t1H(1:Ndof)
   endif
-  !calculate the new Bn
-  if (allocated(surf(1)%bn)) call BnFTran
+  !write Bmn harmonics;
   if (allocated(Bmnc)) call writeBmn
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -128,8 +127,8 @@ subroutine restart( irestart )
   HWRITERA( Nteta,Nzeta      ,   nz            ,   surf(1)%nz(0:Nteta-1,0:Nzeta-1) )
 
   if (allocated(bn)) then
-     HWRITERA( Nteta,Nzeta      ,   tgtBn         ,   surf(1)%tn(0:Nteta-1,0:Nzeta-1) )
-     HWRITERA( Nteta,Nzeta      ,   curBn         ,           bn(0:Nteta-1,0:Nzeta-1) )
+     HWRITERA( Nteta,Nzeta      ,   plas_Bn       ,   surf(1)%pb(0:Nteta-1,0:Nzeta-1) )
+     HWRITERA( Nteta,Nzeta      ,        Bn       ,   surf(1)%bn(0:Nteta-1,0:Nzeta-1) )
      HWRITERA( Nteta,Nzeta      ,   Bx            ,   surf(1)%Bx(0:Nteta-1,0:Nzeta-1) )
      HWRITERA( Nteta,Nzeta      ,   By            ,   surf(1)%By(0:Nteta-1,0:Nzeta-1) )
      HWRITERA( Nteta,Nzeta      ,   Bz            ,   surf(1)%Bz(0:Nteta-1,0:Nzeta-1) )
@@ -142,11 +141,13 @@ subroutine restart( irestart )
      HWRITERA( Ndof, 6       ,   deriv         ,   deriv(1:Ndof, 0:6)            )
   endif
 
-  if (allocated(Cur_Bns)) then
-     HWRITEIV( NBnf          ,   Bnin          ,   Bnin                          )
-     HWRITEIV( NBnf          ,   Bnim          ,   Bnim                          )
-     HWRITERV( NBnf          ,   Cur_Bnc       ,   Cur_Bnc                       )
-     HWRITERV( NBnf          ,   Cur_Bns       ,   Cur_Bns                       )
+  if (allocated(Bmnc)) then
+     HWRITEIV( NBnf          ,   Bmnin         ,   Bmnin                         )
+     HWRITEIV( NBnf          ,   Bmnim         ,   Bmnim                         )
+     HWRITERV( NBnf          ,   target_Bmnc   ,   tBmnc                         )
+     HWRITERV( NBnf          ,   target_Bmns   ,   tBmns                         )
+     HWRITERV( NBnf          ,          Bmnc   ,    Bmnc                         )
+     HWRITERV( NBnf          ,          Bmns   ,    Bmns                         )
   endif
 
   HWRITERV( 1                ,  time_initialize,   time_initialize               )
