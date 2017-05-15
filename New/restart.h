@@ -142,12 +142,12 @@ subroutine restart( irestart )
   endif
 
   if (allocated(Bmnc)) then
-     HWRITEIV( NBnf          ,   Bmnin         ,   Bmnin                         )
-     HWRITEIV( NBnf          ,   Bmnim         ,   Bmnim                         )
-     HWRITERV( NBnf          ,   target_Bmnc   ,   tBmnc                         )
-     HWRITERV( NBnf          ,   target_Bmns   ,   tBmns                         )
-     HWRITERV( NBnf          ,          Bmnc   ,    Bmnc                         )
-     HWRITERV( NBnf          ,          Bmns   ,    Bmns                         )
+     HWRITEIV( NBmn          ,   Bmnin         ,   Bmnin                         )
+     HWRITEIV( NBmn          ,   Bmnim         ,   Bmnim                         )
+     HWRITERV( NBmn          ,   target_Bmnc   ,   tBmnc                         )
+     HWRITERV( NBmn          ,   target_Bmns   ,   tBmns                         )
+     HWRITERV( NBmn          ,          Bmnc   ,    Bmnc                         )
+     HWRITERV( NBmn          ,          Bmns   ,    Bmns                         )
   endif
 
   HWRITERV( 1                ,  time_initialize,   time_initialize               )
