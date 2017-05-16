@@ -1,11 +1,11 @@
  &focusin
- IsQuiet = 0                  ! -1: more info; 0: normal; 1: concise.
+ IsQuiet = -1                 ! -1: more info; 0: normal; 1: concise.
  IsSymmetric = 0              ! function not enabled; keep 0.
  case_surface = 0             ! function not enabled; keep 0.
  knotsurf = 0.2               ! function not enabled;
  Nteta = 256                  ! poloidal number for discretizing the surface
  Nzeta = 32                   ! toroidal number for discretizing the surface
- case_init = -1               ! -1: read coils.ext file; 0: read ext.focus file; 1: initialize with circular coils.
+ case_init =  0               ! -1: read coils.ext file; 0: read ext.focus file; 1: initialize with circular coils.
  case_coils = 1               ! function not enabled; keep 1.
  Ncoils = 16                  ! number of coils; only valid when case_init = 1.
  init_current = 10000000.0    ! initial coil currents (Amper); only valid when case_init = 1
@@ -14,21 +14,22 @@
  IsVaryGeometry = 0           ! 0: all the geometries fixed; 1: geometries can be changed; overwritten by ext.focus.
  target_length = 1.0          ! function not enabled;
  NFcoil = 8                   ! number of Fourier harmonics representing the coils; overwritten by ext.focus.
- Nseg = 360                   ! number of coil segments for discretizing; overwritten by ext.focus.
+ Nseg = 128                   ! number of coil segments for discretizing; overwritten by ext.focus.
  case_optimizer = 1           ! -1: test the 1st derivatives; 0: not optimizations; 1: steepest descent ;
  IsNormalize = 1              ! 0: donot normalize coil parameters; 1: normalize; I = I/I0, x = x/R0.
  IsNormBnormal = 0            ! function not enabled; keep 0.
  IsNormWeight = 0             ! 0: donot normalize the weights; 1: normalize the weights; 
- weight_bnorm = 100000.0      ! weigt for Bn error;
+ weight_bnorm = 0.0           ! weigt for Bn error;
+ weight_bharm = 1.0E6         ! weigt for Bn harmonics optimization;
  weight_tflux = 0.0           ! function not enabled;
  target_tflux = 0.0           ! function not enabled;
  weight_ttlen = 0.0           ! function not enabled;
  weight_specw = 0.0           ! function not enabled;
  weight_ccsep = 0.0           ! function not enabled;
  SD_tausta = 0.0              ! the start value of tau (Steepest Descent step control)
- SD_tauend = 0.001            ! the end   value of tau (Steepest Descent step control)
+ SD_tauend = 1000             ! the end   value of tau (Steepest Descent step control)
  SD_tautol = 0.0001           ! tolerance of SD method;
- SD_Nout = 10                 ! total outputs for SD;
+ SD_Nout = 1000               ! total outputs for SD;
  SD_savefreq = 1              ! file saving frequence;
  NT_xtol = 0.0001             ! function not enabled;
  NT_eta = 0.9                 ! function not enabled;

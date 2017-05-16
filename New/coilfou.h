@@ -87,8 +87,8 @@ subroutine initfou
   include "mpif.h"
 
   LOGICAL   :: exist
-  INTEGER   :: ierr, astat, ii, icoil, maxnseg, ifirst, NF
-  REAL      :: Rmaj, zeta, tt, totalcurrent, r1, r2, z1, z2, start, finish
+  INTEGER   :: ierr, astat, ii, icoil, maxnseg, ifirst, NF, itmp
+  REAL      :: Rmaj, zeta, tt, totalcurrent, r1, r2, z1, z2, z0, start, finish
   CHARACTER :: suffix*3, coilsfile*40
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -317,12 +317,13 @@ subroutine initfou
         call surfcoord(   pi, zeta, r2, z2)
 
         Rmaj = half * (r1 + r2)
+        z0   = half * (z1 + z2)
 
         FouCoil(icoil)%xc(0:1) = (/ Rmaj * cos(zeta), init_radius * cos(zeta) /)
         FouCoil(icoil)%xs(0:1) = (/ 0.0             , 0.0                     /)
         FouCoil(icoil)%yc(0:1) = (/ Rmaj * sin(zeta), init_radius * sin(zeta) /)
         FouCoil(icoil)%ys(0:1) = (/ 0.0             , 0.0                     /)
-        FouCoil(icoil)%zc(0:1) = (/ 0.0             , 0.0                     /)
+        FouCoil(icoil)%zc(0:1) = (/ z0              , 0.0                     /)
         Foucoil(icoil)%zs(0:1) = (/ 0.0             , init_radius             /)
 
      enddo ! end of do icoil;
@@ -379,7 +380,8 @@ subroutine initfou
 
   !-----------------------allocate DoF arrays --------------------------------------------------  
 
-  call AllocData('dof')
+  itmp = -1
+  call AllocData(itmp)
 
   !-----------------------discretize coil data--------------------------------------------------
 

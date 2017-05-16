@@ -2,8 +2,8 @@
 
 ############################################################################################################
 
- ALLFILES= globals numrec initial surface rdknot rdcoils knotxx iccoil bfield bnormal torflux tlength \
-     equarcl specwid coilsep nlinear fdcheck denergy descent restart diagnos exinput identfy bnftran focus
+ ALLFILES= globals numrec initial surface rdknot rdcoils knotxx iccoil bfield bnormal torflux tlength equarcl \
+     specwid coilsep nlinear fdcheck denergy descent restart diagnos exinput identfy bnftran congrad focus
 
 ############################################################################################################
 
@@ -28,7 +28,7 @@
  HDF5=-I$(HDF5_HOME)/include -L$(HDF5_HOME)/lib -lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran \
 -lhdf5 -lpthread -lz -lm
 
- OCULUSVERSION=16
+ OCULUSVERSION=17
  OCULUSFLAGS=-L$(OCULUS) -loculus.$(OCULUSVERSION) -I$(OCULUS)
 
  WEBDIR=$(HOME)/w3_html
@@ -60,9 +60,9 @@ $(FFILES): %.F90: %.h
  text:=$(shell date +%F)
 
 clean:
-	rm -f *.o ; rm -f *.mod ; rm -f *.F90 ; rm -f *.pdf ; rm -f *.toc ; rm -f *.dvi ; rm -f *.out ; rm -f .*.date
+	rm -f *.o ; rm -f *.mod ; rm -f $(FFILES) ; rm -f *.pdf ; rm -f *.toc ; rm -f *.dvi ; rm -f *.out ; rm -f .*.date
 
-############################################################################################################
+###############################################################################################################################################################
 
 %.pdf: %.h head.tex end.tex Makefile
 ifeq ($(USER),shudson)
@@ -92,7 +92,7 @@ else
 	rm -f $*.tex $*.aux $*.blg $*.log $*.ps
 endif
 
-############################################################################################################
+###############################################################################################################################################################
 
 pdfs: $(PFILES) head.html
 ifeq ($(USER),shudson)
@@ -121,4 +121,4 @@ else
 	@echo "Please read pdfs in the directory!"
 endif
 
-############################################################################################################
+###############################################################################################################################################################

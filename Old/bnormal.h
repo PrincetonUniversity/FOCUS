@@ -788,12 +788,17 @@ subroutine bnormal( nderiv )
   REAL              :: r, rm2, rm3, rm4, bx, by, bz, lm, c12, lbnorm, start, finish
   REAL, allocatable :: l1B( :, :), l2B( :, :, :, :), b1n( :, :), b2n( :, :, :, :), b1m( :, :), b2m( :, :, :, :)
   INTEGER           :: array2size, array4size
+  REAL              :: lBx(0:Nteta, 0:Nzeta), lBy(0:Nteta, 0:Nzeta), lBz(0:Nteta, 0:Nzeta)
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  !SALLOCATE(SaveBx, (0:Nteta, 0:Nzeta), zero)
-  !SALLOCATE(SaveBy, (0:Nteta, 0:Nzeta), zero)
-  !SALLOCATE(SaveBz, (0:Nteta, 0:Nzeta), zero)
+  if ( .not. allocated(SaveBx) ) then
+     SALLOCATE(SaveBx, (0:Nteta, 0:Nzeta), zero)
+     SALLOCATE(SaveBy, (0:Nteta, 0:Nzeta), zero)
+     SALLOCATE(SaveBz, (0:Nteta, 0:Nzeta), zero)
+  endif
+
+  lBx = zero; lBy = zero; lBz = zero
 
   !if ( .not. allocated(bn) ) allocate( bn(0:Nteta-1, 0:Nzeta-1) )
   if ( .not. allocated(bm) ) allocate( bm(0:Nteta-1, 0:Nzeta-1) )
@@ -841,7 +846,7 @@ subroutine bnormal( nderiv )
 
      enddo ! end do icoil
 
-     !SaveBx(iteta, jzeta) = bx; SaveBy(iteta, jzeta) = by; SaveBz(iteta, jzeta) = bz
+     lBx(iteta, jzeta) = bx; lBy(iteta, jzeta) = by; lBz(iteta, jzeta) = bz;
      bn(iteta, jzeta) = bx * surf(1)%nx(iteta,jzeta) + by * surf(1)%ny(iteta,jzeta) + bz * surf(1)%nz(iteta,jzeta)
      bm(iteta, jzeta) = bx * bx + by * by + bz * bz ! magnitude square of B
      !bm(iteta, jzeta) = one  ! no normalization;
@@ -898,6 +903,7 @@ subroutine bnormal( nderiv )
 
      enddo ! end do icoil
 
+     lBx(iteta, jzeta) = bx; lBy(iteta, jzeta) = by; lBz(iteta, jzeta) = bz; 
      bn(iteta, jzeta) = bx * surf(1)%nx(iteta,jzeta) + by * surf(1)%ny(iteta,jzeta) + bz * surf(1)%nz(iteta,jzeta)
      bm(iteta, jzeta) = bx * bx + by * by + bz * bz ! magnitude square of B
 
@@ -1000,6 +1006,7 @@ subroutine bnormal( nderiv )
 
      enddo ! end do icoil
 
+     lBx(iteta, jzeta) = bx; lBy(iteta, jzeta) = by; lBz(iteta, jzeta) = bz; 
      bn(iteta, jzeta) = bx * surf(1)%nx(iteta,jzeta) + by * surf(1)%ny(iteta,jzeta) + bz * surf(1)%nz(iteta,jzeta)
      bm(iteta, jzeta) = bx * bx + by * by + bz * bz ! magnitude square of B    
 
@@ -1333,6 +1340,13 @@ subroutine bnormal( nderiv )
 
   end select
 
+  call MPI_REDUCE( lBx, SaveBx, (1+Nteta)*(1+Nzeta), MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
+  RlBCAST( SaveBx,(1+Nteta)*(1+Nzeta), 0)
+  call MPI_REDUCE( lBy, SaveBy, (1+Nteta)*(1+Nzeta), MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
+  RlBCAST( SaveBy,(1+Nteta)*(1+Nzeta), 0)
+  call MPI_REDUCE( lBz, SaveBz, (1+Nteta)*(1+Nzeta), MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
+  RlBCAST( SaveBz,(1+Nteta)*(1+Nzeta), 0)
+
   do icoil = 1, Ncoils
    if( allocated(coil(icoil)%Bx)) then
     DALLOCATE(coil(icoil)%Bx)
@@ -1344,6 +1358,16 @@ subroutine bnormal( nderiv )
   tbn(Nteta,0:Nzeta-1) = tbn(0, 0:Nzeta-1)  !unassigned arrays; 2017/02/10
   tbn(0:Nteta-1,Nzeta) = tbn(0:Nteta-1, 0)
   tbn(Nteta, Nzeta) = tbn(0, 0)
+
+  SaveBx(Nteta,0:Nzeta-1) = SaveBx(0, 0:Nzeta-1)  !unassigned arrays; 2017/05/04
+  SaveBx(0:Nteta-1,Nzeta) = SaveBx(0:Nteta-1, 0)
+  SaveBx(Nteta, Nzeta) = SaveBx(0, 0)
+  SaveBy(Nteta,0:Nzeta-1) = SaveBy(0, 0:Nzeta-1)  !unassigned arrays; 2017/05/04
+  SaveBy(0:Nteta-1,Nzeta) = SaveBy(0:Nteta-1, 0)
+  SaveBy(Nteta, Nzeta) = SaveBy(0, 0)
+  SaveBz(Nteta,0:Nzeta-1) = SaveBz(0, 0:Nzeta-1)  !unassigned arrays; 2017/05/04
+  SaveBz(0:Nteta-1,Nzeta) = SaveBz(0:Nteta-1, 0)
+  SaveBz(Nteta, Nzeta) = SaveBz(0, 0)
 ! bn(iteta,jzeta) & bm(iteta,jzeta) are still allocated.
   return
 end subroutine bnormal

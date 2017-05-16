@@ -50,11 +50,11 @@ There are several *make* options vailable in [Makefile](https://github.com/Princ
 Once successfully compiled the code, you will get the executable *xfocus (or dfocus)*. 
 You can type
 ```
-mpirun -np 32 xfocus suffix
+mpirun -np 32 xfocus <suffix>
 ```
 There are three basic inputs needed for running:
 
-* **suffix.fo**
+* **<suffix>.input**
 
   The input namelist file, details can been seen in [globals](https://github.com/PrincetonUniversity/FOCUS/tree/master/Old/globals.h)
   
@@ -65,9 +65,9 @@ There are three basic inputs needed for running:
   
 * **intial coils**
 
-  Linitialize = -1 : read *coils.suffix* and fit with Fourier series;
+  Linitialize = -1 : read *<suffix>.coils* and fit with Fourier series;
   
-  Linitialize =  0 : read all the *.fo.coil.xxx* files in the directory;
+  Linitialize =  0 : read all the *<suffix>.focus* files in the directory;
   
   Linitialize =  N : N>1, intialize N circular coils toroidally surrounding the plasma;
   

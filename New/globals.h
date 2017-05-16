@@ -89,6 +89,7 @@ module globals
   INTEGER              :: IsNormBnormal  =        0
   INTEGER              :: IsNormWeight   =        0       
   REAL                 :: weight_bnorm   =        1.000D+00
+  REAL                 :: weight_bharm   =        0.000D+00
   REAL                 :: weight_tflux   =        0.000D+00
   REAL                 :: target_tflux   =        0.000D+00
   REAL                 :: weight_ttlen   =        0.000D+00
@@ -141,6 +142,7 @@ module globals
                         IsNormalize   , &
                         IsNormWeight  , &
                         weight_bnorm  , &
+                        weight_bharm  , &
                         weight_tflux  , &
                         target_tflux  , &
                         weight_ttlen  , &
@@ -220,15 +222,31 @@ module globals
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 !latex \subsection{Optimization}
+  ! General target functions;
+  INTEGER              :: itau
   REAL                 :: totalenergy, discretefactor
-  REAL   , allocatable :: evolution(:,:), coilspace(:,:), deriv(:,:)
-  INTEGER              :: itau, isign = 1  ! sign symbol for flux
-  REAL, allocatable    :: t1E(:), t2E(:,:), t1B(:), t2B(:,:), bn(:, :), &
-                          t1F(:), t2F(:,:), t1L(:), t2L(:,:), &
-                          t1A(:), t2A(:,:), t1C(:), t2C(:,:)
-  REAL                 :: bnorm, tflux, ttlen, specw, ccsep
-  LOGICAL              :: Langrange = .false.  
-                       ! flag for whether including langrange multipiler in DoFs; 08/17/2016
+  REAL   , allocatable :: t1E(:), t2E(:,:), evolution(:,:), coilspace(:,:), deriv(:,:)
+  ! Bn surface integration;
+  REAL                 :: bnorm
+  REAL   , allocatable :: t1B(:), t2B(:,:), bn(:,:), dBx(:,:,:)
+  ! Bn reasonant harmoics;
+  INTEGER              :: NBmn
+  INTEGER, allocatable :: Bmnin(:), Bmnim(:)
+  REAL                 :: bharm
+  REAL   , allocatable :: t1H(:), t2H(:,:), Bmnc(:),Bmns(:), wBmn(:), tBmnc(:), tBmns(:), carg(:,:), sarg(:,:)
+  ! Tflux error;
+  INTEGER              :: isign = 1
+  REAL                 :: tflux
+  REAL   , allocatable :: t1F(:), t2F(:,:)
+  ! Length constraint
+  REAL                 :: ttlen
+  REAL   , allocatable :: t1L(:), t2L(:,:)
+  ! Coil-coil spearation
+  REAL                 :: ccsep
+  REAL   , allocatable :: t1C(:), t2C(:,:)
+  ! Spectral condensation;
+  REAL                 :: specw
+  REAL   , allocatable :: t1S(:), t2S(:,:)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -260,7 +278,7 @@ module globals
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 !latex \subsection{Miscellaneous}
-  REAL                 :: tmpw_bnorm, tmpw_tflux ,tmpt_tflux, tmpw_ttlen, tmpw_specw, tmpw_ccsep
+  REAL                 :: tmpw_bnorm, tmpw_tflux ,tmpt_tflux, tmpw_ttlen, tmpw_specw, tmpw_ccsep, tmpw_bharm
                           !tmp weight for saving to restart file
   REAL, allocatable    :: mincc(:,:)!
 

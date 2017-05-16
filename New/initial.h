@@ -50,6 +50,7 @@
 !latex       {]bf 2}: Optimize Bn Fourier spectrum;
 !latex \item \inputvar{IsNormWeight   =        0        } : Normalize weights (1); \link{costfun}
 !latex \item \inputvar{weight\_bnorm  =        1.000D+00} : weight for Bn rms error; \link{bnormal}
+!latex \item \inputvar{weight\_bharm  =        0.000D+00} : weight for Bn harmonics error; \link{bnftran}
 !latex \item \inputvar{weight\_tflux  =        0.000D+00} : weight for toroidal flux error; \link{torflux}
 !latex \item \inputvar{target\_tflux  =        0.000D+00} : target toroidal flux; if 0.0, auto calculated;
 !latex \item \inputvar{weight\_ttlen  =        0.000D+00} : weight for coil length error; \link{coillen}
@@ -144,6 +145,7 @@ subroutine Initial
   IlBCAST( IsNormBnormal ,    1,  0 )
   IlBCAST( IsNormWeight  ,    1,  0 )
   RlBCAST( weight_bnorm  ,    1,  0 )
+  RlBCAST( weight_bharm  ,    1,  0 )
   RlBCAST( weight_tflux  ,    1,  0 )
   RlBCAST( target_tflux  ,    1,  0 )
   RlBCAST( weight_ttlen  ,    1,  0 )
@@ -296,6 +298,7 @@ subroutine Initial
   
   !save weights before normalized
   tmpw_bnorm = weight_bnorm
+  tmpw_bharm = weight_bharm
   tmpw_tflux = weight_tflux
   tmpt_tflux = target_tflux
   tmpw_ttlen = weight_ttlen

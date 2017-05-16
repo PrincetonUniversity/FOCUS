@@ -58,11 +58,13 @@ subroutine restart( irestart )
      if(allocated(t1B)) deriv(1:Ndof,1) = t1B(1:Ndof)
      if(allocated(t1F)) deriv(1:Ndof,2) = t1F(1:Ndof)
      if(allocated(t1L)) deriv(1:Ndof,3) = t1L(1:Ndof)
-     if(allocated(t1A)) deriv(1:Ndof,4) = t1A(1:Ndof)
+     if(allocated(t1S)) deriv(1:Ndof,4) = t1S(1:Ndof)
      if(allocated(t1C)) deriv(1:Ndof,5) = t1C(1:Ndof)
+     if(allocated(t1H)) deriv(1:Ndof,6) = t1H(1:Ndof)
   endif
   !calculate the new Bn
   if (allocated(surf(1)%bn)) call BnFTran
+  if (allocated(Bmnc)) call writeBmn
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -118,26 +120,26 @@ subroutine restart( irestart )
   HWRITERV( 1                ,   PP_bstol      ,   PP_bstol                      )
   HWRITEIV( 1                ,   PP_bsnlimit   ,   PP_bsnlimit                   )
 
-  HWRITERA( 1+Nteta,1+Nzeta  ,   xsurf         ,   surf(1)%xx(0:Nteta,0:Nzeta)   )
-  HWRITERA( 1+Nteta,1+Nzeta  ,   ysurf         ,   surf(1)%yy(0:Nteta,0:Nzeta)   )
-  HWRITERA( 1+Nteta,1+Nzeta  ,   zsurf         ,   surf(1)%zz(0:Nteta,0:Nzeta)   )
-  HWRITERA( 1+Nteta,1+Nzeta  ,   nx            ,   surf(1)%nx(0:Nteta,0:Nzeta)   )
-  HWRITERA( 1+Nteta,1+Nzeta  ,   ny            ,   surf(1)%ny(0:Nteta,0:Nzeta)   )
-  HWRITERA( 1+Nteta,1+Nzeta  ,   nz            ,   surf(1)%nz(0:Nteta,0:Nzeta)   )
+  HWRITERA( Nteta,Nzeta      ,   xsurf         ,   surf(1)%xx(0:Nteta-1,0:Nzeta-1) )
+  HWRITERA( Nteta,Nzeta      ,   ysurf         ,   surf(1)%yy(0:Nteta-1,0:Nzeta-1) )
+  HWRITERA( Nteta,Nzeta      ,   zsurf         ,   surf(1)%zz(0:Nteta-1,0:Nzeta-1) )
+  HWRITERA( Nteta,Nzeta      ,   nx            ,   surf(1)%nx(0:Nteta-1,0:Nzeta-1) )
+  HWRITERA( Nteta,Nzeta      ,   ny            ,   surf(1)%ny(0:Nteta-1,0:Nzeta-1) )
+  HWRITERA( Nteta,Nzeta      ,   nz            ,   surf(1)%nz(0:Nteta-1,0:Nzeta-1) )
 
   if (allocated(bn)) then
-     HWRITERA( 1+Nteta,1+Nzeta  ,   tgtBn         ,   surf(1)%tn(0:Nteta,0:Nzeta)   )
-     HWRITERA( 1+Nteta,1+Nzeta  ,   curBn         ,           bn(0:Nteta,0:Nzeta)   )
-     HWRITERA( 1+Nteta,1+Nzeta  ,   Bx            ,   surf(1)%Bx(0:Nteta,0:Nzeta)   )
-     HWRITERA( 1+Nteta,1+Nzeta  ,   By            ,   surf(1)%By(0:Nteta,0:Nzeta)   )
-     HWRITERA( 1+Nteta,1+Nzeta  ,   Bz            ,   surf(1)%Bz(0:Nteta,0:Nzeta)   )
+     HWRITERA( Nteta,Nzeta      ,   tgtBn         ,   surf(1)%tn(0:Nteta-1,0:Nzeta-1) )
+     HWRITERA( Nteta,Nzeta      ,   curBn         ,           bn(0:Nteta-1,0:Nzeta-1) )
+     HWRITERA( Nteta,Nzeta      ,   Bx            ,   surf(1)%Bx(0:Nteta-1,0:Nzeta-1) )
+     HWRITERA( Nteta,Nzeta      ,   By            ,   surf(1)%By(0:Nteta-1,0:Nzeta-1) )
+     HWRITERA( Nteta,Nzeta      ,   Bz            ,   surf(1)%Bz(0:Nteta-1,0:Nzeta-1) )
   endif
 
   HWRITEIV( 1                ,   itau          ,   itau                          )
-  HWRITERA( itau+1, 8        ,   evolution     ,   evolution(0:itau, 0:7)        )
+  HWRITERA( itau+1, 8        ,   evolution     ,   evolution(0:itau, 0:8)        )
   HWRITERA( itau+1, Tdof     ,   coilspace     ,   coilspace(0:itau, 1:Tdof)     )
   if (allocated(deriv)) then
-     HWRITERA( Ndof, 6       ,   deriv         ,   deriv(1:Ndof, 0:5)            )
+     HWRITERA( Ndof, 6       ,   deriv         ,   deriv(1:Ndof, 0:6)            )
   endif
 
   if (allocated(Cur_Bns)) then
