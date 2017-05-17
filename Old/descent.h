@@ -128,6 +128,8 @@ subroutine descent2
   external             :: denergy2, progres2, D02BJW
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+  write(ounit,'("descent2 : ")') 
   
   NN = NFcoil  ! this assumes the Fourier resolution of each coil is the same; not general; 14 Apr 16;
   

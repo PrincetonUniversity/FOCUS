@@ -69,6 +69,8 @@ subroutine rdcoils
       do jj = 1, NDcoil
          tt = (jj-1)*pi2/NDcoil !poloidal angle;
          
+         FATAL( rdcoils, rmin.lt.one, definition of rmin has changed ask SRH )  ! 11 May 17;
+         
          call knotxx( rmin, tt, zeta, ax, at, az, xx, xt, xz )
          
          coilsX(jj, ii) = xx(1)
@@ -805,6 +807,7 @@ subroutine discretecoil
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
+  write(*,'("discretecoil : ")') 
  
   !coil discresization; xx, xt, xa are 0, 1st and 2nd derivatives;
   do icoil = 1, Ncoils

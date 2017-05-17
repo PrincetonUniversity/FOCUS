@@ -57,6 +57,7 @@ subroutine initial
   IlBCAST( Isymmetric    ,    1,  0 )
   IlBCAST( Itopology     ,    1,  0 )
   RlBCAST( knotsurf      ,    1,  0 )
+  RlBCAST( ellipticity   ,    1,  0 )
   IlBCAST( NFcoil        ,    1,  0 )
   IlBCAST( NDcoil        ,    1,  0 )
   IlBCAST( Linitialize   ,    1,  0 )
@@ -112,7 +113,7 @@ subroutine initial
   if( myid.eq.0 ) then
 
      if( Itopology   .eq. 0 ) write(ounit,0100) Idisplay, Isymmetric, Itopology, NFcoil, NDcoil
-     if( Itopology   .eq. 1 ) write(ounit,0101) Idisplay, Isymmetric, Itopology, knotsurf, NFcoil, NDcoil
+     if( Itopology   .eq. 1 ) write(ounit,0101) Idisplay, Isymmetric, Itopology, knotsurf, ellipticity, NFcoil, NDcoil
 
      if( Linitialize .le. 0 ) write(ounit,0102) Linitialize
      if( Linitialize .gt. 0 ) write(ounit,0103) Linitialize, Rmaj, rmin, Ic, Io, Iw, Lc, Lo, Lw
@@ -132,7 +133,7 @@ subroutine initial
   endif
 
 0100 format("initial : " 10x " : Idisplay ="i2 " ; Isymmetric ="i2" ; Itopology ="i2" ; NFcoil="i3" ; NDcoil ="i4" ;")
-0101 format("initial : " 10x " : Idisplay ="i2 " ; Isymmetric ="i2" ; Itopology ="i2" ; knotsurf ="f7.3" ; NFcoil="i3" ; NDcoil ="i4" ;")
+0101 format("initial : " 10x " : Idisplay ="i2 " ; Isymmetric ="i2" ; Itopology ="i2" ; knotsurf ="f7.3" ; ellipticity="f7.3" ; NFcoil="i3" ; NDcoil ="i4" ;")
 
 0102 format("initial : " 10x " : Linitialize ="i4" ;")
 0103 format("initial : " 10x " : Linitialize ="i4" ; Rmaj ="f5.2" ; rmin ="f5.2" ; Ic ="i2" ; Io ="es13.5" ; Iw ="es12.5" ; Lc ="i2" ; Lo ="es12.5" ; Lw ="es12.5" ;")

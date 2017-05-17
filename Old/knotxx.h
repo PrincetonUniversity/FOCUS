@@ -13,7 +13,7 @@
 subroutine knotxx( aa, teta, zeta, ax, at, az, xx, xt, xz )
   
   use kmodule, only : zero, one, pi2, small, myid, ounit, &
-                      Itopology, knotNF, knotphase, &
+                      Itopology, knotNF, knotsurf, ellipticity, &
                       xkc, xks, ykc, yks, zkc, zks
   
   implicit none
@@ -25,7 +25,8 @@ subroutine knotxx( aa, teta, zeta, ax, at, az, xx, xt, xz )
   REAL                 :: aa, teta, zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xt(1:3), xz(1:3)
   
   INTEGER              :: ierr, p(1:3), q(1:3), mm
-  REAL                 :: cqz, sqz, cpz, spz, RR(0:3), ZZ(0:3), x0(1:3), x1(1:3), x2(1:3), x3(1:3), a0, a1, a2, b0, b1, carg, sarg
+  REAL                 :: rr, rt, rz
+  REAL                 :: cqz, sqz, cpz, spz, x0(1:3), x1(1:3), x2(1:3), x3(1:3), a0, a1, a2, b0, b1, carg, sarg
   REAL                 :: tt(1:3), td(1:3), dd(1:3), xa, ya, za, ff, nn(1:3), nd(1:3), bb(1:3), bd(1:3)
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -66,7 +67,7 @@ subroutine knotxx( aa, teta, zeta, ax, at, az, xx, xt, xz )
    
   case( 1:2 ) ! arbitrary knot represented using Fourier series; Nov 12 15;
    
-   FATAL( knotxx, abs(knotphase).gt.small, need to revise phase )
+!  FATAL( knotxx, abs(knotphase).gt.small, need to revise phase )
    
    x0(1:3) = (/ xkc(0), ykc(0), zkc(0) /)
    x1(1:3) = (/ zero  , zero  , zero   /)
@@ -136,10 +137,22 @@ subroutine knotxx( aa, teta, zeta, ax, at, az, xx, xt, xz )
    bb(1:3) = (/ tt(2)*nn(3)-tt(3)*nn(2), tt(3)*nn(1)-tt(1)*nn(3), tt(1)*nn(2)-tt(2)*nn(1) /)   ! Nov 12 15;
    bd(1:3) = (/ td(2)*nn(3)-td(3)*nn(2), td(3)*nn(1)-td(1)*nn(3), td(1)*nn(2)-td(2)*nn(1) /) &
            + (/ tt(2)*nd(3)-tt(3)*nd(2), tt(3)*nd(1)-tt(1)*nd(3), tt(1)*nd(2)-tt(2)*nd(1) /)   ! Nov 12 15;
+
+   rr = aa * ( knotsurf + ellipticity * cos( teta - zeta )        )
+   rt = aa * (     zero - ellipticity * sin( teta - zeta ) * (+1) )
+   rz = aa * (     zero - ellipticity * sin( teta - zeta ) * (-1) )
    
-   xx(1:3) = x0(1:3) + aa * (   cos(teta) * nn(1:3) - sin(teta) * bb(1:3) ) ! aa is minor radius;
-   xt(1:3) = zero    + aa * ( - sin(teta) * nn(1:3) - cos(teta) * bb(1:3) )
-   xz(1:3) = x1(1:3) + aa * (   cos(teta) * nd(1:3) - sin(teta) * bd(1:3) )
+   xx(1:3) = x0(1:3) + rr * (   cos(teta) * nn(1:3) - sin(teta) * bb(1:3) ) ! aa is minor radius;
+
+   xt(1:3) = zero    + rt * (   cos(teta) * nn(1:3) - sin(teta) * bb(1:3) ) &
+                     + rr * ( - sin(teta) * nn(1:3) - cos(teta) * bb(1:3) )
+
+   xz(1:3) = x1(1:3) + rz * (   cos(teta) * nn(1:3) - sin(teta) * bb(1:3) ) &
+                     + rr * (   cos(teta) * nd(1:3) - sin(teta) * bd(1:3) )
+   
+!  xx(1:3) = x0(1:3) + aa * (   cos(teta) * nn(1:3) - sin(teta) * bb(1:3) ) ! aa is minor radius;
+!  xt(1:3) = zero    + aa * ( - sin(teta) * nn(1:3) - cos(teta) * bb(1:3) )
+!  xz(1:3) = x1(1:3) + aa * (   cos(teta) * nd(1:3) - sin(teta) * bd(1:3) )
    
   else
    
