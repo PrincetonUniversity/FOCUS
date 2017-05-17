@@ -23,7 +23,7 @@ subroutine rdknot
   
   use kmodule, only : zero, one, half, ten, pi, pi2, sqrtmachprec, myid, ncpu, ounit, lunit, &
                       ext, &
-                      knotNF, knotsurf, knotphase, surf, Nteta, Nzeta, bNfp,  &
+                      knotNF, knotsurf, surf, Nteta, Nzeta, bNfp,  &
                       xkc, xks, ykc, yks, zkc, zks, &
                       Mpol, Ntor, &
                       Ntz, isr, trigm, trign, trigwk, ijreal, ijimag, mn, im, in, cfmn, sfmn, efmn, ofmn
@@ -74,10 +74,10 @@ subroutine rdknot
   
   FATAL( rdknot , .not.exist, input knot does not exist )
   
-  if( myid.eq.0 ) read( lunit, *, iostat=iostat ) knotNF, knotphase ! knotphase is redundant; 18 Apr 17;
+  if( myid.eq.0 ) read( lunit, *, iostat=iostat ) knotNF!, knotphase ! knotphase is redundant; 18 Apr 17;
   
   IlBCAST( knotNF, 1, 0 )
-  RlBCAST( knotphase, 1, 0 ) ! knotphast is redundant; 18 Apr 17;
+! RlBCAST( knotphase, 1, 0 ) ! knotphase is redundant; 18 Apr 17;
   
   SALLOCATE( xkc, (0:knotNF), zero )
   SALLOCATE( xks, (0:knotNF), zero )
@@ -128,14 +128,14 @@ subroutine rdknot
   RlBCAST( zkc(0:knotNF), knotNF+1, 0 )
   RlBCAST( zks(0:knotNF), knotNF+1, 0 )
    
-  if( myid.eq.0 ) then
-   write(ounit,'("rdknot  : " 10x " : xkc=",    999es11.03)') xkc(0:knotNF)
-   write(ounit,'("rdknot  : " 10x " : xks=",11x,998es11.03)') xks(1:knotNF)
-   write(ounit,'("rdknot  : " 10x " : ykc=",    999es11.03)') ykc(0:knotNF)
-   write(ounit,'("rdknot  : " 10x " : yks=",11x,999es11.03)') yks(1:knotNF)
-   write(ounit,'("rdknot  : " 10x " : zkc=",    999es11.03)') zkc(0:knotNF)
-   write(ounit,'("rdknot  : " 10x " : zks=",11x,999es11.03)') zks(1:knotNF)
-  endif
+ !if( myid.eq.0 ) then
+ ! write(ounit,'("rdknot  : " 10x " : xkc=",    999es11.03)') xkc(0:knotNF)
+ ! write(ounit,'("rdknot  : " 10x " : xks=",11x,998es11.03)') xks(1:knotNF)
+ ! write(ounit,'("rdknot  : " 10x " : ykc=",    999es11.03)') ykc(0:knotNF)
+ ! write(ounit,'("rdknot  : " 10x " : yks=",11x,999es11.03)') yks(1:knotNF)
+ ! write(ounit,'("rdknot  : " 10x " : zkc=",    999es11.03)') zkc(0:knotNF)
+ ! write(ounit,'("rdknot  : " 10x " : zks=",11x,999es11.03)') zks(1:knotNF)
+ !endif
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -166,7 +166,11 @@ subroutine rdknot
   do ii = 0, Nteta ; teta = ( ii + half ) * pi2 / Nteta
    do jj = 0, Nzeta ; zeta = ( jj + half ) * pi2 / Nzeta
     
-    call knotxx( knotsurf, teta, zeta, ax, at, az, xx, xt, xz )
+    lknotsurf = one ! knotsurf + ellipticity * cos( teta ) ! 11 May 17;
+
+    call knotxx( lknotsurf, teta, zeta, ax, at, az, xx, xt, xz )
+    
+   !call knotxx( knotsurf, teta, zeta, ax, at, az, xx, xt, xz )
     
     ds(1:3) = -(/ xt(2) * xz(3) - xt(3) * xz(2), xt(3) * xz(1) - xt(1) * xz(3), xt(1) * xz(2) - xt(2) * xz(1) /) ! negative sign = counterclockwise;
     
@@ -228,8 +232,12 @@ subroutine rdknot
                     Ldf, xtol, diag(1:Ndof), mode, factor, RR(1:LRR), LRR, QTf(1:Ndof), rwk(1:Ndof,1:4), ic05pdf )
        
        alfa = mod( alfazeta(1) - ten + pi, pi2 ) ; zeta = alfazeta(2) - ten ! offsets must be consistent with above; 26 Apr 17;
+
+       lknotsurf = one ! knotsurf + ellipticity * cos( alfa ) ! 11 May 17;
+
+       call knotxx( lknotsurf, alfa, zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xt(1:3), xz(1:3) )
        
-       call knotxx( knotsurf, alfa, zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xt(1:3), xz(1:3) )
+      !call knotxx( knotsurf, alfa, zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xt(1:3), xz(1:3) )
        
        rx = sqrt( xx(1)*xx(1) + xx(2)*xx(2) ) ; rt = ( xx(1)*xt(1) + xx(2)*xt(2) ) / rx ; rz = ( xx(1)*xz(1) + xx(2)*xz(2) ) / rx
        ox = sqrt( ax(1)*ax(1) + ax(2)*ax(2) ) ; ot = ( ax(1)*at(1) + ax(2)*at(2) ) / ox ; oz = ( ax(1)*az(1) + ax(2)*az(2) ) / ox

@@ -74,6 +74,7 @@ module kmodule
   INTEGER              :: Isymmetric  =        1         !latex \item \inputvar{Isymmetric    =        1        } : enforce stellarator symmetry;
   INTEGER              :: Itopology   =        0         !latex \item \inputvar{Itopology     =        0        } : selects knottedness of plasma:
   REAL                 :: knotsurf    =        0.200D-00 !latex \item \inputvar{knotsurf      =        0.200D-00} : radius of knotted plasma boundary;
+  REAL                 :: ellipticity =        0.000D-00 !latex \item \inputvar{ellipticity   =        0.000D-00} : radius of knotted plasma boundary;
   INTEGER              :: Linitialize =        0         !latex \item \inputvar{Linitialize   =        0        } : 
   REAL                 :: Rmaj        =        1.000D+00 !latex \item \inputvar{Rmaj          =        1.000D+00} : major radius of coils;
   REAL                 :: rmin        =        0.500D+00 !latex \item \inputvar{rmin          =        0.500D+00} : minor radius of coils;
@@ -127,6 +128,7 @@ module kmodule
                          Isymmetric                    , &
                          Itopology                     , &
                          knotsurf                      , &
+                         ellipticity                   , &
                          Linitialize                   , &
                          Rmaj                          , &
                          rmin                          , &
