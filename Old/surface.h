@@ -270,7 +270,7 @@ subroutine surfcoord( theta, zeta, r, z)
   INTEGER           :: imn
   REAL              :: arg, carg, sarg
   
-  if( .not. allocated(bim) ) STOP  "Please allocate surface data first!"
+  if( .not. allocated(bim) ) STOP "surfcoord : please allocate surface data first!"
 
   r = zero; z = zero
   
@@ -320,6 +320,8 @@ subroutine knotxx( aa, teta, zeta, ax, at, az, xx, xt, xz )
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
+  FATAL( surface, .true., this should be removed )
+
   select case( Itopology )
    
 !  case( 1 ) ! torus knot; Nov 12 15;

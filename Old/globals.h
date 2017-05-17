@@ -48,8 +48,8 @@ module kmodule
   
   REAL, parameter      :: pi         =  3.141592653589793238462643383279502884197
   REAL, parameter      :: pi2        =  pi * two
-  REAL                 :: bsconstant =  1.0!E-7 ! mu0/4pi
-  REAL                 :: antibscont =  1.0E-7
+  REAL, parameter      :: bsconstant =  1.0E-7 ! mu0/4pi
+  REAL, parameter      :: antibscont =  1.0!E-7
   REAL, parameter      :: mu0        =  2.0E-07 * pi2
   REAL, parameter      :: goldenmean =  1.618033988749895 ! golden mean = ( one + sqrt(five) ) / two ;    
   
@@ -74,6 +74,7 @@ module kmodule
   INTEGER              :: Isymmetric  =        1         !latex \item \inputvar{Isymmetric    =        1        } : enforce stellarator symmetry;
   INTEGER              :: Itopology   =        0         !latex \item \inputvar{Itopology     =        0        } : selects knottedness of plasma:
   REAL                 :: knotsurf    =        0.200D-00 !latex \item \inputvar{knotsurf      =        0.200D-00} : radius of knotted plasma boundary;
+  REAL                 :: ellipticity =        0.000D-00 !latex \item \inputvar{ellipticity   =        0.000D-00} : radius of knotted plasma boundary;
   INTEGER              :: Linitialize =        0         !latex \item \inputvar{Linitialize   =        0        } : 
   REAL                 :: Rmaj        =        1.000D+00 !latex \item \inputvar{Rmaj          =        1.000D+00} : major radius of coils;
   REAL                 :: rmin        =        0.500D+00 !latex \item \inputvar{rmin          =        0.500D+00} : minor radius of coils;
@@ -116,70 +117,18 @@ module kmodule
   REAL                 :: odetol      =        1.000D-10 !latex \item \inputvar{odetol      =        1.000D-10} : \Poincare plot, \link{pp00aa};
   INTEGER              :: Ppts        =      100         !latex \item \inputvar{Ppts        =      100        } : \Poincare plot, \link{pp00aa};
   INTEGER              :: Ptrj        =        8         !latex \item \inputvar{Ptrj        =        8        } : \Poincare plot, \link{pp00aa};
-  REAL                 :: phi         =        0.000D-00 !latex \item \inputvar{phi         =        0.000D-00} : \Poincare plot, \link{pp00aa};
+  REAL                 ::  phi        =        0.0       !latex \item \inputvar{ phi        =        0.0      } : REDUNDANT;
+  INTEGER              :: iphi        =        0         !latex \item \inputvar{iphi        =        0        } : \Poincare plot,
   REAL                 :: bstol       =        1.000D-06 !latex \item \inputvar{bstol       =        1.000D-06} : 
                                                          !latex       tolerance in Biot-Savart integral; passed to \oculus{bs00aa};
   INTEGER              :: bsnlimit    =   100000         !latex \item \inputvar{bsnlimit    =   100000        } : 
                                                          !latex       max. number of iterations used in Biot-Savart integral; passed to \oculus{bs00aa};
-#ifdef FASHION
-  REAL                 :: cen_cur     =   1.0E7          !central filament;
-  REAL                 :: cen_zmin    =   -100.0D00      !lowest z coordinate;
-  REAL                 :: cen_zmax    =    100.0D00      !uppest z coordinate;
-!latex \ei
-  
+
   namelist / focusin /   Idisplay                      , &
                          Isymmetric                    , &
                          Itopology                     , &
                          knotsurf                      , &
-                         Linitialize                   , &
-                         Rmaj                          , &
-                         rmin                          , &
-                         Ic                            , &
-                         Io                            , &
-                         Iw                            , &
-                         Lc                            , &
-                         Lo                            , &
-                         Lw                            , &
-                         NFcoil                        , &
-                         NDcoil                        , &
-                         cen_cur                       , &
-                         cen_zmin                      , &
-                         cen_zmax                      , &
-                         Loptimize                     , &
-                         Lnormalize                    , &
-                         weight_bnorm                  , &
-                         weight_tflux                  , &
-                         target_tflux                  , &
-                         weight_ttlen                  , &
-                         weight_eqarc                  , &
-                         weight_ccsep                  , &
-                         tauend                        , &
-                         tautol                        , &
-                         Ntauout                       , &
-                         Savfreq                       , &
-                         Nteta                         , &
-                         Nzeta                         , &
-                         absacc                        , &
-                         absreq                        , & ! redundant; 14 Apr 16;
-                         relreq                        , & ! redundant; 14 Apr 16;
-                         xtol                          , &
-                         eta                           , &
-                         stepmx                        , &
-                         Mpol                          , & ! 18 Apr 17;
-                         Ntor                          , & ! 18 Apr 17;
-                         Lpoincare                     , &
-                         odetol                        , &
-                         Ppts                          , &
-                         Ptrj                          , &
-                         phi                           , &
-                         bstol                         , &
-                         bsnlimit                      
-#else
-    
-  namelist / focusin /   Idisplay                      , &
-                         Isymmetric                    , &
-                         Itopology                     , &
-                         knotsurf                      , &
+                         ellipticity                   , &
                          Linitialize                   , &
                          Rmaj                          , &
                          rmin                          , &
@@ -217,10 +166,11 @@ module kmodule
                          odetol                        , &
                          Ppts                          , &
                          Ptrj                          , &
-                         phi                           , &
+                         phi                           , & ! redundant; 27 Apr 17;
+                         iphi                          , &
                          bstol                         , &
                          bsnlimit  
-#endif
+
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   INTEGER              :: myid, ncpu
@@ -247,7 +197,7 @@ module kmodule
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   INTEGER              :: Ncoils, itime, iteta, jzeta, nrestart, itau, Cdof, Ndof, Tdof, Ndim, iter, nfixcur, nfixgeo
-  REAL                 :: totalenergy, discretefactor
+  REAL                 :: totalenergy, discretefactor, Inorm, Gnorm
   LOGICAL              :: Langrange = .false.           ! flag for whether including langrange multipiler in DoFs; 08/17/2016
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -258,7 +208,7 @@ module kmodule
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-  REAL   , allocatable :: cmt(:,:), smt(:,:), shudson(:), newton(:)
+  REAL   , allocatable :: cmt(:,:), smt(:,:), shudson(:), newton(:), norm(:)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -277,7 +227,7 @@ module kmodule
   type toroidalsurface
      INTEGER              :: Nteta, Nzeta
      REAL   , allocatable :: xx(:,:), yy(:,:), zz(:,:), nx(:,:), ny(:,:), nz(:,:), ds(:,:), xt(:,:), yt(:,:), zt(:,:), bnt(:,:)
-     REAL   , allocatable :: rx(:), ry(:), rz(:)
+     REAL   , allocatable :: rr(:), rz(:)
   end type toroidalsurface
 
   type(arbitrarycoil)  , allocatable :: coil(:)  

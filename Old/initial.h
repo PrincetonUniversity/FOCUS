@@ -37,7 +37,7 @@ subroutine initial
 
   if( myid.eq.0 ) then ! only the master node reads the input; 25 Mar 15;
      call getarg(1,ext)
-     write(ounit,'("initial : " 10x " : machprec ="es12.5" ; sqrtmachprec ="es12.5" ; ext = "a100)') machprec, sqrtmachprec, ext
+     write(ounit,'("initial : " 10x " : machprec ="es12.5" ; sqrtmachprec ="es12.5" ; ext = "a)') machprec, sqrtmachprec, trim(ext)
      inquire( file=trim(ext)//".fo", exist=exist )
   endif
 
@@ -57,6 +57,7 @@ subroutine initial
   IlBCAST( Isymmetric    ,    1,  0 )
   IlBCAST( Itopology     ,    1,  0 )
   RlBCAST( knotsurf      ,    1,  0 )
+  RlBCAST( ellipticity   ,    1,  0 )
   IlBCAST( NFcoil        ,    1,  0 )
   IlBCAST( NDcoil        ,    1,  0 )
   IlBCAST( Linitialize   ,    1,  0 )
@@ -94,14 +95,9 @@ subroutine initial
   RlBCAST( odetol        ,    1,  0 )
   IlBCAST( Ppts          ,    1,  0 )
   IlBCAST( Ptrj          ,    1,  0 )
-  RlBCAST( phi           ,    1,  0 )
+  IlBCAST( iphi          ,    1,  0 )
   RlBCAST( bstol         ,    1,  0 )
   IlBCAST( bsnlimit      ,    1,  0 )
-#ifdef FASHION
-  RlBCAST( cen_cur       ,    1,  0 )  
-  RlBCAST( cen_zmin      ,    1,  0 )  
-  RlBCAST( cen_zmax      ,    1,  0 )  
-#endif
   
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -112,7 +108,7 @@ subroutine initial
   if( myid.eq.0 ) then
 
      if( Itopology   .eq. 0 ) write(ounit,0100) Idisplay, Isymmetric, Itopology, NFcoil, NDcoil
-     if( Itopology   .eq. 1 ) write(ounit,0101) Idisplay, Isymmetric, Itopology, knotsurf, NFcoil, NDcoil
+     if( Itopology   .eq. 1 ) write(ounit,0101) Idisplay, Isymmetric, Itopology, knotsurf, ellipticity, NFcoil, NDcoil
 
      if( Linitialize .le. 0 ) write(ounit,0102) Linitialize
      if( Linitialize .gt. 0 ) write(ounit,0103) Linitialize, Rmaj, rmin, Ic, Io, Iw, Lc, Lo, Lw
@@ -127,12 +123,12 @@ subroutine initial
       endif
       
      if( Lpoincare   .eq. 0 ) write(ounit,0109) Lpoincare
-     if( Lpoincare   .ne. 0 ) write(ounit,0110) Lpoincare, odetol, Ppts, Ptrj, phi, bstol, bsnlimit
+     if( Lpoincare   .ne. 0 ) write(ounit,0110) Lpoincare, odetol, Ppts, Ptrj, iphi, bstol, bsnlimit
 
   endif
 
 0100 format("initial : " 10x " : Idisplay ="i2 " ; Isymmetric ="i2" ; Itopology ="i2" ; NFcoil="i3" ; NDcoil ="i4" ;")
-0101 format("initial : " 10x " : Idisplay ="i2 " ; Isymmetric ="i2" ; Itopology ="i2" ; knotsurf ="f7.3" ; NFcoil="i3" ; NDcoil ="i4" ;")
+0101 format("initial : " 10x " : Idisplay ="i2 " ; Isymmetric ="i2" ; Itopology ="i2" ; knotsurf ="f7.3" ; ellipticity="f7.3" ; NFcoil="i3" ; NDcoil ="i4" ;")
 
 0102 format("initial : " 10x " : Linitialize ="i4" ;")
 0103 format("initial : " 10x " : Linitialize ="i4" ; Rmaj ="f5.2" ; rmin ="f5.2" ; Ic ="i2" ; Io ="es13.5" ; Iw ="es12.5" ; Lc ="i2" ; Lo ="es12.5" ; Lw ="es12.5" ;")
@@ -145,7 +141,7 @@ subroutine initial
 0108 format( 36X                               " ; weight_ttlen = "es12.5" ; weight_eqarc ="es12.5" ; weight_ccsep ="es12.5)
 
 0109 format("initial : " 10x " : Lpoincare ="i2" ;")
-0110 format("initial : " 10x " : Lpoincare ="i2" ; odetol ="es8.1" ; Ppts ="i6" ; Ptrj ="i4" ; phi ="f7.3" ; bstol ="es8.1" ; bsnlimit ="i9" ;")
+0110 format("initial : " 10x " : Lpoincare ="i2" ; odetol ="es8.1" ; Ppts ="i6" ; Ptrj ="i4" ; iphi ="i4" ; bstol ="es8.1" ; bsnlimit ="i9" ;")
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -236,6 +232,15 @@ subroutine initial
      FATAL( initial, xtol .lt. zero  , illegal )
      FATAL( initial, eta .lt. zero .or. eta .ge. one, illegal )
      FATAL( initial, stepmx .lt. xtol, illegal )
+  case ( 5 )
+     FATAL( initial, weight_bnorm  .lt.zero, illegal )
+     FATAL( initial, weight_tflux  .lt.zero, illegal )
+     FATAL( initial, weight_ttlen  .lt.zero, illegal )
+     FATAL( initial, weight_eqarc  .lt.zero, illegal )
+     FATAL( initial, weight_ccsep  .lt.zero, illegal )
+     FATAL( initial, Ntauout .le.   0, illegal )
+     FATAL( initial, Nteta   .le.   0, illegal )
+     FATAL( initial, Nzeta   .le.   0, illegal )
   case ( 9 )
      FATAL( initial, weight_bnorm  .lt.zero, illegal )
      FATAL( initial, weight_tflux  .lt.zero, illegal )
@@ -252,11 +257,12 @@ subroutine initial
   FATAL( initial, lc .eq. 0 .and. weight_ttlen .ne. zero, conflicts between lc and weight_ttlen)
 
   if( Lpoincare.ne.0 ) then
-   FATAL( initial, odetol   .le.zero, illegal )
-   FATAL( initial, Ppts     .lt.0   , illegal )
-   FATAL( initial, Ptrj     .lt.0   , illegal )
-   FATAL( initial, bstol    .le.zero, illegal )
-   FATAL( initial, bsnlimit .le.   0, illegal )
+   FATAL( initial, odetol   .le.zero  , illegal )
+   FATAL( initial, Ppts     .lt.0     , illegal )
+   FATAL( initial, Ptrj     .lt.0     , illegal )
+   FATAL( initial, bstol    .le.zero  , illegal )
+   FATAL( initial, bsnlimit .le.   0  , illegal )
+   FATAL( initial, iphi     .gt. Nzeta, illegal )
   endif
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!

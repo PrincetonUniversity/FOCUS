@@ -95,6 +95,7 @@ PROGRAM focus
   case(  2 )   ; call descent2    ; irestart=1  ! differential flow; czhu               ; 14 Apr 16  ;
   case(  3 )   ; call Powell      ; irestart=1  ! Powell nonlinear solver; NAG C05PDF; with    derivs;
   case(  4 )   ; call Newton      ; irestart=1  ! Newton minimum finder  ; NAG E04LYF; with    derivs;
+  case(  5 )   ; call congrad     ; irestart=1  ! conjugate gradient                 ; with    derivs;
   case(  9 )   ; call SVD         ; irestart=1  ! Analyze current Heissian matrix using SVD; F08KBF  ;
   case default ;                  ; irestart=1
   end select
