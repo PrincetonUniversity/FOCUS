@@ -97,11 +97,6 @@ subroutine initial
   IlBCAST( iphi          ,    1,  0 )
   RlBCAST( bstol         ,    1,  0 )
   IlBCAST( bsnlimit      ,    1,  0 )
-#ifdef FASHION
-  RlBCAST( cen_cur       ,    1,  0 )  
-  RlBCAST( cen_zmin      ,    1,  0 )  
-  RlBCAST( cen_zmax      ,    1,  0 )  
-#endif
   
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

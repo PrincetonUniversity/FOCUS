@@ -122,62 +122,7 @@ module kmodule
                                                          !latex       tolerance in Biot-Savart integral; passed to \oculus{bs00aa};
   INTEGER              :: bsnlimit    =   100000         !latex \item \inputvar{bsnlimit    =   100000        } : 
                                                          !latex       max. number of iterations used in Biot-Savart integral; passed to \oculus{bs00aa};
-#ifdef FASHION
-  REAL                 :: cen_cur     =   1.0E7          !central filament;
-  REAL                 :: cen_zmin    =   -100.0D00      !lowest z coordinate;
-  REAL                 :: cen_zmax    =    100.0D00      !uppest z coordinate;
-!latex \ei
-  
-  namelist / focusin /   Idisplay                      , &
-                         Isymmetric                    , &
-                         Itopology                     , &
-                         knotsurf                      , &
-                         Linitialize                   , &
-                         Rmaj                          , &
-                         rmin                          , &
-                         Ic                            , &
-                         Io                            , &
-                         Iw                            , &
-                         Lc                            , &
-                         Lo                            , &
-                         Lw                            , &
-                         NFcoil                        , &
-                         NDcoil                        , &
-                         cen_cur                       , &
-                         cen_zmin                      , &
-                         cen_zmax                      , &
-                         Loptimize                     , &
-                         Lnormalize                    , &
-                         weight_bnorm                  , &
-                         weight_tflux                  , &
-                         target_tflux                  , &
-                         weight_ttlen                  , &
-                         weight_eqarc                  , &
-                         weight_ccsep                  , &
-                         tauend                        , &
-                         tautol                        , &
-                         Ntauout                       , &
-                         Savfreq                       , &
-                         Nteta                         , &
-                         Nzeta                         , &
-                         absacc                        , &
-                         absreq                        , & ! redundant; 14 Apr 16;
-                         relreq                        , & ! redundant; 14 Apr 16;
-                         xtol                          , &
-                         eta                           , &
-                         stepmx                        , &
-                         Mpol                          , & ! 18 Apr 17;
-                         Ntor                          , & ! 18 Apr 17;
-                         Lpoincare                     , &
-                         odetol                        , &
-                         Ppts                          , &
-                         Ptrj                          , &
-                         phi                           , & ! redundant; 27 Apr 17;
-                         iphi                          , &
-                         bstol                         , &
-                         bsnlimit                      
-#else
-    
+
   namelist / focusin /   Idisplay                      , &
                          Isymmetric                    , &
                          Itopology                     , &
@@ -223,7 +168,7 @@ module kmodule
                          iphi                          , &
                          bstol                         , &
                          bsnlimit  
-#endif
+
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   INTEGER              :: myid, ncpu

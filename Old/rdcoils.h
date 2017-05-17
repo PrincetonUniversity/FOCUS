@@ -17,19 +17,11 @@
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine rdcoils
-#ifdef FASHION
   use kmodule, only : zero, half, one, two, pi, pi2, myid, ounit, lunit, ncpu, sqrtmachprec, &
-       NFcoil, NDcoil, Ncoils, Ndof, coil, cmt, smt, itime, Ntauout, Tdof, &
-       Linitialize, Rmaj, rmin, Ic, Io, Iw, Lc, Lo, Lw, Nfixcur, Nfixgeo,&
-       coilspace, ext, coilsX, coilsY, coilsZ, coilsI, Nseg, bsconstant, antibscont, &
-       Loptimize, weight_eqarc, deriv, cen_cur, cen_zmin, cen_zmax
-#else
-  use kmodule, only : zero, half, one, two, pi, pi2, myid, ounit, lunit, ncpu, sqrtmachprec, &
-       NFcoil, NDcoil, Ncoils, Ndof, coil, cmt, smt, itime, Ntauout, Tdof, &
+       surf, Nteta, NFcoil, NDcoil, Ncoils, Ndof, coil, cmt, smt, itime, Ntauout, Tdof, &
        Linitialize, Itopology, Rmaj, rmin, Ic, Io, Iw, Lc, Lo, Lw, Nfixcur, Nfixgeo,&
        coilspace, ext, coilsX, coilsY, coilsZ, coilsI, Nseg, bsconstant,antibscont, &
        Loptimize, weight_eqarc, deriv, norm, Inorm, Gnorm
-#endif
   implicit none
 
   include "mpif.h"
@@ -173,11 +165,7 @@ subroutine rdcoils
 
    !call identfy  !in identfy.h
 
-#ifdef FASHION 
-   allocate( coil(1:Ncoils+1) )
-#else
    allocate( coil(1:Ncoils) )
-#endif
 
    icoil = 0
    do icoil = 1, Ncoils
@@ -270,11 +258,7 @@ subroutine rdcoils
 
    IlBCAST( Ncoils        ,    1,  0 )
 
-#ifdef FASHION 
-   allocate( coil(1:Ncoils+1) )
-#else
    allocate( coil(1:Ncoils) )
-#endif
 
    icoil = 0 
 
@@ -386,11 +370,7 @@ subroutine rdcoils
 
    Ncoils = Linitialize
 
-#ifdef FASHION 
-   allocate( coil(1:Ncoils+1) )
-#else
    allocate( coil(1:Ncoils) )
-#endif
 
    do icoil = 1, Ncoils
 
@@ -466,45 +446,7 @@ subroutine rdcoils
 
   end select
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-#ifdef FASHION
-  Ncoils = Ncoils + 1 ! add a extra central current;
-
-  icoil = Ncoils
-
-  coil(icoil)%N  =  NFcoil
-  coil(icoil)%D  =  NDcoil
-
-  coil(icoil)%I  =  cen_cur
-  coil(icoil)%Ic =  0
-  coil(icoil)%Io =  cen_cur
-  coil(icoil)%Iw =  Iw
-
-  coil(icoil)%L  =  cen_zmax- cen_zmin
-  coil(icoil)%Lc =  0
-  coil(icoil)%Lo =  cen_zmax- cen_zmin
-  coil(icoil)%Lw =  Lw
-
-  SALLOCATE( coil(icoil)%xc, (0:NFcoil), zero )
-  SALLOCATE( coil(icoil)%xs, (0:NFcoil), zero )
-  SALLOCATE( coil(icoil)%yc, (0:NFcoil), zero )
-  SALLOCATE( coil(icoil)%ys, (0:NFcoil), zero )
-  SALLOCATE( coil(icoil)%zc, (0:NFcoil), zero )
-  SALLOCATE( coil(icoil)%zs, (0:NFcoil), zero )
-
-  SALLOCATE( coil(icoil)%xx, (0:coil(icoil)%D), zero )
-  SALLOCATE( coil(icoil)%yy, (0:coil(icoil)%D), zero )
-  SALLOCATE( coil(icoil)%zz, (0:coil(icoil)%D), zero )
-  SALLOCATE( coil(icoil)%xt, (0:coil(icoil)%D), zero )
-  SALLOCATE( coil(icoil)%yt, (0:coil(icoil)%D), zero )
-  SALLOCATE( coil(icoil)%zt, (0:coil(icoil)%D), one  ) !the only non-zero term
-  SALLOCATE( coil(icoil)%xa, (0:coil(icoil)%D), zero )
-  SALLOCATE( coil(icoil)%ya, (0:coil(icoil)%D), zero )
-  SALLOCATE( coil(icoil)%za, (0:coil(icoil)%D), zero )
-
-  coil(icoil)%zz(0:coil(icoil)%D) = (/ (cen_zmin + ii*(cen_zmax-cen_zmin)/coil(icoil)%D, ii = 0, coil(icoil)%D) /)
-#endif
-  
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!  
   !if( myid.eq.0 ) then
   ! write(ounit,'("rdcoils : " 10x " : I ="999(es10.2","))') ( coil(icoil)%I, icoil = 1, Ncoils )
   ! write(ounit,'("rdcoils : " 10x " : L ="999(es10.2","))') ( coil(icoil)%L, icoil = 1, Ncoils )
@@ -556,9 +498,8 @@ subroutine rdcoils
   enddo
   Inorm = totalcurrent/Ncoils !mean of abs values;
 
-  zeta = zero
-  call surfcoord( zero, zeta, r1, z1)
-  call surfcoord(   pi, zeta, r2, z2)       
+  r1 = sqrt( surf(1)%xx(      0,0)**2 + surf(1)%yy(      0,0)**2 ) ! R at (0 ,0)
+  r2 = sqrt( surf(1)%xx(Nteta/2,0)**2 + surf(1)%yy(Nteta/2,0)**2 ) ! R at (pi,0)
   Gnorm = half * (r1 + r2) ! something like the major radius;
 
   idof = 0
@@ -810,9 +751,7 @@ subroutine discretecoil
   do icoil = 1, Ncoils
 
   if( myid.ne.modulo(icoil-1,ncpu) ) cycle ! parallelization loop;
-#ifdef FASHION
-  if( coil(icoil)%Lc == 0 ) cycle
-#endif
+
   mm = 0
   ;coil(icoil)%xx(0:NDcoil) =                            cmt(0:NDcoil,mm) * coil(icoil)%xc(mm)
   ;coil(icoil)%yy(0:NDcoil) =                            cmt(0:NDcoil,mm) * coil(icoil)%yc(mm)
