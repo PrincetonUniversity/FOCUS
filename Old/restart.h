@@ -210,24 +210,53 @@ subroutine restart( irestart )
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  do icoil = 1, Ncoils
-   write(suffix,'(i3.3)') icoil
-   open( lunit, file=".fo.coil."//suffix, status="unknown" )
-   write(lunit,1000) coil(icoil)%N, coil(icoil)%D
-   write(lunit,1001) coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%Io, coil(icoil)%Iw
-   write(lunit,1001) coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo, coil(icoil)%Lw
-   write(lunit,1002) coil(icoil)%xc(0:NFcoil)
-   write(lunit,1002) coil(icoil)%xs(0:NFcoil)
-   write(lunit,1002) coil(icoil)%yc(0:NFcoil)
-   write(lunit,1002) coil(icoil)%ys(0:NFcoil)
-   write(lunit,1002) coil(icoil)%zc(0:NFcoil)
-   write(lunit,1002) coil(icoil)%zs(0:NFcoil)
-   close(lunit)
-  enddo
+  !--------------------------write focus coil file-----------------------------------------
+  open( lunit, file=trim(ext)//".focus", status="unknown" )
+  write(lunit, *), "# Total number of coils"
+  write(lunit, '(I6)'), Ncoils
 
-1000 format(            2i9          )
-1001 format(    es23.15, i2, 2es23.15)
-1002 format(9999es23.15              )
+  do icoil = 1, Ncoils
+
+     write(lunit, *), "#----------------------", icoil,"----------------------" 
+     write(lunit, *), "# coil_type(not valid)    coil_name"
+     write(lunit,'(3X,"1", 4X, A10)'),  coil(icoil)%name
+     write(lunit, *), "# Nseg   current  I_flag  Length L_flag target_length"
+     write(lunit,'(I4, ES23.15, I3, ES23.15, I3, ES23.15)'), &
+          coil(icoil)%D, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo
+
+     write(lunit, *) "# NFcoil"
+     write(lunit, '(I3)') coil(icoil)%N 
+     write(lunit, *) "# Fourier harmonics for coils ( xc; xs; yc; ys; zc; zs) "
+     write(lunit, 1000) coil(icoil)%xc(0:coil(icoil)%N )
+     write(lunit, 1000) coil(icoil)%xs(0:coil(icoil)%N )
+     write(lunit, 1000) coil(icoil)%yc(0:coil(icoil)%N )
+     write(lunit, 1000) coil(icoil)%ys(0:coil(icoil)%N )
+     write(lunit, 1000) coil(icoil)%zc(0:coil(icoil)%N )
+     write(lunit, 1000) coil(icoil)%zs(0:coil(icoil)%N )
+
+  enddo
+  close(lunit)
+1000 format(9999ES23.15)
+
+!!$
+!!$  do icoil = 1, Ncoils
+!!$   write(suffix,'(i3.3)') icoil
+!!$   open( lunit, file=".fo.coil."//suffix, status="unknown" )
+!!$   write(lunit,1000) coil(icoil)%N, coil(icoil)%D
+!!$   write(lunit,1001) coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%Io, coil(icoil)%Iw
+!!$   write(lunit,1001) coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo, coil(icoil)%Lw
+!!$   write(lunit,1002) coil(icoil)%xc(0:NFcoil)
+!!$   write(lunit,1002) coil(icoil)%xs(0:NFcoil)
+!!$   write(lunit,1002) coil(icoil)%yc(0:NFcoil)
+!!$   write(lunit,1002) coil(icoil)%ys(0:NFcoil)
+!!$   write(lunit,1002) coil(icoil)%zc(0:NFcoil)
+!!$   write(lunit,1002) coil(icoil)%zs(0:NFcoil)
+!!$   close(lunit)
+!!$  enddo
+!!$
+!!$1000 format(            2i9          )
+!!$1001 format(    es23.15, i2, 2es23.15)
+!!$1002 format(9999es23.15              )
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   

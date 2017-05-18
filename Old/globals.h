@@ -123,6 +123,7 @@ module kmodule
                                                          !latex       tolerance in Biot-Savart integral; passed to \oculus{bs00aa};
   INTEGER              :: bsnlimit    =   100000         !latex \item \inputvar{bsnlimit    =   100000        } : 
                                                          !latex       max. number of iterations used in Biot-Savart integral; passed to \oculus{bs00aa};
+                                                         !latex       \ei
 
   namelist / focusin /   Idisplay                      , &
                          Isymmetric                    , &

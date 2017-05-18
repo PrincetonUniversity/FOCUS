@@ -195,7 +195,7 @@ subroutine generic
   SALLOCATE( surf(1)%xt, (0:Nteta-1,0:Nzeta-1), zero ) !dx/dtheta;
   SALLOCATE( surf(1)%yt, (0:Nteta-1,0:Nzeta-1), zero ) !dy/dtheta;
   SALLOCATE( surf(1)%zt, (0:Nteta-1,0:Nzeta-1), zero ) !dz/dtheta;
-  SALLOCATE( surf(1)%tn, (0:Nteta-1,0:Nzeta-1), zero ) !target Bn;
+  SALLOCATE( surf(1)%pb, (0:Nteta-1,0:Nzeta-1), zero ) !target Bn;
  
 ! The center point value was used to discretize grid;
   do ii = 0, Nteta-1; teta = ( ii + half ) * pi2 / Nteta
@@ -255,7 +255,7 @@ subroutine generic
         do ii = 0, Nteta-1 ; teta = ( ii + half ) * pi2 / Nteta 
            do imn = 1, NBnf
               arg = Bnim(imn) * teta - Bnin(imn) * zeta
-              surf(1)%tn(ii,jj) = surf(1)%tn(ii,jj) + Bnc(imn)*cos(arg) + Bns(imn)*sin(arg)
+              surf(1)%pb(ii,jj) = surf(1)%pb(ii,jj) + Bnc(imn)*cos(arg) + Bns(imn)*sin(arg)
            enddo
         enddo
      enddo

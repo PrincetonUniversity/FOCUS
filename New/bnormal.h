@@ -60,7 +60,7 @@ subroutine bnormal( ideriv )
            lbn(iteta, jzeta) = lbx(iteta, jzeta) * surf(1)%nx(iteta,jzeta)  &
                 &            + lby(iteta, jzeta) * surf(1)%ny(iteta,jzeta)  &
                 &            + lbz(iteta, jzeta) * surf(1)%nz(iteta,jzeta)
-           surf(1)%bn(iteta, jzeta) = lbn(iteta, jzeta) - surf(1)%tn(iteta, jzeta) !coilBn - targetBn;
+           !surf(1)%bn(iteta, jzeta) = lbn(iteta, jzeta) + surf(1)%pb(iteta, jzeta) !coilBn - targetBn;
         enddo ! end do iteta
      enddo ! end do jzeta
   
@@ -74,7 +74,7 @@ subroutine bnormal( ideriv )
      RlBCAST( surf(1)%By, NumGrid, 0 )  ! total By from coils;
      RlBCAST( surf(1)%Bz, NumGrid, 0 )  ! total Bz from coils;
 
-     surf(1)%bn = bn - surf(1)%tn       ! total Bn;
+     surf(1)%bn = bn + surf(1)%pb       ! total Bn;
 
      bnorm = sum( surf(1)%bn*surf(1)%bn * surf(1)%ds ) * half * discretefactor
 

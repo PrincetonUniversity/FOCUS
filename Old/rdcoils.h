@@ -27,7 +27,7 @@ subroutine rdcoils
   include "mpif.h"
 
   LOGICAL   :: exist
-  INTEGER   :: ierr, astat, ii, icoil, mm, jj, ifail, maxnseg, idof
+  INTEGER   :: ierr, astat, ii, icoil, mm, jj, ifail, maxnseg, idof, tmp
   REAL      :: zeta, tt, totalcurrent, r1, r2, z1, z2, z0
   REAL      :: ax(1:3), at(1:3), az(1:3), xx(1:3), xt(1:3), xz(1:3) !for knotatron;
   CHARACTER :: suffix*3, coilsfile*40
@@ -245,112 +245,208 @@ subroutine rdcoils
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   case( 0 )
 
-   if( myid.eq.0 ) then
+     if( myid==0 ) then  !get file number;
+        inquire( file=trim(ext)//".focus", exist=exist )
+        if ( .not. exist ) then
+           STOP "ext.focus NOT existed"
+           call MPI_ABORT(MPI_COMM_WORLD, 1, ierr)
+        endif
+        open( lunit, file=trim(ext)//".focus", status="old" )
+        read( lunit,*)
+        read( lunit,*) Ncoils
+        write(ounit,'("rdcoils : " 10X " : identified "i3" coils in ext.focus ;")') Ncoils
+     endif
+                               
+     IlBCAST( Ncoils        ,    1,  0 )
+     allocate(    coil(1:Ncoils) )
 
-    Ncoils = 0
-    do ii = 1, 999
-     write(suffix,'(i3.3)') ii
-     inquire( file=".fo.coil."//suffix, exist=exist )
-     if( exist ) Ncoils = Ncoils + 1
-    enddo
+     if( myid==0 ) then
+        do icoil = 1, Ncoils
+           read( lunit,*)
+           read( lunit,*)
+           read( lunit,*) tmp, coil(icoil)%name  !tmp space is reserved for new version;
+           read( lunit,*)
+           read( lunit,*) coil(icoil)%D, coil(icoil)%I, coil(icoil)%Ic, &
+                & coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo
+           FATAL( coilfou, coil(icoil)%D < 0                         , illegal )
+           FATAL( coilfou, coil(icoil)%Ic < 0 .or. coil(icoil)%Ic > 1, illegal )
+           FATAL( coilfou, coil(icoil)%Lc < 0 .or. coil(icoil)%Lc > 2, illegal )
+           FATAL( coilfou, coil(icoil)%L  < zero                     , illegal )
+           FATAL( coilfou, coil(icoil)%Lc < zero                     , illegal )
+           FATAL( coilfou, coil(icoil)%Lo < zero                     , illegal )
+           read( lunit,*)
+           read( lunit,*) coil(icoil)%N
+           FATAL( coilfou, coil(icoil)%N  < 0                    , illegal )
+           SALLOCATE( coil(icoil)%xc, (0:NFcoil), zero )
+           SALLOCATE( coil(icoil)%xs, (0:NFcoil), zero )
+           SALLOCATE( coil(icoil)%yc, (0:NFcoil), zero )
+           SALLOCATE( coil(icoil)%ys, (0:NFcoil), zero )
+           SALLOCATE( coil(icoil)%zc, (0:NFcoil), zero )
+           SALLOCATE( coil(icoil)%zs, (0:NFcoil), zero )
+           read( lunit,*)
+           read( lunit,*) coil(icoil)%xc(0:min(coil(icoil)%N, NFcoil))
+           read( lunit,*) coil(icoil)%xs(0:min(coil(icoil)%N, NFcoil))
+           read( lunit,*) coil(icoil)%yc(0:min(coil(icoil)%N, NFcoil))
+           read( lunit,*) coil(icoil)%ys(0:min(coil(icoil)%N, NFcoil))
+           read( lunit,*) coil(icoil)%zc(0:min(coil(icoil)%N, NFcoil))
+           read( lunit,*) coil(icoil)%zs(0:min(coil(icoil)%N, NFcoil))
 
-    write(ounit,'("rdcoils : " 10x " : identified "i3" .fo.coil.xxx files ;")') Ncoils
+        enddo !end do icoil;
 
-   endif
+        close( lunit )
+     endif ! end of if( myid==0 );
 
-   IlBCAST( Ncoils        ,    1,  0 )
+     do icoil = 1, Ncoils
+        
+        ClBCAST( coil(icoil)%name         , 10       ,  0 )
+        IlBCAST( coil(icoil)%D            , 1        ,  0 )
+        RlBCAST( coil(icoil)%I            , 1        ,  0 )
+        IlBCAST( coil(icoil)%Ic           , 1        ,  0 )
+        RlBCAST( coil(icoil)%L            , 1        ,  0 )
+        IlBCAST( coil(icoil)%Lc           , 1        ,  0 )
+        RlBCAST( coil(icoil)%Lo           , 1        ,  0 )
+        IlBCAST( coil(icoil)%N            , 1        ,  0 )
 
-   allocate( coil(1:Ncoils) )
+        coil(icoil)%N = NFcoil
+        coil(icoil)%D = NDcoil
+        
+        if (.not. allocated(coil(icoil)%xc) ) then
+           SALLOCATE( coil(icoil)%xc, (0:coil(icoil)%N), zero )
+           SALLOCATE( coil(icoil)%xs, (0:coil(icoil)%N), zero )
+           SALLOCATE( coil(icoil)%yc, (0:coil(icoil)%N), zero )
+           SALLOCATE( coil(icoil)%ys, (0:coil(icoil)%N), zero )
+           SALLOCATE( coil(icoil)%zc, (0:coil(icoil)%N), zero )
+           SALLOCATE( coil(icoil)%zs, (0:coil(icoil)%N), zero ) 
+        endif
+        RlBCAST( coil(icoil)%xc(0:coil(icoil)%N) , 1+coil(icoil)%N ,  0 )
+        RlBCAST( coil(icoil)%xs(0:coil(icoil)%N) , 1+coil(icoil)%N ,  0 )
+        RlBCAST( coil(icoil)%yc(0:coil(icoil)%N) , 1+coil(icoil)%N ,  0 )
+        RlBCAST( coil(icoil)%ys(0:coil(icoil)%N) , 1+coil(icoil)%N ,  0 )
+        RlBCAST( coil(icoil)%zc(0:coil(icoil)%N) , 1+coil(icoil)%N ,  0 )
+        RlBCAST( coil(icoil)%zs(0:coil(icoil)%N) , 1+coil(icoil)%N ,  0 )
 
-   icoil = 0 
+        if(coil(icoil)%Ic == 0) Nfixcur = Nfixcur + 1
+        if(coil(icoil)%Lc == 0) Nfixgeo = Nfixgeo + 1
 
-   do ii = 1, 999
+        SALLOCATE( coil(icoil)%xx, (0:coil(icoil)%D), zero )
+        SALLOCATE( coil(icoil)%yy, (0:coil(icoil)%D), zero )
+        SALLOCATE( coil(icoil)%zz, (0:coil(icoil)%D), zero )
+        SALLOCATE( coil(icoil)%xt, (0:coil(icoil)%D), zero )
+        SALLOCATE( coil(icoil)%yt, (0:coil(icoil)%D), zero )
+        SALLOCATE( coil(icoil)%zt, (0:coil(icoil)%D), zero )
+        SALLOCATE( coil(icoil)%xa, (0:coil(icoil)%D), zero )
+        SALLOCATE( coil(icoil)%ya, (0:coil(icoil)%D), zero )
+        SALLOCATE( coil(icoil)%za, (0:coil(icoil)%D), zero )
 
-    write(suffix,'(i3.3)') ii
-    inquire( file=".fo.coil."//suffix, exist=exist )
+     enddo
 
-    if( exist ) then
-
-     icoil = icoil + 1
-
-     SALLOCATE( coil(icoil)%xc, (0:NFcoil), zero )
-     SALLOCATE( coil(icoil)%xs, (0:NFcoil), zero )
-     SALLOCATE( coil(icoil)%yc, (0:NFcoil), zero )
-     SALLOCATE( coil(icoil)%ys, (0:NFcoil), zero )
-     SALLOCATE( coil(icoil)%zc, (0:NFcoil), zero )
-     SALLOCATE( coil(icoil)%zs, (0:NFcoil), zero )
-
-     if( myid.eq.0 ) then
-      open( lunit, file=".fo.coil."//suffix, status="old" )
-      read( lunit,*) coil(icoil)%N, coil(icoil)%D
-      read( lunit,*) coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%Io, coil(icoil)%Iw
-      read( lunit,*) coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo, coil(icoil)%Lw
-      read( lunit,*) coil(icoil)%xc(0:min(coil(icoil)%N,NFcoil))
-      read( lunit,*) coil(icoil)%xs(0:min(coil(icoil)%N,NFcoil))
-      read( lunit,*) coil(icoil)%yc(0:min(coil(icoil)%N,NFcoil))
-      read( lunit,*) coil(icoil)%ys(0:min(coil(icoil)%N,NFcoil))
-      read( lunit,*) coil(icoil)%zc(0:min(coil(icoil)%N,NFcoil))
-      read( lunit,*) coil(icoil)%zs(0:min(coil(icoil)%N,NFcoil))
-      close( lunit )
-     endif ! end of if( myid.eq.0 ) ; 14 Apr 16;
-
-     IlBCAST( coil(icoil)%N            , 1        ,  0 )
-
-     IlBCAST( coil(icoil)%D            , 1        ,  0 )
-
-     RlBCAST( coil(icoil)%I            , 1        ,  0 )
-     IlBCAST( coil(icoil)%Ic           , 1        ,  0 )
-     RlBCAST( coil(icoil)%Io           , 1        ,  0 )
-     RlBCAST( coil(icoil)%Iw           , 1        ,  0 )
-
-     FATAL( rdcoils, coil(icoil)%Ic.lt.0 .or. coil(icoil)%Ic.gt.1, illegal )
-     FATAL( rdcoils, coil(icoil)%Iw.lt.zero                      , illegal )
-
-     RlBCAST( coil(icoil)%L            , 1        ,  0 )
-     IlBCAST( coil(icoil)%Lc           , 1        ,  0 )
-     RlBCAST( coil(icoil)%Lo           , 1        ,  0 )
-     RlBCAST( coil(icoil)%Lw           , 1        ,  0 )
-
-     FATAL( rdcoils, coil(icoil)%Lc.lt.0 .or. coil(icoil)%Lc.gt.2, illegal )
-     FATAL( rdcoils, coil(icoil)%Lo.lt.zero                      , illegal )
-     FATAL( rdcoils, coil(icoil)%Lw.lt.zero                      , illegal )
-
-     RlBCAST( coil(icoil)%xc(0:NFcoil) , 1+NFcoil ,  0 )
-     RlBCAST( coil(icoil)%xs(0:NFcoil) , 1+NFcoil ,  0 )
-     RlBCAST( coil(icoil)%yc(0:NFcoil) , 1+NFcoil ,  0 )
-     RlBCAST( coil(icoil)%ys(0:NFcoil) , 1+NFcoil ,  0 )
-     RlBCAST( coil(icoil)%zc(0:NFcoil) , 1+NFcoil ,  0 )
-     RlBCAST( coil(icoil)%zs(0:NFcoil) , 1+NFcoil ,  0 )
-
-     coil(icoil)%N = NFcoil ! all coils have same Fourier  resolution; should allow each coil to have different Fourier resolution; 14 Apr 16;
-     coil(icoil)%D = NDcoil ! all coils have same discrete resolution; should allow each coil to have different Fourier resolution; 14 Apr 16;
-
-     !   if( myid.eq.0 ) write(ounit,1000) icoil, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%Io, coil(icoil)%Iw
-
-     SALLOCATE( coil(icoil)%xx, (0:coil(icoil)%D), zero )
-     SALLOCATE( coil(icoil)%yy, (0:coil(icoil)%D), zero )
-     SALLOCATE( coil(icoil)%zz, (0:coil(icoil)%D), zero )
-     SALLOCATE( coil(icoil)%xt, (0:coil(icoil)%D), zero )
-     SALLOCATE( coil(icoil)%yt, (0:coil(icoil)%D), zero )
-     SALLOCATE( coil(icoil)%zt, (0:coil(icoil)%D), zero )
-     SALLOCATE( coil(icoil)%xa, (0:coil(icoil)%D), zero )
-     SALLOCATE( coil(icoil)%ya, (0:coil(icoil)%D), zero )
-     SALLOCATE( coil(icoil)%za, (0:coil(icoil)%D), zero )
-
-     write(coil(icoil)%name,'(i3.3"th-coil")') icoil
-
-     if(coil(icoil)%Ic .eq. 0) Nfixcur = Nfixcur + 1
-     if(coil(icoil)%Lc .eq. 0) Nfixgeo = Nfixgeo + 1
-
-    endif ! end of if( exist ) ; 14 Apr 16;
-
-   enddo ! matches do ii; 14 Apr 16;
+!!$
+!!$   if( myid.eq.0 ) then
+!!$
+!!$    Ncoils = 0
+!!$    do ii = 1, 999
+!!$     write(suffix,'(i3.3)') ii
+!!$     inquire( file=".fo.coil."//suffix, exist=exist )
+!!$     if( exist ) Ncoils = Ncoils + 1
+!!$    enddo
+!!$
+!!$    write(ounit,'("rdcoils : " 10x " : identified "i3" .fo.coil.xxx files ;")') Ncoils
+!!$
+!!$   endif
+!!$
+!!$   IlBCAST( Ncoils        ,    1,  0 )
+!!$
+!!$   allocate( coil(1:Ncoils) )
+!!$
+!!$   icoil = 0 
+!!$
+!!$   do ii = 1, 999
+!!$
+!!$    write(suffix,'(i3.3)') ii
+!!$    inquire( file=".fo.coil."//suffix, exist=exist )
+!!$
+!!$    if( exist ) then
+!!$
+!!$     icoil = icoil + 1
+!!$
+!!$     SALLOCATE( coil(icoil)%xc, (0:NFcoil), zero )
+!!$     SALLOCATE( coil(icoil)%xs, (0:NFcoil), zero )
+!!$     SALLOCATE( coil(icoil)%yc, (0:NFcoil), zero )
+!!$     SALLOCATE( coil(icoil)%ys, (0:NFcoil), zero )
+!!$     SALLOCATE( coil(icoil)%zc, (0:NFcoil), zero )
+!!$     SALLOCATE( coil(icoil)%zs, (0:NFcoil), zero )
+!!$
+!!$     if( myid.eq.0 ) then
+!!$      open( lunit, file=".fo.coil."//suffix, status="old" )
+!!$      read( lunit,*) coil(icoil)%N, coil(icoil)%D
+!!$      read( lunit,*) coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%Io, coil(icoil)%Iw
+!!$      read( lunit,*) coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo, coil(icoil)%Lw
+!!$      read( lunit,*) coil(icoil)%xc(0:min(coil(icoil)%N,NFcoil))
+!!$      read( lunit,*) coil(icoil)%xs(0:min(coil(icoil)%N,NFcoil))
+!!$      read( lunit,*) coil(icoil)%yc(0:min(coil(icoil)%N,NFcoil))
+!!$      read( lunit,*) coil(icoil)%ys(0:min(coil(icoil)%N,NFcoil))
+!!$      read( lunit,*) coil(icoil)%zc(0:min(coil(icoil)%N,NFcoil))
+!!$      read( lunit,*) coil(icoil)%zs(0:min(coil(icoil)%N,NFcoil))
+!!$      close( lunit )
+!!$     endif ! end of if( myid.eq.0 ) ; 14 Apr 16;
+!!$
+!!$     IlBCAST( coil(icoil)%N            , 1        ,  0 )
+!!$
+!!$     IlBCAST( coil(icoil)%D            , 1        ,  0 )
+!!$
+!!$     RlBCAST( coil(icoil)%I            , 1        ,  0 )
+!!$     IlBCAST( coil(icoil)%Ic           , 1        ,  0 )
+!!$     RlBCAST( coil(icoil)%Io           , 1        ,  0 )
+!!$     RlBCAST( coil(icoil)%Iw           , 1        ,  0 )
+!!$
+!!$     FATAL( rdcoils, coil(icoil)%Ic.lt.0 .or. coil(icoil)%Ic.gt.1, illegal )
+!!$     FATAL( rdcoils, coil(icoil)%Iw.lt.zero                      , illegal )
+!!$
+!!$     RlBCAST( coil(icoil)%L            , 1        ,  0 )
+!!$     IlBCAST( coil(icoil)%Lc           , 1        ,  0 )
+!!$     RlBCAST( coil(icoil)%Lo           , 1        ,  0 )
+!!$     RlBCAST( coil(icoil)%Lw           , 1        ,  0 )
+!!$
+!!$     FATAL( rdcoils, coil(icoil)%Lc.lt.0 .or. coil(icoil)%Lc.gt.2, illegal )
+!!$     FATAL( rdcoils, coil(icoil)%Lo.lt.zero                      , illegal )
+!!$     FATAL( rdcoils, coil(icoil)%Lw.lt.zero                      , illegal )
+!!$
+!!$     RlBCAST( coil(icoil)%xc(0:NFcoil) , 1+NFcoil ,  0 )
+!!$     RlBCAST( coil(icoil)%xs(0:NFcoil) , 1+NFcoil ,  0 )
+!!$     RlBCAST( coil(icoil)%yc(0:NFcoil) , 1+NFcoil ,  0 )
+!!$     RlBCAST( coil(icoil)%ys(0:NFcoil) , 1+NFcoil ,  0 )
+!!$     RlBCAST( coil(icoil)%zc(0:NFcoil) , 1+NFcoil ,  0 )
+!!$     RlBCAST( coil(icoil)%zs(0:NFcoil) , 1+NFcoil ,  0 )
+!!$
+!!$     coil(icoil)%N = NFcoil ! all coils have same Fourier  resolution; should allow each coil to have different Fourier resolution; 14 Apr 16;
+!!$     coil(icoil)%D = NDcoil ! all coils have same discrete resolution; should allow each coil to have different Fourier resolution; 14 Apr 16;
+!!$
+!!$     !   if( myid.eq.0 ) write(ounit,1000) icoil, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%Io, coil(icoil)%Iw
+!!$
+!!$     SALLOCATE( coil(icoil)%xx, (0:coil(icoil)%D), zero )
+!!$     SALLOCATE( coil(icoil)%yy, (0:coil(icoil)%D), zero )
+!!$     SALLOCATE( coil(icoil)%zz, (0:coil(icoil)%D), zero )
+!!$     SALLOCATE( coil(icoil)%xt, (0:coil(icoil)%D), zero )
+!!$     SALLOCATE( coil(icoil)%yt, (0:coil(icoil)%D), zero )
+!!$     SALLOCATE( coil(icoil)%zt, (0:coil(icoil)%D), zero )
+!!$     SALLOCATE( coil(icoil)%xa, (0:coil(icoil)%D), zero )
+!!$     SALLOCATE( coil(icoil)%ya, (0:coil(icoil)%D), zero )
+!!$     SALLOCATE( coil(icoil)%za, (0:coil(icoil)%D), zero )
+!!$
+!!$     write(coil(icoil)%name,'(i3.3"th-coil")') icoil
+!!$
+!!$     if(coil(icoil)%Ic .eq. 0) Nfixcur = Nfixcur + 1
+!!$     if(coil(icoil)%Lc .eq. 0) Nfixgeo = Nfixgeo + 1
+!!$
+!!$    endif ! end of if( exist ) ; 14 Apr 16;
+!!$
+!!$   enddo ! matches do ii; 14 Apr 16;
 
    if(myid .eq. 0) write(ounit,'("rdcoils : " 10x " : "i3" fixed currents ; "i3" fixed geometries.")') Nfixcur, Nfixgeo
 
-1000 format("rdcoils : " 10x " : "i3") I ="es13.5" ; Ic ="i2" ; Io ="es13.5" ; Iw ="es12.5" ;")
+!1000 format("rdcoils : " 10x " : "i3") I ="es13.5" ; Ic ="i2" ; Io ="es13.5" ; Iw ="es12.5" ;")
 
-   FATAL( rdcoils, icoil.ne.Ncoils, counting error )
+   !FATAL( rdcoils, icoil.ne.Ncoils, counting error )
 
    !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

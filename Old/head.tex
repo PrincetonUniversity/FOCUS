@@ -1,4 +1,4 @@
-% this file is a LaTeX header that is required to create source documentation;
+% this file is a LaTeX header that is required to creat source documentation for Codes;
 
  \listfiles
 
@@ -13,6 +13,22 @@
  \usepackage{amssymb}
  \usepackage{hyperref}
  \usepackage{titlesec}
+ \usepackage{amsmath}
+ \usepackage{verbatim}
+ \usepackage{enumitem}
+ \usepackage{tikz}
+ \usetikzlibrary{shapes,arrows}
+
+%tikz settings
+\tikzstyle{decision} = [diamond, draw, fill=blue!20, 
+    text width=4.5em, text badly centered, node distance=3cm, inner sep=0pt]
+\tikzstyle{block} = [rectangle, draw, fill=blue!20, 
+    text width=8em, text centered, rounded corners, minimum height=4em]
+\tikzstyle{line} = [draw, -latex']
+\tikzstyle{cloud} = [draw, ellipse,fill=red!20, node distance=3cm,
+    minimum height=4em]
+\tikzstyle{io} = [rectangle, draw, fill=green!20, 
+    text width=10em, text centered, rounded corners, minimum height=4em]
 
 % COLORS
 
@@ -57,7 +73,7 @@
  \setlength{\columnseprule}{0.00cm}
 
 %\setlength{\mathindent}{0.0cm}
-%\setlength{\parindent}{0.0cm}
+ \setlength{\parindent}{0.5cm}
 
 %float separation parameters
 %\setlength{\floatsep}{1.0cm}
@@ -85,11 +101,18 @@
 %\def\thesubsection{\normalsize \arabic{section}\alph{subsection}.}
 %\def\figurename{\normalsize \em FIG.}
 
- \titlespacing{\section}{0pt}{0pt}{0pt}
+ \titlespacing{\section}{2pt}{2pt}{2pt}
  \titlespacing{\subsection}{2pt}{2pt}{2pt}
  \titlespacing{\subsubsection}{0pt}{0pt}{0pt}
  \titleformat{\section}[display]{\normalsize}{\hrule}{0pt}{\bf \large }
 %\titleformat{\subsubsection}[display]{\normalsize}{}{0pt}{\thesubsubsection. \quad \normalsize \em}
+
+%verbatim
+\let\oldv\verbatim
+\let\oldendv\endverbatim
+
+\def\verbatim{\par\setbox0\vbox\bgroup\oldv}
+\def\endverbatim{\oldendv\egroup\fboxsep0pt \noindent\colorbox[gray]{0.8}{\usebox0}\par}
 
 % SHORT HAND 
 
@@ -103,6 +126,9 @@
  \newfont{\fnttype}{cmtt10}
  \newcommand{\type}[1]{\mbox{\fnttype #1}}
 
+ \newcommand{\vect}[1]{\mathbf{#1}}
+ \newcommand{\dd}[1]{d #1}
+ \newcommand{\pdv}[2]{\frac{\partial #1}{\partial #2}}
 % MATHEMATICAL SHORT HAND
 
  \newcommand{\be}{\begin{eqnarray}}
@@ -125,30 +151,6 @@
  \renewcommand{\a}{\alpha}
  \renewcommand{\b}{\beta}
 
- \newcommand{\bgss}{\bar g_{\s\s}}
- \newcommand{\bgst}{\bar g_{\s\t}}
- \newcommand{\bgsz}{\bar g_{\s\z}}
- \newcommand{\bgtt}{\bar g_{\t\t}}
- \newcommand{\bgtz}{\bar g_{\t\z}}
- \newcommand{\bgzz}{\bar g_{\z\z}}
-
- \newcommand{\Ate}[1]{{\color{red} A_{\t,e,#1}}}
- \newcommand{\Ato}[1]{{\color{ora} A_{\t,o,#1}}}
- \newcommand{\Aze}[1]{{\color{blu} A_{\z,e,#1}}}
- \newcommand{\Azo}[1]{{\color{gra} A_{\z,o,#1}}}
-
-%\newcommand{\Ate}[1]{{\color{red} {\cal A}_{\t,#1}}}
-%\newcommand{\Ato}[1]{{\color{ora} {\cal C}_{\t,#1}}}
-%\newcommand{\Aze}[1]{{\color{blu} {\cal B}_{\z,#1}}}
-%\newcommand{\Azo}[1]{{\color{gra} {\cal D}_{\z,#1}}}
-
- \newcommand{\vse}[1]{{\color{red} v_{\s,e,#1}}}
- \newcommand{\vso}[1]{{\color{ora} v_{\s,o,#1}}}
- \newcommand{\vte}[1]{{\color{red} v_{\t,e,#1}}}
- \newcommand{\vto}[1]{{\color{ora} v_{\t,o,#1}}}
- \newcommand{\vze}[1]{{\color{blu} v_{\z,e,#1}}}
- \newcommand{\vzo}[1]{{\color{gra} v_{\z,o,#1}}}
-
  \newcommand{\boldalpha}{\mbox{\boldmath$\alpha$\unboldmath}}
  \newcommand{\boldxi}{\mbox{\boldmath$\xi$\unboldmath}}
  \newcommand{\boldpsi}{\mbox{\boldmath$\psi$\unboldmath}}
@@ -157,81 +159,28 @@
  \newcommand{\boldphi}{\mbox{\boldmath$\hat \phi$\unboldmath}}
  \newcommand{\hatboldphi}{\mbox{\boldmath$\hat \phi$\unboldmath}}
 
- \newcommand{\sumi}{\sum_{i=1}^{N_i}} % used in fu00aa, ma01aa;
-
- \newcommand{\At}[1]{A_{\theta,#1}} % used in ma01aa
- \newcommand{\Az}[1]{A_{\zeta,#1}}
-
- \newcommand{\intds}{\int_{s_{l-1}}^{s_{l  }} \!\!\!\!\!\!       ds \,\,}  % used in ma01ab;
- \newcommand{\intdsl}{\int_{s_{i-1}}^{s_{i  }} \!\!\!\!\!\!       ds \,\,} % used in ma01ab;
- \newcommand{\intdsu}{\int_{s_{i  }}^{s_{i+1}} \!\!\!\!\!\!\!\!\! ds \,\,} % used in ma01ab;
- \newcommand{\intdsp}{\int_{0}^{\rho} \!\!\!\!       ds \,\,}              % used in ma01ab;
- \newcommand{\intdso}{\int_{0}^{1} \!\!\!\!       d \bar s \,\,}           % used in ma01ab;
-
- \newcommand{\ooint}{\oint\!\!\!\oint \!d\t d\z \,\,\,}                  % used in ma01ab;
-
  \newcommand{\ds}{\displaystyle}
 
  \newcommand{\bs}{\bar s}
 
-% INSERT FIGURES;
-
- \newcommand{\insertsglfigure}[3]{
- %\clearpage
-  \begin{figure}[t]
-  \begin{center}
-  \includegraphics{#1}
-  \vspace{1.0cm}
-  \caption{#2 \label{fig:#3}}
-  \end{center}
-  \end{figure}
- }
-
- \newcommand{\insertdblfigure}[3]{
- %\clearpage
-  \begin{figure*}[t]
-  \begin{center}
-  \includegraphics{#1}
-  \vspace{1.0cm}
-  \caption{#2\label{fig:#3}}
-  \end{center}
-  \end{figure*}
- }
-
- \newcommand{\inserttwofigure}[4]{
- %\clearpage
-  \begin{figure*}[h]
-  \begin{center}
-  \includegraphics{#1} \hspace{1.5cm} \includegraphics{#2}
-  \vspace{1.0cm}
-  \caption{#3\label{fig:#4}}
-  \end{center}
-  \end{figure*}
- }
 
 %HYPERLINKS
 
- \newcommand{\link}[1]{\href{http://w3.pppl.gov/~shudson/Focus/#1.pdf}{\blu{#1}}}
+ \newcommand{\link}[1]{\href{https://princetonuniversity.github.io/FOCUS/#1.pdf}{\blu{#1}}}
  \newcommand{\doilink}[2]{\href{http://dx.doi.org/#1}{\blu{#2}}}
  \newcommand{\nag}[2]{\href{http://www.nag.co.uk/numeric/FL/manual19/html/mark18.html}{\blu{NAG}}:\href{#1}{\blu{#2}}}
  \newcommand{\oculus}[1]{\href{http://w3.pppl.gov/~shudson/Oculus/oculus.pdf}{\blu{oculus:#1}}}
- \newcommand{\inputvar}[1]{\href{http://w3.pppl.gov/~shudson/Focus/globals.pdf}{\type{\red{#1}}}}
+ \newcommand{\inputvar}[1]{\href{https://princetonuniversity.github.io/FOCUS/initial.pdf}{\type{\red{#1}}}}
  \newcommand{\internal}[1]{\type{#1}}
 
  \newcommand{\code}[1]{
- \noindent \href{http://w3.pppl.gov/~shudson/Focus/subroutines.html}{\blu{\footnotesize {\bf F}ocus}}
+ \noindent \href{https://princetonuniversity.github.io/FOCUS/}{\blu{\footnotesize {\bf F}ocus}}
  \section{#1}
  }
 
  \newcommand{\briefly}[1]{\hrule \vspace{1mm} \noindent #1 \vspace{1mm} \hrule \vspace{1mm}}
  \newcommand{\calledby}[1]{{\noindent \footnotesize [called by: #1.]}}
  \newcommand{\calls}[1]{\hfill {\footnotesize [calls: #1.]}}
-
-%cute stuff from pifont ding lists
- \newcommand{\tick}{\ding{51}}
- \newcommand{\cross}{\ding{55}}
-
- \newcommand{\checked}[1]{\tick  #1}
- \newcommand{\crossed}[1]{\cross #1}
+ \newcommand{\subroutine}[1]{{\bf \red{#1}}}
 
  \begin{document}
