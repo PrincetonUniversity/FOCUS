@@ -129,8 +129,6 @@ subroutine descent2
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  write(ounit,'("descent2 : ")') 
-  
   NN = NFcoil  ! this assumes the Fourier resolution of each coil is the same; not general; 14 Apr 16;
   
   SALLOCATE( xdof, (1:Ndof), zero )

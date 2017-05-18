@@ -748,8 +748,6 @@ subroutine discretecoil
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
-  write(*,'("discretecoil : ")') 
- 
   !coil discresization; xx, xt, xa are 0, 1st and 2nd derivatives;
   do icoil = 1, Ncoils
 
