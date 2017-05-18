@@ -25,7 +25,7 @@ You can visit this [page](https://princetonuniversity.github.io/FOCUS/Get_the_co
 
   All the Fortran90 sources are in *.h files. When *make*, *.h file will produce *.F90 with extracted macros (*seen in [macros](https://github.com/PrincetonUniversity/FOCUS/tree/master/Old/macros)*).
 
-  There are several *make* options vailable in [Makefile]   (https://github.com/PrincetonUniversity/FOCUS/tree/master/Old/Makefile):
+  There are several *make* options vailable in [Makefile](https://github.com/PrincetonUniversity/FOCUS/tree/master/Old/Makefile):
   
   **Optimized concise version (recommended)**
   ```

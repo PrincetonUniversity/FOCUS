@@ -12,7 +12,7 @@
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine identfy
-  use kmodule, only: ounit, myid, zero, coil, surf, Nteta, Nzeta, coilsI, antibscont, Ncoils, bnorm, tflux, ttlen, tbn, target_tflux, isign
+  use kmodule, only: ounit, myid, zero, coil, surf, Nteta, Nzeta, coilsI, antibscont, Ncoils, bnorm, tflux, ttlen, tbn, target_tflux, isign, Lnormalize
   implicit none
   include "mpif.h"
 
@@ -36,7 +36,11 @@ subroutine identfy
   endif
 
   ! evaluate object functions
-  call bnormal(0)
+   if (Lnormalize .eq. 0) then 
+      call bnormal(0)
+   else
+      call bnormal2(0)
+   endif
 
    if ( target_tflux .eq. 0.0 ) then
     call torflux(0)

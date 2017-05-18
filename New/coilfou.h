@@ -198,7 +198,7 @@ subroutine initfou
         open( runit, file=trim(ext)//".focus", status="old" )
         read( runit,*)
         read( runit,*) Ncoils
-        write(ounit,'("coilfou : identified "i3" coils in ext.coilparameters ;")') Ncoils
+        write(ounit,'("coilfou : identified "i3" coils in ext.focus ;")') Ncoils
      endif
                                
      IlBCAST( Ncoils        ,    1,  0 )
