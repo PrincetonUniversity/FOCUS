@@ -10,7 +10,7 @@
 
 !latex \subsection{overview}
 !latex \bi
-!latex \item[1.] Here, and elsewhere, input variables are shown in \inputvar{red}. The input list is read from file and broadcast in \link{al00aa}.
+!latex \item[1.] Here, and elsewhere, input variables are shown in \inputvar{red}. The input list is read from file and broadcast in \link{initial}.
 !latex \ei
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -70,46 +70,50 @@ module kmodule
 !latex \subsection{input list: \type{focusin}}
 !latex \bi
 
-  INTEGER              :: Idisplay    =       -1         !latex \item \inputvar{Idisplay      =        0        } : silent output; -1 = details ;
-  INTEGER              :: Isymmetric  =        1         !latex \item \inputvar{Isymmetric    =        1        } : enforce stellarator symmetry;
-  INTEGER              :: Itopology   =        0         !latex \item \inputvar{Itopology     =        0        } : selects knottedness of plasma:
+  INTEGER              :: Idisplay    =       -1         !latex \item \inputvar{Idisplay      =        0        } : 0: silent output; -1 = more details ;
+  INTEGER              :: Isymmetric  =        1         !latex \item \inputvar{Isymmetric    =        0        } : 0: no symmetry (recommended); 1: enforce stellarator symmetry;
+  INTEGER              :: Itopology   =        0         !latex \item \inputvar{Itopology     =        0        } : 0: VMEC-style surface; 1: knots;
   REAL                 :: knotsurf    =        0.200D-00 !latex \item \inputvar{knotsurf      =        0.200D-00} : radius of knotted plasma boundary;
-  REAL                 :: ellipticity =        0.000D-00 !latex \item \inputvar{ellipticity   =        0.000D-00} : radius of knotted plasma boundary;
-  INTEGER              :: Linitialize =        0         !latex \item \inputvar{Linitialize   =        0        } : 
-  REAL                 :: Rmaj        =        1.000D+00 !latex \item \inputvar{Rmaj          =        1.000D+00} : major radius of coils;
+  REAL                 :: ellipticity =        0.000D-00 !latex \item \inputvar{ellipticity   =        0.000D-00} : ellipticity of knotted plasma boundary;
+  INTEGER              :: Linitialize =        0         !latex \item \inputvar{Linitialize   =        0        } : -N: circular coils for knots; -1: read coils.xxx file;
+                                                         !latex                                                     0: read xxx.focus; N: circular coils for unknots;
+  REAL                 :: Rmaj        =        1.000D+00 !latex \item \inputvar{Rmaj          =        1.000D+00} : major radius of coils (now adaptive to plasma);
   REAL                 :: rmin        =        0.500D+00 !latex \item \inputvar{rmin          =        0.500D+00} : minor radius of coils;
-  INTEGER              :: Ic          =        0         !latex \item \inputvar{Ic            =        0        } : 
-  REAL                 :: Io          =        1.000D+00 !latex \item \inputvar{Io            =        1.000D+00} : 
-  REAL                 :: Iw          =        1.000D+00 !latex \item \inputvar{Iw            =        1.000D+00} : 
-  INTEGER              :: Lc          =        2         !latex \item \inputvar{Lc            =        0        } : logical flag controlling length weight; see \link{tlength};
-  REAL                 :: Lo          =        1.000D+00 !latex \item \inputvar{Lo            =        1.000D+00} : 
-  REAL                 :: Lw          =        1.000D+00 !latex \item \inputvar{Lw            =        1.000D+00} : 
+  INTEGER              :: Ic          =        0         !latex \item \inputvar{Ic            =        1        } : 0: currents fixed; 1: currents varying;
+  REAL                 :: Io          =        1.000D+00 !latex \item \inputvar{Io            =        1.000D+00} : initial current value (A);
+  REAL                 :: Iw          =        1.000D+00 !latex \item \inputvar{Iw            =        1.000D+00} : redundant;
+  INTEGER              :: Lc          =        2         !latex \item \inputvar{Lc            =        0        } : 0: coil geometry fixed; 1: quadratic constraint for length; 
+                                                         !latex                                                     1: exponential constraint; see \link{tlength};
+  REAL                 :: Lo          =        1.000D+00 !latex \item \inputvar{Lo            =        1.000D+00} : object/normalized length;
+  REAL                 :: Lw          =        1.000D+00 !latex \item \inputvar{Lw            =        1.000D+00} : weight for each coil's length;
   INTEGER              :: NFcoil      =        4         !latex \item \inputvar{NFcoil        =        4        } : Fourier harmonics for each coil;
-  INTEGER              :: NDcoil      =      128         !latex \item \inputvar{NDcoil        =      128        } : discrete segments per coil;
-  INTEGER              :: Loptimize   =        0         !latex \item \inputvar{Loptimize     =    -2/-1/0/1/2/3} : -1 and -2 are for testing the derivatives; 
-                                                         !latex       1 old descent; 2 new descent; 3 Powell nonlinear equations slover; 4 Newton;
-  INTEGER              :: Lnormalize  =        0         !latex \item \inputvar{Lnormalize    =        0/1      } : turn off/on normalizing weights;         
+  INTEGER              :: NDcoil      =      128         !latex \item \inputvar{NDcoil        =      128        } : number of segments per coil;
+  INTEGER              :: Loptimize   =        0         !latex \item \inputvar{Loptimize     =    -2/-1/0/1/2/5} : -1 and -2 are for testing the derivatives; 
+                                                         !latex       1: old descent; 2: differential flow (DF); 5: conjugate gradient (CG);
+  INTEGER              :: Lnormalize  =        0         !latex \item \inputvar{Lnormalize    =        1        } : 0: turn off normalizing weights, and using |B| for Bn normalization; 
+                                                         !latex                                                     1: turn on normalizing weights, $w_{normed} = w_0 / \chi_0$;     
   REAL                 :: weight_bnorm=        1.000D+00 !latex \item \inputvar{weight\_bnorm =        1.000D+00} : weight for bnormal constraint; \link{bnormal}
   REAL                 :: weight_tflux=        0.500D+00 !latex \item \inputvar{weight\_tflux =        0.500D+00} : weight for toroidal flux constraint; \link{torflux}
   REAL                 :: target_tflux=        0.000D+00 !latex \item \inputvar{target\_tflux =        1.000D+00} : target toroidal flux; \link{torflux}
   REAL                 :: weight_ttlen=        0.000D+00 !latex \item \inputvar{weight\_ttlen =        0.000D+00} : weight for coil length; \link{tlength}
   REAL                 :: weight_eqarc=        0.000D+00 !latex \item \inputvar{weight\_eqarc =        1.000D+00} : weight for equal arc length constraint; \link{equarcl}
   REAL                 :: weight_ccsep=        0.000D+00 !latex \item \inputvar{weight\_ccsep =        0.000D+00} : weight for coil-coil separation       ; \link{coilsep}
-  REAL                 :: tauend      =        1.000D-00 !latex \item \inputvar{tauend        =        1.000D-00} : artificial relaxtion ``time'', \link{evolve};
-  REAL                 :: tautol      =        1.000D-04 !latex \item \inputvar{tautol        =        1.000D-04} : o.d.e. integration tolerance;
-  INTEGER              :: Ntauout     =      100         !latex \item \inputvar{Ntauout       =      100        } : intermediate time steps; \link{evolve};
-  INTEGER              :: Savfreq     =        1         !latex \item \inputvar{Savfreq       =        1        } : Saving Frequency; 1 means saving files for each step;
-  INTEGER              :: Nteta       =       64         !latex \item \inputvar{Nteta         =       64        } : 
-  INTEGER              :: Nzeta       =       64         !latex \item \inputvar{Nzeta         =       64        } : 
-  REAL                 :: absacc      =        1.000D-08 !latex \item \inputvar{absacc        =        1.000D-08} :
-  REAL                 :: absreq      =        1.000D-12 !latex \item \inputvar{absreq        =        1.000D-12} :
-  REAL                 :: relreq      =        1.000D-01 !latex \item \inputvar{relreq        =        1.000D-01} :
+  REAL                 :: tauend      =        1.000D-00 !latex \item \inputvar{tauend        =        1.000D+00} : stopping ``time`` in DF;  \link{descent};
+  REAL                 :: tautol      =        1.000D-04 !latex \item \inputvar{tautol        =        1.000D-04} : DF o.d.e. integration tolerance;
+  INTEGER              :: Ntauout     =      100         !latex \item \inputvar{Ntauout       =      100        } : intermediate time steps; \link{descent};
+  INTEGER              :: Savfreq     =        1         !latex \item \inputvar{Savfreq       =        1        } : writing files frequency;
+  INTEGER              :: Nteta       =       64         !latex \item \inputvar{Nteta         =       64        } : poloidal surface resolution;
+  INTEGER              :: Nzeta       =       64         !latex \item \inputvar{Nzeta         =       64        } : toroidal surface resolution;
+  REAL                 :: absacc      =        1.000D-08 !latex \item \inputvar{absacc        =        1.000D-08} : redundant;
+  REAL                 :: absreq      =        1.000D-12 !latex \item \inputvar{absreq        =        1.000D-12} : redundant;
+  REAL                 :: relreq      =        1.000D-01 !latex \item \inputvar{relreq        =        1.000D-01} : redundant;
   REAL                 :: xtol        =        1.000D-04 !latex \item \inputvar{xtol          =        0.000D+00} : E04LBF tolerance 10*sqrtmachprec;
   REAL                 :: eta         =        0.900D+00 !latex \item \inputvar{eta           =        0.900D+00} : E04LBF accurance rate (step ration);
   REAL                 :: stepmx      =        1.000D+05 !latex \item \inputvar{stepmx        =        1.000D+05} : E04LBF Euclidean distance between solution and starting;
-  INTEGER              :: Mpol        =       -8         !latex \item \inputvar{Mpol          =       -8        } : Fourier poloidal resolution;
-  INTEGER              :: Ntor        =        4         !latex \item \inputvar{Ntor          =        4        } : Fourier toroidal resolution;
-  INTEGER              :: Lpoincare   =        0         !latex \item \inputvar{Lpoincare     =        0        } : to construct \Poincare plot;
+  INTEGER              :: Mpol        =       -8         !latex \item \inputvar{Mpol          =       -8        } : Fourier poloidal resolution for writing knotted surface;
+  INTEGER              :: Ntor        =        4         !latex \item \inputvar{Ntor          =        4        } : Fourier toroidal resolution for writing knotted surface
+  INTEGER              :: Lpoincare   =        0         !latex \item \inputvar{Lpoincare     =        0        } : to construct \Poincare plot or others; 1: \Poincare plot; 
+                                                         !latex                                        2: writing mgrid file; 4: writing SPEC needed files; The three can be combined freely;
                                                          !latex       \bi \item if \inputvar{Lpoincare} $> 0$, then the fieldline parameter 
                                                          !latex                 is the cylindrical toroidal angle, and so $B^\phi$ must not equal zero;
                                                          !latex           \item if \inputvar{Lpoincare} $=-1$, then the fieldline parameter is the length;
