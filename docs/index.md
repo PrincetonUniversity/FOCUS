@@ -1,6 +1,9 @@
 # Synopsis
+
 The FOCUS uses 3D curves to represent coils in fusion devices.
 For a given plamsa configuration (with or without target Bn distributions), FOCUS could find optimal coils, meeting the user-specified physics and engineering constraints.
+
+&nbsp;
 
 # Before running
 
@@ -82,7 +85,9 @@ For instance, you want to run the code with a case name of "example".
   - *Linitialize =  N* (N>1)
   
     Initialize N circular coils (r=rmin) surrounding the plasma boundary for *Itopology=0* only.
-    
+
+&nbsp;
+
 # Running
 
 Once you finish preparing the input files and successfully compile the code, move to your working directory, which contains the input files and the executable, and then type
@@ -93,6 +98,8 @@ You may need to allocate computating cores first, e.g. try `salloc -p dawson -n 
 
 The code shoul print some information on the screen (or in stdout file for *sbatch*).
 
+&nbsp;
+
 # Output files
 
 The main output data is written in hdf5 file **example.fo.h5**. You can use Matlab or python or any other tools to load the data.
@@ -101,17 +108,24 @@ Besides the hdf5, FOCUS will also write the **coils.example** and **example.focu
 
 And also, there are intermediate savings for the coils to plot a movie. They are ordered in numbers starting from  **.example.fo.filaments.001**. 
 
+&nbsp;
+
 # Plotting tools
 There are several tools for processing the data, like a [python package](https://github.com/PrincetonUniversity/FOCUS/blob/master/pyfocus/coil.py), a powerful GUI interface Echidna in IDL written by Dr. Hudson, and some MATLAB scripts by Dr. Lazerson.
 
 *I will uplaod some of them later.*
 
+&nbsp;
+
 # Documentations
 In the source files, the comments starting with "!latex " can be exported into a tex file and generate pdf documentations.
 You can find some of them in [Subroutins](https://princetonuniversity.github.io/FOCUS/subroutines).
 
+&nbsp;
+
 # Contact
 If you have any questions, please contact Caoxiang Zhu (czhu@pppl.gov or zcxiang@mail.ustc.edu.cn).
 
-Please note that there are no warranties! :relieved:
+Please note that there are no warranties! :octocat:
 
+-----------
