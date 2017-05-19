@@ -82,7 +82,7 @@ For instance, you want to run the code with a case name of "example".
   
     Read the coils data from **example.focus**. This file contains all the Fourier harmonics and control labels for the coils.
     
-  - *Linitialize =  N* (N>1)
+  - *Linitialize =  N* (N≥1)
   
     Initialize N circular coils (r=rmin) surrounding the plasma boundary for *Itopology=0* only.
 
