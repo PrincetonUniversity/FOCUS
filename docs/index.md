@@ -108,6 +108,8 @@ Besides the hdf5, FOCUS will also write the **coils.example** and **example.focu
 
 And also, there are intermediate savings for the coils to plot a movie. They are ordered in numbers starting from  **.example.fo.filaments.001**. 
 
+With different *Lpoincare* values, FOCUS can also write mgrid file for the vacuum field or call OCULUS subroutine to do a field line tracing. The data are stored in **mgrid.example.f.\***, **example.fo.4m3dc1** and **.example.fo.P.xxx**. Details can be seen in [diagnos.pdf](\doc\diagnos.pdf).
+
 &nbsp;
 
 # Plotting tools
