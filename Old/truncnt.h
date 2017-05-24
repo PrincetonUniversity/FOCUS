@@ -44,7 +44,7 @@ SUBROUTINE truncnt
   OPLIST(4) = Ntauout
   OPLIST(10) = 0
   OPLIST(11) = lunit   ! output to null file;
-  if (myid .eq. 0 .and. Idisplay .le. 0) OPLIST(11) = ounit ! only root cpu output;
+  if (myid .eq. 0 .and. Idisplay .le. -1) OPLIST(11) = ounit ! only root cpu output;
   OPLIST(12) = 1
   OPLIST(15) = 2
   OPLIST(16) = 2
@@ -61,6 +61,8 @@ SUBROUTINE truncnt
 
   close(lunit)
 
+  DALLOCATE( IW )
+  DALLOCATE(  W )
   return
 
 END SUBROUTINE truncnt
