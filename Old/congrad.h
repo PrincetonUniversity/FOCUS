@@ -7,6 +7,7 @@ SUBROUTINE congrad
   REAL                    :: alpha, beta, f
   REAL, dimension(1:Ndof) :: xdof, p, gradk, gradf
 
+  if (myid .eq. 0) write(ounit, '("truncnt : "10X" : Begin using Nonlinear Conjugate Gradient to optimize.")')
   
   call getdf(f, gradk)
 
@@ -16,7 +17,7 @@ SUBROUTINE congrad
   itau = 0
   call output
 
-  do itau = 1, Ntauout
+  do
 
      call wolfe(xdof, p, alpha) ! find a step size matching the Wolfe condiction;
      xdof = xdof + alpha*p(1:Ndof) ! next xdof
@@ -32,6 +33,8 @@ SUBROUTINE congrad
 
      alpha = 1.0  ! reset alpha;
 
+     if (itau .ge. Ntauout) exit  ! reach maximum iterations;
+
   enddo
 
   if(myid .eq. 0) write(ounit, '("congrad : Computation using conjugate gradient finished.")')
@@ -44,7 +47,7 @@ END SUBROUTINE congrad
 subroutine output
   
   use kmodule, only : zero, ounit, myid, iter, &
-                      NFcoil, Ndof, &
+                      NFcoil, Ndof, Ncoils, Cdof, t1E, &
                       itau, tauend, Ntauout, Savfreq, tautol, &
                       coil, icoil, Ncoils, totalenergy, evolution, bnorm, tflux, ttlen, eqarc, ccsep, tbn
   
@@ -58,9 +61,9 @@ subroutine output
 
   irestart = 1
 
-  call getdf( f, dE)
+  !call getdf( f, dE)
   
-  sumdE = sum(dE(1:Ndof)**2)
+  sumdE = sum(t1E**2)
 
   if( myid.eq.0 ) write(ounit,1000) itau, totalenergy, sumdE, bnorm, tflux, ttlen, eqarc, ccsep
 
@@ -78,6 +81,8 @@ subroutine output
   endif
   
   if(mod(itau,Savfreq) .eq. 0) call restart( irestart )
+
+  itau = itau + 1
 
   return  
 

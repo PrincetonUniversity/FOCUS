@@ -2,8 +2,9 @@
 
 ############################################################################################################
 
- ALLFILES= globals numrec initial surface rdknot rdcoils knotxx iccoil bfield bnormal torflux tlength equarcl \
-     specwid coilsep nlinear fdcheck denergy descent restart diagnos exinput identfy bnftran congrad focus
+ ALLFILES= globals numrec initial surface rdknot rdcoils knotxx iccoil bfield bnormal torflux tlength equarcl\
+     specwid coilsep nlinear fdcheck denergy descent congrad truncnt restart diagnos exinput identfy bnftran \
+     focus
 
 ############################################################################################################
 
@@ -38,15 +39,18 @@
 
 ############################################################################################################
 
-xfocus: $(OBJS)
-	$(FC) -o xfocus $(OBJS) $(OCULUSFLAGS) $(NAG) $(HDF5)
+xfocus: $(OBJS) tnpack.o
+	$(FC) -o xfocus $(OBJS) tnpack.o $(OCULUSFLAGS) $(NAG) $(HDF5)
 	@echo "Compiling xfocus finished."
 
-dfocus: $(DOBJS)
-	$(FC) -o dfocus $(DOBJS) $(OCULUSFLAGS) $(NAG) $(HDF5)
+dfocus: $(DOBJS) tnpack.o
+	$(FC) -o dfocus $(DOBJS)  tnpack.o $(OCULUSFLAGS) $(NAG) $(HDF5)
 	@echo "Compiling dfocus finished."
 
 ############################################################################################################
+tnpack.o: tnpack.f
+	$(FC) -c $(FLAGS) $(DFLAGS) -o $@ $<
+
 $(OBJS): %_r.o: %.F90
 	$(FC) -c $(FLAGS) -o $@ $<  $(OCULUSFLAGS) $(NAG) $(HDF5)
 
