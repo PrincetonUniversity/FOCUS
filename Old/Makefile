@@ -2,9 +2,9 @@
 
 ############################################################################################################
 
- ALLFILES= globals numrec initial surface rdknot rdcoils knotxx iccoil bfield bnormal torflux tlength equarcl\
-     specwid coilsep nlinear fdcheck denergy descent congrad truncnt restart diagnos exinput identfy bnftran \
-     focus
+ ALLFILES= globals numrec initial surface rdknot rdcoils knotxx iccoil bfield bnormal torflux tlength equarcl \
+     specwid coilsep nlinear fdcheck denergy descent congrad truncnt restart diagnos exinput identfy \
+     bnftran focus
 
 ############################################################################################################
 
@@ -39,15 +39,18 @@
 
 ############################################################################################################
 
-xfocus: $(OBJS) tnpack.o
-	$(FC) -o xfocus $(OBJS) tnpack.o $(OCULUSFLAGS) $(NAG) $(HDF5)
+xfocus: $(OBJS) tnpack.o hybrj.o
+	$(FC) -o xfocus $(OBJS) tnpack.o  hybrj.o $(OCULUSFLAGS) $(NAG) $(HDF5)
 	@echo "Compiling xfocus finished."
 
-dfocus: $(DOBJS) tnpack.o
-	$(FC) -o dfocus $(DOBJS)  tnpack.o $(OCULUSFLAGS) $(NAG) $(HDF5)
+dfocus: $(DOBJS) tnpack.o hybrj.o
+	$(FC) -o dfocus $(DOBJS) tnpack.o hybrj.o $(OCULUSFLAGS) $(NAG) $(HDF5)
 	@echo "Compiling dfocus finished."
 
 ############################################################################################################
+hybrj.o: hybrj.f
+	$(FC) -c $(FLAGS) $(DFLAGS) -o $@ $<
+
 tnpack.o: tnpack.f
 	$(FC) -c $(FLAGS) $(DFLAGS) -o $@ $<
 

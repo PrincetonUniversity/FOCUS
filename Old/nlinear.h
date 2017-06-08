@@ -22,9 +22,10 @@
 !  C05PDF:  Nonlinear equations solver with first derivatives           May/30/2016
 !---------------------------------------------------------------------------------------------------------
 SUBROUTINE Powell
-  use kmodule, only: zero, sqrtmachprec, myid, ounit, evolution, Ntauout, itau, &
+  use kmodule, only: zero, sqrtmachprec, myid, ounit, ext, evolution, Ntauout, itau, &
                      totalenergy, n1E, n2E, NFcoil, Ncoils, Cdof, Ndof,   &
                      bnorm, tflux, ttlen, eqarc, xtol, Idisplay
+  use hdf5
   implicit none
   include "mpif.h"
 
@@ -34,6 +35,13 @@ SUBROUTINE Powell
   REAL              :: FACTOR, X(Ndof)
   INTEGER           :: ii,jj,c1, n1, c2, n2, irestart
   
+! the following are used by the macros HWRITEXX below; do not alter/remove;
+  INTEGER            :: hdfier, rank
+  integer(hid_t)     :: file_id, space_id, dset_id                 ! warning: the string "INTEGER" is a macro;
+  integer(hsize_t)   :: onedims(1:1), twodims(1:2), threedims(1:3) ! warning: the string "INTEGER" is a macro;
+  INTEGER            :: imn
+  REAL               :: tvolume
+
   NN = NFcoil; N = Ndof
 
   LDFJAC = N
@@ -58,7 +66,26 @@ SUBROUTINE Powell
         FJAC(ii,jj) = n2E(c1,n1,c2,n2)
      enddo
   enddo
- 
+
+!!$  !----------------------------------------------
+!!$  if(myid .ne. 0) return
+!!$  call h5open_f( hdfier ) ! initialize Fortran interface;
+!!$  FATAL( SVD    , hdfier.ne.0, error calling h5open_f )
+!!$
+!!$  call h5fcreate_f( trim(ext)//".matrix.h5", H5F_ACC_TRUNC_F, file_id, hdfier ) ! create new file;
+!!$  FATAL( SVD    , hdfier.ne.0, error calling h5fcreate_f )
+!!$
+!!$  HWRITERA( n, n       ,  Hessian  ,  FJAC(1:n,1:n))
+!!$  
+!!$  call h5fclose_f( file_id, hdfier ) ! terminate access;
+!!$  FATAL( nlinear, hdfier.ne.0, error calling h5fclose_f )
+!!$  
+!!$  call h5close_f( hdfier ) ! close Fortran interface;
+!!$  FATAL( nlinear, hdfier.ne.0, error calling h5close_f )
+!!$
+!!$  return
+!!$  !----------------------------------------------
+  
   itau = 0
   !XTOL   = sqrtmachprec
   MODE   = 1
@@ -146,7 +173,8 @@ SUBROUTINE Newton
 
   Intrinsic            :: count
   EXTERNAL             :: funct, H, monit, pack, unpak, costfun, e04lbf
-  
+
+
   n = Ndof; iprint = -1 * Idisplay; MAXCAL = max(Ntauout, 50*n); ibound = 1 !no constraints
   lh = max(n*(n-1)/2,1); LIW = 2; LW = max(7*n+n*(n-1)/2,8); ifail = Idisplay; Ntauout = MAXCAL
 
@@ -391,7 +419,7 @@ SUBROUTINE ntchdms(nderiv)   ! NewTon CHange DiMenSion
 
            do mm = 0, Cdof
               n2E(icoil, mm, icoil, ll+Cdof       +1) = dlc(icoil, ll, mm)
-              n2E(icoil, mm, icoil, ll+Cdof+NFcoil+2) = dls(icoil, ll, mm)
+               n2E(icoil, mm, icoil, ll+Cdof+NFcoil+2) = dls(icoil, ll, mm)
            enddo
 
         enddo
@@ -416,7 +444,7 @@ subroutine SVD
 
   INTEGER           :: astat, ierr, n, info, lda, ldu, ldvt, lwork, isingular, &
                        i, j, c1, n1, c2, n2, ifail, neigen, ieigen, nstep
-  REAL              :: dummy(1,1), step
+  REAL              :: dummy(1,1), step, start, finish
   REAL, allocatable :: a(:,:), ab(:,:), inver(:,:), b(:), s(:), u(:,:), vt(:,:), work(:), w(:)
 
 ! the following are used by the macros HWRITEXX below; do not alter/remove;
@@ -443,7 +471,10 @@ subroutine SVD
   SALLOCATE(inver,(1:lda, 1:n), zero)
 
   !get the Hessian matrix
+  start = MPI_WTIME()
   call costfun(2)
+  finish = MPI_WTIME()
+  if (myid .eq. 0) WRITE(ounit, '("SVD     : "10X" : costfun(2) finished in "ES12.5" seconds.")') finish - start
 
   do j=1,n
      call DoFconvert(j, c2, n2)
@@ -457,25 +488,29 @@ subroutine SVD
   if(myid .ne. 0) return
 
   ab = a
-!!$  !write(ounit,'("SVD     : "10X" : "4ES23.15)') a(1,2), a(2,1), t2E(1,0,1,1), t2E(1,1,1,0)
-!!$
-!!$  ! get optimal work dimension
-!!$  lwork = -1
-!!$  call DGESVD('A','A', n, n, a, lda, s, u, ldu, vt, ldvt, dummy, lwork, info)
-!!$  lwork = max(5*n, nint(dummy(1,1)))
-!!$  SALLOCATE(work, (lwork), zero)
-!!$
-!!$  call DGESVD('A','A', n, n, a, lda, s, u, ldu, vt, ldvt, work , lwork, info)
-!!$
-!!$  write(ounit, '("SVD     : "10X" : INFO = "I4" ; min(abs(s))="es23.15" ;")') info, minval(abs(s)) 
-!!$
-!!$  isingular = 0
-!!$  do i = 1, n
-!!$     if (s(i) .ge. machprec) isingular = isingular + 1
-!!$  enddo
-!!$
-!!$  write(ounit, '("SVD     : "10X" : Rank = " I6" ; Max = "ES23.15" ; Min = "ES23.15)') isingular, s(1), s(n)
-!!$
+  !write(ounit,'("SVD     : "10X" : "4ES23.15)') a(1,2), a(2,1), t2E(1,0,1,1), t2E(1,1,1,0)
+
+  ! get optimal work dimension
+  start = MPI_WTIME()
+  lwork = -1
+  call DGESVD('A','A', n, n, a, lda, s, u, ldu, vt, ldvt, dummy, lwork, info)
+  lwork = max(5*n, nint(dummy(1,1)))
+  SALLOCATE(work, (lwork), zero)
+
+  call DGESVD('A','A', n, n, a, lda, s, u, ldu, vt, ldvt, work , lwork, info)
+
+  finish = MPI_WTIME()  
+  WRITE(ounit, '("SVD     : "10X" : SVD finished in "ES12.5" seconds.")') finish - start
+
+  write(ounit, '("SVD     : "10X" : INFO = "I4" ; min(abs(s))="es23.15" ;")') info, minval(abs(s)) 
+
+  isingular = 0
+  do i = 1, n
+     if (s(i) .ge. machprec) isingular = isingular + 1
+  enddo
+
+  write(ounit, '("SVD     : "10X" : Rank = " I6" ; Max = "ES23.15" ; Min = "ES23.15)') isingular, s(1), s(n)
+
 !!$  a = ab
 !!$  ! calculate eigenvalues and eigenvectors
 !!$  lwork = -1; deallocate(work)
@@ -505,10 +540,10 @@ subroutine SVD
 !!$  step = 1.0E-4; nstep = 100  !evolution stepsize
 !!$  call coilevl( a(1:n,n), step, nstep )  !array for the direction; step for the stepsize  
 !!$  write(ounit, '("Eigen   : "10X" : Writing coils evolution finished")')
-!!$  
-!!$  ! call inverse procedure
-!!$  !call matrinv(ab(1:n,1:n), inver(1:n,1:n), n, ifail)
-!!$  !FATAL(SVD     , ifail .ne. 0, inversing error)
+  
+  ! call inverse procedure
+  !call matrinv(ab(1:n,1:n), inver(1:n,1:n), n, ifail)
+  !FATAL(SVD     , ifail .ne. 0, inversing error)
 
   call h5open_f( hdfier ) ! initialize Fortran interface;
   FATAL( SVD    , hdfier.ne.0, error calling h5open_f )
@@ -673,5 +708,98 @@ subroutine wrtdir(dir)
 
 end subroutine wrtdir
   
-  
-  
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+SUBROUTINE hybrid
+  use kmodule, only: zero, myid, ncpu, ounit, sqrtmachprec, Ntauout, Ndof, Idisplay, coil
+  implicit none
+  include "mpif.h"
+
+  INTEGER           :: n,ldfjac,maxfev,mode,nprint,info,nfev,njev,lr
+  REAL, allocatable :: X(:), FVEC(:), DIAG(:), FJAC(:,:), R(:), QTF(:), W1(:), W2(:), W3(:), W4(:)
+  REAL              :: FACTOR, xtol
+  INTEGER           :: irestart = 1, astat, ierr
+
+  EXTERNAL          :: fcn, pack
+
+
+  N = Ndof
+  maxfev = Ntauout
+  xtol = sqrtmachprec
+  LDFJAC = N
+  LR     = N*(N+1)/2
+  INFO   = Idisplay
+  MODE   = 1
+  FACTOR = 100.0
+  nprint = 1
+
+  SALLOCATE( X   ,(1:N     ), zero)
+  SALLOCATE( FVEC,(N       ), zero)
+  SALLOCATE( DIAG,(N       ), zero)
+  SALLOCATE( FJAC,(LDFJAC,N), zero)
+  SALLOCATE( R   ,(LR      ), zero)
+  SALLOCATE( QTF ,(N       ), zero)
+  SALLOCATE( W1  ,(N       ), zero)
+  SALLOCATE( W2  ,(N       ), zero) 
+  SALLOCATE( W3  ,(N       ), zero) 
+  SALLOCATE( W4  ,(N       ), zero) 
+
+  call pack(x(1:n))
+  if (myid .eq. 0) write(ounit, '("hybrid  : "10X" : Begin using hybrid Newton method to solve nonlinear equations.")')
+  call costfun(1); call output
+
+  call hybrj(fcn,n,x,fvec,fjac,ldfjac,xtol,maxfev,diag,mode,factor,nprint,info,nfev,njev,r,lr,qtf,w1,w2,w3,w4)
+
+  if (myid .eq. 0) then
+     write(ounit, '("hybrid  : "10X" : Hybrid Newton method finished. INFO = "I3)') info
+     select case ( info )
+     case (0)
+        write(ounit, '("hybrid  : "10X" : improper input parameters.")')
+     case (1)
+        write(ounit, '("hybrid  : "10X" : relative error between two consecutive iterates is at most xtol.")')
+     case (2)
+        write(ounit, '("hybrid  : "10X" : number of calls to fcn with iflag = 1 has reached maxfev.")')
+     case (3)
+        write(ounit, '("hybrid  : "10X" : xtol is too small. no further improvement in the approximate solution x is possible.")')
+     case (4)
+        write(ounit, '("hybrid  : "10X" : iteration is not making good progress, as measured by the improvement from the last five jacobian evaluations.")')
+     case (5)
+        write(ounit, '("hybrid  : "10X" : iteration is not making good progress, as measured by the improvement from the last ten iterations.")')
+     end select
+  endif
+
+  deallocate(x, fvec, diag, fjac, r, qtf, w1, w2, w3, w4)
+
+END SUBROUTINE hybrid
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+SUBROUTINE fcn(n, x, fvec, fjac, ldfjac, iflag)
+  use kmodule, only: myid, ounit, ncpu, t2E
+  implicit none
+  include "mpif.h"
+
+  INTEGER, INTENT( IN) :: n,ldfjac,iflag
+  REAL,    INTENT( IN) :: x(n)
+  REAL,    INTENT(OUT) :: fvec(n),fjac(ldfjac,n)
+
+  INTEGER :: ii, jj, c1, c2, n1, n2, astat, ierr
+  REAL    :: f0
+
+  call unpack(x)
+  if (iflag == 1) then
+     call getdf(f0, fvec)
+  else if (iflag == 2) then
+     call costfun(2)
+     do jj = 1, N
+         call DoFconvert(jj,c2,n2)
+         do ii = 1,N
+            call DoFconvert(ii,c1,n1)
+            FJAC(ii,jj) = t2E(c1,n1,c2,n2)
+         enddo
+     enddo
+  else
+     call output
+  endif
+
+END SUBROUTINE fcn

@@ -166,6 +166,7 @@ subroutine tlength(nderiv)
         coil(icoil)%L = d2L(0,0)
              
         llength = llength + coil(icoil)%Lw * ( coil(icoil)%L - coil(icoil)%Lo )**2 / coil(icoil)%Lo**2
+        !print *, "myid = ", myid, " ; llength = ", llength,  coil(icoil)%Lw, coil(icoil)%L, coil(icoil)%Lo
         do ll = 1, Cdof
            l1L(icoil,ll) =  ( coil(icoil)%L - coil(icoil)%Lo ) * d2L(ll,0) / coil(icoil)%Lo**2
         enddo ! end ll

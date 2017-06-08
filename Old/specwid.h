@@ -196,7 +196,7 @@ SUBROUTINE specwid(nderiv)
 
         call coildft( fA, fc, fs, nd, nf)
 
-        leqarc = leqarc + sum(fc(0:nf)**2) + sum(fs(0:nf)**2) + sum(coil(icoil)%zc(0:NFcoil))**2
+        leqarc = leqarc + sum(fc(0:nf)**2) + sum(fs(0:nf)**2) !+ sum(coil(icoil)%zc(0:NFcoil))**2
 
      enddo !end icoil
      
@@ -233,7 +233,7 @@ SUBROUTINE specwid(nderiv)
 
         lfc = fc; lfs = fs
 
-        leqarc = leqarc + sum(lfc(0:nf)**2) + sum(lfs(0:nf)**2) + sum(coil(icoil)%zc(0:NFcoil))**2
+        leqarc = leqarc + sum(lfc(0:nf)**2) + sum(lfs(0:nf)**2) !+ sum(coil(icoil)%zc(0:NFcoil))**2
 
         do ll = 0, nf
 
@@ -258,9 +258,9 @@ SUBROUTINE specwid(nderiv)
 
         enddo ! end ll
 
-        do ll = 4*NFcoil+4, 5*NFcoil+5
-           l1A(icoil, ll) = l1A(icoil,ll) + sum(coil(icoil)%zc(0:NFcoil))   !z(0) = 0 terms
-        enddo
+!!$        do ll = 4*NFcoil+4, 5*NFcoil+5
+!!$           l1A(icoil, ll) = l1A(icoil,ll) + sum(coil(icoil)%zc(0:NFcoil))   !z(0) = 0 terms
+!!$        enddo
 
      enddo ! end icoil
      
@@ -343,7 +343,7 @@ SUBROUTINE specwid(nderiv)
 
         call coildft( fA, fc, fs, nd, nf)
 
-        leqarc = leqarc +  sum(fc(0:nf)**2) + sum(fs(0:nf)**2) + sum(coil(icoil)%zc(0:NFcoil))**2
+        leqarc = leqarc +  sum(fc(0:nf)**2) + sum(fs(0:nf)**2) !+ sum(coil(icoil)%zc(0:NFcoil))**2
 
         ffc(0:nf,0) = fc(0:nf)
         ffs(0:nf,0) = fs(0:nf)
@@ -374,9 +374,9 @@ SUBROUTINE specwid(nderiv)
 
         enddo ! end ll
 
-        do ll = 4*NFcoil+4, 5*NFcoil+5
-           l1A(icoil, ll) = l1A(icoil,ll) + sum(coil(icoil)%zc(0:NFcoil))   !z(0) = 0 terms
-        enddo
+!!$        do ll = 4*NFcoil+4, 5*NFcoil+5
+!!$           l1A(icoil, ll) = l1A(icoil,ll) + sum(coil(icoil)%zc(0:NFcoil))   !z(0) = 0 terms
+!!$        enddo
 
         do ll = 1, Cdof          
            do mm = 1, Cdof
@@ -385,11 +385,11 @@ SUBROUTINE specwid(nderiv)
            enddo  !end mm
         enddo !end ll
 
-        do ll = 4*NFcoil+5, 5*NFcoil+5
-           do mm = 4*NFcoil+5, 5*NFcoil+5
-              l2A(icoil,ll, icoil, mm) = l2A(icoil,ll, icoil, mm) + 1
-           enddo
-        enddo
+!!$        do ll = 4*NFcoil+5, 5*NFcoil+5
+!!$           do mm = 4*NFcoil+5, 5*NFcoil+5
+!!$              l2A(icoil,ll, icoil, mm) = l2A(icoil,ll, icoil, mm) + 1
+!!$           enddo
+!!$        enddo
                                    
      enddo ! end icoil
 

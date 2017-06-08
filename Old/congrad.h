@@ -1,5 +1,5 @@
 SUBROUTINE congrad
-  use kmodule, only: sqrtmachprec, myid, ounit, Ncoils, Ndof, t1E, itau, Ntauout
+  use kmodule, only: sqrtmachprec, myid, ounit, Ncoils, Ndof, t1E, itau, CG_Niter
   implicit none
   include "mpif.h"
 
@@ -14,7 +14,6 @@ SUBROUTINE congrad
   call pack(xdof(1:Ndof)) ! initial xdof;
   p(1:Ndof) = -gradk ! initial step direction;
   alpha = 1.0 ! initial step size;
-  itau = 0
   call output
 
   do
@@ -33,7 +32,7 @@ SUBROUTINE congrad
 
      alpha = 1.0  ! reset alpha;
 
-     if (itau .ge. Ntauout) exit  ! reach maximum iterations;
+     if (itau .ge. CG_Niter) exit  ! reach maximum iterations;
 
   enddo
 

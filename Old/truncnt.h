@@ -21,7 +21,6 @@ SUBROUTINE truncnt
 
   if (myid .eq. 0) write(ounit, '("truncnt : "10X" : Begin using Truncated Newton Method to optimize.")')
 
-  itau = 0
   N = Ndof
   NZ = N*(N+1)/2
   LW = 10*N+5*NZ
