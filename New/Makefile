@@ -14,20 +14,15 @@
 ############################################################################################################
 
  MACROS=macros
- CC=intel # if want to use gfortran; make CC=gfortran
+ CC=intel # if want to use gfortran; make CC=gfortran xfocus; otherwise using Intel
  FC=mpif90
- ifeq ($(CC), intel)
-	RFLAGS=-r8 -mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback -vec_report0
-	DFLAGS=-check all -check noarg_temp_created -debug full -D DEBUG
- else
-	RFLAGS=-O3 -Wall -fdefault-real-8 -ffixed-line-length-none
-	GFLAGS=-g3 -Wextra -Wtarget-lifetime -fbacktrace -fbounds-check -ffpe-trap=zero -fcheck=all -DDEBUG
- endif
-
-# FLAGS=-r8 -mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback -vec_report0
-# DFLAGS=-check all -check noarg_temp_created -debug full -D DEBUG
-# GFLAGS=-O3 -Wall -fdefault-real-8 -ffixed-line-length-none
-# DGFLAGS=-g3 -Wextra -Wtarget-lifetime -fbacktrace -fbounds-check -ffpe-trap=zero -fcheck=all -DDEBUG
+ifeq ($(CC),gfortran)
+ RFLAGS=-O3 -Wall -fdefault-real-8 -ffixed-line-length-none
+ DFLAGS=-g3 -Wextra -Wtarget-lifetime -fbacktrace -fbounds-check -ffpe-trap=zero -fcheck=all -DDEBUG
+else
+ RFLAGS=-r8 -mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback -vec_report0
+ DFLAGS=-check all -check noarg_temp_created -debug full -D DEBUG
+endif
 
 ############################################################################################################
 
@@ -49,7 +44,6 @@ xfocus: $(ROBJS) $(NUMOBJ)
 dfocus: $(DOBJS) $(NUMOBJ)
 	$(FC) -o dfocus $(DOBJS) $(NUMOBJ) $(HDF5)
 	@echo "Compiling dfocus finished."
-
 
 ############################################################################################################
 ode.o : ode.f90
