@@ -54,7 +54,7 @@ m4_define(FATAL,
    if( $2 ) then
      write(0,'("$1 :      fatal : myid=",i3," ; $2 ; $3 ;")') myid
      call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
-     stop      "$1 :            :          ; $2 : $3 ;"
+     stop      "$1 : $2 : $3 ;"
     endif
 
 )m4_dnl
@@ -286,5 +286,5 @@ m4_define(HWRITERC,{
 
 
 m4_define(TMPOUT,{ !Temperarily output a message to help debugging
-  if( myid .eq. 0) write(ounit,*) "I'm here. ", $1
+  if( myid .eq. 0) write(ounit,*) "### DEBUG : $1 = ", $1
 })m4_dnl

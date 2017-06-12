@@ -28,7 +28,6 @@ subroutine bnormal( ideriv )
   !--------------------------------------------------------------------------------------------
   INTEGER                               :: astat, ierr
   INTEGER                               :: icoil, iteta, jzeta, idof, ND, NumGrid
-  REAL                                  :: lbnorm
   REAL, dimension(0:Nteta-1, 0:Nzeta-1) :: lbx, lby, lbz, lbn         ! local Bx, By and Bz
   REAL, allocatable                     :: ldBx(:,:,:)
 

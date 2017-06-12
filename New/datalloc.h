@@ -12,7 +12,7 @@ subroutine AllocData(itype)
 
   INTEGER, intent(in) :: itype
 
-  INTEGER             :: ierr, astat, idof, NS, ND, NF
+  INTEGER             :: icoil, idof, ND, NF
 
   !-------------------------------------------------------------------------------------------
   if (itype == -1) then ! dof related data;
@@ -41,14 +41,14 @@ subroutine AllocData(itype)
      enddo
 
      if(Ndof == 0) then ! no DOF;
-        case_optimizer = 0
-        if(myid==0) write(ounit, *) "AllocData : No free variables; no optimization performed."
+        Nouts = 0
+        if(myid==0) write(ounit, *) "AllocData : No free variables; no optimization will be performed."
      endif
 
      SALLOCATE(    xdof, (1:Ndof), zero ) ! dof vector;
      SALLOCATE( dofnorm, (1:Ndof), zero ) ! dof normalized value vector;
-     SALLOCATE( evolution, (0:SD_Nout, 0:8), zero ) !evolution array;
-     SALLOCATE( coilspace, (0:SD_Nout, 1:Tdof), zero ) ! all the coil parameters;
+     SALLOCATE( evolution, (0:Nouts, 0:8), zero ) !evolution array;
+     SALLOCATE( coilspace, (0:Nouts, 1:Tdof), zero ) ! all the coil parameters;
      
      idof = 0
      do icoil = 1, Ncoils
@@ -75,7 +75,6 @@ subroutine AllocData(itype)
      ! Bnorm and Bharm needed;
      if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec) then
         SALLOCATE(         bn, (0:Nteta-1,0:Nzeta-1), zero ) !Bn from coils;        
-
         SALLOCATE( surf(1)%bn, (0:Nteta-1,0:Nzeta-1), zero ) !total Bn;
         SALLOCATE( surf(1)%Bx, (0:Nteta-1,0:Nzeta-1), zero ) !Bx on the surface;
         SALLOCATE( surf(1)%By, (0:Nteta-1,0:Nzeta-1), zero ) !By on the surface;

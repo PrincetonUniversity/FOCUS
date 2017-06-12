@@ -182,38 +182,6 @@ END SUBROUTINE readBmn
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-SUBROUTINE writeBmn
-  !----------------------------------------------------------------------------------------
-  ! read Bmn harmonics related arrays;
-  ! allocate trig functions;
-  !----------------------------------------------------------------------------------------
-  use globals, only: zero, half, pi2, myid, ounit, wunit, ext, IsQuiet, Nteta, Nzeta,  &
-                     Bmnc, Bmns, NBmn, Bmnin, Bmnim, wBmn
-  implicit none
-  include "mpif.h"
-
-  INTEGER  :: ii, jj, ij, imn, ierr, astat
-  REAL     :: teta, zeta, arg
-  LOGICAL  :: exist
-
-  !----------------------------------------------------------------------------------------
-  if (myid == 0) then
-     open(wunit, file=trim(ext)//".harmonics", status='unknown', action='write')
-     write(wunit,*) "#NBmn"! comment line;
-     write(wunit,*) NBmn !write dimensions
-
-     write(wunit,*) "# n  m   Bmnc  Bmns  wBmn"! comment line;
-     do imn = 1, NBmn
-        write(wunit,*) Bmnin(imn), Bmnim(imn), Bmnc(imn), Bmns(imn), wBmn(imn)
-     enddo
-     close(wunit)
-  endif
-
-  return
-END SUBROUTINE writeBmn
-
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
 SUBROUTINE twodft(func, hs, hc, im, in, mn)
   !-------------------------------------------------------------------------------!
   ! 2D discrete Fourier transformation;
