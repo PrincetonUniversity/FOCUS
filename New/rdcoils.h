@@ -75,21 +75,17 @@
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-subroutine initfou
+subroutine rdcoils
 
-  use globals, only : machprec, zero, half, one, two, pi, pi2, myid, ounit, runit, ncpu, IsQuiet, &
-       case_coils, case_init, init_current, init_radius, NFcoil, Nseg, Ncoils, coil, Nfixcur, Nfixgeo, &
-       IsVaryCurrent, IsVaryGeometry, target_length, ext, coilsX, coilsY, coilsZ, coilsI, coilseg, &
-       coilname, FouCoil, DoF, IsNormalize, Inorm, Gnorm
+  use globals
 
   implicit none
 
   include "mpif.h"
 
   LOGICAL   :: exist
-  INTEGER   :: ierr, astat, ii, icoil, maxnseg, ifirst, NF, itmp
-  REAL      :: Rmaj, zeta, tt, totalcurrent, r1, r2, z1, z2, z0, start, finish
-  CHARACTER :: suffix*3, coilsfile*40
+  INTEGER   :: icoil, maxnseg, ifirst, NF, itmp
+  REAL      :: Rmaj, zeta, totalcurrent, z0
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   Nfixcur = 0 ! fixed coil current number
@@ -102,10 +98,9 @@ subroutine initfou
      !-------------read coils file--------------------------------------------------------------------------
   case(-1 )
      if (myid == 0) then
-        write(ounit,'("coilfou : Reading coils data from coils."A)') trim(ext)
-        coilsfile = 'coils.'//trim(ext)
-        call readcoils(coilsfile, maxnseg)
-        write(ounit,'("coilfou : Read ",i6," coils in coils.ext;")') Ncoils
+        write(ounit,'("rdcoils : reading coils data from "A)') inpcoils  ! different from coilsfile
+        call readcoils(trim(inpcoils), maxnseg)
+        write(ounit,'("rdcoils : Read ",i6," coils in coils.ext;")') Ncoils
      endif
 
      IlBCAST( Ncoils   ,      1, 0 )
@@ -144,9 +139,9 @@ subroutine initfou
         coil(icoil)%Lo =  target_length
         coil(icoil)%name = trim(coilname(icoil))
 
-        FATAL( coilfou, coil(icoil)%Ic < 0 .or. coil(icoil)%Ic > 1, illegal )
-        FATAL( coilfou, coil(icoil)%Lc < 0 .or. coil(icoil)%Lc > 1, illegal )
-        FATAL( coilfou, coil(icoil)%Lo < zero                     , illegal )
+        FATAL( rdcoils, coil(icoil)%Ic < 0 .or. coil(icoil)%Ic > 1, illegal )
+        FATAL( rdcoils, coil(icoil)%Lc < 0 .or. coil(icoil)%Lc > 1, illegal )
+        FATAL( rdcoils, coil(icoil)%Lo < zero                     , illegal )
         if(coil(icoil)%Ic == 0) Nfixcur = Nfixcur + 1
         if(coil(icoil)%Lc == 0) Nfixgeo = Nfixgeo + 1
 
@@ -162,20 +157,11 @@ subroutine initfou
 
         !if(myid .ne. modulo(icoil-1, ncpu)) cycle
 
-        call Fourier( coilsX(1:coilseg(icoil),icoil), Foucoil(icoil)%xc, Foucoil(icoil)%xs, coilseg(icoil), NF)
-        call Fourier( coilsY(1:coilseg(icoil),icoil), Foucoil(icoil)%yc, Foucoil(icoil)%ys, coilseg(icoil), NF)
-        call Fourier( coilsZ(1:coilseg(icoil),icoil), Foucoil(icoil)%zc, Foucoil(icoil)%zs, coilseg(icoil), NF)
+       call Fourier( coilsX(1:coilseg(icoil),icoil), Foucoil(icoil)%xc, Foucoil(icoil)%xs, coilseg(icoil), NF)
+       call Fourier( coilsY(1:coilseg(icoil),icoil), Foucoil(icoil)%yc, Foucoil(icoil)%ys, coilseg(icoil), NF)
+       call Fourier( coilsZ(1:coilseg(icoil),icoil), Foucoil(icoil)%zc, Foucoil(icoil)%zs, coilseg(icoil), NF)
 
      enddo
-
-!!$     do icoil = 1, NCoils
-!!$        RlBCAST( coil(icoil)%xc(0:NF) , 1+NF ,  modulo(icoil-1, ncpu) )
-!!$        RlBCAST( coil(icoil)%xs(0:NF) , 1+NF ,  modulo(icoil-1, ncpu) )
-!!$        RlBCAST( coil(icoil)%yc(0:NF) , 1+NF ,  modulo(icoil-1, ncpu) )
-!!$        RlBCAST( coil(icoil)%ys(0:NF) , 1+NF ,  modulo(icoil-1, ncpu) )
-!!$        RlBCAST( coil(icoil)%zc(0:NF) , 1+NF ,  modulo(icoil-1, ncpu) )
-!!$        RlBCAST( coil(icoil)%zs(0:NF) , 1+NF ,  modulo(icoil-1, ncpu) )
-!!$     enddo
 
      DALLOCATE( coilsX )
      DALLOCATE( coilsY )
@@ -190,15 +176,15 @@ subroutine initfou
   case( 0 )
 
      if( myid==0 ) then  !get file number;
-        inquire( file=trim(ext)//".focus", exist=exist )
+        inquire( file=trim(coilfile), exist=exist )
         if ( .not. exist ) then
            STOP "ext.focus NOT existed"
            call MPI_ABORT(MPI_COMM_WORLD, 1, ierr)
         endif
-        open( runit, file=trim(ext)//".focus", status="old" )
+        open( runit, file=trim(coilfile), status="old", action='read')
         read( runit,*)
         read( runit,*) Ncoils
-        write(ounit,'("coilfou : identified "i3" coils in ext.focus ;")') Ncoils
+        write(ounit,'("rdcoils : identified "i3" coils in ext.focus ;")') Ncoils
      endif
                                
      IlBCAST( Ncoils        ,    1,  0 )
@@ -212,21 +198,21 @@ subroutine initfou
            read( runit,*)
            read( runit,*) coil(icoil)%itype, coil(icoil)%name
            if(coil(icoil)%itype /= 1) then
-              STOP " wrong coil type in coilfou"
+              STOP " wrong coil type in rdcoils"
               call MPI_ABORT(MPI_COMM_WORLD, 1, ierr)
            endif
            read( runit,*)
            read( runit,*) coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, &
                 & coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo
-           FATAL( coilfou, coil(icoil)%NS < 0                        , illegal )
-           FATAL( coilfou, coil(icoil)%Ic < 0 .or. coil(icoil)%Ic > 1, illegal )
-           FATAL( coilfou, coil(icoil)%Lc < 0 .or. coil(icoil)%Lc > 2, illegal )
-           FATAL( coilfou, coil(icoil)%L  < zero                     , illegal )
-           FATAL( coilfou, coil(icoil)%Lc < zero                     , illegal )
-           FATAL( coilfou, coil(icoil)%Lo < zero                     , illegal )
+           FATAL( rdcoils, coil(icoil)%NS < 0                        , illegal )
+           FATAL( rdcoils, coil(icoil)%Ic < 0 .or. coil(icoil)%Ic > 1, illegal )
+           FATAL( rdcoils, coil(icoil)%Lc < 0 .or. coil(icoil)%Lc > 2, illegal )
+           FATAL( rdcoils, coil(icoil)%L  < zero                     , illegal )
+           FATAL( rdcoils, coil(icoil)%Lc < zero                     , illegal )
+           FATAL( rdcoils, coil(icoil)%Lo < zero                     , illegal )
            read( runit,*)
            read( runit,*) FouCoil(icoil)%NF
-           FATAL( coilfou, Foucoil(icoil)%NF  < 0                    , illegal )
+           FATAL( rdcoils, Foucoil(icoil)%NF  < 0                    , illegal )
            SALLOCATE( FouCoil(icoil)%xc, (0:FouCoil(icoil)%NF), zero )
            SALLOCATE( FouCoil(icoil)%xs, (0:FouCoil(icoil)%NF), zero )
            SALLOCATE( FouCoil(icoil)%yc, (0:FouCoil(icoil)%NF), zero )
@@ -294,10 +280,10 @@ subroutine initfou
         coil(icoil)%L  =  pi2*init_radius
         coil(icoil)%Lc =  IsVaryGeometry
         coil(icoil)%Lo =  target_length
-        write(coil(icoil)%name,'(i3.3"th-coil")') icoil
-        FATAL( coilfou, coil(icoil)%Ic < 0 .or. coil(icoil)%Ic > 1, illegal )
-        FATAL( coilfou, coil(icoil)%Lc < 0 .or. coil(icoil)%Lc > 1, illegal )
-        FATAL( coilfou, coil(icoil)%Lo < zero                     , illegal )
+        write(coil(icoil)%name,'("Mod_"I3.3)') icoil
+        FATAL( rdcoils, coil(icoil)%Ic < 0 .or. coil(icoil)%Ic > 1, illegal )
+        FATAL( rdcoils, coil(icoil)%Lc < 0 .or. coil(icoil)%Lc > 1, illegal )
+        FATAL( rdcoils, coil(icoil)%Lo < zero                     , illegal )
         if(coil(icoil)%Ic == 0) Nfixcur = Nfixcur + 1
         if(coil(icoil)%Lc == 0) Nfixgeo = Nfixgeo + 1
 
@@ -313,11 +299,8 @@ subroutine initfou
         !initilize with circular coils;
         zeta = (icoil-1) * pi2 / Ncoils
 
-        call surfcoord( zero, zeta, r1, z1)
-        call surfcoord(   pi, zeta, r2, z2)
-
-        Rmaj = half * (r1 + r2)
-        z0   = half * (z1 + z2)
+        Rmaj = half * ( surf(1)%xx(0, Nzeta/Ncoils) + surf(1)%xx(Nteta/2, Nzeta/Ncoils) )
+        z0   = half * ( surf(1)%zz(0, Nzeta/Ncoils) + surf(1)%zz(Nteta/2, Nzeta/Ncoils) )
 
         FouCoil(icoil)%xc(0:1) = (/ Rmaj * cos(zeta), init_radius * cos(zeta) /)
         FouCoil(icoil)%xs(0:1) = (/ 0.0             , 0.0                     /)
@@ -332,8 +315,8 @@ subroutine initfou
 
   end select
 
-  FATAL( coilfou, Nfixcur > Ncoils, error with fixed currents )
-  FATAL( coilfou, Nfixgeo > Ncoils, error with fixed geometry )
+  FATAL( rdcoils, Nfixcur > Ncoils, error with fixed currents )
+  FATAL( rdcoils, Nfixgeo > Ncoils, error with fixed geometry )
 
   !-----------------------allocate   coil data-------------------------------------------------- 
   do icoil = 1, Ncoils
@@ -357,21 +340,18 @@ subroutine initfou
   enddo
 
   if(myid == 0 .and. IsQuiet <= 0) then
-     write(ounit,'("coilfou : "i3" fixed currents ; "i3" fixed geometries.")') &
+     write(ounit,'("rdcoils : "i3" fixed currents ; "i3" fixed geometries.")') &
           & Nfixcur, Nfixgeo
-     write( ounit,'("rdcoils : total current G ="es23.15" ; 2 . pi2 . G = "es23.15" ;")') &
-          & totalcurrent, totalcurrent * pi2 * two
+     !write( ounit,'("rdcoils : total current G ="es23.15" ; 2 . pi2 . G = "es23.15" ;")') &
+     !     & totalcurrent, totalcurrent * pi2 * two
   endif
 
   if (IsNormalize /= 0) then
-     zeta = zero
-     call surfcoord( zero, zeta, r1, z1)
-     call surfcoord(   pi, zeta, r2, z2)
-     Rmaj = half * (r1 + r2)
+     Rmaj = half * ( surf(1)%xx(0, 0) + surf(1)%xx(Nteta/2, 0) )
      Inorm = sum(abs(coil(1:Ncoils)%I))/Ncoils + machprec !average current;
      Gnorm = Rmaj                              + machprec !major radius   ;
      if (myid == 0) write(ounit, '("rdcoils : Currents are normalized by " ES23.15 &
-          " ; Geometries are normalized by " ES23.15 " ;")'), Inorm, Gnorm
+          " ; Geometries are normalized by " ES23.15 " ;")') Inorm, Gnorm
 
   else
      Inorm = one
@@ -388,28 +368,10 @@ subroutine initfou
   ifirst = 1
   call discoil(ifirst)
   ifirst = 0
-!!$  call mpi_barrier(MPI_COMM_WORLD, ierr)
-!!$  call CPU_TIME( start  )
-!!$  ifirst = 1
-!!$  call discoil(ifirst)
-!!$  ifirst = 0
-!!$  call mpi_barrier(MPI_COMM_WORLD, ierr)
-!!$  call CPU_TIME( finish )
-!!$  if (myid == 0) write(ounit, *) coil(1)%xx(1:3), coil(1)%xt(1:3), coil(1)%xa(1:3)
-!!$  if (myid == 0) write(ounit,'("old method takes", ES23.15)') finish - start
-!!$
-!!$  call mpi_barrier(MPI_COMM_WORLD, ierr)
-!!$  call CPU_TIME( start  )
-!!$  call discfou2
-!!$  call mpi_barrier(MPI_COMM_WORLD, ierr)
-!!$  call CPU_TIME( finish )
-!!$  if (myid == 0) write(ounit, *) coil(1)%xx(1:3), coil(1)%xt(1:3), coil(1)%xa(1:3)
-!!$  if (myid == 0) write(ounit,'("new method takes", ES23.15)') finish - start
-
 
   return
 
-end subroutine initfou
+end subroutine rdcoils
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -419,13 +381,13 @@ subroutine discoil(ifirst)
 ! if ifirst = 1, it will update all the coils; otherwise, only update free coils;
 ! date: 20170314
 !---------------------------------------------------------------------------------------------
-  use globals, only: zero, pi2, myid, ncpu, ounit, coil, FouCoil, Ncoils, DoF
+  use globals, only: zero, pi2, myid, ounit, coil, FouCoil, Ncoils, DoF
   implicit none
   include "mpif.h"
 
   INTEGER, intent(in) :: ifirst
 
-  INTEGER          :: icoil, iseg, mm, NS, NF, llmodnp, ierr, astat
+  INTEGER          :: icoil, iseg, mm, NS, NF, ierr, astat
   REAL             :: tt
   REAL,allocatable :: cmt(:,:), smt(:,:)
   !-------------------------------------------------------------------------------------------
@@ -509,18 +471,6 @@ subroutine discoil(ifirst)
      endif
 
   enddo ! end of do icoil
-!-------------------------broadcast coil data-------------------------------------------------  
-!!$  do icoil = 1, Ncoils ; llmodnp = modulo(icoil-1,ncpu)
-!!$     RlBCAST( coil(icoil)%xx(0:coil(icoil)%NS), coil(icoil)%NS+1, llmodnp )
-!!$     RlBCAST( coil(icoil)%yy(0:coil(icoil)%NS), coil(icoil)%NS+1, llmodnp )
-!!$     RlBCAST( coil(icoil)%zz(0:coil(icoil)%NS), coil(icoil)%NS+1, llmodnp )
-!!$     RlBCAST( coil(icoil)%xt(0:coil(icoil)%NS), coil(icoil)%NS+1, llmodnp )
-!!$     RlBCAST( coil(icoil)%yt(0:coil(icoil)%NS), coil(icoil)%NS+1, llmodnp )
-!!$     RlBCAST( coil(icoil)%zt(0:coil(icoil)%NS), coil(icoil)%NS+1, llmodnp )
-!!$     RlBCAST( coil(icoil)%xa(0:coil(icoil)%NS), coil(icoil)%NS+1, llmodnp )
-!!$     RlBCAST( coil(icoil)%ya(0:coil(icoil)%NS), coil(icoil)%NS+1, llmodnp )
-!!$     RlBCAST( coil(icoil)%za(0:coil(icoil)%NS), coil(icoil)%NS+1, llmodnp )
-!!$  enddo
 
   return
 end subroutine discoil
@@ -537,7 +487,7 @@ SUBROUTINE discfou2
   implicit none
   include "mpif.h"
 
-  INTEGER :: icoil, iorder, llmodnp, ierr, astat, NS, NF
+  INTEGER :: icoil, iorder, llmodnp, ierr, NS, NF
   !-------------------------call fouriermatr----------------------------------------------------  
   do icoil = 1, Ncoils
 
@@ -655,12 +605,12 @@ SUBROUTINE readcoils(filename, maxnseg)
   include "mpif.h"
 
   INTEGER, parameter         :: mcoil = 256, mseg = 1024 ! Largest coils and segments number
-  INTEGER                    :: cunit, istat, astat, lstat, ierr, maxnseg, seg(1:mseg), icoil
+  INTEGER                    :: cunit, istat, astat, lstat, ierr, maxnseg, seg(1:mseg)
   REAL, dimension(mseg,mcoil):: x, y, z, I
   CHARACTER*40               :: filename
   CHARACTER*200              :: line
   REAL                       :: tmp
-  CHARACTER (len=20), dimension(mcoil) :: name
+  CHARACTER (LEN=20), dimension(mcoil) :: name
 
   cunit = 99; I = 1.0; Ncoils= 1; maxnseg = 0; seg = 0;
 
@@ -729,7 +679,6 @@ SUBROUTINE Fourier( X, XFC, XFS, Nsegs, NFcoil)
   REAL    :: X(1:Nsegs), XFC(0:NFcoil), XFS(0:NFcoil)
   INTEGER :: Nsegs, NFcoil, ifou, iseg, funit, ierr
   REAL, allocatable:: A(:), B(:)
-  LOGICAL :: IsOver
 
   allocate(A(0:Nsegs-1))
   allocate(B(0:Nsegs-1))

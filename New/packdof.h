@@ -6,7 +6,7 @@
 !latex  \bi
 !latex  \item The \inputvar{case\_coils} determines the packing and unpacking patern. 
 !latex  \item \inputvar{case\_coils} = 1: Coils are represented with Fourier series.
-!latex  \item For each coil, the number of DOF is $6N_F+4$ ($\sin 0$ terms are omitted.)
+!latex  \item For each coil, the number of DOF is $6N_F+3$ ($\sin 0$ terms are omitted.)
 !latex  \be
 !latex  \vect{X_i} = \left[ \overbrace{I, \underbrace{X_{c,0}, \cdots, X_{c,N}}_\text{N+1}, 
 !latex  \underbrace{X_{s,1}, \cdots, X_{s,N}}_\text{N}, Y_{c,0}, \cdots, Z_{s,N}}^\text{6N+4} \right ]
@@ -25,7 +25,7 @@ SUBROUTINE packdof(lxdof)
   ! DATE: 2017/03/19
   !--------------------------------------------------------------------------------------------- 
   use globals, only : zero, myid, ounit, &
-                    & case_coils, case_optimizer, Ncoils, coil, DoF, Ndof, Inorm, Gnorm
+                    & case_coils, Ncoils, coil, DoF, Ndof, Inorm, Gnorm
   implicit none
   include "mpif.h"
 
@@ -69,7 +69,7 @@ SUBROUTINE unpacking(lxdof)
   ! DATE: 2017/04/03
   !--------------------------------------------------------------------------------------------- 
   use globals, only : zero, myid, ounit, &
-                    & case_coils, case_optimizer, Ncoils, coil, DoF, Ndof, Inorm, Gnorm
+                    & case_coils, Ncoils, coil, DoF, Ndof, Inorm, Gnorm
   implicit none
   include "mpif.h"
 
@@ -100,11 +100,6 @@ SUBROUTINE unpacking(lxdof)
   call unpackcoil !unpack DoF to coil parameters;
   call discoil(ifirst)
 
-!!$  do icoil = 1, 2
-!!$     write(ounit, *) coil(icoil)%I, DoF(icoil)%xdof(1:DoF(icoil)%ND)
-!!$  enddo
-  !write(ounit, *) "unpack", coil(1)%I, coil(1)%xx(0)
-  
   return
 END SUBROUTINE unpacking
 

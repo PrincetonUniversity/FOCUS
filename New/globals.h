@@ -4,14 +4,12 @@
 !latex \briefly{Defines input namelists and global variables, details of input namelist can be viwed at 
 !latex \link{initial}.}
 
-!l tex \calledby{\link{focus}}
-!l tex \calls{\link{initialize}}
+!latex \calledby{\link{focus}}
+!latex \calls{\link{initial}}
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 module globals
-  
-  use oculus, only : biotsavart, poincaredata
   
   implicit none
   
@@ -60,7 +58,15 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-  CHARACTER(LEN=100)   :: ext
+  CHARACTER(LEN=100)   :: ext       ! extention
+  CHARACTER(LEN=100)   :: inputfile ! input namelist
+  CHARACTER(LEN=100)   :: surffile  ! surface file
+  CHARACTER(LEN=100)   :: knotfile  ! knototran file
+  CHARACTER(LEN=100)   :: coilfile  ! FOCUS coil file
+  CHARACTER(LEN=100)   :: harmfile  ! harmonics file
+  CHARACTER(LEN=100)   :: hdf5file  ! hdf5 file
+  CHARACTER(LEN=100)   :: inpcoils  ! input coils.ext file
+  CHARACTER(LEN=100)   :: outcoils  ! output ext.coils file
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
@@ -70,103 +76,117 @@ module globals
         
   INTEGER              :: case_surface   =        0         
   REAL                 :: knotsurf       =        0.200D-00
+  REAL                 :: ellipticity    =        0.000D+00
   INTEGER              :: Nteta          =       64           
   INTEGER              :: Nzeta          =       64  
 
   INTEGER              :: case_init      =        0
   INTEGER              :: case_coils     =        1
   INTEGER              :: Ncoils         =        0
-  REAL                 :: init_current   =        1.000D+07        
-  REAL                 :: init_radius    =        0.500D+00
+  REAL                 :: init_current   =        1.000D+06        
+  REAL                 :: init_radius    =        1.000D+00
   INTEGER              :: IsVaryCurrent  =        1         
   INTEGER              :: IsVaryGeometry =        1         
-  REAL                 :: target_length  =        1.000D+00 
   INTEGER              :: NFcoil         =        4         
   INTEGER              :: Nseg           =      128 
-        
-  INTEGER              :: case_optimizer =        0           
-  INTEGER              :: IsNormalize    =        0
-  INTEGER              :: IsNormBnormal  =        0
-  INTEGER              :: IsNormWeight   =        0       
+              
+  INTEGER              :: IsNormalize    =        1
+  INTEGER              :: IsNormWeight   =        1
+  INTEGER              :: case_bnormal   =        0
+  INTEGER              :: case_length    =        1         
   REAL                 :: weight_bnorm   =        1.000D+00
   REAL                 :: weight_bharm   =        0.000D+00
   REAL                 :: weight_tflux   =        0.000D+00
   REAL                 :: target_tflux   =        0.000D+00
   REAL                 :: weight_ttlen   =        0.000D+00
+  REAL                 :: target_length  =        0.000D+00 
   REAL                 :: weight_specw   =        0.000D+00
   REAL                 :: weight_ccsep   =        0.000D+00
 
-  REAL                 :: SD_tausta      =        0.000D-00
-  REAL                 :: SD_tauend      =        1.000D-00
-  REAL                 :: SD_tautol      =        1.000D-04
-  INTEGER              :: SD_Nout        =      100        
-  INTEGER              :: SD_savefreq    =        1                
+  INTEGER              :: solver_DF      =        0
+  REAL                 :: DF_tausta      =        0.000D+00
+  REAL                 :: DF_tauend      =        1.000D+00
+  INTEGER              :: DF_maxiter     =      100
+  REAL                 :: DF_xtol        =        1.000D-08                    
  
-  REAL                 :: NT_xtol        =        1.000D-04 
-  REAL                 :: NT_eta         =        0.900D+00 
-  REAL                 :: NT_stepmx      =        1.000D+05 
+  INTEGER              :: solver_CG      =        0
+  INTEGER              :: CG_maxiter     =      100
+  REAL                 :: CG_xtol        =        1.000D-08
+  REAL                 :: CG_wolfe_c1    =        1.000D-04
+  REAL                 :: CG_wolfe_c2    =        0.1
 
-  INTEGER              :: case_postproc  =        0         
-  REAL                 :: PP_odetol      =        1.000D-10 
-  INTEGER              :: PP_Ppts        =      100         
-  INTEGER              :: PP_Ptrj        =        8         
-  REAL                 :: PP_phi         =        0.000D-00
-  REAL                 :: PP_Rmin        =        0.000D-00
-  REAL                 :: PP_Rmax        =        0.000D-00
-  REAL                 :: PP_Zmin        =        0.000D-00
-  REAL                 :: PP_Zmax        =        0.000D-00 
-  REAL                 :: PP_bstol       =        1.000D-06 
-  INTEGER              :: PP_bsnlimit    =   100000         
+  INTEGER              :: solver_HN      =        0
+  INTEGER              :: HN_maxiter     =      100
+  REAL                 :: HN_xtol        =        1.000D-08
+  REAL                 :: HN_factor      =      100.0
+
+  INTEGER              :: solver_TN      =        0
+  INTEGER              :: TN_maxiter     =      100
+  REAL                 :: TN_xtol        =        1.000D-08
+  INTEGER              :: TN_reorder     =        0
+  REAL                 :: TN_cr          =        0.1
+
+  INTEGER              :: case_postproc  =        1
+  INTEGER              :: save_freq      =        1
+  INTEGER              :: save_coils     =        0 
+  INTEGER              :: save_harmonics =        0
+  INTEGER              :: save_filaments =        0              
                                                          
 
   
 
-  namelist / focusin /  IsQuiet       , &
-                        IsSymmetric   , & 
-                        case_surface  , & 
-                        knotsurf      , &
-                        Nteta         , &   
-                        Nzeta         , &
-                        case_init     , & 
-                        case_coils    , &
-                        Ncoils        , &
-                        init_current  , &  
-                        init_radius   , &
-                        IsVaryCurrent , & 
-                        IsVaryGeometry, & 
-                        target_length , & 
-                        NFcoil        , & 
-                        Nseg          , &
-                        case_optimizer, &
-                        IsNormBnormal , &
-                        IsNormalize   , &
-                        IsNormWeight  , &
-                        weight_bnorm  , &
-                        weight_bharm  , &
-                        weight_tflux  , &
-                        target_tflux  , &
-                        weight_ttlen  , &
-                        weight_specw  , &
-                        weight_ccsep  , &
-                        SD_tausta     , &
-                        SD_tauend     , &
-                        SD_tautol     , &
-                        SD_Nout       , &
-                        SD_savefreq   , &        
-                        NT_xtol       , & 
-                        NT_eta        , & 
-                        NT_stepmx     , & 
-                        case_postproc , &
-                        PP_odetol     , & 
-                        PP_Ppts       , & 
-                        PP_Ptrj       , & 
-                        PP_phi        , & 
-                        PP_Rmin       , &
-                        PP_Rmax       , &
-                        PP_Zmin       , &
-                        PP_Zmax       , &
-                        PP_bstol      , & 
-                        PP_bsnlimit   
+  namelist / focusin /  IsQuiet        , &
+                        IsSymmetric    , & 
+                        case_surface   , &
+                        knotsurf       , &
+                        ellipticity    , & 
+                        Nteta          , &
+                        Nzeta          , & 
+                        case_init      , &
+                        case_coils     , &  
+                        Ncoils         , &
+                        init_current   , & 
+                        init_radius    , & 
+                        IsVaryCurrent  , & 
+                        IsVaryGeometry , & 
+                        NFcoil         , &
+                        Nseg           , &
+                        IsNormalize    , &
+                        IsNormWeight   , &
+                        case_bnormal   , &
+                        case_length    , &
+                        weight_bnorm   , &
+                        weight_bharm   , &
+                        weight_tflux   , &
+                        target_tflux   , &
+                        weight_ttlen   , &
+                        target_length  , &
+                        weight_specw   , &
+                        weight_ccsep   , &
+                        solver_DF      , & 
+                        DF_tausta      , &  
+                        DF_tauend      , &       
+                        DF_xtol        , & 
+                        DF_maxiter     , & 
+                        solver_CG      , & 
+                        CG_maxiter     , & 
+                        CG_xtol        , & 
+                        CG_wolfe_c1    , &
+                        CG_wolfe_c2    , &
+                        solver_HN      , &
+                        HN_maxiter     , &  
+                        HN_xtol        , & 
+                        HN_factor      , & 
+                        solver_TN      , &
+                        TN_maxiter     , &
+                        TN_reorder     , &
+                        TN_xtol        , &
+                        TN_cr          , &  
+                        case_postproc  , & 
+                        save_freq      , & 
+                        save_coils     , &
+                        save_harmonics , &
+                        save_filaments
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
@@ -215,7 +235,7 @@ module globals
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 !latex \subsection{Packing and unpacking}
-  INTEGER              :: Cdof, Ndof, nfixcur, nfixgeo, Tdof, iter
+  INTEGER              :: Cdof, Ndof, nfixcur, nfixgeo, Tdof
   REAL                 :: Inorm = one, Gnorm = one                !current and geometry normalizations;
   REAL   , allocatable :: xdof(:), dofnorm(:)
 
@@ -223,8 +243,8 @@ module globals
 
 !latex \subsection{Optimization}
   ! General target functions;
-  INTEGER              :: itau
-  REAL                 :: totalenergy, discretefactor
+  INTEGER              :: iout, Nouts
+  REAL                 :: chi, discretefactor
   REAL   , allocatable :: t1E(:), t2E(:,:), evolution(:,:), coilspace(:,:), deriv(:,:)
   ! Bn surface integration;
   REAL                 :: bnorm
@@ -253,14 +273,6 @@ module globals
 !latex \subsection{Knotran parameters}
   REAL                 :: knotphase
   REAL   , allocatable :: xkc(:), xks(:), ykc(:), yks(:), zkc(:), zks(:)
-
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-!latex \subsection{Oculus parameters}
-  INTEGER              :: icoil
-
-  type(biotsavart)     :: bsfield
-  type(poincaredata)   :: poincare
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -281,6 +293,7 @@ module globals
   REAL                 :: tmpw_bnorm, tmpw_tflux ,tmpt_tflux, tmpw_ttlen, tmpw_specw, tmpw_ccsep, tmpw_bharm
                           !tmp weight for saving to restart file
   REAL, allocatable    :: mincc(:,:)!
+  INTEGER              :: ierr, astat
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

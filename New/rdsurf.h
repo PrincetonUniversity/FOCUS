@@ -61,9 +61,9 @@
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-subroutine generic
+subroutine fousurf
   
-  use globals, only : zero, half, pi2, myid, ncpu, ounit, runit, ext, IsQuiet, IsSymmetric, &
+  use globals, only : zero, half, pi2, myid, ounit, runit, surffile, IsQuiet, IsSymmetric, &
                       Nfou, Nfp, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
                       Nteta, Nzeta, surf
   
@@ -76,13 +76,13 @@ subroutine generic
   LOGICAL :: exist
   INTEGER :: iosta, astat, ierr, ii, jj, imn
   REAL    :: RR(0:2), ZZ(0:2), szeta, czeta, xx(1:3), xt(1:3), xz(1:3), ds(1:3), &
-             teta, zeta, arg, dd, tmp
+             teta, zeta, arg, dd
   
   !-------------read plasma.boundary---------------------------------------------------------------------  
-  inquire( file="plasma.boundary", exist=exist)  
+  inquire( file=trim(surffile), exist=exist)  
   FATAL( surface, .not.exist, plasma.boundary does not exist ) 
   if( myid == 0 ) then
-     open(runit, file="plasma.boundary", status='old', action='read')
+     open(runit, file=trim(surffile), status='old', action='read')
      read(runit,*) !empty line
      read(runit,*) Nfou, Nfp, NBnf !read dimensions
   endif
@@ -116,7 +116,7 @@ subroutine generic
   
   if (IsSymmetric  ==  0) then 
      bin(1:Nfou) = bin(1:Nfou) * Nfp  !Disarde periodicity
-     Nfp = 1                          !reset Nfp to 1
+     !Nfp = 1                          !reset Nfp to 1
   endif
   
   
@@ -265,12 +265,12 @@ subroutine generic
   
   return
   
-end subroutine generic
+end subroutine fousurf
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine surfcoord( theta, zeta, r, z)
-  use globals, only: zero, Nfou, Nfp, bim, bin, Rbc, Rbs, Zbc, Zbs
+  use globals, only: zero, Nfou, bim, bin, Rbc, Rbs, Zbc, Zbs
   implicit none
   include "mpif.h"
 
@@ -278,7 +278,7 @@ subroutine surfcoord( theta, zeta, r, z)
   REAL, INTENT(out) :: r, z
 
   INTEGER           :: imn
-  REAL              :: arg, carg, sarg
+  REAL              :: arg
   !-------------calculate r, z coodinates for theta, zeta------------------------------------------------  
   if( .not. allocated(bim) ) STOP  "please allocate surface data first!"
 
