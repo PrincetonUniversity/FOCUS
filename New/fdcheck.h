@@ -36,13 +36,12 @@ SUBROUTINE fdcheck( ideriv )
 
   if(myid == 0) write(ounit, *) "-----------Checking derivatives------------------------------"
   FATAL( fdcheck, Ndof < 1, No enough DOFs )
-  tmp_xdof = xdof  !save the current xdof;
   !--------------------------------------------------------------------------------------------
 
   select case (ideriv)
   !--------------------------------------------------------------------------------------------
 
-  case( 1 )
+  case( -1 )
   if(myid == 0) write(ounit,'("fdcheck : Checking the first derivatives using finite-difference method")')
 
   call cpu_time(start)
@@ -55,17 +54,19 @@ SUBROUTINE fdcheck( ideriv )
 
   do idof = 1, Ndof
      !backward pertubation;
-     xdof(idof) = xdof(idof) - half * small
-     call unpacking(xdof)
+     tmp_xdof = xdof
+     tmp_xdof(idof) = tmp_xdof(idof) - half * small
+     call unpacking(tmp_xdof)
      call costfun(0)
      negvalue = chi
-     xdof = tmp_xdof
+
      !forward pertubation;
-     xdof(idof) = xdof(idof) + half * small
-     call unpacking(xdof)
+     tmp_xdof = xdof
+     tmp_xdof(idof) = tmp_xdof(idof) + half * small
+     call unpacking(tmp_xdof)
      call costfun(0)
      posvalue = chi
-     xdof = tmp_xdof
+
      !finite difference;
      fd = (posvalue - negvalue) / small
      diff = abs(t1E(idof) - fd)
@@ -84,7 +85,7 @@ SUBROUTINE fdcheck( ideriv )
   enddo
   !--------------------------------------------------------------------------------------------
 
-  !case( 2 )
+  !case( -2 )
   case default
      FATAL(fdcheck, .true., not supported ideriv)
   !--------------------------------------------------------------------------------------------

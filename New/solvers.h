@@ -35,8 +35,8 @@
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine solvers
-  use globals, only : ierr, iout, myid, ounit, IsQuiet, Ndof, Nouts, &
-       solver_DF, solver_CG, solver_HN, solver_TN
+  use globals, only : ierr, iout, myid, ounit, IsQuiet, Ndof, Nouts, xdof, &
+       & case_optimize, DF_maxiter, CG_maxiter, HN_maxiter, TN_maxiter
   implicit none
   include "mpif.h"
 
@@ -45,57 +45,71 @@ subroutine solvers
 
   iout = 0 ! reset output counter;
 
+  if (myid == 0) write(ounit, *) "-----------OPTIMIZATIONS-------------------------------------"
+
   if (myid == 0 .and. IsQuiet < 1) write(ounit, '("solvers : total number of DOF is " I6)') Ndof
 
-  if (Nouts == 0) return ! skip optimization;
+  if (abs(case_optimize) >= 1) call AllocData(1)
+  if (abs(case_optimize) >= 2) call AllocData(2)
 
+  if (case_optimize < 0) then          ! finite difference checking derivatives;
+     call fdcheck(case_optimize)
+     return
+  endif
+  
   !--------------------------------DF--------------------------------------------------------------------
-  if (solver_DF == 1)  then
+  if (DF_maxiter > 0)  then
      if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "---------------------------------------------------"
      if (myid == 0 .and. IsQuiet < 0) write(ounit, *) " Optimizing with Differential Flow (DF)"
-     call AllocData(1)
      call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
      start = MPI_Wtime()
+     call unpacking(xdof)
      call descent
+     call packdof(xdof)
      finish = MPI_Wtime()
      if (myid  ==  0) write(ounit,'("solvers : DF takes ", es23.15," seconds;")') finish - start
   endif
   
   !--------------------------------CG--------------------------------------------------------------------
-  if (solver_DF == 1)  then
+  if (CG_maxiter > 0)  then
      if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "---------------------------------------------------"
      if (myid == 0 .and. IsQuiet < 0) write(ounit, *) " Optimizing with Nonlinear Conjugate Gradient (CG)"
      call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
      start = MPI_Wtime()
+     call unpacking(xdof)
      !call congrad
+     call packdof(xdof)
      finish = MPI_Wtime()
      if (myid  ==  0) write(ounit,'("solvers : CG takes ", es23.15," seconds;")') finish - start
   endif
   
   !--------------------------------HN--------------------------------------------------------------------
-  if (solver_DF == 1)  then
+  if (HN_maxiter > 0)  then
      if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "---------------------------------------------------"
      if (myid == 0 .and. IsQuiet < 0) write(ounit, *) " Optimizing with Hybrid Newton Method (HN) "
      call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
      start = MPI_Wtime()
+     call unpacking(xdof)
      !call hybridnt
      finish = MPI_Wtime()
      if (myid  ==  0) write(ounit,'("solvers : HN takes ", es23.15," seconds;")') finish - start
   endif
   
   !--------------------------------TN--------------------------------------------------------------------
-  if (solver_DF == 1)  then
+  if (TN_maxiter > 0)  then
      if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "---------------------------------------------------"
      if (myid == 0 .and. IsQuiet < 0) write(ounit, *) " Optimizing with Truncated Newton Method (TN) "
      call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
      start = MPI_Wtime()
+     call unpacking(xdof)
      !call truncnt
+     call packdof(xdof)
      finish = MPI_Wtime()
      if (myid  ==  0) write(ounit,'("solvers : TN takes ", es23.15," seconds;")') finish - start
   endif
   
   !------------------------------------------------------------------------------------------------------
-
+  
   return
 end subroutine solvers
 
@@ -147,7 +161,7 @@ subroutine costfun(ideriv)
   !if ( ideriv .ge. 1 .and. .not. allocated(t1E) ) ALLOCATE(t1E(1:Ndof))
   !if ( ideriv == 2 .and. .not. allocated(t2E) ) ALLOCATE(t2E(1:Ncoils, 0:Cdof, 1:Ncoils, 0:Cdof))
 
-  if     ( ideriv == 1 ) then
+  if ( ideriv == 1 ) then
    t1E = zero
   elseif ( ideriv == 2 ) then
    t1E = zero; t2E = zero
@@ -290,7 +304,7 @@ end subroutine costfun
 subroutine output (mark)
 
   use globals, only : zero, ounit, myid, ierr, astat, iout, Nouts, Ncoils, save_freq, Tdof, &
-       coil, coilspace, FouCoil, chi, t1E, bnorm, bharm, tflux, ttlen, specw, ccsep, evolution
+       coil, coilspace, FouCoil, chi, t1E, bnorm, bharm, tflux, ttlen, specw, ccsep, evolution, xdof, DoF
 
   implicit none  
   include "mpif.h"
@@ -300,8 +314,9 @@ subroutine output (mark)
   INTEGER            :: idof, NF, icoil
   REAL               :: sumdE
 
+  iout = iout + 1
 
-  FATAL( output , iout > Nouts, maximum iteration reached )
+  FATAL( output , iout > Nouts+1, maximum iteration reached )
 
   sumdE = sqrt(sum(t1E**2)) ! Eucliean norm 2; 
 
@@ -330,7 +345,6 @@ subroutine output (mark)
         select case (coil(icoil)%itype)
         case (1)
            NF = FouCoil(icoil)%NF
-
            coilspace(iout, idof+1:idof+NF+1) = FouCoil(icoil)%xc(0:NF) ; idof = idof + NF +1
            coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%xs(1:NF) ; idof = idof + NF
            coilspace(iout, idof+1:idof+NF+1) = FouCoil(icoil)%yc(0:NF) ; idof = idof + NF +1
@@ -346,7 +360,6 @@ subroutine output (mark)
 
   if(mod(iout,save_freq) .eq. 0) call saving
 
-  iout = iout + 1
 
   return  
 

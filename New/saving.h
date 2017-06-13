@@ -81,6 +81,7 @@ subroutine saving
   HWRITEIV( 1                ,   IsVaryGeometry,   IsvaryGeometry                )
   HWRITEIV( 1                ,   NFcoil        ,   NFcoil                        )
   HWRITEIV( 1                ,   Nseg          ,   Nseg                          )
+  HWRITEIV( 1                ,   case_optimize ,   case_optimize                 )
   HWRITEIV( 1                ,   IsNormalize   ,   IsNormalize                   )
   HWRITEIV( 1                ,   ISNormWeight  ,   IsNormWeight                  )
   HWRITEIV( 1                ,   case_bnormal  ,   case_bnormal                  )
@@ -93,21 +94,17 @@ subroutine saving
   HWRITERV( 1                ,   target_length ,   target_length                 )
   HWRITERV( 1                ,   weight_specw  ,   weight_specw                  )
   HWRITERV( 1                ,   weight_ccsep  ,   weight_ccsep                  )
-  HWRITEIV( 1                ,   solver_DF     ,   solver_DF                     )
   HWRITERV( 1                ,   DF_tausta     ,   DF_tausta                     )
   HWRITERV( 1                ,   DF_tauend     ,   DF_tauend                     )
   HWRITERV( 1                ,   DF_xtol       ,   DF_xtol                       )
   HWRITEIV( 1                ,   DF_maxiter    ,   DF_maxiter                    )
-  HWRITEIV( 1                ,   solver_CG     ,   solver_CG                     )
   HWRITEIV( 1                ,   CG_maxiter    ,   CG_maxiter                    )
   HWRITERV( 1                ,   CG_xtol       ,   CG_xtol                       )
   HWRITERV( 1                ,   CG_wolfe_c1   ,   CG_wolfe_c1                   )
   HWRITERV( 1                ,   CG_wolfe_c2   ,   CG_wolfe_c2                   )
-  HWRITEIV( 1                ,   solver_HN     ,   solver_HN                     )
   HWRITEIV( 1                ,   HN_maxiter    ,   HN_maxiter                    )
   HWRITERV( 1                ,   HN_xtol       ,   HN_xtol                       )
   HWRITERV( 1                ,   HN_factor     ,   HN_factor                     )
-  HWRITEIV( 1                ,   solver_TN     ,   solver_TN                     )
   HWRITEIV( 1                ,   TN_maxiter    ,   TN_maxiter                    )
   HWRITEIV( 1                ,   TN_reorder    ,   TN_reorder                    )
   HWRITERV( 1                ,   TN_xtol       ,   TN_xtol                       )
@@ -134,8 +131,8 @@ subroutine saving
   endif
 
   HWRITEIV( 1                ,   iout          ,   iout                          )
-  HWRITERA( iout+1, 8        ,   evolution     ,   evolution(0:iout, 0:8)        )
-  HWRITERA( iout+1, Tdof     ,   coilspace     ,   coilspace(0:iout, 1:Tdof)     )
+  HWRITERA( iout, 8          ,   evolution     ,   evolution(1:iout, 0:8)      )
+  HWRITERA( iout, Tdof       ,   coilspace     ,   coilspace(1:iout, 1:Tdof)   )
   if (allocated(deriv)) then
      HWRITERA( Ndof, 6       ,   deriv         ,   deriv(1:Ndof, 0:6)            )
   endif
@@ -168,17 +165,17 @@ subroutine saving
   do icoil = 1, Ncoils
 
      write(wunit, *) "#--------------------------------------------" 
-     write(wunit, *) "# coil_type     coil_name"
+     write(wunit, *) "#coil_type     coil_name"
      write(wunit,'(3X,I3,4X, A10)') coil(icoil)%itype, coil(icoil)%name
-     write(wunit, '(3(A6, A23))') "# Nseg", "current",  "Ifree", "Length", "Lfree", "target_length"
+     write(wunit, '(3(A6, A15, 8X))') " #Nseg", "current",  "Ifree", "Length", "Lfree", "target_length"
      write(wunit,'(2X, I4, ES23.15, 3X, I3, ES23.15, 3X, I3, ES23.15)') &
           coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo
      select case (coil(icoil)%itype)
      case (1)
         NF = FouCoil(icoil)%NF ! shorthand;
-        write(wunit, *) "# NFcoil"
+        write(wunit, *) "#NFcoil"
         write(wunit, '(I3)') NF
-        write(wunit, *) "# Fourier harmonics for coils ( xc; xs; yc; ys; zc; zs) "
+        write(wunit, *) "#Fourier harmonics for coils ( xc; xs; yc; ys; zc; zs) "
         write(wunit, 1000) FouCoil(icoil)%xc(0:NF)
         write(wunit, 1000) FouCoil(icoil)%xs(0:NF)
         write(wunit, 1000) FouCoil(icoil)%yc(0:NF)
@@ -193,6 +190,7 @@ subroutine saving
 1000 format(9999ES23.15)
 
   !--------------------------write coils.ext file-----------------------------------------------  
+
   if( save_coils == 1 ) then
 
      open(funit,file=trim(outcoils), status="unknown", form="formatted" )

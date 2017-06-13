@@ -103,25 +103,22 @@ module globals
   REAL                 :: weight_specw   =        0.000D+00
   REAL                 :: weight_ccsep   =        0.000D+00
 
-  INTEGER              :: solver_DF      =        0
+  INTEGER              :: case_optimize  =        1
+  INTEGER              :: DF_maxiter     =        0
+  REAL                 :: DF_xtol        =        1.000D-08     
   REAL                 :: DF_tausta      =        0.000D+00
-  REAL                 :: DF_tauend      =        1.000D+00
-  INTEGER              :: DF_maxiter     =      100
-  REAL                 :: DF_xtol        =        1.000D-08                    
+  REAL                 :: DF_tauend      =        1.000D+00               
  
-  INTEGER              :: solver_CG      =        0
-  INTEGER              :: CG_maxiter     =      100
+  INTEGER              :: CG_maxiter     =        0
   REAL                 :: CG_xtol        =        1.000D-08
   REAL                 :: CG_wolfe_c1    =        1.000D-04
   REAL                 :: CG_wolfe_c2    =        0.1
 
-  INTEGER              :: solver_HN      =        0
-  INTEGER              :: HN_maxiter     =      100
+  INTEGER              :: HN_maxiter     =        0
   REAL                 :: HN_xtol        =        1.000D-08
   REAL                 :: HN_factor      =      100.0
 
-  INTEGER              :: solver_TN      =        0
-  INTEGER              :: TN_maxiter     =      100
+  INTEGER              :: TN_maxiter     =        0
   REAL                 :: TN_xtol        =        1.000D-08
   INTEGER              :: TN_reorder     =        0
   REAL                 :: TN_cr          =        0.1
@@ -163,21 +160,18 @@ module globals
                         target_length  , &
                         weight_specw   , &
                         weight_ccsep   , &
-                        solver_DF      , & 
+                        case_optimize  , & 
+                        DF_maxiter     , & 
+                        DF_xtol        , & 
                         DF_tausta      , &  
                         DF_tauend      , &       
-                        DF_xtol        , & 
-                        DF_maxiter     , & 
-                        solver_CG      , & 
                         CG_maxiter     , & 
                         CG_xtol        , & 
                         CG_wolfe_c1    , &
                         CG_wolfe_c2    , &
-                        solver_HN      , &
                         HN_maxiter     , &  
                         HN_xtol        , & 
                         HN_factor      , & 
-                        solver_TN      , &
                         TN_maxiter     , &
                         TN_reorder     , &
                         TN_xtol        , &

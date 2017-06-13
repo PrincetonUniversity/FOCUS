@@ -37,7 +37,7 @@ subroutine descent
 
   !---------------------------------------------------------------------------------------------     
   INTEGER              :: itau, iflag, iwork(5)
-  REAL                 :: tau, relerr, abserr, lxdof(1:Ndof), dE(1:Ndof)
+  REAL                 :: t0, tau, relerr, abserr, lxdof(1:Ndof), dE(1:Ndof)
   REAL   , allocatable :: work(:)
 
   external             :: denergy
@@ -45,24 +45,23 @@ subroutine descent
 
   call packdof(lxdof) !copy to local;
 
-  iflag = 1 ; tau = DF_tausta
+  iflag = 1 ; t0 = DF_tausta ; tau = t0
   relerr = DF_xtol ; abserr = sqrtmachprec
   SALLOCATE( work, (1:100+21*Ndof), zero )
 
   call denergy(tau, lxdof, dE)
   if (myid == 0) write(ounit, '("output  : "A6" : "9(A12," ; "))') "iout", "tau", "chi", "dE_norm", &
-       "Bnormal", "Bmn harmonics", "toroidal flux", "coil length", "spectral", "c-c separation" 
-  call output(DF_tausta)
+       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "spectral", "c-c sep." 
+  call output(t0)
 
   do itau = 1, DF_maxiter
 
-    tau = DF_tausta + itau * (DF_tauend - DF_tausta) / DF_maxiter
-    call ode ( denergy, Ndof, dE, tau, DF_tauend, relerr, abserr, iflag, work, iwork )
-    call output(tau)
+     tau = DF_tausta + itau * (DF_tauend - DF_tausta) / DF_maxiter
+     call ode ( denergy, Ndof, lxdof, t0, tau, relerr, abserr, iflag, work, iwork )
+     call unpacking(lxdof)
+     call output(t0)
 
   end do  
-
-  call unpacking(lxdof)
 
   call mpi_barrier(MPI_COMM_WORLD, ierr)
 
@@ -80,7 +79,7 @@ subroutine denergy( tau, lxdof, dE )
   implicit none
   include "mpif.h"
   !---------------------------------------------------------------------------------------------      
-  REAL                 :: tau, lxdof(1:Ndof), dE(1:Ndof)
+  REAL                 :: tau, lxdof(*), dE(*)
   
   INTEGER              :: iorder
   external             :: unpacking, costfun

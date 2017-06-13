@@ -47,8 +47,8 @@ subroutine AllocData(itype)
 
      SALLOCATE(    xdof, (1:Ndof), zero ) ! dof vector;
      SALLOCATE( dofnorm, (1:Ndof), zero ) ! dof normalized value vector;
-     SALLOCATE( evolution, (0:Nouts, 0:8), zero ) !evolution array;
-     SALLOCATE( coilspace, (0:Nouts, 1:Tdof), zero ) ! all the coil parameters;
+     SALLOCATE( evolution, (1:Nouts+1, 0:8), zero ) !evolution array;
+     SALLOCATE( coilspace, (1:Nouts+1, 1:Tdof), zero ) ! all the coil parameters;
      
      idof = 0
      do icoil = 1, Ncoils

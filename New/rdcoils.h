@@ -85,7 +85,7 @@ subroutine rdcoils
 
   LOGICAL   :: exist
   INTEGER   :: icoil, maxnseg, ifirst, NF, itmp
-  REAL      :: Rmaj, zeta, totalcurrent, z0
+  REAL      :: Rmaj, zeta, totalcurrent, z0, r1, r2, z1, z2
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   Nfixcur = 0 ! fixed coil current number
@@ -299,9 +299,12 @@ subroutine rdcoils
         !initilize with circular coils;
         zeta = (icoil-1) * pi2 / Ncoils
 
-        Rmaj = half * ( surf(1)%xx(0, Nzeta/Ncoils) + surf(1)%xx(Nteta/2, Nzeta/Ncoils) )
-        z0   = half * ( surf(1)%zz(0, Nzeta/Ncoils) + surf(1)%zz(Nteta/2, Nzeta/Ncoils) )
+        call surfcoord( zero, zeta, r1, z1)
+        call surfcoord(   pi, zeta, r2, z2)
 
+        Rmaj = half * (r1 + r2)
+        z0   = half * (z1 + z2)        
+        
         FouCoil(icoil)%xc(0:1) = (/ Rmaj * cos(zeta), init_radius * cos(zeta) /)
         FouCoil(icoil)%xs(0:1) = (/ 0.0             , 0.0                     /)
         FouCoil(icoil)%yc(0:1) = (/ Rmaj * sin(zeta), init_radius * sin(zeta) /)

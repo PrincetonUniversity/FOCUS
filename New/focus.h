@@ -135,7 +135,7 @@ PROGRAM focus
 
   tfinish = MPI_Wtime()
   time_initialize = tfinish - tstart
-  if( myid  ==  0 ) write(ounit, '(A30, ES12.5, A3)') "focus   : Initialization took ", time_initialize," S."
+  if( myid  ==  0 ) write(ounit, '(A, ES12.5, A3)') "focus   : Initialization took ", time_initialize," S."
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -151,11 +151,11 @@ PROGRAM focus
      mins = (secs-hrs*60*60)/60
      secs = secs-hrs*60*60-mins*60
      if(hrs>0)then
-         write(ounit, '(A30, 3(I6, A3))') "focus   : Optimization took ",hrs," H ", mins," M ",secs," S."
+         write(ounit, '(A, 3(I6, A3))') "focus   : Optimization took ",hrs," H ", mins," M ",secs," S."
      elseif(mins>0)then
-         write(ounit, '(A30, 2(I6, A3))') "focus   : Optimization took ", mins," M ",secs," S."
+         write(ounit, '(A, 2(I6, A3))') "focus   : Optimization took ", mins," M ",secs," S."
      else
-         write(ounit, '(A30, ES12.5, A3)') "focus   : Optimization took ", time_optimize," S."
+         write(ounit, '(A, ES12.5, A3)') "focus   : Optimization took ", time_optimize," S."
      endif
   endif
 
@@ -183,11 +183,11 @@ PROGRAM focus
      mins = (secs-hrs*60*60)/60
      secs = secs-hrs*60*60-mins*60
      if(hrs>0)then
-         write(ounit, '(A30, 3(I6, A3))') "focus   : Post-processing took ",hrs," H ", mins," M ",secs," S."
+         write(ounit, '(A, 3(I6, A3))') "focus   : Post-processing took ",hrs," H ", mins," M ",secs," S."
      elseif(mins>0)then
-         write(ounit, '(A30, 2(I6, A3))') "focus   : Post-processing took ", mins," M ",secs," S."
+         write(ounit, '(A, 2(I6, A3))') "focus   : Post-processing took ", mins," M ",secs," S."
      else
-         write(ounit, '(A30, ES12.5, A3)') "focus   : Post-processing took ", time_postproc," S."
+         write(ounit, '(A, ES12.5, A3)') "focus   : Post-processing took ", time_postproc," S."
      endif
   endif
 

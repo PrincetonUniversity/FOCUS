@@ -192,7 +192,7 @@ subroutine initial
   harmfile  = trim(ext)//".harmonics"
   hdf5file  = "focus_"//trim(ext)//".h5"
   inpcoils  = "coils."//trim(ext)
-  outcoils  = trim(ext)//"coils."
+  outcoils  = trim(ext)//".coils"
 
   !-------------read the namelist-----------------------------------------------------------------------
   if( myid == 0 ) then
@@ -211,10 +211,11 @@ subroutine initial
 
   !-------------show the namelist for checking----------------------------------------------------------
 
-  if (myid == 0 .and. IsQuiet < 1) then ! Not quiet to output more informations;
+  if (myid == 0) then ! Not quiet to output more informations;
 
-     write(ounit, *) "-----------INPUT NAMELIST------------------------------------"
-     write(ounit, '(3A, I1)')"initial : Read focusin from ", trim(inputfile),  " ; IsQuiet = ", IsQuiet
+     if (IsQuiet < 1) write(ounit, *) "-----------INPUT NAMELIST------------------------------------"
+     if (IsQuiet < 1) write(ounit, '(3A, I2)')"initial : Read focusin from ", trim(inputfile),  &
+          " ; IsQuiet = ", IsQuiet
 
      select case (IsSymmetric)
      case (0)
@@ -228,13 +229,13 @@ subroutine initial
      case (0)
         inquire( file=trim(surffile), exist=exist )
         FATAL( initial, .not.exist, plasma boundary file not provided )
-        if (IsQuiet < 0)  write(ounit, '(8X,": case_surface = "I1, &
+        if (IsQuiet < 1)  write(ounit, '(8X,": case_surface = "I1, &
              " ; FOCUS will read VMEC-like Fourier harmonics in "A)') case_surface, trim(surffile)
      case (1)
         inquire( file=trim(knotfile), exist=exist )
         FATAL( initial, .not.exist, axis file not provided )
         FATAL( initial, knotsurf < zero, illegal minor radius)
-        if (IsQuiet < 0)  write(ounit, '(8X,": case_surface = "I1, &
+        if (IsQuiet < 1)  write(ounit, '(8X,": case_surface = "I1, &
              " ; FOCUS will read axis info in "A)') case_surface, trim(knotfile)
         if (IsQuiet < 0)  write(ounit, '(8X,": knotsurf = " ES12.5 &
              " ; ellipticity = " ES12.5)') knotsurf, ellipticity
@@ -244,7 +245,7 @@ subroutine initial
 
      FATAL( initial, Nteta   <=   0, illegal surface resolution )
      FATAL( initial, Nzeta   <=   0, illegal surface resolution )
-     write(ounit, '(8X,": plasma boundary will be discretized in "I6" X "I6)') Nteta, Nzeta
+     if (IsQuiet < 1) write(ounit, '(8X,": plasma boundary will be discretized in "I6" X "I6)') Nteta, Nzeta
 
      select case( case_init )
      case(-1 )
@@ -252,22 +253,22 @@ subroutine initial
         FATAL( initial, .not.exist, coils file coils.ext not provided )
         FATAL( initial, NFcoil <= 0    , no enough harmonics )
         FATAL( initial, Nseg   <= 0    , no enough segments  )
-        write(ounit, '(8X,": read coils data in" A )') trim(inpcoils)
+        if (IsQuiet < 1) write(ounit, '(8X,": read coils data in" A )') trim(inpcoils)
         if (IsQuiet < 0) write(ounit, '(8X,": NFcoil = "I3" ; IsVaryCurrent = "I1 &
              " ; IsVaryGeometry = "I1)') NFcoil, IsVaryCurrent, IsVaryGeometry
         write(ounit, '(8X,": coils will be discretized in "I6" segments")') Nseg
      case( 0 )
         inquire( file=trim(coilfile), exist=exist )
         FATAL( initial, .not.exist, FOCUS coil file ext.focus not provided )
-        write(ounit, '(8X,": read coil parameters in" A )') trim(coilfile)
+        if (IsQuiet < 1) write(ounit, '(8X,": read coil parameters in" A )') trim(coilfile)
      case( 1 )
         FATAL( initial, Ncoils < 1, should provide the No. of coils)
         FATAL( initial, init_current == zero, invalid coil current)
         FATAL( initial, init_radius < zero, invalid coil radius)
         FATAL( initial, NFcoil <= 0    , no enough harmonics )
         FATAL( initial, Nseg   <= 0    , no enough segments  )
-        write(ounit, '(8X,": Initialize "I4" circular coils with r="ES12.5"m ; I="ES12.5" A")') &
-             Ncoils, init_radius, init_current
+        if (IsQuiet < 1) write(ounit, '(8X,": Initialize "I4" circular coils with r="ES12.5"m ; I="&
+             ES12.5" A")') Ncoils, init_radius, init_current
         if (IsQuiet < 0) write(ounit, '(8X,": NFcoil = "I3" ; IsVaryCurrent = "I1 &
              " ; IsVaryGeometry = "I1)') NFcoil, IsVaryCurrent, IsVaryGeometry
         write(ounit, '(8X,": coils will be discretized in "I6" segments")') Nseg
@@ -279,22 +280,91 @@ subroutine initial
      if (IsQuiet < 0) write(ounit, '(8X,": case_coils = "I1 &
           "using Fourier series as the basic representation.")') case_coils
 
+     select case ( case_optimize)
+     case ( -2 )
+        write(ounit, '(8X,": case_optimize = -1 ; test the 2nd derivatives.")') 
+     case ( -1 )
+        write(ounit, '(8X,": case_optimize = -2 ; test the 1st derivatives.")') 
+     case (  0 )
+        write(ounit, '(8X,": case_optimize =  0 ; no optimization will be performed.")')
+     case (  1 )
+        write(ounit, '(8X,": case_optimize =  1 ; gradient methods will be performed.")')
+
+        if (DF_maxiter > 0) then
+           if (IsQuiet < 1) write(ounit, '(8X,": Differential flow is used")')
+           if (IsQuiet < 0) write(ounit,'(8X,": DF_tausta = "ES12.5" ; DF_tauend = "ES12.5 &
+                " ; DF_xtol = "ES12.5" ; DF_maxiter = "I6)') DF_tausta, DF_tauend, DF_xtol, DF_maxiter
+        endif
+
+        if (CG_maxiter > 0) then        
+           FATAL( Initial, CG_wolfe_c1 <= zero .or. CG_wolfe_c1 >= one, should be 0<c1<1 )
+           FATAL( Initial, CG_wolfe_c2 <= zero .or. CG_wolfe_c2 >= one, should be 0<c2<1 )
+           FATAL( Initial, CG_wolfe_c1 >= CG_wolfe_c2, should be c1<c2)
+           if (IsQuiet < 1) write(ounit, '(8X,": Nonlinear Conjugate Gradient method is used")')
+           if (IsQuiet < 0) write(ounit,'(8X,": CG_wolfe_c1 = "ES12.5" ; CG_wolfe_c2 = "ES12.5" ; CG_xtol = "&
+                ES12.5" ; CG_maxiter = "ES12.5)') CG_wolfe_c1, CG_wolfe_c2, CG_xtol, CG_maxiter
+        endif
+
+     case (  2 )
+        if (IsQuiet < 1) write(ounit, '(8X,": case_optimize =  2 ; Newton methods will be performed.")')
+
+        if (DF_maxiter > 0) then
+           write(ounit, '(8X,": Differential flow is used")')
+           if (IsQuiet < 0) write(ounit,'(8X,": DF_tausta = "ES12.5" ; DF_tauend = "ES12.5 &
+                " ; DF_xtol = "ES12.5" ; DF_maxiter = "I6)') DF_tausta, DF_tauend, DF_xtol, DF_maxiter
+        endif
+
+        if (CG_maxiter > 0) then        
+           FATAL( Initial, CG_wolfe_c1 <= zero .or. CG_wolfe_c1 >= one, should be 0<c1<1 )
+           FATAL( Initial, CG_wolfe_c2 <= zero .or. CG_wolfe_c2 >= one, should be 0<c2<1 )
+           FATAL( Initial, CG_wolfe_c1 >= CG_wolfe_c2, should be c1<c2)
+           write(ounit, '(8X,": Nonlinear Conjugate Gradient method is used")')
+           if (IsQuiet < 0) write(ounit,'(8X,": CG_wolfe_c1 = "ES12.5" ; CG_wolfe_c2 = "ES12.5" ; CG_xtol = "&
+                ES12.5" ; CG_maxiter = "ES12.5)') CG_wolfe_c1, CG_wolfe_c2, CG_xtol, CG_maxiter
+        endif
+
+        if (HN_maxiter > 0) then
+           write(ounit, '(8X,": Hybrid Newton method is used")')
+           if (IsQuiet < 0) write(ounit,'(8X,": HN_factor = "ES12.5" ; HN_xtol = " &
+                ES12.5" ; HN_maxiter = "I6)') HN_factor, HN_xtol, HN_maxiter
+        endif
+
+        if (TN_maxiter > 0) then        
+           FATAL( Initial, TN_cr <= zero .or. TN_cr > one, should be 0<cr<=1 )
+           write(ounit, '(8X,": Truncated Newton method is used")')
+           if (IsQuiet < 0) write(ounit,'(8X,": TN_cr = "ES12.5" ; TN_reorder = "I1" ; TN_xtol = " &
+                ES12.5" ; TN_maxiter = "I6)') TN_cr, TN_reorder, TN_xtol, TN_maxiter
+        endif
+
+     case default
+        FATAL( initial, .true., selected case_optimize is not supported )
+     end select
+
+     if (case_optimize > 0) then
+        FATAL( initial, DF_maxiter < 0, must be non-negative )
+        FATAL( initial, CG_maxiter < 0, must be non-negative )
+        FATAL( initial, HN_maxiter < 0, must be non-negative )
+        FATAL( initial, TN_maxiter < 0, must be non-negative )
+     endif
+
      write(ounit, '(8X,": IsNormalize = "I1" ; IsNormWeight = "I1)') IsNormalize, IsNormWeight
 
      select case ( case_bnormal )
      case ( 0 )
-        write(ounit, '(8X,": case_bnormal = "I1" ; no normalization on Bn")') case_bnormal
+        if (IsQuiet < 0) write(ounit, '(8X,": case_bnormal = "I1" ; no normalization on Bn")') case_bnormal
      case ( 1 )
-        write(ounit, '(8X,": case_bnormal = "I1" ; Bn normalized to |B|")') case_bnormal
+        if (IsQuiet < 0) write(ounit, '(8X,": case_bnormal = "I1" ; Bn normalized to |B|")') case_bnormal
      case default
         FATAL( initial, .true., selected case_bnormal is not supported )
      end select
 
      select case ( case_length )
      case ( 1 )
-        write(ounit, '(8X,": case_bnormal = "I1" ; quadratic format of length constraint")') case_length
+        if (IsQuiet < 0) write(ounit, '(8X,": case_bnormal = "I1" ; quadratic format of length constraint")')&
+             case_length
      case ( 2 )
-        write(ounit, '(8X,": case_bnormal = "I1" ; exponential format of length constraint")') case_length
+        if (IsQuiet < 0) write(ounit, '(8X,": case_bnormal = "I1" ; exponential format of length constraint" &
+             )') case_length
      case default
         FATAL( initial, .true., selected case_length is not supported )
      end select
@@ -305,62 +375,33 @@ subroutine initial
      FATAL( initial, weight_ttlen  < zero, illegal )
      FATAL( initial, weight_specw  < zero, illegal )
      FATAL( initial, weight_ccsep  < zero, illegal )
-     write(ounit, '(8X,": weights are set as: "6A12)') "bnorm", "bharm", "tflux", "ttlen", "specw", "ccsep"
-     write(ounit, '(8X,": "20X,6ES12.5)') weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, &
-          weight_specw, weight_ccsep
+     if (IsQuiet < 1) write(ounit, '(8X,": weights are set as: "6A12)') "bnorm", "bharm", "tflux", &
+         "ttlen", "specw", "ccsep"
+     if (IsQuiet < 1) write(ounit, '(8X,": "20X,6ES12.5)') weight_bnorm, weight_bharm, weight_tflux, &
+          weight_ttlen, weight_specw, weight_ccsep
 
      FATAL( initial, target_length  < zero, illegal )
-     write(ounit, '(8X,": target_tflux = "ES12.5" ; target_length = "ES12.5)') target_tflux, target_length
-
-     if (solver_DF == 1) then
-        FATAL( initial, DF_maxiter <= 0, must be positive )
-        write(ounit, '(8X,": Differential flow is used")')
-        if (IsQuiet < 0) write(ounit,'(8X,": DF_tausta = "ES12.5" ; DF_tauend = "ES12.5 &
-             " ; DF_xtol = "ES12.5" ; DF_maxiter = "I6)') DF_tausta, DF_tauend, DF_xtol, DF_maxiter
-     endif
-                       
-     if (solver_CG == 1) then
-        FATAL( initial, CG_maxiter <= 0, must be positive )
-        FATAL( Initial, CG_wolfe_c1 <= zero .or. CG_wolfe_c1 >= one, should be 0<c1<1 )
-        FATAL( Initial, CG_wolfe_c2 <= zero .or. CG_wolfe_c2 >= one, should be 0<c2<1 )
-        FATAL( Initial, CG_wolfe_c1 >= CG_wolfe_c2, should be c1<c2)
-        write(ounit, '(8X,": Nonlinear Conjugate Gradient method is used")')
-        if (IsQuiet < 0) write(ounit,'(8X,": CG_wolfe_c1 = "ES12.5" ; CG_wolfe_c2 = "ES12.5" ; CG_xtol = " &
-             ES12.5" ; CG_maxiter = "ES12.5)') CG_wolfe_c1, CG_wolfe_c2, CG_xtol, CG_maxiter
-     endif
-
-     if (solver_HN == 1) then
-        FATAL( initial, HN_maxiter <= 0, must be positive )
-        write(ounit, '(8X,": Hybrid Newton method is used")')
-        if (IsQuiet < 0) write(ounit,'(8X,": HN_factor = "ES12.5" ; HN_xtol = " &
-             ES12.5" ; HN_maxiter = "I6)') HN_factor, HN_xtol, HN_maxiter
-     endif
-
-     if (solver_TN == 1) then
-        FATAL( initial, TN_maxiter <= 0, must be positive )
-        FATAL( Initial, TN_cr <= zero .or. TN_cr > one, should be 0<cr<=1 )
-        write(ounit, '(8X,": Truncated Newton method is used")')
-        if (IsQuiet < 0) write(ounit,'(8X,": TN_cr = "ES12.5" ; TN_reorder = "I1" ; TN_xtol = " &
-             ES12.5" ; TN_maxiter = "I6)') TN_cr, TN_reorder, TN_xtol, TN_maxiter
-     endif
+     if (IsQuiet < 1) write(ounit, '(8X,": target_tflux = "ES12.5" ; target_length = "ES12.5)') &
+          target_tflux, target_length
 
      select case ( case_postproc )
      case ( 0 )
-        write(ounit,'(8X,": no extra post-processings")')
+        if (IsQuiet < 1) write(ounit,'(8X,": no extra post-processings")')
      case ( 1 )
-        write(ounit,'(8X,": coil evaluation would be performed")')
+        if (IsQuiet < 1) write(ounit,'(8X,": coil evaluation would be performed")')
      case default
         FATAL( initial, .true., selected case_postproc is not supported )
      end select
-        
+
      FATAL( initial, save_freq < 0, should not be negative )
-     write(ounit, '(8X,": files saving setteings: freq = "I4" ; coils = "I1" ; harmonics = "I1 &
-          " ; filaments = " I1)') save_freq, save_coils, save_harmonics, save_filaments
+     if (IsQuiet < 0) write(ounit, '(8X,": files saving setteings: freq = "I4" ; coils = "I1" ; harmonics = "&
+          I1" ; filaments = " I1)') save_freq, save_coils, save_harmonics, save_filaments
      if (IsQuiet < 0) then
-        write(ounit,'(8X,5A)') ": ", trim(coilfile), " and ", trim(hdf5file), "will be stored."
-        if (save_coils /= 0) write(ounit,'(8X, 3A)') ": new coils file ", trim(outcoils), "will be updated."
-        if (save_harmonics /= 0) write(ounit,'(8X,3A)')": Bmn harmonics file ",  trim(harmfile), "will be updated."
-      endif
+        write(ounit,'(8X,5A)') ": ", trim(coilfile), " and ", trim(hdf5file), " will be stored."
+        if (save_coils /= 0) write(ounit,'(8X, 3A)') ": new coils file ", trim(outcoils), " will be updated."
+        if (save_harmonics /= 0) write(ounit,'(8X,3A)')": Bmn harmonics file ",  trim(harmfile), &
+             " will be updated."
+     endif
 
   endif
 
@@ -368,11 +409,11 @@ subroutine initial
   write(nodelabel,'(i3.3)') myid ! nodelabel is global; 30 Oct 15;
 
   ! initialize iteration and total iterations;
-  iout = 0
-  Nouts = solver_DF*DF_maxiter + solver_CG*CG_maxiter + solver_HN*HN_maxiter + solver_TN*TN_maxiter
+  iout = 0 ; Nouts = 0
+  if (case_optimize >0) Nouts = DF_maxiter + CG_maxiter + HN_maxiter + TN_maxiter
 
   discretefactor = (pi2/Nteta) * (pi2/Nzeta)
-  
+
   !save weights before normalized
   tmpw_bnorm = weight_bnorm
   tmpw_bharm = weight_bharm
@@ -384,6 +425,6 @@ subroutine initial
 
   return
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+  !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 end subroutine initial
