@@ -6,31 +6,28 @@
 !latex          Springer Science \& Business Media.).}
 
 !latex \calledby{\link{solvers}}
-!latex \calls{packdof}
+!latex \calls{\link{packdof}}
 
 !latex \section{Basic algorithm}
 !latex The basic nonlinear conjugate gradient algorithm used in FOCUS is a hybrid of {\bf Algorithm 5.4} 
 !latex and {\bf Equation (5.49)} from \emph{Numerical Optimization} and 
-!latex \doilink{10.1137/S1052623497318992}{Dai & Yuan}. This version of conjugate gradient method converges 
+!latex \doilink{10.1137/S1052623497318992}{Dai \& Yuan}. This version of conjugate gradient method converges 
 !latex globally, provided the line search satisfies the standard Wolfe conditions. 
 !latex 
 !latex Our target function is $\chi^2(\vect{X})$, while $\vect{X}$ is the variables vector. As we mentioned 
 !latex before, we can calculate the gradient $G(\vect{X}) = \pdv{\chi^2}{\vect{X}}$ accurately with analytical
 !latex expressions. The structure of the algorithm is as below.
-!latex \fbox{ \beigin{minipage}{\textwidth}
-!latex \begin{itemize}
-!latex \item[$k=0$:] for initial $\vect{X}_0$, evaluate $\chi^2(\vect{X}_0)$ and $G(\vect{X}_0)$;
-!latex               $p_0 =  -G_0$
-!latex \item[{\bf while} $G_k>\epsilon$] \\
-!latex               $\vect{X}_{k+1} = \vect{X}_k + \a_k p_k$ ($\a_k$ satisfies strong Wolfe condition) \\
-!latex               $\b_{k+1} = \frac{\abs{G_{k+1}}^2}{(G_{k+1} - G_k)^T p_k}$ \\
-!latex               $p_{k+1} = -G_{k+1} + \b_{k+1} p_k$
-!latex               $k = k + 1$
-!latex \item[{\bf end(while)}]
-!latex \end{itemize}
-!latex \end{minipage}}
+!latex \begin{tcolorbox}
+!latex  $k=0$: for initial $\vect{X}_0$, evaluate $\chi^2(\vect{X}_0)$ and $G(\vect{X}_0)$; $p_0 = -G_0$; \\
+!latex {\bf while} $G_k>\epsilon$ : \\ 
+!latex               $\vect{X}_{k+1} = \vect{X}_k + \a_k p_k$ ($\a_k$ satisfies strong Wolfe condition); \\
+!latex               $\b_{k+1} = \frac{|G_{k+1}|^2}{(G_{k+1} - G_k)^T p_k}$; \\
+!latex               $p_{k+1} = -G_{k+1} + \b_{k+1} p_k$ ; \\
+!latex               $k = k + 1$ ; \\
+!latex {\bf end(while)}
+!latex \end{tcolorbox}
 !latex 
-!latex The line search algorithm is applying the {\bf Algorithm 3.5 & 3.6} in the book to satisfy 
+!latex The line search algorithm is applying the {\bf Algorithm 3.5 \& 3.6} in the book to satisfy 
 !latex the strong Wolfe conditions.
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!

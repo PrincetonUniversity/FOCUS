@@ -3,7 +3,7 @@
 ############################################################################################################
 
  ALLFILES= globals initial datalloc rdsurf rdknot rdcoils packdof bfield bnormal bmnharm fdcheck \
-           solvers descent saving focus
+           solvers descent congrad saving focus
  HFILES= $(ALLFILES:=.h)
  FFILES= $(ALLFILES:=.F90)
  PFILES= $(ALLFILES:=.pdf)
@@ -61,7 +61,7 @@ $(FFILES): %.F90: %.h
 ############################################################################################################
 
 clean:
-	 rm -f $(FFILES) ; rm -f $(ROBJS) ;  rm -f $(DOBJS) ; rm -f *.mod ; rm -f *.pdf ; rm -f *.toc ; rm -f *.dvi ; rm -f *.out ; rm -f .*.date ; rm -f *.tex *.aux *.blg *.log *.ps
+	 rm -f $(FFILES) ; rm -f $(ROBJS) ;  rm -f $(DOBJS) ; rm -f *.mod ; rm -f *.pdf
 
 ############################################################################################################
 
@@ -73,7 +73,8 @@ $(PFILES): %.pdf: %.h head.tex end.tex
 	@echo $*.pdf
 	@pdflatex -shell-escape -interaction=nonstopmode -file-line-error $*.tex | grep ".*:[0-9]*:.*" ||:
 	@pdflatex -shell-escape -interaction=nonstopmode -file-line-error $*.tex | grep ".*:[0-9]*:.*" ||: 
-	@pdflatex -shell-escape -interaction=nonstopmode -file-line-error $*.tex | grep ".*:[0-9]*:.*" ||: 
+	@pdflatex -shell-escape -interaction=nonstopmode -file-line-error $*.tex | grep ".*:[0-9]*:.*" ||:
+	@rm -f $*.tex $*.aux $*.blg $*.log $*.ps .$*.date $*.toc $*.out
 	
 
 ############################################################################################################

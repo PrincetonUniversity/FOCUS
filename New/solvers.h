@@ -22,10 +22,10 @@
 !latex  option to normalize the object function values to its initial value.
 !latex  
 !latex  When \inputvar{IsNormWeight = 1}, all the nonzero weights will be divided by the current object
-!latex  function values. For example, in the beginning, the Bnormal error is $f_B_0 = 0.1$ and 
-!latex  input $w_B = 1.0$. Then the updated $w'_B = w_B/f_B_0 = 10.0$, such that at every step
+!latex  function values. For example, in the beginning, the Bnormal error is $f_{B_0} = 0.1$ and 
+!latex  input $w_B = 1.0$. Then the updated $w'_B = w_B/f_{B_0} = 10.0$, such that at every step
 !latex  \be
-!latex  \ds w'_B f_B = w_B \frac{f_B}{f_B_0} \ .
+!latex  \ds w'_B f_B = w_B \frac{f_B}{f_{B_0}} \ .
 !latex  \ee
 !latex  
 !latex  \emph{* Please note that when writing the output file, the original weights (as same as input) 
@@ -79,7 +79,7 @@ subroutine solvers
      call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
      start = MPI_Wtime()
      call unpacking(xdof)
-     !call congrad
+     call congrad
      call packdof(xdof)
      finish = MPI_Wtime()
      if (myid  ==  0) write(ounit,'("solvers : CG takes ", es23.15," seconds;")') finish - start
