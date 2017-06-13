@@ -350,9 +350,14 @@ subroutine rdcoils
   endif
 
   if (IsNormalize /= 0) then
-     Rmaj = half * ( surf(1)%xx(0, 0) + surf(1)%xx(Nteta/2, 0) )
+     r1 = sqrt( surf(1)%xx(      0,0)**2 + surf(1)%yy(      0,0)**2 ) ! R at (0 ,0)
+     r2 = sqrt( surf(1)%xx(Nteta/2,0)**2 + surf(1)%yy(Nteta/2,0)**2 ) ! R at (pi,0)
+     Gnorm = half * (r1 + r2) ! something like the major radius;
      Inorm = sum(abs(coil(1:Ncoils)%I))/Ncoils + machprec !average current;
-     Gnorm = Rmaj                              + machprec !major radius   ;
+
+     FATAL( rdcoils, abs(Gnorm) < machprec, cannot be zero )
+     FATAL( rdcoils, abs(Inorm) < machprec, cannot be zero )
+
      if (myid == 0) write(ounit, '("rdcoils : Currents are normalized by " ES23.15 &
           " ; Geometries are normalized by " ES23.15 " ;")') Inorm, Gnorm
 
