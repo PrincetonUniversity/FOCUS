@@ -11,8 +11,8 @@ m4_define(SALLOCATE,{ ! macro expansion of sallocate = set allocate;
 
 #ifdef DEBUG
    if( allocated( $1 ) ) then
-    write(0,'("macros : 0123456789 : $1 already allocated ;")') 
-    stop      'macros : 0123456789 : $1 already allocated ;'
+    write(0,'("macros  : 0123456789 : $1 already allocated ;")') 
+    stop      'macros  : 0123456789 : $1 already allocated ;'
    endif
 #endif
 
@@ -20,8 +20,8 @@ m4_define(SALLOCATE,{ ! macro expansion of sallocate = set allocate;
 
 #ifdef DEBUG
    if( astat.ne.0 ) then
-    write(0,'("macros : 0123456789 : error allocating $1 ;")') 
-    stop      'macros : 0123456789 : error allocating $1 ;'
+    write(0,'("macros  : 0123456789 : error allocating $1 ;")') 
+    stop      'macros  : 0123456789 : error allocating $1 ;'
    endif
 #endif
 
@@ -32,8 +32,8 @@ m4_define(DALLOCATE,{ ! macro expansion of dallocate = de- allocate;
 
 #ifdef DEBUG
    if( .not.allocated( $1 ) ) then
-    write(0,'("macros : 0123456789 : $1 not already allocated ;")') 
-    stop      'macros : 0123456789 : $1 not already allocated ;'
+    write(0,'("macros  : 0123456789 : $1 not already allocated ;")') 
+    stop      'macros  : 0123456789 : $1 not already allocated ;'
    endif
 #endif
 
@@ -41,8 +41,8 @@ m4_define(DALLOCATE,{ ! macro expansion of dallocate = de- allocate;
 
 #ifdef DEBUG
    if( astat.ne.0 ) then
-    write(0,'("macros : 0123456789 : error de-allocating $1 ;")') 
-    stop      'macros : 0123456789 : error de-allocating $1 ;'
+    write(0,'("macros  : 0123456789 : error de-allocating $1 ;")') 
+    stop      'macros  : 0123456789 : error de-allocating $1 ;'
    endif
 #endif
 
@@ -147,29 +147,29 @@ m4_define(HWRITEIV,{
 
   if( $1.le.0 ) then
 
-   write(0,'("macros :      fatal : error calling hwriteiv ; $2 : $1.le.0 ;")')
+   write(0,'("macros  :      fatal : error calling hwriteiv ; $2 : $1.le.0 ;")')
 
   else
 
    call h5screate_simple_f( rank , onedims , space_id , hdfier )
    if( hdfier.ne.0 ) then
-    write(0,'("macros :      fatal : error calling h5screate_simple_f ;")')
+    write(0,'("macros  :      fatal : error calling h5screate_simple_f ;")')
     call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
-    stop "macros : error calling h5screate_simple_f;"
+    stop "macros  : error calling h5screate_simple_f;"
    endif
 
    call h5dcreate_f( file_id , "$2" , H5T_NATIVE_INTEGER , space_id , dset_id , hdfier )
    if( hdfier.ne.0 ) then
-    write(0,'("macros :      fatal : error calling h5dcreate_f ;")')
+    write(0,'("macros  :      fatal : error calling h5dcreate_f ;")')
     call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
-    stop "macros : error calling h5dcreate_f;"
+    stop "macros  : error calling h5dcreate_f;"
    endif
 
    call h5dwrite_f( dset_id , H5T_NATIVE_INTEGER , $3 , onedims , hdfier )
    if( hdfier.ne.0 ) then
-    write(0,'("macros :      fatal : error calling h5dwrite_f ;")')
+    write(0,'("macros  :      fatal : error calling h5dwrite_f ;")')
     call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
-    stop "macros : error calling h5dwrite_f;"
+    stop "macros  : error calling h5dwrite_f;"
    endif
 
   endif
@@ -183,29 +183,29 @@ m4_define(HWRITERV,{
 
   if( $1.le.0 ) then
 
-   write(0,'("macros :      fatal : error calling hwriterv ; $2 : $1.le.0 ;")')
+   write(0,'("macros  :      fatal : error calling hwriterv ; $2 : $1.le.0 ;")')
 
   else
 
    call h5screate_simple_f( rank , onedims , space_id , hdfier )
    if( hdfier.ne.0 ) then
-    write(0,'("macros :      fatal : error calling h5screate_simple_f ;")')
+    write(0,'("macros  :      fatal : error calling h5screate_simple_f ;")')
     call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
-    stop "macros : error calling h5screate_simple_f;"
+    stop "macros  : error calling h5screate_simple_f;"
    endif
 
    call h5dcreate_f( file_id , "$2" , H5T_NATIVE_DOUBLE , space_id , dset_id , hdfier )
    if( hdfier.ne.0 ) then
-    write(0,'("macros :      fatal : error calling h5dcreate_f ;")')
+    write(0,'("macros  :      fatal : error calling h5dcreate_f ;")')
     call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
-    stop "macros : error calling h5dcreate_f;"
+    stop "macros  : error calling h5dcreate_f;"
    endif
 
    call h5dwrite_f( dset_id , H5T_NATIVE_DOUBLE , $3 , onedims , hdfier )
    if( hdfier.ne.0 ) then
-    write(0,'("macros :      fatal : error calling h5dwrite_f ;")')
+    write(0,'("macros  :      fatal : error calling h5dwrite_f ;")')
     call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
-    stop "macros : error calling h5dwrite_f;"
+    stop "macros  : error calling h5dwrite_f;"
    endif
 
   endif
@@ -219,29 +219,29 @@ m4_define(HWRITERA,{
 
   if( $1.le.0 .or. $2.le.0 ) then
 
-   write(0,'("macros :  warning   : error calling hwritera ; $3 : $1.le.0 .or. $2.le.0 ;")')
+   write(0,'("macros  :  warning   : error calling hwritera ; $3 : $1.le.0 .or. $2.le.0 ;")')
 
   else
 
    call h5screate_simple_f( rank , twodims(1:2) , space_id , hdfier )
    if( hdfier.ne.0 ) then
-    write(0,'("macros :      fatal : error calling h5screate_simple_f ;")')
+    write(0,'("macros  :      fatal : error calling h5screate_simple_f ;")')
     call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
-    stop "macros : error calling h5screate_simple_f;"
+    stop "macros  : error calling h5screate_simple_f;"
    endif
 
    call h5dcreate_f( file_id , "$3" , H5T_NATIVE_DOUBLE , space_id , dset_id , hdfier )
    if( hdfier.ne.0 ) then
-    write(0,'("macros :      fatal : error calling h5dcreate_f ;")')
+    write(0,'("macros  :      fatal : error calling h5dcreate_f ;")')
     call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
-    stop "macros : error calling h5dcreate_f;"
+    stop "macros  : error calling h5dcreate_f;"
    endif
 
    call h5dwrite_f( dset_id , H5T_NATIVE_DOUBLE , $4 , twodims(1:2) , hdfier )
    if( hdfier.ne.0 ) then
-    write(0,'("macros :      fatal : error calling h5dwrite_f ;")')
+    write(0,'("macros  :      fatal : error calling h5dwrite_f ;")')
     call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
-    stop "macros : error calling h5dwrite_f;"
+    stop "macros  : error calling h5dwrite_f;"
    endif
 
   endif
@@ -255,29 +255,29 @@ m4_define(HWRITERC,{
 
   if( $1.le.0 .or. $2.le.0 .or. $3.le.0 ) then
 
-   write(0,'("macros :      fatal : error calling hwriterc ; $4 : $1.le.0 .or. $2.le.0 .or. $3.le.0 ;")')
+   write(0,'("macros  :      fatal : error calling hwriterc ; $4 : $1.le.0 .or. $2.le.0 .or. $3.le.0 ;")')
 
   else
 
    call h5screate_simple_f( rank , threedims , space_id , hdfier )
    if( hdfier.ne.0 ) then
-    write(0,'("macros :      fatal : error calling h5screate_simple_f ;")')
+    write(0,'("macros  :      fatal : error calling h5screate_simple_f ;")')
     call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
-    stop "macros : error calling h5screate_simple_f;"
+    stop "macros  : error calling h5screate_simple_f;"
    endif
 
    call h5dcreate_f( file_id , "$4" , H5T_NATIVE_DOUBLE , space_id , dset_id , hdfier )
    if( hdfier.ne.0 ) then
-    write(0,'("macros :      fatal : error calling h5dcreate_f ;")')
+    write(0,'("macros  :      fatal : error calling h5dcreate_f ;")')
     call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
-    stop "macros : error calling h5dcreate_f;"
+    stop "macros  : error calling h5dcreate_f;"
    endif
 
    call h5dwrite_f( dset_id , H5T_NATIVE_DOUBLE , $5 , threedims , hdfier )
    if( hdfier.ne.0 ) then
-    write(0,'("macros :      fatal : error calling h5dwrite_f ;")')
+    write(0,'("macros  :      fatal : error calling h5dwrite_f ;")')
     call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
-    stop "macros : error calling h5dwrite_f;"
+    stop "macros  : error calling h5dwrite_f;"
    endif
 
   endif
