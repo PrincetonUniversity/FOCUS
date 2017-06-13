@@ -35,7 +35,7 @@
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine solvers
-  use globals, only : ierr, iout, myid, ounit, IsQuiet, Ndof, Nouts, xdof, &
+  use globals, only : ierr, iout, myid, ounit, IsQuiet, IsNormWeight, Ndof, Nouts, xdof, &
        & case_optimize, DF_maxiter, CG_maxiter, HN_maxiter, TN_maxiter
   implicit none
   include "mpif.h"
@@ -56,6 +56,8 @@ subroutine solvers
      call fdcheck(case_optimize)
      return
   endif
+
+  if (IsNormWeight /= 0) call normweight
   
   !--------------------------------DF--------------------------------------------------------------------
   if (DF_maxiter > 0)  then
@@ -301,6 +303,105 @@ end subroutine costfun
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
+subroutine normweight
+  use globals, only : zero, sqrtmachprec, ounit, myid, xdof, bnorm, bharm, tflux, ttlen, specw, ccsep, &
+       weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_specw, weight_ccsep
+
+  implicit none  
+  include "mpif.h"
+
+  INTEGER    :: ierr, icoil
+  REAL       :: tmp, cur_tflux
+
+  !----------------------------------------------------------------------------------------------------
+
+  call unpacking(xdof)
+
+!-!-!-!-!-!-!-!-!-!-bnorm-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+  if( weight_bnorm >= sqrtmachprec ) then
+
+   call bnormal(0)   
+   if (abs(bnorm) > sqrtmachprec) weight_bnorm = weight_bnorm / bnorm
+   if( myid == 0 ) write(ounit, 1000) "weight_bnorm", weight_bnorm
+   
+  endif
+!!$
+!!$!-!-!-!-!-!-!-!-!-!-tflux-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+!!$
+!!$  if( weight_tflux .ge. sqrtmachprec ) then
+!!$
+!!$   if ( target_tflux .eq. 0.0 ) then
+!!$    call torflux(0)
+!!$    target_tflux = isign*sqrt(2.0*tflux)             
+!!$    if(myid .eq. 0) write(ounit,'("costfun :"11X" : Reset target toroidal flux to"ES23.15)') target_tflux
+!!$   else
+!!$      tmp = target_tflux
+!!$      target_tflux = zero
+!!$      call torflux(0)
+!!$      target_tflux = tmp
+!!$      cur_tflux = isign*sqrt(2.0*tflux)
+!!$      Io = Io * target_tflux / cur_tflux
+!!$      do icoil = 1, Ncoils
+!!$         coil(icoil)%I = Io
+!!$         coil(icoil)%Io = Io
+!!$      enddo
+!!$      if(myid .eq. 0) write(ounit,'("costfun :"11X" : rescale coil currents with a factor of"ES23.15)') target_tflux / cur_tflux
+!!$   endif
+!!$
+!!$   call torflux(0)
+!!$   if (abs(tflux) .gt. sqrtmachprec) weight_tflux = weight_tflux / tflux * target_tflux**2
+!!$   if( myid .eq. 0 ) write(ounit, 1000) "weight_tflux", weight_tflux
+!!$   
+!!$  endif  
+!!$
+!!$!-!-!-!-!-!-!-!-!-!-ttlen-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+!!$
+!!$  if( weight_ttlen .ge. sqrtmachprec ) then
+!!$
+!!$   if( lc .eq. 1 ) then 
+!!$    call tlength(0)
+!!$   elseif(lc .eq. 2) then
+!!$    call tlengthExp(0)
+!!$   else
+!!$    FATAL( dnergy, .true., Conflicts between lc and weight_ttlen )
+!!$   !call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+!!$   !stop "Weights_normalize: Conflicts between lc and weight_ttlen"
+!!$   endif
+!!$
+!!$   if (abs(ttlen) .gt. sqrtmachprec) weight_ttlen = weight_ttlen / ttlen
+!!$   if( myid .eq. 0 ) write(ounit, 1000) "weight_ttlen", weight_ttlen
+!!$   
+!!$  endif 
+!!$
+!!$!-!-!-!-!-!-!-!-!-!-eqarc-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+!!$
+!!$  if( weight_eqarc .ge. sqrtmachprec ) then
+!!$
+!!$   call specwid(0)
+!!$   if (abs(eqarc) .gt. sqrtmachprec) weight_eqarc = weight_eqarc / eqarc
+!!$   if( myid .eq. 0 ) write(ounit, 1000) "weight_eqarc", weight_eqarc
+!!$   
+!!$  endif 
+!!$
+!!$!-!-!-!-!-!-!-!-!-!-ccsep-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+!!$
+!!$  if( weight_ccsep .ge. sqrtmachprec ) then
+!!$
+!!$   call coilsep(0)
+!!$   if (abs(ccsep) .gt. sqrtmachprec) weight_ccsep = weight_ccsep / ccsep
+!!$   if( myid .eq. 0 ) write(ounit, 1000) "weight_ccsep", weight_ccsep
+!!$   
+!!$  endif
+
+1000 format("solvers : " 8x " : "A12" is normalized to" ES23.15)
+
+  return
+
+end subroutine normweight
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
 subroutine output (mark)
 
   use globals, only : zero, ounit, myid, ierr, astat, iout, Nouts, Ncoils, save_freq, Tdof, &
@@ -364,3 +465,5 @@ subroutine output (mark)
   return  
 
 end subroutine output
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
