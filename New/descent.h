@@ -29,7 +29,7 @@ subroutine descent
   ! Using the differential flow to optimize the coils;
   ! DATE: 2017/04/05
   !---------------------------------------------------------------------------------------------    
-  use globals, only : zero, half, myid, ncpu, ounit, astat, ierr, sqrtmachprec, &
+  use globals, only : zero, half, myid, ncpu, ounit, IsQuiet, astat, ierr, sqrtmachprec, &
         Ndof, iout, DF_tausta, DF_tauend, DF_xtol, DF_maxiter
 
   implicit none  
@@ -58,6 +58,24 @@ subroutine descent
 
      tau = DF_tausta + itau * (DF_tauend - DF_tausta) / DF_maxiter
      call ode ( denergy, Ndof, lxdof, t0, tau, relerr, abserr, iflag, work, iwork )
+
+     if ( iflag /= 2 .and. myid == 0) then
+        write ( ounit, '(A,I3)' ) 'descent : ODE solver ERROR; returned IFLAG = ', iflag
+        if ( IsQuiet < 0 ) then
+           select case ( iflag )
+           case ( 3 )
+              write(ounit, '("descent : DF_xtol or abserr too small.")')
+           case ( 4 )
+              write(ounit, '("descent : tau not reached after 500 steps.")')
+           case ( 5 )
+              write(ounit, '("descent : tau not reached because equation to be stiff.")')
+           case ( 6 )
+              write(ounit, '("descent : INVALID input parameters.")')
+           end select
+        end if
+        call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+     end if
+
      call unpacking(lxdof)
      call output(t0)
 
