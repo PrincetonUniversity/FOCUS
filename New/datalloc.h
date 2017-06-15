@@ -82,9 +82,9 @@ subroutine AllocData(itype)
 
         do icoil = 1, Ncoils
            ND = DoF(icoil)%ND
-           SALLOCATE( coil(icoil)%Bx, (0:ND, 0:ND), zero )   !total Bx;
-           SALLOCATE( coil(icoil)%By, (0:ND, 0:ND), zero )   !total By;  
-           SALLOCATE( coil(icoil)%Bz, (0:ND, 0:ND), zero )   !total Bz;
+           SALLOCATE( coil(icoil)%Bx, (0:ND, 0:ND), zero )   ! Bx;
+           SALLOCATE( coil(icoil)%By, (0:ND, 0:ND), zero )   ! By;  
+           SALLOCATE( coil(icoil)%Bz, (0:ND, 0:ND), zero )   ! Bz;
         enddo
      endif
 
@@ -93,6 +93,16 @@ subroutine AllocData(itype)
         call readbmn
         SALLOCATE(  Bmnc , (1:NBmn), zero )  ! current Bmn cos values;
         SALLOCATE(  Bmns , (1:NBmn), zero )  ! current Bmn sin values;
+     endif
+
+     ! tflux needed;
+     if (weight_tflux > sqrtmachprec) then
+        do icoil = 1, Ncoils
+           ND = DoF(icoil)%ND
+           SALLOCATE( coil(icoil)%Bx, (0:ND, 0:ND), zero )   ! Ax;
+           SALLOCATE( coil(icoil)%By, (0:ND, 0:ND), zero )   ! Ay;  
+           SALLOCATE( coil(icoil)%Bz, (0:ND, 0:ND), zero )   ! Az;
+        enddo
      endif
             
   endif
@@ -107,12 +117,16 @@ subroutine AllocData(itype)
      ! Bnorm related;
      if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec) then
         SALLOCATE( t1B, (1:Ndof), zero )                       !total dB/dx;
-        SALLOCATE( dBx, (1:Ndof, 0:Nteta-1, 0:Nzeta-1), zero ) !distribution of dB/dx;
      endif
 
      ! Bharm related;
      if (weight_bharm > sqrtmachprec) then
         SALLOCATE( t1H,  (1:Ndof), zero )
+     endif
+
+     ! tflux needed;
+     if (weight_tflux > sqrtmachprec) then
+        SALLOCATE( t1F,  (1:Ndof), zero )
      endif
 
   endif

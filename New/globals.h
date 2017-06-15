@@ -249,8 +249,7 @@ module globals
   REAL                 :: bharm
   REAL   , allocatable :: t1H(:), t2H(:,:), Bmnc(:),Bmns(:), wBmn(:), tBmnc(:), tBmns(:), carg(:,:), sarg(:,:)
   ! Tflux error;
-  INTEGER              :: isign = 1
-  REAL                 :: tflux
+  REAL                 :: tflux, psi_avg
   REAL   , allocatable :: t1F(:), t2F(:,:)
   ! Length constraint
   REAL                 :: ttlen

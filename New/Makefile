@@ -3,7 +3,7 @@
 ############################################################################################################
 
  ALLFILES= globals initial datalloc rdsurf rdknot rdcoils packdof bfield bnormal bmnharm fdcheck \
-           solvers descent congrad saving focus
+           torflux solvers descent congrad saving focus
  HFILES= $(ALLFILES:=.h)
  FFILES= $(ALLFILES:=.F90)
  PFILES= $(ALLFILES:=.pdf)
@@ -17,11 +17,11 @@
  CC=intel # if want to use gfortran; make CC=gfortran xfocus; otherwise using Intel
  FC=mpif90
 ifeq ($(CC),gfortran)
- RFLAGS=-O3 -Wall -fdefault-real-8 -ffixed-line-length-none
+ RFLAGS=-O3 -Wall -fdefault-real-8 -ffixed-line-length-none -march=native -ffast-math
  DFLAGS=-g3 -Wextra -Wtarget-lifetime -fbacktrace -fbounds-check -ffpe-trap=zero -fcheck=all -DDEBUG
 else
- RFLAGS=-r8 -mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback -vec_report0
- DFLAGS=-check all -check noarg_temp_created -debug full -D DEBUG
+ RFLAGS=-r8 -mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback -vec_report0 -ipo -xhost
+ DFLAGS=-check all -check noarg_temp_created -debug full -D DEBUG -qopt-report=[5]
 endif
 
 ############################################################################################################
