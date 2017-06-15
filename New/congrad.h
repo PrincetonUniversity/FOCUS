@@ -33,8 +33,7 @@
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE congrad
-  use globals, only: sqrtmachprec, myid, ounit, Ncoils, Ndof, t1E, iout, CG_maxiter, CG_xtol, &
-       chi, t1E
+  use globals, only: sqrtmachprec, myid, ounit, Ncoils, Ndof, t1E, iout, CG_maxiter, CG_xtol
   implicit none
   include "mpif.h"
 
@@ -44,8 +43,8 @@ SUBROUTINE congrad
 
   iter = 0
   call packdof(lxdof(1:Ndof)) ! initial xdof;  
-  call costfun(1)
-  p(1:Ndof) = -t1E ! initial step direction;
+  call getdf(lxdof, f, gradk)
+  p(1:Ndof) = -gradk ! initial step direction;
   alpha = 1.0 ! initial step size;
 
   if (myid == 0) write(ounit, '("output  : "A6" : "9(A12," ; "))') "iout", "iter", "chi", "dE_norm", &
@@ -56,16 +55,13 @@ SUBROUTINE congrad
 
      iter = iter + 1
      call wolfe(lxdof, p, alpha) ! find a step size matching the Wolfe condiction;
-     lxdof = lxdof + alpha*p(1:Ndof) ! next xdof
+     lxdof = lxdof + alpha*p ! next xdof
 
-     call unpacking(lxdof)
-     call costfun(1)
-     f = chi
-     gradf = t1E
+     call getdf(lxdof, f, gradf)
 
      call output(real(iter))
 
-     if ( sum(gradf**2) .lt. sqrtmachprec) exit  ! reach minimum
+     if ( sqrt(sum(gradf**2)) < CG_xtol ) exit  ! reach minimum
  
      beta = sum(gradf**2) / sum( (gradf-gradk)*p )
      p = -gradf + beta*p ! direction for next step;
@@ -86,7 +82,7 @@ END SUBROUTINE congrad
 
 SUBROUTINE wolfe( x0, p, alpha )
 
-  use globals, only : zero, sqrtmachprec, ounit, myid, Ndof, CG_wolfe_c1, CG_wolfe_c2, chi, t1E
+  use globals, only : zero, sqrtmachprec, ounit, myid, Ndof, CG_wolfe_c1, CG_wolfe_c2
 
   implicit none
   include "mpif.h"
@@ -95,70 +91,57 @@ SUBROUTINE wolfe( x0, p, alpha )
   REAL, INTENT(out)       :: alpha
 
   REAL                    :: zoom
-  INTEGER                 :: i
-  REAL                    :: a0, am, ap, ac, f0, fc, fp, rd, c1, c2
+  INTEGER                 :: i, maxiter
+  REAL                    :: a0, ap, ac, f0, fc, fp, rd, c1, c2
   REAL, dimension(1:Ndof) :: xc, g0, gc, gp
 
 
   c1 = CG_wolfe_c1
   c2 = CG_wolfe_c2     ! c1 & c2
-  i = 0
+  i = 0 ; maxiter = 10
   a0 = 0.0
-  am = alpha
-  if (am <= 0.0) STOP "alpha_max should be larger than alpha_0"
 
-  call unpacking(x0)
-  call costfun(1)
-  f0 = chi
-  g0 = t1E
+  call getdf(x0, f0, g0)
   
   ap = a0            ! previous alpha;
   fp = f0            ! previous fnction;
   gp = g0            ! previous gradient;
 
-  call RANDOM_NUMBER(rd)
-  ac = am*rd   ! current alpha;
+  ac = alpha
 
-  do
+  do i = 1, maxiter
+
      xc = x0 + ac*p  ! current xdof
 
-     call unpacking(xc)
-     call costfun(1)
-     fc = chi
-     gc = t1E
+     call getdf(xc, fc, gc)
 
      if ( (fc > f0 + c1*ac*sum(p*g0)) .or. (fc >= fp .and. i > 1) ) then
+        !TMPOUT('wolfe: case1')
+        if (myid .eq. 0) print *, ap, ac
         alpha = zoom( x0, p, ap, ac )
         return
      endif
 
      if ( abs(sum(p*gc)) <= -c2*sum(p*g0) ) then
+        !TMPOUT('wolfe: case2')
+        if (myid .eq. 0) print *, ap, ac
         alpha = ac
         return
      endif
 
      if ( sum(p*gc) >= zero ) then
+        !TMPOUT('wolfe: case3')
+        if (myid .eq. 0) print *, ap, ac
         alpha = zoom( x0, p, ac, ap )
         return
-     endif        
+     endif          
 
      ap = ac
      fp = fc
      gp = gc
 
      ! if too many iterations then increase alpha_max;
-     if ( i > 1000 .or. (am-ac) .lt. sqrtmachprec ) then 
-        am = 2.0 * am
-        i = 0
-#ifdef DEBUG
-        if (myid .eq. 0) print '("congrad : ", A, F10.5)', "change am to", am
-#endif
-     endif
-
-     call RANDOM_NUMBER(rd)
-     ac = ac + (am-ac)*rd
-
-     i = i+1
+     ac = ac*2.0
      
   end do
 
@@ -170,7 +153,7 @@ END SUBROUTINE wolfe
 
 REAL FUNCTION zoom( x0, p, alo, ahi )
 
-  use globals, only : zero, ounit, myid, Ndof, CG_wolfe_c1, CG_wolfe_c2, chi, t1E
+  use globals, only : zero, ounit, myid, Ndof, CG_wolfe_c1, CG_wolfe_c2
 
   implicit none
   include "mpif.h"
@@ -185,23 +168,16 @@ REAL FUNCTION zoom( x0, p, alo, ahi )
   c1 = CG_wolfe_c1
   c2 = CG_wolfe_c2     ! c1 & c2
 
-  call unpacking(x0)
-  call costfun(1)
-  f0 = chi
-  g0 = t1E
+  call getdf(x0, f0, g0)
 
   do
      alpha = 0.5*(alo + ahi)
+
      xc = x0 + alpha*p
-     call unpacking(xc)
-     call costfun(1)
-     fc = chi
-     gc = t1E
+     call getdf(xc, fc, gc)
 
      xl = x0 + alo*p
-     call unpacking(xl)
-     fl = chi
-     gl = t1E
+     call getdf(xl, fl, gl)
 
      if ( (fc > f0 + c1*alpha*sum(p*g0)) .or. (fc >= fl) ) then 
         ahi = alpha
@@ -224,3 +200,23 @@ REAL FUNCTION zoom( x0, p, alo, ahi )
 END FUNCTION zoom
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+
+SUBROUTINE getdf(lxdof, f, g)
+  use globals, only: myid, ounit, ierr,  Ndof, chi, t1E
+  implicit none
+  include "mpif.h"
+
+  REAL, INTENT(in ) :: lxdof(1:Ndof)
+  REAL, INTENT(out) :: f, g(1:Ndof)
+
+  
+  call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
+
+  call unpacking(lxdof)
+  call costfun(1)
+  f = chi
+  g = t1E
+
+  return
+END SUBROUTINE getdf

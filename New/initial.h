@@ -302,7 +302,7 @@ subroutine initial
            FATAL( Initial, CG_wolfe_c1 >= CG_wolfe_c2, should be c1<c2)
            if (IsQuiet < 1) write(ounit, '(8X,": Nonlinear Conjugate Gradient method is used")')
            if (IsQuiet < 0) write(ounit,'(8X,": CG_wolfe_c1 = "ES12.5" ; CG_wolfe_c2 = "ES12.5" ; CG_xtol = "&
-                ES12.5" ; CG_maxiter = "ES12.5)') CG_wolfe_c1, CG_wolfe_c2, CG_xtol, CG_maxiter
+                ES12.5" ; CG_maxiter = "I6)') CG_wolfe_c1, CG_wolfe_c2, CG_xtol, CG_maxiter
         endif
 
      case (  2 )
@@ -320,7 +320,7 @@ subroutine initial
            FATAL( Initial, CG_wolfe_c1 >= CG_wolfe_c2, should be c1<c2)
            write(ounit, '(8X,": Nonlinear Conjugate Gradient method is used")')
            if (IsQuiet < 0) write(ounit,'(8X,": CG_wolfe_c1 = "ES12.5" ; CG_wolfe_c2 = "ES12.5" ; CG_xtol = "&
-                ES12.5" ; CG_maxiter = "ES12.5)') CG_wolfe_c1, CG_wolfe_c2, CG_xtol, CG_maxiter
+                ES12.5" ; CG_maxiter = "I6)') CG_wolfe_c1, CG_wolfe_c2, CG_xtol, CG_maxiter
         endif
 
         if (HN_maxiter > 0) then

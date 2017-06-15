@@ -613,7 +613,7 @@ SUBROUTINE readcoils(filename, maxnseg)
   include "mpif.h"
 
   INTEGER, parameter         :: mcoil = 256, mseg = 1024 ! Largest coils and segments number
-  INTEGER                    :: cunit, istat, astat, lstat, ierr, maxnseg, seg(1:mseg)
+  INTEGER                    :: icoil, cunit, istat, astat, lstat, ierr, maxnseg, seg(1:mseg)
   REAL, dimension(mseg,mcoil):: x, y, z, I
   CHARACTER*40               :: filename
   CHARACTER*200              :: line

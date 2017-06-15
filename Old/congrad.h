@@ -121,8 +121,9 @@ SUBROUTINE wolfe( x0, p, alpha )
   fp = f0            ! previous fnction;
   gp = g0            ! previous gradient;
 
-  call RANDOM_NUMBER(rd)
-  ac = am*rd   ! current alpha;
+!!$  call RANDOM_NUMBER(rd)
+!!$  ac = am*rd   ! current alpha;
+  ac = alpha
 
   do
      xc = x0 + ac*p  ! current xdof
@@ -164,8 +165,9 @@ SUBROUTINE wolfe( x0, p, alpha )
 #endif
      endif
 
-     call RANDOM_NUMBER(rd)
-     ac = ac + (am-ac)*rd
+!!$     call RANDOM_NUMBER(rd)
+!!$     ac = ac + (am-ac)*rd
+  ac = 2.0 * ac
 
      i = i+1
      

@@ -394,7 +394,7 @@ subroutine normweight
 !!$   
 !!$  endif
 
-1000 format("solvers : " 8x " : "A12" is normalized to" ES23.15)
+1000 format("solvers : "A12" is normalized to" ES23.15)
 
   return
 
