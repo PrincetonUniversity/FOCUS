@@ -123,7 +123,7 @@ subroutine costfun(ideriv)
        chi, t1E, t2E, &
        bnorm      , t1B, t2B, weight_bnorm,  &
        bharm      , t1H, t2H, weight_bharm,  &
-       tflux      , t1F, t2F, weight_tflux, target_tflux, isign, &
+       tflux      , t1F, t2F, weight_tflux, target_tflux, psi_avg, &
        ttlen      , t1L, t2L, weight_ttlen, &
        specw      , t1S, t2S, weight_specw, &
        ccsep      , t1C, t2C, weight_ccsep
@@ -139,14 +139,14 @@ subroutine costfun(ideriv)
   if (IsQuiet <= -1) then
      call bnormal(0)
      if (weight_bharm > sqrtmachprec) call bmnharm(0)
-!!$
-!!$   if ( target_tflux == 0.0 ) then
-!!$    call torflux(0)
-!!$    target_tflux = isign*sqrt(2.0*tflux)             
-!!$    if (myid == 0) write(ounit,'("Costfun :"11X" : Reset target toroidal flux to"ES23.15)') target_tflux
-!!$   endif
-!!$
-!!$   call torflux(0)
+
+     if ( abs(target_tflux) < sqrtmachprec ) then
+        call torflux(0)
+        target_tflux = psi_avg
+        if (myid == 0) write(ounit,'("costfun : Reset target toroidal flux to "ES12.5)') target_tflux
+     endif
+
+     call torflux(0)
 !!$
 !!$   if (lc == 1) then
 !!$    call tlength(0)
@@ -160,8 +160,6 @@ subroutine costfun(ideriv)
   
   chi = zero
   
-  !if ( ideriv .ge. 1 .and. .not. allocated(t1E) ) ALLOCATE(t1E(1:Ndof))
-  !if ( ideriv == 2 .and. .not. allocated(t2E) ) ALLOCATE(t2E(1:Ncoils, 0:Cdof, 1:Ncoils, 0:Cdof))
 
   if ( ideriv == 1 ) then
    t1E = zero
@@ -197,26 +195,23 @@ subroutine costfun(ideriv)
    endif
   endif
 
-!!$  ! if (myid == 0) write(ounit,'("calling bnormal used",f10.5,"seconds.")') finish-start
-!!$
-!!$  if (weight_tflux > sqrtmachprec) then
-!!$
-!!$   if ( target_tflux == 0.0 ) then
-!!$    call torflux(0)
-!!$    target_tflux = isign*sqrt(2.0*tflux)             
-!!$    if (myid == 0) write(ounit,'("Costfun :"11X" : Reset target toroidal flux to"ES23.15)') target_tflux
-!!$   endif
-!!$
-!!$   call torflux(ideriv)
-!!$   chi = chi + weight_tflux * tflux / target_tflux**2 ! normalization
-!!$   if     ( ideriv == 1 ) then
-!!$    t1E = t1E +  weight_tflux * t1F / target_tflux**2
-!!$   elseif ( ideriv == 2 ) then
-!!$    t1E = t1E +  weight_tflux * t1F / target_tflux**2
-!!$    t2E = t2E +  weight_tflux * t2F / target_tflux**2
-!!$   endif
-!!$
-!!$  endif
+  ! toroidal flux;
+  if (weight_tflux > sqrtmachprec) then
+     if ( abs(target_tflux) < sqrtmachprec ) then
+        call torflux(0)
+        target_tflux = psi_avg
+        if(myid .eq. 0) write(ounit,'("solvers : Reset target toroidal flux to "ES12.5)') target_tflux
+     endif
+
+     call torflux(ideriv)
+     chi = chi + weight_tflux * tflux / target_tflux**2 ! normalization
+     if     ( ideriv == 1 ) then
+        t1E = t1E +  weight_tflux * t1F / target_tflux**2
+     elseif ( ideriv == 2 ) then
+        t1E = t1E +  weight_tflux * t1F / target_tflux**2
+        t2E = t2E +  weight_tflux * t2F / target_tflux**2
+     endif
+  endif
 !!$
 !!$  ! if (myid == 0) write(ounit,'("calling torflux used",f10.5,"seconds.")') start-finish
 !!$
@@ -305,7 +300,8 @@ end subroutine costfun
 
 subroutine normweight
   use globals, only : zero, sqrtmachprec, ounit, myid, xdof, bnorm, bharm, tflux, ttlen, specw, ccsep, &
-       weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_specw, weight_ccsep
+       weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_specw, weight_ccsep, target_tflux, &
+       psi_avg, coil, Ncoils
 
   implicit none  
   include "mpif.h"
@@ -326,35 +322,30 @@ subroutine normweight
    if( myid == 0 ) write(ounit, 1000) "weight_bnorm", weight_bnorm
    
   endif
-!!$
-!!$!-!-!-!-!-!-!-!-!-!-tflux-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-!!$
-!!$  if( weight_tflux .ge. sqrtmachprec ) then
-!!$
-!!$   if ( target_tflux .eq. 0.0 ) then
-!!$    call torflux(0)
-!!$    target_tflux = isign*sqrt(2.0*tflux)             
-!!$    if(myid .eq. 0) write(ounit,'("costfun :"11X" : Reset target toroidal flux to"ES23.15)') target_tflux
-!!$   else
-!!$      tmp = target_tflux
-!!$      target_tflux = zero
-!!$      call torflux(0)
-!!$      target_tflux = tmp
-!!$      cur_tflux = isign*sqrt(2.0*tflux)
-!!$      Io = Io * target_tflux / cur_tflux
-!!$      do icoil = 1, Ncoils
-!!$         coil(icoil)%I = Io
-!!$         coil(icoil)%Io = Io
-!!$      enddo
-!!$      if(myid .eq. 0) write(ounit,'("costfun :"11X" : rescale coil currents with a factor of"ES23.15)') target_tflux / cur_tflux
-!!$   endif
-!!$
-!!$   call torflux(0)
-!!$   if (abs(tflux) .gt. sqrtmachprec) weight_tflux = weight_tflux / tflux * target_tflux**2
-!!$   if( myid .eq. 0 ) write(ounit, 1000) "weight_tflux", weight_tflux
-!!$   
-!!$  endif  
-!!$
+
+!-!-!-!-!-!-!-!-!-!-tflux-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+  
+  if( weight_tflux .ge. sqrtmachprec ) then
+
+     call torflux(0)
+     if ( abs(target_tflux) < sqrtmachprec ) then
+        target_tflux = psi_avg
+        if(myid .eq. 0) write(ounit,'("solvers : Reset target toroidal flux to "ES12.5)') target_tflux
+     else
+        call torflux(0)
+        do icoil = 1, Ncoils
+           coil(icoil)%I = coil(icoil)%I * target_tflux / psi_avg
+        enddo
+        if(myid .eq. 0) write(ounit,'("solvers : rescale coil currents with a factor of "ES12.5)') &
+             target_tflux / psi_avg
+     endif
+
+     call torflux(0)
+     if (abs(tflux) > sqrtmachprec) weight_tflux = weight_tflux / tflux * target_tflux**2
+     if( myid .eq. 0 ) write(ounit, 1000) "weight_tflux", weight_tflux
+
+  endif
+
 !!$!-!-!-!-!-!-!-!-!-!-ttlen-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 !!$
 !!$  if( weight_ttlen .ge. sqrtmachprec ) then
@@ -395,6 +386,8 @@ subroutine normweight
 !!$  endif
 
 1000 format("solvers : "A12" is normalized to" ES23.15)
+
+  call packdof(xdof)
 
   return
 

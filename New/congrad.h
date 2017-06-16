@@ -116,22 +116,16 @@ SUBROUTINE wolfe( x0, p, alpha )
      call getdf(xc, fc, gc)
 
      if ( (fc > f0 + c1*ac*sum(p*g0)) .or. (fc >= fp .and. i > 1) ) then
-        !TMPOUT('wolfe: case1')
-        if (myid .eq. 0) print *, ap, ac
         alpha = zoom( x0, p, ap, ac )
         return
      endif
 
      if ( abs(sum(p*gc)) <= -c2*sum(p*g0) ) then
-        !TMPOUT('wolfe: case2')
-        if (myid .eq. 0) print *, ap, ac
         alpha = ac
         return
      endif
 
      if ( sum(p*gc) >= zero ) then
-        !TMPOUT('wolfe: case3')
-        if (myid .eq. 0) print *, ap, ac
         alpha = zoom( x0, p, ac, ap )
         return
      endif          
