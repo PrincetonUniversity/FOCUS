@@ -24,7 +24,7 @@
 !latex  \end{align}
 !latex  Here $\dd \vect{l}$ is on the boundary curve of the poloidal surface and the total magnetic vector 
 !latex  potential $\vect{A}$ is 
-!latex  \begin{align} \vect{A}({\bf \bar x})  = \frac{\mu_0}{4\pi}\sum_{i=1}^{N_C} I_i \ \int_{C_i} 
+!latex  \begin{align} \vect{A}(\vect{X})  = \frac{\mu_0}{4\pi}\sum_{i=1}^{N_C} I_i \ \int_{C_i} 
 !latex  \frac{\dd{\vect{l}_i}}{r}.
 !latex  \end{align}
 !latex  The variation of $f_\Psi$ resulting from $\delta \vect{x_i}$ is 
@@ -34,13 +34,56 @@
 !latex  \end{align}
 !latex  where
 !latex  $\ds \delta \Psi_\z = \int_{\partial {\cal T}} \delta \vect{A} \cdot \dd{\vect{l}}$ and 
-!latex  \begin{align} 
-!latex  \ds \delta \vect{A}({\bf \bar x}) &= \frac{\mu_0}{4\pi} I_i \ \int_0^{2\pi} \left [ -\frac{\vect{r} 
+!latex  \begin{align} \label{eq:var_psi}
+!latex  \ds \delta \vect{A}(\vect{x}) &= \frac{\mu_0}{4\pi} I_i \ \int_0^{2\pi} \left [ -\frac{\vect{r} 
 !latex  \cdot \vect{x}_i'}{r^3} \ \delta \vect{x}_i \, + \, \frac{\vect{r} \cdot \delta \vect{x}_i}{r^3} \ 
 !latex  \vect{x}_i' \right ] \dd{t} .
 !latex  \end{align}
 
 !latex  \section{First derivatives}
+!latex  We can write \Eqn{var_psi} into $x,y,z$ components, (subscript $i$ is omitting here)
+!latex  \begin{align}
+!latex  \ds \delta A_x & = \frac{\mu_0}{4\pi} I_i \ \int_0^{2\pi} \left [ \frac{\Delta x \dd{x} + 
+!latex  \Delta y \dd{y} + \Delta z \dd{z}}{r^3} \ x' -  \frac{\Delta x x' + \Delta y y' + \Delta z z'}{r^3} 
+!latex  \ \dd{x}  \right ] \dd{t} ; \\
+!latex  \ds \delta A_y & = \frac{\mu_0}{4\pi} I_i \ \int_0^{2\pi} \left [ \frac{\Delta x \dd{x} + 
+!latex  \Delta y \dd{y} + \Delta z \dd{z}}{r^3} \ y' - \frac{\Delta x x' + \Delta y y' + \Delta z z'}{r^3} 
+!latex  \ \dd{y}  \right ] \dd{t} ; \\
+!latex  \ds \delta A_z & = \frac{\mu_0}{4\pi} I_i \ \int_0^{2\pi} \left [ \frac{\Delta x \dd{x} + 
+!latex  \Delta y \dd{y} + \Delta z \dd{z}}{r^3} \ z' - \frac{\Delta x x' + \Delta y y' + \Delta z z'}{r^3} 
+!latex  \ \dd{z}  \right ] \dd{t} . 
+!latex  \end{align}
+!latex  
+!latex  Here, we are applying $\vect{r} = \Delta x \ \vect{e_x} $ and $\vect{x}' = x' \vect{e_x}$. More
+!latex  specifically, $\Delta x = x_{surf} - x_{coil} $ and $x' = \dd{x} / \dd{t}$.
+!latex 
+!latex  The first derivatives can be calculated as
+!latex  \begin{align}
+!latex  \ds \pdv{A_x}{x} & = \frac{\mu_0}{4\pi} I_i \ \int_0^{2\pi} 
+!latex      \left [ -  \frac{\Delta y y' + \Delta z z'}{r^3}  \right ] \dd{t} ; \\
+!latex  \ds \pdv{A_x}{y} & = \frac{\mu_0}{4\pi} I_i \ \int_0^{2\pi} 
+!latex      \left [ \frac{\Delta y x'}{r^3} \right ] \dd{t} ; \\
+!latex  \ds \pdv{A_x}{z} & = \frac{\mu_0}{4\pi} I_i \ \int_0^{2\pi} 
+!latex      \left [ \frac{\Delta z x'}{r^3} \right ] \dd{t} .
+!latex  \end{align}
+
+!latex  \begin{align}
+!latex  \ds \pdv{A_y}{x} & = \frac{\mu_0}{4\pi} I_i \ \int_0^{2\pi} 
+!latex      \left [ \frac{\Delta x y'}{r^3}  \right ] \dd{t} ; \\
+!latex  \ds \pdv{A_y}{y} & = \frac{\mu_0}{4\pi} I_i \ \int_0^{2\pi} 
+!latex      \left [ - \frac{\Delta x x' + \Delta z z'}{r^3} \right ] \dd{t} ; \\
+!latex  \ds \pdv{A_y}{z} & = \frac{\mu_0}{4\pi} I_i \ \int_0^{2\pi} 
+!latex      \left [ \frac{\Delta z y'}{r^3} \right ] \dd{t} .
+!latex  \end{align}
+
+!latex  \begin{align}
+!latex  \ds \pdv{A_z}{x} & = \frac{\mu_0}{4\pi} I_i \ \int_0^{2\pi} 
+!latex      \left [ \frac{\Delta x z'}{r^3}  \right ] \dd{t} ; \\
+!latex  \ds \pdv{A_z}{y} & = \frac{\mu_0}{4\pi} I_i \ \int_0^{2\pi} 
+!latex      \left [ \frac{\Delta y z'}{r^3} \right ] \dd{t} ; \\
+!latex  \ds \pdv{A_z}{z} & = \frac{\mu_0}{4\pi} I_i \ \int_0^{2\pi} 
+!latex      \left [ \frac{\Delta x x' + \Delta y y'}{r^3} \right ] \dd{t} .
+!latex  \end{align}
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 subroutine torflux( ideriv )
