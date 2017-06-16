@@ -27,8 +27,8 @@
 !latex  and $L_{i,0}$ is a user-specified normalization.
 !latex  The variations in $L$ resulting from a variation $\delta \vect{x}_i$ is
 !latex  \be\label{eq:var_L}
-!latex  \ds \delta L(\vect{X})  = \int_0^{2\pi} \frac{({\vect{x}'_i} \cdot {\vect{x}'_i})
-!latex  {\vect{x}''_i} - ({\vect{x}'_i} \cdot {\vect{x}''_i}){\vect{x}'_i}}
+!latex  \ds \delta L(\vect{X})  = \int_0^{2\pi} \frac{ ({\vect{x}'_i} \cdot {\vect{x}''_i}){\vect{x}'_i}
+!latex  - ({\vect{x}'_i} \cdot {\vect{x}'_i}){\vect{x}''_i}}
 !latex  {({\vect{x}_i'} \cdot {\vect{x}_i'})^{3/2}} \cdot \delta \vect{x}_i \ \dd{t}. 
 !latex  \ee
 !latex  
@@ -36,11 +36,11 @@
 !latex  From \Eqn{var_L}, we can calculated the first derivatives of coil length with respect to the coil 
 !latex  geometries,
 !latex  \begin{align}
-!latex  \ds \pdv{L}{x} & = \int_0^{2\pi} \frac{y'y'x'' + z'z'x'' - y'y''x' - z'z''x'}
+!latex  \ds \pdv{L}{x} & = \int_0^{2\pi} \frac{y'y''x' + z'z''x'- y'y'x'' - z'z'x''}
 !latex                                   {(x'x' + y'y' + z'z')^{3/2}} \dd{t} \ ; \\
-!latex  \ds \pdv{L}{y} & = \int_0^{2\pi} \frac{x'x'y'' + z'z'y'' - x'x''y' - z'z''y'}
+!latex  \ds \pdv{L}{y} & = \int_0^{2\pi} \frac{x'x''y' + z'z''y' - x'x'y'' - z'z'y'' }
 !latex                                   {(x'x' + y'y' + z'z')^{3/2}} \dd{t} \ ; \\
-!latex  \ds \pdv{L}{z} & = \int_0^{2\pi} \frac{x'x'z'' + y'y'z'' - x'x''z' - y'y''z'}
+!latex  \ds \pdv{L}{z} & = \int_0^{2\pi} \frac{x'x''z' + y'y''z' - x'x'z'' - y'y'z''}
 !latex                                   {(x'x' + y'y' + z'z')^{3/2}} \dd{t} \ .
 !latex  \end{align}
 !latex  So the first derivatives of coil length objective function are
@@ -50,35 +50,37 @@
 !latex  \end{align}
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-! seems paralization works slower than series. 06/24
+
+! not parallelized; communications may take more time;
 subroutine length(ideriv)
   use globals, only : zero, half, pi2, ncpu, myid, ounit, &
-                      coil, DoF, Ncoils, Nfixgeo, Ndof, ttlen, t1L, t2L, case_length
-                      
+       coil, DoF, Ncoils, Nfixgeo, Ndof, ttlen, t1L, t2L, case_length
+
   implicit none
   include "mpif.h"
   INTEGER, INTENT(in) :: ideriv
 
   INTEGER             :: astat, ierr, icoil, idof, ND
-  REAL, dimension(1:Ndof) :: d1L
+  REAL                :: d1L(1:Ndof), norm(1:Ncoils)
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+  !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   ttlen = zero
-   
+
   if( ideriv >= 0 ) then
 
      do icoil = 1, Ncoils
 
-        if( myid.ne.modulo(icoil-1,ncpu) ) cycle ! parallelization loop;
+        !if( myid.ne.modulo(icoil-1,ncpu) ) cycle ! parallelization loop;
         call LenDeriv0(icoil, coil(icoil)%L)
-        RlBCAST( coil(icoil)%L, 1, modulo(icoil-1,ncpu) ) !broadcast each coil's length        
+        !RlBCAST( coil(icoil)%L, 1, modulo(icoil-1,ncpu) ) !broadcast each coil's length        
 
      enddo
 
      if (case_length == 1) then ! quadratic;
         do icoil = 1, Ncoils
-           if ( coil(icoil)%Lc /= 0 ) ttlen = ttlen + (coil(icoil)%L - coil(icoil)%Lo)**2 / coil(icoil)%Lo**2
+           if ( coil(icoil)%Lc /= 0 ) ttlen = ttlen + &
+                & half * (coil(icoil)%L - coil(icoil)%Lo)**2 / coil(icoil)%Lo**2
         enddo
      elseif (case_length == 2) then ! exponential;
         do icoil = 1, Ncoils
@@ -87,56 +89,42 @@ subroutine length(ideriv)
      else
         FATAL( length, .true. , invalid case_length option )
      end if
-   
-     ttlen = half * ttlen / (Ncoils - Nfixgeo)
+
+     ttlen = ttlen / (Ncoils - Nfixgeo)
 
   endif
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+  !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   if ( ideriv >= 1 ) then
 
-     t1L = zero ; d1L = zero
+     t1L = zero ; d1L = zero ; norm = zero
 
-     if (case_length == 1) then ! quadratic;
-        idof = 0
-        do icoil = 1, Ncoils
-           ND = DoF(icoil)%ND
-           if ( coil(icoil)%Ic /= 0 ) then !if current is free;
-              idof = idof +1
-           endif
+     idof = 0
+     do icoil = 1, Ncoils
 
-           if ( coil(icoil)%Lc /= 0 ) then !if geometry is free;
-              call lenDeriv1( icoil, d1L(idof+1:idof+ND), ND )
-              t1L(idof+1:idof+ND) = d1L(idof+1:idof+ND) * (coil(1:Ncoils)%L - coil(1:Ncoils)%Lo) &
-                   &                                    / coil(1:Ncoils)%Lo**2
-              idof = idof + ND
-           endif
+        ND = DoF(icoil)%ND
 
-        enddo !end icoil;
-        FATAL( torflux , idof .ne. Ndof, counting error in packing )
+        if (case_length == 1) then
+           norm(icoil) = (coil(icoil)%L - coil(icoil)%Lo) / coil(icoil)%Lo**2  ! quadratic;
+        elseif (case_length == 2) then
+           norm(icoil) = exp(coil(icoil)%L) / exp(coil(icoil)%Lo)       ! exponential;
+        else
+           FATAL( length, .true. , invalid case_length option )
+        end if
 
-     elseif (case_length == 2) then ! exponential;
+        if ( coil(icoil)%Ic /= 0 ) then !if current is free;
+           idof = idof +1
+        endif
 
-        idof = 0
-        do icoil = 1, Ncoils
-           ND = DoF(icoil)%ND
-           if ( coil(icoil)%Ic /= 0 ) then !if current is free;
-              idof = idof +1
-           endif
+        if ( coil(icoil)%Lc /= 0 ) then !if geometry is free;
+           call lenDeriv1( icoil, d1L(idof+1:idof+ND), ND )
+           t1L(idof+1:idof+ND) = d1L(idof+1:idof+ND) * norm(icoil)
+           idof = idof + ND
+        endif
 
-           if ( coil(icoil)%Lc /= 0 ) then !if geometry is free;
-              call lenDeriv1( icoil, d1L(idof+1:idof+ND), ND )
-              t1L(idof+1:idof+ND) = d1L(idof+1:idof+ND) * exp(coil(1:Ncoils)%L) / exp(coil(1:Ncoils)%Lo)
-              idof = idof + ND
-           endif
-
-        enddo !end icoil;
-        FATAL( torflux , idof .ne. Ndof, counting error in packing )
-
-     else
-        FATAL( length, .true. , invalid case_length option )
-     end if
+     enddo !end icoil;
+     FATAL( torflux , idof .ne. Ndof, counting error in packing )
 
      t1L = t1L / (Ncoils - Nfixgeo)
 
@@ -197,16 +185,16 @@ subroutine LenDeriv1(icoil, derivs, ND)
   
   derivs = zero
   
-  do kseg = 0, coil(icoil)%NS-1
+  do kseg = 1, coil(icoil)%NS
      
      xt = coil(icoil)%xt(kseg) ; yt = coil(icoil)%yt(kseg) ; zt = coil(icoil)%zt(kseg)
      xa = coil(icoil)%xa(kseg) ; ya = coil(icoil)%ya(kseg) ; za = coil(icoil)%za(kseg)
 
      dl3 = sqrt(xt*xt + yt*yt + zt*zt)**3
 
-     dLx(1,kseg) = ( yt*yt*xa + zt*zt*xa - yt*ya*xt - zt*za*xt ) / dl3
-     dLy(1,kseg) = ( xt*xt*ya + zt*zt*ya - xt*xa*yt - zt*za*yt ) / dl3
-     dLz(1,kseg) = ( xt*xt*za + yt*yt*za - xt*xa*zt - yt*ya*zt ) / dl3
+     dLx(1,kseg) = ( yt*ya*xt + zt*za*xt - yt*yt*xa - zt*zt*xa ) / dl3 * coil(icoil)%dd(kseg)
+     dLy(1,kseg) = ( xt*xa*yt + zt*za*yt - xt*xt*ya - zt*zt*ya ) / dl3 * coil(icoil)%dd(kseg)
+     dLz(1,kseg) = ( xt*xa*zt + yt*ya*zt - xt*xt*za - yt*yt*za ) / dl3 * coil(icoil)%dd(kseg)
 
   enddo ! end kseg
 

@@ -118,13 +118,13 @@ end subroutine solvers
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine costfun(ideriv)
-  use globals, only: zero, sqrtmachprec, myid, ounit, astat, ierr, IsQuiet, &
-       Ncoils, deriv, Ndof, xdof, dofnorm, &
+  use globals, only: zero, one, sqrtmachprec, myid, ounit, astat, ierr, IsQuiet, &
+       Ncoils, deriv, Ndof, xdof, dofnorm, coil, &
        chi, t1E, t2E, &
        bnorm      , t1B, t2B, weight_bnorm,  &
        bharm      , t1H, t2H, weight_bharm,  &
        tflux      , t1F, t2F, weight_tflux, target_tflux, psi_avg, &
-       ttlen      , t1L, t2L, weight_ttlen, &
+       ttlen      , t1L, t2L, weight_ttlen, case_length, &
        specw      , t1S, t2S, weight_specw, &
        ccsep      , t1C, t2C, weight_ccsep
 
@@ -136,7 +136,8 @@ subroutine costfun(ideriv)
   REAL                :: start, finish
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  if (IsQuiet <= -1) then
+  if (IsQuiet <= -2) then
+
      call bnormal(0)
      if (weight_bharm > sqrtmachprec) call bmnharm(0)
 
@@ -147,24 +148,25 @@ subroutine costfun(ideriv)
      endif
 
      call torflux(0)
-!!$
-!!$   if (lc == 1) then
-!!$    call tlength(0)
-!!$   else
-!!$    call tlengthExp(0)
-!!$   endif
-!!$   
-!!$   call specwid(0)
-!!$   call coilsep(0)
+
+     if (case_length == 1 .and. sum(coil(1:Ncoils)%Lo) < sqrtmachprec) then
+        coil(1:Ncoils)%Lo = one
+        call length(0)
+        coil(1:Ncoils)%Lo = coil(1:Ncoils)%L
+        if(myid .eq. 0) write(ounit,'("solvers : reset target coil length to the current actual length. ")')
+     endif
+
+     call length(0)
+
   endif
-  
+
   chi = zero
-  
+
 
   if ( ideriv == 1 ) then
-   t1E = zero
+     t1E = zero
   elseif ( ideriv == 2 ) then
-   t1E = zero; t2E = zero
+     t1E = zero; t2E = zero
   endif
 
   !call unpacking(xdof)
@@ -172,27 +174,27 @@ subroutine costfun(ideriv)
   ! Bnormal surface intergration;
   if (weight_bnorm > sqrtmachprec) then
 
-   call bnormal(ideriv)
-   chi = chi + weight_bnorm * bnorm
-   if     ( ideriv == 1 ) then
-    t1E = t1E +  weight_bnorm * t1B
-   elseif ( ideriv == 2 ) then
-    t1E = t1E +  weight_bnorm * t1B
-    t2E = t2E +  weight_bnorm * t2B
-   endif
+     call bnormal(ideriv)
+     chi = chi + weight_bnorm * bnorm
+     if     ( ideriv == 1 ) then
+        t1E = t1E +  weight_bnorm * t1B
+     elseif ( ideriv == 2 ) then
+        t1E = t1E +  weight_bnorm * t1B
+        t2E = t2E +  weight_bnorm * t2B
+     endif
   endif
 
   ! individual Bn harmonics;
   if (weight_bharm > sqrtmachprec) then
 
-   call bmnharm(ideriv)
-   chi = chi + weight_bharm * bharm
-   if     ( ideriv == 1 ) then
-    t1E = t1E +  weight_bharm * t1H
-   elseif ( ideriv == 2 ) then
-    t1E = t1E +  weight_bharm * t1H
-    t2E = t2E +  weight_bharm * t2H
-   endif
+     call bmnharm(ideriv)
+     chi = chi + weight_bharm * bharm
+     if     ( ideriv == 1 ) then
+        t1E = t1E +  weight_bharm * t1H
+     elseif ( ideriv == 2 ) then
+        t1E = t1E +  weight_bharm * t1H
+        t2E = t2E +  weight_bharm * t2H
+     endif
   endif
 
   ! toroidal flux;
@@ -212,30 +214,27 @@ subroutine costfun(ideriv)
         t2E = t2E +  weight_tflux * t2F / target_tflux**2
      endif
   endif
-!!$
-!!$  ! if (myid == 0) write(ounit,'("calling torflux used",f10.5,"seconds.")') start-finish
-!!$
-!!$  if (weight_ttlen > sqrtmachprec) then
-!!$
-!!$   if ( lc == 1 ) then 
-!!$    call tlength(ideriv)
-!!$   elseif (lc == 2) then
-!!$    call tlengthExp(ideriv)
-!!$   else
-!!$    FATAL( dnergy, .true., Conflicts between lc and weight_ttlen )
-!!$   !call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
-!!$   !stop "COSTFUN: Conflicts between lc and weight_ttlen"
-!!$   endif
-!!$   
-!!$   chi = chi + weight_ttlen * ttlen
-!!$   if     ( ideriv == 1 ) then
-!!$    t1E = t1E +  weight_ttlen * t1L
-!!$   elseif ( ideriv == 2 ) then
-!!$    t1E = t1E +  weight_ttlen * t1L
-!!$    t2E = t2E +  weight_ttlen * t2L
-!!$   endif
-!!$
-!!$  endif
+
+  if (weight_ttlen > sqrtmachprec) then
+
+     if (case_length == 1 .and. sum(coil(1:Ncoils)%Lo) < sqrtmachprec) then
+        coil(1:Ncoils)%Lo = one
+        call length(0)
+        coil(1:Ncoils)%Lo = coil(1:Ncoils)%L
+        if(myid .eq. 0) write(ounit,'("solvers : reset target coil length to the current actual length. ")')
+     endif
+
+     call length(ideriv)
+
+     chi = chi + weight_ttlen * ttlen
+     if     ( ideriv == 1 ) then
+        t1E = t1E +  weight_ttlen * t1L
+     elseif ( ideriv == 2 ) then
+        t1E = t1E +  weight_ttlen * t1L
+        t2E = t2E +  weight_ttlen * t2L
+     endif
+
+  endif
 !!$
 !!$  ! if (myid == 0) write(ounit,'("calling tlength used",f10.5,"seconds.")') finish-start
 !!$
@@ -286,12 +285,12 @@ subroutine costfun(ideriv)
 !!$     enddo
 !!$  endif
 
-   if ( ideriv == 1 ) then                ! multiply t1E & t2E with normalized terms; 06/09/2017
-      t1E = t1E * dofnorm
+  if ( ideriv == 1 ) then                ! multiply t1E & t2E with normalized terms; 06/09/2017
+     t1E = t1E * dofnorm
 !!$   elseif ( ideriv == 2 ) then
 !!$      t1E = t1E * dofnorm
 !!$      t2E = t2E * hesnorm
-   endif
+  endif
 
   return
 end subroutine costfun
@@ -299,9 +298,9 @@ end subroutine costfun
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine normweight
-  use globals, only : zero, sqrtmachprec, ounit, myid, xdof, bnorm, bharm, tflux, ttlen, specw, ccsep, &
+  use globals, only : zero, one, sqrtmachprec, ounit, myid, xdof, bnorm, bharm, tflux, ttlen, specw, ccsep, &
        weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_specw, weight_ccsep, target_tflux, &
-       psi_avg, coil, Ncoils
+       psi_avg, coil, Ncoils, case_length
 
   implicit none  
   include "mpif.h"
@@ -313,18 +312,18 @@ subroutine normweight
 
   call unpacking(xdof)
 
-!-!-!-!-!-!-!-!-!-!-bnorm-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+  !-!-!-!-!-!-!-!-!-!-bnorm-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   if( weight_bnorm >= sqrtmachprec ) then
 
-   call bnormal(0)   
-   if (abs(bnorm) > sqrtmachprec) weight_bnorm = weight_bnorm / bnorm
-   if( myid == 0 ) write(ounit, 1000) "weight_bnorm", weight_bnorm
-   
+     call bnormal(0)   
+     if (abs(bnorm) > sqrtmachprec) weight_bnorm = weight_bnorm / bnorm
+     if( myid == 0 ) write(ounit, 1000) "weight_bnorm", weight_bnorm
+
   endif
 
-!-!-!-!-!-!-!-!-!-!-tflux-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  
+  !-!-!-!-!-!-!-!-!-!-tflux-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
   if( weight_tflux .ge. sqrtmachprec ) then
 
      call torflux(0)
@@ -346,25 +345,22 @@ subroutine normweight
 
   endif
 
-!!$!-!-!-!-!-!-!-!-!-!-ttlen-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-!!$
-!!$  if( weight_ttlen .ge. sqrtmachprec ) then
-!!$
-!!$   if( lc .eq. 1 ) then 
-!!$    call tlength(0)
-!!$   elseif(lc .eq. 2) then
-!!$    call tlengthExp(0)
-!!$   else
-!!$    FATAL( dnergy, .true., Conflicts between lc and weight_ttlen )
-!!$   !call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
-!!$   !stop "Weights_normalize: Conflicts between lc and weight_ttlen"
-!!$   endif
-!!$
-!!$   if (abs(ttlen) .gt. sqrtmachprec) weight_ttlen = weight_ttlen / ttlen
-!!$   if( myid .eq. 0 ) write(ounit, 1000) "weight_ttlen", weight_ttlen
-!!$   
-!!$  endif 
-!!$
+  !-!-!-!-!-!-!-!-!-!-ttlen-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+  if( weight_ttlen .ge. sqrtmachprec ) then
+
+     if (case_length == 1 .and. sum(coil(1:Ncoils)%Lo) < sqrtmachprec) then
+        coil(1:Ncoils)%Lo = one
+        call length(0)
+        coil(1:Ncoils)%Lo = coil(1:Ncoils)%L
+        if(myid .eq. 0) write(ounit,'("solvers : reset target coil length to the current actual length. ")')
+     endif
+
+     if (abs(ttlen) .gt. sqrtmachprec) weight_ttlen = weight_ttlen / ttlen
+     if( myid .eq. 0 ) write(ounit, 1000) "weight_ttlen", weight_ttlen
+
+  endif
+
 !!$!-!-!-!-!-!-!-!-!-!-eqarc-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 !!$
 !!$  if( weight_eqarc .ge. sqrtmachprec ) then
