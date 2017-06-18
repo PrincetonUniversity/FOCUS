@@ -46,6 +46,7 @@ subroutine bnormal( ideriv )
   !-------------------------------calculate Bn-------------------------------------------------- 
   if( ideriv >= 0 ) then
 
+ 
      do jzeta = 0, Nzeta - 1
         do iteta = 0, Nteta - 1
            if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;
@@ -62,7 +63,7 @@ subroutine bnormal( ideriv )
            !surf(1)%bn(iteta, jzeta) = lbn(iteta, jzeta) + surf(1)%pb(iteta, jzeta) !coilBn - targetBn;
         enddo ! end do iteta
      enddo ! end do jzeta
-  
+ 
      call MPI_REDUCE( lbn, bn        , NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
      call MPI_REDUCE( lbx, surf(1)%Bx, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
      call MPI_REDUCE( lby, surf(1)%By, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
@@ -153,6 +154,6 @@ subroutine bnormal( ideriv )
   !--------------------------------------------------------------------------------------------
 
   call MPI_barrier( MPI_COMM_WORLD, ierr )
-  
+
   return
 end subroutine bnormal

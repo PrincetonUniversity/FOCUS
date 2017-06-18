@@ -170,10 +170,9 @@ subroutine costfun(ideriv)
   endif
 
   !call unpacking(xdof)
-
   ! Bnormal surface intergration;
   if (weight_bnorm > sqrtmachprec) then
-
+ 
      call bnormal(ideriv)
      chi = chi + weight_bnorm * bnorm
      if     ( ideriv == 1 ) then
@@ -201,7 +200,7 @@ subroutine costfun(ideriv)
   if (weight_tflux > sqrtmachprec) then
      if ( abs(target_tflux) < sqrtmachprec ) then
         call torflux(0)
-        target_tflux = psi_avg
+        target_tflux = psi_avg        
         if(myid .eq. 0) write(ounit,'("solvers : Reset target toroidal flux to "ES12.5)') target_tflux
      endif
 
@@ -355,6 +354,8 @@ subroutine normweight
         coil(1:Ncoils)%Lo = coil(1:Ncoils)%L
         if(myid .eq. 0) write(ounit,'("solvers : reset target coil length to the current actual length. ")')
      endif
+
+     call length(0)
 
      if (abs(ttlen) .gt. sqrtmachprec) weight_ttlen = weight_ttlen / ttlen
      if( myid .eq. 0 ) write(ounit, 1000) "weight_ttlen", weight_ttlen

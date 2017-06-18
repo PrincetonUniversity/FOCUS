@@ -288,3 +288,8 @@ m4_define(HWRITERC,{
 m4_define(TMPOUT,{ !Temperarily output a message to help debugging
   if( myid .eq. 0) write(ounit,*) "### DEBUG : $1 = ", $1
 })m4_dnl
+
+
+m4_define(MPIOUT,{ !Temperarily output a message to help debugging
+  write(ounit,*) "*** DEBUG : myid = ", myid, " ; $1 = ", $1
+})m4_dnl

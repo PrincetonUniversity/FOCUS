@@ -113,7 +113,7 @@ subroutine torflux( ideriv )
   !--------------------------initialize and allocate arrays------------------------------------- 
 
   tflux = zero ; lsum = zero ; psi_avg = zero ; dflux = zero ; psi_diff = zero
-  lax = zero; lay = zero; laz = zero      !already allocted; reset to zero;
+  ldiff = zero ; lax = zero; lay = zero; laz = zero      !already allocted; reset to zero;
 
   do icoil = 1, Ncoils
      coil(icoil)%Ax = zero; coil(icoil)%Ay = zero; coil(icoil)%Az = zero
@@ -121,7 +121,7 @@ subroutine torflux( ideriv )
 
   !-------------------------------calculate Bn-------------------------------------------------- 
   if( ideriv >= 0 ) then
-
+     
      do jzeta = 0, Nzeta - 1
         if( myid.ne.modulo(jzeta,ncpu) ) cycle ! parallelization loop; 
          
@@ -144,12 +144,14 @@ subroutine torflux( ideriv )
         ldiff(jzeta) = lflux - target_tflux
         dflux = dflux + ldiff(jzeta)**2
      enddo ! end do jzeta
-
+     
      call MPI_REDUCE( dflux, tflux  , 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
      call MPI_REDUCE( lsum , psi_avg, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
      call MPI_REDUCE( ldiff, psi_diff, Nzeta, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
+               
+     RlBCAST( psi_avg, 1, 0)
      RlBCAST( psi_diff, Nzeta, 0)
-
+     
      psi_avg = psi_avg / Nzeta
      tflux = half * tflux / Nzeta 
   

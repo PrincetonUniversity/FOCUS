@@ -66,7 +66,7 @@ SUBROUTINE fdcheck( ideriv )
      call unpacking(tmp_xdof)
      call costfun(0)
      posvalue = chi
-
+     
      !finite difference;
      fd = (posvalue - negvalue) / small
      diff = abs(t1E(idof) - fd)
