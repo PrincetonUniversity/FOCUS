@@ -931,15 +931,6 @@ subroutine weightnormalize
 
   call discretecoil
 
-!-!-!-!-!-!-!-!-!-!-bnorm-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-  if( weight_bnorm .ge. sqrtmachprec ) then
-
-   call bnormal2(0)   
-   if (abs(bnorm) .gt. sqrtmachprec) weight_bnorm = weight_bnorm / bnorm
-   if( myid .eq. 0 ) write(ounit, 1000) "weight_bnorm", weight_bnorm
-   
-  endif
 
 !-!-!-!-!-!-!-!-!-!-tflux-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -968,6 +959,17 @@ subroutine weightnormalize
    if( myid .eq. 0 ) write(ounit, 1000) "weight_tflux", weight_tflux
    
   endif  
+
+
+!-!-!-!-!-!-!-!-!-!-bnorm-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+  if( weight_bnorm .ge. sqrtmachprec ) then
+
+   call bnormal2(0)   
+   if (abs(bnorm) .gt. sqrtmachprec) weight_bnorm = weight_bnorm / bnorm
+   if( myid .eq. 0 ) write(ounit, 1000) "weight_bnorm", weight_bnorm
+   
+  endif
 
 !-!-!-!-!-!-!-!-!-!-ttlen-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

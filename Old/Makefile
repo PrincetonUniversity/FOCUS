@@ -4,7 +4,7 @@
 
  ALLFILES= globals numrec initial surface rdknot rdcoils knotxx iccoil bfield bnormal torflux tlength equarcl \
      specwid coilsep nlinear fdcheck denergy descent congrad truncnt restart diagnos exinput identfy \
-     bnftran focus
+     bnftran hessian focus
 
 ############################################################################################################
 

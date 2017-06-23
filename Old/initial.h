@@ -264,6 +264,9 @@ subroutine initial
      FATAL( initial, Ntauout .le.   0, illegal )
      FATAL( initial, Nteta   .le.   0, illegal )
      FATAL( initial, Nzeta   .le.   0, illegal )
+     CG_Niter = Ntauout
+     NT_Niter = Ntauout
+     Ntauout = CG_Niter + NT_Niter
   case default
      FATAL( initial, .true., selected Loptimize is not supported )
   end select

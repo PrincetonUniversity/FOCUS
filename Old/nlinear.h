@@ -436,7 +436,7 @@ END SUBROUTINE ntchdms
 
 subroutine SVD
 
-  use kmodule, only: zero, machprec, myid, ncpu, ounit, lunit, ext,  Ndof, t2E
+  use kmodule, only: zero, machprec, myid, ncpu, ounit, lunit, ext,  Ndof, t2E, totalenergy
   use hdf5
   
   implicit none
@@ -444,8 +444,8 @@ subroutine SVD
 
   INTEGER           :: astat, ierr, n, info, lda, ldu, ldvt, lwork, isingular, &
                        i, j, c1, n1, c2, n2, ifail, neigen, ieigen, nstep
-  REAL              :: dummy(1,1), step, start, finish
-  REAL, allocatable :: a(:,:), ab(:,:), inver(:,:), b(:), s(:), u(:,:), vt(:,:), work(:), w(:)
+  REAL              :: dummy(1,1), step, start, finish, f0, xdof(1:Ndof), bdof(1:Ndof)
+  REAL, allocatable :: a(:,:), ab(:,:), inver(:,:), b(:), s(:), u(:,:), vt(:,:), work(:), w(:), diff(:,:)
 
 ! the following are used by the macros HWRITEXX below; do not alter/remove;
   INTEGER            :: hdfier, rank
@@ -469,6 +469,7 @@ subroutine SVD
   SALLOCATE(u, (1:ldu, 1:n), zero)
   SALLOCATE(vt,(1:ldvt,1:n), zero)
   SALLOCATE(inver,(1:lda, 1:n), zero)
+  
 
   !get the Hessian matrix
   start = MPI_WTIME()
@@ -485,7 +486,7 @@ subroutine SVD
   enddo
 
   !if( ncpu .gt. 1) stop "SVD only works on single node."
-  if(myid .ne. 0) return
+  if(myid == 0) then
 
   ab = a
   !write(ounit,'("SVD     : "10X" : "4ES23.15)') a(1,2), a(2,1), t2E(1,0,1,1), t2E(1,1,1,0)
@@ -511,40 +512,60 @@ subroutine SVD
 
   write(ounit, '("SVD     : "10X" : Rank = " I6" ; Max = "ES23.15" ; Min = "ES23.15)') isingular, s(1), s(n)
 
-!!$  a = ab
-!!$  ! calculate eigenvalues and eigenvectors
-!!$  lwork = -1; deallocate(work)
-!!$  call F08FAF('V','U', n, a, lda, w,dummy(1,1),lwork,info)
-!!$  lwork = max(3*n-1,nint(dummy(1,1)))
-!!$  Allocate (work(lwork))
-!!$  call F08FAF('V','U', n, a, lda, w,work,lwork,info)
-!!$
-!!$  write(ounit, '("Eigen   : "10X" : INFO = "I4" ; min(w)="es23.15" ; max(w)="es23.15" ;")') info, minval(w), maxval(w)
-!!$  ieigen = 0 ; neigen = 0
-!!$  do i = 1, n
-!!$     if (w(i) .ge. machprec) then 
-!!$        neigen = neigen + 1
-!!$     else
-!!$        ieigen = i
-!!$        write(ounit, '("Eigen   : "10X" : Find a negtivie eigenvalues at " I6)') ieigen
-!!$     endif        
-!!$  enddo
-!!$  write(ounit, '("Eigen   : "10X" : number of positive eigenvalues = "I6)') neigen
-!!$
-!!$  !test
-!!$  !b(1:n) = matmul(ab(1:n,1:n), a(1:n,ieigen)) - w(ieigen) * a(1:n,ieigen)
-!!$  !write(ounit, '("Eigen   : "10X" : The square summation of the vector is"ES23.15)') sum(b(1:n)**2)
-!!$
-!!$  write(ounit, '("Eigen   : "10X" : The 24-th eigenvalue is"ES23.15)') w(24)
-!!$  write(ounit, '("Eigen   : "10X" : The  N-th eigenvalue is"ES23.15)') w(n)
-!!$  step = 1.0E-4; nstep = 100  !evolution stepsize
-!!$  call coilevl( a(1:n,n), step, nstep )  !array for the direction; step for the stepsize  
+  a = ab
+  ! calculate eigenvalues and eigenvectors
+  lwork = -1; deallocate(work)
+  call F08FAF('V','U', n, a, lda, w,dummy(1,1),lwork,info)
+  lwork = max(3*n-1,nint(dummy(1,1)))
+  Allocate (work(lwork))
+  call F08FAF('V','U', n, a, lda, w,work,lwork,info)
+
+  write(ounit, '("Eigen   : "10X" : INFO = "I4" ; min(w)="es23.15" ; max(w)="es23.15" ;")') info, minval(w), maxval(w)
+  ieigen = 0 ; neigen = 0
+  do i = 1, n
+     if (w(i) .ge. machprec) then 
+        neigen = neigen + 1
+     else
+        ieigen = i
+        write(ounit, '("Eigen   : "10X" : Find a negtivie eigenvalues at " I6)') ieigen
+     endif        
+  enddo
+  write(ounit, '("Eigen   : "10X" : number of positive eigenvalues = "I6)') neigen
+
+  !test
+  !b(1:n) = matmul(ab(1:n,1:n), a(1:n,ieigen)) - w(ieigen) * a(1:n,ieigen)
+  !write(ounit, '("Eigen   : "10X" : The square summation of the vector is"ES23.15)') sum(b(1:n)**2)
+
+  !write(ounit, '("Eigen   : "10X" : The 24-th eigenvalue is"ES23.15)') w(24)
+  !write(ounit, '("Eigen   : "10X" : The  N-th eigenvalue is"ES23.15)') w(n)
+  
+  endif ! endif myid==0
+
+  call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+  RlBCAST( a(1:n, 1:n), n*n,  0)
+
+  step = 0.001 ; nstep = 500 ; f0 = totalenergy
+  SALLOCATE(diff,(1:2*nstep+1, 1:n), zero)
+  call pack(xdof)
+  bdof = xdof
+  do i = 1, n
+     if (myid ==0) write(ounit,'("myid == ", I3, " ; i="I)') myid, i
+     do j = -nstep, nstep
+        xdof = bdof + j*step*a(1:n, i)
+        call unpack(xdof) ; call costfun(0)
+        diff(j+nstep+1, i) = f0 - totalenergy
+     enddo
+  enddo
+   
+!!$  step = 0.01; nstep = 500  !evolution stepsize
+!!$  call coilevl( a(1:n,n/2), step, nstep )  !array for the direction; step for the stepsize  
 !!$  write(ounit, '("Eigen   : "10X" : Writing coils evolution finished")')
   
   ! call inverse procedure
   !call matrinv(ab(1:n,1:n), inver(1:n,1:n), n, ifail)
   !FATAL(SVD     , ifail .ne. 0, inversing error)
 
+  if (myid ==0) then
   call h5open_f( hdfier ) ! initialize Fortran interface;
   FATAL( SVD    , hdfier.ne.0, error calling h5open_f )
 
@@ -555,13 +576,15 @@ subroutine SVD
   HWRITEIV( 1          ,  rank     ,  isingular  )
   HWRITERA( n, n       ,  Hessian  ,  ab(1:n,1:n))
   HWRITERA( n, n       ,  inverse  ,  inver(1:n,1:n))
-  HWRITERA( n, n       ,  output   ,  a(1:n,1:n) )
+  HWRITERA( n, n       ,  eigenV   ,  a(1:n,1:n) )
   HWRITERA( n, n       ,  U        ,  u(1:n,1:n) )
   HWRITERA( n, n       ,  VT       ,  vt(1:n,1:n))
   HWRITERV( n          ,  S        ,  s(1:n     ))
-  if(info .gt. 0) then
-     HWRITERV( lwork      ,  Work     ,work(1:lwork))
-  endif
+  HWRITERV( n          ,  eigenW   ,  w(1:n     ))
+  HWRITERA( 2*nstep+1, n ,  diff   ,  diff(1:2*nstep+1, 1:n))
+!!$  if(info .gt. 0) then
+!!$     HWRITERV( lwork      ,  Work     ,work(1:lwork))
+!!$  endif
   
   call h5fclose_f( file_id, hdfier ) ! terminate access;
   FATAL( nlinear, hdfier.ne.0, error calling h5fclose_f )
@@ -569,14 +592,17 @@ subroutine SVD
   call h5close_f( hdfier ) ! close Fortran interface;
   FATAL( nlinear, hdfier.ne.0, error calling h5close_f )
 
+  endif
+
   DALLOCATE(a)
   DALLOCATE(ab)
   DALLOCATE(b)
   DALLOCATE(u)
   DALLOCATE(s)
   DALLOCATE(vt)
-  DALLOCATE(work)
+  !DALLOCATE(work)
 
+  DALLOCATE(diff)
 
   write(ounit, '("SVD     : "10X" : SVD finished and please check ", A, ".matrix.h5")') trim(ext)
 
@@ -631,17 +657,20 @@ subroutine coilevl( dir, stepsize, nstep )
   REAL    :: dir(1:Ndof), stepsize
 
   INTEGER :: istep, irestart
-  REAL    :: xdof(1:Ndof)
+  REAL    :: xdof(1:Ndof), bdof(1:Ndof)
 
   call wrtdir(dir)
   call pack(xdof(1:Ndof))
   irestart = 1; call restart(irestart)
+  itau = 0 ; bdof = xdof
   do istep = 0, nstep
-     xdof = xdof + stepsize*istep*dir
+     write(*,*) istep
+     xdof = bdof + stepsize*istep*dir
      call unpack(xdof(1:Ndof))
-     call costfun(1)
+     write(*,*) "before costfun"
+     call costfun(0)
+     write(*,*) "after costfun"
      if(allocated(evolution)) then
-        itau = istep
         evolution(itau,0) = itau
         evolution(itau,1) = totalenergy
         evolution(itau,2) = (sum(t1E**2))
@@ -654,6 +683,7 @@ subroutine coilevl( dir, stepsize, nstep )
         evolution(itau,9) = coil(1)%L
      endif
      call restart(irestart)
+     itau = itau + 1
   enddo
 
 end subroutine coilevl
