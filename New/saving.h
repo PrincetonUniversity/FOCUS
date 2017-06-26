@@ -162,36 +162,38 @@ subroutine saving
 
 
   !--------------------------write focus coil file-----------------------------------------
-  open( wunit, file=trim(coilfile), status="unknown", form="formatted")
-  write(wunit, *) "# Total number of coils"
-  write(wunit, '(8X,I6)') Ncoils
+  if( save_coils == 1 ) then
+     open( wunit, file=trim(coilfile), status="unknown", form="formatted")
+     write(wunit, *) "# Total number of coils"
+     write(wunit, '(8X,I6)') Ncoils
 
-  do icoil = 1, Ncoils
+     do icoil = 1, Ncoils
 
-     write(wunit, *) "#--------------------------------------------" 
-     write(wunit, *) "#coil_type     coil_name"
-     write(wunit,'(3X,I3,4X, A10)') coil(icoil)%itype, coil(icoil)%name
-     write(wunit, '(3(A6, A15, 8X))') " #Nseg", "current",  "Ifree", "Length", "Lfree", "target_length"
-     write(wunit,'(2X, I4, ES23.15, 3X, I3, ES23.15, 3X, I3, ES23.15)') &
-          coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo
-     select case (coil(icoil)%itype)
-     case (1)
-        NF = FouCoil(icoil)%NF ! shorthand;
-        write(wunit, *) "#NFcoil"
-        write(wunit, '(I3)') NF
-        write(wunit, *) "#Fourier harmonics for coils ( xc; xs; yc; ys; zc; zs) "
-        write(wunit, 1000) FouCoil(icoil)%xc(0:NF)
-        write(wunit, 1000) FouCoil(icoil)%xs(0:NF)
-        write(wunit, 1000) FouCoil(icoil)%yc(0:NF)
-        write(wunit, 1000) FouCoil(icoil)%ys(0:NF)
-        write(wunit, 1000) FouCoil(icoil)%zc(0:NF)
-        write(wunit, 1000) FouCoil(icoil)%zs(0:NF)
-     case default
-        FATAL(restart, .true., not supported coil types)
-     end select
-  enddo
-  close(wunit)
+        write(wunit, *) "#--------------------------------------------" 
+        write(wunit, *) "#coil_type     coil_name"
+        write(wunit,'(3X,I3,4X, A10)') coil(icoil)%itype, coil(icoil)%name
+        write(wunit, '(3(A6, A15, 8X))') " #Nseg", "current",  "Ifree", "Length", "Lfree", "target_length"
+        write(wunit,'(2X, I4, ES23.15, 3X, I3, ES23.15, 3X, I3, ES23.15)') &
+             coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo
+        select case (coil(icoil)%itype)
+        case (1)
+           NF = FouCoil(icoil)%NF ! shorthand;
+           write(wunit, *) "#NFcoil"
+           write(wunit, '(I3)') NF
+           write(wunit, *) "#Fourier harmonics for coils ( xc; xs; yc; ys; zc; zs) "
+           write(wunit, 1000) FouCoil(icoil)%xc(0:NF)
+           write(wunit, 1000) FouCoil(icoil)%xs(0:NF)
+           write(wunit, 1000) FouCoil(icoil)%yc(0:NF)
+           write(wunit, 1000) FouCoil(icoil)%ys(0:NF)
+           write(wunit, 1000) FouCoil(icoil)%zc(0:NF)
+           write(wunit, 1000) FouCoil(icoil)%zs(0:NF)
+        case default
+           FATAL(restart, .true., not supported coil types)
+        end select
+     enddo
+     close(wunit)
 1000 format(9999ES23.15)
+  endif
 
   !--------------------------write coils.ext file-----------------------------------------------  
 
@@ -217,7 +219,7 @@ subroutine saving
 1010 format(4es23.15,:,i9,"  ",a10)
 
   !--------------------------write .ext.fo.filaments.xxx file-----------------------------------
-  
+
   write(srestart,'(i6.6)') iout
 
   if( save_filaments == 1 ) then

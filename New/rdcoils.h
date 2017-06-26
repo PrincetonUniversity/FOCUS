@@ -25,7 +25,7 @@
 !latex  \item[2.] \inputvar{case\_init = 1} : Read coils data from {\bf .ext.coil.xxx} files. xxx can vary 
 !latex             from $001$ to $999$. Each file has such a format. \red{This is the most flexible way, and
 !latex             each coil can be different.}            
-!latex  \begin{tcolorbox}
+!latex  \begin{raw}
 !latex  #type of coils;   name
 !latex      1      "Module 1"
 !latex  #  Nseg       I   Ic  L   Lc  Lo
@@ -39,7 +39,7 @@
 !latex  0.00 0.00
 !latex  0.00 0.00
 !latex  0.00 0.30
-!latex  \end{tcolorbox}
+!latex  \end{raw}
 !latex  \ei
 !latex  \bi
 !latex  \item[3.] \inputvar{case\_init = -1} : Get coils data from a standard coils.ext file and 
@@ -53,12 +53,12 @@
 !latex   \item[2.] To avoid calling triangular functions every operations, it's a btter idea to allocate
 !latex   the public triangular arrays.
 !latex   \be
-!latex   cmt(iD, iN) = \cos(iN \ \frac{iD}{D_i} 2\pi); iD = 0, coil(icoil)\%D; \ iN = 0,  coil(icoil)\%N
+!latex   cmt(iD, iN) = \cos(iN \ \frac{iD}{D_i} 2\pi); iD = 0, coil(icoil)\%D; \ iN = 0,  coil(icoil)\%N \\
 !latex   smt(iD, iN) = \sin(iN \ \frac{iD}{D_i} 2\pi); iD = 0, coil(icoil)\%D; \ iN = 0,  coil(icoil)\%N
 !latex   \ee
 !latex   \item[3.] Using the concept of vectorization, we can also finish this just through matrix 
 !latex   operations. This is in \subroutine{fouriermatrix}.
-!latex   \begin{tcolorbox}
+!latex   \begin{raw}
 !latex   subroutine fouriermatrix(xc, xs, xx, NF, ND)
 !latex   nn(0:NF, 1:1) : matrix for N; iN
 !latex   tt(1:1, 0:ND) : matrix for angle; iD/ND*2pi
@@ -68,7 +68,7 @@
 !latex   xx(1:1, 0:ND) : returned disrecte points;
 !latex   
 !latex   xx = xc * cos(nt) + xs * sin(nt)
-!latex   \end{tcolorbox}
+!latex   \end{raw}
 !latex   \item[4.] Actually, in real tests, the new method is not so fast. And parallelizations are actually
 !latex   slowing the speed, both for the normal and vectorized method. 
 !latex   \ei

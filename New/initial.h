@@ -12,7 +12,7 @@
 !latex  \bi
 !latex  \item \inputvar{IsQuiet = -1} \\
 !latex    \textit{Information displayed to the user} \\
-!latex    \bi [topsep=0pt]
+!latex    \bi \vspace{-5mm}
 !latex    \item[-1:] more details \& update unconstrained cost functions;
 !latex    \item[-1:] more details;
 !latex    \item[0:]  essential;
@@ -21,7 +21,7 @@
 !latex 
 !latex  \item \inputvar{IsSymmetric = 0} \\
 !latex    \textit{Enforce stellarator symmetry or not} \\
-!latex    \bi [topsep=0pt]
+!latex    \bi \vspace{-5mm}
 !latex    \item[0:] no stellarator symmetry enforced;
 !latex    \item[1:] periodicty enforced;
 !latex    \item[2:] fully stellarator symmetry enforced. 
@@ -31,7 +31,7 @@
 !latex 
 !latex  \item \inputvar{case\_surface = 0} \\
 !latex    \textit{Specify the input plasma boundary format} \\
-!latex    \bi [topsep=0pt]
+!latex    \bi \vspace{-5mm}
 !latex    \item[0:] general VMEC-like format (Rbc, Rbs, Zbc, Zbs), seen in \link{rdsurf};
 !latex    \item[1:] read axis for knots, seen in \link{rdknot}; (not ready)
 !latex    %\item[2:] read wout file from VMEC outputs, seen in \link{rdvmec}.
@@ -53,7 +53,7 @@
 !latex 
 !latex  \item \inputvar{case\_init = 0} \\
 !latex    \textit{Specify the initializing method for coils, seen in \link{rdcoils}} \\
-!latex    \bi [topsep=0pt]
+!latex    \bi \vspace{-5mm}
 !latex    \item[-1:] read the standard \emph{coils.example} file;
 !latex    \item[0:] read FOCUS format data in \emph{example.focus};
 !latex    \item[1:] toroidally spaced \inputvar{Ncoils} circular coils with radius of \inputvar{init\_radius};
@@ -61,7 +61,7 @@
 !latex 
 !latex  \item \inputvar{case\_coils = 1} \\
 !latex    \textit{Specify representation used for the initial coils, seen in \link{rdcoils}} \\
-!latex    \bi [topsep=0pt]
+!latex    \bi \vspace{-5mm}
 !latex    \item[0:] using piecewise linear representation; (not ready)
 !latex    \item[1:] using Fourier series representation;
 !latex    \ei
@@ -77,14 +77,14 @@
 !latex 
 !latex  \item \inputvar{IsVaryCurrent = 1} \\
 !latex    \textit{Keep coil currents fixed or not, overriden by \emph{example.focus}} \\
-!latex    \bi [topsep=0pt]
+!latex    \bi \vspace{-5mm}
 !latex    \item[0:] coil currents are fixed;
 !latex    \item[1:] coil currents are free;
 !latex    \ei
 !latex 
 !latex  \item \inputvar{IsVaryGeometry = 1} \\
 !latex    \textit{Keep coil geometries fixed or not, overriden by \emph{example.focus}} \\
-!latex    \bi [topsep=0pt]
+!latex    \bi \vspace{-5mm}
 !latex    \item[0:] coil geometries are fixed;
 !latex    \item[1:] coil geometries are free;
 !latex    \ei
@@ -101,7 +101,7 @@
 !latex 
 !latex  \item \inputvar{IsNormalize = 1} \\
 !latex    \textit{Normalizing coil parameters or not} \\
-!latex    \bi [topsep=0pt]
+!latex    \bi \vspace{-5mm}
 !latex    \item[0:] keep raw data (normalized to 1.0);
 !latex    \item[1:] currents being normalized to averaged absolute current,
 !latex              coil geometry parameters being normalized to major radius;
@@ -109,21 +109,21 @@
 !latex 
 !latex  \item \inputvar{IsNormWeight = 1} \\
 !latex    \textit{each constraints normalized to initial value or not} \\
-!latex    \bi [topsep=0pt]
+!latex    \bi \vspace{-5mm}
 !latex    \item[0:] keep raw value for constraints;
 !latex    \item[1:] $w = w/f_0$ weights normalized to the initial values of each constraints;
 !latex    \ei
 !latex 
 !latex  \item \inputvar{case\_bnormal = 0} \\
 !latex    \textit{ Bn error normalized to $|B|$ or not} \\
-!latex    \bi [topsep=0pt]
+!latex    \bi \vspace{-5mm}
 !latex    \item[0:] keep raw Bn error;
 !latex    \item[1:] Bn residue normalized to local $|B|$;
 !latex    \ei
 !latex 
 !latex  \item \inputvar{case\_length = 0} \\
 !latex    \textit{ options for constructing coil length constraint, seen in \link{length}} \\
-!latex    \bi [topsep=0pt]
+!latex    \bi \vspace{-5mm}
 !latex    \item[1:] quadratic format, converging the target\_length;
 !latex    \item[2:] exponential format, as short as possible;
 !latex    \ei
@@ -158,7 +158,7 @@
 !latex 
 !latex  \item \inputvar{case\_optimize = 1} \\
 !latex    \textit{specify optimizing options.} \\
-!latex    \bi [topsep=0pt]
+!latex    \bi \vspace{-5mm}
 !latex    \item[-2:] check the 2nd derivatives; seen in\link{fdcheck}; (not ready)
 !latex    \item[-1:] check the 1st derivarives; seen in\link{fdcheck};
 !latex    \item[ 0:] no optimizations performed; 
@@ -182,35 +182,35 @@
 !latex    \textit{maximum iterations allowed for using Conjugate Gradient (CG); if zero, turned of; seen in \link{congrad}}
 !latex 
 !latex  \item \inputvar{CG\_xtol = 1.000D-08} \\
-!latex    \textit{the stopping criteria of finding minimum; if $|\dd{\chi^2} / \dd{\vect{X}}|< CG\_xtol$}, exit the optimization; seen in  \link{congrad}};
+!latex    \textit{the stopping criteria of finding minimum; if $|\dd{\chi^2} / \dd{\vect{X}}|< CG\_xtol$, exit the optimization; seen in  \link{congrad}};
 !latex 
-!latex  \item \inputvar{CG\_wolfe_c1 = 1.000D-04} \\
-!latex    \textit{c1 value in the strong wolfe condition for line search; usually $1.0\times 10^{-4}; $seen in  \link{congrad}};
+!latex  \item \inputvar{CG\_wolfe\_c1 = 1.000D-04} \\
+!latex    \textit{c1 value in the strong wolfe condition for line search; usually $1.0\times 10^{-4}$; seen in  \link{congrad}};
 !latex 
-!latex  \item \inputvar{CG\_wolfe_c2 = 0.1} \\
-!latex    \textit{c2 value in the strong wolfe condition for line search; $0<c1<c2<1$; $seen in  \link{congrad}};
+!latex  \item \inputvar{CG\_wolfe\_c2 = 0.1} \\
+!latex    \textit{c2 value in the strong wolfe condition for line search; if one CG step takes too long, try to increase c2, but remember $0<c1<c2<1$; seen in \link{congrad}};
 !latex 
 !latex  \par \begin{tikzpicture} \draw[dashed] (0,1) -- (10,1); \end{tikzpicture}
 !latex 
 !latex  \item \inputvar{case\_postproc = 1} \\
 !latex    \textit{specify post-processing options.} \\
-!latex    \bi [topsep=0pt]
+!latex    \bi \vspace{-5mm}
 !latex    \item[ 0:] no extra post-processing;
 !latex    \item[ 1:] evaluate the current coils; more details; (not ready)
 !latex    \item[ 2:] write mgrid file; (not ready)
 !latex    \ei
 !latex 
 !latex  \item \inputvar{save\_freq = 1} \\
-!latex    \textit{frequence for writing output files; should be positive; $seen in  \link{solvers}};
+!latex    \textit{frequence for writing output files; should be positive; seen in  \link{solvers}};
 !latex 
 !latex  \item \inputvar{save\_coils = 0} \\
-!latex    \textit{flag for indicating whether write \emph{example.coils}; $seen in  \link{saving}};
+!latex    \textit{flag for indicating whether write \emph{example.focus} and \emph{example.coils}; seen in  \link{saving}};
 !latex 
 !latex  \item \inputvar{save\_harmonics = 0} \\
-!latex    \textit{flag for indicating whether write \emph{example.harmonics}; $seen in  \link{saving}};
+!latex    \textit{flag for indicating whether write \emph{example.harmonics}; seen in  \link{saving}};
 !latex 
 !latex  \item \inputvar{save\_filaments = 0} \\
-!latex    \textit{flag for indicating whether write \emph{.example.filaments.xxxxxx}; $seen in  \link{saving}};
+!latex    \textit{flag for indicating whether write \emph{.example.filaments.xxxxxx}; seen in  \link{saving}};
 !latex  \ei
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!

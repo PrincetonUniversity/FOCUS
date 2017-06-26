@@ -28,7 +28,7 @@
 !latex  The variations in $L$ resulting from a variation $\delta \vect{x}_i$ is
 !latex  \be\label{eq:var_L}
 !latex  \ds \delta L(\vect{X})  = \int_0^{2\pi} \frac{ ({\vect{x}'_i} \cdot {\vect{x}''_i}){\vect{x}'_i}
-!latex  - ({\vect{x}'_i} \cdot {\vect{x}'_i}){\vect{x}''_i}}
+!latex  - ({\vect{x}'_i} \cdot {\vect{x}'_i}){\vect{x}''_i} }
 !latex  {({\vect{x}_i'} \cdot {\vect{x}_i'})^{3/2}} \cdot \delta \vect{x}_i \ \dd{t}. 
 !latex  \ee
 !latex  
@@ -48,6 +48,7 @@
 !latex  \ds \pdv{L}{X_i} = \int_0^{2\pi} \frac{\delta L}{\delta x} \pdv{x}{X_i} +
 !Latex                                   \frac{\delta L}{\delta y} \pdv{y}{X_i} +
 !Latex                                   \frac{\delta L}{\delta z} \pdv{z}{X_i}  \dd{t} \ .
+!latex  \ee
 !latex  Here, $X_i$ is an arbitrary variable $X_i \in \vect{X} = \{I^1, X_{c,0}^1, \dots \}$.
 !latex  So the first derivatives of coil length objective function are
 !latex  \begin{align}

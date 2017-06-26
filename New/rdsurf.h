@@ -21,7 +21,7 @@
 !latex \subsection{Variables}
 !latex The Fourier harmonics of the plasma boundary are  reqired in \verb+plasma.boundary+, 
 !latex and the format of this file is as follows: 
-!latex \begin{tcolorbox}
+!latex \begin{raw}
 !latex Nfou       ! integer: number of Fourier harmonics for the plasma boundary;
 !latex Nfp        ! integer: number of field periodicity;
 !latex NBnf       ! integer: number of Fourier harmonics for Bn;
@@ -36,12 +36,12 @@
 !latex Zbc(1:bmn) ! real   : cylindrical Z cosine harmonics;
 !latex Zbs(1:bmn) ! real   : cylindrical Z   sine harmonics;
 !latex Bns(1:nbf) ! real   : B normal sin harmonics;
-!latex Bnc(1:nbf) ! real   : B normal cos harmonics; \end{tcolorbox}
+!latex Bnc(1:nbf) ! real   : B normal cos harmonics; \end{raw}
 !latex Note that immediately after reading (and broadcasting) 
 !latex \verb+bin+, the field periodicity factor is included, i.e. \verb+bin = bin * Nfp+.
 !latex \subsection{Sample file}
 !latex Example of the plasma.boundary file:
-!latex  { \begin{tcolorbox}
+!latex  { \begin{raw}
 !latex #Nfou Nfp NBnf
 !latex 4 2 1
 !latex #plasma boundary
@@ -53,7 +53,7 @@
 !latex #Bn harmonics
 !latex # n m bnc bns
 !latex 0 0 0.0 0.0
-!latex \end{tcolorbox}
+!latex \end{raw}
 !latex }
 !latex \section{Knotran}
 !latex The input surface file for knotrans is descriped in \code{knotxx}.

@@ -15,6 +15,7 @@
  \usepackage{titlesec}
  \usepackage{amsmath}
  \usepackage{verbatim}
+ \usepackage{listings}
  \usepackage{enumitem}
  \usepackage{tikz}
  \usepackage{tcolorbox}
@@ -112,6 +113,15 @@
 \let\oldv\verbatim
 \let\oldendv\endverbatim
 
+\definecolor{verbgray}{gray}{0.9}
+
+\lstnewenvironment{raw}{%
+  \lstset{backgroundcolor=\color{verbgray},
+  frame=single,
+  framerule=0pt,
+  basicstyle=\ttfamily,
+  columns=fullflexible}}{}
+
 \def\verbatim{\par\setbox0\vbox\bgroup\oldv}
 \def\endverbatim{\oldendv\egroup\fboxsep0pt \noindent\colorbox[gray]{0.8}{\usebox0}\par}
 
@@ -141,7 +151,7 @@
  \newcommand{\be}{\begin{eqnarray}}
  \newcommand{\ee}{\end{eqnarray}}
 
- \newcommand{\bi}{\begin{itemize}}
+ \newcommand{\bi}{\begin{itemize}[noitemsep, topsep=0pt]}
  \newcommand{\ei}{\end{itemize}}
 
  \newcommand{\braket}[3]{\left\langle #1 \left| #2 \right| #3 \right\rangle}
@@ -182,7 +192,7 @@
 
  \newcommand{\code}[1]{\href{https://github.com/PrincetonUniversity/FOCUS/blob/master/New/#1}{\blu{#1}}}
 
- \newcommand{\briefly}[1]{\hrule \vspace{1mm} \noindent #1 \vspace{1mm} \hrule \vspace{1mm}}
+ \newcommand{\briefly}[1]{\vspace{1mm} \hrule \vspace{1mm} \noindent #1 \vspace{1mm} \hrule \vspace{1mm}}
  \newcommand{\calledby}[1]{{\noindent \footnotesize [called by: #1.]}}
  \newcommand{\calls}[1]{\hfill {\footnotesize [calls: #1.]}}
  \newcommand{\subroutine}[1]{{\bf \red{#1}}}

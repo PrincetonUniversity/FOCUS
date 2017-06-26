@@ -66,10 +66,10 @@ clean:
 ############################################################################################################
 
 $(PFILES): %.pdf: %.h head.tex end.tex
-	@ls --full-time $*.h | cut -c 32-50 > .$*.date
+	@ls -lT $*.h | cut -c 35-55 > .$*.date
 	@awk -v file=$* -v date=.$*.date 'BEGIN{getline cdate < date ; FS="!latex" ; print "\\input{head} \\code{"file"}"} \
 	{if(NF>1) print $$2} \
-	END{print "\\hrule \\vspace{1mm} \\footnotesize $*.h last modified on "cdate";" ; print "\\input{end}"}' $*.h > $*.tex
+	END{print "\\vspace{1mm} \\hrule \\vspace{1mm} \\footnotesize $*.h last modified on "cdate";" ; print "\\input{end}"}' $*.h > $*.tex
 	@echo $*.pdf
 	@pdflatex -shell-escape -interaction=nonstopmode -file-line-error $*.tex | grep ".*:[0-9]*:.*" ||:
 	@pdflatex -shell-escape -interaction=nonstopmode -file-line-error $*.tex | grep ".*:[0-9]*:.*" ||: 
