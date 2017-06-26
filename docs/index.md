@@ -7,14 +7,14 @@ For a given plamsa configuration (with or without target Bn distributions), FOCU
 
 # Table of contents
 
-- [Before running](#Before-running)
-  * [Get the source](#Get-the-source)
-  * [Compile](#Compile)
-- [Input files](#Input-files)
-- [Running](#Running)
-- [Output files](#Output-files)
-- [Plotting](#Plotting)
-- [Documentation](Documentation)
+- [Before running](#before-running)
+  * [Get the source](#get-the-source)
+  * [Compile](#compile)
+- [Input files](#input-files)
+- [Running](#running)
+- [Output files](#output-files)
+- [Plotting](#plotting)
+- [Documentation](#documentation)
 
 # Before running
 
@@ -121,7 +121,7 @@ The basic output file is written in hdf5 format.
   
   All the results can be seen in *focus_example.h5*. 
   Any hdf5 file reading functions can be used for reading the results. 
-  Recommending the class *hdf5* defined in [pyfocus](https://github.com/PrincetonUniversity/FOCUS/blob/master/pyfocus/coil.py) (details can seen in [Plotting](#Plotting)).
+  Recommending the class *hdf5* defined in [pyfocus](https://github.com/PrincetonUniversity/FOCUS/blob/master/pyfocus/coil.py) (details can seen in [Plotting](#plotting)).
   
 If you want to see other output files, please turn on the flags in the namelist.
 
