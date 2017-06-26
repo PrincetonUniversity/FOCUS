@@ -7,14 +7,14 @@ For a given plamsa configuration (with or without target Bn distributions), FOCU
 
 # Table of contents
 
-- [Before running](#Before-running)
-  * [Get the source](#Get-the-source)
-  * [Compile](#Compile)
-- [Input files](#Input-files)
-- [Running](#Running)
-- [Output files](#Output-files)
-- [Plotting](#Plotting)
-- [Documentation](Documentation)
+- [Before running](#before-running)
+  * [Get the source](#get-the-source)
+  * [Compile](#compile)
+- [Input files](#input-files)
+- [Running](#running)
+- [Output files](#output-files)
+- [Plotting](#plotting)
+- [Documentation](#documentation)
 
 # Before running
 
