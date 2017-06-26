@@ -19,7 +19,7 @@ subroutine bnormal( ideriv )
 !------------------------------------------------------------------------------------------------------   
   use globals, only: zero, half, one, pi2, sqrtmachprec, bsconstant, ncpu, myid, ounit, &
        coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, &
-       bnorm, t1B, t2B, bn, Ndof
+       bnorm, t1B, t2B, bn, Ndof, dB
 
   implicit none
   include "mpif.h"
@@ -29,7 +29,7 @@ subroutine bnormal( ideriv )
   INTEGER                               :: astat, ierr
   INTEGER                               :: icoil, iteta, jzeta, idof, ND, NumGrid
   REAL, dimension(0:Nteta-1, 0:Nzeta-1) :: lbx, lby, lbz, lbn         ! local Bx, By and Bz
-  REAL, dimension(1:Ndof, 0:Nteta-1, 0:Nzeta-1) :: ldB, dB
+  REAL, dimension(1:Ndof, 0:Nteta-1, 0:Nzeta-1) :: ldB
 
   !--------------------------initialize and allocate arrays------------------------------------- 
 
@@ -63,7 +63,8 @@ subroutine bnormal( ideriv )
            !surf(1)%bn(iteta, jzeta) = lbn(iteta, jzeta) + surf(1)%pb(iteta, jzeta) !coilBn - targetBn;
         enddo ! end do iteta
      enddo ! end do jzeta
- 
+     
+     call MPI_BARRIER( MPI_COMM_WORLD, ierr )
      call MPI_REDUCE( lbn, bn        , NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
      call MPI_REDUCE( lbx, surf(1)%Bx, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
      call MPI_REDUCE( lby, surf(1)%By, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
@@ -140,6 +141,7 @@ subroutine bnormal( ideriv )
         enddo
      enddo
 
+     call MPI_BARRIER( MPI_COMM_WORLD, ierr )
      call MPI_REDUCE(ldB, dB, Ndof*NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
      RlBCAST( dB, Ndof*NumGrid, 0 )
 

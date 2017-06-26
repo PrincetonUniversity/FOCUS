@@ -242,7 +242,7 @@ module globals
   REAL   , allocatable :: t1E(:), t2E(:,:), evolution(:,:), coilspace(:,:), deriv(:,:)
   ! Bn surface integration;
   REAL                 :: bnorm
-  REAL   , allocatable :: t1B(:), t2B(:,:), bn(:,:), dBx(:,:,:)
+  REAL   , allocatable :: t1B(:), t2B(:,:), bn(:,:), dB(:,:,:)
   ! Bn reasonant harmoics;
   INTEGER              :: NBmn
   INTEGER, allocatable :: Bmnin(:), Bmnim(:)

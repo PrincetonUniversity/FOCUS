@@ -37,6 +37,7 @@
 !latex 2017/05/20: Truncated Newton Method with Preconditioning CG method was implemented.\par
 !latex 2017/06/04: The first paper introducing FOCUS was submitted to Nuclear Fusion. \par
 !latex 2017/06/07: Hybrid Newton method was implemented. \par
+!latex 2017/06/23: NAG and OCULUS dependance have been removed in the new code.\par
  
 !latex \subsection{Structure of the code}
 !latex \begin{tikzpicture}[node distance=2cm, auto]

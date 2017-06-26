@@ -25,7 +25,7 @@
 !latex  \item[2.] \inputvar{case\_init = 1} : Read coils data from {\bf .ext.coil.xxx} files. xxx can vary 
 !latex             from $001$ to $999$. Each file has such a format. \red{This is the most flexible way, and
 !latex             each coil can be different.}            
-!latex  \begin{verbatim}
+!latex  \begin{tcolorbox}
 !latex  #type of coils;   name
 !latex      1      "Module 1"
 !latex  #  Nseg       I   Ic  L   Lc  Lo
@@ -39,7 +39,7 @@
 !latex  0.00 0.00
 !latex  0.00 0.00
 !latex  0.00 0.30
-!latex  \end{verbatim}
+!latex  \end{tcolorbox}
 !latex  \ei
 !latex  \bi
 !latex  \item[3.] \inputvar{case\_init = -1} : Get coils data from a standard coils.ext file and 
@@ -58,7 +58,7 @@
 !latex   \ee
 !latex   \item[3.] Using the concept of vectorization, we can also finish this just through matrix 
 !latex   operations. This is in \subroutine{fouriermatrix}.
-!latex   \begin{verbatim}
+!latex   \begin{tcolorbox}
 !latex   subroutine fouriermatrix(xc, xs, xx, NF, ND)
 !latex   nn(0:NF, 1:1) : matrix for N; iN
 !latex   tt(1:1, 0:ND) : matrix for angle; iD/ND*2pi
@@ -68,7 +68,7 @@
 !latex   xx(1:1, 0:ND) : returned disrecte points;
 !latex   
 !latex   xx = xc * cos(nt) + xs * sin(nt)
-!latex   \end{verbatim}
+!latex   \end{tcolorbox}
 !latex   \item[4.] Actually, in real tests, the new method is not so fast. And parallelizations are actually
 !latex   slowing the speed, both for the normal and vectorized method. 
 !latex   \ei
@@ -99,8 +99,8 @@ subroutine rdcoils
   case(-1 )
      if (myid == 0) then
         write(ounit,'("rdcoils : reading coils data from "A)') inpcoils  ! different from coilsfile
-        call readcoils(trim(inpcoils), maxnseg)
-        write(ounit,'("rdcoils : Read ",i6," coils in coils.ext;")') Ncoils
+        call readcoils(inpcoils, maxnseg)
+        write(ounit,'("rdcoils : Read ",i6," coils in "A" ;")') Ncoils, trim(inpcoils)
      endif
 
      IlBCAST( Ncoils   ,      1, 0 )
@@ -615,16 +615,19 @@ SUBROUTINE readcoils(filename, maxnseg)
   INTEGER, parameter         :: mcoil = 256, mseg = 1024 ! Largest coils and segments number
   INTEGER                    :: icoil, cunit, istat, astat, lstat, ierr, maxnseg, seg(1:mseg)
   REAL, dimension(mseg,mcoil):: x, y, z, I
-  CHARACTER*40               :: filename
+  CHARACTER*100              :: filename
   CHARACTER*200              :: line
   REAL                       :: tmp
   CHARACTER (LEN=20), dimension(mcoil) :: name
 
   cunit = 99; I = 1.0; Ncoils= 1; maxnseg = 0; seg = 0;
 
-  open(cunit,FILE=filename,STATUS='old',IOSTAT=istat)
-  if ( istat .ne. 0 ) stop "Reading coils error!"
-
+  open(cunit,FILE=trim(filename),STATUS='old',IOSTAT=istat)
+  if ( istat .ne. 0 ) then
+     write(ounit,'("rdcoils : Reading coils data error in "A)') trim(filename)
+     call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+  endif
+     
   ! read coils and segments data
   read(cunit,*)
   read(cunit,*)

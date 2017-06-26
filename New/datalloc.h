@@ -117,6 +117,7 @@ subroutine AllocData(itype)
      ! Bnorm related;
      if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec) then
         SALLOCATE( t1B, (1:Ndof), zero )                       !total dB/dx;
+        SALLOCATE( dB , (1:Ndof, 0:Nteta-1, 0:Nzeta-1), zero ) !distribution of dB/dx;
      endif
 
      ! Bharm related;

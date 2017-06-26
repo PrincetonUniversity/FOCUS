@@ -20,7 +20,8 @@
 !latex \red{counterclockwise} from the top view. The positive surface normal should be pointed outwards.
 !latex \subsection{Variables}
 !latex The Fourier harmonics of the plasma boundary are  reqired in \verb+plasma.boundary+, 
-!latex and the format of this file is as follows: \begin{verbatim}
+!latex and the format of this file is as follows: 
+!latex \begin{tcolorbox}
 !latex Nfou       ! integer: number of Fourier harmonics for the plasma boundary;
 !latex Nfp        ! integer: number of field periodicity;
 !latex NBnf       ! integer: number of Fourier harmonics for Bn;
@@ -35,12 +36,12 @@
 !latex Zbc(1:bmn) ! real   : cylindrical Z cosine harmonics;
 !latex Zbs(1:bmn) ! real   : cylindrical Z   sine harmonics;
 !latex Bns(1:nbf) ! real   : B normal sin harmonics;
-!latex Bnc(1:nbf) ! real   : B normal cos harmonics; \end{verbatim}
+!latex Bnc(1:nbf) ! real   : B normal cos harmonics; \end{tcolorbox}
 !latex Note that immediately after reading (and broadcasting) 
 !latex \verb+bin+, the field periodicity factor is included, i.e. \verb+bin = bin * Nfp+.
 !latex \subsection{Sample file}
 !latex Example of the plasma.boundary file:
-!latex  { \begin{verbatim}
+!latex  { \begin{tcolorbox}
 !latex #Nfou Nfp NBnf
 !latex 4 2 1
 !latex #plasma boundary
@@ -52,12 +53,12 @@
 !latex #Bn harmonics
 !latex # n m bnc bns
 !latex 0 0 0.0 0.0
-!latex \end{verbatim}
+!latex \end{tcolorbox}
 !latex }
 !latex \section{Knotran}
-!latex The input surface file for knotrans is descriped in \subroutine{knotxx}.
+!latex The input surface file for knotrans is descriped in \code{knotxx}.
 !latex \section{Tokamak}
-!latex This part is reserved for later accomplishment of the interface for tokamaks.
+!latex This part is reserved for later development of the interface for tokamaks.
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

@@ -55,8 +55,10 @@ subroutine descent
   call output(t0)
 
   do itau = 1, DF_maxiter
-
+     
      tau = DF_tausta + itau * (DF_tauend - DF_tausta) / DF_maxiter
+
+     call mpi_barrier(MPI_COMM_WORLD, ierr)
      call ode ( denergy, Ndof, lxdof, t0, tau, relerr, abserr, iflag, work, iwork )
 
      if ( iflag /= 2 .and. myid == 0) then
@@ -80,8 +82,6 @@ subroutine descent
      call output(t0)
 
   end do  
-
-  call mpi_barrier(MPI_COMM_WORLD, ierr)
 
   DALLOCATE( work )
 

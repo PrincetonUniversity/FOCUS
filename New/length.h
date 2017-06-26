@@ -33,20 +33,26 @@
 !latex  \ee
 !latex  
 !latex  \section{First derivatives}
-!latex  From \Eqn{var_L}, we can calculated the first derivatives of coil length with respect to the coil 
-!latex  geometries,
+!latex  From \Eqn{var_L}, we can calculated the functional derivatives of coil length with respect to the 
+!latex  coil geometries,
 !latex  \begin{align}
-!latex  \ds \pdv{L}{x} & = \int_0^{2\pi} \frac{y'y''x' + z'z''x'- y'y'x'' - z'z'x''}
-!latex                                   {(x'x' + y'y' + z'z')^{3/2}} \dd{t} \ ; \\
-!latex  \ds \pdv{L}{y} & = \int_0^{2\pi} \frac{x'x''y' + z'z''y' - x'x'y'' - z'z'y'' }
-!latex                                   {(x'x' + y'y' + z'z')^{3/2}} \dd{t} \ ; \\
-!latex  \ds \pdv{L}{z} & = \int_0^{2\pi} \frac{x'x''z' + y'y''z' - x'x'z'' - y'y'z''}
-!latex                                   {(x'x' + y'y' + z'z')^{3/2}} \dd{t} \ .
+!latex  \ds \frac{\delta L}{\delta x} & =  \frac{y'y''x' + z'z''x' - y'y'x'' - z'z'x''}
+!laetx                                          {(x'x' + y'y' + z'z')^{3/2}} \ ; \\
+!latex  \ds \frac{\delta L}{\delta x} & =  \frac{x'x''y' + z'z''y' - x'x'y'' - z'z'y''}
+!latex                                          {(x'x' + y'y' + z'z')^{3/2}} \ ; \\
+!latex  \ds \frac{\delta L}{\delta x} & =  \frac{x'x''z' + y'y''z' - x'x'z'' - y'y'z''}
+!latex                                          {(x'x' + y'y' + z'z')^{3/2}} \ .
 !latex  \end{align}
+!latex  Then the derivatives of coil length with respect to coil parameters are
+!latex  \be
+!latex  \ds \pdv{L}{X_i} = \int_0^{2\pi} \frac{\delta L}{\delta x} \pdv{x}{X_i} +
+!Latex                                   \frac{\delta L}{\delta y} \pdv{y}{X_i} +
+!Latex                                   \frac{\delta L}{\delta z} \pdv{z}{X_i}  \dd{t} \ .
+!latex  Here, $X_i$ is an arbitrary variable $X_i \in \vect{X} = \{I^1, X_{c,0}^1, \dots \}$.
 !latex  So the first derivatives of coil length objective function are
 !latex  \begin{align}
-!latex  \ds \pdv{f_L}{x} & = \frac{1}{N_C} \frac{e^{L_i}}{e^{L_{i,o}}} \pdv{L}{x} \  ; \\
-!latex  \ds \pdv{f_L}{x} & = \frac{1}{N_C} \frac{(Li - L{i,o})}{L_{i,o}^2} \  \pdv{L}{x} \ .
+!latex  \ds \pdv{f_L}{X_i} & = \frac{1}{N_C} \frac{e^{L_i}}{e^{L_{i,o}}} \pdv{L}{X_i} \  ; \\
+!latex  \ds \pdv{f_L}{X_i} & = \frac{1}{N_C} \frac{(Li - L{i,o})}{L_{i,o}^2} \  \pdv{L}{X_i} \ .
 !latex  \end{align}
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!

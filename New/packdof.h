@@ -32,31 +32,33 @@ SUBROUTINE packdof(lxdof)
   REAL    :: lxdof(1:Ndof)
   INTEGER :: idof, icoil, ND, astat, ierr
   !--------------------------------------------------------------------------------------------- 
-     ! reset xdof;
-     lxdof = zero
 
-     call packcoil !pack coil parameters into DoF;
-     ! packing;
-     idof = 0
-     do icoil = 1, Ncoils
+  ! reset xdof;
+  lxdof = zero
 
-        if(coil(icoil)%Ic /= 0) then 
-           lxdof(idof+1) = coil(icoil)%I / Inorm
-           idof = idof + 1
-        endif
+  call packcoil !pack coil parameters into DoF;
+  ! packing;
+  idof = 0
+  do icoil = 1, Ncoils
 
-        ND = DoF(icoil)%ND
-        if(coil(icoil)%Lc /= 0) then
-           lxdof(idof+1:idof+ND) = DoF(icoil)%xdof(1:ND) / Gnorm
-           idof = idof + ND
-        endif
+     if(coil(icoil)%Ic /= 0) then 
+        lxdof(idof+1) = coil(icoil)%I / Inorm
+        idof = idof + 1
+     endif
 
-     enddo !end do icoil;
+     ND = DoF(icoil)%ND
+     if(coil(icoil)%Lc /= 0) then
+        lxdof(idof+1:idof+ND) = DoF(icoil)%xdof(1:ND) / Gnorm
+        idof = idof + ND
+     endif
+
+  enddo !end do icoil;
 
   !--------------------------------------------------------------------------------------------- 
   FATAL( packdof , idof .ne. Ndof, counting error in packing )
 
   !write(ounit, *) "pack ", lxdof(1)
+  call mpi_barrier(MPI_COMM_WORLD, ierr)
 
   return
 END SUBROUTINE packdof
@@ -69,7 +71,7 @@ SUBROUTINE unpacking(lxdof)
   ! DATE: 2017/04/03
   !--------------------------------------------------------------------------------------------- 
   use globals, only : zero, myid, ounit, &
-                    & case_coils, Ncoils, coil, DoF, Ndof, Inorm, Gnorm
+       & case_coils, Ncoils, coil, DoF, Ndof, Inorm, Gnorm
   implicit none
   include "mpif.h"
 
@@ -99,6 +101,8 @@ SUBROUTINE unpacking(lxdof)
 
   call unpackcoil !unpack DoF to coil parameters;
   call discoil(ifirst)
+
+  call mpi_barrier(MPI_COMM_WORLD, ierr)
 
   return
 END SUBROUTINE unpacking

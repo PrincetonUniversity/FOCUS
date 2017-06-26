@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 '''
 coilpy is a python library for plasma physics and coil designing.
-Maintained by CaoXiang ZHU (czhu@pppl.gov)
+Mainly for FOCUS related data virtualization.
+Written by CaoXiang ZHU (czhu@pppl.gov)
 
 Table of contents:
 1. read plasma boundary (FOCUS format);
@@ -12,6 +13,12 @@ Table of contents:
 6. tansform spline2xys format data into a coils file;
 7. plot the coils;
 8. produce an array of color rgb float triplets;
+9. expand single coil filament to a rectangle coi;
+10. plot plasma surface from VMEC cdf format output file;
+11. poincare plotting from OCULUS data;
+12. plot coils from FOCUS hdf5 output data;
+13. animating the coils evolution from FOCUS hdf5 output data;
+14. plot cost function converging curves from FOCUS hdf5 output data;
 '''
 #QT_API imcompactible
 import sip
@@ -27,12 +34,82 @@ from PyQt4.QtCore import pyqtSlot as Slot
 
 import numpy as np
 import matplotlib.pyplot as plt
+import xarray as ncdata
 from mpl_toolkits.mplot3d import Axes3D
 import os.path
 from matplotlib import cm
 import h5py
 from mayavi import mlab
 import colorsys
+
+#------------------------------------------
+class coil(object):
+    '''
+    coil class
+    '''
+    name = 'default name'
+    I = 0.0
+    def __init__(self):
+        self.x = []
+        self.y = []
+        self.z = []
+
+#------------------------------------------
+class hdf5(object):
+    '''
+    load hdf5 results
+    '''
+    def __init__(self, hdf5file):
+        self.file = hdf5file
+        try:
+            hdf5 = h5py.File(self.file, 'r')
+            self.names = hdf5.keys()
+            for name in self.names:
+                setattr(self, name, hdf5[name].value)
+        except IOError:
+            print "Error: this is not a valid hdf5 file."
+        else:
+            print "Read ", len(self.names), " objects in", hdf5
+            hdf5.close()
+    def __del__(self):
+        class_name = self.__class__.__name__
+        #print class_name, "destroyed" 
+
+#------------------------------------------
+class fourier(object):
+    '''
+    fourier series class
+    x = a0 + a1*cos(t) + a2*cos(2t) + ...+ b1*sin(t) + b2*sin(2t) + ..
+    '''
+    def __init__(self, FouData):
+        assert len(FouData) > 0
+        self.ndim = (len(FouData)+1)/2 - 1  #number of Fourier coefficients; 0,1,2,...,Ndim
+        self.cos = np.zeros(self.ndim + 1)
+        self.sin = np.zeros(self.ndim + 1)
+
+        if len(FouData) == 2*self.ndim + 1: #omit b0
+            self.cos[0:self.ndim+1] = FouData[0:self.ndim+1]
+            self.sin[1:self.ndim+1] = FouData[self.ndim+1:2*self.ndim + 1]
+        elif len(FouData) == 2*self.ndim + 2: #keep b0
+            self.cos[0:self.ndim+1] = FouData[0:self.ndim+1]
+            self.sin[0:self.ndim+1] = FouData[self.ndim+1:2*self.ndim + 2]
+        else:
+            print "Error: dimensions not matched. ", len(FouData)
+
+    def disc(self, nseg=100): #discretize the data
+        assert self.ndim > 0
+        assert nseg > 0
+        m = np.arange(self.ndim + 1)
+        ang = np.linspace(0, 2*np.pi, nseg)
+        x = np.zeros(nseg)
+        for ii in range(nseg):
+            x[ii] = sum(self.cos * np.cos( m * ang[ii] ) + self.sin * np.sin( m * ang[ii] ))
+        return x
+
+    def __del__(self):
+        class_name = self.__class__.__name__
+        #print class_name, "destroyed" 
+
 
 #------------------------------------------  1  ----------------------------------------------------
 def read_plasma_boundary(filename):
@@ -71,18 +148,19 @@ def read_plasma_boundary(filename):
     return plas_data, bn_data
         
 #------------------------------------------  2  ----------------------------------------------------
-def plot_plasma_boundary(filename,plotype='cross-section',zeta=0.0, zeta1=2*np.pi,
-                         c='r',style='-',width=2.0,lbl='plasma boundary',npol=128,ntor=128):
+def plot_plasma_boundary(filename,plottype='cross-section',zeta=0.0, zeta1=2*np.pi,
+                         c=(1,0,0),style='-',width=2.0,lbl='Target boundary',npol=128,ntor=128):
     '''
     plot the plasma boundary;
-    plotype:
+    plottype:
             cross-section -> 2D plot at zeta plane
             surface       -> 3D surface using matplotlib
+            surface3d     -> 3D surface using mayavi
             bnormal       -> 3D surface plot with Bn scalar using mayavi
     '''
     plas, bfou = read_plasma_boundary(filename)
     maxR, minR, maxZ, minZ = 0.0, 999.0, 0.0, 999.0
-    if plotype=='cross-section' : #plot cross-section
+    if plottype=='cross-section' : #plot cross-section
         npoints = 360 #number of points
         theta = np.linspace(0,2* np.pi, npoints)
         r = np.zeros(npoints)
@@ -99,9 +177,14 @@ def plot_plasma_boundary(filename,plotype='cross-section',zeta=0.0, zeta1=2*np.p
             z[ipoint] = np.sum(tmpz) #z value at ipont
             maxZ = max(np.sum(tmpz), maxZ)
             minZ = min(np.sum(tmpz), minZ)
-        plt.plot(r, z, color=c,linewidth=width,linestyle=style,label=lbl)
+        if plt.get_fignums():
+            fig = plt.gcf()
+            ax = plt.gca()
+        else :
+            fig, ax = plt.subplots()
+        ax.plot(r, z, color=c,linewidth=width,linestyle=style,label=lbl)
         return maxR, minR, maxZ, minZ
-    elif plotype == 'surface' : #plot surface
+    elif plottype == 'surface' : #plot surface
         if plt.get_fignums():
             fig = plt.gcf()
         else :
@@ -131,7 +214,7 @@ def plot_plasma_boundary(filename,plotype='cross-section',zeta=0.0, zeta1=2*np.p
         #p3 = [x[npol/2  ,ntor/2+1], y[npol/2  ,ntor/2+1], z[npol/2  ,ntor/2+1]]
         #p4 = [x[npol/2+1,ntor/2+1], y[npol/2+1,ntor/2+1], z[npol/2+1,ntor/2+1]]
         return maxR, minR, maxZ, minZ
-    elif plotype == 'surface3d' :
+    elif plottype == 'surface3d' :
         x=np.zeros((npol+1,ntor+1))
         y=np.zeros((npol+1,ntor+1))
         z=np.zeros((npol+1,ntor+1))
@@ -152,9 +235,14 @@ def plot_plasma_boundary(filename,plotype='cross-section',zeta=0.0, zeta1=2*np.p
                 y[j,i] = np.sum(tmpr) * np.sin(ator)
                 z[j,i] = np.sum(tmpz)                
         #fig = mlab.figure(bgcolor=(1,1,1),fgcolor=(0,0,0),size=(600,600))
-        mlab.mesh(x,y,z,color=(1, 0, 0))
+        surf = mlab.mesh(x,y,z,color=c, representation = 'surface')
+        # Change the visualization parameters.
+        #surf.actor.property.interpolation = 'phong'
+        #surf.actor.property.specular = 01.0
+        #surf.actor.property.specular_power = 100
+        #surf.scene.light_manager.light_mode = "vtk"
         return maxR, minR, maxZ, minZ
-    elif plotype == 'bnormal' :
+    elif plottype == 'bnormal' :
         x=np.zeros((npol+1,ntor+1))
         y=np.zeros((npol+1,ntor+1))
         z=np.zeros((npol+1,ntor+1))
@@ -179,7 +267,7 @@ def plot_plasma_boundary(filename,plotype='cross-section',zeta=0.0, zeta1=2*np.p
         return targetBn
     else :
         raise NameError("No such option!")
-        print "plotype = cross-section/surface/bnormal"
+        print "plottype = cross-section/surface/surface3d/bnormal"
         
 
 #------------------------------------------  3  ----------------------------------------------------
@@ -252,22 +340,14 @@ def sequence_h5_data(prefix, variable, result, istart, istop, istep, itype):
             rslt.append([tau,bnorm])  #append[tau, bnorm]; will be changed later
     return rslt
 #------------------------------------------  4  ----------------------------------------------------
-class coil(object):
-    '''
-    coil class
-    '''
-    name = 'default name'
-    I = 0.0
-    def __init__(self):
-        self.x = []
-        self.y = []
-        self.z = []
     
-def readcoils(filename):
+def read_coils(filename):
     '''
     filename : the path for the coils file
     return an array of coil class;
     '''
+    if not os.path.exists(filename) :
+        raise IOError ("File not existed. Please check again!")
 
     ncoil = 0
     with open(filename,'r') as coilfile: #get each coil segments number
@@ -310,6 +390,7 @@ def readcoils(filename):
         if icoil != ncoil:
             raise CountingError("The number of coils doesn't match!")
         return(coildata)
+
 #------------------------------------------  5  ----------------------------------------------------
 def xyz2coils(xyzname,coilsname):
     '''
@@ -371,32 +452,44 @@ def plotBn(h5name, bntype='current'):
         mesh = mlab.mesh(x,y,z,scalars=currentBn, colormap='RdBu')
 
 #------------------------------------------  7  ----------------------------------------------------
-def plot_coils(filename, color=(0,0,1), Ncolor=1, width=2.0):
+def plot_coils(coil_data, plottype='filament', color=(0,0,1), Ncolor=1, width=2.0, recW=0.1, recH=0.1):
     '''
     This function plots out 3D coils in filename(coils file).
     It calls readcoil() to read coil and plot the data in mayave.
     INPUT :
             filename : coils file
-            coloe    : the single color tripet float; default blue;
+            plottype : plot type (filament or real)
+            color    : the single color tripet float; default blue;
             Ncolor   : number of colors used for coils (usually equals the number of coil categories)
     OUTPUT: 
             mlab figures (in current figure, otherwise in new figure)
     '''
-    if not os.path.exists(filename) :
-        raise IOError ("File not existed. Please check again!")
     
-    coil_data = readcoils(filename)
-    
-    if Ncolor > 1:
-        c = color_array(Ncolor)
-        ic = 0
-        for icoil in coil_data:
-            mlab.plot3d(icoil.x, icoil.y, icoil.z, color = c[ic%Ncolor], line_width=width)
-            ic += 1
-    else :
-        for icoil in coil_data:
-            mlab.plot3d(icoil.x, icoil.y, icoil.z, color = color, line_width=width)
-    return coil_data
+    if plottype == 'filament' :
+        if Ncolor > 1:
+            c = color_array(Ncolor)
+            ic = 0
+            for icoil in coil_data:
+                mlab.plot3d(icoil.x, icoil.y, icoil.z, color = c[ic%Ncolor], line_width=width)
+                ic += 1
+        else :
+            for icoil in coil_data:
+                mlab.plot3d(icoil.x, icoil.y, icoil.z, color = color, line_width=width)
+    elif plottype == 'real' :
+        if Ncolor > 1:
+            c = color_array(Ncolor)
+            ic = 0
+            for icoil in coil_data:
+                xsurf, ysurf, zsurf = expand(icoil.x, icoil.y, icoil.z, recW, recH)
+                mlab.mesh(xsurf, ysurf, zsurf, color=c[ic%Ncolor])
+                ic += 1
+        else :
+            for icoil in coil_data:
+                xsurf, ysurf, zsurf = expand(icoil.x, icoil.y, icoil.z, recW, recH)
+                mlab.mesh(xsurf, ysurf, zsurf, color=color)
+                #for ii in range(4):
+                   # mlab.plot3d(xsurf[ii,:], ysurf[ii,:], zsurf[ii,:], color=(0,0,0), line_width=0.5)
+    return
 
 #------------------------------------------  8  ----------------------------------------------------
 def color_array( N ):
@@ -408,3 +501,295 @@ def color_array( N ):
         raise ValueError("Please provide a positive integer!")
     return [colorsys.hsv_to_rgb((i+1.0)/3.0, 1.0, 1.0) for i in np.linspace(0.0, 1.0, N)]
     #return [(0.0, i, 1-i) for i in np.linspace(0.0, 1.0, N)]
+
+#------------------------------------------  9  ----------------------------------------------------
+def expand(x, y, z, b, h):
+    '''
+    This function expand single coil filament to a rectangle coil;
+    '''
+    n = np.size(x)
+    t = np.linspace(0, 2*np.pi, n)
+    dt = 2*np.pi/(n-1)
+
+    xt = np.gradient(x)/dt
+    yt = np.gradient(y)/dt
+    zt = np.gradient(z)/dt
+
+    xa = np.gradient(xt)/dt
+    ya = np.gradient(yt)/dt
+    za = np.gradient(zt)/dt
+
+    aa = np.sqrt(xa*xa + ya*ya + za*za)
+
+    xn = xa / aa
+    yn = ya / aa
+    zn = za / aa
+
+    xb = yt*zn - yn*zt
+    yb = zt*xn - zn*xt
+    zb = xt*yn - xn*yt
+
+    x1 = x - b/2*xb + h/2*xn
+    y1 = y - b/2*yb + h/2*yn
+    z1 = z - b/2*zb + h/2*zn
+
+    x2 = x + b/2*xb + h/2*xn
+    y2 = y + b/2*yb + h/2*yn
+    z2 = z + b/2*zb + h/2*zn
+
+    x3 = x + b/2*xb - h/2*xn
+    y3 = y + b/2*yb - h/2*yn
+    z3 = z + b/2*zb - h/2*zn
+
+    x4 = x - b/2*xb - h/2*xn
+    y4 = y - b/2*yb - h/2*yn
+    z4 = z - b/2*zb - h/2*zn
+
+    xx = np.array([x1, x2, x3, x4, x1])
+    yy = np.array([y1, y2, y3, y4, y1])
+    zz = np.array([z1, z2, z3, z4, z1])
+
+    return xx, yy, zz
+
+#------------------------------------------  10  ----------------------------------------------------
+#this can be consistent with plot_plasma-boundary
+def plot_vmec_surface(wout, ns=-1, plottype='cross-section',zeta=0.0, zeta1=2*np.pi,
+                         c=(1,0,0),style='-',width=2.0,lbl='VMEC_surface',npol=128,ntor=128, prange='full'):
+    '''
+    wout : the vmec netcdf file;
+    plot the ns-th flux surface;
+    '''
+    vmec = ncdata.open_dataset(wout)
+    mf = vmec['mpol'].values
+    nf = vmec['ntor'].values
+    xm = vmec['xm'].values
+    xn = vmec['xn'].values
+    rmnc = vmec['rmnc'].values
+    zmns = vmec['zmns'].values
+    rbc = rmnc[ns,:]
+    zbs = zmns[ns,:]
+    if plottype=='cross-section' : #plot cross-section
+        npoints = 361 #number of points
+        theta = np.linspace(0,2*np.pi, npoints)
+        r = np.zeros(npoints)
+        z = np.zeros(npoints)
+        for ipoint in range(npoints):
+            tmpr = rbc*np.cos(xm*theta[ipoint]-xn*zeta)
+            r[ipoint] = np.sum(tmpr) #r value at ipont
+
+            tmpz = zbs*np.sin(xm*theta[ipoint]-xn*zeta)
+            z[ipoint] = np.sum(tmpz) #z value at ipont
+        if plt.get_fignums():
+            fig = plt.gcf()
+            ax = plt.gca()
+        else :
+            fig, ax = plt.subplots()
+        if prange == 'full':
+            ax.plot(r, z, color=c,linewidth=width,linestyle=style,label=lbl)
+            return r, z
+        elif prange == 'upper':
+            ax.plot(r[0:npoints/2+1], z[0:npoints/2+1], color=c,linewidth=width,linestyle=style,label=lbl)
+            return r[0:npoints/2+1], z[0:npoints/2+1]
+        elif prange == 'below':
+            ax.plot(r[npoints/2:npoints], z[npoints/2:npoints], color=c,linewidth=width,linestyle=style,label=lbl)
+            return r[npoints/2:npoints], z[npoints/2:npoints]
+        else:
+            raise NameError("No such option!")
+    #mayavi 3D plot
+    elif plottype == 'surface3d' :
+        x=np.zeros((npol+1,ntor+1))
+        y=np.zeros((npol+1,ntor+1))
+        z=np.zeros((npol+1,ntor+1))
+
+        for i in range(ntor+1):
+            ator = zeta + (i+0.5)*(zeta1-zeta)/ntor #zeta
+            for j in range(npol+1):
+                apol = (j+0.5)*2*np.pi/npol #theta
+                tmpr = rbc*np.cos(xm*apol-xn*ator) 
+                tmpz = zbs*np.sin(xm*apol-xn*ator)
+
+                x[j,i] = np.sum(tmpr) * np.cos(ator)
+                y[j,i] = np.sum(tmpr) * np.sin(ator)
+                z[j,i] = np.sum(tmpz)                
+        #fig = mlab.figure(bgcolor=(1,1,1),fgcolor=(0,0,0),size=(600,600))
+        mlab.mesh(x,y,z,color=c)
+        return x, y, z
+    else :
+        raise NameError("No such option!")
+        print "plottype = cross-section/surface3d"
+
+#------------------------------------------  11  ----------------------------------------------------
+def plot_poincare( path, pp, code='Glass', prange='full', dotsize=0.5):
+    '''
+    This function is for plotting Oculus style Poincare plots data.
+    INPUT:
+         path  -> directory path;
+         pp    -> poincare plot data file name;
+         code  -> code name, Glass or Focus;
+         prange-> plot range, full, upper or lower;
+    plot poincare in current figure;
+    '''
+
+    num = 0 #reset numberig
+    suffix = 'gl' if code == 'Glass' else 'fo'
+    ppfile = path + '.' + pp + '.' + suffix + '.P.' + str(num).zfill(3) + '.dat'
+    # get current figure or build new one;
+    if plt.get_fignums():
+        fig = plt.gcf()
+        ax = plt.gca()
+    else :
+        fig, ax = plt.subplots()
+    # scattering data;      
+    while os.path.isfile(ppfile):
+        r,z = read_ppfile(ppfile)
+
+        if prange == 'full':
+            ax.scatter(r,z,dotsize,color='blue')
+        elif prange == 'upper':
+            ax.scatter(r[z>=0.0],z[z>=0.0],dotsize,color='blue')
+        elif prange == 'lower':
+            ax.scatter(r[z<=0.0],z[z<=0.0],dotsize,color='blue')
+
+        num += 1
+        ppfile = path + '.' + pp + '.' + suffix + '.P.' + str(num).zfill(3) + '.dat'
+    print "Poincare plots finished in ", path
+
+#------------------------------------------  12  ----------------------------------------------------
+
+def hdf5coil(h5data, nn = -1):
+    '''
+    read FOCUS hdf5 output file and return the nn-th coil data
+    '''
+    if not isinstance(h5data, hdf5):
+        print h5data, " is not a valid FOCUS hdf5 file."
+        return
+    ncoil = h5data.Ncoils[0]  #array to index
+    assert ncoil>0
+    nf = h5data.NFcoil[0]
+    assert nf>0
+    nseg = h5data.Nseg[0]
+    assert nseg>0
+    coilfou = np.reshape(h5data.coilspace[:,nn], (ncoil,-1)) #all coil data at nn time; and reshape
+    coildata = np.ndarray((ncoil,),dtype=np.object)
+
+    for icoil in range(ncoil):
+        xyzfou = np.reshape(coilfou[icoil,1:], (3,-1))  #pop current and reshape in 3 rows;
+        coildata[icoil] = coil()
+        #coildata[icoil].I = coilfou[icoil,0]  #coil current
+        coildata[icoil].x.extend(fourier(xyzfou[0,:]).disc(nseg))
+        coildata[icoil].y.extend(fourier(xyzfou[1,:]).disc(nseg))
+        coildata[icoil].z.extend(fourier(xyzfou[2,:]).disc(nseg))
+    print "Read {} coils in {}.".format(ncoil, filename)
+    return coildata
+
+#------------------------------------------  13  ----------------------------------------------------
+
+def coilevolve(h5data, delay = 250):
+    '''
+    plot coil evolution movie
+    '''
+    if not isinstance(h5data, hdf5):
+        print h5data, " is not a valid FOCUS hdf5 file."
+        return
+
+    ncoil = h5data.Ncoils[0]  #array to index
+    assert ncoil>0
+    nf = h5data.NFcoil[0]
+    assert nf>0
+    nseg = h5data.Nseg[0]
+    assert nseg>0
+    nout = h5data.iout[0]
+    assert nout>1
+    nfp = h5data.Nfp[0]
+    unicoil = ncoil/nfp
+
+    xx = np.zeros([ncoil,nseg], dtype=np.float32)
+    yy = np.zeros([ncoil,nseg], dtype=np.float32)
+    zz = np.zeros([ncoil,nseg], dtype=np.float32)
+    c = color_array(unicoil)
+    coils = []
+
+    #initial coils (fixed for comparison)
+    coilinit = np.reshape(h5data.coilspace[:,0], (ncoil,-1))
+    for icoil in range(ncoil):
+        xyzfou = np.reshape(coilinit[icoil,1:], (3,-1))
+        mlab.plot3d(fourier(xyzfou[0,:]).disc(nseg), fourier(xyzfou[1,:]).disc(nseg),
+                    fourier(xyzfou[2,:]).disc(nseg), color=(0.5, 0.5, 0.5))
+
+    # first coils
+    coilfou = np.reshape(h5data.coilspace[:,0], (ncoil,-1))
+    for icoil in range(ncoil):
+        xyzfou = np.reshape(coilfou[icoil,1:], (3,-1))   
+        xx[icoil,:] = fourier(xyzfou[0,:]).disc(nseg)
+        yy[icoil,:] = fourier(xyzfou[1,:]).disc(nseg)
+        zz[icoil,:] = fourier(xyzfou[2,:]).disc(nseg)
+        l = mlab.plot3d(xx[icoil,:], yy[icoil,:], zz[icoil,:], color=c[icoil%unicoil])
+        coils.append(l)
+
+    @mlab.show
+    @mlab.animate(delay=delay)
+    def anim():
+        while 1:
+            for iout in range(nout):
+                coilfou = np.reshape(h5data.coilspace[:,iout], (ncoil,-1)) #all coil data at iout time;
+                for icoil in range(ncoil):
+                    xyzfou = np.reshape(coilfou[icoil,1:], (3,-1))   
+                    xx[icoil,:] = fourier(xyzfou[0,:]).disc(nseg)
+                    yy[icoil,:] = fourier(xyzfou[1,:]).disc(nseg)
+                    zz[icoil,:] = fourier(xyzfou[2,:]).disc(nseg)
+                    coils[icoil].mlab_source.set(x=xx[icoil,:], y=yy[icoil,:], z=zz[icoil,:])
+                yield
+    anim()
+    return
+
+#------------------------------------------  14  ----------------------------------------------------
+
+def chievolve(h5data, term='chi', width = 2.5, linestyle='-', color='b'):
+    '''
+    plot chi-square cost functions evolution curves
+    '''
+    # check data type
+    if not isinstance(h5data, hdf5):
+        print h5data, " is not a valid FOCUS hdf5 file."
+        return
+
+    # get fig and axis
+    if plt.get_fignums():
+        fig = plt.gcf()
+        ax = plt.gca()
+    else :
+        fig, ax = plt.subplots(facecolor = "white", figsize=[8,6], dpi=125)
+        
+    # get data
+    iteration = range(len(h5data.evolution[0,:]))
+    if term == 'chi':
+        target = h5data.evolution[1,:]
+        label = r'$ \chi^2$'
+    elif term == 'deriv':
+        target = h5data.evolution[2,:]
+        label = r'$|d \chi^2 / d {\bf X}|$'
+    elif term == 'bnorm':
+        target = h5data.evolution[3,:]
+        label = r'$ f_B$'     
+    elif term == 'bharm':
+        target = h5data.evolution[4,:]
+        label = r'$ f_H$'    
+    elif term == 'tflux':
+        target = h5data.evolution[5,:]
+        label = r'$ f_{\Psi}$'   
+    elif term == 'ttlen':
+        target = h5data.evolution[6,:]
+        label = r'$ f_L$' 
+    else :
+        print term, " is not a valid option."
+        return
+    
+    # plotting
+    ax.semilogy(iteration, target, linewidth=width, label=label, linestyle=linestyle, color=color)
+    plt.xticks(fontsize=16)
+    plt.yticks(fontsize=16)
+    plt.xlabel('iteration',fontsize=24)
+    plt.ylabel(label,fontsize=24)
+    plt.legend(loc='upper right', frameon=False, prop={'size':24, 'weight':'bold'})
+
+    return

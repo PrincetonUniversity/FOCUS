@@ -136,6 +136,8 @@ subroutine costfun(ideriv)
   REAL                :: start, finish
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
+  call mpi_barrier(MPI_COMM_WORLD, ierr)
+
   if (IsQuiet <= -2) then
 
      call bnormal(0)
@@ -201,7 +203,7 @@ subroutine costfun(ideriv)
      if ( abs(target_tflux) < sqrtmachprec ) then
         call torflux(0)
         target_tflux = psi_avg        
-        if(myid .eq. 0) write(ounit,'("solvers : Reset target toroidal flux to "ES12.5)') target_tflux
+        if (myid==0) write(ounit,'("solvers : Reset target toroidal flux to "ES12.5)') target_tflux
      endif
 
      call torflux(ideriv)
@@ -291,6 +293,8 @@ subroutine costfun(ideriv)
 !!$      t2E = t2E * hesnorm
   endif
 
+  call mpi_barrier(MPI_COMM_WORLD, ierr)
+
   return
 end subroutine costfun
 
@@ -321,6 +325,16 @@ subroutine normweight
 
   endif
 
+  !-!-!-!-!-!-!-!-!-!-bnorm-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+  if( weight_bharm >= sqrtmachprec ) then
+
+     call bmnharm(0)   
+     if (abs(bharm) > sqrtmachprec) weight_bharm = weight_bharm / bharm
+     if( myid == 0 ) write(ounit, 1000) "weight_bharm", weight_bharm
+
+  endif
+
   !-!-!-!-!-!-!-!-!-!-tflux-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   if( weight_tflux .ge. sqrtmachprec ) then
@@ -330,7 +344,6 @@ subroutine normweight
         target_tflux = psi_avg
         if(myid .eq. 0) write(ounit,'("solvers : Reset target toroidal flux to "ES12.5)') target_tflux
      else
-        call torflux(0)
         do icoil = 1, Ncoils
            coil(icoil)%I = coil(icoil)%I * target_tflux / psi_avg
         enddo
@@ -348,7 +361,7 @@ subroutine normweight
 
   if( weight_ttlen .ge. sqrtmachprec ) then
 
-     if (case_length == 1 .and. sum(coil(1:Ncoils)%Lo) < sqrtmachprec) then
+     if ( sum(coil(1:Ncoils)%Lo) < sqrtmachprec) then
         coil(1:Ncoils)%Lo = one
         call length(0)
         coil(1:Ncoils)%Lo = coil(1:Ncoils)%L
@@ -405,8 +418,9 @@ subroutine output (mark)
   INTEGER            :: idof, NF, icoil
   REAL               :: sumdE
 
-  iout = iout + 1
 
+  iout = iout + 1
+  
   FATAL( output , iout > Nouts+1, maximum iteration reached )
 
   sumdE = sqrt(sum(t1E**2)) ! Eucliean norm 2; 
@@ -451,6 +465,7 @@ subroutine output (mark)
 
   if(mod(iout,save_freq) .eq. 0) call saving
 
+  call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
 
   return  
 

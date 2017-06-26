@@ -144,12 +144,14 @@ subroutine torflux( ideriv )
         ldiff(jzeta) = lflux - target_tflux
         dflux = dflux + ldiff(jzeta)**2
      enddo ! end do jzeta
-     
+
+     call MPI_BARRIER( MPI_COMM_WORLD, ierr )
      call MPI_REDUCE( dflux, tflux  , 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
      call MPI_REDUCE( lsum , psi_avg, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
      call MPI_REDUCE( ldiff, psi_diff, Nzeta, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
                
      RlBCAST( psi_avg, 1, 0)
+     RlBCAST( tflux, 1, 0)
      RlBCAST( psi_diff, Nzeta, 0)
      
      psi_avg = psi_avg / Nzeta
@@ -200,6 +202,7 @@ subroutine torflux( ideriv )
 
      ldF = ldF * pi2/Nteta
 
+     call MPI_BARRIER( MPI_COMM_WORLD, ierr )
      call MPI_REDUCE(ldF, dF, Ndof*Nzeta, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
      RlBCAST( dF, Ndof*Nzeta, 0 )
 

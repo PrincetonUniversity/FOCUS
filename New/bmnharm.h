@@ -52,7 +52,7 @@ SUBROUTINE bmnharm( ideriv )
   ! calculate the bharm cost function
   !----------------------------------------------------------------------------------------
   use globals, only: zero, half, myid, Ndof, Nteta, Nzeta, surf, &
-                     dBx, bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn
+                     dB, bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn
   implicit none
   include "mpif.h"
 
@@ -60,12 +60,12 @@ SUBROUTINE bmnharm( ideriv )
   !----------------------------------------------------------------------------------------
   
   INTEGER             :: idof, ierr, astat, imn
-  REAL, allocatable   :: dBxc(:), dBxs(:) 
+  REAL, allocatable   :: dBc(:), dBs(:) 
 
   !--------------------------initialize and allocate arrays-------------------------------- 
 
-  SALLOCATE( dBxc, (1:NBmn), zero )  ! temporary dBx_mn_cos
-  SALLOCATE( dBxs, (1:NBmn), zero )  ! temporary dBx_mn_sin
+  SALLOCATE( dBc, (1:NBmn), zero )  ! temporary dB_mn_cos
+  SALLOCATE( dBs, (1:NBmn), zero )  ! temporary dB_mn_sin
 
   call bnormal(ideriv) ! calculate Bn info;
 
@@ -88,16 +88,16 @@ SUBROUTINE bmnharm( ideriv )
   if ( ideriv >= 1 ) then
      ! can parallelize in Ndof direction;
      do idof = 1, Ndof
-        call twodft( dBx(idof,  0:Nteta-1, 0:Nzeta-1), dBxs, dBxc, Bmnim, Bmnin, NBmn )
-        t1H(idof) = sum( wBmn * ( (Bmnc - tBmnc)*dBxc + (Bmns - tBmns)*dBxs ) )
+        call twodft( dB(idof,  0:Nteta-1, 0:Nzeta-1), dBs, dBc, Bmnim, Bmnin, NBmn )
+        t1H(idof) = sum( wBmn * ( (Bmnc - tBmnc)*dBc + (Bmns - tBmns)*dBs ) )
      enddo
      
   endif
 
   !--------------------------------------------------------------------------------------------
 
-  DALLOCATE( dBxc )
-  DALLOCATE( dBxs )
+  DALLOCATE( dBc )
+  DALLOCATE( dBs )
   
   return
 

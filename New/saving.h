@@ -115,6 +115,7 @@ subroutine saving
   HWRITEIV( 1                ,   save_harmonics,   save_harmonics                )
   HWRITEIV( 1                ,   save_filaments,   save_filaments                )
 
+  HWRITEIV( 1                ,   Nfp           ,   Nfp                         )
   HWRITERA( Nteta,Nzeta      ,   xsurf         ,   surf(1)%xx(0:Nteta-1,0:Nzeta-1) )
   HWRITERA( Nteta,Nzeta      ,   ysurf         ,   surf(1)%yy(0:Nteta-1,0:Nzeta-1) )
   HWRITERA( Nteta,Nzeta      ,   zsurf         ,   surf(1)%zz(0:Nteta-1,0:Nzeta-1) )
@@ -131,8 +132,11 @@ subroutine saving
   endif
 
   HWRITEIV( 1                ,   iout          ,   iout                          )
-  HWRITERA( iout, 8          ,   evolution     ,   evolution(1:iout, 0:8)      )
-  HWRITERA( iout, Tdof       ,   coilspace     ,   coilspace(1:iout, 1:Tdof)   )
+  HWRITERV( 1                ,   Inorm         ,   Inorm                         )
+  HWRITERV( 1                ,   Gnorm         ,   Gnorm                         )
+  HWRITERA( iout, 8          ,   evolution     ,   evolution(1:iout, 0:8)        )
+  HWRITERA( iout, Tdof       ,   coilspace     ,   coilspace(1:iout, 1:Tdof)     )
+
   if (allocated(deriv)) then
      HWRITERA( Ndof, 6       ,   deriv         ,   deriv(1:Ndof, 0:6)            )
   endif
@@ -218,7 +222,7 @@ subroutine saving
 
   if( save_filaments == 1 ) then
 
-     open( funit, file="."//trim(ext)//".fo.filaments."//srestart, status="unknown", form="unformatted" )  
+     open( funit, file="."//trim(ext)//".filaments."//srestart, status="unknown", form="unformatted" )  
      write(funit) Ncoils, Nseg
      do icoil = 1, Ncoils
         write(funit) coil(icoil)%xx(0:coil(icoil)%NS)
@@ -235,11 +239,11 @@ subroutine saving
   if (save_harmonics == 1 .and. allocated(Bmnc)) then
 
      open(wunit, file=trim(harmfile), status='unknown', action='write')
-     write(wunit,*) "#NBmn"! comment line;
-     write(wunit,*) NBmn !write dimensions
-     write(wunit,*) "# n  m   Bmnc  Bmns  wBmn"! comment line;
+     write(wunit,'("#NBmn")')                     ! comment line;
+     write(wunit,'(I6)') NBmn                     !write dimensions
+     write(wunit,'("# n  m   Bmnc  Bmns  wBmn")') ! comment line;
      do imn = 1, NBmn
-        write(wunit,*) Bmnin(imn), Bmnim(imn), Bmnc(imn), Bmns(imn), wBmn(imn)
+        write(wunit,'(2(I3, 4X), 3(ES23.15,4X))') Bmnin(imn), Bmnim(imn), Bmnc(imn), Bmns(imn), wBmn(imn)
      enddo
      close(wunit)
 
