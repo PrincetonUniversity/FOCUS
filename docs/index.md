@@ -14,7 +14,7 @@ For a given plamsa configuration (with or without target Bn distributions), FOCU
 - [Running](#running)
 - [Output files](#output-files)
 - [Plotting](#plotting)
-- [Documentation](#documentation)
+- [Documentation](#documentations)
 
 # Before running
 
