@@ -13,7 +13,7 @@
 !latex  \item \inputvar{IsQuiet = -1} \\
 !latex    \textit{Information displayed to the user} \\
 !latex    \bi \vspace{-5mm}
-!latex    \item[-1:] more details \& update unconstrained cost functions;
+!latex    \item[-2:] more details \& update unconstrained cost functions;
 !latex    \item[-1:] more details;
 !latex    \item[0:]  essential;
 !latex    \item[1:] concise.

@@ -10,7 +10,7 @@ Here are the list and links.
 | -----   | -------------- | ------ | ------------- |
 | globals | declaring global variables | [gloabls.h](https://github.com/PrincetonUniversity/FOCUS/blob/master/New/globals.h) | [globals.pdf](https://princetonuniversity.github.io/FOCUS/globals.pdf) |
 | initial | initilization | [initial.h](https://github.com/PrincetonUniversity/FOCUS/blob/master/New/initial.h) | [initial.pdf](https://princetonuniversity.github.io/FOCUS/initial.pdf) |
-| rdsurf  | read and discretize the unknot(toroidal) plasma boundary | [rdsurf.h](https://github.com/PrincetonUniversity/FOCUS/blob/master/New/rdsurf.h) | [surface.pdf](https://princetonuniversity.github.io/FOCUS/rdsurf.pdf) |
+| rdsurf  | read and discretize the unknot(toroidal) plasma boundary | [rdsurf.h](https://github.com/PrincetonUniversity/FOCUS/blob/master/New/rdsurf.h) | [rdsurf.pdf](https://princetonuniversity.github.io/FOCUS/rdsurf.pdf) |
 | rdknot  | read and discretize the knotted boundary | [rdknot.h](https://github.com/PrincetonUniversity/FOCUS/blob/master/New/rdknot.h) | [rdknot.pdf](https://princetonuniversity.github.io/FOCUS/rdknot.pdf) |
 | rdcoils | read and initilize the coils | [rdcoils.h](https://github.com/PrincetonUniversity/FOCUS/blob/master/New/rdcoils.h) | [rdcoils.pdf](https://princetonuniversity.github.io/FOCUS/rdcoils.pdf) |
 | rdknot  | handling knotatron stuffs | [rdknot.h](https://github.com/PrincetonUniversity/FOCUS/blob/master/New/rdknot.h) | [rdknot.pdf](https://princetonuniversity.github.io/FOCUS/rdknot.pdf) |
@@ -18,7 +18,7 @@ Here are the list and links.
 | bnormal | evaluate the normal field residue | [bnormal.h](https://github.com/PrincetonUniversity/FOCUS/blob/master/New/bnormal.h) | [bnormal.pdf](https://princetonuniversity.github.io/FOCUS/bnormal.pdf) |
 | bmnharm | evaluate the Bn spectrum difference | [bmnharm.h](https://github.com/PrincetonUniversity/FOCUS/blob/master/New/bmnharm.h) | [bmnharm.pdf](https://princetonuniversity.github.io/FOCUS/bmnharm.pdf) |
 | torflux | evaluate the toroidal flux error | [torflux.h](https://github.com/PrincetonUniversity/FOCUS/blob/master/New/torflux.h) | [torflux.pdf](https://princetonuniversity.github.io/FOCUS/torflux.pdf) |
-| length  | evaluate the coil length constraint | [length.h](https://github.com/PrincetonUniversity/FOCUS/blob/master/New/length.h) | [tlength.pdf](https://princetonuniversity.github.io/FOCUS/length.pdf) |
+| length  | evaluate the coil length constraint | [length.h](https://github.com/PrincetonUniversity/FOCUS/blob/master/New/length.h) | [length.pdf](https://princetonuniversity.github.io/FOCUS/length.pdf) |
 | solvers | interface for all the optimizers | [solvers.h](https://github.com/PrincetonUniversity/FOCUS/blob/master/New/solvers.h) | [solvers.pdf](https://princetonuniversity.github.io/FOCUS/solvers.pdf) |
 | descent | differential flow optimization | [descent.h](https://github.com/PrincetonUniversity/FOCUS/blob/master/New/descent.h) | [descent.pdf](https://princetonuniversity.github.io/FOCUS/descent.pdf) |
 | congrad | conjugate gradient optimization | [congrad.h](https://github.com/PrincetonUniversity/FOCUS/blob/master/New/congrad.h) | [congrad.pdf](https://princetonuniversity.github.io/FOCUS/congrad.pdf) |
