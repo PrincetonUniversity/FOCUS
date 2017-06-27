@@ -146,7 +146,7 @@ subroutine costfun(ideriv)
      if ( abs(target_tflux) < sqrtmachprec ) then
         call torflux(0)
         target_tflux = psi_avg
-        if (myid == 0) write(ounit,'("costfun : Reset target toroidal flux to "ES12.5)') target_tflux
+        if (myid == 0) write(ounit,'("costfun : Reset target toroidal flux to "ES23.15)') target_tflux
      endif
 
      call torflux(0)
@@ -203,7 +203,7 @@ subroutine costfun(ideriv)
      if ( abs(target_tflux) < sqrtmachprec ) then
         call torflux(0)
         target_tflux = psi_avg        
-        if (myid==0) write(ounit,'("solvers : Reset target toroidal flux to "ES12.5)') target_tflux
+        if (myid==0) write(ounit,'("solvers : Reset target toroidal flux to "ES23.15)') target_tflux
      endif
 
      call torflux(ideriv)
