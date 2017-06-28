@@ -642,7 +642,7 @@ SUBROUTINE readcoils(filename, maxnseg)
           I(seg(Ncoils), Ncoils)
      if ( I(seg(Ncoils), Ncoils) == 0.0 ) then
         seg(Ncoils) = seg(Ncoils) - 1  !remove the duplicated last point
-        read(line, *, IOSTAT = lstat) tmp, tmp, tmp, tmp, name(Ncoils)
+        read(line, *, IOSTAT = lstat) tmp, tmp, tmp, tmp, tmp, name(Ncoils)
         Ncoils = Ncoils + 1
      endif
   enddo

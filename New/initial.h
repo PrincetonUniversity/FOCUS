@@ -333,7 +333,7 @@ subroutine initial
 
      FATAL( initial, case_coils /= 1, only fourier representation is valid )
      if (IsQuiet < 0) write(ounit, '(8X,": case_coils = "I1 &
-          "using Fourier series as the basic representation.")') case_coils
+          " ; using Fourier series as the basic representation.")') case_coils
 
      select case ( case_optimize)
      case ( -2 )
@@ -464,7 +464,7 @@ subroutine initial
   write(nodelabel,'(i3.3)') myid ! nodelabel is global; 30 Oct 15;
 
   ! initialize iteration and total iterations;
-  iout = 0 ; Nouts = 0
+  iout = 1 ; Nouts = 1
   if (case_optimize >0) Nouts = DF_maxiter + CG_maxiter + HN_maxiter + TN_maxiter
 
   discretefactor = (pi2/Nteta) * (pi2/Nzeta)

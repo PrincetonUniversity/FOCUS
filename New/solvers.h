@@ -36,11 +36,11 @@
 
 subroutine solvers
   use globals, only : ierr, iout, myid, ounit, IsQuiet, IsNormWeight, Ndof, Nouts, xdof, &
-       & case_optimize, DF_maxiter, CG_maxiter, HN_maxiter, TN_maxiter
+       & case_optimize, DF_maxiter, CG_maxiter, HN_maxiter, TN_maxiter, coil, DoF
   implicit none
   include "mpif.h"
 
-  REAL :: start, finish
+  REAL :: start, finish, ii, lxdof(1:Ndof), f, g(1:Ndof)
 
 
   iout = 0 ! reset output counter;
@@ -58,6 +58,13 @@ subroutine solvers
   endif
 
   if (IsNormWeight /= 0) call normweight
+
+  if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "---------------------------------------------------"
+  if (myid == 0 .and. IsQuiet < 0) write(ounit, *) " Initial status"
+  if (myid == 0) write(ounit, '("output  : "A6" : "9(A12," ; "))') "iout", "mark", "chi", "dE_norm", &
+       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "spectral", "c-c sep." 
+  call costfun(1)
+  call output(0.0)
   
   !--------------------------------DF--------------------------------------------------------------------
   if (DF_maxiter > 0)  then
@@ -71,7 +78,7 @@ subroutine solvers
      finish = MPI_Wtime()
      if (myid  ==  0) write(ounit,'("solvers : DF takes ", es23.15," seconds;")') finish - start
   endif
-  
+
   !--------------------------------CG--------------------------------------------------------------------
   if (CG_maxiter > 0)  then
      if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "---------------------------------------------------"
@@ -421,7 +428,7 @@ subroutine output (mark)
 
   iout = iout + 1
   
-  FATAL( output , iout > Nouts+1, maximum iteration reached )
+  FATAL( output , iout > Nouts+2, maximum iteration reached )
 
   sumdE = sqrt(sum(t1E**2)) ! Eucliean norm 2; 
 
