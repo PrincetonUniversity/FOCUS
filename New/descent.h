@@ -52,7 +52,7 @@ subroutine descent
   call denergy(tau, lxdof, dE)
   if (myid == 0) write(ounit, '("output  : "A6" : "9(A12," ; "))') "iout", "tau", "chi", "dE_norm", &
        "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "spectral", "c-c sep." 
-  call output(t0)
+  !call output(t0)
 
   do itau = 1, DF_maxiter
      
@@ -79,6 +79,7 @@ subroutine descent
      end if
 
      call unpacking(lxdof)
+     call costfun(1)
      call output(t0)
 
   end do  

@@ -33,7 +33,7 @@
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE congrad
-  use globals, only: sqrtmachprec, myid, ounit, Ncoils, Ndof, t1E, iout, CG_maxiter, CG_xtol
+  use globals, only: sqrtmachprec, myid, ounit, Ncoils, Ndof, t1E, iout, CG_maxiter, CG_xtol, xdof
   implicit none
   include "mpif.h"
 
@@ -42,14 +42,13 @@ SUBROUTINE congrad
   REAL, dimension(1:Ndof) :: lxdof, p, gradk, gradf
 
   iter = 0
-  call packdof(lxdof(1:Ndof)) ! initial xdof;  
+  call packdof(lxdof(1:Ndof)) ! initial xdof;
   call getdf(lxdof, f, gradk)
   p(1:Ndof) = -gradk ! initial step direction;
   alpha = 1.0 ! initial step size;
 
   if (myid == 0) write(ounit, '("output  : "A6" : "9(A12," ; "))') "iout", "iter", "chi", "dE_norm", &
        "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "spectral", "c-c sep." 
-  call output(real(iter))
 
   do
 
