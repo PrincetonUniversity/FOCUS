@@ -114,7 +114,7 @@ Use the variable *IsQuiet* in the namelist to control the details you want.
 # Output files
 
 When calling [saving](https://github.com/PrincetonUniversity/FOCUS/tree/master/New/saving.h), current calculating results will be saved to local files.
-The frequence of writing outputs is controlled by the variable *save_freq*.
+The frequency of writing outputs is controlled by the variable *save_freq*.
 The basic output file is written in hdf5 format.
 
 * hdf5 file

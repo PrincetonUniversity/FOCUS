@@ -50,7 +50,7 @@ SUBROUTINE fdcheck( ideriv )
   if(myid .eq. 0) write(ounit,'("fdcheck : First order derivatives of energy function takes " &
        ES23.15 " seconds.")') finish - start
   if( myid.eq.0 ) write(ounit,'("fdcheck : idof  /  Ndof ;   analytical value"5X" ;   fd-method value"6X &
-       " ;   difference"11X" ;   reletive diff")')
+       " ;   difference"11X" ;   relative diff")')
 
   do idof = 1, Ndof
      !backward pertubation;

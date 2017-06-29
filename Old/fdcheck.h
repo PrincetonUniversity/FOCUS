@@ -36,7 +36,7 @@ subroutine testderivs1
 !!$  call pack( xdof )  !back up the current coils data
 !!$  call epotent1(icoil, jcoil, Ax(0:Cdof))
 !!$  
-!!$  if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : coil# : dof : dof# :   numerical value"6X" :   fd-method value"6X" :   difference"11X" :   reletive diff")')
+!!$  if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : coil# : dof : dof# :   numerical value"6X" :   fd-method value"6X" :   difference"11X" :   relative diff")')
 !!$
 !!$        
 !!$!-------X_COS-----------------
@@ -173,7 +173,7 @@ subroutine testderivs1
 
   call pack( bdof )  !back up the current coils data
   
-  if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : coil# : Fourier# :      numerical value"3X" :   fd-method value"6X" :   difference"11X" :   reletive diff")')
+  if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : coil# : Fourier# :      numerical value"3X" :   fd-method value"6X" :   difference"11X" :   relative diff")')
 
   do idof = 1, Ndof
 
@@ -359,7 +359,7 @@ subroutine testderivs2
 !!$  call pack( xdof )  !back up the current coils data
 !!$  call epotent2(icoil, jcoil, icoil, lbz(0:Cdof,0:Cdof))
 !!$  
-!!$  if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : coil# : dof : dof# :   numerical value"6X" :   fd-method value"6X" :   difference"11X" :   reletive diff")')
+!!$  if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : coil# : dof : dof# :   numerical value"6X" :   fd-method value"6X" :   difference"11X" :   relative diff")')
 !!$
 !!$        
 !!$!-------X_COS-----------------
@@ -488,7 +488,7 @@ subroutine testderivs2
 !!$  call pack( xdof )  !back up the current coils data
 !!$  call epotent2(icoil, jcoil, icoil, lbz(0:Cdof,0:Cdof))
 !!$  
-!!$  if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : coil# : dof : dof# :   numerical value"6X" :   fd-method value"6X" :   difference"11X" :   reletive diff")')
+!!$  if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : coil# : dof : dof# :   numerical value"6X" :   fd-method value"6X" :   difference"11X" :   relative diff")')
 !!$
 !!$!-------X_COS-----------------
 !!$  do idof = 0, NFcoil
@@ -738,7 +738,7 @@ subroutine testderivs2
 
   call pack( bdof )  !back up the current coils data
   if(myid .eq. 0) write(ounit,'("fdcheck : " 10X " : The 2nd derivatives is over t1E("I3" , "I3 "). ")') jcoil, jdof
-  if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : coil# : Fourier# :      numerical value"3X" :   fd-method value"6X" :   difference"11X" :   reletive diff")')
+  if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : coil# : Fourier# :      numerical value"3X" :   fd-method value"6X" :   difference"11X" :   relative diff")')
 
   do idof = 1, Ndof
 

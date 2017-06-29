@@ -44,10 +44,10 @@
 !latex    \textit{Ellipticity of plasma for knototrans, only valid for \inputvar{case\_surface = 1}} 
 !latex 
 !latex  \item \inputvar{Nteta = 64} \\
-!latex    \textit{Poloidal resolution for discritizing the plasma} 
+!latex    \textit{Poloidal resolution for discretizing the plasma}
 !latex 
 !latex  \item \inputvar{Nzeta = 64} \\
-!latex    \textit{Toroidal resolution for discritizing the plasma} 
+!latex    \textit{Toroidal resolution for discretizing the plasma}
 !latex 
 !latex  \par \begin{tikzpicture} \draw[dashed] (0,1) -- (10,1); \end{tikzpicture}
 !latex 
@@ -160,7 +160,7 @@
 !latex    \textit{specify optimizing options.} \\
 !latex    \bi \vspace{-5mm}
 !latex    \item[-2:] check the 2nd derivatives; seen in\link{fdcheck}; (not ready)
-!latex    \item[-1:] check the 1st derivarives; seen in\link{fdcheck};
+!latex    \item[-1:] check the 1st derivatives; seen in\link{fdcheck};
 !latex    \item[ 0:] no optimizations performed; 
 !latex    \item[ 1:] optimizing with algorithms using the gradient (DF and/or CG); seen in \link{solvers};
 !latex    \item[ 2:] optimizing with algorithms using the Hessian (HT and/or NT); seen in \link{solvers};
@@ -170,7 +170,7 @@
 !latex    \textit{maximum iterations allowed for using Differential Flow (DF); if zero, turned of; seen in \link{descent}}
 !latex 
 !latex  \item \inputvar{DF\_xtol = 1.000D-08} \\
-!latex    \textit{reletive error for ODE solver; seen in \link{descent}}
+!latex    \textit{relative error for ODE solver; seen in \link{descent}}
 !latex 
 !latex  \item \inputvar{DF\_tausta = 0.000D+00} \\
 !latex    \textit{starting value of $\tau$; usually $0.0$ is a good idea; seen in \link{descent}}
@@ -201,7 +201,7 @@
 !latex    \ei
 !latex 
 !latex  \item \inputvar{save\_freq = 1} \\
-!latex    \textit{frequence for writing output files; should be positive; seen in  \link{solvers}};
+!latex    \textit{frequency for writing output files; should be positive; seen in  \link{solvers}};
 !latex 
 !latex  \item \inputvar{save\_coils = 0} \\
 !latex    \textit{flag for indicating whether write \emph{example.focus} and \emph{example.coils}; seen in  \link{saving}};

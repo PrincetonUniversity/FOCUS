@@ -23,7 +23,7 @@
 !latex           and is controlled by \inputvar{tauend}, \inputvar{tautol} and \inputvar{Ntauout}.
 !latex \ei
 
-!latex \subsection{derivarives test}
+!latex \subsection{derivatives test}
 !latex \bi
 !latex \item[1.] When \inputvar{Loptimize = -1}, the code will test the first derivatives comparing the results of finite difference, shudson`s and czhu`s method.
 !latex Here, minus sign in shudson`s method was temporarily eliminated.
