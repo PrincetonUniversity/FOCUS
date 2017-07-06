@@ -12,10 +12,10 @@
 !latex surface integration would be a better idea. Especially for designing RMP coils in tokamaks.
 !latex
 !latex \subsection{0-order cost function}
-!latex In the flux coordinate ($\psi, \theta, \pi$), the normal magnetic field perturbation can be written
+!latex In the flux coordinate ($\psi, \theta, \phi$), the normal magnetic field perturbation can be written
 !latex as,
 !latex \be
-!latex \ds B_n(\theta,\phi) = \vec{B} \cdot \nabla{\psi} = \sum_{m,n} \Delta_{mn} \ exp^{-i(m\theta - n\phi)}\ .
+!latex \ds B_n(\theta,\phi) = \vec{B} \cdot \nabla{\psi} = \sum_{m,n} \Delta_{mn} e^{-i(m\theta - n\phi)}\ .
 !latex \ee
 !latex If we define the cost function {\bf H = bharm} as,
 !latex \be
