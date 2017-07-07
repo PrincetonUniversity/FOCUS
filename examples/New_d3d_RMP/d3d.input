@@ -14,7 +14,7 @@
  init_current   =        1.000D+06      ! initial coil currents (Amper); only valid when case_init = 1
  init_radius    =        0.500D+00      ! initial coil currents (Amper); only valid when case_init = 1
  IsVaryCurrent  =        1              ! 0: all the currents   fixed; 1: currents   can be changed; overwritten by ext.focus
- IsVaryGeometry =        1              ! 0: all the geometries fixed; 1: geometries can be changed; overwritten by ext.focus
+ IsVaryGeometry =        0              ! 0: all the geometries fixed; 1: geometries can be changed; overwritten by ext.focus
  NFcoil         =        8              ! number of Fourier harmonics representing the coils; overwritten by ext.focus
  Nseg           =      128              ! number of coil segments for discretizing; overwritten by ext.focus
 
@@ -23,7 +23,7 @@
  case_bnormal   =        0              ! 0: keep raw Bn error; 1: Bn residue normalized to local |B|
  case_length    =        2              ! 1: quadratic format, converging the target length; 2: exponential format, as short as possible
  weight_bnorm   =        0.000D+00      ! weight for real space Bn errors
- weight_bharm   =        1.000D+00      ! weight for Bnm harmonic errors
+ weight_bharm   =        1.000D+08      ! weight for Bnm harmonic errors
  weight_tflux   =        0.000D+00      ! weight for toroidal flux error
  target_tflux   =        0.000D+00      ! target for the toroidal flux
  weight_ttlen   =        0.010D+00      ! weight for coil length error
