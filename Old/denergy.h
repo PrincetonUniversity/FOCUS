@@ -678,8 +678,8 @@ subroutine costfun(nderiv)
   if(Idisplay .eq. -2 .and. myid .eq. 0) write(ounit,'("Costfun :"12X": begin the "I6"th run.")') iter
   if(Idisplay .eq. -1) then
 
-    !call bnormal(0)
-    call bnormal2(0)
+    call bnormal(0)
+    !call bnormal2(0)
 
    if ( target_tflux .eq. 0.0 ) then
     call torflux(0)
@@ -716,7 +716,7 @@ subroutine costfun(nderiv)
 
   if (weight_bnorm .gt. sqrtmachprec) then
 
-   call bnormal2(nderiv)
+   call bnormal(nderiv)
    totalenergy = totalenergy + weight_bnorm * bnorm
    if     ( nderiv .eq. 1 ) then
     t1E = t1E +  weight_bnorm * t1B
@@ -965,7 +965,7 @@ subroutine weightnormalize
 
   if( weight_bnorm .ge. sqrtmachprec ) then
 
-   call bnormal2(0)   
+   call bnormal(0)   
    if (abs(bnorm) .gt. sqrtmachprec) weight_bnorm = weight_bnorm / bnorm
    if( myid .eq. 0 ) write(ounit, 1000) "weight_bnorm", weight_bnorm
    

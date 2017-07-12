@@ -553,7 +553,7 @@ subroutine SVD
      do j = -nstep, nstep
         xdof = bdof + j*step*a(1:n, i)
         call unpack(xdof) ; call costfun(0)
-        diff(j+nstep+1, i) = f0 - totalenergy
+        diff(j+nstep+1, i) = totalenergy - f0
      enddo
   enddo
    
