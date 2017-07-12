@@ -144,6 +144,8 @@ subroutine saving
   if (allocated(Bmnc)) then
      HWRITEIV( NBmn          ,   Bmnin         ,   Bmnin                         )
      HWRITEIV( NBmn          ,   Bmnim         ,   Bmnim                         )
+     HWRITERV( NBmn          ,   initial_Bmnc  ,   iBmnc                         )
+     HWRITERV( NBmn          ,   initial_Bmns  ,   iBmns                         )
      HWRITERV( NBmn          ,   target_Bmnc   ,   tBmnc                         )
      HWRITERV( NBmn          ,   target_Bmns   ,   tBmns                         )
      HWRITERV( NBmn          ,          Bmnc   ,    Bmnc                         )

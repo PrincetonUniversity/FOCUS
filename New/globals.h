@@ -247,7 +247,8 @@ module globals
   INTEGER              :: NBmn
   INTEGER, allocatable :: Bmnin(:), Bmnim(:)
   REAL                 :: bharm
-  REAL   , allocatable :: t1H(:), t2H(:,:), Bmnc(:),Bmns(:), wBmn(:), tBmnc(:), tBmns(:), carg(:,:), sarg(:,:)
+  REAL   , allocatable :: t1H(:), t2H(:,:), Bmnc(:),Bmns(:), wBmn(:), tBmnc(:), tBmns(:), &
+                          carg(:,:), sarg(:,:), iBmnc(:), iBmns(:)
   ! Tflux error;
   REAL                 :: tflux, psi_avg
   REAL   , allocatable :: t1F(:), t2F(:,:)

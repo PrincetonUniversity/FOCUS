@@ -64,6 +64,7 @@ subroutine solvers
   if (myid == 0) write(ounit, '("output  : "A6" : "9(A12," ; "))') "iout", "mark", "chi", "dE_norm", &
        "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "spectral", "c-c sep." 
   call costfun(1)
+  call saveBmn    ! in bmnharm.h;
   call output(0.0)
   
   !--------------------------------DF--------------------------------------------------------------------
@@ -322,26 +323,6 @@ subroutine normweight
 
   call unpacking(xdof)
 
-  !-!-!-!-!-!-!-!-!-!-bnorm-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-  if( weight_bnorm >= sqrtmachprec ) then
-
-     call bnormal(0)   
-     if (abs(bnorm) > sqrtmachprec) weight_bnorm = weight_bnorm / bnorm
-     if( myid == 0 ) write(ounit, 1000) "weight_bnorm", weight_bnorm
-
-  endif
-
-  !-!-!-!-!-!-!-!-!-!-bnorm-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-  if( weight_bharm >= sqrtmachprec ) then
-
-     call bmnharm(0)   
-     if (abs(bharm) > sqrtmachprec) weight_bharm = weight_bharm / bharm
-     if( myid == 0 ) write(ounit, 1000) "weight_bharm", weight_bharm
-
-  endif
-
   !-!-!-!-!-!-!-!-!-!-tflux-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   if( weight_tflux .ge. sqrtmachprec ) then
@@ -361,6 +342,26 @@ subroutine normweight
      call torflux(0)
      if (abs(tflux) > sqrtmachprec) weight_tflux = weight_tflux / tflux * target_tflux**2
      if( myid .eq. 0 ) write(ounit, 1000) "weight_tflux", weight_tflux
+
+  endif
+
+  !-!-!-!-!-!-!-!-!-!-bnorm-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+  if( weight_bnorm >= sqrtmachprec ) then
+
+     call bnormal(0)   
+     if (abs(bnorm) > sqrtmachprec) weight_bnorm = weight_bnorm / bnorm
+     if( myid == 0 ) write(ounit, 1000) "weight_bnorm", weight_bnorm
+
+  endif
+
+  !-!-!-!-!-!-!-!-!-!-bnorm-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+  if( weight_bharm >= sqrtmachprec ) then
+
+     call bmnharm(0)   
+     if (abs(bharm) > sqrtmachprec) weight_bharm = weight_bharm / bharm
+     if( myid == 0 ) write(ounit, 1000) "weight_bharm", weight_bharm
 
   endif
 

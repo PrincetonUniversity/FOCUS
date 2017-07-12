@@ -259,3 +259,28 @@ SUBROUTINE twoift(func, hs, hc, im, in, mn)
 END SUBROUTINE twoift
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+SUBROUTINE saveBmn
+  !----------------------------------------------------------------------------------------
+  ! save the present Bmn harmonics in iBmnc and iBmns;
+  !----------------------------------------------------------------------------------------
+  use globals, only: zero, ierr, astat, myid, machprec, weight_Bharm, NBmn, Bmnc, Bmns, iBmnc, iBmns
+  implicit none
+  include "mpif.h"
+
+  if (weight_bharm > machprec) then
+     
+     SALLOCATE( iBmnc, (1:NBmn), zero )
+     SALLOCATE( iBmns, (1:NBmn), zero )
+
+     FATAL( saveBmn, .not. allocated(Bmnc), you should allocate Bmnc first. )
+     FATAL( saveBmn, .not. allocated(Bmns), you should allocate Bmns first. )
+
+     iBmnc = Bmnc
+     iBmns = Bmns
+
+  endif
+
+  return
+
+END SUBROUTINE saveBmn
