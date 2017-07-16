@@ -66,7 +66,7 @@ subroutine fousurf
   
   use globals, only : zero, half, pi2, myid, ounit, runit, surffile, IsQuiet, IsSymmetric, &
                       Nfou, Nfp, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
-                      Nteta, Nzeta, surf
+                      Nteta, Nzeta, surf, Npc, discretefactor
   
   implicit none
   
@@ -115,12 +115,18 @@ subroutine fousurf
   IlBCAST( bim(1:Nfou), Nfou, 0 )
   IlBCAST( bin(1:Nfou), Nfou, 0 )
   
-  if (IsSymmetric  ==  0) then 
-     bin(1:Nfou) = bin(1:Nfou) * Nfp  !Disarde periodicity
-     !Nfp = 1                          !reset Nfp to 1
-  endif
-  
-  
+  select case (IsSymmetric)
+  case ( 0 )
+     bin(1:Nfou) = bin(1:Nfou) * Nfp  !Discard periodicity;
+     Nfp = 1                          !reset Nfp to 1;
+     Npc = 1                          !number of coils periodicity 
+  case ( 1 )                          !plasma periodicity enabled;
+     Npc = 1
+  case ( 2 )                          !plasma and coil periodicity enabled;
+     Npc = Nfp
+  end select
+  discretefactor = discretefactor/Nfp
+     
   RlBCAST( Rbc(1:Nfou), Nfou, 0 )
   RlBCAST( Rbs(1:Nfou), Nfou, 0 )
   RlBCAST( Zbc(1:Nfou), Nfou, 0 )

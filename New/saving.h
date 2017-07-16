@@ -172,7 +172,7 @@ subroutine saving
 
      do icoil = 1, Ncoils
 
-        write(wunit, *) "#--------------------------------------------" 
+        write(wunit, *) "#-------------------",icoil,"-------------------------" 
         write(wunit, *) "#coil_type     coil_name"
         write(wunit,'(3X,I3,4X, A10)') coil(icoil)%itype, coil(icoil)%name
         write(wunit, '(3(A6, A15, 8X))') " #Nseg", "current",  "Ifree", "Length", "Lfree", "target_length"

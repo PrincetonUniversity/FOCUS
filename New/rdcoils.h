@@ -172,6 +172,8 @@ subroutine rdcoils
 
      coil(1:Ncoils)%itype = case_coils
 
+     Ncoils = Ncoils / Npc ! Ncoils changed to unique number of coils;
+
      !-------------individual coil file---------------------------------------------------------------------
   case( 0 )
 
@@ -188,9 +190,9 @@ subroutine rdcoils
      endif
                                
      IlBCAST( Ncoils        ,    1,  0 )
-     allocate( FouCoil(1:Ncoils) )
-     allocate(    coil(1:Ncoils) )
-     allocate( DoF(1:Ncoils) )
+     allocate( FouCoil(1:Ncoils*Npc) )
+     allocate(    coil(1:Ncoils*Npc) )
+     allocate(     DoF(1:Ncoils*Npc) )
 
      if( myid==0 ) then
         do icoil = 1, Ncoils
@@ -267,9 +269,9 @@ subroutine rdcoils
      !-------------toroidally placed circular coils---------------------------------------------------------
   case( 1 ) ! toroidally placed coils; 2017/03/13
 
-     allocate( FouCoil(1:Ncoils) )
-     allocate(    coil(1:Ncoils) )
-     allocate( DoF(1:Ncoils) )
+     allocate( FouCoil(1:Ncoils*Npc) )
+     allocate(    coil(1:Ncoils*Npc) )
+     allocate(     DoF(1:Ncoils*Npc) )
 
      do icoil = 1, Ncoils
 
@@ -297,7 +299,7 @@ subroutine rdcoils
         SALLOCATE( FouCoil(icoil)%zs, (0:NFcoil), zero )
 
         !initilize with circular coils;
-        zeta = (icoil-1) * pi2 / Ncoils
+        zeta = (icoil-1) * pi2 / (Ncoils*Npc)
 
         call surfcoord( zero, zeta, r1, z1)
         call surfcoord(   pi, zeta, r2, z2)
@@ -322,7 +324,7 @@ subroutine rdcoils
   FATAL( rdcoils, Nfixgeo > Ncoils, error with fixed geometry )
 
   !-----------------------allocate   coil data-------------------------------------------------- 
-  do icoil = 1, Ncoils
+  do icoil = 1, Ncoils*Npc
      SALLOCATE( coil(icoil)%xx, (0:coil(icoil)%NS), zero )
      SALLOCATE( coil(icoil)%yy, (0:coil(icoil)%NS), zero )
      SALLOCATE( coil(icoil)%zz, (0:coil(icoil)%NS), zero )
@@ -333,6 +335,15 @@ subroutine rdcoils
      SALLOCATE( coil(icoil)%ya, (0:coil(icoil)%NS), zero )
      SALLOCATE( coil(icoil)%za, (0:coil(icoil)%NS), zero )
      SALLOCATE( coil(icoil)%dd, (0:coil(icoil)%NS), zero )
+
+     if (.not. allocated(FouCoil(icoil)%xc) ) then
+        SALLOCATE( FouCoil(icoil)%xc, (0:FouCoil(icoil)%NF), zero )
+        SALLOCATE( FouCoil(icoil)%xs, (0:FouCoil(icoil)%NF), zero )
+        SALLOCATE( FouCoil(icoil)%yc, (0:FouCoil(icoil)%NF), zero )
+        SALLOCATE( FouCoil(icoil)%ys, (0:FouCoil(icoil)%NF), zero )
+        SALLOCATE( FouCoil(icoil)%zc, (0:FouCoil(icoil)%NF), zero )
+        SALLOCATE( FouCoil(icoil)%zs, (0:FouCoil(icoil)%NF), zero ) 
+     endif
   enddo
 
   !-----------------------normalize currents and geometries-------------------------------------
@@ -383,13 +394,24 @@ end subroutine rdcoils
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
+subroutine mapcoil
+!---------------------------------------------------------------------------------------------
+! mapping periodic coils;
+!---------------------------------------------------------------------------------------------
+  use globals, only: zero, pi2, myid, ounit, coil, FouCoil, Ncoils, DoF
+  implicit none
+  include "mpif.h"
+
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
 subroutine discoil(ifirst)
 !---------------------------------------------------------------------------------------------
 ! dicretize coils data;
 ! if ifirst = 1, it will update all the coils; otherwise, only update free coils;
 ! date: 20170314
 !---------------------------------------------------------------------------------------------
-  use globals, only: zero, pi2, myid, ounit, coil, FouCoil, Ncoils, DoF
+  use globals, only: zero, pi2, myid, ounit, coil, FouCoil, Ncoils, DoF, Npc
   implicit none
   include "mpif.h"
 
@@ -400,7 +422,7 @@ subroutine discoil(ifirst)
   REAL,allocatable :: cmt(:,:), smt(:,:)
   !-------------------------------------------------------------------------------------------
   !xx, xt, xa are 0, 1st and 2nd derivatives;
-  do icoil = 1, Ncoils
+  do icoil = 1, Ncoils*Npc
 
      if( (coil(icoil)%Lc + ifirst) /= 0) then  !first time or if Lc/=0, then need discretize;
 

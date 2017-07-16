@@ -164,13 +164,15 @@ PROGRAM focus
   
   call unpacking(xdof)  ! unpack the optimized xdof array;
 
+  if (myid == 0) write(ounit, *) "-----------POST-PROCESSING-----------------------------------"
+
   select case( case_postproc )
 
   case( 0 ) ; call saving
- !case( 1 ) ; call saving ; call diagnos
- !case( 2 ) ; call saving ; call diagnos ; call wtmgrid  ! write mgrid file;
- !case( 3 ) ; call saving ; call diagnos ; call poinplot ! Poincare plots; for future; 
- !case( 4 ) ; call saving ; call diagnos ; call resonant ! resonant harmonics analysis; for future; 
+  case( 1 ) ; call diagnos ; call saving 
+ !case( 2 ) ; call saving  ; call diagnos ; call wtmgrid  ! write mgrid file;
+ !case( 3 ) ; call saving  ; call diagnos ; call poinplot ! Poincare plots; for future; 
+ !case( 4 ) ; call saving  ; call diagnos ; call resonant ! resonant harmonics analysis; for future; 
 
   end select
 
