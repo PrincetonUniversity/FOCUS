@@ -58,6 +58,8 @@ subroutine initial
   IlBCAST( Itopology     ,    1,  0 )
   RlBCAST( knotsurf      ,    1,  0 )
   RlBCAST( ellipticity   ,    1,  0 )
+  IlBCAST( nrotate       ,    1,  0 )
+  RlBCAST( zetaoff       ,    1,  0 )
   IlBCAST( NFcoil        ,    1,  0 )
   IlBCAST( NDcoil        ,    1,  0 )
   IlBCAST( Linitialize   ,    1,  0 )

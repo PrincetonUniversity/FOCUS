@@ -21,7 +21,7 @@
 
 subroutine rdknot
   
-  use kmodule, only : zero, one, half, ten, pi, pi2, sqrtmachprec, myid, ncpu, ounit, lunit, &
+  use kmodule, only : zero, one, half, ten, pi, pi2, sqrtmachprec, small, myid, ncpu, ounit, lunit, &
                       ext, &
                       knotNF, knotsurf, surf, Nteta, Nzeta, bNfp,  &
                       xkc, xks, ykc, yks, zkc, zks, &
@@ -213,15 +213,15 @@ subroutine rdknot
     write(ounit,'("rdknot  : " 10x " : (xo,yo,zo) = ("f12.7","f12.7","f12.7" ) ; lo ="f12.7" ;")') xo(1:3), lo
     
 
-    alfazeta(1:2) = (/ zero, zero /)  + ten ! note offset in \teta & \zeta; 18 Apr 17;
+    alfazeta(1:2) = (/ zero, zero /)  + one ! note offset in \teta & \zeta; offsets must be consistent with below; 18 Apr 17;
     
     do kk = 0, Nzeta-1 ; gphi = kk * (pi2/bNfp) / Nzeta ! regularly spaced in \phi ; 27 Apr 17;
      
-!    alfazeta(2) = gphi + ten ! reinitialize guess; 26 Apr 17;
+!    alfazeta(2) = gphi + one ! reinitialize guess; 26 Apr 17;
      
      do jj = 0, Nteta-1 ; teta = jj *  pi2       / Nteta ; jk = 1 + jj + kk*Nteta ! regularly spaced in \teta; 27 Apr 17;
       
-!     alfazeta(1) = teta + ten ! reinitialize guess; 26 Apr 17;
+!     alfazeta(1) = teta + one ! reinitialize guess; 26 Apr 17;
       
       ic05pdf = 1 ; irevcm = 0 ; xtol = sqrtmachprec ; mode = 1 ; factor = one
       
@@ -231,21 +231,22 @@ subroutine rdknot
                     Ndof, alfazeta(1:Ndof), ff(1:Ndof), df(1:Ldf,1:Ndof), &
                     Ldf, xtol, diag(1:Ndof), mode, factor, RR(1:LRR), LRR, QTf(1:Ndof), rwk(1:Ndof,1:4), ic05pdf )
        
-       alfa = mod( alfazeta(1) - ten + pi, pi2 ) ; zeta = alfazeta(2) - ten ! offsets must be consistent with above; 26 Apr 17;
+       alfa = mod( alfazeta(1) - one + pi, pi2 ) ; zeta = alfazeta(2) - one ! offsets must be consistent with above; 26 Apr 17;
 
-       lknotsurf = one ! knotsurf + ellipticity * cos( alfa ) ! 11 May 17;
+       lknotsurf = one
 
        call knotxx( lknotsurf, alfa, zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xt(1:3), xz(1:3) )
        
-      !call knotxx( knotsurf, alfa, zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xt(1:3), xz(1:3) )
-       
        rx = sqrt( xx(1)*xx(1) + xx(2)*xx(2) ) ; rt = ( xx(1)*xt(1) + xx(2)*xt(2) ) / rx ; rz = ( xx(1)*xz(1) + xx(2)*xz(2) ) / rx
        ox = sqrt( ax(1)*ax(1) + ax(2)*ax(2) ) ; ot = ( ax(1)*at(1) + ax(2)*at(2) ) / ox ; oz = ( ax(1)*az(1) + ax(2)*az(2) ) / ox
+
+       surf(1)%rr(jk) = rx
+       surf(1)%rz(jk) = xx(3)
        
        select case( irevcm )
-       case( 0 ) ;!if( ic05pdf.ne.0 ) write(ounit,2000) alfa, zeta, teta, gphi, ff(1:Ndof), ic05pdf
+       case( 0 ) ;!if( ic05pdf.ne.0 ) write(ounit,2000) teta, gphi, alfa, zeta, ff(1:Ndof), surf(1)%rr(jk), surf(1)%rz(jk), ic05pdf
         ;        ; exit
-       case( 1 ) ;                   !write(ounit,2000) alfa, zeta, teta, gphi, ff(1:Ndof)
+       case( 1 ) ;!                   write(ounit,2000) teta, gphi, alfa, zeta, ff(1:Ndof), surf(1)%rr(jk), surf(1)%rz(jk)
       !case( 2 ) ; ff(1  ) = ( xx(1) - xo(1) ) * sin(gphi) - ( xx(2) - xo(2) ) * cos(gphi)
       ! ;        ; ff(2  ) = ( rx    - ox    ) * sin(teta) - ( xx(3) - ax(3) ) * cos(teta)
       !case( 3 ) ; df(1,1) = ( xt(1)         ) * sin(gphi) - ( xt(2)         ) * cos(gphi)
@@ -264,11 +265,10 @@ subroutine rdknot
        
       enddo ! end of do; Nov 12 15;
       
-2000  format("rdknot  : " 10x " : (\a,\z)=("f12.08" ,"f12.08" ) ; (\t,\p)=("f12.08" ,"f12.08" ) ; F="2es10.02" ; ":"ic05pdf="i3" ;")
+2000  format("rdknot  : " 10x " : (\t,\p)=("f12.08" ,"f12.08" ) ; (\a,\z)=("f12.08" ,"f12.08" ) ; F="2es10.02" ; (R,Z)=("2f15.10" ) ;":"ic05pdf="i3" ;")
       
-      surf(1)%rr(jk) = sqrt( (xx(1)      )**2 + (xx(2)      )**2 )
-      surf(1)%rz(jk) =        xx(3)!xo(3) ! 27 Apr 17;
-      
+     !pause
+
      enddo ! end of do jj; Nov 12 15;
     enddo ! end of do kk; Nov 12 15;
     
@@ -287,27 +287,29 @@ subroutine rdknot
     
     open(lunit, file="input."//trim(ext), status="unknown")
     write(lunit,'("&INDATA")')
-    write(lunit,'(" DELT = 0.5, NSTEP = 10000, TCON0 = 1.0,")')
+    write(lunit,'(" DELT = 0.6, NSTEP = 1000, TCON0 = 1.0,")')
     write(lunit,'(" NS_ARRAY    =      16,      25,      36,      49,")')
-    write(lunit,'(" FTOL_ARRAY  = 1.0E-05, 1.0E-07, 1.0E-09, 1.0E-12,")')
-    write(lunit,'(" NITER_ARRAY =    1000,   10000,  100000, 1000000,")')
-! write(lunit,'(" PRECON_TYPE = 'none'")')
+    write(lunit,'(" FTOL_ARRAY  = 1.0E-04, 1.0E-06, 1.0E-08, 1.0E-10,")')
+    write(lunit,'(" NITER_ARRAY =     100,    1000,   10000,  100000,")')
+!   write(lunit,'(" PRECON_TYPE = 'none'")')
 !   write(lunit,'(" PREC2D_THRESHOLD = 1.000000E-19")')
-!   write(lunit,'(" LASYM = T, NFP = 1, MPOL ="i4", NTOR ="i3",")')  abs(Mpol), Ntor
-    write(lunit,'(" LASYM = F, NFP = 1, MPOL ="i4", NTOR ="i3",")')          8,    4
+    write(lunit,'(" LASYM = T, NFP = 1, MPOL ="i4", NTOR ="i3",")')  abs(Mpol), Ntor
+!   write(lunit,'(" LASYM = F, NFP = 1, MPOL ="i4", NTOR ="i3",")')          8,    4
     write(lunit,'(" PHIEDGE = 1.0, LFREEB = F, GAMMA = 0.0, SPRES_PED = 1.0,")')
 !   write(lunit,'(" PRES_SCALE = 0.0, PMASS_TYPE = 'power_series' ")')
-    write(lunit,'(" PRES_SCALE = 0.0, AM = 0.0, ")')
-    write(lunit,'(" NCURR = 1, CURTOR = 0.0, AC = 0.0,")')
-    write(lunit,'(" Raxis ="99(es13.05","))') cfmn(1:Ntor+1)
-    write(lunit,'(" Zaxis ="99(es13.05","))') ofmn(1:Ntor+1)
+    write(lunit,'(" PRES_SCALE = 0.0, AM = 0.0, NCURR = 1, CURTOR = 0.0, AC = 0.0,")')
+    write(lunit,'(" Raxis ="99(es13.05","))') cfmn(1:min(Ntor,8)+1)
+    write(lunit,'(" Zaxis ="99(es13.05","))') ofmn(1:min(Ntor,8)+1)
     do ii = 1, mn
+    !if( abs(cfmn(ii))+abs(sfmn(ii))+abs(efmn(ii))+abs(ofmn(ii)).gt.sqrtmachprec ) then
      write(lunit,1000) in(ii), im(ii), cfmn(ii), in(ii), im(ii), sfmn(ii), in(ii), im(ii), efmn(ii), in(ii), im(ii), ofmn(ii)
+    !endif
     enddo
     write(lunit,'("/")')
     close(lunit)
     
 1000 format(" Rbc("i3","i2") ="es23.15", Rbs("i3","i2") ="es23.15", Zbc("i3","i2") ="es23.15", Zbs("i3","i2") ="es23.15",")
+!000 format(" Rbc("i3","i2") ="f11.7", Rbs("i3","i2") ="f11.7", Zbc("i3","i2") ="f11.7", Zbs("i3","i2") ="f11.7",")
 
    endif ! end of if( myid.eq.0 ) ; Nov 12 15;
    

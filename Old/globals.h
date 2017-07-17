@@ -75,6 +75,8 @@ module kmodule
   INTEGER              :: Itopology   =        0         !latex \item \inputvar{Itopology     =        0        } : 0: VMEC-style surface; 1: knots;
   REAL                 :: knotsurf    =        0.200D-00 !latex \item \inputvar{knotsurf      =        0.200D-00} : radius of knotted plasma boundary;
   REAL                 :: ellipticity =        0.000D-00 !latex \item \inputvar{ellipticity   =        0.000D-00} : ellipticity of knotted plasma boundary;
+  INTEGER              :: nrotate     =        1         !latex \item \inputvar{nrotate       =        1        } : rotation of ellipse;
+  REAL                 :: zetaoff     =        0.000D-00 !latex \item \inputvar{zetaoff       =        0.000D-00} : rotation phase offset;
   INTEGER              :: Linitialize =        0         !latex \item \inputvar{Linitialize   =        0        } : -N: circular coils for knots; -1: read coils.xxx file;
                                                          !latex                                                     0: read xxx.focus; N: circular coils for unknots;
   REAL                 :: Rmaj        =        1.000D+00 !latex \item \inputvar{Rmaj          =        1.000D+00} : major radius of coils (now adaptive to plasma);
@@ -134,6 +136,8 @@ module kmodule
                          Itopology                     , &
                          knotsurf                      , &
                          ellipticity                   , &
+                         nrotate                       , &
+                         zetaoff                       , &
                          Linitialize                   , &
                          Rmaj                          , &
                          rmin                          , &

@@ -13,7 +13,7 @@
 subroutine knotxx( aa, teta, zeta, ax, at, az, xx, xt, xz )
   
   use kmodule, only : zero, one, pi2, small, myid, ounit, &
-                      Itopology, knotNF, knotsurf, ellipticity, &
+                      Itopology, knotNF, knotsurf, ellipticity, nrotate, zetaoff, &
                       xkc, xks, ykc, yks, zkc, zks
   
   implicit none
@@ -26,8 +26,8 @@ subroutine knotxx( aa, teta, zeta, ax, at, az, xx, xt, xz )
   
   INTEGER              :: ierr, p(1:3), q(1:3), mm
   REAL                 :: rr, rt, rz
-  REAL                 :: cqz, sqz, cpz, spz, x0(1:3), x1(1:3), x2(1:3), x3(1:3), a0, a1, a2, b0, b1, carg, sarg
-  REAL                 :: tt(1:3), td(1:3), dd(1:3), xa, ya, za, ff, nn(1:3), nd(1:3), bb(1:3), bd(1:3)
+  REAL                 :: cqz, sqz, cpz, spz, x0(1:3), x1(1:3), x2(1:3), x3(1:3), a0, a1, a2, b0, b1, carg, sarg, ctz
+  REAL                 :: tt(1:3), td(1:3), dd(1:3), xa, ya, za, ff, nn(1:3), nz(1:3), bb(1:3), bz(1:3), v1(1:3), v2(1:3), w1(1:3), w2(1:3), arg
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
@@ -132,27 +132,65 @@ subroutine knotxx( aa, teta, zeta, ax, at, az, xx, xt, xz )
           + za * ( x3(3) - td(3) * a1 - tt(3) * a2 ) ) / ff - b0 * a1 ) / a0 ! Nov 12 15;
 
    nn(1:3) =   td(1:3)                  / b0                                                   ! Nov 12 15;
-   nd(1:3) = ( dd(1:3) - nn(1:3) * b1 ) / b0                                                   ! Nov 12 15;
+   nz(1:3) = ( dd(1:3) - nn(1:3) * b1 ) / b0                                                   ! Nov 12 15;
    
    bb(1:3) = (/ tt(2)*nn(3)-tt(3)*nn(2), tt(3)*nn(1)-tt(1)*nn(3), tt(1)*nn(2)-tt(2)*nn(1) /)   ! Nov 12 15;
-   bd(1:3) = (/ td(2)*nn(3)-td(3)*nn(2), td(3)*nn(1)-td(1)*nn(3), td(1)*nn(2)-td(2)*nn(1) /) &
-           + (/ tt(2)*nd(3)-tt(3)*nd(2), tt(3)*nd(1)-tt(1)*nd(3), tt(1)*nd(2)-tt(2)*nd(1) /)   ! Nov 12 15;
+   bz(1:3) = (/ td(2)*nn(3)-td(3)*nn(2), td(3)*nn(1)-td(1)*nn(3), td(1)*nn(2)-td(2)*nn(1) /) &
+           + (/ tt(2)*nz(3)-tt(3)*nz(2), tt(3)*nz(1)-tt(1)*nz(3), tt(1)*nz(2)-tt(2)*nz(1) /)   ! Nov 12 15;
 
-   rr = aa * ( knotsurf + ellipticity * cos( teta - zeta )        )
-   rt = aa * (     zero - ellipticity * sin( teta - zeta ) * (+1) )
-   rz = aa * (     zero - ellipticity * sin( teta - zeta ) * (-1) )
+   arg = nrotate * zeta + zetaoff
+
+   v1(1:3) =     cos(arg) * nn(1:3) + sin(arg) * bb(1:3)
+
+   w1(1:3) = ( - sin(arg) * nn(1:3) + cos(arg) * bb(1:3) ) * nrotate &
+           + (   cos(arg) * nz(1:3) + sin(arg) * bz(1:3) )
+
+   v2(1:3) =   - sin(arg) * nn(1:3) + cos(arg) * bb(1:3)
+
+   w2(1:3) = ( - cos(arg) * nn(1:3) - sin(arg) * bb(1:3) ) * nrotate &
+           + ( - sin(arg) * nz(1:3) + cos(arg) * bz(1:3) )
+
+   xx(1:3) = ax(1:3) + aa * knotsurf * (   ellipticity * cos(teta) * v1(1:3) + sin(teta) * v2(1:3) )
+
+   xt(1:3) = at(1:3) + aa * knotsurf * ( - ellipticity * sin(teta) * v1(1:3) + cos(teta) * v2(1:3) )
+
+   xz(1:3) = az(1:3) + aa * knotsurf * (   ellipticity * cos(teta) * w1(1:3) + sin(teta) * w2(1:3) )
+
+!  xx(1:3) = ax(1:3) + aa * knotsurf * ( (   ellipticity * cos(teta) * cos(zeta) + sin(teta) * sin(zeta) ) * nn(1:3)   &
+!                                      + (   ellipticity * cos(teta) * sin(zeta) - sin(teta) * cos(zeta) ) * bb(1:3) )   ! 31 May 17;
+
+!  xt(1:3) = at(1:3) + aa * knotsurf * ( ( - ellipticity * sin(teta) * cos(zeta) + cos(teta) * sin(zeta) ) * nn(1:3)   &
+!                                      + ( - ellipticity * sin(teta) * sin(zeta) - cos(teta) * cos(zeta) ) * bb(1:3) )   ! 31 May 17;
+
+!  xz(1:3) = az(1:3) + aa * knotsurf * ( ( - ellipticity * cos(teta) * sin(zeta) + sin(teta) * cos(zeta) ) * nn(1:3)   &
+!                                      + ( + ellipticity * cos(teta) * cos(zeta) + sin(teta) * sin(zeta) ) * bb(1:3) ) & 
+!                    + aa * knotsurf * ( (   ellipticity * cos(teta) * cos(zeta) + sin(teta) * sin(zeta) ) * nz(1:3)   &
+!                                      + (   ellipticity * cos(teta) * sin(zeta) - sin(teta) * cos(zeta) ) * bz(1:3) )
+
+
+!  xx(1:3)  = ax(1:3) + aa * knotsurf * (   ellipticity * cos(teta) * nn(1:3) + sin(teta) * bb(1:3) )   ! 31 May 17;
+
+!  xt(1:3)  = at(1:3) + aa * knotsurf * ( - ellipticity * sin(teta) * nn(1:3) + cos(teta) * bb(1:3) )   ! 31 May 17;
+
+!  xz(1:3)  = az(1:3) + aa * knotsurf * ( + ellipticity * sin(teta) * nn(1:3) - cos(teta) * bb(1:3) ) & ! 31 May 17;
+!                     + aa * knotsurf * (   ellipticity * cos(teta) * nz(1:3) + sin(teta) * bz(1:3) )   ! 31 May 17;
+
+!  rr = aa * ( knotsurf + ellipticity * cos( teta - zeta )        )
+!  rt = aa * (     zero - ellipticity * sin( teta - zeta ) * (+1) )
+!  rz = aa * (     zero - ellipticity * sin( teta - zeta ) * (-1) )
    
-   xx(1:3) = x0(1:3) + rr * (   cos(teta) * nn(1:3) - sin(teta) * bb(1:3) ) ! aa is minor radius;
+!  xx(1:3) = ax(1:3) + rr * (   cos(teta) * nn(1:3) - sin(teta) * bb(1:3) ) ! aa is minor radius;
 
-   xt(1:3) = zero    + rt * (   cos(teta) * nn(1:3) - sin(teta) * bb(1:3) ) &
-                     + rr * ( - sin(teta) * nn(1:3) - cos(teta) * bb(1:3) )
 
-   xz(1:3) = x1(1:3) + rz * (   cos(teta) * nn(1:3) - sin(teta) * bb(1:3) ) &
-                     + rr * (   cos(teta) * nd(1:3) - sin(teta) * bd(1:3) )
+!  xt(1:3) = at(1:3) + rt * (   cos(teta) * nn(1:3) - sin(teta) * bb(1:3) ) &
+!                    + rr * ( - sin(teta) * nn(1:3) - cos(teta) * bb(1:3) )
+
+!  xz(1:3) = az(1:3) + rz * (   cos(teta) * nn(1:3) - sin(teta) * bb(1:3) ) &
+!                    + rr * (   cos(teta) * nz(1:3) - sin(teta) * bz(1:3) )
    
 !  xx(1:3) = x0(1:3) + aa * (   cos(teta) * nn(1:3) - sin(teta) * bb(1:3) ) ! aa is minor radius;
 !  xt(1:3) = zero    + aa * ( - sin(teta) * nn(1:3) - cos(teta) * bb(1:3) )
-!  xz(1:3) = x1(1:3) + aa * (   cos(teta) * nd(1:3) - sin(teta) * bd(1:3) )
+!  xz(1:3) = x1(1:3) + aa * (   cos(teta) * nz(1:3) - sin(teta) * bz(1:3) )
    
   else
    
