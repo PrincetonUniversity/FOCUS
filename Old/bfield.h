@@ -228,9 +228,9 @@ subroutine bfield2(icoil, iteta, jzeta, Bx, By, Bz)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  FATAL( bfield1, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
-  FATAL( bfield1, iteta .lt. 0 .or. iteta .gt. Nteta , iteta not in right range )
-  FATAL( bfield1, jzeta .lt. 0 .or. jzeta .gt. Nzeta , jzeta not in right range )
+  FATAL( bfield2, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
+  FATAL( bfield2, iteta .lt. 0 .or. iteta .gt. Nteta , iteta not in right range )
+  FATAL( bfield2, jzeta .lt. 0 .or. jzeta .gt. Nzeta , jzeta not in right range )
   
   NN = NFcoil
   dlx = zero; ltx = zero; lBx = zero; Bx = zero
@@ -549,7 +549,7 @@ subroutine bfield2(icoil, iteta, jzeta, Bx, By, Bz)
 
    enddo
   enddo
-  
+
   return
 
 end subroutine bfield2

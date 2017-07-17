@@ -181,8 +181,9 @@ subroutine restart( irestart )
   HWRITEIV( 1                           ,   itau                                    ,   itau                                                      )
 
   HWRITERA( itau+1, 10                  ,   evolution                               ,   evolution(0:itau,0:9)                                     ) ! itau-1
-
+  if (allocated(deriv)) then
   HWRITERA( Ndof, 6                     ,   deriv                                   ,   deriv(1:Ndof, 0:5)                                        )
+  endif
 
   HWRITERA( itau+1, Tdof                ,   coilspace                               ,   coilspace(0:itau, 1:Tdof)                                 )
   HWRITERV( Tdof                        ,   perA                                    ,   perA(1:Tdof)                                              )

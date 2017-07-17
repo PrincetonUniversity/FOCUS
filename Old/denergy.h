@@ -675,13 +675,11 @@ subroutine costfun(nderiv)
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   iter = iter + 1
-  ! if(Idisplay .eq. -1 .and. myid .eq. 0) write(ounit,'("Costfun :"12X": begin the "I6"th run.")') iter
+  if(Idisplay .eq. -2 .and. myid .eq. 0) write(ounit,'("Costfun :"12X": begin the "I6"th run.")') iter
   if(Idisplay .eq. -1) then
-   if (Lnormalize .eq. 0) then 
-      call bnormal(0)
-   else
-      call bnormal2(0)
-   endif
+
+    !call bnormal(0)
+    call bnormal2(0)
 
    if ( target_tflux .eq. 0.0 ) then
     call torflux(0)
@@ -718,12 +716,7 @@ subroutine costfun(nderiv)
 
   if (weight_bnorm .gt. sqrtmachprec) then
 
-   if (Lnormalize .eq. 0) then 
-      call bnormal(nderiv)
-   else
-      call bnormal2(nderiv)
-   endif
-   
+   call bnormal2(nderiv)
    totalenergy = totalenergy + weight_bnorm * bnorm
    if     ( nderiv .eq. 1 ) then
     t1E = t1E +  weight_bnorm * t1B
@@ -785,12 +778,12 @@ subroutine costfun(nderiv)
 
   ! call equarcl(nderiv)
   ! call specwid_df(nderiv)
-   if ( Loptimize .eq. 3) then
-    call langrange(nderiv)
-   else
-    !call specwid(nderiv)
-    call specwid_df(nderiv)
-   endif
+   !if ( Loptimize .eq. 3 ) then
+    !call langrange(nderiv)
+   !else
+    call specwid(nderiv)
+    !call specwid_df(nderiv)
+  ! endif
    
    totalenergy = totalenergy + weight_eqarc * eqarc
    if     ( nderiv .eq. 1 ) then
@@ -816,12 +809,13 @@ subroutine costfun(nderiv)
   endif
   
   ! normalization
-  if (nderiv .eq. 1) then
+  if (nderiv .ge. 1) then
      do icoil = 1, Ncoils
         t1E(icoil, 0) = t1E(icoil, 0)*Inorm
         t1E(icoil, 1:Cdof) = t1E(icoil, 1:Cdof)*Gnorm
      enddo
-  else if (nderiv .eq. 2) then
+  endif
+  if (nderiv .ge. 2) then
      do icoil = 1, Ncoils
         do jcoil = 1, Ncoils
            t2E(icoil,      0, jcoil,      0) = t2E(icoil,      0, jcoil,      0)*Inorm*Inorm
@@ -836,7 +830,11 @@ subroutine costfun(nderiv)
   if(allocated(deriv)) then
      deriv = zero
      do ii = 1, Ndof
-        call DoFconvert(ii, icl, inf)
+        !if (Loptimize .eq. 3) then
+        !   call ntconvert(ii, icl, inf)
+        !else
+           call DoFconvert(ii, icl, inf)
+        !endif
         if(allocated(t1E)) deriv(ii, 0) = t1E(icl, inf)
         if(allocated(t1B)) deriv(ii, 1) = t1B(icl, inf)
         if(allocated(t1F)) deriv(ii, 2) = t1F(icl, inf)
@@ -919,14 +917,16 @@ subroutine denergy2( tau, xdof, dE )
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine weightnormalize
-  use kmodule, only:  weight_bnorm, weight_tflux, weight_ttlen, weight_eqarc, weight_ccsep, &
+  use kmodule, only:  zero, Io,  coil, Ncoils,  &
+                      weight_bnorm, weight_tflux, weight_ttlen, weight_eqarc, weight_ccsep, &
                              bnorm,        tflux,        ttlen,        eqarc,        ccsep, &
                      target_tflux, isign, Lnormalize, sqrtmachprec, myid, ounit, lc          
   implicit none
   include "mpif.h"
 
 
-  INTEGER    :: ierr
+  INTEGER    :: ierr, icoil
+  REAL       :: tmp, cur_tflux
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   call discretecoil
@@ -946,10 +946,21 @@ subroutine weightnormalize
   if( weight_tflux .ge. sqrtmachprec ) then
 
    if ( target_tflux .eq. 0.0 ) then
-    target_tflux = 0.0
     call torflux(0)
     target_tflux = isign*sqrt(2.0*tflux)             
-    if(myid .eq. 0) write(ounit,'("Costfun :"11X" : Reset target toroidal flux to"ES23.15)') target_tflux
+    if(myid .eq. 0) write(ounit,'("costfun :"11X" : Reset target toroidal flux to"ES23.15)') target_tflux
+   else
+      tmp = target_tflux
+      target_tflux = zero
+      call torflux(0)
+      target_tflux = tmp
+      cur_tflux = isign*sqrt(2.0*tflux)
+      Io = Io * target_tflux / cur_tflux
+      do icoil = 1, Ncoils
+         coil(icoil)%I = Io
+         coil(icoil)%Io = Io
+      enddo
+      if(myid .eq. 0) write(ounit,'("costfun :"11X" : rescale coil currents with a factor of"ES23.15)') target_tflux / cur_tflux
    endif
 
    call torflux(0)
@@ -981,7 +992,7 @@ subroutine weightnormalize
 
   if( weight_eqarc .ge. sqrtmachprec ) then
 
-   call equarcl(0)
+   call specwid(0)
    if (abs(eqarc) .gt. sqrtmachprec) weight_eqarc = weight_eqarc / eqarc
    if( myid .eq. 0 ) write(ounit, 1000) "weight_eqarc", weight_eqarc
    

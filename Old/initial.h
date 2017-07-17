@@ -234,6 +234,7 @@ subroutine initial
      FATAL( initial, xtol .lt. zero  , illegal )
      FATAL( initial, eta .lt. zero .or. eta .ge. one, illegal )
      FATAL( initial, stepmx .lt. xtol, illegal )
+     NT_Niter = Ntauout
   case ( 5 )
      FATAL( initial, weight_bnorm  .lt.zero, illegal )
      FATAL( initial, weight_tflux  .lt.zero, illegal )
@@ -243,6 +244,19 @@ subroutine initial
      FATAL( initial, Ntauout .le.   0, illegal )
      FATAL( initial, Nteta   .le.   0, illegal )
      FATAL( initial, Nzeta   .le.   0, illegal )
+     CG_Niter = Ntauout
+  case ( 6 )
+     FATAL( initial, weight_bnorm  .lt.zero, illegal )
+     FATAL( initial, weight_tflux  .lt.zero, illegal )
+     FATAL( initial, weight_ttlen  .lt.zero, illegal )
+     FATAL( initial, weight_eqarc  .lt.zero, illegal )
+     FATAL( initial, weight_ccsep  .lt.zero, illegal )
+     FATAL( initial, Ntauout .le.   0, illegal )
+     FATAL( initial, Nteta   .le.   0, illegal )
+     FATAL( initial, Nzeta   .le.   0, illegal )
+     CG_Niter = Ntauout
+     NT_Niter = Ntauout
+     Ntauout = CG_Niter + NT_Niter
   case ( 9 )
      FATAL( initial, weight_bnorm  .lt.zero, illegal )
      FATAL( initial, weight_tflux  .lt.zero, illegal )
@@ -279,32 +293,34 @@ subroutine initial
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
+  itau = 0
+
   nrestart = -1 ; bmn = 0 ; discretefactor = (pi2/Nteta) * (pi2/Nzeta); Cdof = 6*NFcoil + 6 ! DoF of per coil
 
   SALLOCATE( evolution, (0:Ntauout,0:9), zero )
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   ! construct a array shudson/newton to convert different representation of array index in each coil
-  if ( Loptimize .eq. 3 ) then
-     ncdof = 1 + 3 + 8 * NFcoil
-     SALLOCATE( newton, (1:ncdof), zero)
-     idof = 0
-     ;            ; idof = idof + 1 ; newton(idof) =             0 ! coil(icoil)%I
-     ; mm = 0     ; idof = idof + 1 ; newton(idof) =             1 ! coil(icoil)%xc( 0)
-     ;            ; idof = idof + 1 ; newton(idof) =    2*NFcoil+3 ! coil(icoil)%yc( 0)
-!    ;            ; idof = idof + 1 ; newton(idof) =    4*NFcoil+5 ! coil(icoil)%zc( 0)
-     ;            ; idof = idof + 1 ; newton(idof) =    6*NFcoil+7 ! coil(icoil)%lmdc( 0)
-     do mm = 1, NFcoil ; idof = idof + 1 ; newton(idof) = mm+         1 ! coil(icoil)%xc(mm)
-        ;              ; idof = idof + 1 ; newton(idof) = mm+2*NFcoil+3 ! coil(icoil)%yc(mm)
-        ;              ; idof = idof + 1 ; newton(idof) = mm+4*NFcoil+5 ! coil(icoil)%zc(mm)
-        ;              ; idof = idof + 1 ; newton(idof) = mm+6*NFcoil+7 ! coil(icoil)%lmdc(mm)
-        ;              ; idof = idof + 1 ; newton(idof) = mm+  NFcoil+2 ! coil(icoil)%xs(mm)
-        ;              ; idof = idof + 1 ; newton(idof) = mm+3*NFcoil+4 ! coil(icoil)%ys(mm)
-        ;              ; idof = idof + 1 ; newton(idof) = mm+5*NFcoil+6 ! coil(icoil)%zs(mm)
-        ;              ; idof = idof + 1 ; newton(idof) = mm+7*NFcoil+8 ! coil(icoil)%lmds(mm)
-     enddo ! end of do mm
-     FATAL( initial, idof .ne. ncdof, counting error in constructing newton array )
-  else
+!!$  if ( Loptimize .eq. 3 ) then
+!!$     ncdof = 1 + 3 + 8 * NFcoil
+!!$     SALLOCATE( newton, (1:ncdof), zero)
+!!$     idof = 0
+!!$     ;            ; idof = idof + 1 ; newton(idof) =             0 ! coil(icoil)%I
+!!$     ; mm = 0     ; idof = idof + 1 ; newton(idof) =             1 ! coil(icoil)%xc( 0)
+!!$     ;            ; idof = idof + 1 ; newton(idof) =    2*NFcoil+3 ! coil(icoil)%yc( 0)
+!!$!    ;            ; idof = idof + 1 ; newton(idof) =    4*NFcoil+5 ! coil(icoil)%zc( 0)
+!!$     ;            ; idof = idof + 1 ; newton(idof) =    6*NFcoil+7 ! coil(icoil)%lmdc( 0)
+!!$     do mm = 1, NFcoil ; idof = idof + 1 ; newton(idof) = mm+         1 ! coil(icoil)%xc(mm)
+!!$        ;              ; idof = idof + 1 ; newton(idof) = mm+2*NFcoil+3 ! coil(icoil)%yc(mm)
+!!$        ;              ; idof = idof + 1 ; newton(idof) = mm+4*NFcoil+5 ! coil(icoil)%zc(mm)
+!!$        ;              ; idof = idof + 1 ; newton(idof) = mm+6*NFcoil+7 ! coil(icoil)%lmdc(mm)
+!!$        ;              ; idof = idof + 1 ; newton(idof) = mm+  NFcoil+2 ! coil(icoil)%xs(mm)
+!!$        ;              ; idof = idof + 1 ; newton(idof) = mm+3*NFcoil+4 ! coil(icoil)%ys(mm)
+!!$        ;              ; idof = idof + 1 ; newton(idof) = mm+5*NFcoil+6 ! coil(icoil)%zs(mm)
+!!$        ;              ; idof = idof + 1 ; newton(idof) = mm+7*NFcoil+8 ! coil(icoil)%lmds(mm)
+!!$     enddo ! end of do mm
+!!$     FATAL( initial, idof .ne. ncdof, counting error in constructing newton array )
+!!$  else
 
      ncdof = 1 + 3 + 6 * NFcoil;
      SALLOCATE( shudson, (1:ncdof), zero)
@@ -321,7 +337,7 @@ subroutine initial
         ;            ; idof = idof + 1 ; shudson(idof) = mm+5*NFcoil+6 ! coil(icoil)%zs(mm)
      enddo ! end of do mm
      FATAL( initial, idof .ne. ncdof, counting error in constructing shudson array )
-  endif
+!  endif
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

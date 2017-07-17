@@ -19,18 +19,17 @@ subroutine bnormal( ideriv )
 !------------------------------------------------------------------------------------------------------   
   use globals, only: zero, half, one, pi2, sqrtmachprec, bsconstant, ncpu, myid, ounit, &
        coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, &
-       bnorm, t1B, t2B, bn, Ndof, dBx
+       bnorm, t1B, t2B, bn, Ndof, dB
 
   implicit none
   include "mpif.h"
 
-  INTEGER, INTENT(in)               :: ideriv
+  INTEGER, INTENT(in)                   :: ideriv
   !--------------------------------------------------------------------------------------------
   INTEGER                               :: astat, ierr
   INTEGER                               :: icoil, iteta, jzeta, idof, ND, NumGrid
-  REAL                                  :: lbnorm
   REAL, dimension(0:Nteta-1, 0:Nzeta-1) :: lbx, lby, lbz, lbn         ! local Bx, By and Bz
-  REAL, allocatable                     :: ldBx(:,:,:)
+  REAL, dimension(1:Ndof, 0:Nteta-1, 0:Nzeta-1) :: ldB
 
   !--------------------------initialize and allocate arrays------------------------------------- 
 
@@ -47,6 +46,7 @@ subroutine bnormal( ideriv )
   !-------------------------------calculate Bn-------------------------------------------------- 
   if( ideriv >= 0 ) then
 
+ 
      do jzeta = 0, Nzeta - 1
         do iteta = 0, Nteta - 1
            if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;
@@ -63,7 +63,8 @@ subroutine bnormal( ideriv )
            !surf(1)%bn(iteta, jzeta) = lbn(iteta, jzeta) + surf(1)%pb(iteta, jzeta) !coilBn - targetBn;
         enddo ! end do iteta
      enddo ! end do jzeta
-  
+     
+     call MPI_BARRIER( MPI_COMM_WORLD, ierr )
      call MPI_REDUCE( lbn, bn        , NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
      call MPI_REDUCE( lbx, surf(1)%Bx, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
      call MPI_REDUCE( lby, surf(1)%By, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
@@ -76,7 +77,7 @@ subroutine bnormal( ideriv )
 
      surf(1)%bn = bn + surf(1)%pb       ! total Bn;
 
-     bnorm = sum( surf(1)%bn*surf(1)%bn * surf(1)%ds ) * half * discretefactor
+     bnorm = sum( surf(1)%bn * surf(1)%bn * surf(1)%ds ) * half * discretefactor
 
      ! mapping the last  row & column; only used for plotting;
 !!$             bn(Nteta, 0:Nzeta-1) =         bn(0, 0:Nzeta-1)
@@ -102,9 +103,7 @@ subroutine bnormal( ideriv )
   !-------------------------------calculate Bn/x------------------------------------------------
   if ( ideriv >= 1 ) then
 
-     SALLOCATE( ldBx, (1:Ndof, 0:Nteta-1, 0:Nzeta-1), zero )
-     t1B = zero
-     dBx = zero
+     t1B = zero ; ldB = zero ; dB = zero
 
      do jzeta = 0, Nzeta - 1
         do iteta = 0, Nteta - 1
@@ -118,7 +117,7 @@ subroutine bnormal( ideriv )
               if ( coil(icoil)%Ic /= 0 ) then !if current is free;
                  call bfield0(icoil, iteta, jzeta, &
                       & coil(icoil)%Bx(0,0), coil(icoil)%By(0,0), coil(icoil)%Bz(0,0))
-                 ldBx(idof+1, iteta, jzeta) = bsconstant* ( coil(icoil)%Bx(0,0)*surf(1)%nx(iteta,jzeta)   &
+                 ldB(idof+1, iteta, jzeta) = bsconstant * ( coil(icoil)%Bx(0,0)*surf(1)%nx(iteta,jzeta)   &
                       &                                   + coil(icoil)%By(0,0)*surf(1)%ny(iteta,jzeta)   &
                       &                                   + coil(icoil)%Bz(0,0)*surf(1)%nz(iteta,jzeta) )
                  idof = idof +1
@@ -128,7 +127,7 @@ subroutine bnormal( ideriv )
                  call bfield1(icoil, iteta, jzeta, &
                       &       coil(icoil)%Bx(1:ND,0), coil(icoil)%By(1:ND,0), coil(icoil)%Bz(1:ND,0), ND)
 
-                 ldBx(idof+1:idof+ND, iteta, jzeta) = bsconstant * coil(icoil)%I          &
+                 ldB(idof+1:idof+ND, iteta, jzeta) = bsconstant * coil(icoil)%I          &
                       &                            * ( coil(icoil)%Bx(1:ND,0)*surf(1)%nx(iteta,jzeta)   &
                       &                              + coil(icoil)%By(1:ND,0)*surf(1)%ny(iteta,jzeta)   &
                       &                              + coil(icoil)%Bz(1:ND,0)*surf(1)%nz(iteta,jzeta) )
@@ -142,19 +141,21 @@ subroutine bnormal( ideriv )
         enddo
      enddo
 
-     call MPI_REDUCE(ldBx, dBx, Ndof*NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
-     RlBCAST( dBx, Ndof*NumGrid, 0 )
+     call MPI_BARRIER( MPI_COMM_WORLD, ierr )
+     call MPI_REDUCE(ldB, dB, Ndof*NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
+     RlBCAST( dB, Ndof*NumGrid, 0 )
 
      do idof = 1, Ndof
-        t1B(idof) = sum( surf(1)%bn(0:Nteta-1, 0:Nzeta-1)* dBx(idof, 0:Nteta-1, 0:Nzeta-1) &
+        t1B(idof) = sum( surf(1)%bn(0:Nteta-1, 0:Nzeta-1) * dB(idof, 0:Nteta-1, 0:Nzeta-1) &
                         * surf(1)%ds(0:Nteta-1, 0:Nzeta-1) ) * discretefactor
      enddo
 
-     call MPI_barrier( MPI_COMM_WORLD, ierr )
 
   endif
 
   !--------------------------------------------------------------------------------------------
-  
+
+  call MPI_barrier( MPI_COMM_WORLD, ierr )
+
   return
 end subroutine bnormal

@@ -10,7 +10,7 @@
 
 !latex \subsection{overview}
 !latex \bi
-!latex \item[1.] This routine is called by \link{notopt} only if \inputvar{Itopology} $= 2$.
+!latex \item[1.] \red{This routine need to be updated}.
 !latex \item[2.] A knot is a closed curve in three-dimensional space.
 !latex \item[3.] The parameters describing the knot, namely \internal{xkc}, \internal{yks} and 
 !latex \internal{zks}, are read from \verb+knot+.

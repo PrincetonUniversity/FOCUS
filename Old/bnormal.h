@@ -1390,7 +1390,7 @@ subroutine bnormal2( nderiv )
   INTEGER           :: astat, ierr
   INTEGER           :: icoil, NN,  iteta, jzeta, c1, c2, n1, n2   ! icoil, iteta, jzeta, kseg are local
   REAL              :: r, rm2, rm3, rm4, bx, by, bz, lm, c12, lbnorm, start, finish
-  REAL, allocatable :: l1B( :, :), l2B( :, :, :, :), b1n( :, :), b2n( :, :, :, :), b1m( :, :), b2m( :, :, :, :)
+  REAL, allocatable :: l1B( :, :), l2B( :, :, :, :), b1n( :, :), b2n( :, :, :, :)!, b1m( :, :), b2m( :, :, :, :)
   INTEGER           :: array2size, array4size
   REAL              :: lBx(0:Nteta, 0:Nzeta), lBy(0:Nteta, 0:Nzeta), lBz(0:Nteta, 0:Nzeta)
 
@@ -1580,7 +1580,7 @@ subroutine bnormal2( nderiv )
 
      if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;
      bx = zero; by = zero; bz = zero
-
+     
      do icoil = 1, Ncoils
 
       call bfield2(icoil, iteta, jzeta, coil(icoil)%Bx(0:Cdof,0:Cdof), coil(icoil)%By(0:Cdof,0:Cdof), coil(icoil)%Bz(0:Cdof,0:Cdof))
@@ -1595,8 +1595,9 @@ subroutine bnormal2( nderiv )
 
      enddo ! end do icoil
 
+     
      lBx(iteta, jzeta) = bx; lBy(iteta, jzeta) = by; lBz(iteta, jzeta) = bz;
-     bn(iteta, jzeta) = bx * surf(1)%nx(iteta,jzeta) + by * surf(1)%ny(iteta,jzeta) + bz * surf(1)%nz(iteta,jzeta)
+      bn(iteta, jzeta) = bx * surf(1)%nx(iteta,jzeta) + by * surf(1)%ny(iteta,jzeta) + bz * surf(1)%nz(iteta,jzeta)
      !bm(iteta, jzeta) = bx * bx + by * by + bz * bz ! magnitude square of B    
 
      ! derivatives for bn & bm terms
@@ -1607,9 +1608,9 @@ subroutine bnormal2( nderiv )
      ! b1m( 0, 0) = bm(iteta, jzeta)
 
      do c1 = 1, Ncoils
-      b1n(c1, 0       )  =       coil(c1)%Bx( 0, 0)*surf(1)%nx(iteta,jzeta) + coil(c1)%By( 0, 0)*surf(1)%ny(iteta,jzeta) + coil(c1)%Bz( 0, 0)*surf(1)%nz(iteta,jzeta)
+      b1n(c1, 0       )  = coil(c1)%Bx( 0, 0)*surf(1)%nx(iteta,jzeta) + coil(c1)%By( 0, 0)*surf(1)%ny(iteta,jzeta) + coil(c1)%Bz( 0, 0)*surf(1)%nz(iteta,jzeta)
       do n1 = 1, Cdof
-       b1n(c1,n1      )  =     ( coil(c1)%Bx(n1, 0)*surf(1)%nx(iteta,jzeta) + coil(c1)%By(n1, 0)*surf(1)%ny(iteta,jzeta) + coil(c1)%Bz(n1, 0)*surf(1)%nz(iteta,jzeta) ) * coil(c1)%I 
+       b1n(c1,n1      )  = ( coil(c1)%Bx(n1, 0)*surf(1)%nx(iteta,jzeta) + coil(c1)%By(n1, 0)*surf(1)%ny(iteta,jzeta) + coil(c1)%Bz(n1, 0)*surf(1)%nz(iteta,jzeta) ) * coil(c1)%I 
       enddo
      enddo
 
@@ -1617,9 +1618,11 @@ subroutine bnormal2( nderiv )
      do c2 = 1, Ncoils
       do n2 = 1, Cdof
 
-       b2n(c2, 0,c2,n2)  =       coil(c2)%Bx(n2, 0)*surf(1)%nx(iteta,jzeta) + coil(c2)%By(n2, 0)*surf(1)%ny(iteta,jzeta) + coil(c2)%Bz(n2, 0)*surf(1)%nz(iteta,jzeta)
-       b2n(c2,n2,c2, 0)  =       b2n(c2, 0,c2,n2)
-       
+       b2n(c2, 0,c2,n2)  = coil(c2)%Bx(n2, 0)*surf(1)%nx(iteta,jzeta) + coil(c2)%By(n2, 0)*surf(1)%ny(iteta,jzeta) + coil(c2)%Bz(n2, 0)*surf(1)%nz(iteta,jzeta)
+       b2n(c2,n2,c2, 0)  = coil(c2)%Bx(n2, 0)*surf(1)%nx(iteta,jzeta) + coil(c2)%By(n2, 0)*surf(1)%ny(iteta,jzeta) + coil(c2)%Bz(n2, 0)*surf(1)%nz(iteta,jzeta) !bug here! 20170524
+       !if(c2 .eq.1 .and. n2 .eq.1) write(*,*) "I'm here!"
+       !WRITE(ounit, '("myid = "I3" ; c2 = " I3 " : n2 = " I3 " ; b2n(c2,n2,c2,0) = "ES23.15)'), myid, c2, n2, b2n(c2,n2,c2,0)
+
       enddo
      enddo
      
@@ -1629,7 +1632,7 @@ subroutine bnormal2( nderiv )
       do n2 = 1, Cdof
        do n1 = 1, Cdof
         
-        b2n(c2,n1,c2,n2)  =     ( coil(c2)%Bx(n1,n2)*surf(1)%nx(iteta,jzeta) + coil(c2)%By(n1,n2)*surf(1)%ny(iteta,jzeta) + coil(c2)%Bz(n1,n2)*surf(1)%nz(iteta,jzeta) ) * coil(c2)%I
+        b2n(c2,n1,c2,n2)  = ( coil(c2)%Bx(n1,n2)*surf(1)%nx(iteta,jzeta) + coil(c2)%By(n1,n2)*surf(1)%ny(iteta,jzeta) + coil(c2)%Bz(n1,n2)*surf(1)%nz(iteta,jzeta) ) * coil(c2)%I
 
        enddo
       enddo
@@ -1659,7 +1662,7 @@ subroutine bnormal2( nderiv )
 #ifdef BNORM
           l2B(c1,n1,c2,n2) = l2B(c1,n1,c2,n2) + ( b1n(c1,n1)*b1n(c2,n2) + (bn(iteta,jzeta)-surf(1)%bnt(iteta,jzeta))*b2n(c1,n1,c2,n2) ) * surf(1)%ds(iteta,jzeta)
 #else
-         l2B(c1,n1,c2,n2) = l2B(c1,n1,c2,n2) + ( b1n(c1,n1)*b1n(c2,n2) + bn(iteta,jzeta) *b2n(c1,n1,c2,n2) ) * surf(1)%ds(iteta,jzeta)
+          l2B(c1,n1,c2,n2) = l2B(c1,n1,c2,n2) + ( b1n(c1,n1)*b1n(c2,n2) + bn(iteta,jzeta) *b2n(c1,n1,c2,n2) ) * surf(1)%ds(iteta,jzeta)
 #endif
         enddo
        enddo
@@ -1744,13 +1747,13 @@ subroutine bnormal2( nderiv )
   SaveBz(0:Nteta-1,Nzeta) = SaveBz(0:Nteta-1, 0)
   SaveBz(Nteta, Nzeta) = SaveBz(0, 0)
 
-  do icoil = 1, Ncoils
-   if( allocated(coil(icoil)%Bx)) then
-    DALLOCATE(coil(icoil)%Bx)
-    DALLOCATE(coil(icoil)%By)
-    DALLOCATE(coil(icoil)%Bz)
-   endif
-  enddo
+!!$  do icoil = 1, Ncoils
+!!$   if( allocated(coil(icoil)%Bx)) then
+!!$    DALLOCATE(coil(icoil)%Bx)
+!!$    DALLOCATE(coil(icoil)%By)
+!!$    DALLOCATE(coil(icoil)%Bz)
+!!$   endif
+!!$  enddo
 
   tbn(Nteta,0:Nzeta-1) = tbn(0, 0:Nzeta-1)  !unassigned arrays; 2017/02/10
   tbn(0:Nteta-1,Nzeta) = tbn(0:Nteta-1, 0)

@@ -12,6 +12,8 @@
 *.log
 *.h5
 *~
+.DS_Store
+*/.DS_Store
 
 .cproject
 .idea/

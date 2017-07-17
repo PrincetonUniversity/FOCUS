@@ -55,7 +55,7 @@ module kmodule
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-  INTEGER              :: ounit      =  0
+  INTEGER              :: ounit      =  6
 
   INTEGER              :: lunit      =  8
   INTEGER              :: funit      =  9
@@ -205,7 +205,7 @@ module kmodule
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  INTEGER              :: Ncoils, itime, iteta, jzeta, nrestart, itau, Cdof, Ndof, Tdof, Ndim, iter, nfixcur, nfixgeo
+  INTEGER              :: Ncoils, itime, iteta, jzeta, nrestart, itau, Cdof, Ndof, Tdof, Ndim, iter, nfixcur, nfixgeo, CG_Niter, NT_Niter
   REAL                 :: totalenergy, discretefactor, Inorm, Gnorm
   LOGICAL              :: Langrange = .false.           ! flag for whether including langrange multipiler in DoFs; 08/17/2016
 
@@ -257,6 +257,7 @@ module kmodule
   REAL, allocatable    :: t1E(:,:), t2E(:,:,:,:), t1B(:,:), t2B(:,:,:,:), bn(:,:), bm(:,:), t1F(:,:), t2F(:,:,:,:), t1L(:,:), t2L(:,:,:,:), &
                           t1A(:,:), t2A(:,:,:,:), t1C(:,:), t2C(:,:,:,:), dlc(:,:,:), dls(:,:,:), n1E(:,:), n2E(:,:,:,:), tbn(:,:)
   REAL                 :: bnorm, tflux, ttlen, eqarc, ccsep
+  !REAL, allocatable    :: HESD(:), HESU(:)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

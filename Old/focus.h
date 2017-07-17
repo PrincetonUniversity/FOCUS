@@ -93,9 +93,13 @@ PROGRAM focus
 ! case( -1 )   ; call NAGderiv1   ; irestart=0  ! NAG routine check of the first  derivatives        ;
   case(  1 )   ; call descent     ; irestart=1  ! differential flow; shudson            ; 14 Apr 16  ;
   case(  2 )   ; call descent2    ; irestart=1  ! differential flow; czhu               ; 14 Apr 16  ;
-  case(  3 )   ; call Powell      ; irestart=1  ! Powell nonlinear solver; NAG C05PDF; with    derivs;
-  case(  4 )   ; call Newton      ; irestart=1  ! Newton minimum finder  ; NAG E04LYF; with    derivs;
+  case(  3 )   ; call hybrid      ; irestart=1  ! Powell nonlinear solver; NAG C05PDF; with    derivs;
+! case(  3 )   ; call Powell      ; irestart=1  ! Powell nonlinear solver; NAG C05PDF; with    derivs;
+  case(  4 )   ; call truncnt     ; irestart=1  ! Truncated Newton method with PCG   ; with    derivs;
+! case(  4 )   ; call Newton      ; irestart=1  ! Newton minimum finder  ; NAG E04LYF; with    derivs;
   case(  5 )   ; call congrad     ; irestart=1  ! conjugate gradient                 ; with    derivs;
+  case(  6 )   ; call congrad     ; call hybrid  ; irestart=1
+!  case(  6 )   ; call congrad     ; call truncnt; irestart=1  ! conjugate gradient & truncated Newton method; with derivs;
   case(  9 )   ; call SVD         ; irestart=1  ! Analyze current Heissian matrix using SVD; F08KBF  ;
   case default ;                  ; irestart=1
   end select
@@ -148,40 +152,3 @@ PROGRAM focus
 END PROGRAM focus
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-
-SUBROUTINE test
-
-!just for benchmarking with the new code; 04/04/2017
-  
-  use kmodule, only: coil, surf, NFcoil, Ncoils, Nteta, Nzeta, Ndof, bnorm, t1B, Cdof, &
-                     zero, pi2, myid, ounit, NDcoil
-  implicit none
-  include "mpif.h"
-
-  INTEGER :: icoil, iteta, jzeta, ierr, astat
-  
-  !Cdof = 6*NFcoil + 3
-  icoil = 1 ; iteta = 0; jzeta = 0
-
-  if(.not. allocated(coil(icoil)%Bx)) then 
-     SALLOCATE( coil(icoil)%Bx, (0:Cdof, 0:Cdof), zero )
-     SALLOCATE( coil(icoil)%By, (0:Cdof, 0:Cdof), zero )
-     SALLOCATE( coil(icoil)%Bz, (0:Cdof, 0:Cdof), zero )
-  endif
-  
-     call bfield1(icoil, iteta, jzeta, coil(icoil)%Bx(0:Cdof,0), coil(icoil)%By(0:Cdof,0), &
-          coil(icoil)%Bz(0:Cdof,0))
-    
-     if( myid==0 ) write(ounit,*) "Bx/x = ", coil(icoil)%Bx(0:Cdof,0) * pi2/NDcoil
-     if( myid==0 ) write(ounit,*) "By/x = ", coil(icoil)%By(0:Cdof,0) * pi2/NDcoil
-     if( myid==0 ) write(ounit,*) "Bz/x = ", coil(icoil)%Bz(0:Cdof,0) * pi2/NDcoil
-
-  !endif
-
-  call bnormal2(0)
-  if( myid==0 ) write(ounit,*) "bnorm = ", bnorm
-  !call bnormal(1)
-  !write(ounit,*) "OB/x = ", t1B(1:Ncoils, 0:Cdof)
-
-end SUBROUTINE test
