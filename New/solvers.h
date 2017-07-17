@@ -159,7 +159,7 @@ subroutine costfun(ideriv)
 
      call torflux(0)
 
-     if (case_length == 1 .and. sum(coil(1:Ncoils)%Lo) < sqrtmachprec) then
+     if ( (case_length == 1) .and. (sum(coil(1:Ncoils)%Lo) < sqrtmachprec) ) then
         coil(1:Ncoils)%Lo = one
         call length(0)
         coil(1:Ncoils)%Lo = coil(1:Ncoils)%L

@@ -5,9 +5,8 @@ SUBROUTINE diagnos
 ! DATE: 07/13/2017
 ! diagonose the coil performance
 !------------------------------------------------------------------------------------------------------   
-  use globals, only: zero, myid, ounit, IsQuiet, case_optimize, coil, surf, Ncoils, Nteta, Nzeta, &
-       bnorm, bharm, tflux, ttlen, specw, ccsep
-
+  use globals, only: zero, one, sqrtmachprec, myid, ounit, IsQuiet, case_optimize, case_length, &
+       coil, surf, Ncoils, Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep
                      
   implicit none
   include "mpif.h"
@@ -44,6 +43,8 @@ SUBROUTINE diagnos
   
   ! calculate the average length
   AvgLength = zero
+  if ( (case_length == 1) .and. (sum(coil(1:Ncoils)%Lo) < sqrtmachprec) ) coil(1:Ncoils)%Lo = one
+  call length(0)
   do icoil = 1, Ncoils
      AvgLength = AvgLength + coil(icoil)%L
   enddo

@@ -93,6 +93,8 @@ subroutine AllocData(itype)
         call readbmn
         SALLOCATE(  Bmnc , (1:NBmn), zero )  ! current Bmn cos values;
         SALLOCATE(  Bmns , (1:NBmn), zero )  ! current Bmn sin values;
+        SALLOCATE( iBmnc , (1:NBmn), zero )  ! initial Bmn cos values;
+        SALLOCATE( iBmns , (1:NBmn), zero )  ! initial Bmn sin values;
      endif
 
      ! tflux needed;

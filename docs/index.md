@@ -14,7 +14,7 @@ For a given plamsa configuration (with or without target Bn distributions), FOCU
 - [Running](#running)
 - [Output files](#output-files)
 - [Plotting](#plotting)
-- [More documentations](#documentations)
+- [Documentations](#documentations)
 
 # Before running
 
@@ -184,7 +184,7 @@ Here are some basic instructions for using the python package (later I will writ
 
 # Documentations
 In the source files, the comments starting with "!latex " can be exported into a tex file and generate pdf documentations.
-You can find some of them in [Subroutins](https://princetonuniversity.github.io/FOCUS/subroutines).
+You can find some of them in [Subroutines](https://princetonuniversity.github.io/FOCUS/subroutines).
 
 &nbsp;
 

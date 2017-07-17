@@ -270,11 +270,8 @@ SUBROUTINE saveBmn
 
   if (weight_bharm > machprec) then
      
-     SALLOCATE( iBmnc, (1:NBmn), zero )
-     SALLOCATE( iBmns, (1:NBmn), zero )
-
-     FATAL( saveBmn, .not. allocated(Bmnc), you should allocate Bmnc first. )
-     FATAL( saveBmn, .not. allocated(Bmns), you should allocate Bmns first. )
+     FATAL( saveBmn, .not. allocated( Bmnc), you should allocate  Bmnc first. )
+     FATAL( saveBmn, .not. allocated(iBmnc), you should allocate iBmnc first. )
 
      iBmnc = Bmnc
      iBmns = Bmns

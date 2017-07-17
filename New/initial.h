@@ -196,7 +196,7 @@
 !latex    \textit{specify post-processing options.} \\
 !latex    \bi \vspace{-5mm}
 !latex    \item[ 0:] no extra post-processing;
-!latex    \item[ 1:] evaluate the current coils; more details; (not ready)
+!latex    \item[ 1:] evaluate the present coils for each cost functions, coil curvature, coil-coil separation, and coil-plasma separation;
 !latex    \item[ 2:] write mgrid file; (not ready)
 !latex    \ei
 !latex 
@@ -415,10 +415,10 @@ subroutine initial
 
      select case ( case_length )
      case ( 1 )
-        if (IsQuiet < 0) write(ounit, '(8X,": case_bnormal = "I1" ; quadratic format of length constraint")')&
+        if (IsQuiet < 0) write(ounit, '(8X,": case_length = "I1" ; quadratic format of length constraint")')&
              case_length
      case ( 2 )
-        if (IsQuiet < 0) write(ounit, '(8X,": case_bnormal = "I1" ; exponential format of length constraint" &
+        if (IsQuiet < 0) write(ounit, '(8X,": case_length = "I1" ; exponential format of length constraint" &
              )') case_length
      case default
         FATAL( initial, .true., selected case_length is not supported )
