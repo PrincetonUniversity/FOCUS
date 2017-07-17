@@ -131,7 +131,7 @@ subroutine wtmgrid
   CHARACTER*13         :: suffix
   CHARACTER*30         :: curlabel(1:1)
 
-  np =  72  ; nz = 242  ; nr = 242 ; Mfp = 2 ! SHOULD BE USER INPUT; 04 Aug 16;
+  np = 36 ; nz = 128 ; nr = 128 ; Mfp = 1 ! SHOULD BE USER INPUT; 04 Aug 16;
 
   SALLOCATE( BRZp, (1:3,1:Nr,1:Nz,1:Np), zero )
   SALLOCATE(dBRZp, (1:3,1:Nr,1:Nz,1:Np), zero )
@@ -140,15 +140,15 @@ subroutine wtmgrid
 
   Pmin = zero ; Pmax = pi2 ! DO NOT CHANGE; 04 Aug 16;
 
- !call plasdim(Rmin, Rmax, Zmin, Zmax)  !calculate plasma surface boundary  ;09/11/2016
+  call plasdim(Rmin, Rmax, Zmin, Zmax)  !calculate plasma surface boundary  ;09/11/2016
  !call coildim(Rmin, Rmax, Zmin, Zmax)
 
- !gap = 0.3
- !Rmin = Rmin -gap; Rmax = Rmax + gap
- !Zmin = Zmin -gap; Zmax = Zmax + gap
+  gap = 0.05
+  Rmin = Rmin - gap; Rmax = Rmax + gap
+  Zmin = Zmin - gap; Zmax = Zmax + gap
 
-  Rmin =  2.4 ; Rmax =  3.6
-  Zmin = -0.6 ; Zmax =  0.6
+ !Rmin =  2.4 ; Rmax =  3.6
+ !Zmin = -0.6 ; Zmax =  0.6
 
   if( myid.eq.0 ) write( ounit,'("wtmgrid : " 10x " : writing mgrid or m3dc1 file at grid of [ "4(ES23.15,2X)" ]",3i6)') Rmin, Rmax, Zmin, Zmax, np, nr, nz
 
