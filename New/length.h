@@ -76,7 +76,7 @@ subroutine length(ideriv)
 
   if( ideriv >= 0 ) then
 
-     do icoil = 1, Ncoils
+     do icoil = 1, Ncoils     !only care about unique coils;
 
         !if( myid.ne.modulo(icoil-1,ncpu) ) cycle ! parallelization loop;
         call LenDeriv0(icoil, coil(icoil)%L)

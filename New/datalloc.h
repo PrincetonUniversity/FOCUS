@@ -17,11 +17,11 @@ subroutine AllocData(itype)
   !-------------------------------------------------------------------------------------------
   if (itype == -1) then ! dof related data;
 
-     Ndof = 0; Tdof = 0
+     Cdof = 0; Ndof = 0; Tdof = 0
 
-     do icoil = 1, Ncoils
-        select case (coil(icoil)%itype)
+     do icoil = 1, Ncoils*Npc
         
+        select case (coil(icoil)%itype)       
         case(1)
            ! get number of DoF for each coil and allocate arrays;
            NF = FouCoil(icoil)%NF
@@ -34,9 +34,14 @@ subroutine AllocData(itype)
         case default
            FATAL(AllocData, .true., not supported coil types)
         end select
+        
+     enddo
+
+     do icoil = 1, Ncoils
 
         Ndof = Ndof + coil(icoil)%Ic + DoF(icoil)%ND
-        Tdof = Tdof + 1              + ND
+        Tdof = Tdof + 1              + 6*(FouCoil(icoil)%NF)+3
+        if (DoF(icoil)%ND >= Cdof) Cdof = DoF(icoil)%ND ! find the largest ND for single coil;
 
      enddo
 
@@ -79,13 +84,6 @@ subroutine AllocData(itype)
         SALLOCATE( surf(1)%Bx, (0:Nteta-1,0:Nzeta-1), zero ) !Bx on the surface;
         SALLOCATE( surf(1)%By, (0:Nteta-1,0:Nzeta-1), zero ) !By on the surface;
         SALLOCATE( surf(1)%Bz, (0:Nteta-1,0:Nzeta-1), zero ) !Bz on the surface;
-
-        do icoil = 1, Ncoils
-           ND = DoF(icoil)%ND
-           SALLOCATE( coil(icoil)%Bx, (0:ND, 0:ND), zero )   ! Bx;
-           SALLOCATE( coil(icoil)%By, (0:ND, 0:ND), zero )   ! By;  
-           SALLOCATE( coil(icoil)%Bz, (0:ND, 0:ND), zero )   ! Bz;
-        enddo
      endif
 
      ! Bharm needed;
@@ -93,18 +91,8 @@ subroutine AllocData(itype)
         call readbmn
         SALLOCATE(  Bmnc , (1:NBmn), zero )  ! current Bmn cos values;
         SALLOCATE(  Bmns , (1:NBmn), zero )  ! current Bmn sin values;
-        SALLOCATE( iBmnc , (1:NBmn), zero )  ! initial Bmn cos values;
-        SALLOCATE( iBmns , (1:NBmn), zero )  ! initial Bmn sin values;
-     endif
-
-     ! tflux needed;
-     if (weight_tflux > sqrtmachprec .or. IsQuiet <= -2) then
-        do icoil = 1, Ncoils
-           ND = DoF(icoil)%ND
-           SALLOCATE( coil(icoil)%Ax, (0:ND, 0:ND), zero )   ! Ax;
-           SALLOCATE( coil(icoil)%Ay, (0:ND, 0:ND), zero )   ! Ay;  
-           SALLOCATE( coil(icoil)%Az, (0:ND, 0:ND), zero )   ! Az;
-        enddo
+        SALLOCATE( iBmnc , (1:NBmn), zero )
+        SALLOCATE( iBmns , (1:NBmn), zero )
      endif
             
   endif
@@ -119,12 +107,12 @@ subroutine AllocData(itype)
      ! Bnorm related;
      if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec) then
         SALLOCATE( t1B, (1:Ndof), zero )                       !total dB/dx;
-        SALLOCATE( dB , (1:Ndof, 0:Nteta-1, 0:Nzeta-1), zero ) !distribution of dB/dx;
      endif
 
      ! Bharm related;
      if (weight_bharm > sqrtmachprec) then
         SALLOCATE( t1H,  (1:Ndof), zero )
+        SALLOCATE( dB , (1:Ndof, 0:Nteta-1, 0:Nzeta-1), zero ) !distribution of dB/dx;
      endif
 
      ! tflux needed;

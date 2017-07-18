@@ -5,13 +5,13 @@ SUBROUTINE diagnos
 ! DATE: 07/13/2017
 ! diagonose the coil performance
 !------------------------------------------------------------------------------------------------------   
-  use globals, only: zero, one, sqrtmachprec, myid, ounit, IsQuiet, case_optimize, case_length, &
-       coil, surf, Ncoils, Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep
+  use globals, only: zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
+       Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length
                      
   implicit none
   include "mpif.h"
 
-  INTEGER           :: icoil, itmp, astat, ierr, mf=20, nf=20
+  INTEGER           :: icoil, itmp, astat, ierr, NF, idof
   LOGICAL           :: lwbnorm = .True. , l_raw = .False.!if use raw coils data
   REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist
   REAL, parameter   :: infmax = 1.0E6
@@ -19,13 +19,37 @@ SUBROUTINE diagnos
 
   if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "----Coil diagnostic--------------------------------"
 
+  !--------------------------------cost functions-------------------------------------------------------  
   if (case_optimize == 0) call AllocData(0) ! if not allocate data;
   call costfun(0)
 
   if (myid == 0) write(ounit, '("diagnos : "6(A12," ; "))') , &
        "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "spectral", "c-c sep." 
-  if (myid == 0) write(ounit, '("diagnos : "6(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, specw, ccsep
+  if (myid == 0) write(ounit, '("        : "6(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, specw, ccsep
 
+  !save all the coil parameters;
+  if (allocated(coilspace)) then
+     idof = 0
+     do icoil = 1, Ncoils
+        coilspace(iout, idof+1 ) = coil(icoil)%I ;  idof = idof + 1
+
+        select case (coil(icoil)%itype)
+        case (1)
+           NF = FouCoil(icoil)%NF
+           coilspace(iout, idof+1:idof+NF+1) = FouCoil(icoil)%xc(0:NF) ; idof = idof + NF +1
+           coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%xs(1:NF) ; idof = idof + NF
+           coilspace(iout, idof+1:idof+NF+1) = FouCoil(icoil)%yc(0:NF) ; idof = idof + NF +1
+           coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%ys(1:NF) ; idof = idof + NF
+           coilspace(iout, idof+1:idof+NF+1) = FouCoil(icoil)%zc(0:NF) ; idof = idof + NF +1
+           coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%zs(1:NF) ; idof = idof + NF
+        case default
+           FATAL(descent, .true., not supported coil types)
+        end select
+     enddo
+     FATAL( output , idof .ne. Tdof, counting error in restart )
+  endif
+
+  !-------------------------------coil maximum curvature----------------------------------------------------  
   MaxCurv = zero
   do icoil = 1, Ncoils
      call curvature(icoil)
@@ -40,8 +64,8 @@ SUBROUTINE diagnos
   enddo
   if(myid .eq. 0) write(ounit, '("diagnos : Maximum curvature of all the coils is  :" ES23.15 &
        " ; at coil " I3)') MaxCurv, itmp
-  
-  ! calculate the average length
+
+  !-------------------------------average coil length-------------------------------------------------------  
   AvgLength = zero
   if ( (case_length == 1) .and. (sum(coil(1:Ncoils)%Lo) < sqrtmachprec) ) coil(1:Ncoils)%Lo = one
   call length(0)
@@ -51,7 +75,7 @@ SUBROUTINE diagnos
   AvgLength = AvgLength / Ncoils
   if(myid .eq. 0) write(ounit, '("diagnos : Average length of the coils is"8X" :" ES23.15)') AvgLength
 
-  ! calculate the minimum distance of coil-coil separation
+  !-----------------------------minimum coil coil separation------------------------------------  
   ! coils are supposed to be placed in order
   minCCdist = infmax
   do icoil = 1, Ncoils
@@ -82,7 +106,7 @@ SUBROUTINE diagnos
 
   if(myid .eq. 0) write(ounit, '("diagnos : The minimum coil-coil distance is "4X" :" ES23.15)') minCCdist
 
-  ! calculate the minimum distance of coil-plasma separation
+  !--------------------------------minimum coil plasma separation-------------------------------  
   minCPdist = infmax
   do icoil = 1, Ncoils
 
@@ -111,6 +135,8 @@ SUBROUTINE diagnos
   if(myid .eq. 0) write(ounit, '("diagnos : The minimum coil-plasma distance is    :" ES23.15 &
        " ; at coil " I3)') minCPdist, itmp
 
+  !---------------------------------------------------------------------------------------------  
+  return
 
 END SUBROUTINE diagnos
 

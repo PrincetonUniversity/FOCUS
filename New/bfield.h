@@ -28,7 +28,7 @@ subroutine bfield0(icoil, iteta, jzeta, Bx, By, Bz)
 ! Be careful if coils have different resolutions.
 !------------------------------------------------------------------------------------------------------   
   use globals, only: coil, surf, Ncoils, Nteta, Nzeta, &
-                     zero, myid, ounit
+                     zero, myid, ounit, Npc
   implicit none
   include "mpif.h"
 
@@ -42,9 +42,9 @@ subroutine bfield0(icoil, iteta, jzeta, Bx, By, Bz)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  FATAL( bfield0, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
-  FATAL( bfield0, iteta .lt. 0 .or. iteta .gt. Nteta , iteta not in right range )
-  FATAL( bfield0, jzeta .lt. 0 .or. jzeta .gt. Nzeta , jzeta not in right range )
+  FATAL( bfield0, icoil .lt. 1 .or. icoil .gt. Ncoils*Npc, icoil not in right range )
+  FATAL( bfield0, iteta .lt. 0 .or. iteta .gt. Nteta     , iteta not in right range )
+  FATAL( bfield0, jzeta .lt. 0 .or. jzeta .gt. Nzeta     , jzeta not in right range )
   
   dlx = zero; ltx = zero; Bx = zero
   dly = zero; lty = zero; By = zero
@@ -81,7 +81,7 @@ subroutine bfield1(icoil, iteta, jzeta, Bx, By, Bz, ND)
 ! Discretizing factor is includeed; coil(icoil)%dd(kseg)
 !------------------------------------------------------------------------------------------------------   
   use globals, only: coil, DoF, surf, NFcoil, Ncoils, Nteta, Nzeta, &
-                     zero, myid, ounit
+                     zero, myid, ounit, Npc
   implicit none
   include "mpif.h"
 
@@ -96,9 +96,9 @@ subroutine bfield1(icoil, iteta, jzeta, Bx, By, Bz, ND)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-  FATAL( bfield1, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
-  FATAL( bfield1, iteta .lt. 0 .or. iteta .gt. Nteta , iteta not in right range )
-  FATAL( bfield1, jzeta .lt. 0 .or. jzeta .gt. Nzeta , jzeta not in right range )
+  FATAL( bfield1, icoil .lt. 1 .or. icoil .gt. Ncoils*Npc, icoil not in right range )
+  FATAL( bfield1, iteta .lt. 0 .or. iteta .gt. Nteta     , iteta not in right range )
+  FATAL( bfield1, jzeta .lt. 0 .or. jzeta .gt. Nzeta     , jzeta not in right range )
   FATAL( bfield1, ND <= 0, wrong inout dimension of ND )
   
   NS = coil(icoil)%NS

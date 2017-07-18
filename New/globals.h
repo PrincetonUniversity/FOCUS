@@ -203,7 +203,7 @@ module globals
      INTEGER              :: NS, Ic, Lc, itype
      REAL                 :: I,  L, Lo, maxcurv
      REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), dd(:), &
-                             Bx(:,:), By(:,:), Bz(:,:),  Ax(:,:), Ay(:,:), Az(:,:)
+                             Ax(:,:), Ay(:,:), Az(:,:)
      character(LEN=10)    :: name
   end type arbitrarycoil
 
@@ -222,9 +222,9 @@ module globals
   type(FourierCoil)    , allocatable :: FouCoil(:)
   type(DegreeOfFreedom), allocatable :: DoF(:)
 
-  INTEGER              :: Nfou=0, Nfp=0, NBnf=0
+  INTEGER              :: Nfou=0, Nfp=0, NBnf=0, Npc = 1
   INTEGER, allocatable :: bim(:), bin(:), Bnim(:), Bnin(:)
-  REAL   , allocatable :: Rbc(:), Zbs(:), Rbs(:), Zbc(:), Bnc(:), Bns(:)
+  REAL   , allocatable :: Rbc(:), Zbs(:), Rbs(:), Zbc(:), Bnc(:), Bns(:), cosip(:), sinip(:)
     
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

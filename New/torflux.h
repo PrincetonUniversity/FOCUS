@@ -96,7 +96,7 @@ subroutine torflux( ideriv )
 ! ideriv = 2 -> calculate the toroidal flux constraint and its first & second derivatives;
 !------------------------------------------------------------------------------------------------------   
   use globals, only: zero, half, one, pi2, sqrtmachprec, bsconstant, ncpu, myid, ounit, &
-       coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, &
+       coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, Cdof, Npc, &
        tflux, t1F, t2F, Ndof, psi_avg, target_tflux
 
   implicit none
@@ -105,19 +105,16 @@ subroutine torflux( ideriv )
   INTEGER, INTENT(in)                   :: ideriv
   !--------------------------------------------------------------------------------------------
   INTEGER                               :: astat, ierr
-  INTEGER                               :: icoil, iteta, jzeta, idof, ND
+  INTEGER                               :: icoil, iteta, jzeta, idof, ND, ip
   REAL                                  :: dflux, lflux, lsum
-  REAL, dimension(0:Nteta-1, 0:Nzeta-1) :: lax, lay, laz          ! local Ax, Ay and Az
+  REAL                                  :: lax, lay, laz          ! local Ax, Ay and Az
+  REAL, dimension(0:Cdof, 0:Cdof)       :: dAx, dAy, dAz          ! dA of each coil;
   REAL, dimension(1:Ndof, 0:Nzeta-1)    :: ldF, dF
   REAL, dimension(0:Nzeta-1)            :: ldiff, psi_diff
   !--------------------------initialize and allocate arrays------------------------------------- 
 
   tflux = zero ; lsum = zero ; psi_avg = zero ; dflux = zero ; psi_diff = zero
   ldiff = zero ; lax = zero; lay = zero; laz = zero      !already allocted; reset to zero;
-
-  do icoil = 1, Ncoils
-     coil(icoil)%Ax = zero; coil(icoil)%Ay = zero; coil(icoil)%Az = zero
-  enddo
 
   !-------------------------------calculate Bn-------------------------------------------------- 
   if( ideriv >= 0 ) then
@@ -126,18 +123,20 @@ subroutine torflux( ideriv )
         if( myid.ne.modulo(jzeta,ncpu) ) cycle ! parallelization loop; 
          
         lflux = zero
-        do iteta = 0, Nteta - 1     
-           do icoil = 1, Ncoils
-              call bpotential0(icoil, iteta, jzeta, &
-                   coil(icoil)%Ax(0,0), coil(icoil)%Ay(0,0), coil(icoil)%Az(0,0))
+        do iteta = 0, Nteta - 1
+           lax = zero; lay = zero; laz = zero
+           do ip = 1, Npc
+              do icoil = 1, Ncoils
+                 call bpotential0(icoil+(ip-1)*Ncoils, iteta, jzeta, dAx(0,0), dAy(0,0), dAz(0,0))
+                 lax = lax + dAx( 0, 0) * coil(icoil)%I * bsconstant
+                 lay = lay + dAy( 0, 0) * coil(icoil)%I * bsconstant
+                 laz = laz + dAz( 0, 0) * coil(icoil)%I * bsconstant
+              enddo ! end do icoil
+           enddo  ! end do ip;
 
-              lax(iteta, jzeta) = lax(iteta, jzeta) + coil(icoil)%Ax( 0, 0) * coil(icoil)%I * bsconstant
-              lay(iteta, jzeta) = lay(iteta, jzeta) + coil(icoil)%Ay( 0, 0) * coil(icoil)%I * bsconstant
-              laz(iteta, jzeta) = laz(iteta, jzeta) + coil(icoil)%Az( 0, 0) * coil(icoil)%I * bsconstant
-           enddo ! end do icoil
-           lflux = lflux + lax(iteta, jzeta) * surf(1)%xt(iteta,jzeta) + &    ! local flux;
-                           lay(iteta, jzeta) * surf(1)%yt(iteta,jzeta) + &
-                           laz(iteta, jzeta) * surf(1)%zt(iteta,jzeta)
+           lflux = lflux + lax * surf(1)%xt(iteta,jzeta) + &    ! local flux;
+                           lay * surf(1)%yt(iteta,jzeta) + &
+                           laz * surf(1)%zt(iteta,jzeta)
         enddo ! end do iteta
         lflux = lflux * pi2/Nteta ! discretization factor;
         lsum  = lsum + lflux
@@ -169,33 +168,36 @@ subroutine torflux( ideriv )
 
         do iteta = 0, Nteta - 1  
            idof = 0
-           do icoil = 1, Ncoils
-              ND = DoF(icoil)%ND
-              if ( coil(icoil)%Ic /= 0 ) then !if current is free;
-                 call bpotential0(icoil, iteta, jzeta, &
-                      & coil(icoil)%Ax(0,0), coil(icoil)%Ay(0,0), coil(icoil)%Az(0,0))
+           
+           do ip = 1, Npc
+              do icoil = 1, Ncoils
+                 ND = DoF(icoil)%ND
+                 if ( coil(icoil)%Ic /= 0 ) then !if current is free;
+                    call bpotential0(icoil, iteta, jzeta, &
+                         & dAx(0,0), dAy(0,0), dAz(0,0))
 
-                 ldF(idof+1, jzeta) = ldF(idof+1, jzeta) &
-                      & + bsconstant * ( coil(icoil)%Ax(0,0)*surf(1)%xt(iteta,jzeta)   &
-                      &                + coil(icoil)%Ay(0,0)*surf(1)%yt(iteta,jzeta)   &
-                      &                + coil(icoil)%Az(0,0)*surf(1)%zt(iteta,jzeta) )
-                 idof = idof +1
-              endif
+                    ldF(idof+1, jzeta) = ldF(idof+1, jzeta) &
+                         & + bsconstant * ( dAx(0,0)*surf(1)%xt(iteta,jzeta)   &
+                         &                + dAy(0,0)*surf(1)%yt(iteta,jzeta)   &
+                         &                + dAz(0,0)*surf(1)%zt(iteta,jzeta) )
+                    idof = idof +1
+                 endif
 
-              if ( coil(icoil)%Lc /= 0 ) then !if geometry is free;
-                 call bpotential1(icoil, iteta, jzeta, &
-                      &       coil(icoil)%Ax(1:ND,0), coil(icoil)%Ay(1:ND,0), coil(icoil)%Az(1:ND,0), ND)
+                 if ( coil(icoil)%Lc /= 0 ) then !if geometry is free;
+                    call bpotential1(icoil, iteta, jzeta, &
+                         &       dAx(1:ND,0), dAy(1:ND,0), dAz(1:ND,0), ND)
 
-                 ldF(idof+1:idof+ND, jzeta) = ldF(idof+1:idof+ND, jzeta) &
-                      & + bsconstant * coil(icoil)%I * ( coil(icoil)%Ax(1:ND,0)*surf(1)%xt(iteta,jzeta)   &
-                      &                                + coil(icoil)%Ay(1:ND,0)*surf(1)%yt(iteta,jzeta)   &
-                      &                                + coil(icoil)%Az(1:ND,0)*surf(1)%zt(iteta,jzeta) )
+                    ldF(idof+1:idof+ND, jzeta) = ldF(idof+1:idof+ND, jzeta) &
+                         & + bsconstant * coil(icoil)%I * ( dAx(1:ND,0)*surf(1)%xt(iteta,jzeta)   &
+                         &                                + dAy(1:ND,0)*surf(1)%yt(iteta,jzeta)   &
+                         &                                + dAz(1:ND,0)*surf(1)%zt(iteta,jzeta) )
 
-                 idof = idof + ND
-              endif
-              
-           enddo !end icoil;
-           FATAL( torflux , idof .ne. Ndof, counting error in packing )
+                    idof = idof + ND
+                 endif
+
+              enddo !end icoil;
+              FATAL( torflux , idof .ne. Ndof, counting error in packing )
+           enddo  ! end do ip;
 
         enddo !end iteta;
      enddo !end jzeta
@@ -229,7 +231,7 @@ subroutine bpotential0(icoil, iteta, jzeta, Ax, Ay, Az)
 ! Biot-Savart constant and currents are not included for later simplication.
 ! Discretizing factor is includeed; coil(icoil)%dd(kseg) 
 !------------------------------------------------------------------------------------------------------   
-  use globals, only: coil, surf, Ncoils, Nteta, Nzeta, &
+  use globals, only: coil, surf, Ncoils, Nteta, Nzeta, Npc, &
                      zero, myid, ounit
   implicit none
   include "mpif.h"
@@ -244,9 +246,9 @@ subroutine bpotential0(icoil, iteta, jzeta, Ax, Ay, Az)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  FATAL( bpotential0, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
-  FATAL( bpotential0, iteta .lt. 0 .or. iteta .gt. Nteta , iteta not in right range )
-  FATAL( bpotential0, jzeta .lt. 0 .or. jzeta .gt. Nzeta , jzeta not in right range )
+  FATAL( bpotential0, icoil .lt. 1 .or. icoil .gt. Ncoils*Npc, icoil not in right range )
+  FATAL( bpotential0, iteta .lt. 0 .or. iteta .gt. Nteta     , iteta not in right range )
+  FATAL( bpotential0, jzeta .lt. 0 .or. jzeta .gt. Nzeta     , jzeta not in right range )
   
   dlx = zero; ltx = zero; Ax = zero
   dly = zero; lty = zero; Ay = zero
@@ -282,7 +284,7 @@ subroutine bpotential1(icoil, iteta, jzeta, Ax, Ay, Az, ND)
 ! Biot-Savart constant and currents are not included for later simplication.
 ! Discretizing factor is includeed; coil(icoil)%dd(kseg) 
 !------------------------------------------------------------------------------------------------------    
-  use globals, only: coil, DoF, surf, NFcoil, Ncoils, Nteta, Nzeta, &
+  use globals, only: coil, DoF, surf, NFcoil, Ncoils, Nteta, Nzeta, Npc, &
                      zero, myid, ounit
   implicit none
   include "mpif.h"
@@ -298,9 +300,9 @@ subroutine bpotential1(icoil, iteta, jzeta, Ax, Ay, Az, ND)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-  FATAL( bpotential1, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
-  FATAL( bpotential1, iteta .lt. 0 .or. iteta .gt. Nteta , iteta not in right range )
-  FATAL( bpotential1, jzeta .lt. 0 .or. jzeta .gt. Nzeta , jzeta not in right range )
+  FATAL( bpotential1, icoil .lt. 1 .or. icoil .gt. Ncoils*Npc, icoil not in right range )
+  FATAL( bpotential1, iteta .lt. 0 .or. iteta .gt. Nteta     , iteta not in right range )
+  FATAL( bpotential1, jzeta .lt. 0 .or. jzeta .gt. Nzeta     , jzeta not in right range )
   FATAL( bpotential1, ND <= 0, wrong inout dimension of ND )
   
   NS = coil(icoil)%NS

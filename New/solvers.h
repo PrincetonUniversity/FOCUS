@@ -43,8 +43,6 @@ subroutine solvers
   REAL :: start, finish, ii, lxdof(1:Ndof), f, g(1:Ndof)
 
 
-  iout = 0 ! reset output counter;
-
   if (myid == 0) write(ounit, *) "-----------OPTIMIZATIONS-------------------------------------"
 
   if (myid == 0 .and. IsQuiet < 1) write(ounit, '("solvers : total number of DOF is " I6)') Ndof
@@ -65,6 +63,7 @@ subroutine solvers
        "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "spectral", "c-c sep." 
   call costfun(1)
   call saveBmn    ! in bmnharm.h;
+  iout = 0 ! reset output counter;
   call output(0.0)
   
   !--------------------------------DF--------------------------------------------------------------------
