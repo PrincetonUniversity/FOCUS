@@ -308,7 +308,7 @@ end subroutine costfun
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine normweight
-  use globals, only : zero, one, sqrtmachprec, ounit, myid, xdof, bnorm, bharm, tflux, ttlen, specw, ccsep, &
+  use globals, only : zero, one, machprec, ounit, myid, xdof, bnorm, bharm, tflux, ttlen, specw, ccsep, &
        weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_specw, weight_ccsep, target_tflux, &
        psi_avg, coil, Ncoils, case_length
 
@@ -324,10 +324,10 @@ subroutine normweight
 
   !-!-!-!-!-!-!-!-!-!-tflux-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  if( weight_tflux .ge. sqrtmachprec ) then
+  if( weight_tflux .ge. machprec ) then
 
      call torflux(0)
-     if ( abs(target_tflux) < sqrtmachprec ) then
+     if ( abs(target_tflux) < machprec ) then
         target_tflux = psi_avg
         if(myid .eq. 0) write(ounit,'("solvers : Reset target toroidal flux to "ES12.5)') target_tflux
      else
@@ -339,36 +339,36 @@ subroutine normweight
      endif
 
      call torflux(0)
-     if (abs(tflux) > sqrtmachprec) weight_tflux = weight_tflux / tflux * target_tflux**2
+     if (abs(tflux) > machprec) weight_tflux = weight_tflux / tflux * target_tflux**2
      if( myid .eq. 0 ) write(ounit, 1000) "weight_tflux", weight_tflux
 
   endif
 
   !-!-!-!-!-!-!-!-!-!-bnorm-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  if( weight_bnorm >= sqrtmachprec ) then
+  if( weight_bnorm >= machprec ) then
 
      call bnormal(0)   
-     if (abs(bnorm) > sqrtmachprec) weight_bnorm = weight_bnorm / bnorm
+     if (abs(bnorm) > machprec) weight_bnorm = weight_bnorm / bnorm
      if( myid == 0 ) write(ounit, 1000) "weight_bnorm", weight_bnorm
 
   endif
 
   !-!-!-!-!-!-!-!-!-!-bnorm-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  if( weight_bharm >= sqrtmachprec ) then
+  if( weight_bharm >= machprec ) then
 
      call bmnharm(0)   
-     if (abs(bharm) > sqrtmachprec) weight_bharm = weight_bharm / bharm
+     if (abs(bharm) > machprec) weight_bharm = weight_bharm / bharm
      if( myid == 0 ) write(ounit, 1000) "weight_bharm", weight_bharm
 
   endif
 
   !-!-!-!-!-!-!-!-!-!-ttlen-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  if( weight_ttlen .ge. sqrtmachprec ) then
+  if( weight_ttlen .ge. machprec ) then
 
-     if ( sum(coil(1:Ncoils)%Lo) < sqrtmachprec) then
+     if ( sum(coil(1:Ncoils)%Lo) < machprec) then
         coil(1:Ncoils)%Lo = one
         call length(0)
         coil(1:Ncoils)%Lo = coil(1:Ncoils)%L
@@ -377,27 +377,27 @@ subroutine normweight
 
      call length(0)
 
-     if (abs(ttlen) .gt. sqrtmachprec) weight_ttlen = weight_ttlen / ttlen
+     if (abs(ttlen) .gt. machprec) weight_ttlen = weight_ttlen / ttlen
      if( myid .eq. 0 ) write(ounit, 1000) "weight_ttlen", weight_ttlen
 
   endif
 
 !!$!-!-!-!-!-!-!-!-!-!-eqarc-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 !!$
-!!$  if( weight_eqarc .ge. sqrtmachprec ) then
+!!$  if( weight_eqarc .ge. machprec ) then
 !!$
 !!$   call specwid(0)
-!!$   if (abs(eqarc) .gt. sqrtmachprec) weight_eqarc = weight_eqarc / eqarc
+!!$   if (abs(eqarc) .gt. machprec) weight_eqarc = weight_eqarc / eqarc
 !!$   if( myid .eq. 0 ) write(ounit, 1000) "weight_eqarc", weight_eqarc
 !!$   
 !!$  endif 
 !!$
 !!$!-!-!-!-!-!-!-!-!-!-ccsep-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 !!$
-!!$  if( weight_ccsep .ge. sqrtmachprec ) then
+!!$  if( weight_ccsep .ge. machprec ) then
 !!$
 !!$   call coilsep(0)
-!!$   if (abs(ccsep) .gt. sqrtmachprec) weight_ccsep = weight_ccsep / ccsep
+!!$   if (abs(ccsep) .gt. machprec) weight_ccsep = weight_ccsep / ccsep
 !!$   if( myid .eq. 0 ) write(ounit, 1000) "weight_ccsep", weight_ccsep
 !!$   
 !!$  endif
