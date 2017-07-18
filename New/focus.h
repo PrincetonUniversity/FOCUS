@@ -4,8 +4,8 @@
 !latex \briefly{Main program.}
 
 !latex \calledby{\link{}}
-!latex \calls{\link{initial}, \link{surface}, \link{rdknot}, \link{rdcoils}, 
-!latex \link{restart}, \link{optimizer}, \link{cleanup}}.
+!latex \calls{\link{initial}, \link{rdsurf}, \link{rdcoils}, 
+!latex \link{saving}, \link{solvers}}.
 
 !latex \tableofcontents
 
@@ -32,19 +32,20 @@
 !latex 2016/11/01: The code was renmaed to FOCUS and a poster was presented by CZHU at the APS-DPP 
 !latex meeting in San Jose, CA. \par
 !latex 2017/02/15: A re-writing for debugging and better structure began by CZHU. \par
-!latex 2017/04/04: The code repository was tranported to Princeton University @ GitHub/ \par
+!latex 2017/04/04: The code repository was tranported to Princeton University @ GitHub \par
 !latex 2017/05/15: Nonlinear Conjugate Gradient method was implemented. \par
 !latex 2017/05/20: Truncated Newton Method with Preconditioning CG method was implemented.\par
 !latex 2017/06/04: The first paper introducing FOCUS was submitted to Nuclear Fusion. \par
 !latex 2017/06/07: Hybrid Newton method was implemented. \par
 !latex 2017/06/23: NAG and OCULUS dependance have been removed in the new code.\par
+!latex 2017/07/18: Enable field periodicity and add coil diagnostic part. \par
  
 !latex \subsection{Structure of the code}
 !latex \begin{tikzpicture}[node distance=2cm, auto]
 !latex \node [block] (start) {Main program in \link{focus}};
-!latex \node [io, below of=start] (input) {read input in \link{initial} \& allocate data in \link{dataalloc}};
-!latex \node [io, below of=input] (surface) {read \& discretize surface data in \link{surface}};
-!latex \node [io, below of=surface] (coils) {initialize coils data in \link{fourier}};
+!latex \node [io, below of=start] (input) {read input in \link{initial} \& allocate data in \link{datalloc}};
+!latex \node [io, below of=input] (surface) {read \& discretize surface data in \link{rdsurf}};
+!latex \node [io, below of=surface] (coils) {initialize coils data in \link{rdcoils}};
 !latex \node [cloud, left of=coils, xshift=-4cm, yshift=1.0cm] (diagnos) 
 !latex               {coils evaluation in \link{diagnos}};
 !latex \node [block, below of=coils] (pack) {Packing degrees of freedom in \link{packdof}};
@@ -53,8 +54,8 @@
 !latex               {unpack DOF to coils in \link{packdof}};
 !latex \node [block, right of=unpack, xshift=2cm] (costfun) 
 !latex               {calculate the cost functions in \link{solvers}};
-!latex \node [block, below of=optimizer, yshift=-1.5cm] (postproc) {post proceeding in \link{wtmgrid}};
-!latex \node [io, below of=postproc] (output) {saving all the data in \link{savedata}};
+!latex \node [block, below of=optimizer, yshift=-1.5cm] (postproc) {post proceedings};
+!latex \node [io, below of=postproc] (output) {saving all the data in \link{saving}};
 !latex \node [block, below of=output] (clean) {clean and finish in \link{cleanup}};
 
 !latex \path [line] (start) -- (input);

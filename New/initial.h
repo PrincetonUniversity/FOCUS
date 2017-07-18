@@ -23,8 +23,8 @@
 !latex    \textit{Enforce stellarator symmetry or not} \\
 !latex    \bi \vspace{-5mm}
 !latex    \item[0:] no stellarator symmetry enforced;
-!latex    \item[1:] periodicty enforced;
-!latex    \item[2:] fully stellarator symmetry enforced. 
+!latex    \item[1:] plasma periodicty enforced;
+!latex    \item[2:] coil and plasma periodicity enforced. 
 !latex    \ei
 !latex 
 !latex  \par \begin{tikzpicture} \draw[dashed] (0,1) -- (10,1); \end{tikzpicture}
@@ -163,7 +163,7 @@
 !latex    \item[-1:] check the 1st derivatives; seen in\link{fdcheck};
 !latex    \item[ 0:] no optimizations performed; 
 !latex    \item[ 1:] optimizing with algorithms using the gradient (DF and/or CG); seen in \link{solvers};
-!latex    \item[ 2:] optimizing with algorithms using the Hessian (HT and/or NT); seen in \link{solvers};
+!latex    \item[ 2:] optimizing with algorithms using the Hessian (HT and/or NT); seen in \link{solvers}; (not ready)
 !latex    \ei
 !latex 
 !latex  \item \inputvar{DF\_maxiter = 0} \\
