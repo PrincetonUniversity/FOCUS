@@ -276,8 +276,14 @@ subroutine initial
      case (0)
         if (IsQuiet < 0) write(ounit, '(8X,": IsSymmetric = "I1, &
              " ; No stellarator symmetry or periodicity enforced.")') IsSymmetric
+     case (1)
+        if (IsQuiet < 0) write(ounit, '(8X,": IsSymmetric = "I1, &
+             " ; plasma boundary periodicity is enforced.")') IsSymmetric
+     case (2)
+        if (IsQuiet < 0) write(ounit, '(8X,": IsSymmetric = "I1, &
+             " ; plasma boundary and coil periodicity are enforced.")') IsSymmetric
      case default
-        FATAL( initial, IsSymmetric /= 0, Stellarator symmetry is not activated yet)
+        FATAL( initial, .true., IsSymmetric /= 0,1,2, unspported option)
      end select
 
      select case (case_surface)
@@ -415,10 +421,10 @@ subroutine initial
 
      select case ( case_length )
      case ( 1 )
-        if (IsQuiet < 0) write(ounit, '(8X,": case_bnormal = "I1" ; quadratic format of length constraint")')&
+        if (IsQuiet < 0) write(ounit, '(8X,": case_length = "I1" ; quadratic format of length constraint")')&
              case_length
      case ( 2 )
-        if (IsQuiet < 0) write(ounit, '(8X,": case_bnormal = "I1" ; exponential format of length constraint" &
+        if (IsQuiet < 0) write(ounit, '(8X,": case_length = "I1" ; exponential format of length constraint" &
              )') case_length
      case default
         FATAL( initial, .true., selected case_length is not supported )

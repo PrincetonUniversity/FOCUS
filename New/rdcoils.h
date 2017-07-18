@@ -84,7 +84,7 @@ subroutine rdcoils
   include "mpif.h"
 
   LOGICAL   :: exist
-  INTEGER   :: icoil, maxnseg, ifirst, NF, itmp
+  INTEGER   :: icoil, maxnseg, ifirst, NF, itmp, ip
   REAL      :: Rmaj, zeta, totalcurrent, z0, r1, r2, z1, z2
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -125,8 +125,9 @@ subroutine rdcoils
 
      allocate(    coil(1:Ncoils) )
      allocate( FouCoil(1:Ncoils) )
-     allocate( DoF(1:Ncoils) )
+     allocate(     DoF(1:Ncoils) )
 
+     Ncoils = Ncoils / Npc ! Ncoils changed to unique number of coils;
      icoil = 0
      do icoil = 1, Ncoils
 
@@ -172,8 +173,6 @@ subroutine rdcoils
 
      coil(1:Ncoils)%itype = case_coils
 
-     Ncoils = Ncoils / Npc ! Ncoils changed to unique number of coils;
-
      !-------------individual coil file---------------------------------------------------------------------
   case( 0 )
 
@@ -186,7 +185,7 @@ subroutine rdcoils
         open( runit, file=trim(coilfile), status="old", action='read')
         read( runit,*)
         read( runit,*) Ncoils
-        write(ounit,'("rdcoils : identified "i3" coils in ext.focus ;")') Ncoils
+        write(ounit,'("rdcoils : identified "i3" unique coils in "A" ;")') Ncoils, coilfile
      endif
                                
      IlBCAST( Ncoils        ,    1,  0 )
@@ -273,6 +272,8 @@ subroutine rdcoils
      allocate(    coil(1:Ncoils*Npc) )
      allocate(     DoF(1:Ncoils*Npc) )
 
+     if (myid == 0)  write(ounit,'("rdcoils : initializing "i3" unique circular coils;")') Ncoils
+
      do icoil = 1, Ncoils
 
         !general coil parameters;
@@ -323,33 +324,52 @@ subroutine rdcoils
   FATAL( rdcoils, Nfixcur > Ncoils, error with fixed currents )
   FATAL( rdcoils, Nfixgeo > Ncoils, error with fixed geometry )
 
-  !-----------------------allocate   coil data-------------------------------------------------- 
-  do icoil = 1, Ncoils*Npc
-     SALLOCATE( coil(icoil)%xx, (0:coil(icoil)%NS), zero )
-     SALLOCATE( coil(icoil)%yy, (0:coil(icoil)%NS), zero )
-     SALLOCATE( coil(icoil)%zz, (0:coil(icoil)%NS), zero )
-     SALLOCATE( coil(icoil)%xt, (0:coil(icoil)%NS), zero )
-     SALLOCATE( coil(icoil)%yt, (0:coil(icoil)%NS), zero )
-     SALLOCATE( coil(icoil)%zt, (0:coil(icoil)%NS), zero )
-     SALLOCATE( coil(icoil)%xa, (0:coil(icoil)%NS), zero )
-     SALLOCATE( coil(icoil)%ya, (0:coil(icoil)%NS), zero )
-     SALLOCATE( coil(icoil)%za, (0:coil(icoil)%NS), zero )
-     SALLOCATE( coil(icoil)%dd, (0:coil(icoil)%NS), zero )
-
-     if (.not. allocated(FouCoil(icoil)%xc) ) then
-        SALLOCATE( FouCoil(icoil)%xc, (0:FouCoil(icoil)%NF), zero )
-        SALLOCATE( FouCoil(icoil)%xs, (0:FouCoil(icoil)%NF), zero )
-        SALLOCATE( FouCoil(icoil)%yc, (0:FouCoil(icoil)%NF), zero )
-        SALLOCATE( FouCoil(icoil)%ys, (0:FouCoil(icoil)%NF), zero )
-        SALLOCATE( FouCoil(icoil)%zc, (0:FouCoil(icoil)%NF), zero )
-        SALLOCATE( FouCoil(icoil)%zs, (0:FouCoil(icoil)%NF), zero ) 
-     endif
+  !-----------------------allocate   coil data--------------------------------------------------
+  do ip = 1, Npc
+     do icoil = 1, Ncoils
+        SALLOCATE( coil(icoil+(ip-1)*Ncoils)%xx, (0:coil(icoil)%NS), zero )
+        SALLOCATE( coil(icoil+(ip-1)*Ncoils)%yy, (0:coil(icoil)%NS), zero )
+        SALLOCATE( coil(icoil+(ip-1)*Ncoils)%zz, (0:coil(icoil)%NS), zero )
+        SALLOCATE( coil(icoil+(ip-1)*Ncoils)%xt, (0:coil(icoil)%NS), zero )
+        SALLOCATE( coil(icoil+(ip-1)*Ncoils)%yt, (0:coil(icoil)%NS), zero )
+        SALLOCATE( coil(icoil+(ip-1)*Ncoils)%zt, (0:coil(icoil)%NS), zero )
+        SALLOCATE( coil(icoil+(ip-1)*Ncoils)%xa, (0:coil(icoil)%NS), zero )
+        SALLOCATE( coil(icoil+(ip-1)*Ncoils)%ya, (0:coil(icoil)%NS), zero )
+        SALLOCATE( coil(icoil+(ip-1)*Ncoils)%za, (0:coil(icoil)%NS), zero )
+        SALLOCATE( coil(icoil+(ip-1)*Ncoils)%dd, (0:coil(icoil)%NS), zero )
+     enddo
   enddo
+
+  SALLOCATE( cosip, (0:Npc), one  )  ! cos(ip*pi/Np) ; default one ;
+  SALLOCATE( sinip, (0:Npc), zero )  ! sin(ip*pi/Np) ; default zero;
+
+  if (Npc >= 2) then
+     do ip = 1, Npc-1
+        cosip(ip) = cos(ip*pi2/Npc) ; sinip(ip) = sin(ip*pi2/Npc)
+        do icoil = 1, Ncoils
+           select case (coil(icoil)%itype)
+           case( 1 )
+              NF = FouCoil(icoil)%NF
+              SALLOCATE( FouCoil(icoil+ip*Ncoils)%xc, (0:NF), zero )
+              SALLOCATE( FouCoil(icoil+ip*Ncoils)%xs, (0:NF), zero )
+              SALLOCATE( FouCoil(icoil+ip*Ncoils)%yc, (0:NF), zero )
+              SALLOCATE( FouCoil(icoil+ip*Ncoils)%ys, (0:NF), zero )
+              SALLOCATE( FouCoil(icoil+ip*Ncoils)%zc, (0:NF), zero )
+              SALLOCATE( FouCoil(icoil+ip*Ncoils)%zs, (0:NF), zero )
+           case default
+              FATAL(discoil, .true., not supported coil types)
+           end select
+        enddo
+     enddo
+     
+     call mapcoil ! map perodic coils;
+
+  endif 
 
   !-----------------------normalize currents and geometries-------------------------------------
   !sum the total currents;
   totalcurrent = zero
-  do icoil = 1, Ncoils
+  do icoil = 1, Ncoils*Npc
      totalcurrent = totalcurrent + coil(icoil)%I
   enddo
 
@@ -398,10 +418,46 @@ subroutine mapcoil
 !---------------------------------------------------------------------------------------------
 ! mapping periodic coils;
 !---------------------------------------------------------------------------------------------
-  use globals, only: zero, pi2, myid, ounit, coil, FouCoil, Ncoils, DoF
+  use globals, only: zero, pi2, myid, ounit, ierr, coil, FouCoil, Ncoils, DoF, Npc, cosip, sinip
   implicit none
   include "mpif.h"
 
+  INTEGER  :: ip, icoil, NF
+
+  do ip = 1, Npc-1
+     
+     do icoil = 1, Ncoils
+
+        coil(icoil+ip*Ncoils)%itype   = coil(icoil)%itype
+        coil(icoil+ip*Ncoils)%NS      = coil(icoil)%NS
+        coil(icoil+ip*Ncoils)%Ic      = coil(icoil)%Ic
+        coil(icoil+ip*Ncoils)%Lc      = coil(icoil)%Lc
+        coil(icoil+ip*Ncoils)%I       = coil(icoil)%I 
+        coil(icoil+ip*Ncoils)%L       = coil(icoil)%L 
+        coil(icoil+ip*Ncoils)%Lo      = coil(icoil)%Lo
+        coil(icoil+ip*Ncoils)%maxcurv = coil(icoil)%maxcurv
+        coil(icoil+ip*Ncoils)%name    = coil(icoil)%name
+
+        select case (coil(icoil)%itype)
+        case( 1 )
+           Foucoil(icoil+ip*Ncoils)%NF = Foucoil(icoil)%NF
+           Foucoil(icoil+ip*Ncoils)%xc = Foucoil(icoil)%xc * cosip(ip) - Foucoil(icoil)%yc * sinip(ip)
+           Foucoil(icoil+ip*Ncoils)%xs = Foucoil(icoil)%xs * cosip(ip) - Foucoil(icoil)%ys * sinip(ip)
+           Foucoil(icoil+ip*Ncoils)%yc = Foucoil(icoil)%yc * cosip(ip) + Foucoil(icoil)%xc * sinip(ip)
+           Foucoil(icoil+ip*Ncoils)%ys = Foucoil(icoil)%ys * cosip(ip) + Foucoil(icoil)%xs * sinip(ip)
+           Foucoil(icoil+ip*Ncoils)%zc = Foucoil(icoil)%zc
+           Foucoil(icoil+ip*Ncoils)%zs = Foucoil(icoil)%zs
+        case default
+           FATAL(discoil, .true., not supported coil types)
+        end select
+
+     enddo
+  enddo
+
+  return
+
+END subroutine mapcoil
+           
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -411,17 +467,19 @@ subroutine discoil(ifirst)
 ! if ifirst = 1, it will update all the coils; otherwise, only update free coils;
 ! date: 20170314
 !---------------------------------------------------------------------------------------------
-  use globals, only: zero, pi2, myid, ounit, coil, FouCoil, Ncoils, DoF, Npc
+  use globals, only: zero, pi2, myid, ounit, coil, FouCoil, Ncoils, DoF, Npc, cosip, sinip
   implicit none
   include "mpif.h"
 
   INTEGER, intent(in) :: ifirst
 
-  INTEGER          :: icoil, iseg, mm, NS, NF, ierr, astat
+  INTEGER          :: icoil, iseg, mm, NS, NF, ierr, astat, ip
   REAL             :: tt
   REAL,allocatable :: cmt(:,:), smt(:,:)
   !-------------------------------------------------------------------------------------------
   !xx, xt, xa are 0, 1st and 2nd derivatives;
+  if (Npc >= 2) call mapcoil ! map periodic coils;
+
   do icoil = 1, Ncoils*Npc
 
      if( (coil(icoil)%Lc + ifirst) /= 0) then  !first time or if Lc/=0, then need discretize;
@@ -452,6 +510,7 @@ subroutine discoil(ifirst)
                  smt(iseg,mm) = sin( mm * tt )
               enddo
            enddo
+
            !-------------------------calculate coil data-------------------------------------------------  
            mm = 0
            coil(icoil)%xx(0:NS) = cmt(0:NS,mm) * Foucoil(icoil)%xc(mm)
@@ -481,12 +540,17 @@ subroutine discoil(ifirst)
            enddo ! end of do mm; 
 
            if(ifirst /= 0) then
-              DoF(icoil)%xof(1:NS,      1:  NF+1) = cmt(1:NS, 0:NF)  !xc
-              DoF(icoil)%xof(1:NS,   NF+2:2*NF+1) = smt(1:NS, 1:NF)  !xs
-              DoF(icoil)%yof(1:NS, 2*NF+2:3*NF+2) = cmt(1:NS, 0:NF)  !yc
-              DoF(icoil)%yof(1:NS, 3*NF+3:4*NF+2) = smt(1:NS, 1:NF)  !ys
-              DoF(icoil)%zof(1:NS, 4*NF+3:5*NF+3) = cmt(1:NS, 0:NF)  !zc
-              DoF(icoil)%zof(1:NS, 5*NF+4:6*NF+3) = smt(1:NS, 1:NF)  !zs
+              ip = (icoil-1)/Ncoils  ! the integer is the period number;
+              DoF(icoil)%xof(1:NS,      1:  NF+1) =  cosip(ip) * cmt(1:NS, 0:NF)  !x/xc
+              DoF(icoil)%xof(1:NS,   NF+2:2*NF+1) =  cosip(ip) * smt(1:NS, 1:NF)  !x/xs
+              DoF(icoil)%xof(1:NS, 2*NF+2:3*NF+2) = -sinip(ip) * cmt(1:NS, 0:NF)  !x/yc ; valid for ip>0 ;
+              DoF(icoil)%xof(1:NS, 3*NF+3:4*NF+2) = -sinip(ip) * smt(1:NS, 1:NF)  !x/ys ; valid for ip>0 ;
+              DoF(icoil)%yof(1:NS,      1:  NF+1) =  sinip(ip) * cmt(1:NS, 0:NF)  !y/xc ; valid for ip>0 ;
+              DoF(icoil)%yof(1:NS,   NF+2:2*NF+1) =  sinip(ip) * smt(1:NS, 1:NF)  !y/xs ; valid for ip>0 ;
+              DoF(icoil)%yof(1:NS, 2*NF+2:3*NF+2) =  cosip(ip) * cmt(1:NS, 0:NF)  !y/yc
+              DoF(icoil)%yof(1:NS, 3*NF+3:4*NF+2) =  cosip(ip) * smt(1:NS, 1:NF)  !y/ys
+              DoF(icoil)%zof(1:NS, 4*NF+3:5*NF+3) =              cmt(1:NS, 0:NF)  !z/zc
+              DoF(icoil)%zof(1:NS, 5*NF+4:6*NF+3) =              smt(1:NS, 1:NF)  !z/zs
            endif
 
            coil(icoil)%dd = pi2 / NS  ! discretizing factor;

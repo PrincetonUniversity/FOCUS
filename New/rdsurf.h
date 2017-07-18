@@ -114,18 +114,8 @@ subroutine fousurf
 
   IlBCAST( bim(1:Nfou), Nfou, 0 )
   IlBCAST( bin(1:Nfou), Nfou, 0 )
-  
-  select case (IsSymmetric)
-  case ( 0 )
-     bin(1:Nfou) = bin(1:Nfou) * Nfp  !Discard periodicity;
-     Nfp = 1                          !reset Nfp to 1;
-     Npc = 1                          !number of coils periodicity 
-  case ( 1 )                          !plasma periodicity enabled;
-     Npc = 1
-  case ( 2 )                          !plasma and coil periodicity enabled;
-     Npc = Nfp
-  end select
-  discretefactor = discretefactor/Nfp
+ 
+  bin(1:Nfou) = bin(1:Nfou) * Nfp  !The full plasma;
      
   RlBCAST( Rbc(1:Nfou), Nfou, 0 )
   RlBCAST( Rbs(1:Nfou), Nfou, 0 )
@@ -150,7 +140,8 @@ subroutine fousurf
      IlBCAST( Bnim(1:NBnf), NBnf, 0 )
      IlBCAST( Bnin(1:NBnf), NBnf, 0 )
 
-     !if (IsSymmetric  ==  0) Bnin(1:NBnf) = Bnin(1:NBnf) * Nfp ! Disarde periodicity;
+     !if (IsSymmetric  ==  0)
+     Bnin(1:NBnf) = Bnin(1:NBnf) * Nfp ! Disarde periodicity;
      ! This should be consistent with bnftran; Before fully constructed the stellarator symmetry,
      ! it's turned off;
      
@@ -186,6 +177,18 @@ subroutine fousurf
   endif
 
   !-------------discretize surface data------------------------------------------------------------------  
+
+  select case (IsSymmetric)
+  case ( 0 )
+     Nfp = 1                          !reset Nfp to 1;
+     Npc = 1                          !number of coils periodicity 
+  case ( 1 )                          !plasma periodicity enabled;
+     Npc = 1
+  case ( 2 )                          !plasma and coil periodicity enabled;
+     Npc = Nfp
+  end select
+  discretefactor = discretefactor/Nfp
+
   allocate( surf(1:1) ) ! can allow for myltiple plasma boundaries 
                         ! if multiple currents are allowed; 14 Apr 16;
   
@@ -206,7 +209,7 @@ subroutine fousurf
  
 ! The center point value was used to discretize grid;
   do ii = 0, Nteta-1; teta = ( ii + half ) * pi2 / Nteta
-   do jj = 0, Nzeta-1; zeta = ( jj + half ) * pi2 / Nzeta
+   do jj = 0, Nzeta-1; zeta = ( jj + half ) * pi2 / ( Nzeta*Nfp )
     
     RR(0:2) = zero ; ZZ(0:2) = zero
     
@@ -258,8 +261,8 @@ subroutine fousurf
   !calculate target Bn with input harmonics; 05 Jan 17;
   if(NBnf >  0) then
 
-     do jj = 0, Nzeta-1 ; zeta = ( jj + half ) * pi2 / Nzeta
-        do ii = 0, Nteta-1 ; teta = ( ii + half ) * pi2 / Nteta 
+     do jj = 0, Nzeta-1 ; zeta = ( jj + half ) * pi2 / (Nzeta*Nfp)
+        do ii = 0, Nteta-1 ; teta = ( ii + half ) * pi2 / Nteta
            do imn = 1, NBnf
               arg = Bnim(imn) * teta - Bnin(imn) * zeta
               surf(1)%pb(ii,jj) = surf(1)%pb(ii,jj) + Bnc(imn)*cos(arg) + Bns(imn)*sin(arg)

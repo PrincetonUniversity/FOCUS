@@ -110,7 +110,7 @@ SUBROUTINE readBmn
   ! read Bmn harmonics related arrays;
   ! allocate trig functions;
   !----------------------------------------------------------------------------------------
-  use globals, only: zero, half, pi2, myid, ounit, runit, ext, IsQuiet, Nteta, Nzeta,  &
+  use globals, only: zero, half, pi2, myid, ounit, runit, ext, IsQuiet, Nteta, Nzeta, Nfp, &
                      NBmn, Bmnin, Bmnim, wBmn, tBmnc, tBmns, carg, sarg
   implicit none
   include "mpif.h"
@@ -165,8 +165,11 @@ SUBROUTINE readBmn
   !-------------------------store trig functions-------------------------------------------
   SALLOCATE( carg,  (1:Nteta*Nzeta, 1:NBmn), zero )
   SALLOCATE( sarg,  (1:Nteta*Nzeta, 1:NBmn), zero )
+
+  Bmnin(1:NBmn) = Bmnin(1:NBmn) * Nfp
+
   ij = 0
-  do jj = 0, Nzeta-1 ; zeta = ( jj + half ) * pi2 / Nzeta
+  do jj = 0, Nzeta-1 ; zeta = ( jj + half ) * pi2 / (Nzeta*Nfp)
      do ii = 0, Nteta-1 ; teta = ( ii + half ) * pi2 / Nteta
         ij = ij + 1
         do imn = 1, NBmn
@@ -269,12 +272,9 @@ SUBROUTINE saveBmn
   include "mpif.h"
 
   if (weight_bharm > machprec) then
-     
-     SALLOCATE( iBmnc, (1:NBmn), zero )
-     SALLOCATE( iBmns, (1:NBmn), zero )
 
-     FATAL( saveBmn, .not. allocated(Bmnc), you should allocate Bmnc first. )
-     FATAL( saveBmn, .not. allocated(Bmns), you should allocate Bmns first. )
+     FATAL( saveBmn, .not. allocated( Bmnc), you should allocate  Bmnc first. )
+     FATAL( saveBmn, .not. allocated(iBmnc), you should allocate iBmnc first. )
 
      iBmnc = Bmnc
      iBmns = Bmns
