@@ -166,10 +166,10 @@ subroutine torflux( ideriv )
      do jzeta = 0, Nzeta - 1
         if( myid.ne.modulo(jzeta,ncpu) ) cycle ! parallelization loop;
 
-        do iteta = 0, Nteta - 1  
-           idof = 0
+        do iteta = 0, Nteta - 1             
            
            do ip = 1, Npc
+              idof = 0
               do icoil = 1, Ncoils
                  ND = DoF(icoil)%ND
                  if ( coil(icoil)%Ic /= 0 ) then !if current is free;
