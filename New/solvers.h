@@ -223,9 +223,10 @@ subroutine costfun(ideriv)
      endif
   endif
 
+  ! coil length;
   if (weight_ttlen > sqrtmachprec) then
 
-     if (case_length == 1 .and. sum(coil(1:Ncoils)%Lo) < sqrtmachprec) then
+     if ( (case_length == 1) .and. (sum(coil(1:Ncoils)%Lo) < sqrtmachprec) ) then
         coil(1:Ncoils)%Lo = one
         call length(0)
         coil(1:Ncoils)%Lo = coil(1:Ncoils)%L
@@ -368,7 +369,7 @@ subroutine normweight
 
   if( weight_ttlen .ge. machprec ) then
 
-     if ( sum(coil(1:Ncoils)%Lo) < machprec) then
+     if ( (case_length == 1) .and. (sum(coil(1:Ncoils)%Lo) < machprec) ) then
         coil(1:Ncoils)%Lo = one
         call length(0)
         coil(1:Ncoils)%Lo = coil(1:Ncoils)%L

@@ -60,7 +60,7 @@
 
 ! not parallelized; communications may take more time;
 subroutine length(ideriv)
-  use globals, only : zero, half, pi2, ncpu, myid, ounit, &
+  use globals, only : zero, half, pi2, machprec, ncpu, myid, ounit, &
        coil, DoF, Ncoils, Nfixgeo, Ndof, ttlen, t1L, t2L, case_length
 
   implicit none
@@ -97,7 +97,7 @@ subroutine length(ideriv)
         FATAL( length, .true. , invalid case_length option )
      end if
 
-     ttlen = ttlen / (Ncoils - Nfixgeo)
+     ttlen = ttlen / (Ncoils - Nfixgeo + machprec)
 
   endif
 
@@ -133,7 +133,7 @@ subroutine length(ideriv)
      enddo !end icoil;
      FATAL( torflux , idof .ne. Ndof, counting error in packing )
 
-     t1L = t1L / (Ncoils - Nfixgeo)
+     t1L = t1L / (Ncoils - Nfixgeo + machprec)
 
   endif
 
