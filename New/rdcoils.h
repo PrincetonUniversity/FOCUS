@@ -388,6 +388,9 @@ subroutine rdcoils
 
      FATAL( rdcoils, abs(Gnorm) < machprec, cannot be zero )
      FATAL( rdcoils, abs(Inorm) < machprec, cannot be zero )
+     
+     if (IsNormalize > 0) Inorm = Inorm *     IsNormalize
+     if (IsNormalize < 0) Gnorm = Gnorm * abs(IsNormalize)
 
      if (myid == 0) write(ounit, '("rdcoils : Currents are normalized by " ES23.15 &
           " ; Geometries are normalized by " ES23.15 " ;")') Inorm, Gnorm
