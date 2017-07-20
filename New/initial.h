@@ -408,7 +408,7 @@ subroutine initial
         FATAL( initial, TN_maxiter < 0, must be non-negative )
      endif
 
-     write(ounit, '(8X,": IsNormalize = "I1" ; IsNormWeight = "I1)') IsNormalize, IsNormWeight
+     write(ounit, '(8X,": IsNormalize = "I" ; IsNormWeight = "I)') IsNormalize, IsNormWeight
 
      select case ( case_bnormal )
      case ( 0 )

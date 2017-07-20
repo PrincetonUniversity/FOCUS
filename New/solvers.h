@@ -331,12 +331,12 @@ subroutine normweight
      if ( abs(target_tflux) < machprec ) then
         target_tflux = psi_avg
         if(myid .eq. 0) write(ounit,'("solvers : Reset target toroidal flux to "ES12.5)') target_tflux
-     else
-        do icoil = 1, Ncoils
-           coil(icoil)%I = coil(icoil)%I * target_tflux / psi_avg
-        enddo
-        if(myid .eq. 0) write(ounit,'("solvers : rescale coil currents with a factor of "ES12.5)') &
-             target_tflux / psi_avg
+     else if (sum(abs(coil(1:Ncoils)%Ic)) == Ncoils) then !only valid when all currents are free;
+           do icoil = 1, Ncoils
+              coil(icoil)%I = coil(icoil)%I * target_tflux / psi_avg
+           enddo
+           if(myid .eq. 0) write(ounit,'("solvers : rescale coil currents with a factor of "ES12.5)') &
+                target_tflux / psi_avg
      endif
 
      call torflux(0)

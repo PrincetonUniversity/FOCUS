@@ -229,7 +229,7 @@ subroutine saving
 
      open( funit, file="."//trim(ext)//".filaments."//srestart, status="unknown", form="unformatted" )  
      write(funit) Ncoils, Nseg
-     do icoil = 1, Ncoils
+     do icoil = 1, Ncoils*Npc
         write(funit) coil(icoil)%xx(0:coil(icoil)%NS)
         write(funit) coil(icoil)%yy(0:coil(icoil)%NS)
         write(funit) coil(icoil)%zz(0:coil(icoil)%NS)
