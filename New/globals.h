@@ -102,6 +102,8 @@ module globals
   REAL                 :: target_length  =        0.000D+00 
   REAL                 :: weight_specw   =        0.000D+00
   REAL                 :: weight_ccsep   =        0.000D+00
+  REAL                 :: weight_inorm   =        1.000D+00
+  REAL                 :: weight_gnorm   =        1.000D+00
 
   INTEGER              :: case_optimize  =        1
   INTEGER              :: DF_maxiter     =        0
@@ -160,7 +162,9 @@ module globals
                         target_length  , &
                         weight_specw   , &
                         weight_ccsep   , &
-                        case_optimize  , & 
+                        weight_inorm   , &
+                        weight_gnorm   , &
+                        case_optimize  , &
                         DF_maxiter     , & 
                         DF_xtol        , & 
                         DF_tausta      , &  
