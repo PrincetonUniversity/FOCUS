@@ -154,6 +154,14 @@
 !latex  \item \inputvar{weight\_ccsep = 0.0} \\
 !latex    \textit{weight for coil-coil separation constraint, if zero, turned off; seen in \link{coilsep}}; (not ready) 
 !latex
+!latex  \item \inputvar{weight\_Inorm = 1.0} \\
+!latex    \textit{additional factor for normalizing currents; the larger, the more optimized for currents;
+!latex     seen in \link{rdcoils}} 
+!latex 
+!latex  \item \inputvar{weight\_Gnorm = 1.0} \\
+!latex    \textit{additional factor for normalizing geometric variables; the larger, the more optimized for
+!latex     coil shapes; seen in \link{rdcoils}} 
+!latex 
 !latex  \par \begin{tikzpicture} \draw[dashed] (0,1) -- (10,1); \end{tikzpicture}
 !latex 
 !latex  \item \inputvar{case\_optimize = 1} \\
@@ -165,6 +173,10 @@
 !latex    \item[ 1:] optimizing with algorithms using the gradient (DF and/or CG); seen in \link{solvers};
 !latex    \item[ 2:] optimizing with algorithms using the Hessian (HT and/or NT); seen in \link{solvers}; (not ready)
 !latex    \ei
+!latex 
+!latex  \item \inputvar{exit\_tol = 1.000D-04} \\
+!latex    \textit{additional creteria to judge if the cost function decreases significantly; 
+!latex     if $\frac{|\chi^2_i - \chi^2_{i-5}|}{\chi^2_i} < exit\_tol$, send an exit signal; seen in \link{solvers}}
 !latex 
 !latex  \item \inputvar{DF\_maxiter = 0} \\
 !latex    \textit{maximum iterations allowed for using Differential Flow (DF); if zero, turned of; seen in \link{descent}}

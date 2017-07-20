@@ -89,10 +89,12 @@ PROGRAM focus
   
   use globals, only: ncpu, myid, ounit, ierr, astat, eunit, case_surface, case_coils, case_optimize, &
        case_postproc, xdof, tstart, tfinish, time_initialize, time_optimize, time_postproc
+
+  use mpi  !to enable gfortran mpi_wtime bugs; 07/20/2017
   
   implicit none
   
-  include "mpif.h"
+  !include "mpif.h"
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   

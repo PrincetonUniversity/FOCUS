@@ -30,7 +30,7 @@ subroutine descent
   ! DATE: 2017/04/05
   !---------------------------------------------------------------------------------------------    
   use globals, only : zero, half, myid, ncpu, ounit, IsQuiet, astat, ierr, sqrtmachprec, &
-        Ndof, iout, DF_tausta, DF_tauend, DF_xtol, DF_maxiter
+        Ndof, iout, DF_tausta, DF_tauend, DF_xtol, DF_maxiter, exit_signal
 
   implicit none  
   include "mpif.h"
@@ -81,6 +81,11 @@ subroutine descent
      call unpacking(lxdof)
      call costfun(1)
      call output(t0)
+
+     if ( exit_signal ) then
+        if(myid .eq. 0) write(ounit, '("descent : EXITING-------No obvious change in last 5 outputs!")')
+        exit         ! no obvious changes in past 5 iterations; 07/20/2017
+     endif
 
   end do  
 
