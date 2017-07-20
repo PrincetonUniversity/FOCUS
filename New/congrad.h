@@ -33,9 +33,11 @@
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE congrad
-  use globals, only: sqrtmachprec, myid, ounit, Ncoils, Ndof, t1E, iout, CG_maxiter, CG_xtol, xdof
+  use globals, only: sqrtmachprec, myid, ounit, Ncoils, Ndof, t1E, iout, CG_maxiter, CG_xtol, xdof, &
+       exit_signal, tstart, tfinish
+  use mpi
   implicit none
-  include "mpif.h"
+  !include "mpif.h"
 
   INTEGER                 :: idof, icoil, c1, n1, ierr, astat, iter
   REAL                    :: alpha, beta, f
@@ -47,7 +49,7 @@ SUBROUTINE congrad
   p(1:Ndof) = -gradk ! initial step direction;
   alpha = 1.0 ! initial step size;
 
-  if (myid == 0) write(ounit, '("output  : "A6" : "9(A12," ; "))') "iout", "iter", "chi", "dE_norm", &
+  if (myid == 0) write(ounit, '("output  : "A6" : "9(A12," ; "))') "iout", "time (s)", "chi", "dE_norm", &
        "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "spectral", "c-c sep." 
 
   do
@@ -58,9 +60,13 @@ SUBROUTINE congrad
 
      call getdf(lxdof, f, gradf)
 
-     call output(real(iter))
+     tstart = MPI_Wtime()
+     call output(tstart-tfinish)
 
-     if ( sqrt(sum(gradf**2)) < CG_xtol ) exit  ! reach minimum
+     if ( sqrt(sum(gradf**2)) < CG_xtol ) then
+        if(myid .eq. 0) write(ounit, '("congrad : EXITING--------Local minimum reached!")')
+        exit  ! reach minimum
+     endif
  
      beta = sum(gradf**2) / sum( (gradf-gradk)*p )
      p = -gradf + beta*p ! direction for next step;
@@ -68,7 +74,15 @@ SUBROUTINE congrad
 
      alpha = 1.0  ! reset alpha;
 
-     if (iter .ge. CG_maxiter) exit  ! reach maximum iterations;
+     if (iter .ge. CG_maxiter) then
+        if(myid .eq. 0) write(ounit, '("congrad : EXITING--------Maximum iterations reached!")')
+        exit  ! reach maximum iterations;
+     endif
+
+     if ( exit_signal ) then
+        if(myid .eq. 0) write(ounit, '("congrad : EXITING-------No obvious change in last 5 outputs!")')
+        exit         ! no obvious changes in past 5 iterations; 07/20/2017
+     endif
 
   enddo
 

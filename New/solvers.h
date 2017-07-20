@@ -416,7 +416,8 @@ end subroutine normweight
 subroutine output (mark)
 
   use globals, only : zero, ounit, myid, ierr, astat, iout, Nouts, Ncoils, save_freq, Tdof, &
-       coil, coilspace, FouCoil, chi, t1E, bnorm, bharm, tflux, ttlen, specw, ccsep, evolution, xdof, DoF
+       coil, coilspace, FouCoil, chi, t1E, bnorm, bharm, tflux, ttlen, specw, ccsep, evolution, xdof, DoF, &
+       exit_tol, exit_signal
 
   implicit none  
   include "mpif.h"
@@ -449,6 +450,11 @@ subroutine output (mark)
      evolution(iout,8) = ccsep
   endif
 
+  ! exit the optimization if no obvious changes in past 5 outputs; 07/20/2017
+  if (iout>5) then
+     if ( abs(evolution(iout,1) - evolution(iout-5, 1)) / evolution(iout,1) < exit_tol ) exit_signal = .True.
+  end if
+  
   !save all the coil parameters;
   if (allocated(coilspace)) then
      idof = 0
