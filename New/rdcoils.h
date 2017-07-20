@@ -84,7 +84,7 @@ subroutine rdcoils
   include "mpif.h"
 
   LOGICAL   :: exist
-  INTEGER   :: icoil, maxnseg, ifirst, NF, itmp, ip
+  INTEGER   :: icoil, maxnseg, ifirst, NF, itmp, ip, icoef
   REAL      :: Rmaj, zeta, totalcurrent, z0, r1, r2, z1, z2
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -380,18 +380,24 @@ subroutine rdcoils
      !     & totalcurrent, totalcurrent * pi2 * two
   endif
 
-  if (IsNormalize /= 0) then
-     r1 = sqrt( surf(1)%xx(      0,0)**2 + surf(1)%yy(      0,0)**2 ) ! R at (0 ,0)
-     r2 = sqrt( surf(1)%xx(Nteta/2,0)**2 + surf(1)%yy(Nteta/2,0)**2 ) ! R at (pi,0)
-     Gnorm = half * (r1 + r2) ! something like the major radius;
-     Inorm = sum(abs(coil(1:Ncoils)%I))/Ncoils + machprec !average current;
+  if (IsNormalize > 0) then
+     Gnorm = 0
+     Inorm = 0
+     do icoil = 1, Ncoils
+        do icoef = 0, NF
+           Gnorm = Gnorm + FouCoil(icoil)%xs(icoef)**2 + FouCoil(icoil)%xc(icoef)**2
+           Gnorm = Gnorm + FouCoil(icoil)%ys(icoef)**2 + FouCoil(icoil)%yc(icoef)**2
+           Gnorm = Gnorm + FouCoil(icoil)%zs(icoef)**2 + FouCoil(icoil)%zc(icoef)**2
+        enddo
+        Inorm = Inorm + coil(icoil)%I**2
+     enddo
+     Gnorm = sqrt(Gnorm) * weight_gnorm
+     Inorm = sqrt(Inorm) * weight_inorm
+     Inorm = Inorm * (NF + 1) * 6  ! compensate for the fact that there are so many more spatial variables
 
      FATAL( rdcoils, abs(Gnorm) < machprec, cannot be zero )
      FATAL( rdcoils, abs(Inorm) < machprec, cannot be zero )
      
-     if (IsNormalize > 0) Inorm = Inorm *     IsNormalize
-     if (IsNormalize < 0) Gnorm = Gnorm * abs(IsNormalize)
-
      if (myid == 0) write(ounit, '("rdcoils : Currents are normalized by " ES23.15 &
           " ; Geometries are normalized by " ES23.15 " ;")') Inorm, Gnorm
 
