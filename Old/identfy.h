@@ -36,11 +36,11 @@ subroutine identfy
   endif
 
   ! evaluate object functions
-   if (Lnormalize .eq. 0) then 
-      call bnormal(0)
-   else
-      call bnormal2(0)
-   endif
+#ifdef NORM
+    call bnormal(0)
+#else
+    call bnormal2(0)
+#endif
 
    if ( target_tflux .eq. 0.0 ) then
     call torflux(0)

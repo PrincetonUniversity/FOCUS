@@ -516,19 +516,19 @@ subroutine rdcoils
 
         ! czhu's representation;  07/09/2016
 
-        coil(icoil)%xc(0:1) = (/ Rmaj * cos(zeta), rmin * cos(zeta) /)
-        coil(icoil)%xs(0:1) = (/ 0.0             , 0.0              /)
-        coil(icoil)%yc(0:1) = (/ Rmaj * sin(zeta), rmin * sin(zeta) /)
-        coil(icoil)%ys(0:1) = (/ 0.0             , 0.0              /)
-        coil(icoil)%zc(0:1) = (/ z0              , 0.0              /)
-        coil(icoil)%zs(0:1) = (/ 0.0             , rmin             /)
-!!$
-!!$    coil(icoil)%xc(0:1) = (/ Rmaj * cos(zeta), sqrt(2.0)/2 * rmin * cos(zeta) /)
-!!$    coil(icoil)%xs(0:1) = (/ 0.0             ,-sqrt(2.0)/2 * rmin * cos(zeta) /)
-!!$    coil(icoil)%yc(0:1) = (/ Rmaj * sin(zeta), sqrt(2.0)/2 * rmin * sin(zeta) /)
-!!$    coil(icoil)%ys(0:1) = (/ 0.0             ,-sqrt(2.0)/2 * rmin * sin(zeta) /)
-!!$    coil(icoil)%zc(0:1) = (/ z0              , sqrt(2.0)/2 * rmin             /)
-!!$    coil(icoil)%zs(0:1) = (/ 0.0             , sqrt(2.0)/2 * rmin             /)
+!!$        coil(icoil)%xc(0:1) = (/ Rmaj * cos(zeta), rmin * cos(zeta) /)
+!!$        coil(icoil)%xs(0:1) = (/ 0.0             , 0.0              /)
+!!$        coil(icoil)%yc(0:1) = (/ Rmaj * sin(zeta), rmin * sin(zeta) /)
+!!$        coil(icoil)%ys(0:1) = (/ 0.0             , 0.0              /)
+!!$        coil(icoil)%zc(0:1) = (/ z0              , 0.0              /)
+!!$        coil(icoil)%zs(0:1) = (/ 0.0             , rmin             /)
+
+    coil(icoil)%xc(0:1) = (/ Rmaj * cos(zeta), sqrt(2.0)/2 * rmin * cos(zeta) /)
+    coil(icoil)%xs(0:1) = (/ 0.0             ,-sqrt(2.0)/2 * rmin * cos(zeta) /)
+    coil(icoil)%yc(0:1) = (/ Rmaj * sin(zeta), sqrt(2.0)/2 * rmin * sin(zeta) /)
+    coil(icoil)%ys(0:1) = (/ 0.0             ,-sqrt(2.0)/2 * rmin * sin(zeta) /)
+    coil(icoil)%zc(0:1) = (/ z0              , sqrt(2.0)/2 * rmin             /)
+    coil(icoil)%zs(0:1) = (/ 0.0             , sqrt(2.0)/2 * rmin             /)
 
         SALLOCATE( coil(icoil)%xx, (0:coil(icoil)%D), zero )
         SALLOCATE( coil(icoil)%yy, (0:coil(icoil)%D), zero )
