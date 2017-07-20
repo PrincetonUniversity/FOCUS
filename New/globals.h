@@ -106,6 +106,7 @@ module globals
   REAL                 :: weight_gnorm   =        1.000D+00
 
   INTEGER              :: case_optimize  =        1
+  REAL                 :: exit_tol       =        1.000D-04
   INTEGER              :: DF_maxiter     =        0
   REAL                 :: DF_xtol        =        1.000D-08     
   REAL                 :: DF_tausta      =        0.000D+00
@@ -165,6 +166,7 @@ module globals
                         weight_inorm   , &
                         weight_gnorm   , &
                         case_optimize  , &
+                        exit_tol       , &
                         DF_maxiter     , & 
                         DF_xtol        , & 
                         DF_tausta      , &  
@@ -244,6 +246,7 @@ module globals
   INTEGER              :: iout, Nouts
   REAL                 :: chi, discretefactor
   REAL   , allocatable :: t1E(:), t2E(:,:), evolution(:,:), coilspace(:,:), deriv(:,:)
+  LOGICAL              :: exit_signal = .False.
   ! Bn surface integration;
   REAL                 :: bnorm
   REAL   , allocatable :: t1B(:), t2B(:,:), bn(:,:), dB(:,:,:)
