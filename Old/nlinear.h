@@ -816,20 +816,27 @@ SUBROUTINE fcn(n, x, fvec, fjac, ldfjac, iflag)
   INTEGER :: ii, jj, c1, c2, n1, n2, astat, ierr
   REAL    :: f0
 
-  call unpack(x)
-  if (iflag == 1) then
+  select case ( iflag )
+
+  case ( 0 )   ! output ;
+     call output
+  case ( 1 )   ! update fvec ;
+     call unpack(x)
      call getdf(f0, fvec)
-  else if (iflag == 2) then
+  case ( 2 )   ! update fjac ;
+     call unpack(x)
      call costfun(2)
      do jj = 1, N
-         call DoFconvert(jj,c2,n2)
-         do ii = 1,N
-            call DoFconvert(ii,c1,n1)
-            FJAC(ii,jj) = t2E(c1,n1,c2,n2)
-         enddo
+        call DoFconvert(jj,c2,n2)
+        do ii = 1,N
+           call DoFconvert(ii,c1,n1)
+           FJAC(ii,jj) = t2E(c1,n1,c2,n2)
+        enddo
      enddo
-  else
-     call output
-  endif
+  case default
+     FATAL( fcn , .true. , unsupported iflage option )
+  end select
+
+  return
 
 END SUBROUTINE fcn

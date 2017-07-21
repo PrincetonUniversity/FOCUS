@@ -606,7 +606,7 @@ subroutine rdcoils
 
      r1 = sqrt( surf(1)%xx(      0,0)**2 + surf(1)%yy(      0,0)**2 ) ! R at (0 ,0)
      r2 = sqrt( surf(1)%xx(Nteta/2,0)**2 + surf(1)%yy(Nteta/2,0)**2 ) ! R at (pi,0)
-     Gnorm = half * (r1 + r2) ! something like the major radius;
+     Gnorm = half * (r1 + r2) ! something like the major radius; need to be changded;
 
      idof = 0
      do icoil = 1, Ncoils
