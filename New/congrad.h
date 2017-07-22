@@ -39,7 +39,7 @@ SUBROUTINE congrad
   implicit none
   !include "mpif.h"
 
-  INTEGER                 :: idof, icoil, c1, n1, ierr, astat, iter
+  INTEGER                 :: idof, icoil, c1, n1, ierr, astat, iter, iflag
   REAL                    :: alpha, beta, f
   REAL, dimension(1:Ndof) :: lxdof, p, gradk, gradf
 
@@ -55,7 +55,12 @@ SUBROUTINE congrad
   do
 
      iter = iter + 1
-     call wolfe(lxdof, p, alpha) ! find a step size matching the Wolfe condiction;
+     call wolfe(lxdof, p, alpha, iflag) ! find a step size matching the Wolfe condiction;
+     if ( iflag == -1 ) then
+        if(myid .eq. 0) write(ounit, '("congrad : EXITING--------Unconverged line search!")')
+        exit  ! reach maximum iterations;
+     endif
+        
      lxdof = lxdof + alpha*p ! next xdof
 
      call getdf(lxdof, f, gradf)
@@ -93,21 +98,23 @@ END SUBROUTINE congrad
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-SUBROUTINE wolfe( x0, p, alpha )
+SUBROUTINE wolfe( x0, p, alpha, iflag )
 
   use globals, only : zero, sqrtmachprec, ounit, myid, Ndof, CG_wolfe_c1, CG_wolfe_c2
 
   implicit none
   include "mpif.h"
 
-  REAL, INTENT( in)       :: x0(1:Ndof), p(1:Ndof)
-  REAL, INTENT(out)       :: alpha
+  REAL   , INTENT( in)    :: x0(1:Ndof), p(1:Ndof)
+  INTEGER, INTENT(out)    :: iflag
+  REAL   , INTENT(out)    :: alpha
 
   REAL                    :: zoom
   INTEGER                 :: i, maxiter
   REAL                    :: a0, ap, ac, f0, fc, fp, rd, c1, c2
   REAL, dimension(1:Ndof) :: xc, g0, gc, gp
 
+  iflag = 0 ! normal value;
 
   c1 = CG_wolfe_c1
   c2 = CG_wolfe_c2     ! c1 & c2
@@ -129,7 +136,14 @@ SUBROUTINE wolfe( x0, p, alpha )
      call getdf(xc, fc, gc)
 
      if ( (fc > f0 + c1*ac*sum(p*g0)) .or. (fc >= fp .and. i > 1) ) then
+#ifdef DEBUG
+        if (myid == 0) write(ounit,'("congrad : option 1 ; ap = "F12.5" ; ac = "F12.5)') ap, ac
+#endif
         alpha = zoom( x0, p, ap, ac )
+        if (abs(alpha) < sqrtmachprec) exit    ! if zoom failed;
+#ifdef DEBUG
+        if (myid == 0) write(ounit,'("congrad : zoom failed to find next alpha.")')
+#endif
         return
      endif
 
@@ -139,7 +153,14 @@ SUBROUTINE wolfe( x0, p, alpha )
      endif
 
      if ( sum(p*gc) >= zero ) then
+#ifdef DEBUG
+        if (myid == 0) write(ounit,'("congrad : option 3 ; ap = "F12.5" ; ac = "F12.5)') ap, ac
+#endif
         alpha = zoom( x0, p, ac, ap )
+        if (abs(alpha) < sqrtmachprec) exit    ! if zoom failed;
+#ifdef DEBUG
+        if (myid == 0) write(ounit,'("congrad : zoom failed to find next alpha.")')
+#endif
         return
      endif          
 
@@ -151,6 +172,12 @@ SUBROUTINE wolfe( x0, p, alpha )
      ac = ac*2.0
      
   end do
+
+#ifdef DEBUG
+  if (myid == 0) write(ounit, '("congrad : line search does not converge. Please change c1, c2, or weights.")')
+#endif
+
+  iflag = -1 ! not converge; terminate the optimization;
 
   return
 
@@ -168,17 +195,18 @@ REAL FUNCTION zoom( x0, p, alo, ahi )
   REAL, INTENT(   in)     :: x0(1:Ndof), p(1:Ndof)
   REAL, INTENT(inout)     :: alo, ahi
 
+  INTEGER                 :: iter, maxiter = 20 ! maximum iteration;
   REAL                    :: f0, fc, fl, fp, alpha, c1, c2
   REAL, dimension(1:Ndof) :: xc, xl, g0, gc, gp, gl
 
-
+  iter = 0
   c1 = CG_wolfe_c1
   c2 = CG_wolfe_c2     ! c1 & c2
 
   call getdf(x0, f0, g0)
 
   do
-     alpha = 0.5*(alo + ahi)
+     alpha = 0.5*(alo + ahi) ! linearly intepolation;
 
      xc = x0 + alpha*p
      call getdf(xc, fc, gc)
@@ -201,6 +229,16 @@ REAL FUNCTION zoom( x0, p, alo, ahi )
         alo = alpha
 
      endif
+
+     iter = iter + 1
+     if (iter >= maxiter) then 
+#ifdef DEBUG
+        if (myid == 0) write(ounit,'("congrad : zoom failed to find next alpha, reset to zero.")')
+#endif
+        zoom = zero
+        return
+     endif
+
   end do
 
   return
