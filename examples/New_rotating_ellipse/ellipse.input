@@ -19,7 +19,10 @@
  Nseg           =      128 
 
  case_optimize  =        1
+ exit_tol       =        1.000D-03
  IsNormalize    =        1
+ weight_Inorm   =        1.000D+00
+ weight_Gnorm   =        1.000D+00
  IsNormWeight   =        1
  case_bnormal   =        0
  case_length    =        1         
