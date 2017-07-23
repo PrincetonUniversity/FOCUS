@@ -300,7 +300,7 @@ subroutine rdcoils
         SALLOCATE( FouCoil(icoil)%zs, (0:NFcoil), zero )
 
         !initilize with circular coils;
-        zeta = (icoil-1) * pi2 / (Ncoils*Npc)
+        zeta = (icoil-1+half) * pi2 / (Ncoils*Npc)  ! put a half for a shift;
 
         call surfcoord( zero, zeta, r1, z1)
         call surfcoord(   pi, zeta, r2, z2)
