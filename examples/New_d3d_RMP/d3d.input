@@ -34,6 +34,7 @@
  weight_gnorm   =        1.000D+00		! weight for normalization of geometric coefficients. Larger weight makes the derivatives more important.
 
  case_optimize  =        1              ! -2: check the 2nd derivatives (not ready); -1: check the 1st derivatives; 0: no optimizations performed; 1: optimizing with algorithms using the gradient (DF and/or CG); 2: optimizing with algorithms using the Hessian (HT and/or NT)
+ exit_tol       =        1.000D-04      ! Exit the optimizer if the percent change in the cost function over the last 5 steps is below this threshold
 
  DF_maxiter     =        100            ! maximum iterations allowed for using Differential Flow (DF)
  DF_xtol        =        1.000D-08      ! relative error for ODE solver

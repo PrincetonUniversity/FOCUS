@@ -94,6 +94,8 @@ subroutine saving
   HWRITERV( 1                ,   target_length ,   target_length                 )
   HWRITERV( 1                ,   weight_specw  ,   weight_specw                  )
   HWRITERV( 1                ,   weight_ccsep  ,   weight_ccsep                  )
+  HWRITERV( 1                ,   weight_gnorm  ,   weight_gnorm                  )
+  HWRITERV( 1                ,   weight_inorm  ,   weight_inorm                  )
   HWRITERV( 1                ,   DF_tausta     ,   DF_tausta                     )
   HWRITERV( 1                ,   DF_tauend     ,   DF_tauend                     )
   HWRITERV( 1                ,   DF_xtol       ,   DF_xtol                       )
