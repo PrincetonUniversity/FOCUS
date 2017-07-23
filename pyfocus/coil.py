@@ -20,6 +20,8 @@ Table of contents:
 13. animating the coils evolution from FOCUS hdf5 output data;
 14. plot cost function converging curves from FOCUS hdf5 output data;
 '''
+
+'''
 #QT_API imcompactible
 import sip
 API_NAMES = ["QDate", "QDateTime", "QString", "QTextStream", "QTime", "QUrl", "QVariant"]
@@ -31,6 +33,7 @@ from PyQt4.QtGui import *
 from PyQt4.QtSvg import *
 from PyQt4.QtCore import pyqtSignal as Signal
 from PyQt4.QtCore import pyqtSlot as Slot
+'''
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -66,6 +69,8 @@ class hdf5(object):
             self.names = hdf5.keys()
             for name in self.names:
                 setattr(self, name, hdf5[name].value)
+                if hdf5[name].value.dtype == 'S1': #only for hdf5 string;
+                    setattr(self, name, ''.join(hdf5[name].value))
         except IOError:
             print "Error: this is not a valid hdf5 file."
         else:
@@ -656,7 +661,7 @@ def plot_poincare( path, pp, code='Glass', prange='full', dotsize=0.5):
 
 #------------------------------------------  12  ----------------------------------------------------
 
-def hdf5coil(h5data, nn = -1):
+def hdf5coil(h5data, nn = -1, old=False):
     '''
     read FOCUS hdf5 output file and return the nn-th coil data
     '''
@@ -667,24 +672,42 @@ def hdf5coil(h5data, nn = -1):
     assert ncoil>0
     nf = h5data.NFcoil[0]
     assert nf>0
-    nseg = h5data.Nseg[0]
+    if old:
+        nseg = h5data.NDcoil[0]
+    else:
+        nseg = h5data.Nseg[0]
     assert nseg>0
     coilfou = np.reshape(h5data.coilspace[:,nn], (ncoil,-1)) #all coil data at nn time; and reshape
     coildata = np.ndarray((ncoil,),dtype=np.object)
 
     for icoil in range(ncoil):
-        xyzfou = np.reshape(coilfou[icoil,1:], (3,-1))  #pop current and reshape in 3 rows;
+        
+        if old: #old format hdf5
+            tmpfou = np.reshape(coilfou[icoil, 4:], (nf, 6))
+            xyzfou = np.zeros([3, 2*nf+1], dtype=np.float32)
+            xyzfou[0, 0] = coilfou[icoil, 1] #xc0
+            xyzfou[1, 0] = coilfou[icoil, 2] #yc0
+            xyzfou[2, 0] = coilfou[icoil, 3] #yc0
+            xyzfou[0, 1:nf+1] = tmpfou[:, 0] #xc(1:n)
+            xyzfou[1, 1:nf+1] = tmpfou[:, 1] #yc(1:n)
+            xyzfou[2, 1:nf+1] = tmpfou[:, 2] #zc(1:n)
+            xyzfou[0, nf+1:2*nf+1] = tmpfou[:, 3] #xs(1:n)
+            xyzfou[1, nf+1:2*nf+1] = tmpfou[:, 4] #ys(1:n)
+            xyzfou[2, nf+1:2*nf+1] = tmpfou[:, 5] #zs(1:n)
+        else:
+            xyzfou = np.reshape(coilfou[icoil,1:], (3,-1))  #pop current and reshape in 3 rows;
+ 
         coildata[icoil] = coil()
         #coildata[icoil].I = coilfou[icoil,0]  #coil current
         coildata[icoil].x.extend(fourier(xyzfou[0,:]).disc(nseg))
         coildata[icoil].y.extend(fourier(xyzfou[1,:]).disc(nseg))
         coildata[icoil].z.extend(fourier(xyzfou[2,:]).disc(nseg))
-    print "Read {} coils in {}.".format(ncoil, filename)
+    print "Read {} coils.".format(ncoil)
     return coildata
 
 #------------------------------------------  13  ----------------------------------------------------
 
-def coilevolve(h5data, delay = 250):
+def coilevolve(h5data, delay = 250, nout=-1, old = False, savepng=False):
     '''
     plot coil evolution movie
     '''
@@ -696,11 +719,21 @@ def coilevolve(h5data, delay = 250):
     assert ncoil>0
     nf = h5data.NFcoil[0]
     assert nf>0
-    nseg = h5data.Nseg[0]
+    if old:
+        nseg = h5data.NDcoil[0]
+    else:
+        nseg = h5data.Nseg[0]
     assert nseg>0
-    nout = h5data.iout[0]
+    if nout < 0:
+        if old:
+            nout = h5data.itau[0]
+        else:
+            nout = h5data.iout[0] 
     assert nout>1
-    nfp = h5data.Nfp[0]
+    if old:
+        nfp = 1
+    else:
+        nfp = h5data.Nfp[0]
     unicoil = ncoil/nfp
 
     xx = np.zeros([ncoil,nseg], dtype=np.float32)
@@ -712,34 +745,82 @@ def coilevolve(h5data, delay = 250):
     #initial coils (fixed for comparison)
     coilinit = np.reshape(h5data.coilspace[:,0], (ncoil,-1))
     for icoil in range(ncoil):
-        xyzfou = np.reshape(coilinit[icoil,1:], (3,-1))
+        if old: #old format hdf5
+            tmpfou = np.reshape(coilinit[icoil, 4:], (nf, 6))
+            xyzfou = np.zeros([3, 2*nf+1], dtype=np.float32)
+            xyzfou[0, 0] = coilinit[icoil, 1] #xc0
+            xyzfou[1, 0] = coilinit[icoil, 2] #yc0
+            xyzfou[2, 0] = coilinit[icoil, 3] #yc0
+            xyzfou[0, 1:nf+1] = tmpfou[:, 0] #xc(1:n)
+            xyzfou[1, 1:nf+1] = tmpfou[:, 1] #yc(1:n)
+            xyzfou[2, 1:nf+1] = tmpfou[:, 2] #zc(1:n)
+            xyzfou[0, nf+1:2*nf+1] = tmpfou[:, 3] #xs(1:n)
+            xyzfou[1, nf+1:2*nf+1] = tmpfou[:, 4] #ys(1:n)
+            xyzfou[2, nf+1:2*nf+1] = tmpfou[:, 5] #zs(1:n)
+        else:
+            xyzfou = np.reshape(coilinit[icoil,1:], (3,-1))  #pop current and reshape in 3 rows;
+
         mlab.plot3d(fourier(xyzfou[0,:]).disc(nseg), fourier(xyzfou[1,:]).disc(nseg),
                     fourier(xyzfou[2,:]).disc(nseg), color=(0.5, 0.5, 0.5))
 
     # first coils
     coilfou = np.reshape(h5data.coilspace[:,0], (ncoil,-1))
     for icoil in range(ncoil):
-        xyzfou = np.reshape(coilfou[icoil,1:], (3,-1))   
+        if old: #old format hdf5
+            tmpfou = np.reshape(coilfou[icoil, 4:], (nf, 6))
+            xyzfou = np.zeros([3, 2*nf+1], dtype=np.float32)
+            xyzfou[0, 0] = coilfou[icoil, 1] #xc0
+            xyzfou[1, 0] = coilfou[icoil, 2] #yc0
+            xyzfou[2, 0] = coilfou[icoil, 3] #yc0
+            xyzfou[0, 1:nf+1] = tmpfou[:, 0] #xc(1:n)
+            xyzfou[1, 1:nf+1] = tmpfou[:, 1] #yc(1:n)
+            xyzfou[2, 1:nf+1] = tmpfou[:, 2] #zc(1:n)
+            xyzfou[0, nf+1:2*nf+1] = tmpfou[:, 3] #xs(1:n)
+            xyzfou[1, nf+1:2*nf+1] = tmpfou[:, 4] #ys(1:n)
+            xyzfou[2, nf+1:2*nf+1] = tmpfou[:, 5] #zs(1:n)
+        else:
+            xyzfou = np.reshape(coilfou[icoil,1:], (3,-1))  #pop current and reshape in 3 rows;
+
         xx[icoil,:] = fourier(xyzfou[0,:]).disc(nseg)
         yy[icoil,:] = fourier(xyzfou[1,:]).disc(nseg)
         zz[icoil,:] = fourier(xyzfou[2,:]).disc(nseg)
         l = mlab.plot3d(xx[icoil,:], yy[icoil,:], zz[icoil,:], color=c[icoil%unicoil])
         coils.append(l)
 
-    @mlab.show
+    print ' in coilevolve : '
     @mlab.animate(delay=delay)
     def anim():
+        print ' in anim '
         while 1:
             for iout in range(nout):
                 coilfou = np.reshape(h5data.coilspace[:,iout], (ncoil,-1)) #all coil data at iout time;
                 for icoil in range(ncoil):
-                    xyzfou = np.reshape(coilfou[icoil,1:], (3,-1))   
+                    if old: #old format hdf5
+                        tmpfou = np.reshape(coilfou[icoil, 4:], (nf, 6))
+                        xyzfou = np.zeros([3, 2*nf+1], dtype=np.float32)
+                        xyzfou[0, 0] = coilfou[icoil, 1] #xc0
+                        xyzfou[1, 0] = coilfou[icoil, 2] #yc0
+                        xyzfou[2, 0] = coilfou[icoil, 3] #yc0
+                        xyzfou[0, 1:nf+1] = tmpfou[:, 0] #xc(1:n)
+                        xyzfou[1, 1:nf+1] = tmpfou[:, 1] #yc(1:n)
+                        xyzfou[2, 1:nf+1] = tmpfou[:, 2] #zc(1:n)
+                        xyzfou[0, nf+1:2*nf+1] = tmpfou[:, 3] #xs(1:n)
+                        xyzfou[1, nf+1:2*nf+1] = tmpfou[:, 4] #ys(1:n)
+                        xyzfou[2, nf+1:2*nf+1] = tmpfou[:, 5] #zs(1:n)
+                    else:
+                        xyzfou = np.reshape(coilfou[icoil,1:], (3,-1))  #pop current and reshape in 3 rows;
+
                     xx[icoil,:] = fourier(xyzfou[0,:]).disc(nseg)
                     yy[icoil,:] = fourier(xyzfou[1,:]).disc(nseg)
                     zz[icoil,:] = fourier(xyzfou[2,:]).disc(nseg)
                     coils[icoil].mlab_source.set(x=xx[icoil,:], y=yy[icoil,:], z=zz[icoil,:])
+                if savepng :
+                    filename = 'coil_evolution_'+str(iout).zfill(6)+'.png'
+                    print(filename)
+                    mlab.savefig(filename=filename)
                 yield
     anim()
+    mlab.show()
     return
 
 #------------------------------------------  14  ----------------------------------------------------
@@ -792,4 +873,81 @@ def chievolve(h5data, term='chi', width = 2.5, linestyle='-', color='b'):
     plt.ylabel(label,fontsize=24)
     plt.legend(loc='upper right', frameon=False, prop={'size':24, 'weight':'bold'})
 
+    return
+
+#------------------------------------------  15  ----------------------------------------------------
+
+def plot_hdf5_surface(h5data, plottype='surf', color=(1,0,0)):
+    '''
+    plot plasma surface from the hdf5 data
+
+    plottype:
+            'surf'      : just plot the surface with pure color;
+            'targetBn'  : plot the surface with target Bn distribution;
+            'realizedBn': plot the surface with realized Bn distribution;
+    '''
+
+    if not isinstance(h5data, hdf5):
+        print h5data, " is not a valid FOCUS hdf5 file."
+        return
+
+    # data manipulation
+    nt =  h5data.Nteta[0] #opposite notation for nt & nz!
+    nz =  h5data.Nzeta[0]  
+    xx = np.zeros([nt+1,nz+1], dtype=np.float32)
+    yy = np.zeros([nt+1,nz+1], dtype=np.float32)
+    zz = np.zeros([nt+1,nz+1], dtype=np.float32)
+    Bn = np.zeros([nt+1,nz+1], dtype=np.float32)
+
+    xx[0:nt, 0:nz] = np.transpose(h5data.xsurf[0:nz, 0:nt])
+    xx[  nt, 0:nz] = xx[0   , 0:nz]
+    xx[0:nt,   nz] = xx[0:nt, 0   ]
+    xx[  nt,   nz] = xx[0   , 0   ]
+
+    yy[0:nt, 0:nz] = np.transpose(h5data.ysurf[0:nz, 0:nt])
+    yy[  nt, 0:nz] = yy[0   , 0:nz]
+    yy[0:nt,   nz] = yy[0:nt, 0   ]
+    yy[  nt,   nz] = yy[0   , 0   ]
+
+    zz[0:nt, 0:nz] = np.transpose(h5data.zsurf[0:nz, 0:nt])
+    zz[  nt, 0:nz] = zz[0   , 0:nz]
+    zz[0:nt,   nz] = zz[0:nt, 0   ]
+    zz[  nt,   nz] = zz[0   , 0   ]
+
+    #plot
+    if plottype == 'surf':
+        mlab.mesh(xx, yy, zz, color=color)
+    elif plottype == 'targetBn':
+        for i in range(nz+1):
+            ator = (i+0.5)*2*np.pi/nz #zeta
+            for j in range(nt+1):
+                apol = (j+0.5)*2*np.pi/nt #theta
+                tmpBn = h5data.target_Bmnc*np.cos(h5data.Bmnim*apol-h5data.Bmnin*ator) \
+                     + h5data.target_Bmns*np.sin(h5data.Bmnim*apol-h5data.Bmnin*ator)
+
+                Bn[j,i] = np.sum(tmpBn)
+        mlab.mesh(xx, yy, zz, scalars=Bn, colormap='RdBu')
+        axes = mlab.colorbar( orientation='vertical', label_fmt='%.1e')
+        axes.title_text_property.font_family = 'times'
+        axes.title_text_property.font_size = 6
+        axes.title_text_property.italic = False
+        axes.label_text_property.font_family = 'times'
+        axes.label_text_property.font_size = 100
+        axes.label_text_property.italic = False
+    elif plottype == 'realizedBn':
+        Bn[0:nt, 0:nz] = np.transpose(h5data.Bn[0:nz, 0:nt])
+        Bn[  nt, 0:nz] = Bn[0   , 0:nz]
+        Bn[0:nt,   nz] = Bn[0:nt, 0   ]
+        Bn[  nt,   nz] = Bn[0   , 0   ]
+        mlab.mesh(xx, yy, zz, scalars=Bn, colormap='RdBu')
+        axes = mlab.colorbar(orientation='vertical', label_fmt='%.1e')
+        axes.title_text_property.font_family = 'times'
+        axes.title_text_property.font_size = 6
+        axes.title_text_property.italic = False
+        axes.label_text_property.font_family = 'times'
+        axes.label_text_property.font_size = 100
+        axes.label_text_property.italic = False
+    else :
+        raise NameError("No such option!")
+        print "plottype = surf/targetBn/realizedBn"
     return

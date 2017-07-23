@@ -292,6 +292,44 @@ m4_define(HWRITERC,{
 
 })m4_dnl
 
+m4_define(HWRITECH,{
+
+!macro expansion of hwritech; write character in hdf5 format;
+
+  rank = 1 ; onedims(1) = $1
+
+  if( $1.le.0 ) then
+
+   write(0,'("macros  :      fatal : error calling hwriterv ; $2 : $1.le.0 ;")')
+
+  else
+
+   call h5screate_simple_f( rank , onedims , space_id , hdfier )
+   if( hdfier.ne.0 ) then
+    write(0,'("macros  :      fatal : error calling h5screate_simple_f ;")')
+    call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+    stop "macros  : error calling h5screate_simple_f;"
+   endif
+
+   call h5dcreate_f( file_id , "$2" , H5T_NATIVE_CHARACTER , space_id , dset_id , hdfier )
+   if( hdfier.ne.0 ) then
+    write(0,'("macros  :      fatal : error calling h5dcreate_f ;")')
+    call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+    stop "macros  : error calling h5dcreate_f;"
+   endif
+
+   call h5dwrite_f( dset_id , H5T_NATIVE_CHARACTER , $3 , onedims , hdfier )
+   if( hdfier.ne.0 ) then
+    write(0,'("macros  :      fatal : error calling h5dwrite_f ;")')
+    call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+    stop "macros  : error calling h5dwrite_f;"
+   endif
+
+   CALL h5dclose_f(dset_id, hdfier)    ! terminate dataset;
+   
+  endif
+
+})m4_dnl
 
 m4_define(TMPOUT,{ !Temperarily output a message to help debugging
   if( myid .eq. 0) write(ounit,*) "### DEBUG : $1 = ", $1

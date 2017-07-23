@@ -29,7 +29,8 @@ subroutine saving
 
 
   INTEGER            :: ii, jj, icoil, NF
-  ! REAL, allocatable  :: perA(:)
+  CHARACTER(LEN=10)  :: version='v0.1.0'
+
 
   ! the following are used by the macros HWRITEXX below; do not alter/remove;
   INTEGER            :: hdfier, rank
@@ -65,6 +66,8 @@ subroutine saving
   call h5fcreate_f( trim(hdf5file), H5F_ACC_TRUNC_F, file_id, hdfier ) ! create new file;
   FATAL( restart, hdfier.ne.0, error calling h5fcreate_f )
 
+  HWRITECH( 10               ,   version       ,   version                       )
+
   !INPUT namelist;
   HWRITEIV( 1                ,   IsQuiet       ,   IsQuiet                       )
   HWRITEIV( 1                ,   IsSymmetric   ,   IsSymmetric                   )
@@ -82,6 +85,7 @@ subroutine saving
   HWRITEIV( 1                ,   NFcoil        ,   NFcoil                        )
   HWRITEIV( 1                ,   Nseg          ,   Nseg                          )
   HWRITEIV( 1                ,   case_optimize ,   case_optimize                 )
+  HWRITERV( 1                ,   exit_xtol     ,   exit_tol                      )
   HWRITEIV( 1                ,   IsNormalize   ,   IsNormalize                   )
   HWRITEIV( 1                ,   ISNormWeight  ,   IsNormWeight                  )
   HWRITEIV( 1                ,   case_bnormal  ,   case_bnormal                  )
