@@ -23,7 +23,7 @@ subroutine rdknot
   
   use kmodule, only : zero, one, half, ten, pi, pi2, sqrtmachprec, small, myid, ncpu, ounit, lunit, &
                       ext, &
-                      knotNF, knotsurf, surf, Nteta, Nzeta, bNfp,  &
+                      knotNF, knotsurf, surf, Nteta, Nzeta, bNfp, ellipticity, &
                       xkc, xks, ykc, yks, zkc, zks, &
                       Mpol, Ntor, &
                       Ntz, isr, trigm, trign, trigwk, ijreal, ijimag, mn, im, in, cfmn, sfmn, efmn, ofmn
@@ -54,30 +54,12 @@ subroutine rdknot
     open(lunit, file=trim(ext)//".fo.knot", status="old", action='read', iostat=iostat)  
     write(ounit,'("rdknot  : " 10x " : reading ext.fo.knot ;")') 
    endif
-  else
-   inquire( file=".fo.knot", exist=exist )
-   if( exist ) then
-    if( myid.eq.0 ) then
-     open(lunit, file=trim(ext)//".knot", status="old", action='read', iostat=iostat)  
-     write(ounit,'("rdknot  : " 10x " : reading .fo.knot ;")') 
-    endif
-  !else
-  ! inquire( file="knot", exist=exist )
-  ! if( exist ) then
-  !  if( myid.eq.0 ) then
-  !   open(lunit, file="knot", status="old", action='read', iostat=iostat)
-  !   write(ounit,'("rdknot  : " 10x " : reading knot ;")') 
-  !  endif
-  ! endif
-   endif
-  endif
-  
+
   FATAL( rdknot , .not.exist, input knot does not exist )
   
   if( myid.eq.0 ) read( lunit, *, iostat=iostat ) knotNF!, knotphase ! knotphase is redundant; 18 Apr 17;
   
   IlBCAST( knotNF, 1, 0 )
-! RlBCAST( knotphase, 1, 0 ) ! knotphase is redundant; 18 Apr 17;
   
   SALLOCATE( xkc, (0:knotNF), zero )
   SALLOCATE( xks, (0:knotNF), zero )
@@ -87,28 +69,6 @@ subroutine rdknot
   SALLOCATE( zks, (0:knotNF), zero )
 
   bNfp = 1
-  
-! NFcoil = qtorusknot + ptorusknot
-!   
-! FATAL(rdknot , ptorusknot.gt.qtorusknot, needs attention )
-!   
-! xkc(ptorusknot) =   Rtorusaxis ; xkc(qtorusknot-ptorusknot) = + half * atorusaxis ; xkc(qtorusknot+ptorusknot) = half * atorusaxis
-! yks(ptorusknot) =   Rtorusaxis ; yks(qtorusknot-ptorusknot) = - half * atorusaxis ; yks(qtorusknot+ptorusknot) = half * atorusaxis
-! zks(qtorusknot) = - atorusaxis
-  
-! suffix = 'square' & phase = pi2 / 4.0D
-  
-! xnc=[ 0.0,  1.767311692237854e+00,  6.828825699356500e-14, -9.444974660873413e-01,  3.381930152590584e-14, -2.645063698291779e-01 ]
-! yns=[ 0.0,  6.908266991376877e-02, -2.093433065786243e-12, -9.791350364685059e-01,  7.350465722200106e-13, -2.231226861476898e-01 ]
-! zns=[ 0.0, -9.695488214492798e-02, -1.645109395931321e-12,  5.140577629208565e-02, -3.898339984154120e-13, -4.254519343376160e-01 ]
-  
-! suffix = 'granny' & phase = 0.0D
-  
-! xkc(0:5) = (/ 0.0,  6.653696894645691e-01, -1.656940383509831e-11, -1.043724060058594e+00,  1.069502906375641e-11, -8.075384050607681e-02 /)
-! yks(0:5) = (/ 0.0, -5.815748572349548e-01, -2.619011431337359e-11, -1.002896547317505e+00, -3.263673359343855e-11,  1.082220524549484e-01 /)
-! zks(0:5) = (/ 0.0,  4.834449507384875e-11, -1.123250573873520e-01,  5.830259885986067e-11, -6.876130104064941e-01, -3.233802114976925e-12 /)
-  
- !write(ounit,'("rdknot  : " 10x " : lNFcoil, NFcoil=",2i6," ;")') lNFcoil, NFcoil
 
   if( myid.eq.0 ) read( lunit, *, iostat=iostat ) xkc(0:knotNF)
   if( myid.eq.0 ) read( lunit, *, iostat=iostat ) xks(0:knotNF)
@@ -118,6 +78,47 @@ subroutine rdknot
   if( myid.eq.0 ) read( lunit, *, iostat=iostat ) zks(0:knotNF)
   
   if( myid.eq.0 ) close(lunit,iostat=iostat)
+
+  else                                        ! read knotopt format; 07/23/2017;
+   inquire( file=trim(ext)//".op.knot", exist=exist )
+   if( exist ) then
+    if( myid.eq.0 ) then
+     open(lunit, file=trim(ext)//".op.knot", status="old", action='read', iostat=iostat)  
+     write(ounit,'("rdknot  : " 10x " : reading xxx.op.knot ;")') 
+    endif
+   endif
+
+  FATAL( rdknot , .not.exist, input knot does not exist )
+  if( myid.eq.0 ) read( lunit, *, iostat=iostat ) 
+  if( myid.eq.0 ) read( lunit, *, iostat=iostat ) knotNF
+  
+  IlBCAST( knotNF, 1, 0 )
+  
+  SALLOCATE( xkc, (0:knotNF), zero )
+  SALLOCATE( xks, (0:knotNF), zero )
+  SALLOCATE( ykc, (0:knotNF), zero )
+  SALLOCATE( yks, (0:knotNF), zero )
+  SALLOCATE( zkc, (0:knotNF), zero )
+  SALLOCATE( zks, (0:knotNF), zero )
+
+  bNfp = 1
+  if( myid.eq.0 ) read( lunit, *, iostat=iostat )
+  if( myid.eq.0 ) read( lunit, *, iostat=iostat ) xkc(0:knotNF)
+  if( myid.eq.0 ) read( lunit, *, iostat=iostat )
+  if( myid.eq.0 ) read( lunit, *, iostat=iostat ) xks(0:knotNF)
+  if( myid.eq.0 ) read( lunit, *, iostat=iostat )
+  if( myid.eq.0 ) read( lunit, *, iostat=iostat ) ykc(0:knotNF)
+  if( myid.eq.0 ) read( lunit, *, iostat=iostat )
+  if( myid.eq.0 ) read( lunit, *, iostat=iostat ) yks(0:knotNF)
+  if( myid.eq.0 ) read( lunit, *, iostat=iostat )
+  if( myid.eq.0 ) read( lunit, *, iostat=iostat ) zkc(0:knotNF)
+  if( myid.eq.0 ) read( lunit, *, iostat=iostat )
+  if( myid.eq.0 ) read( lunit, *, iostat=iostat ) zks(0:knotNF)
+  
+  if( myid.eq.0 ) close(lunit,iostat=iostat)
+
+  endif
+  
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
@@ -128,15 +129,6 @@ subroutine rdknot
   RlBCAST( zkc(0:knotNF), knotNF+1, 0 )
   RlBCAST( zks(0:knotNF), knotNF+1, 0 )
    
- !if( myid.eq.0 ) then
- ! write(ounit,'("rdknot  : " 10x " : xkc=",    999es11.03)') xkc(0:knotNF)
- ! write(ounit,'("rdknot  : " 10x " : xks=",11x,998es11.03)') xks(1:knotNF)
- ! write(ounit,'("rdknot  : " 10x " : ykc=",    999es11.03)') ykc(0:knotNF)
- ! write(ounit,'("rdknot  : " 10x " : yks=",11x,999es11.03)') yks(1:knotNF)
- ! write(ounit,'("rdknot  : " 10x " : zkc=",    999es11.03)') zkc(0:knotNF)
- ! write(ounit,'("rdknot  : " 10x " : zks=",11x,999es11.03)') zks(1:knotNF)
- !endif
-
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 !discretize the knot surface data; 2017/03/28; czhu;
@@ -167,6 +159,7 @@ subroutine rdknot
    do jj = 0, Nzeta ; zeta = ( jj + half ) * pi2 / Nzeta
     
     lknotsurf = one ! knotsurf + ellipticity * cos( teta ) ! 11 May 17;
+    !lknotsurf =  knotsurf + ellipticity * cos( teta ) ! 07/23/1017;
 
     call knotxx( lknotsurf, teta, zeta, ax, at, az, xx, xt, xz )
     
