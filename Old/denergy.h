@@ -678,8 +678,11 @@ subroutine costfun(nderiv)
   if(Idisplay .eq. -2 .and. myid .eq. 0) write(ounit,'("Costfun :"12X": begin the "I6"th run.")') iter
   if(Idisplay .eq. -1) then
 
-    !call bnormal(0)
+#ifdef NORM
+    call bnormal(0)
+#else
     call bnormal2(0)
+#endif
 
    if ( target_tflux .eq. 0.0 ) then
     call torflux(0)
@@ -716,7 +719,12 @@ subroutine costfun(nderiv)
 
   if (weight_bnorm .gt. sqrtmachprec) then
 
-   call bnormal2(nderiv)
+#ifdef NORM
+    call bnormal(nderiv)
+#else
+    call bnormal2(nderiv)
+#endif
+
    totalenergy = totalenergy + weight_bnorm * bnorm
    if     ( nderiv .eq. 1 ) then
     t1E = t1E +  weight_bnorm * t1B
@@ -931,15 +939,6 @@ subroutine weightnormalize
 
   call discretecoil
 
-!-!-!-!-!-!-!-!-!-!-bnorm-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-  if( weight_bnorm .ge. sqrtmachprec ) then
-
-   call bnormal2(0)   
-   if (abs(bnorm) .gt. sqrtmachprec) weight_bnorm = weight_bnorm / bnorm
-   if( myid .eq. 0 ) write(ounit, 1000) "weight_bnorm", weight_bnorm
-   
-  endif
 
 !-!-!-!-!-!-!-!-!-!-tflux-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -968,6 +967,22 @@ subroutine weightnormalize
    if( myid .eq. 0 ) write(ounit, 1000) "weight_tflux", weight_tflux
    
   endif  
+
+
+!-!-!-!-!-!-!-!-!-!-bnorm-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+  if( weight_bnorm .ge. sqrtmachprec ) then
+
+#ifdef NORM
+    call bnormal(0)
+#else
+    call bnormal2(0)
+#endif
+  
+   if (abs(bnorm) .gt. sqrtmachprec) weight_bnorm = weight_bnorm / bnorm
+   if( myid .eq. 0 ) write(ounit, 1000) "weight_bnorm", weight_bnorm
+   
+  endif
 
 !-!-!-!-!-!-!-!-!-!-ttlen-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

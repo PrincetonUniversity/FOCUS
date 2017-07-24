@@ -100,7 +100,8 @@ PROGRAM focus
   case(  5 )   ; call congrad     ; irestart=1  ! conjugate gradient                 ; with    derivs;
   case(  6 )   ; call congrad     ; call hybrid  ; irestart=1
 !  case(  6 )   ; call congrad     ; call truncnt; irestart=1  ! conjugate gradient & truncated Newton method; with derivs;
-  case(  9 )   ; call SVD         ; irestart=1  ! Analyze current Heissian matrix using SVD; F08KBF  ;
+! case(  9 )   ; call SVD         ; irestart=1  ! Analyze current Heissian matrix using SVD; F08KBF  ;
+  case(  9 )   ; call truncnt ; call svd ;  call hessian    ; irestart=1  
   case default ;                  ; irestart=1
   end select
 

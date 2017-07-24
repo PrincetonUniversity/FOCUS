@@ -1,14 +1,15 @@
 SUBROUTINE congrad
-  use kmodule, only: sqrtmachprec, myid, ounit, Ncoils, Ndof, t1E, itau, CG_Niter
+  use kmodule, only: Idisplay, sqrtmachprec, myid, ounit, Ncoils, Ndof, t1E, itau, CG_Niter
   implicit none
   include "mpif.h"
 
-  INTEGER                 :: idof, icoil, c1, n1, ierr, astat
+  INTEGER                 :: idof, icoil, c1, n1, ierr, astat, ifail
   REAL                    :: alpha, beta, f
   REAL, dimension(1:Ndof) :: xdof, p, gradk, gradf
 
   if (myid .eq. 0) write(ounit, '("truncnt : "10X" : Begin using Nonlinear Conjugate Gradient to optimize.")')
   
+  ifail = 0
   call getdf(f, gradk)
 
   call pack(xdof(1:Ndof)) ! initial xdof;
@@ -25,18 +26,27 @@ SUBROUTINE congrad
      call getdf(f, gradf)     
      call output
 
-     if ( sum(gradf**2) .lt. sqrtmachprec) exit  ! reach minimum 
+     if ( sum(gradf**2) .lt. sqrtmachprec) then
+        ifail = 1
+        exit  ! reach minimum
+     endif
+  
      beta = sum(gradf**2) / sum( (gradf-gradk)*p )
      p = -gradf + beta*p ! direction for next step;
      gradk = gradf  !save for the current step;
 
      alpha = 1.0  ! reset alpha;
 
-     if (itau .ge. CG_Niter) exit  ! reach maximum iterations;
+     if (itau .ge. CG_Niter) then
+        ifail = 2
+        exit  ! reach maximum iterations;
+     endif
 
   enddo
 
-  if(myid .eq. 0) write(ounit, '("congrad : Computation using conjugate gradient finished.")')
+  if (myid .eq. 0) write(ounit, '("congrad : Computation using conjugate gradient finished.")')
+  if (myid .eq. 0 .and. Idisplay <0) write(ounit, '("congrad : ifail = "I1" ; 0: sth wrong; 1: reach minimum; 2: out of iterations.")') ifail
+     
 
   return
 END SUBROUTINE congrad
