@@ -246,9 +246,12 @@ subroutine bpotential0(icoil, iteta, jzeta, Ax, Ay, Az)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  FATAL( bpotential0, icoil .lt. 1 .or. icoil .gt. Ncoils*Npc, icoil not in right range )
-  FATAL( bpotential0, iteta .lt. 0 .or. iteta .gt. Nteta     , iteta not in right range )
-  FATAL( bpotential0, jzeta .lt. 0 .or. jzeta .gt. Nzeta     , jzeta not in right range )
+  FATAL( bpotential0, icoil .lt. 1 .or. icoil .gt. Ncoils*Npc, &
+    icoil not in right range )
+  FATAL( bpotential0, iteta .lt. 0 .or. iteta .gt. Nteta     , &
+    iteta not in right range )
+  FATAL( bpotential0, jzeta .lt. 0 .or. jzeta .gt. Nzeta     , &
+    jzeta not in right range )
   
   dlx = zero; ltx = zero; Ax = zero
   dly = zero; lty = zero; Ay = zero
@@ -300,9 +303,12 @@ subroutine bpotential1(icoil, iteta, jzeta, Ax, Ay, Az, ND)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-  FATAL( bpotential1, icoil .lt. 1 .or. icoil .gt. Ncoils*Npc, icoil not in right range )
-  FATAL( bpotential1, iteta .lt. 0 .or. iteta .gt. Nteta     , iteta not in right range )
-  FATAL( bpotential1, jzeta .lt. 0 .or. jzeta .gt. Nzeta     , jzeta not in right range )
+  FATAL( bpotential1, icoil .lt. 1 .or. icoil .gt. Ncoils*Npc, &
+    icoil not in right range )
+  FATAL( bpotential1, iteta .lt. 0 .or. iteta .gt. Nteta     , &
+    iteta not in right range )
+  FATAL( bpotential1, jzeta .lt. 0 .or. jzeta .gt. Nzeta     , &
+    jzeta not in right range )
   FATAL( bpotential1, ND <= 0, wrong inout dimension of ND )
   
   NS = coil(icoil)%NS
