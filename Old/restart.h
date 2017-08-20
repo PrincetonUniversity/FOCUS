@@ -343,14 +343,14 @@ SUBROUTINE write_plasma
   write(lunit,*      ) "#------- plasma boundary------"
   write(lunit,*      ) "#  n   m   Rbc   Rbs    Zbc   Zbs"
   do imn = 1, bmn
-     write(lunit,'(2I, 4ES15.6)') bin(imn), bim(imn), Rbc(imn), Rbs(imn), Zbc(imn), Zbs(imn)
+     write(lunit,'(2I, 4ES15.6)') bin(imn)/bNfp, bim(imn), Rbc(imn), Rbs(imn), Zbc(imn), Zbs(imn)
   enddo
 
   write(lunit,*      ) "#-------Bn harmonics----------"
   write(lunit,*      ) "#  n  m  bnc   bns"
   if (nbf .gt. 0) then
   do imn = 1, nbf
-     write(lunit,'(2I, 2ES15.6)') bnin(imn), bnim(imn), bnc(imn), bns(imn)
+     write(lunit,'(2I, 2ES15.6)') bnin(imn)/bNfp, bnim(imn), bnc(imn), bns(imn)
   enddo
   else
      write(lunit,'(2I, 2ES15.6)') 0, 0, 0.0, 0.0

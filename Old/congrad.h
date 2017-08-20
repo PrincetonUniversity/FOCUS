@@ -7,7 +7,7 @@ SUBROUTINE congrad
   REAL                    :: alpha, beta, f
   REAL, dimension(1:Ndof) :: xdof, p, gradk, gradf
 
-  if (myid .eq. 0) write(ounit, '("truncnt : "10X" : Begin using Nonlinear Conjugate Gradient to optimize.")')
+  if (myid .eq. 0) write(ounit, '("congrad : "10X" : Begin using Nonlinear Conjugate Gradient to optimize.")')
   
   ifail = 0
   call getdf(f, gradk)

@@ -37,7 +37,7 @@ SUBROUTINE bnftran(mf, nf)
   ! CZHU; first version: 2017/01/11; last revised: 2017/01/11                     !
   !-------------------------------------------------------------------------------!
   use kmodule, only: zero, half, two, pi2, myid, ounit, &
-       Nteta, Nzeta, surf, tbn, Nbf, bnim, bnin, bnc, bns, surf
+       Nteta, Nzeta, surf, tbn, Nbf, bnim, bnin, bnc, bns, surf, bNfp
   implicit none
   include "mpif.h"
   !-------------------------------------------------------------------------------
@@ -107,13 +107,13 @@ SUBROUTINE bnftran(mf, nf)
      do im = 0, mf
 
         imn = imn + 1
-        bnin(imn) = in ; bnim(imn) = im
+        bnin(imn) = in * bNfp ; bnim(imn) = im
 
         do ii = 0, Nteta-1 
            teta = ( ii + half ) * pi2 / Nteta
            do jj = 0, Nzeta-1
               zeta = ( jj + half ) * pi2 / Nzeta
-              arg = im*teta - in*zeta
+              arg = im*teta - in*bNfp*zeta
               !bnc(imn) = bnc(imn) + (tbn(ii, jj)-surf(1)%bnt(ii,jj))*cos(arg)
               !bns(imn) = bns(imn) + (tbn(ii, jj)-surf(1)%bnt(ii,jj))*sin(arg)
 
