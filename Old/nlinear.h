@@ -23,7 +23,7 @@
 !---------------------------------------------------------------------------------------------------------
 SUBROUTINE Powell
   use kmodule, only: zero, sqrtmachprec, myid, ounit, ext, evolution, Ntauout, itau, &
-                     totalenergy, n1E, n2E, NFcoil, Ncoils, Cdof, Ndof,   &
+                     totalenergy, t1E, t2E, NFcoil, Ncoils, Cdof, Ndof,   &
                      bnorm, tflux, ttlen, eqarc, xtol, Idisplay
   use hdf5
   implicit none
@@ -55,15 +55,15 @@ SUBROUTINE Powell
   SALLOCATE( QTF ,(N       ), zero)
   SALLOCATE( W   ,(N     ,4), zero)
 
-  call ntpack(X(1:N))
-  call costfun(2); call ntchdms(2)
+  call pack(X(1:N))
+  call costfun(2)
   if (myid .eq. 0) write(ounit, '("nlinear :",12X,"; Initial Value " 11X,"; E = ",es23.15,"; D = ",es23.15,"; B = ",es23.15,"; F = ",es23.15,"; L = ",es23.15,"; A = ",es23.15)') &
-                         totalenergy, sqrt(sum(n1E(1:Ncoils,0:Cdof)**2)/N), bnorm, tflux, ttlen, eqarc
+                         totalenergy, sqrt(sum(t1E(1:Ncoils,0:Cdof)**2)/N), bnorm, tflux, ttlen, eqarc
   do jj = 1, N
-     call ntconvert(jj,c2,n2)
+     call DoFconvert(jj,c2,n2)
      do ii = 1,N
-        call ntconvert(ii,c1,n1)
-        FJAC(ii,jj) = n2E(c1,n1,c2,n2)
+        call DoFconvert(ii,c1,n1)
+        FJAC(ii,jj) = t2E(c1,n1,c2,n2)
      enddo
   enddo
 
@@ -87,7 +87,7 @@ SUBROUTINE Powell
 !!$  !----------------------------------------------
   
   itau = 0
-  !XTOL   = sqrtmachprec
+  XTOL   = sqrtmachprec
   MODE   = 1
   FACTOR = 100.0
  ! DIAG(1:N) = 1.0
@@ -107,20 +107,20 @@ SUBROUTINE Powell
         evolution(itau,1) = totalenergy
         call restart(irestart)
      else if (IREVCM .eq. 2) then
-        call ntunpack(X(1:N))
-        call costfun(1); call ntchdms(1)
+        call unpack(X(1:N))
+        call costfun(1)
         do idof = 1,N
-           call ntconvert(idof,c1,n1)
-           FVEC(idof) = n1E(c1,n1)
+           call DoFconvert(idof,c1,n1)
+           FVEC(idof) = t1E(c1,n1)
         enddo
      else if (IREVCM .eq. 3) then
-        call ntunpack(X(1:N))
-        call costfun(2); call ntchdms(2)
+        call unpack(X(1:N))
+        call costfun(2)
         do jj = 1, N
-           call ntconvert(jj,c2,n2)
+           call DoFconvert(jj,c2,n2)
            do ii = 1,N
-              call ntconvert(ii,c1,n1)
-              FJAC(ii,jj) = n2E(c1,n1,c2,n2)
+              call DoFconvert(ii,c1,n1)
+              FJAC(ii,jj) = t2E(c1,n1,c2,n2)
            enddo
         enddo
      endif
@@ -436,7 +436,7 @@ END SUBROUTINE ntchdms
 
 subroutine SVD
 
-  use kmodule, only: zero, machprec, myid, ncpu, ounit, lunit, ext,  Ndof, t2E
+  use kmodule, only: zero, machprec, myid, ncpu, ounit, lunit, ext,  Ndof, t2E, totalenergy
   use hdf5
   
   implicit none
@@ -444,8 +444,8 @@ subroutine SVD
 
   INTEGER           :: astat, ierr, n, info, lda, ldu, ldvt, lwork, isingular, &
                        i, j, c1, n1, c2, n2, ifail, neigen, ieigen, nstep
-  REAL              :: dummy(1,1), step, start, finish
-  REAL, allocatable :: a(:,:), ab(:,:), inver(:,:), b(:), s(:), u(:,:), vt(:,:), work(:), w(:)
+  REAL              :: dummy(1,1), step, start, finish, f0, xdof(1:Ndof), bdof(1:Ndof)
+  REAL, allocatable :: a(:,:), ab(:,:), inver(:,:), b(:), s(:), u(:,:), vt(:,:), work(:), w(:), diff(:,:)
 
 ! the following are used by the macros HWRITEXX below; do not alter/remove;
   INTEGER            :: hdfier, rank
@@ -469,6 +469,7 @@ subroutine SVD
   SALLOCATE(u, (1:ldu, 1:n), zero)
   SALLOCATE(vt,(1:ldvt,1:n), zero)
   SALLOCATE(inver,(1:lda, 1:n), zero)
+  
 
   !get the Hessian matrix
   start = MPI_WTIME()
@@ -485,7 +486,7 @@ subroutine SVD
   enddo
 
   !if( ncpu .gt. 1) stop "SVD only works on single node."
-  if(myid .ne. 0) return
+  if(myid == 0) then
 
   ab = a
   !write(ounit,'("SVD     : "10X" : "4ES23.15)') a(1,2), a(2,1), t2E(1,0,1,1), t2E(1,1,1,0)
@@ -511,40 +512,63 @@ subroutine SVD
 
   write(ounit, '("SVD     : "10X" : Rank = " I6" ; Max = "ES23.15" ; Min = "ES23.15)') isingular, s(1), s(n)
 
-!!$  a = ab
-!!$  ! calculate eigenvalues and eigenvectors
-!!$  lwork = -1; deallocate(work)
-!!$  call F08FAF('V','U', n, a, lda, w,dummy(1,1),lwork,info)
-!!$  lwork = max(3*n-1,nint(dummy(1,1)))
-!!$  Allocate (work(lwork))
-!!$  call F08FAF('V','U', n, a, lda, w,work,lwork,info)
+  a = ab
+  ! calculate eigenvalues and eigenvectors
+  lwork = -1; deallocate(work)
+  call F08FAF('V','U', n, a, lda, w,dummy(1,1),lwork,info)
+  lwork = max(3*n-1,nint(dummy(1,1)))
+  Allocate (work(lwork))
+  call F08FAF('V','U', n, a, lda, w,work,lwork,info)
+
+  write(ounit, '("Eigen   : "10X" : INFO = "I4" ; min(w)="es23.15" ; max(w)="es23.15" ;")') info, minval(w), maxval(w)
+  ieigen = 0 ; neigen = 0
+  do i = 1, n
+     if (w(i) .ge. machprec) then 
+        neigen = neigen + 1
+     else
+        ieigen = i
+        write(ounit, '("Eigen   : "10X" : Find a negtivie eigenvalues at " I6)') ieigen
+     endif        
+  enddo
+  write(ounit, '("Eigen   : "10X" : number of positive eigenvalues = "I6)') neigen
+
+  !test
+  !b(1:n) = matmul(ab(1:n,1:n), a(1:n,ieigen)) - w(ieigen) * a(1:n,ieigen)
+  !write(ounit, '("Eigen   : "10X" : The square summation of the vector is"ES23.15)') sum(b(1:n)**2)
+
+  !write(ounit, '("Eigen   : "10X" : The 24-th eigenvalue is"ES23.15)') w(24)
+  !write(ounit, '("Eigen   : "10X" : The  N-th eigenvalue is"ES23.15)') w(n)
+  
+  endif ! endif myid==0
+
+
+!-------------
+!!$  call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!!$  RlBCAST( a(1:n, 1:n), n*n,  0)
 !!$
-!!$  write(ounit, '("Eigen   : "10X" : INFO = "I4" ; min(w)="es23.15" ; max(w)="es23.15" ;")') info, minval(w), maxval(w)
-!!$  ieigen = 0 ; neigen = 0
+!!$  step = 0.001 ; nstep = 500 ; f0 = totalenergy
+!!$  SALLOCATE(diff,(1:2*nstep+1, 1:n), zero)
+!!$  call pack(xdof)
+!!$  bdof = xdof
 !!$  do i = 1, n
-!!$     if (w(i) .ge. machprec) then 
-!!$        neigen = neigen + 1
-!!$     else
-!!$        ieigen = i
-!!$        write(ounit, '("Eigen   : "10X" : Find a negtivie eigenvalues at " I6)') ieigen
-!!$     endif        
+!!$     if (myid ==0) write(ounit,'("myid == ", I3, " ; i="I)') myid, i
+!!$     do j = -nstep, nstep
+!!$        xdof = bdof + j*step*a(1:n, i)
+!!$        call unpack(xdof) ; call costfun(0)
+!!$        diff(j+nstep+1, i) = totalenergy - f0
+!!$     enddo
 !!$  enddo
-!!$  write(ounit, '("Eigen   : "10X" : number of positive eigenvalues = "I6)') neigen
-!!$
-!!$  !test
-!!$  !b(1:n) = matmul(ab(1:n,1:n), a(1:n,ieigen)) - w(ieigen) * a(1:n,ieigen)
-!!$  !write(ounit, '("Eigen   : "10X" : The square summation of the vector is"ES23.15)') sum(b(1:n)**2)
-!!$
-!!$  write(ounit, '("Eigen   : "10X" : The 24-th eigenvalue is"ES23.15)') w(24)
-!!$  write(ounit, '("Eigen   : "10X" : The  N-th eigenvalue is"ES23.15)') w(n)
-!!$  step = 1.0E-4; nstep = 100  !evolution stepsize
-!!$  call coilevl( a(1:n,n), step, nstep )  !array for the direction; step for the stepsize  
+!--------------
+   
+!!$  step = 0.01; nstep = 500  !evolution stepsize
+!!$  call coilevl( a(1:n,n/2), step, nstep )  !array for the direction; step for the stepsize  
 !!$  write(ounit, '("Eigen   : "10X" : Writing coils evolution finished")')
   
   ! call inverse procedure
   !call matrinv(ab(1:n,1:n), inver(1:n,1:n), n, ifail)
   !FATAL(SVD     , ifail .ne. 0, inversing error)
 
+  if (myid ==0) then
   call h5open_f( hdfier ) ! initialize Fortran interface;
   FATAL( SVD    , hdfier.ne.0, error calling h5open_f )
 
@@ -555,13 +579,15 @@ subroutine SVD
   HWRITEIV( 1          ,  rank     ,  isingular  )
   HWRITERA( n, n       ,  Hessian  ,  ab(1:n,1:n))
   HWRITERA( n, n       ,  inverse  ,  inver(1:n,1:n))
-  HWRITERA( n, n       ,  output   ,  a(1:n,1:n) )
+  HWRITERA( n, n       ,  eigenV   ,  a(1:n,1:n) )
   HWRITERA( n, n       ,  U        ,  u(1:n,1:n) )
   HWRITERA( n, n       ,  VT       ,  vt(1:n,1:n))
   HWRITERV( n          ,  S        ,  s(1:n     ))
-  if(info .gt. 0) then
-     HWRITERV( lwork      ,  Work     ,work(1:lwork))
-  endif
+  HWRITERV( n          ,  eigenW   ,  w(1:n     ))
+ ! HWRITERA( 2*nstep+1, n ,  diff   ,  diff(1:2*nstep+1, 1:n))
+!!$  if(info .gt. 0) then
+!!$     HWRITERV( lwork      ,  Work     ,work(1:lwork))
+!!$  endif
   
   call h5fclose_f( file_id, hdfier ) ! terminate access;
   FATAL( nlinear, hdfier.ne.0, error calling h5fclose_f )
@@ -569,16 +595,19 @@ subroutine SVD
   call h5close_f( hdfier ) ! close Fortran interface;
   FATAL( nlinear, hdfier.ne.0, error calling h5close_f )
 
+  endif
+
   DALLOCATE(a)
   DALLOCATE(ab)
   DALLOCATE(b)
   DALLOCATE(u)
   DALLOCATE(s)
   DALLOCATE(vt)
-  DALLOCATE(work)
+  !DALLOCATE(work)
 
+  DALLOCATE(diff)
 
-  write(ounit, '("SVD     : "10X" : SVD finished and please check ", A, ".matrix.h5")') trim(ext)
+  if (myid .eq. 0) write(ounit, '("SVD     : "10X" : SVD finished and please check ", A, ".matrix.h5")') trim(ext)
 
   return
 
@@ -631,17 +660,20 @@ subroutine coilevl( dir, stepsize, nstep )
   REAL    :: dir(1:Ndof), stepsize
 
   INTEGER :: istep, irestart
-  REAL    :: xdof(1:Ndof)
+  REAL    :: xdof(1:Ndof), bdof(1:Ndof)
 
   call wrtdir(dir)
   call pack(xdof(1:Ndof))
   irestart = 1; call restart(irestart)
+  itau = 0 ; bdof = xdof
   do istep = 0, nstep
-     xdof = xdof + stepsize*istep*dir
+     write(*,*) istep
+     xdof = bdof + stepsize*istep*dir
      call unpack(xdof(1:Ndof))
-     call costfun(1)
+     write(*,*) "before costfun"
+     call costfun(0)
+     write(*,*) "after costfun"
      if(allocated(evolution)) then
-        itau = istep
         evolution(itau,0) = itau
         evolution(itau,1) = totalenergy
         evolution(itau,2) = (sum(t1E**2))
@@ -654,6 +686,7 @@ subroutine coilevl( dir, stepsize, nstep )
         evolution(itau,9) = coil(1)%L
      endif
      call restart(irestart)
+     itau = itau + 1
   enddo
 
 end subroutine coilevl
@@ -786,20 +819,191 @@ SUBROUTINE fcn(n, x, fvec, fjac, ldfjac, iflag)
   INTEGER :: ii, jj, c1, c2, n1, n2, astat, ierr
   REAL    :: f0
 
-  call unpack(x)
-  if (iflag == 1) then
+  select case ( iflag )
+
+  case ( 0 )   ! output ;
+     !call unpack(x)
+     !call costfun(1)
+     call output
+  case ( 1 )   ! update fvec ;
+     call unpack(x)
      call getdf(f0, fvec)
-  else if (iflag == 2) then
+  case ( 2 )   ! update fjac ;
+     call unpack(x)
      call costfun(2)
      do jj = 1, N
-         call DoFconvert(jj,c2,n2)
-         do ii = 1,N
-            call DoFconvert(ii,c1,n1)
-            FJAC(ii,jj) = t2E(c1,n1,c2,n2)
-         enddo
+        call DoFconvert(jj,c2,n2)
+        do ii = 1,N
+           call DoFconvert(ii,c1,n1)
+           FJAC(ii,jj) = t2E(c1,n1,c2,n2)
+        enddo
      enddo
-  else
-     call output
-  endif
+  case default
+     FATAL( fcn , .true. , unsupported iflag option )
+  end select
+
+  return
 
 END SUBROUTINE fcn
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+SUBROUTINE mod_newton
+  use kmodule, only: zero, myid, ncpu, ounit, machprec, Ndof, NT_Niter
+  implicit none
+  include "mpif.h"
+
+  INTEGER              :: N, iter, ierr, astat
+  REAL                 :: alpha
+  REAL   , allocatable :: X(:), G(:,:), H(:,:), DX(:, :)
+
+  ! preparing;
+  N = Ndof
+  SALLOCATE( X, (1:N)     , zero )
+  SALLOCATE( G, (1:N, 1:1), zero )
+  SALLOCATE( H, (1:N, 1:N), zero )
+  SALLOCATE(DX, (1:N, 1:1), zero )
+
+  ! entry status;
+  if (myid .eq. 0) write(ounit, '("mnewton : "10X" : Begin to use modified Newton method to optimize.")')
+  call pack(X(1:N))
+  call DERIVS( N, X(1:N), G(1:N,1), H(1:N, 1:N) )
+  call output
+
+  call modinv( N, H(1:N, 1:N) )
+  dx(1:N, 1:1) = MATMUL( H(1:N, 1:N), -G(1:N, 1:1) ) ! line search direction;
+  alpha = 1.0
+
+  ! modified newton loop;
+  do iter = 1, NT_Niter
+
+     call wolfe(X, dx(1:N,1), alpha)
+     X = X + alpha * dx(1:N, 1)
+     call unpack(X(1:N))
+     call DERIVS( N, X(1:N), G(1:N,1), H(1:N, 1:N) )
+     call output
+
+     if ( maxval(MATMUL( TRANSPOSE(G(1:N, 1:1)), G(1:N, 1:1) ) ) < machprec ) then
+        if (myid .eq. 0) write(ounit, '("mnewton : |G| < sqrtmachprec; minimum reached!")')
+        exit  ! reach minimum
+     endif
+ 
+     ! next iteration;
+     call modinv( N, H(1:N, 1:N) )
+     dx(1:N, 1:1) = MATMUL( H(1:N, 1:N), -G(1:N, 1:1) )
+     alpha = 1.0    
+
+  enddo
+
+  if (myid .eq. 0) write(ounit, '("mnewton : modified Newton method finished in "I4" iterations.")') iter
+
+  DALLOCATE( X )
+  DALLOCATE( G )
+  DALLOCATE( H )
+  DALLOCATE(DX )
+
+  return
+
+END SUBROUTINE mod_newton
+
+SUBROUTINE MODINV(N, A)
+!=======================================================================
+! Inverse indefinite symmetric matrix using 
+! modified Cholesky decomposition.
+! P' (A+E) P = L L'
+!
+! (A+E)^(-1) = P' (L^(-1))' (L^(-1) P
+!
+! N : dimension
+! A : input/output; the symmetric matrix
+!     on entry, it only use the lower triangular part;
+! IFLAG : INFO in DTRTRI of LAPACK
+!         = 0: successful exit
+!         < 0: if INFO = -i, the i-th argument had an illegal value
+!         > 0: if INFO = i, A(i,i) is exactly zero.  The triangular
+!              matrix is singular and its inverse can not be computed.
+!=======================================================================
+
+  implicit none
+  
+  INTEGER, INTENT(IN   ) :: N
+  REAL   , INTENT(INOUT) :: A(1:N, 1:N)
+  
+  INTEGER   :: i, j, Ndim, LDA, IFLAG, P(1:N)
+  REAL      :: tau1, tau2, eps, E(1:N), G(1:N), PP(1:N, 1:N)
+  CHARACTER :: UPLO, DIAG
+
+  eps  = epsilon(0.0D+0)
+  tau1 = eps**(1.0/3)
+  tau2 = eps**(1.0/3)
+  UPLO = 'L'
+  DIAG = 'N' 
+  Ndim = N
+  LDA  = N
+
+  if (N < 1) STOP "Wrong dimension. N<1"
+  if (N ==1) then
+     if ( abs(A(1,1)) < eps ) STOP "The only value is zero!"
+     A(1,1) = 1.0/A(1,1)    ! special case;
+     return
+  endif
+
+  if (sum(abs(A(1, 2:N)))  > 0.0) then
+     ! reset the upper half;
+     do i = 1, N
+        do j = i+1, N
+           A(i, j) = 0.0D0
+        enddo
+     enddo
+  endif
+
+  call modchl(Ndim, N, A, g, eps, tau1,tau2, P, E)
+
+  ! permutation matrix;
+  PP = 0.0D0
+  do i = 1, N
+     PP(i, P(i)) = 1.0D0
+  enddo
+
+  call dtrtri(UPLO, DIAG, N, A, LDA, iflag)
+  if (iflag /= 0) then
+     write(*,*) "Something wrong with inverse lower triangular matrix."
+     write(*,*) "iflag = ", iflag
+     write(*,*) "        < 0: if INFO = -i, the i-th argument had an illegal value."
+     write(*,*) "        > 0: if INFO = i, A(i,i) is exactly zero."
+     STOP "exit"
+  endif
+
+  A = MATMUL( MATMUL( MATMUL(TRANSPOSE(PP), TRANSPOSE(A)), A ), PP )
+
+  return
+ 
+END SUBROUTINE MODINV
+
+
+
+SUBROUTINE DERIVS(N,X,G,H)
+  use kmodule, only: zero, myid, ncpu, ounit, sqrtmachprec, Ntauout, Ndof, Idisplay, coil, totalenergy, t1E, t2E
+  implicit none
+  include "mpif.h"
+  
+  INTEGER, INTENT( in) :: N
+  REAL   , INTENT( in) :: X(1:N)
+  REAL   , INTENT(out) :: G(1:N), H(1:N, 1:N)
+
+  INTEGER  :: ii, jj, c1, c2, n1, n2
+
+  call unpack(X(1:N))
+  call costfun(2)
+
+  do jj = 1, N
+     call DoFconvert(jj,c2,n2)
+     G(jj) = t1E(c2,n2)
+     do ii = 1,N
+        call DoFconvert(ii,c1,n1)
+        H(ii,jj) = t2E(c1,n1,c2,n2)
+     enddo
+  enddo
+
+  return
+END SUBROUTINE DERIVS

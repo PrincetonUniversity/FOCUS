@@ -479,7 +479,7 @@ subroutine rdcoils
         coil(icoil)%N  =  NFcoil
         coil(icoil)%D  =  NDcoil
 
-        !    Io = 8.1E7/Ncoils
+        !   Io = 8.1E7/Ncoils
         coil(icoil)%I  =  Io
         coil(icoil)%Ic =  Ic
         coil(icoil)%Io =  Io
@@ -497,7 +497,7 @@ subroutine rdcoils
         SALLOCATE( coil(icoil)%zc, (0:NFcoil), zero )
         SALLOCATE( coil(icoil)%zs, (0:NFcoil), zero )
 
-        zeta = (icoil-1) * pi2 / Ncoils ! +half for different initialize option; 2017/04/17 
+        zeta = (icoil-1+half) * pi2 / Ncoils ! +half for different initialize option; 2017/04/17 
 
         call surfcoord( zero, zeta, r1, z1)
         call surfcoord(   pi, zeta, r2, z2)
@@ -522,7 +522,7 @@ subroutine rdcoils
         coil(icoil)%ys(0:1) = (/ 0.0             , 0.0              /)
         coil(icoil)%zc(0:1) = (/ z0              , 0.0              /)
         coil(icoil)%zs(0:1) = (/ 0.0             , rmin             /)
-!!$
+!!$    ! angle difference in coil representation;
 !!$    coil(icoil)%xc(0:1) = (/ Rmaj * cos(zeta), sqrt(2.0)/2 * rmin * cos(zeta) /)
 !!$    coil(icoil)%xs(0:1) = (/ 0.0             ,-sqrt(2.0)/2 * rmin * cos(zeta) /)
 !!$    coil(icoil)%yc(0:1) = (/ Rmaj * sin(zeta), sqrt(2.0)/2 * rmin * sin(zeta) /)
@@ -606,7 +606,7 @@ subroutine rdcoils
 
      r1 = sqrt( surf(1)%xx(      0,0)**2 + surf(1)%yy(      0,0)**2 ) ! R at (0 ,0)
      r2 = sqrt( surf(1)%xx(Nteta/2,0)**2 + surf(1)%yy(Nteta/2,0)**2 ) ! R at (pi,0)
-     Gnorm = half * (r1 + r2) ! something like the major radius;
+     Gnorm = half * (r1 + r2) ! something like the major radius; need to be changded;
 
      idof = 0
      do icoil = 1, Ncoils

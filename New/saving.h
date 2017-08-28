@@ -209,10 +209,10 @@ subroutine saving
   if( save_coils == 1 ) then
 
      open(funit,file=trim(outcoils), status="unknown", form="formatted" )
-     write(funit,'("periods 1")')
+     write(funit,'("periods "I3)') Nfp
      write(funit,'("begin filament")')
      write(funit,'("mirror NIL")')
-     do icoil = 1, Ncoils
+     do icoil = 1, Ncoils*Npc
         do ii = 0, coil(icoil)%NS-1
            write(funit,1010) coil(icoil)%xx(ii), coil(icoil)%yy(ii), coil(icoil)%zz(ii), coil(icoil)%I
         enddo

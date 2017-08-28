@@ -94,13 +94,15 @@ PROGRAM focus
   case(  1 )   ; call descent     ; irestart=1  ! differential flow; shudson            ; 14 Apr 16  ;
   case(  2 )   ; call descent2    ; irestart=1  ! differential flow; czhu               ; 14 Apr 16  ;
   case(  3 )   ; call hybrid      ; irestart=1  ! Powell nonlinear solver; NAG C05PDF; with    derivs;
-! case(  3 )   ; call Powell      ; irestart=1  ! Powell nonlinear solver; NAG C05PDF; with    derivs;
-  case(  4 )   ; call truncnt     ; irestart=1  ! Truncated Newton method with PCG   ; with    derivs;
+  case(  4 )   ; call mod_newton  ; irestart=1  ! Powell nonlinear solver; NAG C05PDF; with    derivs;
+! case(  4 )   ; call truncnt     ; irestart=1  ! Truncated Newton method with PCG   ; with    derivs;
 ! case(  4 )   ; call Newton      ; irestart=1  ! Newton minimum finder  ; NAG E04LYF; with    derivs;
   case(  5 )   ; call congrad     ; irestart=1  ! conjugate gradient                 ; with    derivs;
-  case(  6 )   ; call congrad     ; call hybrid  ; irestart=1
-!  case(  6 )   ; call congrad     ; call truncnt; irestart=1  ! conjugate gradient & truncated Newton method; with derivs;
-  case(  9 )   ; call SVD         ; irestart=1  ! Analyze current Heissian matrix using SVD; F08KBF  ;
+!  case(  6 )   ; call congrad     ; call hybrid  ; irestart=1
+  case(  6 )   ; call congrad     ; call mod_newton; irestart=1  
+! case(  9 )   ; call SVD         ; irestart=1  ! Analyze current Heissian matrix using SVD; F08KBF  ;
+  case(  9 )   ; call congrad     ; call truncnt; call svd;  irestart=1  
+! case(  9 )   ; call truncnt ; call svd ;  call hessian    ; irestart=1  
   case default ;                  ; irestart=1
   end select
 
@@ -134,10 +136,13 @@ PROGRAM focus
   case( 7  ) ; call exinput
              ; call wtmgrid
              ; call diagnos
-  case( 8: ) ; call wtmgrid ! 8 only write mgrid; > 8 write both
+  case( 8  ) ; call wtmgrid ! 8 only write mgrid; > 8 write both
+  case( 9  ) ; call Bmodule
   end select
 
  !call identfy
+
+  call restart( irestart )
 
   call cpu_time(tstart)
   

@@ -4,7 +4,7 @@
 
  ALLFILES= globals numrec initial surface rdknot rdcoils knotxx iccoil bfield bnormal torflux tlength equarcl \
      specwid coilsep nlinear fdcheck denergy descent congrad truncnt restart diagnos exinput identfy \
-     bnftran focus
+     bnftran hessian focus
 
 ############################################################################################################
 
@@ -24,6 +24,10 @@
 
 ############################################################################################################
 
+ #MKL=-I$(MKLHOME)/include -L$(MKLHOME)/lib/em64t/ -lmkl_lapack
+ MKL=
+ LAPACK=-L$(LAPACK) -llapack -lblas -lgfortran #module load lapack/3.5.0rhel6
+
  NAG=-L$(NAG_ROOT)/lib -lnag_nag
 
  HDF5=-I$(HDF5_HOME)/include -L$(HDF5_HOME)/lib -lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran \
@@ -39,12 +43,12 @@
 
 ############################################################################################################
 
-xfocus: $(OBJS) tnpack.o hybrj.o
-	$(FC) -o xfocus $(OBJS) tnpack.o  hybrj.o $(OCULUSFLAGS) $(NAG) $(HDF5)
+xfocus: $(OBJS) tnpack.o hybrj.o modchl.o
+	$(FC) -o xfocus $(OBJS) tnpack.o  hybrj.o modchl.o $(OCULUSFLAGS) $(NAG) $(HDF5) $(MKL)
 	@echo "Compiling xfocus finished."
 
-dfocus: $(DOBJS) tnpack.o hybrj.o
-	$(FC) -o dfocus $(DOBJS) tnpack.o hybrj.o $(OCULUSFLAGS) $(NAG) $(HDF5)
+dfocus: $(DOBJS) tnpack.o hybrj.o modchl.o
+	$(FC) -o dfocus $(DOBJS) tnpack.o hybrj.o modchl.o $(OCULUSFLAGS) $(NAG) $(HDF5) $(MKL)
 	@echo "Compiling dfocus finished."
 
 ############################################################################################################
@@ -54,11 +58,14 @@ hybrj.o: hybrj.f
 tnpack.o: tnpack.f
 	$(FC) -c $(FLAGS) $(DFLAGS) -o $@ $<
 
+modchl.o: modchl.f
+	$(FC) -c $(FLAGS) $(DFLAGS) -o $@ $<
+
 $(OBJS): %_r.o: %.F90
-	$(FC) -c $(FLAGS) -o $@ $<  $(OCULUSFLAGS) $(NAG) $(HDF5)
+	$(FC) -c $(FLAGS) -o $@ $<  $(OCULUSFLAGS) $(NAG) $(HDF5) $(MKL)
 
 $(DOBJS): %_d.o: %.F90
-	$(FC) -c $(FLAGS) $(DFLAGS) -o $@ $< $(OCULUSFLAGS) $(NAG) $(HDF5)
+	$(FC) -c $(FLAGS) $(DFLAGS) -o $@ $< $(OCULUSFLAGS) $(NAG) $(HDF5) $(MKL)
 
 $(FFILES): %.F90: %.h
 	m4 -P $(MACROS) $< > $@
