@@ -479,7 +479,7 @@ subroutine rdcoils
         coil(icoil)%N  =  NFcoil
         coil(icoil)%D  =  NDcoil
 
-        !    Io = 8.1E7/Ncoils
+        !   Io = 8.1E7/Ncoils
         coil(icoil)%I  =  Io
         coil(icoil)%Ic =  Ic
         coil(icoil)%Io =  Io

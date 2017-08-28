@@ -136,10 +136,13 @@ PROGRAM focus
   case( 7  ) ; call exinput
              ; call wtmgrid
              ; call diagnos
-  case( 8: ) ; call wtmgrid ! 8 only write mgrid; > 8 write both
+  case( 8  ) ; call wtmgrid ! 8 only write mgrid; > 8 write both
+  case( 9  ) ; call Bmodule
   end select
 
  !call identfy
+
+  call restart( irestart )
 
   call cpu_time(tstart)
   

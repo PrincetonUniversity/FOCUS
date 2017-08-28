@@ -166,6 +166,13 @@ subroutine restart( irestart )
   HWRITERV( 1                           ,   bstol                                   ,   bstol                                                     )
   HWRITEIV( 1                           ,   bsnlimit                                ,   bsnlimit                                                  )
 
+  HWRITERV( 1                           ,   real_wb                                 ,   weight_bnorm                                              )
+  HWRITERV( 1                           ,   real_wf                                 ,   weight_tflux                                              )
+  HWRITERV( 1                           ,   real_tf                                 ,   target_tflux                                              )
+  HWRITERV( 1                           ,   real_wl                                 ,   weight_ttlen                                              )
+  HWRITERV( 1                           ,   real_wa                                 ,   weight_eqarc                                              )
+  HWRITERV( 1                           ,   real_wc                                 ,   weight_ccsep                                              )
+
   HWRITEIV( 1                           ,   bmn                                     ,   bmn                                                       )
   if( bmn.gt.0 ) then 
   HWRITEIV( bmn                         ,   bim                                     ,   bim(1:bmn)                                                )
@@ -203,6 +210,10 @@ subroutine restart( irestart )
   HWRITERA( 1+Nteta,1+Nzeta             ,   Bx                                      ,       SaveBx(0:Nteta,0:Nzeta)                               )
   HWRITERA( 1+Nteta,1+Nzeta             ,   By                                      ,       SaveBy(0:Nteta,0:Nzeta)                               )
   HWRITERA( 1+Nteta,1+Nzeta             ,   Bz                                      ,       SaveBz(0:Nteta,0:Nzeta)                               )
+  endif
+
+  if (allocated(Bmod_n)) then
+  HWRITERV(   Ntor+1                    ,   Bmod                                    ,   Bmod_n(    0:Ntor)                                        )
   endif
 
   call h5fclose_f( file_id, hdfier ) ! terminate access;
