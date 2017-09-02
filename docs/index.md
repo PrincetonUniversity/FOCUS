@@ -8,8 +8,6 @@ For a given plamsa configuration (with or without target Bn distributions), FOCU
 # Table of contents
 
 - [Before running](#before-running)
-  * [Get the source](#get-the-source)
-  * [Compile](#compile)
 - [Input files](#input-files)
 - [Running](#running)
 - [Output files](#output-files)
@@ -24,7 +22,7 @@ If you are fresh to GitHub, you can visit this [page](https://princetonuniversit
 ## Compile
 * Prerequisites
 
-  The current version of the FOCUS is using intel compiler with libraries OpenMPI, hdf5-serial.
+  The current version of the FOCUS is using intel/gfotran compiler with libraries OpenMPI, hdf5-serial.
   If you are at PPPL cluster, you should add these terms in your environment variables file (like *~/.cshrc*):
   ```
   module load intel openmpi/1.8.4 hdf5-serial/1.8.5
@@ -57,7 +55,7 @@ For instance, you want to run the code with a case name of "example".
 * input namelist
   
   The file **example.input** contains all the input variables for FOCUS.
-  Here is an example input file for the rotating ellipse case [test.input](https://github.com/PrincetonUniversity/FOCUS/tree/master/examples/New_rotating_ellipse/test.input)
+  Here is an example input file for the rotating ellipse case [ellipse.input](https://github.com/PrincetonUniversity/FOCUS/tree/master/examples/New_rotating_ellipse/ellipse.input)
   A detailed description for these variables can be found in [initial.pdf](https://princetonuniversity.github.io/FOCUS/initial.pdf).
   These files should be placed in the same directory as the executable.
   
@@ -80,12 +78,12 @@ For instance, you want to run the code with a case name of "example".
   
     Read the coils data from **coils.example** and fit the coils with Fourier coefficients. 
     The format ofcoils.\* file can be seen in [VMECwiki](http://vmecwiki.pppl.wikispaces.net/MAKEGRID).
-	Here is an example for the rotating ellipse case [coils.test](https://github.com/PrincetonUniversity/FOCUS/tree/master/examples/New_rotating_ellipse/coils.test)
+	Here is an example for the rotating ellipse case [coils.ellipse](https://github.com/PrincetonUniversity/FOCUS/tree/master/examples/New_rotating_ellipse/coils.ellipse)
     
   - *case_init =  0* : **example.focus**
   
     Read the coils data from **example.focus**. This file contains all the Fourier harmonics and control labels for the coils.
-	Here is an example for the rotating ellipse case [test.focus](https://github.com/PrincetonUniversity/FOCUS/tree/master/examples/New_rotating_ellipse/test.focus)
+	Here is an example for the rotating ellipse case [ellipse.focus](https://github.com/PrincetonUniversity/FOCUS/tree/master/examples/New_rotating_ellipse/elipse.focus)
     
   - *case_init =  1*
   

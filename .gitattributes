@@ -1,0 +1,2 @@
+*.pdf  diff=astextplain
+*.h    diff=fortran
