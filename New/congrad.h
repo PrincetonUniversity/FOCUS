@@ -72,7 +72,7 @@ SUBROUTINE congrad
         if(myid .eq. 0) write(ounit, '("congrad : EXITING--------Local minimum reached!")')
         exit  ! reach minimum
      endif
- 
+
      beta = sum(gradf**2) / sum( (gradf-gradk)*p )
      p = -gradf + beta*p ! direction for next step;
      gradk = gradf  !save for the current step;
