@@ -393,7 +393,7 @@ subroutine rdcoils
      enddo
      Gnorm = sqrt(Gnorm) * weight_gnorm
      Inorm = sqrt(Inorm) * weight_inorm
-     Inorm = Inorm * (NF + 1) * 6  ! compensate for the fact that there are so many more spatial variables
+     Inorm = Inorm * 6  ! compensate for the fact that there are so many more spatial variables
 
      FATAL( rdcoils, abs(Gnorm) < machprec, cannot be zero )
      FATAL( rdcoils, abs(Inorm) < machprec, cannot be zero )
