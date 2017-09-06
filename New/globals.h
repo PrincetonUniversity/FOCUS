@@ -61,8 +61,8 @@ module globals
   CHARACTER(LEN=100)   :: ext       ! extention
   CHARACTER(LEN=100)   :: inputfile ! input namelist
   CHARACTER(LEN=100)   :: surffile  ! surface file
-  CHARACTER(LEN=100)   :: knotfile  ! knototran file
-  CHARACTER(LEN=100)   :: coilfile  ! FOCUS coil file
+ !CHARACTER(LEN=100)   :: knotfile  ! knototran file
+  CHARACTER(LEN=100)   :: coilfile  ! FOCUS coil file ! set in initial; SRH; 29 Sep 17;
   CHARACTER(LEN=100)   :: harmfile  ! harmonics file
   CHARACTER(LEN=100)   :: hdf5file  ! hdf5 file
   CHARACTER(LEN=100)   :: inpcoils  ! input coils.ext file
@@ -81,7 +81,7 @@ module globals
   INTEGER              :: Nzeta          =       64  
 
   INTEGER              :: case_init      =        0
-  INTEGER              :: case_coils     =        1
+ !INTEGER              :: case_coils     =        1
   INTEGER              :: Ncoils         =        0
   REAL                 :: init_current   =        1.000D+06        
   REAL                 :: init_radius    =        1.000D+00
@@ -98,7 +98,7 @@ module globals
   REAL                 :: weight_bharm   =        0.000D+00
   REAL                 :: weight_tflux   =        0.000D+00
   REAL                 :: target_tflux   =        0.000D+00
-  REAL                 :: weight_ttlen   =        0.000D+00
+  REAL                 :: weight_length  =        0.000D+00
   REAL                 :: target_length  =        0.000D+00 
   REAL                 :: weight_specw   =        0.000D+00
   REAL                 :: weight_ccsep   =        0.000D+00
@@ -131,9 +131,6 @@ module globals
   INTEGER              :: save_coils     =        0 
   INTEGER              :: save_harmonics =        0
   INTEGER              :: save_filaments =        0              
-                                                         
-
-  
 
   namelist / focusin /  IsQuiet        , &
                         IsSymmetric    , & 
@@ -143,7 +140,7 @@ module globals
                         Nteta          , &
                         Nzeta          , & 
                         case_init      , &
-                        case_coils     , &  
+!                       case_coils     , &  
                         Ncoils         , &
                         init_current   , & 
                         init_radius    , & 
@@ -159,7 +156,7 @@ module globals
                         weight_bharm   , &
                         weight_tflux   , &
                         target_tflux   , &
-                        weight_ttlen   , &
+                        weight_length  , &
                         target_length  , &
                         weight_specw   , &
                         weight_ccsep   , &
@@ -200,16 +197,16 @@ module globals
 !latex \subsection{surface and coils data}
   type toroidalsurface
      INTEGER              :: Nteta, Nzeta
-     REAL   , allocatable :: xx(:,:), yy(:,:), zz(:,:), nx(:,:), ny(:,:), nz(:,:), &
-                             ds(:,:), xt(:,:), yt(:,:), zt(:,:), bn(:,:), pb(:,:), &
-                             Bx(:,:), By(:,:), Bz(:,:)
+     REAL   , allocatable :: xx(:,:), yy(:,:), zz(:,:), nx(:,:), ny(:,:), nz(:,:), ds(:,:), xt(:,:), yt(:,:), zt(:,:)
+     REAL   , allocatable :: Bn(:,:), Bx(:,:), By(:,:), Bz(:,:), pb(:,:)
   end type toroidalsurface
 
   type arbitrarycoil
-     INTEGER              :: NS, Ic, Lc, itype
-     REAL                 :: I,  L, Lo, maxcurv
-     REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), dd(:), &
-                             Ax(:,:), Ay(:,:), Az(:,:)
+     INTEGER              :: NF, NS, Ic, Lc, itype
+     REAL                 :: I,  L, Lo, Le, maxcurv
+     REAL   , allocatable :: xc(:), xs(:), yc(:), ys(:), zc(:), zs(:)
+     REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), dd(:)
+     REAL   , allocatable :: Ax(:,:), Ay(:,:), Az(:,:)
      character(LEN=10)    :: name
   end type arbitrarycoil
 
@@ -228,7 +225,10 @@ module globals
   type(FourierCoil)    , allocatable :: FouCoil(:)
   type(DegreeOfFreedom), allocatable :: DoF(:)
 
-  INTEGER              :: Nfou=0, Nfp=0, NBnf=0, Npc = 1
+
+  INTEGER              :: Nfp
+
+  INTEGER              :: Nfou = 0, NBnf = 0 ! this should be local to readsrf; 04 Sep 17;
   INTEGER, allocatable :: bim(:), bin(:), Bnim(:), Bnin(:)
   REAL   , allocatable :: Rbc(:), Zbs(:), Rbs(:), Zbc(:), Bnc(:), Bns(:), cosip(:), sinip(:)
     
@@ -247,20 +247,24 @@ module globals
   REAL                 :: chi, discretefactor
   REAL   , allocatable :: t1E(:), t2E(:,:), evolution(:,:), coilspace(:,:), deriv(:,:)
   LOGICAL              :: exit_signal = .False.
+
   ! Bn surface integration;
-  REAL                 :: bnorm
+  REAL                 :: Bdotnsquared
   REAL   , allocatable :: t1B(:), t2B(:,:), bn(:,:), dB(:,:,:)
-  ! Bn reasonant harmoics;
+
+  ! Bn resonant harmonics;
   INTEGER              :: NBmn
   INTEGER, allocatable :: Bmnin(:), Bmnim(:)
   REAL                 :: bharm
   REAL   , allocatable :: t1H(:), t2H(:,:), Bmnc(:),Bmns(:), wBmn(:), tBmnc(:), tBmns(:), &
                           carg(:,:), sarg(:,:), iBmnc(:), iBmns(:)
+
   ! Tflux error;
-  REAL                 :: tflux, psi_avg
+  REAL                 :: toroidalfluxerror, toroidalfluxaverage
   REAL   , allocatable :: t1F(:), t2F(:,:)
+
   ! Length constraint
-  REAL                 :: ttlen
+  REAL                 :: coillengtherror
   REAL   , allocatable :: t1L(:), t2L(:,:)
   ! Coil-coil spearation
   REAL                 :: ccsep
@@ -271,15 +275,16 @@ module globals
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-!latex \subsection{Knotran parameters}
-  REAL                 :: knotphase
-  REAL   , allocatable :: xkc(:), xks(:), ykc(:), yks(:), zkc(:), zks(:)
+!latex \subsection{Axis parameters}
+ !REAL                 :: knotphase
+  INTEGER              :: axisNF
+  REAL   , allocatable :: axisxc(:), axisxs(:), axisyc(:), axisys(:), axiszc(:), axiszs(:)
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 !latex \subsection{Reading coils file}
-  REAL,    allocatable :: coilsX(:,:), coilsY(:,:), coilsZ(:,:), coilsI(:) 
-                        !coilsI stores the true currents, coil%I stores scaled current;?
+  REAL,    allocatable :: coilsX(:,:), coilsY(:,:), coilsZ(:,:)
+  REAL,    allocatable :: coilsI(:) !coilsI stores the true currents, coil%I stores scaled current;?
   INTEGER, allocatable :: coilseg(:)
   character(LEN=20), allocatable :: coilname(:)
 
@@ -296,6 +301,18 @@ module globals
   REAL, allocatable    :: mincc(:,:)!
   INTEGER              :: ierr, astat
 
+  LOGICAL :: Ltflux, Llength
+
+  LOGICAL :: Ldescent, Lcgradient
+
+  INTEGER :: Ntz
+
+  REAL              :: deltacurveparameter, deltatheta
+  REAL, allocatable :: cmt(:,:), smt(:,:)
+
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 end module globals
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+

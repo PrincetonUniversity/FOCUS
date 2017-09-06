@@ -15,7 +15,7 @@
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-subroutine saving
+subroutine archive
   
   use globals
   
@@ -73,7 +73,7 @@ subroutine saving
   HWRITEIV( 1                ,   Nteta         ,   Nteta                           )
   HWRITEIV( 1                ,   Nzeta         ,   Nzeta                           )
   HWRITEIV( 1                ,   case_init     ,   case_init                       )
-  HWRITEIV( 1                ,   case_coils    ,   case_coils                      )
+! HWRITEIV( 1                ,   case_coils    ,   case_coils                      )
   HWRITEIV( 1                ,   Ncoils        ,   Ncoils                          )
   HWRITERV( 1                ,   init_current  ,   init_current                    )
   HWRITERV( 1                ,   init_radius   ,   init_radius                     )
@@ -91,7 +91,7 @@ subroutine saving
   HWRITERV( 1                ,   weight_bharm  ,   weight_bharm                    )
   HWRITERV( 1                ,   weight_tflux  ,   weight_tflux                    )
   HWRITERV( 1                ,   target_tflux  ,   target_tflux                    )
-  HWRITERV( 1                ,   weight_ttlen  ,   weight_ttlen                    )
+  HWRITERV( 1                ,   weight_length ,   weight_length                   )
   HWRITERV( 1                ,   target_length ,   target_length                   )
   HWRITERV( 1                ,   weight_specw  ,   weight_specw                    )
   HWRITERV( 1                ,   weight_ccsep  ,   weight_ccsep                    )
@@ -118,7 +118,7 @@ subroutine saving
   HWRITEIV( 1                ,   save_harmonics,   save_harmonics                  )
   HWRITEIV( 1                ,   save_filaments,   save_filaments                  )
 
-  HWRITEIV( 1                ,   Nfp           ,   Nfp                             )
+! HWRITEIV( 1                ,   Nfp           ,   Nfp                             )
   HWRITERA( Nteta,Nzeta      ,   xsurf         ,   surf(1)%xx(0:Nteta-1,0:Nzeta-1) )
   HWRITERA( Nteta,Nzeta      ,   ysurf         ,   surf(1)%yy(0:Nteta-1,0:Nzeta-1) )
   HWRITERA( Nteta,Nzeta      ,   zsurf         ,   surf(1)%zz(0:Nteta-1,0:Nzeta-1) )
@@ -137,8 +137,8 @@ subroutine saving
   HWRITEIV( 1                ,   iout          ,   iout                            )
   HWRITERV( 1                ,   Inorm         ,   Inorm                           )
   HWRITERV( 1                ,   Gnorm         ,   Gnorm                           )
-  HWRITERA( iout, 8          ,   evolution     ,   evolution(1:iout, 0:8)          )
-  HWRITERA( iout, Tdof       ,   coilspace     ,   coilspace(1:iout, 1:Tdof)       )
+! HWRITERA( iout, 8          ,   evolution     ,   evolution(1:iout, 0:8)          )
+! HWRITERA( iout, Tdof       ,   coilspace     ,   coilspace(1:iout, 1:Tdof)       )
   
   if (allocated(deriv)) then
    HWRITERA( Ndof, 6       ,   deriv         ,   deriv(1:Ndof, 0:6)            )
@@ -185,25 +185,25 @@ subroutine saving
     write(wunit, '(3(A6, A15, 8X))') " #Nseg", "current",  "Ifree", "Length", "Lfree", "target_length"
     write(wunit,'(2X,I4,ES23.15,3X,I3,ES23.15,3X,I3,ES23.15)') coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo
     
-    select case( coil(icoil)%itype )
-     
-    case( 1 )
-     
-     write(wunit, *) "#NFcoil"
-     write(wunit, '(I3)') FouCoil(icoil)%NF
-     write(wunit, *) "#Fourier harmonics for coils ( xc; xs; yc; ys; zc; zs) "
-     write(wunit, 1000) FouCoil(icoil)%xc(0:FouCoil(icoil)%NF)
-     write(wunit, 1000) FouCoil(icoil)%xs(0:FouCoil(icoil)%NF)
-     write(wunit, 1000) FouCoil(icoil)%yc(0:FouCoil(icoil)%NF)
-     write(wunit, 1000) FouCoil(icoil)%ys(0:FouCoil(icoil)%NF)
-     write(wunit, 1000) FouCoil(icoil)%zc(0:FouCoil(icoil)%NF)
-     write(wunit, 1000) FouCoil(icoil)%zs(0:FouCoil(icoil)%NF)
-     
-    case default
-     
-     FATAL(restart, .true., selected value of coil(icoil)%type is not supported )
-     
-    end select
+!    select case( coil(icoil)%itype )
+!     
+!    case( 1 )
+!     
+!     write(wunit, *) "#NFcoil"
+!     write(wunit, '(I3)') FouCoil(icoil)%NF
+!     write(wunit, *) "#Fourier harmonics for coils ( xc; xs; yc; ys; zc; zs) "
+!     write(wunit, 1000) FouCoil(icoil)%xc(0:FouCoil(icoil)%NF)
+!     write(wunit, 1000) FouCoil(icoil)%xs(0:FouCoil(icoil)%NF)
+!     write(wunit, 1000) FouCoil(icoil)%yc(0:FouCoil(icoil)%NF)
+!     write(wunit, 1000) FouCoil(icoil)%ys(0:FouCoil(icoil)%NF)
+!     write(wunit, 1000) FouCoil(icoil)%zc(0:FouCoil(icoil)%NF)
+!     write(wunit, 1000) FouCoil(icoil)%zs(0:FouCoil(icoil)%NF)
+!     
+!    case default
+!     
+!     FATAL(restart, .true., selected value of coil(icoil)%type is not supported )
+!     
+!    end select
     
    enddo ! end of do icoil = 1, Ncoils ; SRH; 29 Sep 17;
    
@@ -218,7 +218,7 @@ subroutine saving
    write(funit,'("begin filament")')
    write(funit,'("mirror NIL")')
 
-   do icoil = 1, Ncoils*Npc
+   do icoil = 1, Ncoils
 
     do ii = 0, coil(icoil)%NS-1
      write(funit,1010) coil(icoil)%xx(ii), coil(icoil)%yy(ii), coil(icoil)%zz(ii), coil(icoil)%I
@@ -251,7 +251,7 @@ subroutine saving
    
    write(funit) Ncoils, Nseg
    
-   do icoil = 1, Ncoils*Npc
+   do icoil = 1, Ncoils
     write(funit) coil(icoil)%xx(0:coil(icoil)%NS)
     write(funit) coil(icoil)%yy(0:coil(icoil)%NS)
     write(funit) coil(icoil)%zz(0:coil(icoil)%NS)
@@ -277,11 +277,13 @@ subroutine saving
   endif
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+
+  write(ounit,'("archive : " 10x " : saved restart & output files ;")')
   
   return
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-end subroutine saving
+end subroutine archive
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-

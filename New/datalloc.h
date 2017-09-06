@@ -19,7 +19,7 @@ subroutine AllocData(itype)
 
      Cdof = 0; Ndof = 0; Tdof = 0
 
-     do icoil = 1, Ncoils*Npc
+     do icoil = 1, Ncoils
         
         select case (coil(icoil)%itype)       
         case(1)
@@ -79,6 +79,7 @@ subroutine AllocData(itype)
 
      ! Bnorm and Bharm needed;
      if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec .or. IsQuiet <= -2) then
+      FATAL( datalloc, .not.allocated(surf), error )
         SALLOCATE(         bn, (0:Nteta-1,0:Nzeta-1), zero ) !Bn from coils;        
         SALLOCATE( surf(1)%bn, (0:Nteta-1,0:Nzeta-1), zero ) !total Bn;
         SALLOCATE( surf(1)%Bx, (0:Nteta-1,0:Nzeta-1), zero ) !Bx on the surface;

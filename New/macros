@@ -52,10 +52,25 @@ m4_define(FATAL,
 !macro expansion of fatal
 
    if( $2 ) then
-     write(0,'("$1 :      fatal : myid=",i3," ; $2 ; $3 ;")') myid
+     write(0,'("$1 :      fatal : myid =",i4," ; $2 ; $3;")') myid
      call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
-     stop      "$1 : $2 : $3 ;"
+     stop      "$1 : $2 : $3;"
     endif
+
+)m4_dnl
+m4_define(CHECK,
+
+!macro expansion of check
+
+#ifdef DEBUG
+
+   if( $2 ) then
+     write(0,'("$1 :      fatal : myid =",i4," ; $2 ; $3;")') myid
+     call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+     stop      "$1 : $2 : $3;"
+    endif
+
+#endif
 
 )m4_dnl
 m4_define(LlBCAST,{
@@ -64,17 +79,17 @@ m4_define(LlBCAST,{
  
 #ifdef DEBUG 
    if( $2.le.0 ) then
-    write(0,'("       : ",10x," ; myid=",i3," ; error broadcasting $1 ; length="i15" ;")') myid, $2
+    write(0,'("       : ",10x," ; myid =",i4," ; error broadcasting $1 ; length="i15" ;")') myid, $2
     call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
     stop
    endif
-  !write(0,'("       :            ; myid=",i3," ; broadcasting $1 ; length="i15" ;")') myid, $2
+  !write(0,'("       :            ; myid =",i4," ; broadcasting $1 ; length="i15" ;")') myid, $2
 #endif
 
    call MPI_BCAST( $1, $2, MPI_LOGICAL, $3, MPI_COMM_WORLD, ierr )
  
 #ifdef DEBUG 
-  !write(0,'("       :            ; myid=",i3," ; broadcasted  $1 ;")') myid
+  !write(0,'("       :            ; myid =",i4," ; broadcasted  $1 ;")') myid
 #endif
 
 })m4_dnl
@@ -84,17 +99,17 @@ m4_define(IlBCAST,{
 
 #ifdef DEBUG   
    if( $2.le.0 ) then
-    write(0,'("       :      fatal ; myid=",i3," ; error broadcasting $1 ; length="i15" ;")') myid, $2
+    write(0,'("       :      fatal ; myid =",i4," ; error broadcasting $1 ; length="i15" ;")') myid, $2
     call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
     stop
    endif
-  !write(0,'("       :            ; myid=",i3," ; broadcasting $1 ; length="i15" ;")') myid, $2
+  !write(0,'("       :            ; myid =",i4," ; broadcasting $1 ; length="i15" ;")') myid, $2
 #endif
   
    call MPI_BCAST( $1, $2, MPI_INTEGER, $3, MPI_COMM_WORLD, ierr )
  
 #ifdef DEBUG 
-  !write(0,'("       :            ; myid=",i3," ; broadcasted  $1 ;")') myid
+  !write(0,'("       :            ; myid =",i4," ; broadcasted  $1 ;")') myid
 #endif
 
 
@@ -105,17 +120,17 @@ m4_define(RlBCAST,{
   
 #ifdef DEBUG
    if( $2.le.0 ) then
-    write(0,'("       :      fatal ; myid=",i3," ; error broadcasting $1 ; length="i15" ;")') myid, $2
+    write(0,'("       :      fatal ; myid =",i4," ; error broadcasting $1 ; length="i15" ;")') myid, $2
     call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
     stop
    endif
-  !write(0,'("       :            ; myid=",i3," ; broadcasting $1 ; length="i15" ;")') myid, $2
+  !write(0,'("       :            ; myid =",i4," ; broadcasting $1 ; length="i15" ;")') myid, $2
 #endif
   
    call MPI_BCAST( $1, $2, MPI_DOUBLE_PRECISION, $3, MPI_COMM_WORLD, ierr )
  
 #ifdef DEBUG 
-  !write(0,'("       :            ; myid=",i3," ; broadcasted  $1 ;")') myid
+  !write(0,'("       :            ; myid =",i4," ; broadcasted  $1 ;")') myid
 #endif
 
 })m4_dnl
@@ -125,17 +140,17 @@ m4_define(ClBCAST,{
   
 #ifdef DEBUG
    if( $2.le.0 ) then
-    write(0,'("       :      fatal ; myid=",i3," ; error broadcasting $1 ; length="i15" ;")') myid, $2
+    write(0,'("       :      fatal ; myid =",i4," ; error broadcasting $1 ; length="i15" ;")') myid, $2
     call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
     stop
    endif
-  !write(0,'("       :            ; myid=",i3," ; broadcasting $1 ; length="i15" ;")') myid, $2
+  !write(0,'("       :            ; myid =",i4," ; broadcasting $1 ; length="i15" ;")') myid, $2
 #endif
   
    call MPI_BCAST( $1, $2, MPI_CHARACTER, $3, MPI_COMM_WORLD, ierr )
  
 #ifdef DEBUG 
-  !write(0,'("       :            ; myid=",i3," ; broadcasted  $1 ;")') myid
+  !write(0,'("       :            ; myid =",i4," ; broadcasted  $1 ;")') myid
 #endif
 
 })m4_dnl

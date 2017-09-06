@@ -2,8 +2,8 @@
 
 ############################################################################################################
 
- ALLFILES= globals initial datalloc rdsurf rdknot rdcoils packdof bfield bnormal bmnharm fdcheck \
-           torflux length solvers descent congrad saving diagnos focus
+#ALLFILES= globals initial readsrf rdcoils coilxyz packdof bfield bnormal setflag drivers archive datalloc bmnharm fdcheck torflux surfcoord length denergy output normweight costfun descent congrad diagnos focus
+ ALLFILES= globals initial readsrf rdcoils packdof coilxyz bfield setflag bnormal torflux length descent congrad archive focus
  HFILES= $(ALLFILES:=.h)
  FFILES= $(ALLFILES:=.F90)
  PFILES= $(ALLFILES:=.pdf)
@@ -26,9 +26,7 @@ endif
 
 ############################################################################################################
 
-
- HDF5=-I$(HDF5_HOME)/include -L$(HDF5_HOME)/lib -lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran \
--lhdf5 -lpthread -lz -lm
+ HDF5=-I$(HDF5_HOME)/include -L$(HDF5_HOME)/lib -lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran -lhdf5 -lpthread -lz -lm
 
  WEBDIR=$(HOME)/w3_html
 
@@ -49,10 +47,10 @@ dfocus: $(DOBJS) $(NUMOBJ)
 ode.o : ode.f90
 	$(FC) -c $(RFLAGS) -o $@ $<
 
-$(ROBJS): %_r.o: %.F90
+$(ROBJS): %_r.o: %.F90 macros globals_r.o Makefile
 	$(FC) -c $(RFLAGS) -o $@ $<  $(HDF5)
 
-$(DOBJS): %_d.o: %.F90
+$(DOBJS): %_d.o: %.F90 macros globals_d.o Makefile
 	$(FC) -c $(RFLAGS) $(DFLAGS) -o $@ $<  $(HDF5)
 
 $(FFILES): %.F90: %.h

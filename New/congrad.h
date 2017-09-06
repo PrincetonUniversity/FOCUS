@@ -45,7 +45,7 @@ SUBROUTINE congrad
 
   iter = 0
   call packdof(lxdof(1:Ndof)) ! initial xdof;
-  call getdf(lxdof, f, gradk)
+! call getdf(lxdof, f, gradk)
   p(1:Ndof) = -gradk ! initial step direction;
   alpha = 1.0 ! initial step size;
 
@@ -63,10 +63,10 @@ SUBROUTINE congrad
         
      lxdof = lxdof + alpha*p ! next xdof
 
-     call getdf(lxdof, f, gradf)
+!    call getdf(lxdof, f, gradf)
 
      tstart = MPI_Wtime()
-     call output(tstart-tfinish)
+!    call output(tstart-tfinish)
 
      if ( sqrt(sum(gradf**2)) < CG_xtol ) then
         if(myid .eq. 0) write(ounit, '("congrad : EXITING--------Local minimum reached!")')
@@ -121,7 +121,7 @@ SUBROUTINE wolfe( x0, p, alpha, iflag )
   i = 0 ; maxiter = 10
   a0 = 0.0
 
-  call getdf(x0, f0, g0)
+! call getdf(x0, f0, g0)
   
   ap = a0            ! previous alpha;
   fp = f0            ! previous fnction;
@@ -133,7 +133,7 @@ SUBROUTINE wolfe( x0, p, alpha, iflag )
 
      xc = x0 + ac*p  ! current xdof
 
-     call getdf(xc, fc, gc)
+!    call getdf(xc, fc, gc)
 
      if ( (fc > f0 + c1*ac*sum(p*g0)) .or. (fc >= fp .and. i > 1) ) then
 #ifdef DEBUG
@@ -203,16 +203,16 @@ REAL FUNCTION zoom( x0, p, alo, ahi )
   c1 = CG_wolfe_c1
   c2 = CG_wolfe_c2     ! c1 & c2
 
-  call getdf(x0, f0, g0)
+! call getdf(x0, f0, g0)
 
   do
      alpha = 0.5*(alo + ahi) ! linearly intepolation;
 
      xc = x0 + alpha*p
-     call getdf(xc, fc, gc)
+!    call getdf(xc, fc, gc)
 
      xl = x0 + alo*p
-     call getdf(xl, fl, gl)
+!    call getdf(xl, fl, gl)
 
      if ( (fc > f0 + c1*alpha*sum(p*g0)) .or. (fc >= fl) ) then 
         ahi = alpha
@@ -258,8 +258,8 @@ SUBROUTINE getdf(lxdof, f, g)
   
   call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
 
-  call unpacking(lxdof)
-  call costfun(1)
+!  call unpacking(lxdof)
+! call costfun(1)
   f = chi
   g = t1E
 
