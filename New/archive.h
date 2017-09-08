@@ -119,20 +119,20 @@ subroutine archive
   HWRITEIV( 1                ,   save_filaments,   save_filaments                  )
 
 ! HWRITEIV( 1                ,   Nfp           ,   Nfp                             )
-  HWRITERA( Nteta,Nzeta      ,   xsurf         ,   surf(1)%xx(0:Nteta-1,0:Nzeta-1) )
-  HWRITERA( Nteta,Nzeta      ,   ysurf         ,   surf(1)%yy(0:Nteta-1,0:Nzeta-1) )
-  HWRITERA( Nteta,Nzeta      ,   zsurf         ,   surf(1)%zz(0:Nteta-1,0:Nzeta-1) )
-  HWRITERA( Nteta,Nzeta      ,   nx            ,   surf(1)%nx(0:Nteta-1,0:Nzeta-1) )
-  HWRITERA( Nteta,Nzeta      ,   ny            ,   surf(1)%ny(0:Nteta-1,0:Nzeta-1) )
-  HWRITERA( Nteta,Nzeta      ,   nz            ,   surf(1)%nz(0:Nteta-1,0:Nzeta-1) )
+  HWRITERA( Nteta,Nzeta      ,   xsurf         ,   surf%xx(0:Nteta-1,0:Nzeta-1) )
+  HWRITERA( Nteta,Nzeta      ,   ysurf         ,   surf%yy(0:Nteta-1,0:Nzeta-1) )
+  HWRITERA( Nteta,Nzeta      ,   zsurf         ,   surf%zz(0:Nteta-1,0:Nzeta-1) )
+  HWRITERA( Nteta,Nzeta      ,   nx            ,   surf%nx(0:Nteta-1,0:Nzeta-1) )
+  HWRITERA( Nteta,Nzeta      ,   ny            ,   surf%ny(0:Nteta-1,0:Nzeta-1) )
+  HWRITERA( Nteta,Nzeta      ,   nz            ,   surf%nz(0:Nteta-1,0:Nzeta-1) )
 
-  if( allocated(bn) ) then
-  HWRITERA( Nteta,Nzeta      ,   plas_Bn       ,   surf(1)%pb(0:Nteta-1,0:Nzeta-1) )
-  HWRITERA( Nteta,Nzeta      ,        Bn       ,   surf(1)%bn(0:Nteta-1,0:Nzeta-1) )
-  HWRITERA( Nteta,Nzeta      ,   Bx            ,   surf(1)%Bx(0:Nteta-1,0:Nzeta-1) )
-  HWRITERA( Nteta,Nzeta      ,   By            ,   surf(1)%By(0:Nteta-1,0:Nzeta-1) )
-  HWRITERA( Nteta,Nzeta      ,   Bz            ,   surf(1)%Bz(0:Nteta-1,0:Nzeta-1) )
-  endif
+! if( allocated(bn) ) then
+! HWRITERA( Nteta,Nzeta      ,   plas_Bn       ,   surf%pb(0:Nteta-1,0:Nzeta-1) )
+! HWRITERA( Nteta,Nzeta      ,        Bn       ,   surf%bn(0:Nteta-1,0:Nzeta-1) )
+! HWRITERA( Nteta,Nzeta      ,   Bx            ,   surf%Bx(0:Nteta-1,0:Nzeta-1) )
+! HWRITERA( Nteta,Nzeta      ,   By            ,   surf%By(0:Nteta-1,0:Nzeta-1) )
+! HWRITERA( Nteta,Nzeta      ,   Bz            ,   surf%Bz(0:Nteta-1,0:Nzeta-1) )
+! endif
  
   HWRITEIV( 1                ,   iout          ,   iout                            )
   HWRITERV( 1                ,   Inorm         ,   Inorm                           )
@@ -180,10 +180,10 @@ subroutine archive
     write(wunit, *) "#-----------------", icoil, "---------------------------" 
     
     write(wunit, *) "#coil_type     coil_name"
-    write(wunit,'(3X,I3,4X, A10)') coil(icoil)%itype, coil(icoil)%name
+    write(wunit,'(3X,I3,4X, A10)') 1, coil(icoil)%name
     
     write(wunit, '(3(A6, A15, 8X))') " #Nseg", "current",  "Ifree", "Length", "Lfree", "target_length"
-    write(wunit,'(2X,I4,ES23.15,3X,I3,ES23.15,3X,I3,ES23.15)') coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo
+    write(wunit,'(2X,I4,ES23.15,3X,I3,ES23.15,3X,I3,ES23.15)') Nseg, coil(icoil)%I, coil(icoil)%If, coil(icoil)%L, coil(icoil)%Lf, coil(icoil)%Lo
     
 !    select case( coil(icoil)%itype )
 !     
@@ -220,11 +220,11 @@ subroutine archive
 
    do icoil = 1, Ncoils
 
-    do ii = 0, coil(icoil)%NS-1
+    do ii = 0, Nseg-1
      write(funit,1010) coil(icoil)%xx(ii), coil(icoil)%yy(ii), coil(icoil)%zz(ii), coil(icoil)%I
     enddo
 
-    ii =  coil(icoil)%NS
+    ii =  Nseg
 
     write(funit,1010) coil(icoil)%xx(ii), coil(icoil)%yy(ii), coil(icoil)%zz(ii), zero, icoil, coil(icoil)%name
 
@@ -252,9 +252,9 @@ subroutine archive
    write(funit) Ncoils, Nseg
    
    do icoil = 1, Ncoils
-    write(funit) coil(icoil)%xx(0:coil(icoil)%NS)
-    write(funit) coil(icoil)%yy(0:coil(icoil)%NS)
-    write(funit) coil(icoil)%zz(0:coil(icoil)%NS)
+    write(funit) coil(icoil)%xx(0:Nseg)
+    write(funit) coil(icoil)%yy(0:Nseg)
+    write(funit) coil(icoil)%zz(0:Nseg)
    enddo
    
    close( funit )

@@ -51,7 +51,7 @@ subroutine readsrf
 
    write(ounit,'("readsrf : " 10x " : case_surface ="i2" ; Nteta ="i4", Nzeta ="i4" ; knotsurf ="f6.3" ;")') case_surface, Nteta, Nzeta, knotsurf
 
-   call rdknot   ! axis  -style plasma boundary;
+   call rdaxis   ! axis  -style plasma boundary;
 
  !case( 2 )
 
@@ -75,40 +75,34 @@ subroutine readsrf
 !  FATAL( focus, .true., selected value of IsSymmetric not supported )
 ! end select
   
-! discretefactor = discretefactor / Nfp ! discretefactor was initialized in initial; SRH; 28 Sep 17;
+! discretefactor = discretefactor / Nfp ! discretefactor was initialized in initial; 28 Sep 17;
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  allocate( surf(1:1) )
+  surf%Nteta = Nteta
+  surf%Nzeta = Nzeta
   
-  surf(1)%Nteta = Nteta
-  surf(1)%Nzeta = Nzeta
+  SALLOCATE( surf%xx, (0:Nteta  ,0:Nzeta  ), zero )
+  SALLOCATE( surf%yy, (0:Nteta  ,0:Nzeta  ), zero )
+  SALLOCATE( surf%zz, (0:Nteta  ,0:Nzeta  ), zero )
   
-  SALLOCATE( surf(1)%xx, (0:Nteta  ,0:Nzeta  ), zero )
-  SALLOCATE( surf(1)%yy, (0:Nteta  ,0:Nzeta  ), zero )
-  SALLOCATE( surf(1)%zz, (0:Nteta  ,0:Nzeta  ), zero )
+  SALLOCATE( surf%nx, (0:Nteta  ,0:Nzeta  ), zero )
+  SALLOCATE( surf%ny, (0:Nteta  ,0:Nzeta  ), zero )
+  SALLOCATE( surf%nz, (0:Nteta  ,0:Nzeta  ), zero )
   
-  SALLOCATE( surf(1)%nx, (0:Nteta  ,0:Nzeta  ), zero )
-  SALLOCATE( surf(1)%ny, (0:Nteta  ,0:Nzeta  ), zero )
-  SALLOCATE( surf(1)%nz, (0:Nteta  ,0:Nzeta  ), zero )
+  SALLOCATE( surf%ds, (0:Nteta  ,0:Nzeta  ), zero )
   
-  SALLOCATE( surf(1)%ds, (0:Nteta  ,0:Nzeta  ), zero )
+  SALLOCATE( surf%xt, (0:Nteta  ,0:Nzeta  ), zero )
+  SALLOCATE( surf%yt, (0:Nteta  ,0:Nzeta  ), zero )
+  SALLOCATE( surf%zt, (0:Nteta  ,0:Nzeta  ), zero )
   
-  SALLOCATE( surf(1)%xt, (0:Nteta  ,0:Nzeta  ), zero )
-  SALLOCATE( surf(1)%yt, (0:Nteta  ,0:Nzeta  ), zero )
-  SALLOCATE( surf(1)%zt, (0:Nteta  ,0:Nzeta  ), zero )
-  
-  SALLOCATE( surf(1)%Bx, (0:Nteta-1,0:Nzeta-1), zero )
-  SALLOCATE( surf(1)%By, (0:Nteta-1,0:Nzeta-1), zero )
-  SALLOCATE( surf(1)%Bz, (0:Nteta-1,0:Nzeta-1), zero )
-  
-  SALLOCATE( surf(1)%Bn, (0:Nteta-1,0:Nzeta-1), zero )
-
-  SALLOCATE( surf(1)%pb, (0:Nteta  ,0:Nzeta  ), zero ) ! normal field; SRH; 28 Sep 17;
+  SALLOCATE( surf%pb, (0:Nteta  ,0:Nzeta  ), zero ) ! normal field; 28 Sep 17;
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
   CHECK( readsrf, Nteta.eq.0, error )
   CHECK( readsrf, Nzeta.eq.0, error )
@@ -128,23 +122,23 @@ subroutine readsrf
     
     dd = sqrt( sum( ds(1:3)*ds(1:3) ) )
 
-    surf(1)%xx(iteta,jzeta) = xx(1)
-    surf(1)%yy(iteta,jzeta) = xx(2)
-    surf(1)%zz(iteta,jzeta) = xx(3)
+    surf%xx(iteta,jzeta) = xx(1)
+    surf%yy(iteta,jzeta) = xx(2)
+    surf%zz(iteta,jzeta) = xx(3)
     
-    surf(1)%xt(iteta,jzeta) = xt(1)
-    surf(1)%yt(iteta,jzeta) = xt(2)
-    surf(1)%zt(iteta,jzeta) = xt(3)
+    surf%xt(iteta,jzeta) = xt(1)
+    surf%yt(iteta,jzeta) = xt(2)
+    surf%zt(iteta,jzeta) = xt(3)
 
     CHECK( readsrf, dd.lt.sqrtmachprec, divide by zero )
     
-    surf(1)%nx(iteta,jzeta) = ds(1) / dd
-    surf(1)%ny(iteta,jzeta) = ds(2) / dd
-    surf(1)%nz(iteta,jzeta) = ds(3) / dd
+    surf%nx(iteta,jzeta) = ds(1) / dd
+    surf%ny(iteta,jzeta) = ds(2) / dd
+    surf%nz(iteta,jzeta) = ds(3) / dd
     
-    surf(1)%ds(iteta,jzeta) =         dd
+    surf%ds(iteta,jzeta) =         dd
     
-    surf(1)%pb(iteta,jzeta) = bn ! target normal field; SRH; 28 Sep 17;
+    surf%pb(iteta,jzeta) = bn ! target normal field; 28 Sep 17;
     
    enddo ! end of do jzeta;
    
@@ -152,11 +146,15 @@ subroutine readsrf
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+
   return
   
 end subroutine readsrf
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
 
 
@@ -222,6 +220,7 @@ end subroutine readsrf
 !latex This part is reserved for later development of the interface for tokamaks.
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
 subroutine fousurf
   
@@ -235,6 +234,7 @@ subroutine fousurf
   include "mpif.h"
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
   LOGICAL :: exist
   INTEGER :: iosta, astat, ierr, ii, jj, imn
@@ -354,20 +354,20 @@ subroutine fousurf
 ! allocate( surf(1:1) ) ! can allow for myltiple plasma boundaries 
                         ! if multiple currents are allowed; 14 Apr 16;
   
-! surf(1)%Nteta = Nteta ! not used yet; used for multiple surfaces; 20170307;
-! surf(1)%Nzeta = Nzeta ! not used yet; used for multiple surfaces; 20170307;
+! surf%Nteta = Nteta ! not used yet; used for multiple surfaces; 20170307;
+! surf%Nzeta = Nzeta ! not used yet; used for multiple surfaces; 20170307;
   
-! SALLOCATE( surf(1)%xx, (0:Nteta-1,0:Nzeta-1), zero ) !x coordinates;
-! SALLOCATE( surf(1)%yy, (0:Nteta-1,0:Nzeta-1), zero ) !y coordinates
-! SALLOCATE( surf(1)%zz, (0:Nteta-1,0:Nzeta-1), zero ) !z coordinates
-! SALLOCATE( surf(1)%nx, (0:Nteta-1,0:Nzeta-1), zero ) !unit nx;
-! SALLOCATE( surf(1)%ny, (0:Nteta-1,0:Nzeta-1), zero ) !unit ny;
-! SALLOCATE( surf(1)%nz, (0:Nteta-1,0:Nzeta-1), zero ) !unit nz;
-! SALLOCATE( surf(1)%ds, (0:Nteta-1,0:Nzeta-1), zero ) !jacobian;
-! SALLOCATE( surf(1)%xt, (0:Nteta-1,0:Nzeta-1), zero ) !dx/dtheta;
-! SALLOCATE( surf(1)%yt, (0:Nteta-1,0:Nzeta-1), zero ) !dy/dtheta;
-! SALLOCATE( surf(1)%zt, (0:Nteta-1,0:Nzeta-1), zero ) !dz/dtheta;
-! SALLOCATE( surf(1)%pb, (0:Nteta-1,0:Nzeta-1), zero ) !target Bn;
+! SALLOCATE( surf%xx, (0:Nteta-1,0:Nzeta-1), zero ) !x coordinates;
+! SALLOCATE( surf%yy, (0:Nteta-1,0:Nzeta-1), zero ) !y coordinates
+! SALLOCATE( surf%zz, (0:Nteta-1,0:Nzeta-1), zero ) !z coordinates
+! SALLOCATE( surf%nx, (0:Nteta-1,0:Nzeta-1), zero ) !unit nx;
+! SALLOCATE( surf%ny, (0:Nteta-1,0:Nzeta-1), zero ) !unit ny;
+! SALLOCATE( surf%nz, (0:Nteta-1,0:Nzeta-1), zero ) !unit nz;
+! SALLOCATE( surf%ds, (0:Nteta-1,0:Nzeta-1), zero ) !jacobian;
+! SALLOCATE( surf%xt, (0:Nteta-1,0:Nzeta-1), zero ) !dx/dtheta;
+! SALLOCATE( surf%yt, (0:Nteta-1,0:Nzeta-1), zero ) !dy/dtheta;
+! SALLOCATE( surf%zt, (0:Nteta-1,0:Nzeta-1), zero ) !dz/dtheta;
+! SALLOCATE( surf%pb, (0:Nteta-1,0:Nzeta-1), zero ) !target Bn;
  
 ! The center point value was used to discretize grid;
 ! do ii = 0, Nteta-1; teta = ( ii + half ) * pi2 / Nteta
@@ -402,20 +402,20 @@ subroutine fousurf
 !   dd = sqrt( sum( ds(1:3)*ds(1:3) ) )
 
     ! x, y, z coordinates for the surface;
-!   surf(1)%xx(ii,jj) = xx(1)
-!   surf(1)%yy(ii,jj) = xx(2)
-!   surf(1)%zz(ii,jj) = xx(3)
+!   surf%xx(ii,jj) = xx(1)
+!   surf%yy(ii,jj) = xx(2)
+!   surf%zz(ii,jj) = xx(3)
 
     ! dx/dt, dy/dt, dz/dt (dt for d theta)
-!   surf(1)%xt(ii,jj) = xt(1)
-!   surf(1)%yt(ii,jj) = xt(2)
-!   surf(1)%zt(ii,jj) = xt(3)
+!   surf%xt(ii,jj) = xt(1)
+!   surf%yt(ii,jj) = xt(2)
+!   surf%zt(ii,jj) = xt(3)
 
     ! surface normal vectors and ds for the jacobian;
-!   surf(1)%nx(ii,jj) = ds(1) / dd
-!   surf(1)%ny(ii,jj) = ds(2) / dd
-!   surf(1)%nz(ii,jj) = ds(3) / dd
-!   surf(1)%ds(ii,jj) =         dd
+!   surf%nx(ii,jj) = ds(1) / dd
+!   surf%ny(ii,jj) = ds(2) / dd
+!   surf%nz(ii,jj) = ds(3) / dd
+!   surf%ds(ii,jj) =         dd
 
 !  enddo ! end of do jj; 14 Apr 16;
 ! enddo ! end of do ii; 14 Apr 16;
@@ -427,7 +427,7 @@ subroutine fousurf
 !       do ii = 0, Nteta-1 ; teta = ( ii + half ) * pi2 / Nteta
 !          do imn = 1, NBnf
 !             arg = Bnim(imn) * teta - Bnin(imn) * zeta
-!             surf(1)%pb(ii,jj) = surf(1)%pb(ii,jj) + Bnc(imn)*cos(arg) + Bns(imn)*sin(arg)
+!             surf%pb(ii,jj) = surf%pb(ii,jj) + Bnc(imn)*cos(arg) + Bns(imn)*sin(arg)
 !          enddo
 !       enddo
 !    enddo
@@ -439,6 +439,9 @@ subroutine fousurf
   
 end subroutine fousurf
 
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
 subroutine surfxx( teta, zeta, xx, xt, xz, bn )
   
@@ -452,6 +455,8 @@ subroutine surfxx( teta, zeta, xx, xt, xz, bn )
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+
   LOGICAL :: exist
   INTEGER :: iosta, astat, ierr, ii, jj, imn
   REAL    :: RR(0:2), ZZ(0:2), szeta, czeta, xx(1:3), xt(1:3), xz(1:3), ds(1:3), bn(1:3), &
@@ -503,12 +508,15 @@ subroutine surfxx( teta, zeta, xx, xt, xz, bn )
 
 ! endif
  
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+
   return
   
 end subroutine surfxx
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
 
 !title (axis) ! Reads axis parameters from file.
@@ -527,9 +535,9 @@ end subroutine surfxx
 !latex \item[3.] A circular or elliptical cross section surface is constructed.
 !latex \ei
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!!
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-subroutine rdknot
+subroutine rdaxis
   
   use globals, only : zero, one, half, ten, pi2, myid, ncpu, ounit, runit, &
                       ext, &
@@ -541,13 +549,13 @@ subroutine rdknot
   
   include "mpif.h"
   
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!!
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   LOGICAL              :: exist
   INTEGER              :: iostat, astat, ierr, ii, jj
   REAL                 :: teta, zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xt(1:3), xz(1:3), ds(1:3), dd
   
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!!
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   inquire( file=trim(ext)//".axis", exist=exist )
   if( exist ) then
@@ -565,7 +573,7 @@ subroutine rdknot
    endif
   endif
   
-  FATAL( rdknot, .not.exist, neither ext.axis nor .axis found )
+  FATAL( rdaxis, .not.exist, neither ext.axis nor .axis found )
   
   if( myid.eq.0 ) then
    read( runit, *, iostat=iostat )
@@ -600,7 +608,7 @@ subroutine rdknot
    
   endif
   
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!!
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   RlBCAST( axisxc(0:axisNF), axisNF+1, 0 )
   RlBCAST( axisxs(0:axisNF), axisNF+1, 0 )
@@ -620,7 +628,7 @@ subroutine rdknot
 !   write(ounit,'("readsrf : " 10x " : axiszs =",11x,999es11.03)') axiszs(1:axisNF)
 !  endif
   
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!!
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
 ! discretize the surface data; 2017/03/28; czhu;
   
@@ -635,17 +643,14 @@ subroutine rdknot
 ! end select
 ! discretefactor = discretefactor/Nfp
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!!
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   return
   
-end subroutine rdknot
+end subroutine rdaxis
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!!
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!!
-
-
-
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine knotxx( aa, teta, zeta, ax, at, az, xx, xt, xz )
   
@@ -656,7 +661,7 @@ subroutine knotxx( aa, teta, zeta, ax, at, az, xx, xt, xz )
   
   include "mpif.h"
   
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!!
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   REAL                 :: aa, teta, zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xt(1:3), xz(1:3)
   
@@ -665,7 +670,7 @@ subroutine knotxx( aa, teta, zeta, ax, at, az, xx, xt, xz )
   REAL                 :: a0, a1, a2, b0, b1, carg, sarg
   REAL                 :: tt(1:3), td(1:3), dd(1:3), xa, ya, za, ff, nn(1:3), nd(1:3), bb(1:3), bd(1:3)
   
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!!
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   x0(1:3) = (/ axisxc(0), axisyc(0), axiszc(0) /)
   x1(1:3) = (/ zero  , zero  , zero   /)
@@ -696,13 +701,13 @@ subroutine knotxx( aa, teta, zeta, ax, at, az, xx, xt, xz )
     
   endif ! end of if( aa.gt.zero ) ; 14 Apr 16;
    
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!!
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   ax(1:3) = x0(1:3)                                                        ! Nov 12 15;
   at(1:3) = zero                                                           ! Nov 12 15;
   az(1:3) = x1(1:3)                                                        ! Nov 12 15;
   
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!!
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   if( aa.gt.zero ) then
    
@@ -744,12 +749,14 @@ subroutine knotxx( aa, teta, zeta, ax, at, az, xx, xt, xz )
    xt(1:3) = zero
    xz(1:3) = zero
    
-  endif ! end of if( aa.gt.zero ) ; SRH; 28 Aug 17;
+  endif ! end of if( aa.gt.zero ) ; 28 Aug 17;
   
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!!
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
   return
   
 end subroutine knotxx
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!!
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-

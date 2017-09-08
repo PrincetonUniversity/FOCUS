@@ -16,8 +16,9 @@
 
 subroutine setflag
   
-  use globals, only : zero, one, pi2, sqrtmachprec, myid, ounit, &
+  use globals, only : zero, one, pi2, sqrtmachprec, myid, ncpu, ounit, &
                       Nseg, Ncoils, coil, cmt, smt, &
+                      Nteta, Nzeta, surf, &
                       Ndof, xdof, &
                       IsNormalize, weight_gnorm, weight_inorm, Gnorm, Inorm, &
                       bsconstant, Bdotnsquared, &
@@ -30,49 +31,66 @@ subroutine setflag
   
   include "mpif.h"
 
-  INTEGER   :: icoil, imn, ierr, ideriv, astat, NF, ii, mm
-  REAL      :: tt
+  INTEGER   :: icoil, imn, ierr, ideriv, astat, maxNF, ii, mm, iteta, jzeta
+  REAL      :: tt, dAdx(0:Nseg,1:3,0:3), dBdx(0:Nseg,1:3,0:3)
   CHARACTER :: packorunpack
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  NF = 0
+  maxNF = 0
   do icoil = 1, Ncoils
-   NF = max( coil(icoil)%NF, NF )
+   maxNF = max( coil(icoil)%NF, maxNF )
   enddo
-  write(ounit,'("setflag : " 10x " : NF =",i3," ;")') NF
+  write(ounit,'("setflag : " 10x " : maxNF =",i3," ;")') maxNF
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-  
-  SALLOCATE( cmt, (0:Nseg, 0:NF), zero )
-  SALLOCATE( smt, (0:Nseg, 0:NF), zero )
+  SALLOCATE( cmt, (0:Nseg, 0:maxNF), zero ) ! trigonometric factors mapping coils from `Fourier' to real space; 04 Sep 17;
+  SALLOCATE( smt, (0:Nseg, 0:maxNF), zero )
   
   do ii = 0, Nseg ; tt = ii * pi2 / Nseg
-   do mm = 0, NF
+   do mm = 0, maxNF
     cmt(ii,mm) = cos( mm * tt )
     smt(ii,mm) = sin( mm * tt )
    enddo
   enddo
-
+  
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-
+  
   do icoil = 1, Ncoils
-
-   call coilxyz( icoil )
    
-  enddo
+   call coilxyz( icoil ) ! map coils to real space; 04 Sep 17;
+   
+   SALLOCATE( coil(icoil)%Ph, (          0:Nzeta-1), zero )
+   SALLOCATE( coil(icoil)%Al, (          0:Nzeta-1), zero )
+   SALLOCATE( coil(icoil)%Bn, (0:Nteta-1,0:Nzeta-1), zero )
+   
+   do jzeta = 0, Nzeta-1
+    do iteta = 0, Nteta-1
+     
+     call abfield( icoil, iteta, jzeta, Nseg, dAdx(0:Nseg,1:3,0:3), dBdx(0:Nseg,1:3,0:3) ) ! compute field & potential produced by i-th coil on surface; 
+     
+     coil(icoil)%Bn(iteta,jzeta) = dBdx(0,1,0) * surf%nx(iteta,jzeta) &
+                                 + dBdx(0,2,0) * surf%ny(iteta,jzeta) &
+                                 + dBdx(0,3,0) * surf%nz(iteta,jzeta) ! * discretefactor; 04 Sep 17;
+
+     coil(icoil)%Al(      jzeta) = coil(icoil)%Al(      jzeta) + dAdx(0,1,0) + dAdx(0,2,0) + dAdx(0,3,0)
+     
+    enddo ! end do iteta;
+    
+   enddo ! end do jzeta;
+   
+  enddo ! end of do icoil; 04 Sep 17;
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
   Ndof = 0 
-
+  
   do icoil = 1, Ncoils
    
-   if( coil(icoil)%Lc.ne.0 ) Ndof = Ndof + 6*coil(icoil)%NF+3 ! allow geometry to vary; 04 Sep 17;
-   if( coil(icoil)%Ic.ne.0 ) Ndof = Ndof + 1                  ! allow current to vary; 04 Sep 17;
+   if( coil(icoil)%Lf.ne.0 ) Ndof = Ndof + 6*coil(icoil)%NF+3 ! allow geometry to vary; 04 Sep 17;
+   if( coil(icoil)%If.ne.0 ) Ndof = Ndof + 1                  ! allow current to vary; 04 Sep 17;
    
   enddo
-
+  
   write(ounit,'("setflag : " 10x " : Ndof ="i9" ;")') Ndof
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
@@ -93,7 +111,7 @@ subroutine setflag
   case( 1 )
    
    Gnorm = zero
-   Inorm = zero ! initialize summation; SRH; 29 Sep 17;
+   Inorm = zero ! initialize summation     ; 29 Sep 17;
    
    do icoil = 1, Ncoils
     

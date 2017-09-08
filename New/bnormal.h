@@ -15,7 +15,7 @@ subroutine bnormal( ideriv )
   
   use globals, only : zero, half, one, pi2, sqrtmachprec, ncpu, myid, ounit, &
                       bsconstant, &
-                      surf, Nteta, Nzeta, Ntz, Ncoils, coil, DoF, discretefactor, &
+                      surf, Nteta, Nzeta, Ntz, Ncoils, coil, Nseg, discretefactor, &
                       Bdotnsquared, &
                       t1B, t2B, Ndof, dB, Cdof, weight_bharm
   
@@ -29,9 +29,9 @@ subroutine bnormal( ideriv )
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
-  INTEGER                              :: astat, ierr, icoil, iteta, jzeta! idof, ND, ip
+  INTEGER                              :: astat, ierr, icoil, iteta, jzeta
   REAL, dimension(0:Nteta-1,0:Nzeta-1) :: lbx, lby, lbz        ! local Bx, By and Bz
-  REAL                                 :: dBx, dBy, dBz        ! dB of each coil;
+  REAL, dimension(0:Nseg,1:3,0:3)      :: dAdx, dBdx
 ! REAL, dimension(0:Cdof, 0:Cdof)      :: dBx, dBy, dBz        ! dB of each coil;
 ! REAL, dimension(1:Ndof)              :: l1B
 ! REAL, allocatable                    :: ldB(:,:,:)
@@ -51,11 +51,11 @@ subroutine bnormal( ideriv )
     
     do icoil = 1, Ncoils
      
-     call bfield( icoil, iteta, jzeta, dBx, dBy, dBz )
+     call abfield( icoil, iteta, jzeta, Nseg, dAdx(0:Nseg,1:3,0:3), dBdx(0:Nseg,1:3,0:3) )
 
-     lbx(iteta,jzeta) = lbx(iteta,jzeta) + dBx * coil(icoil)%I! * bsconstant
-     lby(iteta,jzeta) = lby(iteta,jzeta) + dBy * coil(icoil)%I! * bsconstant
-     lbz(iteta,jzeta) = lbz(iteta,jzeta) + dBz * coil(icoil)%I! * bsconstant
+     lbx(iteta,jzeta) = lbx(iteta,jzeta) + dBdx(0,1,0) * coil(icoil)%I ! * bsconstant
+     lby(iteta,jzeta) = lby(iteta,jzeta) + dBdx(0,2,0) * coil(icoil)%I ! * bsconstant
+     lbz(iteta,jzeta) = lbz(iteta,jzeta) + dBdx(0,3,0) * coil(icoil)%I ! * bsconstant
      
     enddo ! end do icoil
     
@@ -64,27 +64,27 @@ subroutine bnormal( ideriv )
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  call MPI_BARRIER( MPI_COMM_WORLD, ierr )
+! call MPI_BARRIER( MPI_COMM_WORLD, ierr )
   
-  call MPI_REDUCE( lbx(0:Nteta-1,0:Nzeta-1), surf(1)%Bx(0:Nteta-1,0:Nzeta-1), Ntz, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
-  call MPI_REDUCE( lby(0:Nteta-1,0:Nzeta-1), surf(1)%By(0:Nteta-1,0:Nzeta-1), Ntz, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
-  call MPI_REDUCE( lbz(0:Nteta-1,0:Nzeta-1), surf(1)%Bz(0:Nteta-1,0:Nzeta-1), Ntz, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
+! call MPI_REDUCE( lbx(0:Nteta-1,0:Nzeta-1), surf(1)%Bx(0:Nteta-1,0:Nzeta-1), Ntz, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
+! call MPI_REDUCE( lby(0:Nteta-1,0:Nzeta-1), surf(1)%By(0:Nteta-1,0:Nzeta-1), Ntz, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
+! call MPI_REDUCE( lbz(0:Nteta-1,0:Nzeta-1), surf(1)%Bz(0:Nteta-1,0:Nzeta-1), Ntz, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
   
-  RlBCAST( surf(1)%Bx(0:Nteta-1,0:Nzeta-1), Ntz, 0 )  ! total Bx from coils;
-  RlBCAST( surf(1)%By(0:Nteta-1,0:Nzeta-1), Ntz, 0 )  ! total By from coils;
-  RlBCAST( surf(1)%Bz(0:Nteta-1,0:Nzeta-1), Ntz, 0 )  ! total Bz from coils;
+! RlBCAST( surf(1)%Bx(0:Nteta-1,0:Nzeta-1), Ntz, 0 )  ! total Bx from coils;
+! RlBCAST( surf(1)%By(0:Nteta-1,0:Nzeta-1), Ntz, 0 )  ! total By from coils;
+! RlBCAST( surf(1)%Bz(0:Nteta-1,0:Nzeta-1), Ntz, 0 )  ! total Bz from coils;
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
    
-  surf(1)%bn(0:Nteta-1,0:Nzeta-1) = surf(1)%Bx*surf(1)%nx + surf(1)%By*surf(1)%ny + surf(1)%Bz*surf(1)%nz + surf(1)%pb ! total Bn, including plasma component;
+! surf(1)%bn(0:Nteta-1,0:Nzeta-1) = surf(1)%Bx*surf(1)%nx + surf(1)%By*surf(1)%ny + surf(1)%Bz*surf(1)%nz + surf(1)%pb ! total Bn, including plasma component;
   
-  Bdotnsquared = sum( surf(1)%bn * surf(1)%bn * surf(1)%ds ) * half * discretefactor * bsconstant
+! Bdotnsquared = sum( surf(1)%bn * surf(1)%bn * surf(1)%ds ) * half * discretefactor * bsconstant
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
   if ( ideriv.ge.1 ) then
    
-   FATAL( bnormal, .true., under reconstruction )
+   FATAL( bnormal, .true., derivatives under reconstruction )
 
 !     t1B = zero ; l1B = zero
 !     if (weight_bharm > sqrtmachprec) then

@@ -1,3 +1,4 @@
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
 !title (input) ! Description of global variables.
 
@@ -7,13 +8,13 @@
 !latex \calledby{\link{focus}}
 !latex \calls{\link{initial}}
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
 module globals
   
   implicit none
   
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
 !latex \subsection{Useful parameters}
   REAL, parameter      :: zero       =         0.0
@@ -46,8 +47,6 @@ module globals
   REAL, parameter      :: mu0        =  2.0E-07 * pi2
   REAL, parameter      :: goldenmean =  1.618033988749895 ! golden mean = ( one + sqrt(five) ) / two ;    
   
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
 !latex \subsection{IO units}
   INTEGER              :: ounit      =  6 ! output to screen
   INTEGER              :: eunit      =  0 ! error unit
@@ -55,8 +54,6 @@ module globals
   INTEGER              :: runit      =  8 ! read  unit
   INTEGER              :: funit      =  9 ! general I/O
   INTEGER              :: bunit      = 10 ! backup unit for I/O
-  
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   CHARACTER(LEN=100)   :: ext       ! extention
   CHARACTER(LEN=100)   :: inputfile ! input namelist
@@ -67,8 +64,6 @@ module globals
   CHARACTER(LEN=100)   :: hdf5file  ! hdf5 file
   CHARACTER(LEN=100)   :: inpcoils  ! input coils.ext file
   CHARACTER(LEN=100)   :: outcoils  ! output ext.coils file
-  
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
 !latex \subsection{Input namelist: \type{focusin}}
   INTEGER              :: IsQuiet        =       -1        
@@ -185,46 +180,45 @@ module globals
                         save_harmonics , &
                         save_filaments
   
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
 !latex  \subsection{MPI stuffs}
   INTEGER              :: myid, ncpu
   REAL                 :: machprec, vsmall, small, sqrtmachprec
   CHARACTER            :: nodelabel*3
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 !latex \subsection{surface and coils data}
   type toroidalsurface
      INTEGER              :: Nteta, Nzeta
      REAL   , allocatable :: xx(:,:), yy(:,:), zz(:,:), nx(:,:), ny(:,:), nz(:,:), ds(:,:), xt(:,:), yt(:,:), zt(:,:)
-     REAL   , allocatable :: Bn(:,:), Bx(:,:), By(:,:), Bz(:,:), pb(:,:)
+     REAL   , allocatable :: pb(:,:)
   end type toroidalsurface
 
-  type arbitrarycoil
-     INTEGER              :: NF, NS, Ic, Lc, itype
-     REAL                 :: I,  L, Lo, Le, maxcurv
+  type spacecurve
+     INTEGER              :: NF, If, Lf
+     REAL                 ::     I , L , Lo, Le, maxcurv
      REAL   , allocatable :: xc(:), xs(:), yc(:), ys(:), zc(:), zs(:)
-     REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), dd(:)
-     REAL   , allocatable :: Ax(:,:), Ay(:,:), Az(:,:)
+     REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:)
+     REAL   , allocatable :: Ph(  :)! Ax(  :), Ay(  :), Az(  :)
+     REAL   , allocatable :: Al(  :)! Ax(  :), Ay(  :), Az(  :)
+     REAL   , allocatable :: Bn(:,:)! Bx(:,:), By(:,:), Bz(:,:)
      character(LEN=10)    :: name
-  end type arbitrarycoil
+  end type spacecurve
 
-  type FourierCoil
-     INTEGER              :: NF
-     REAL   , allocatable :: xc(:), xs(:), yc(:), ys(:), zc(:), zs(:)
-  end type FourierCoil
+! type FourierCoil
+!    INTEGER              :: NF
+!    REAL   , allocatable :: xc(:), xs(:), yc(:), ys(:), zc(:), zs(:)
+! end type FourierCoil
 
-  type DegreeOfFreedom
-     INTEGER              :: ND
-     REAL   , allocatable :: xdof(:), xof(:,:), yof(:,:), zof(:,:)
-  end type DegreeOfFreedom
+! type DegreeOfFreedom
+!    INTEGER              :: ND
+!    REAL   , allocatable :: xdof(:), xof(:,:), yof(:,:), zof(:,:)
+! end type DegreeOfFreedom
   
-  type(arbitrarycoil)  , allocatable :: coil(:)  
-  type(toroidalsurface), allocatable :: surf(:)
-  type(FourierCoil)    , allocatable :: FouCoil(:)
-  type(DegreeOfFreedom), allocatable :: DoF(:)
-
+  type(spacecurve)     , allocatable :: coil(:)  
+  type(toroidalsurface)              :: surf
+! type(FourierCoil)    , allocatable :: FouCoil(:)
+! type(DegreeOfFreedom), allocatable :: DoF(:)
 
   INTEGER              :: Nfp
 
@@ -232,14 +226,12 @@ module globals
   INTEGER, allocatable :: bim(:), bin(:), Bnim(:), Bnin(:)
   REAL   , allocatable :: Rbc(:), Zbs(:), Rbs(:), Zbc(:), Bnc(:), Bns(:), cosip(:), sinip(:)
     
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 !latex \subsection{Packing and unpacking}
   INTEGER              :: Cdof, Ndof, nfixcur, nfixgeo, Tdof
   REAL                 :: Inorm = one, Gnorm = one                !current and geometry normalizations;
   REAL   , allocatable :: xdof(:), dofnorm(:)
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 !latex \subsection{Optimization}
   ! General target functions;
@@ -273,14 +265,12 @@ module globals
   REAL                 :: specw
   REAL   , allocatable :: t1S(:), t2S(:,:)
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 !latex \subsection{Axis parameters}
  !REAL                 :: knotphase
   INTEGER              :: axisNF
   REAL   , allocatable :: axisxc(:), axisxs(:), axisyc(:), axisys(:), axiszc(:), axiszs(:)
   
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 !latex \subsection{Reading coils file}
   REAL,    allocatable :: coilsX(:,:), coilsY(:,:), coilsZ(:,:)
@@ -288,12 +278,10 @@ module globals
   INTEGER, allocatable :: coilseg(:)
   character(LEN=20), allocatable :: coilname(:)
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 !latex \subsection{Time counting}
   REAL                 :: tstart, tfinish, time_initialize, time_optimize, time_postproc
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 !latex \subsection{Miscellaneous}
   REAL                 :: tmpw_bnorm, tmpw_tflux ,tmpt_tflux, tmpw_ttlen, tmpw_specw, tmpw_ccsep, tmpw_bharm
@@ -310,9 +298,8 @@ module globals
   REAL              :: deltacurveparameter, deltatheta
   REAL, allocatable :: cmt(:,:), smt(:,:)
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
 end module globals
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-

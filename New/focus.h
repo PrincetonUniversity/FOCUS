@@ -16,7 +16,8 @@
 
 PROGRAM focus
   
-  use globals, only : ncpu, myid, ounit, ierr, astat, ext, &
+  use globals, only : zero, ncpu, myid, ounit, ierr, astat, ext, &
+                      Nseg, &
                       Ndof, xdof, &
                       tstart, &
                       Ldescent, &
@@ -98,8 +99,6 @@ PROGRAM focus
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  call MPI_BARRIER( MPI_COMM_WORLD, ierr )
-  
   if( Ldescent ) call descent( Ndof, xdof(1:Ndof) )
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!

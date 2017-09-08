@@ -56,7 +56,7 @@ subroutine descent( Ndof, lxdof )
   
 !  call mpi_barrier(MPI_COMM_WORLD, ierr)
 
-  write(ounit,'("descent : " 10x " : calling ode/descentodes ;")')
+  write(ounit,'("descent : " 10x " : calling ode:descentodes ;")')
   
   call ode( descentodes, Ndof, lxdof(1:Ndof), tstart, tend, relerr, abserr, iflag, work(1:100+21*Ndof), iwork(1:5) )
   

@@ -53,7 +53,7 @@ subroutine torflux( ideriv )
     
     do icoil = 1, Ncoils
      
-     call bpotential( icoil, iteta, jzeta, dAx, dAy, dAz )
+    !call abfield( icoil, iteta, jzeta, dAx, dAy, dAz )
      
      lax = lax + dAx * coil(icoil)%I
      lay = lay + dAy * coil(icoil)%I
@@ -61,7 +61,7 @@ subroutine torflux( ideriv )
      
     enddo ! end of do icoil;
     
-    toroidalflux = toroidalflux + lax*surf(1)%xt(iteta,jzeta) + lay*surf(1)%yt(iteta,jzeta) + laz*surf(1)%zt(iteta,jzeta)
+    toroidalflux = toroidalflux + lax*surf%xt(iteta,jzeta) + lay*surf%yt(iteta,jzeta) + laz*surf%zt(iteta,jzeta)
     
    enddo ! end of do iteta;
    
@@ -109,9 +109,9 @@ subroutine torflux( ideriv )
 !                         & dAx(0,0), dAy(0,0), dAz(0,0))
 !
 !                    ldF(idof+1, jzeta) = ldF(idof+1, jzeta) &
-!                         & + bsconstant * ( dAx(0,0)*surf(1)%xt(iteta,jzeta)   &
-!                         &                + dAy(0,0)*surf(1)%yt(iteta,jzeta)   &
-!                         &                + dAz(0,0)*surf(1)%zt(iteta,jzeta) )
+!                         & + bsconstant * ( dAx(0,0)*surf%xt(iteta,jzeta)   &
+!                         &                + dAy(0,0)*surf%yt(iteta,jzeta)   &
+!                         &                + dAz(0,0)*surf%zt(iteta,jzeta) )
 !                    idof = idof +1
 !                 endif
 !
@@ -120,9 +120,9 @@ subroutine torflux( ideriv )
 !                         &       dAx(1:ND,0), dAy(1:ND,0), dAz(1:ND,0), ND)
 !
 !                    ldF(idof+1:idof+ND, jzeta) = ldF(idof+1:idof+ND, jzeta) &
-!                         & + bsconstant * coil(icoil)%I * ( dAx(1:ND,0)*surf(1)%xt(iteta,jzeta)   &
-!                         &                                + dAy(1:ND,0)*surf(1)%yt(iteta,jzeta)   &
-!                         &                                + dAz(1:ND,0)*surf(1)%zt(iteta,jzeta) )
+!                         & + bsconstant * coil(icoil)%I * ( dAx(1:ND,0)*surf%xt(iteta,jzeta)   &
+!                         &                                + dAy(1:ND,0)*surf%yt(iteta,jzeta)   &
+!                         &                                + dAz(1:ND,0)*surf%zt(iteta,jzeta) )
 !
 !                    idof = idof + ND
 !                 endif
@@ -158,131 +158,129 @@ end subroutine torflux
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
-subroutine bpotential( icoil, iteta, jzeta, Ax, Ay, Az )
-  
-  use globals, only : zero, one, sqrtmachprec, myid, ounit, &
-                      Ncoils, Nteta, Nzeta, &
-                      coil, surf, &
-                      deltacurveparameter
-  
-  implicit none
-  
-  include "mpif.h"
-  
-  INTEGER, intent(in ) :: icoil, iteta, jzeta
-  REAL   , intent(out) :: Ax, Ay, Az
-  
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-  
-  INTEGER              :: ierr, astat, kk
-  REAL                 :: dlx, dly, dlz, distance, inversedistance
-  
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-  
-  CHECK( bpotential, icoil.lt.1 .or. icoil.gt.Ncoils, icoil not in right range )
-  CHECK( bpotential, iteta.lt.0 .or. iteta.gt.Nteta , iteta not in right range )
-  CHECK( bpotential, jzeta.lt.0 .or. jzeta.gt.Nzeta , jzeta not in right range )
-  
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-  
-  Ax = zero ; Ay = zero ; Az = zero
-  
-  do kk = 1, coil(icoil)%NS
-   
-   dlx = surf(1)%xx(iteta,jzeta) - coil(icoil)%xx(kk)
-   dly = surf(1)%yy(iteta,jzeta) - coil(icoil)%yy(kk)
-   dlz = surf(1)%zz(iteta,jzeta) - coil(icoil)%zz(kk)
-   
-   distance = dlx**2 + dly**2 + dlz**2
-
-   CHECK( torflux, distance.lt.sqrtmachprec, divide by zero )
-   
-   inversedistance  = one / sqrt( distance )
-   
-   Ax = Ax + coil(icoil)%xt(kk) * inversedistance * deltacurveparameter
-   Ay = Ay + coil(icoil)%yt(kk) * inversedistance * deltacurveparameter
-   Az = Az + coil(icoil)%zt(kk) * inversedistance * deltacurveparameter
-   
-  enddo    ! enddo kk
-
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-  
-  return
-
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-
-end subroutine bpotential
+!subroutine afield( icoil, iteta, jzeta, NS, dAdx )
+!  
+!  use globals, only : zero, one, sqrtmachprec, myid, myid, ounit, &
+!                      surf, Nteta, Nzeta, &
+!                      Ncoils, coil, Nseg, deltacurveparameter
+!  
+!  implicit none
+!  
+!  include "mpif.h"
+!  
+!  INTEGER, intent(in ) :: icoil, iteta, jzeta, NS
+!  REAL   , intent(out) :: dAdx(0:NS,1:3,0:3)
+!  
+!!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+!  
+!  INTEGER :: ierr, astat, ii
+!  REAL    :: dx, dy, dz, rr(1:5), invr
+!  
+!!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+!  
+!  CHECK( afield, icoil.lt.1 .or. icoil.gt.Ncoils, icoil not in range )
+!  CHECK( afield, iteta.lt.0 .or. iteta.gt.Nteta , iteta not in range )
+!  CHECK( afield, jzeta.lt.0 .or. jzeta.gt.Nzeta , jzeta not in range )
+!  
+!!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+!  
+!  dAdx(1:NS,1:3,0:3) = zero ! perhaps this is not required; 04 Sep 17;
+!
+!  do ii = 1, Nseg
+!   
+!   dx = surf%xx(iteta,jzeta) - coil(icoil)%xx(ii)
+!   dy = surf%yy(iteta,jzeta) - coil(icoil)%yy(ii)
+!   dz = surf%zz(iteta,jzeta) - coil(icoil)%zz(ii)
+!   
+!   rr(2) = dx**2 + dy**2 + dz**2 ; rr(1) = sqrt(rr(2)) ! rr(3) = rr(1) * rr(2) ; rr(5) = rr(3) * rr(2)
+!   
+!   CHECK( afield , rr(1).lt.sqrtmachprec, divide by zero )
+!   
+!   invr = one / rr(1)
+!   
+!   dAdx(ii,1,0) = coil(icoil)%xt(ii) * invr ! * deltacurveparameter
+!   dAdx(ii,2,0) = coil(icoil)%yt(ii) * invr
+!   dAdx(ii,3,0) = coil(icoil)%zt(ii) * invr
+!   
+!  enddo ! end do ii;
+!
+!  dAdx(0,1,0) = sum( dAdx(1:NS,1,0) ) ! * deltacurveparameter
+!  dAdx(0,2,0) = sum( dAdx(1:NS,2,0) ) ! * deltacurveparameter
+!  dAdx(0,3,0) = sum( dAdx(1:NS,3,0) ) ! * deltacurveparameter
+!
+!!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+!  
+!  return
+!
+!!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+!
+!end subroutine afield
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-subroutine bpotential1(icoil, iteta, jzeta, Ax, Ay, Az, ND)
-!------------------------------------------------------------------------------------------------------ 
-! DATE:  06/15/2017
-! calculate the magnetic potential and its 1st derivatives from coil(icoil) at the evaluation point;
-! Biot-Savart constant and currents are not included for later simplication.
-! Discretizing factor is includeed; coil(icoil)%dd(kseg) 
-!------------------------------------------------------------------------------------------------------    
-  use globals, only: coil, DoF, surf, NFcoil, Ncoils, Nteta, Nzeta,      &
-                     zero, myid, ounit
-  implicit none
-  include "mpif.h"
+!subroutine bpotential1(icoil, iteta, jzeta, Ax, Ay, Az, ND)
+!
+!  use globals, only: coil, surf, NFcoil, Ncoils, Nteta, Nzeta,      &
+!                     zero, myid, ounit
+!  implicit none
+!  include "mpif.h"
+!
+!  INTEGER, intent(in ) :: icoil, iteta, jzeta, ND
+!  REAL, dimension(1:1, 1:ND), intent(inout) :: Ax, Ay, Az
+!
 
-  INTEGER, intent(in ) :: icoil, iteta, jzeta, ND
-  REAL, dimension(1:1, 1:ND), intent(inout) :: Ax, Ay, Az
+!
+!  INTEGER              :: ierr, astat, kseg, NS
+!  REAL                 :: dlx, dly, dlz, r, rm3, ltx, lty, ltz
+!  REAL, dimension(1:1, 1:coil(icoil)%NS)   :: dAxx, dAxy, dAxz, dAyx, dAyy, dAyz, dAzx, dAzy, dAzz
+!
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-  INTEGER              :: ierr, astat, kseg, NS
-  REAL                 :: dlx, dly, dlz, r, rm3, ltx, lty, ltz
-  REAL, dimension(1:1, 1:coil(icoil)%NS)   :: dAxx, dAxy, dAxz, dAyx, dAyy, dAyz, dAzx, dAzy, dAzz
-
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  
-  FATAL( bpotential1, icoil .lt. 1 .or. icoil .gt. Ncoils    , icoil not in right range )
-  FATAL( bpotential1, iteta .lt. 0 .or. iteta .gt. Nteta     , iteta not in right range )
-  FATAL( bpotential1, jzeta .lt. 0 .or. jzeta .gt. Nzeta     , jzeta not in right range )
-  FATAL( bpotential1, ND <= 0, wrong inout dimension of ND )
-  
-  NS = coil(icoil)%NS
-
-  dlx = zero; ltx = zero; Ax = zero
-  dly = zero; lty = zero; Ay = zero
-  dlz = zero; ltz = zero; Az = zero
-
-  do kseg = 1, NS
-     
-     dlx = surf(1)%xx(iteta,jzeta) - coil(icoil)%xx(kseg)
-     dly = surf(1)%yy(iteta,jzeta) - coil(icoil)%yy(kseg)
-     dlz = surf(1)%zz(iteta,jzeta) - coil(icoil)%zz(kseg)
-
-     r = sqrt(dlx**2 + dly**2 + dlz**2); rm3 = r**(-3)
-
-     ltx = coil(icoil)%xt(kseg)
-     lty = coil(icoil)%yt(kseg)
-     ltz = coil(icoil)%zt(kseg)
-
-     dAxx(1,kseg) = - (dly*lty + dlz*ltz) * rm3 * coil(icoil)%dd(kseg) !Ax/x
-     dAxy(1,kseg) =    dly*ltx            * rm3 * coil(icoil)%dd(kseg) !Ax/y
-     dAxz(1,kseg) =    dlz*ltx            * rm3 * coil(icoil)%dd(kseg) !Ax/z
-
-     dAyx(1,kseg) =    dlx*lty            * rm3 * coil(icoil)%dd(kseg) !Ay/x
-     dAyy(1,kseg) = - (dlx*ltx + dlz*ltz) * rm3 * coil(icoil)%dd(kseg) !Ay/y
-     dAyz(1,kseg) =    dlz*lty            * rm3 * coil(icoil)%dd(kseg) !Ay/z
-
-     dAzx(1,kseg) =    dlx*ltz            * rm3 * coil(icoil)%dd(kseg) !Az/x
-     dAzy(1,kseg) =    dly*ltz            * rm3 * coil(icoil)%dd(kseg) !Az/y
-     dAzz(1,kseg) = - (dlx*ltx + dly*lty) * rm3 * coil(icoil)%dd(kseg) !Az/z
-
-  enddo    ! enddo kseg
-
-  Ax(1:1, 1:ND) = matmul(dAxx, DoF(icoil)%xof) + matmul(dAxy, DoF(icoil)%yof) + matmul(dAxz, DoF(icoil)%zof)
-  Ay(1:1, 1:ND) = matmul(dAyx, DoF(icoil)%xof) + matmul(dAyy, DoF(icoil)%yof) + matmul(dAyz, DoF(icoil)%zof)
-  Az(1:1, 1:ND) = matmul(dAzx, DoF(icoil)%xof) + matmul(dAzy, DoF(icoil)%yof) + matmul(dAzz, DoF(icoil)%zof)
-
-  return
-
-end subroutine bpotential1
+!  
+!  FATAL( bpotential1, icoil .lt. 1 .or. icoil .gt. Ncoils    , icoil not in right range )
+!  FATAL( bpotential1, iteta .lt. 0 .or. iteta .gt. Nteta     , iteta not in right range )
+!  FATAL( bpotential1, jzeta .lt. 0 .or. jzeta .gt. Nzeta     , jzeta not in right range )
+!  FATAL( bpotential1, ND <= 0, wrong inout dimension of ND )
+!  
+!  NS = coil(icoil)%NS
+!
+!  dlx = zero; ltx = zero; Ax = zero
+!  dly = zero; lty = zero; Ay = zero
+!  dlz = zero; ltz = zero; Az = zero
+!
+!  do kseg = 1, NS
+!     
+!     dlx = surf%xx(iteta,jzeta) - coil(icoil)%xx(kseg)
+!     dly = surf%yy(iteta,jzeta) - coil(icoil)%yy(kseg)
+!     dlz = surf%zz(iteta,jzeta) - coil(icoil)%zz(kseg)
+!
+!     r = sqrt(dlx**2 + dly**2 + dlz**2); rm3 = r**(-3)
+!
+!     ltx = coil(icoil)%xt(kseg)
+!     lty = coil(icoil)%yt(kseg)
+!     ltz = coil(icoil)%zt(kseg)
+!
+!     dAxx(1,kseg) = - (dly*lty + dlz*ltz) * rm3 * coil(icoil)%dd(kseg) !Ax/x
+!     dAxy(1,kseg) =    dly*ltx            * rm3 * coil(icoil)%dd(kseg) !Ax/y
+!     dAxz(1,kseg) =    dlz*ltx            * rm3 * coil(icoil)%dd(kseg) !Ax/z
+!
+!     dAyx(1,kseg) =    dlx*lty            * rm3 * coil(icoil)%dd(kseg) !Ay/x
+!     dAyy(1,kseg) = - (dlx*ltx + dlz*ltz) * rm3 * coil(icoil)%dd(kseg) !Ay/y
+!     dAyz(1,kseg) =    dlz*lty            * rm3 * coil(icoil)%dd(kseg) !Ay/z
+!
+!     dAzx(1,kseg) =    dlx*ltz            * rm3 * coil(icoil)%dd(kseg) !Az/x
+!     dAzy(1,kseg) =    dly*ltz            * rm3 * coil(icoil)%dd(kseg) !Az/y
+!     dAzz(1,kseg) = - (dlx*ltx + dly*lty) * rm3 * coil(icoil)%dd(kseg) !Az/z
+!
+!  enddo    ! enddo kseg
+!
+!  Ax(1:1, 1:ND) = matmul(dAxx, DoF(icoil)%xof) + matmul(dAxy, DoF(icoil)%yof) + matmul(dAxz, DoF(icoil)%zof)
+!  Ay(1:1, 1:ND) = matmul(dAyx, DoF(icoil)%xof) + matmul(dAyy, DoF(icoil)%yof) + matmul(dAyz, DoF(icoil)%zof)
+!  Az(1:1, 1:ND) = matmul(dAzx, DoF(icoil)%xof) + matmul(dAzy, DoF(icoil)%yof) + matmul(dAzz, DoF(icoil)%zof)
+!
+!  return
+!
+!end subroutine bpotential1
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!

@@ -12,7 +12,7 @@ SUBROUTINE packdof( packorunpack )
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  use globals, only : zero, myid, ounit, Ncoils, coil, DoF, Ndof, xdof, Inorm, Gnorm
+  use globals, only : zero, myid, ounit, Ncoils, coil, Ndof, xdof, Inorm, Gnorm
   
   implicit none
   
@@ -37,7 +37,7 @@ SUBROUTINE packdof( packorunpack )
    
    do icoil = 1, Ncoils ; NF = coil(icoil)%NF
     
-    if( coil(icoil)%Lc == 0 ) then
+    if( coil(icoil)%Lf == 0 ) then
      
      xdof(idof+     1:idof+  NF+1) = coil(icoil)%xc(0:NF)
      xdof(idof+  NF+2:idof+2*NF+1) = coil(icoil)%xs(1:NF)
@@ -50,7 +50,7 @@ SUBROUTINE packdof( packorunpack )
      
     endif
     
-    if( coil(icoil)%Ic == 0 ) then
+    if( coil(icoil)%If == 0 ) then
      
      xdof(idof+     1:idof+     1) = coil(icoil)%I
      
@@ -66,7 +66,7 @@ SUBROUTINE packdof( packorunpack )
    
    do icoil = 1, Ncoils ; NF = coil(icoil)%NF
     
-    if( coil(icoil)%Lc == 0 ) then
+    if( coil(icoil)%Lf == 0 ) then
      
      coil(icoil)%xc(0:NF) = xdof(idof+     1:idof+  NF+1)
      coil(icoil)%xs(1:NF) = xdof(idof+  NF+2:idof+2*NF+1)
@@ -81,7 +81,7 @@ SUBROUTINE packdof( packorunpack )
      
     endif
     
-    if( coil(icoil)%Ic == 0 ) then
+    if( coil(icoil)%If == 0 ) then
      
      coil(icoil)%I        = xdof(idof+     1            )
      
@@ -107,14 +107,14 @@ SUBROUTINE packdof( packorunpack )
 !  
 !  do icoil = 1, Ncoils
 !   
-!   if( coil(icoil)%Ic /= 0 ) then 
+!   if( coil(icoil)%If /= 0 ) then 
 !    lxdof(idof+1) = coil(icoil)%I / Inorm
 !    idof = idof + 1
 !   endif
 !   
 !   ND = DoF(icoil)%ND
 !   
-!   if( coil(icoil)%Lc /= 0 ) then
+!   if( coil(icoil)%Lf /= 0 ) then
 !    lxdof(idof+1:idof+ND) = DoF(icoil)%xdof(1:ND) / Gnorm
 !    idof = idof + ND
 !   endif
@@ -146,14 +146,14 @@ END SUBROUTINE packdof
 !  
 !  do icoil = 1, Ncoils
 !   
-!   if( coil(icoil)%Ic /= 0 ) then
+!   if( coil(icoil)%If /= 0 ) then
 !    coil(icoil)%I = lxdof(idof+1) * Inorm
 !    idof = idof + 1
 !   endif
 !   
 !   ND = DoF(icoil)%ND
 !   
-!   if( coil(icoil)%Lc /= 0 ) then
+!   if( coil(icoil)%Lf /= 0 ) then
 !    DoF(icoil)%xdof(1:ND) = lxdof(idof+1:idof+ND) * Gnorm
 !    idof = idof + ND
 !   endif
@@ -200,7 +200,7 @@ END SUBROUTINE packdof
 !
 !        !pack Fourier series;
 !        idof = 0
-!        if(coil(icoil)%Lc /= 0) then
+!        if(coil(icoil)%Lf /= 0) then
 !           DoF(icoil)%xdof(idof+1:idof+NF+1) = FouCoil(icoil)%xc(0:NF) ; idof = idof + NF+1
 !           DoF(icoil)%xdof(idof+1:idof+NF  ) = FouCoil(icoil)%xs(1:NF) ; idof = idof + NF    
 !           DoF(icoil)%xdof(idof+1:idof+NF+1) = FouCoil(icoil)%yc(0:NF) ; idof = idof + NF+1
@@ -245,7 +245,7 @@ END SUBROUTINE packdof
 !    
 !    idof = 0
 !    
-!    if( coil(icoil)%Lc /= 0 ) then
+!    if( coil(icoil)%Lf /= 0 ) then
 !     
 !     FouCoil(icoil)%xc(0:NF) = DoF(icoil)%xdof(idof+1 : idof+NF+1) ; idof = idof + NF + 1
 !     FouCoil(icoil)%xs(1:NF) = DoF(icoil)%xdof(idof+1 : idof+NF  ) ; idof = idof + NF    
