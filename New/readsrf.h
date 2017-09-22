@@ -15,148 +15,141 @@
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
 subroutine readsrf
-
+  
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  use globals, only : zero, half, pi2, sqrtmachprec, myid, ounit, &
-                      Nteta, Nzeta, surf, case_surface, IsSymmetric, discretefactor, knotsurf
+  use globals, only : zero, half, three, pi2, sqrtmachprec, myid, ounit, tstart, &
+                      axisfile, &
+                      Nt, Nz, surf, Isurface, minorrad
   
   implicit none
   
   include "mpif.h"
   
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  INTEGER :: astat, ierr, ii, jj, iteta, jzeta
-  REAL    :: teta, zeta, xx(1:3), xt(1:3), xz(1:3), bn, ax(1:3), at(1:3), az(1:3), ds(1:3), dd
-
-! INTEGER :: secs, mins, hrs, ii, jj
-! REAL    :: teta, zeta, xx(1:3), xt(1:3), xz(1:3), bn, ax(1:3), at(1:3), az(1:3), ds(1:3), dd
+  INTEGER :: astat, ierr, ii, jj
+  REAL    :: teta, zeta, xx(1:3), xt(1:3), xz(1:3), bn, ax(1:3), at(1:3), az(1:3), ds(1:3), dd, tnow
   
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  select case( case_surface )
+  tnow = MPI_WTIME()
+  
+  select case( Isurface )
    
   case( 0 )
    
-   write(ounit,'("readsrf : " 10x " : case_surface ="i2" ; Nteta ="i4", Nzeta ="i4" ;")') case_surface, Nteta, Nzeta
+   if( myid.eq.0 ) write(ounit,'("readsrf : ",f10.1," : Isurface ="i2" ; Nt ="i4", Nz ="i4" ;")') tnow-tstart, Isurface, Nt, Nz
    
    call fousurf  ! VMEC  -style plasma boundary;
    
   case( 1 )
-
-   write(ounit,'("readsrf : " 10x " : case_surface ="i2" ; Nteta ="i4", Nzeta ="i4" ; knotsurf ="f6.3" ;")') case_surface, Nteta, Nzeta, knotsurf
-
-   call rdaxis   ! axis  -style plasma boundary;
-
- !case( 2 )
-
-  !call readwout ! Boozer-style plasma boundary (under construction);
-
-  case default
-
-   FATAL( focus , .true., selected value of case_surface not supported )
-
-  end select
-
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-  
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  
-! select case( IsSymmetric )
-! case ( 0 ) ; Nfp = 1
-! case ( 1 ) ;         ; Npc = 1
-! case ( 2 ) ;         ; Npc = Nfp
-! case default
-!  FATAL( focus, .true., selected value of IsSymmetric not supported )
-! end select
-  
-! discretefactor = discretefactor / Nfp ! discretefactor was initialized in initial; 28 Sep 17;
-  
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-  
-  surf%Nteta = Nteta
-  surf%Nzeta = Nzeta
-  
-  SALLOCATE( surf%xx, (0:Nteta  ,0:Nzeta  ), zero )
-  SALLOCATE( surf%yy, (0:Nteta  ,0:Nzeta  ), zero )
-  SALLOCATE( surf%zz, (0:Nteta  ,0:Nzeta  ), zero )
-  
-  SALLOCATE( surf%nx, (0:Nteta  ,0:Nzeta  ), zero )
-  SALLOCATE( surf%ny, (0:Nteta  ,0:Nzeta  ), zero )
-  SALLOCATE( surf%nz, (0:Nteta  ,0:Nzeta  ), zero )
-  
-  SALLOCATE( surf%ds, (0:Nteta  ,0:Nzeta  ), zero )
-  
-  SALLOCATE( surf%xt, (0:Nteta  ,0:Nzeta  ), zero )
-  SALLOCATE( surf%yt, (0:Nteta  ,0:Nzeta  ), zero )
-  SALLOCATE( surf%zt, (0:Nteta  ,0:Nzeta  ), zero )
-  
-  SALLOCATE( surf%pb, (0:Nteta  ,0:Nzeta  ), zero ) ! normal field; 28 Sep 17;
-  
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-  
-  CHECK( readsrf, Nteta.eq.0, error )
-  CHECK( readsrf, Nzeta.eq.0, error )
-
-  do iteta = 0, Nteta ; teta = ( iteta + half ) * pi2 / Nteta ! grid center;
    
-   do jzeta = 0, Nzeta ; zeta = ( jzeta + half ) * pi2 / Nzeta
+   if( myid.eq.0 ) write(ounit,1000) tnow-tstart, Isurface, Nt, Nz, minorrad, trim(axisfile)
+   
+   call rdaxis   ! axis  -style plasma boundary;
+   
+  case default
+   
+   FATAL( focus , .true., selected value of Isurface is not supported )
+   
+  end select
+  
+1000 format("readsrf : ",f10.1," : Isurface ="i2" ; Nt ="i4", Nz ="i4" ; minorrad ="f6.3" ; reading ",a," ;")
+  
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+  
+  surf%Nteta = Nt
+  surf%Nzeta = Nz
+  
+  CHECK( readsrf, Nt.lt.0, error )
+  CHECK( readsrf, Nz.lt.0, error )
+  
+  SALLOCATE( surf%xx, (0:Nt,0:Nz ), zero )
+  SALLOCATE( surf%yy, (0:Nt,0:Nz ), zero )
+  SALLOCATE( surf%zz, (0:Nt,0:Nz ), zero )
+  
+  SALLOCATE( surf%nx, (0:Nt,0:Nz ), zero )
+  SALLOCATE( surf%ny, (0:Nt,0:Nz ), zero )
+  SALLOCATE( surf%nz, (0:Nt,0:Nz ), zero )
+  
+  SALLOCATE( surf%ds, (0:Nt,0:Nz ), zero )
+  
+  SALLOCATE( surf%xt, (0:Nt,0:Nz ), zero )
+  SALLOCATE( surf%yt, (0:Nt,0:Nz ), zero )
+  SALLOCATE( surf%zt, (0:Nt,0:Nz ), zero )
+  
+! SALLOCATE( surf%Bn, (0:Nt,0:Nz ), zero ) ! normal field;
+! SALLOCATE( surf%Tf, (     0:Nz ), zero ) ! toroidal flux;
+  SALLOCATE( surf%Bp, (0:Nt,0:Nz ), zero ) ! normal field;
+  
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+  
+  CHECK( readsrf, Nt.le.0, error )
+  CHECK( readsrf, Nz.le.0, error )
+  
+  do ii = 0, Nt ; teta = ( ii + half ) * pi2 / Nt ! grid center;
+   do jj = 0, Nz ; zeta = ( jj + half ) * pi2 / Nz
     
-    select case( case_surface )
+    select case( Isurface )
     case( 0 ) ; call surfxx(           teta, zeta,                            xx(1:3), xt(1:3), xz(1:3), bn )
-    case( 1 ) ; call knotxx( knotsurf, teta, zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xt(1:3), xz(1:3)     ) ; bn = zero
+    case( 1 ) ; call knotxx( minorrad, teta, zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xt(1:3), xz(1:3)     ) ; bn = zero
     case default
-     FATAL( focus , .true., selected case_surface not supported )
+     FATAL( focus , .true., selected Isurface is not supported )
     end select
     
-    ds(1:3) = - (/ xt(2) * xz(3) - xt(3) * xz(2), xt(3) * xz(1) - xt(1) * xz(3), xt(1) * xz(2) - xt(2) * xz(1) /) ! negative sign = counterclockwise;
+    ds(1:3) = - (/ xt(2) * xz(3) - xt(3) * xz(2), &
+                   xt(3) * xz(1) - xt(1) * xz(3), &
+                   xt(1) * xz(2) - xt(2) * xz(1) /) ! negative sign = counterclockwise;
     
     dd = sqrt( sum( ds(1:3)*ds(1:3) ) )
-
-    surf%xx(iteta,jzeta) = xx(1)
-    surf%yy(iteta,jzeta) = xx(2)
-    surf%zz(iteta,jzeta) = xx(3)
     
-    surf%xt(iteta,jzeta) = xt(1)
-    surf%yt(iteta,jzeta) = xt(2)
-    surf%zt(iteta,jzeta) = xt(3)
-
+    surf%xx(ii,jj) = xx(1)
+    surf%yy(ii,jj) = xx(2)
+    surf%zz(ii,jj) = xx(3)
+    
+    surf%xt(ii,jj) = xt(1)
+    surf%yt(ii,jj) = xt(2)
+    surf%zt(ii,jj) = xt(3)
+    
     CHECK( readsrf, dd.lt.sqrtmachprec, divide by zero )
     
-    surf%nx(iteta,jzeta) = ds(1) / dd
-    surf%ny(iteta,jzeta) = ds(2) / dd
-    surf%nz(iteta,jzeta) = ds(3) / dd
+    surf%nx(ii,jj) = ds(1) / dd
+    surf%ny(ii,jj) = ds(2) / dd
+    surf%nz(ii,jj) = ds(3) / dd
     
-    surf%ds(iteta,jzeta) =         dd
+    surf%ds(ii,jj) =         dd
     
-    surf%pb(iteta,jzeta) = bn ! target normal field; 28 Sep 17;
+    surf%Bp(ii,jj) = bn ! target/plasma normal field;
     
-   enddo ! end of do jzeta;
-   
-  enddo ! end of do iteta;
+    surf%area = surf%area + sum(xx(1:3)*ds(1:3))
+
+   enddo ! end of do jj;
+  enddo ! end of do ii;
+
+  surf%area = surf%area * (pi2/Nt) * (pi2/Nz) / three
+
+ !if( myid.eq.0 ) write(ounit,'("readsrf : ", 10x ," : surface area =",e13.5," ;")') surf%area
   
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-
+  
+! SALLOCATE( surf%area, (0:Nt-1), zero )
+  
+! do jj = 0, Nz-1
+   
+!  surf%area(jj) = sum( surf%xx(0:Nt-1,jj)*surf%yt(0:Nt-1,jj)-surf%yy(0:Nt-1,jj)*surf%xt(0:Nt-1,jj) ) * (pi2/Nt)
+   
+!  if( myid.eq.0 .and. jj.eq.0 ) write(ounit,'("readsrf : ", 10x ," : ",i4," cross-section area =",e13.5" ;")') jj, surf%area(jj)
+   
+! enddo
+  
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+  
   return
   
 end subroutine readsrf
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-
-
 
 !title (boundary) ! The plasma boundary is read from file 
 
@@ -219,25 +212,23 @@ end subroutine readsrf
 !latex \section{Tokamak}
 !latex This part is reserved for later development of the interface for tokamaks.
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
 subroutine fousurf
   
-  use globals, only : zero, half, pi2, myid, ounit, runit, surffile, IsQuiet, IsSymmetric, &
+  use globals, only : zero, half, pi2, myid, ounit, runit, surffile, &
                       Nfp, &
                       Nfou, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
-                      Nteta, Nzeta, surf, discretefactor
+                      Nt, Nz, surf
   
   implicit none
   
   include "mpif.h"
   
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
   LOGICAL :: exist
-  INTEGER :: iosta, astat, ierr, ii, jj, imn
+  INTEGER :: iosta, astat, ierr, imn
   REAL    :: RR(0:2), ZZ(0:2), szeta, czeta, xx(1:3), xt(1:3), xz(1:3), ds(1:3), &
              teta, zeta, arg, dd
   
@@ -318,60 +309,47 @@ subroutine fousurf
   FATAL( surface, iosta.ne.0, error closing plasma.boundary )
   
   !-------------output for check-------------------------------------------------------------------------
-  if( myid == 0 .and. IsQuiet <= 0) then
-     write(ounit, *) "-----------Reading surface-----------------------------------"
-     write(ounit, '("surface : Nfou = " I06 " ; Nfp = " I06 " ; NBnf = " I06 " ;" )') Nfou, Nfp, NBnf
-  endif
+! if( myid == 0 .and. IsQuiet <= 0) then
+!    write(ounit, *) "-----------Reading surface-----------------------------------"
+!    write(ounit, '("surface : Nfou = " I06 " ; Nfp = " I06 " ; NBnf = " I06 " ;" )') Nfou, Nfp, NBnf
+! endif
 
-  if( myid == 0 .and. IsQuiet <= -2) then !very detailed output;
-     write(ounit,'("        : " 10x " : bim ="10i13   )') bim(1:Nfou)
-     write(ounit,'("        : " 10x " : bin ="10i13   )') bin(1:Nfou)
-     write(ounit,'("        : " 10x " : Rbc ="10es13.5)') Rbc(1:Nfou)
-     write(ounit,'("        : " 10x " : Rbs ="10es13.5)') Rbs(1:Nfou)
-     write(ounit,'("        : " 10x " : Zbc ="10es13.5)') Zbc(1:Nfou)
-     write(ounit,'("        : " 10x " : Zbs ="10es13.5)') Zbs(1:Nfou)
-     if(Nbnf > 0) then
-        write(ounit,'("        : " 10x " : Bnim ="10i13  )') Bnim(1:NBnf)
-        write(ounit,'("        : " 10x " : Bnin ="10i13  )') Bnin(1:NBnf)
-        write(ounit,'("        : " 10x " : Bnc ="10es13.5)') Bnc (1:NBnf)
-        write(ounit,'("        : " 10x " : Bns ="10es13.5)') Bns (1:NBnf)
-     endif
-  endif
-
-  !-------------discretize surface data------------------------------------------------------------------  
-
-! select case (IsSymmetric)
-! case ( 0 )
-!    Nfp = 1                          !reset Nfp to 1;
-!    Npc = 1                          !number of coils periodicity 
-! case ( 1 )                          !plasma periodicity enabled;
-!    Npc = 1
-! case ( 2 )                          !plasma and coil periodicity enabled;
-!    Npc = Nfp
-! end select
-! discretefactor = discretefactor/Nfp
+! if( myid == 0 .and. IsQuiet <= -2) then !very detailed output;
+!    write(ounit,'("        : " 10x " : bim ="10i13   )') bim(1:Nfou)
+!    write(ounit,'("        : " 10x " : bin ="10i13   )') bin(1:Nfou)
+!    write(ounit,'("        : " 10x " : Rbc ="10es13.5)') Rbc(1:Nfou)
+!    write(ounit,'("        : " 10x " : Rbs ="10es13.5)') Rbs(1:Nfou)
+!    write(ounit,'("        : " 10x " : Zbc ="10es13.5)') Zbc(1:Nfou)
+!    write(ounit,'("        : " 10x " : Zbs ="10es13.5)') Zbs(1:Nfou)
+!    if(Nbnf > 0) then
+!       write(ounit,'("        : " 10x " : Bnim ="10i13  )') Bnim(1:NBnf)
+!       write(ounit,'("        : " 10x " : Bnin ="10i13  )') Bnin(1:NBnf)
+!       write(ounit,'("        : " 10x " : Bnc ="10es13.5)') Bnc (1:NBnf)
+!       write(ounit,'("        : " 10x " : Bns ="10es13.5)') Bns (1:NBnf)
+!    endif
+! endif
 
 ! allocate( surf(1:1) ) ! can allow for myltiple plasma boundaries 
                         ! if multiple currents are allowed; 14 Apr 16;
   
-! surf%Nteta = Nteta ! not used yet; used for multiple surfaces; 20170307;
-! surf%Nzeta = Nzeta ! not used yet; used for multiple surfaces; 20170307;
+! surf%Nteta = Nt ! not used yet; used for multiple surfaces; 20170307;
+! surf%Nzeta = Nz ! not used yet; used for multiple surfaces; 20170307;
   
-! SALLOCATE( surf%xx, (0:Nteta-1,0:Nzeta-1), zero ) !x coordinates;
-! SALLOCATE( surf%yy, (0:Nteta-1,0:Nzeta-1), zero ) !y coordinates
-! SALLOCATE( surf%zz, (0:Nteta-1,0:Nzeta-1), zero ) !z coordinates
-! SALLOCATE( surf%nx, (0:Nteta-1,0:Nzeta-1), zero ) !unit nx;
-! SALLOCATE( surf%ny, (0:Nteta-1,0:Nzeta-1), zero ) !unit ny;
-! SALLOCATE( surf%nz, (0:Nteta-1,0:Nzeta-1), zero ) !unit nz;
-! SALLOCATE( surf%ds, (0:Nteta-1,0:Nzeta-1), zero ) !jacobian;
-! SALLOCATE( surf%xt, (0:Nteta-1,0:Nzeta-1), zero ) !dx/dtheta;
-! SALLOCATE( surf%yt, (0:Nteta-1,0:Nzeta-1), zero ) !dy/dtheta;
-! SALLOCATE( surf%zt, (0:Nteta-1,0:Nzeta-1), zero ) !dz/dtheta;
-! SALLOCATE( surf%pb, (0:Nteta-1,0:Nzeta-1), zero ) !target Bn;
+! SALLOCATE( surf%xx, (0:Nt-1,0:Nz-1), zero ) !x coordinates;
+! SALLOCATE( surf%yy, (0:Nt-1,0:Nz-1), zero ) !y coordinates
+! SALLOCATE( surf%zz, (0:Nt-1,0:Nz-1), zero ) !z coordinates
+! SALLOCATE( surf%nx, (0:Nt-1,0:Nz-1), zero ) !unit nx;
+! SALLOCATE( surf%ny, (0:Nt-1,0:Nz-1), zero ) !unit ny;
+! SALLOCATE( surf%nz, (0:Nt-1,0:Nz-1), zero ) !unit nz;
+! SALLOCATE( surf%ds, (0:Nt-1,0:Nz-1), zero ) !jacobian;
+! SALLOCATE( surf%xt, (0:Nt-1,0:Nz-1), zero ) !dx/dtheta;
+! SALLOCATE( surf%yt, (0:Nt-1,0:Nz-1), zero ) !dy/dtheta;
+! SALLOCATE( surf%zt, (0:Nt-1,0:Nz-1), zero ) !dz/dtheta;
+! SALLOCATE( surf%pb, (0:Nt-1,0:Nz-1), zero ) !target Bn;
  
 ! The center point value was used to discretize grid;
-! do ii = 0, Nteta-1; teta = ( ii + half ) * pi2 / Nteta
-!  do jj = 0, Nzeta-1; zeta = ( jj + half ) * pi2 / ( Nzeta*Nfp )
+! do ii = 0, Nt-1; teta = ( ii + half ) * pi2 / Nt
+!  do jj = 0, Nz-1; zeta = ( jj + half ) * pi2 / ( Nz*Nfp )
     
 !   RR(0:2) = zero ; ZZ(0:2) = zero
     
@@ -423,8 +401,8 @@ subroutine fousurf
   !calculate target Bn with input harmonics; 05 Jan 17;
 ! if(NBnf >  0) then
 
-!    do jj = 0, Nzeta-1 ; zeta = ( jj + half ) * pi2 / (Nzeta*Nfp)
-!       do ii = 0, Nteta-1 ; teta = ( ii + half ) * pi2 / Nteta
+!    do jj = 0, Nz-1 ; zeta = ( jj + half ) * pi2 / (Nz*Nfp)
+!       do ii = 0, Nt-1 ; teta = ( ii + half ) * pi2 / Nt
 !          do imn = 1, NBnf
 !             arg = Bnim(imn) * teta - Bnin(imn) * zeta
 !             surf%pb(ii,jj) = surf%pb(ii,jj) + Bnc(imn)*cos(arg) + Bns(imn)*sin(arg)
@@ -445,20 +423,18 @@ end subroutine fousurf
 
 subroutine surfxx( teta, zeta, xx, xt, xz, bn )
   
-  use globals, only : zero, half, pi2, myid, ounit, runit, surffile, IsQuiet, IsSymmetric, &
+  use globals, only : zero, half, pi2, myid, ounit, runit, surffile, &
                       Nfou, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
-                      Nteta, Nzeta, surf, discretefactor
+                      Nt, Nz, surf
   
   implicit none
   
   include "mpif.h"
   
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
   LOGICAL :: exist
-  INTEGER :: iosta, astat, ierr, ii, jj, imn
+  INTEGER :: iosta, astat, ierr, imn
   REAL    :: RR(0:2), ZZ(0:2), szeta, czeta, xx(1:3), xt(1:3), xz(1:3), ds(1:3), bn(1:3), &
              teta, zeta, arg, dd
   
@@ -497,8 +473,8 @@ subroutine surfxx( teta, zeta, xx, xt, xz, bn )
 
 
    
-!    do jj = 0, Nzeta-1 ; zeta = ( jj + half ) * pi2 / (Nzeta*Nfp)
-!       do ii = 0, Nteta-1 ; teta = ( ii + half ) * pi2 / Nteta
+!    do jj = 0, Nz-1 ; zeta = ( jj + half ) * pi2 / (Nz*Nfp)
+!       do ii = 0, Nt-1 ; teta = ( ii + half ) * pi2 / Nt
 !          do imn = 1, NBnf
 !             arg = Bnim(imn) * teta - Bnin(imn) * zeta
 !             bn = bn + Bnc(imn)*cos(arg) + Bns(imn)*sin(arg)
@@ -514,10 +490,7 @@ subroutine surfxx( teta, zeta, xx, xt, xz, bn )
   
 end subroutine surfxx
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-
 
 !title (axis) ! Reads axis parameters from file.
 
@@ -535,50 +508,40 @@ end subroutine surfxx
 !latex \item[3.] A circular or elliptical cross section surface is constructed.
 !latex \ei
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
 subroutine rdaxis
   
   use globals, only : zero, one, half, ten, pi2, myid, ncpu, ounit, runit, &
-                      ext, &
+                      ext, axisfile, &
                       axisNF, axisxc, axisxs, axisyc, axisys, axiszc, axiszs, Nfp, &
-                      IsSymmetric, discretefactor, &
-                      knotsurf, Nteta, Nzeta, surf
+                      minorrad, Nt, Nz, surf
   
   implicit none
   
   include "mpif.h"
   
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+
   LOGICAL              :: exist
-  INTEGER              :: iostat, astat, ierr, ii, jj
+  INTEGER              :: iostat, astat, ierr
   REAL                 :: teta, zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xt(1:3), xz(1:3), ds(1:3), dd
   
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  inquire( file=trim(ext)//".axis", exist=exist )
-  if( exist ) then
-   if( myid.eq.0 ) then
-    open(runit, file=trim(ext)//".axis", status="old", action='read', iostat=iostat)  
-    write(ounit,'("readsrf : " 10x " : reading ext.axis ;")') 
-   endif
-  else
-   inquire( file=".axis", exist=exist )
-   if( exist ) then
-    if( myid.eq.0 ) then
-     open(runit, file=".axis", status="old", action='read', iostat=iostat)  
-     write(ounit,'("rdcoil  : " 10x " : reading .axis ;")') 
-    endif
-   endif
-  endif
+  inquire( file=trim(axisfile), exist=exist )
   
-  FATAL( rdaxis, .not.exist, neither ext.axis nor .axis found )
+  FATAL( rdaxis , .not.exist, axisfile does not exist )
+  
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
   if( myid.eq.0 ) then
-   read( runit, *, iostat=iostat )
-   read( runit, *, iostat=iostat ) axisNF
-  endif
+   
+   open( runit, file=trim(axisfile), status="old", action='read' )
+   read( runit, * )
+   read( runit, * ) axisNF ! write(ounit,'("readsrf : " 10x " : axisNF = ",i3," ;")') axisNF
+   
+  endif ! end of if( myid.eq.0 ) x;
   
   IlBCAST( axisNF, 1, 0 )
   
@@ -591,24 +554,23 @@ subroutine rdaxis
   
   if( myid.eq.0 ) then
    
-   read( runit, *, iostat=iostat ) 
-   read( runit, *, iostat=iostat ) axisxc(0:axisNF)
-   read( runit, *, iostat=iostat ) 
-   read( runit, *, iostat=iostat ) axisxs(0:axisNF)
-   read( runit, *, iostat=iostat ) 
-   read( runit, *, iostat=iostat ) axisyc(0:axisNF)
-   read( runit, *, iostat=iostat ) 
-   read( runit, *, iostat=iostat ) axisys(0:axisNF)
-   read( runit, *, iostat=iostat ) 
-   read( runit, *, iostat=iostat ) axiszc(0:axisNF)
-   read( runit, *, iostat=iostat ) 
-   read( runit, *, iostat=iostat ) axiszs(0:axisNF)
+   read( runit, * ) 
+   read( runit, * ) axisxc(0:axisNF) ! write(ounit,'("readsrf : " 10x " : axisxc = ",99es13.05," ;")') axisxc
+   read( runit, * ) 
+   read( runit, * ) axisxs(0:axisNF)
+   read( runit, * ) 
+   read( runit, * ) axisyc(0:axisNF)
+   read( runit, * ) 
+   read( runit, * ) axisys(0:axisNF)
+   read( runit, * ) 
+   read( runit, * ) axiszc(0:axisNF)
+   read( runit, * ) 
+   read( runit, * ) axiszs(0:axisNF)
    
-   close(runit,iostat=iostat)
+   close(runit)
    
-  endif
+  endif ! end of if( myid.eq.0 ) ;
   
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   RlBCAST( axisxc(0:axisNF), axisNF+1, 0 )
   RlBCAST( axisxs(0:axisNF), axisNF+1, 0 )
@@ -628,29 +590,15 @@ subroutine rdaxis
 !   write(ounit,'("readsrf : " 10x " : axiszs =",11x,999es11.03)') axiszs(1:axisNF)
 !  endif
   
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  
-! discretize the surface data; 2017/03/28; czhu;
-  
-! select case (IsSymmetric)
-! case ( 0 )
-!    Nfp = 1                          !reset Nfp to 1;
-!    Npc = 1                          !number of coils periodicity 
-! case ( 1 )                          !plasma periodicity enabled;
-!    Npc = 1
-! case ( 2 )                          !plasma and coil periodicity enabled;
-!    Npc = Nfp
-! end select
-! discretefactor = discretefactor/Nfp
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   return
   
 end subroutine rdaxis
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
 subroutine knotxx( aa, teta, zeta, ax, at, az, xx, xt, xz )
   
@@ -661,7 +609,7 @@ subroutine knotxx( aa, teta, zeta, ax, at, az, xx, xt, xz )
   
   include "mpif.h"
   
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
   REAL                 :: aa, teta, zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xt(1:3), xz(1:3)
   
@@ -672,6 +620,15 @@ subroutine knotxx( aa, teta, zeta, ax, at, az, xx, xt, xz )
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
+  CHECK( readsrf, .not.allocated(axisxc), illegal )
+  CHECK( readsrf, .not.allocated(axisxs), illegal )
+  CHECK( readsrf, .not.allocated(axisyc), illegal )
+  CHECK( readsrf, .not.allocated(axisys), illegal )
+  CHECK( readsrf, .not.allocated(axiszc), illegal )
+  CHECK( readsrf, .not.allocated(axiszs), illegal )
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+
   x0(1:3) = (/ axisxc(0), axisyc(0), axiszc(0) /)
   x1(1:3) = (/ zero  , zero  , zero   /)
   x2(1:3) = (/ zero  , zero  , zero   /)
@@ -701,14 +658,14 @@ subroutine knotxx( aa, teta, zeta, ax, at, az, xx, xt, xz )
     
   endif ! end of if( aa.gt.zero ) ; 14 Apr 16;
    
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+
   ax(1:3) = x0(1:3)                                                        ! Nov 12 15;
   at(1:3) = zero                                                           ! Nov 12 15;
   az(1:3) = x1(1:3)                                                        ! Nov 12 15;
-  
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  
+    
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+
   if( aa.gt.zero ) then
    
    a0      = sqrt( x1(1)*x1(1) + x1(2)*x1(2) + x1(3)*x1(3) )                ! Nov 12 15;
@@ -749,10 +706,8 @@ subroutine knotxx( aa, teta, zeta, ax, at, az, xx, xt, xz )
    xt(1:3) = zero
    xz(1:3) = zero
    
-  endif ! end of if( aa.gt.zero ) ; 28 Aug 17;
+  endif ! end of if( aa.gt.zero );
   
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
   return

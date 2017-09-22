@@ -77,27 +77,28 @@
 
 subroutine rdcoils
   
-  use globals
+  use globals, only : zero, half, pi, pi2, myid, ounit, tstart, &
+                      NFcoil, Ncoils, IsVaryCurrent, IsVaryGeometry, target_length, &
+                      runit, coilfile, discretecurve, &
+                      Ns, init_current, init_radius, coil, Initialize, Isurface, &
+                      cmt, smt
   
   implicit none
   
   include "mpif.h"
   
-  LOGICAL :: exist
-  INTEGER :: icoil, maxnseg, ifirst, NF, itmp, ip, icoef, jj
-  REAL    :: zeta, totalcurrent, Ro, Zo, r1, r2, z1, z2, tt, ax(1:3), at(1:3), az(1:3), xx(1:3), xt(1:3), xz(1:3)
+  LOGICAL              :: exist
+  INTEGER              :: icoil, maxnseg, ifirst, NF, itmp, ip, icoef, jj, kk, ierr, astat, lNF, maxNF, mm
+  REAL                 :: zeta, totalcurrent, Ro, Zo, r1, r2, z1, z2, tt, ax(1:3), at(1:3), az(1:3), xx(1:3), xt(1:3), xz(1:3), rdummy, tnow
+  REAL   , allocatable :: coilsX(:,:), coilsY(:,:), coilsZ(:,:)
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  
-  Nfixcur = 0 ; Nfixgeo = 0 ! these are now set in setflag; 04 Sep 17;
-  
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  
-  select case( case_init )
+    
+  select case( Initialize )
    
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
    
-  case( -1 ) ! case_init = -1 : 04 Sep 17;
+  case( -1 ) ! Initialize = -1 : 04 Sep 17;
    
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
    
@@ -181,153 +182,144 @@ subroutine rdcoils
    
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
    
-  case( 0 ) ! case_init = 0 : read fourier harmonics of coils from file; 29 Sep 17;
+  case( 0 ) ! Initialize = 0 : read fourier harmonics of coils from file; 29 Sep 17;
    
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
    
-   FATAL( rdcoils, .true., this option is under reconstruction -- contact shudson@pppl.gov to reimplement )
+   tnow = MPI_WTIME()
    
-!   if( myid == 0 ) then
-!    
-!    open( runit, file=trim(coilfile), status="old", action='read')
-!    
-!    read( runit,*)
-!    read( runit,*) Ncoils
-!    
-!    write(ounit,'("rdcoils : " 10x " : reading ",A," ; Ncoils =",i6," ;")') coilfile, Ncoils
-!    
-!   endif ! end of if( myid.eq.0 ) ; 29 Sep 17;
-!   
-!   IlBCAST( Ncoils, 1, 0 )
-!   
-!   allocate( FouCoil(1:Ncoils*Npc) ) ! FouCoil is type(fourierCoil    ) ; 29 Sep 17;
-!   allocate(    coil(1:Ncoils*Npc) ) !    coil is type(arbitrarycoil  ) ; 29 Sep 17;
-!   allocate(     DoF(1:Ncoils*Npc) ) !     DoF is type(DegreeOfFreedom) ; 29 Sep 17;
-!   
-!   if( myid == 0 ) then
-!    
-!    do icoil = 1, Ncoils
-!     
-!     read( runit,*)
-!     
-!     read( runit,*)
-!     read( runit,*) coil(icoil)%itype, coil(icoil)%name
-!     
-!     FATAL( rdcoils, coil(icoil)%itype /= 1, wrong coil type in coilfile )
-!     
-!     read( runit,*)
-!     read( runit,*) coil(icoil)%NS, coil(icoil)%I, coil(icoil)%If, coil(icoil)%L, coil(icoil)%Lf, coil(icoil)%Lo
-!     
-!     FATAL( rdcoils, coil(icoil)%NS < 0                        , illegal )
-!     FATAL( rdcoils, coil(icoil)%If < 0 .or. coil(icoil)%If > 1, illegal )
-!     FATAL( rdcoils, coil(icoil)%Lf < 0 .or. coil(icoil)%Lf > 2, illegal )
-!     FATAL( rdcoils, coil(icoil)%L  < zero                     , illegal )
-!     FATAL( rdcoils, coil(icoil)%Lf < zero                     , illegal )
-!     FATAL( rdcoils, coil(icoil)%Lo < zero                     , illegal )
-!     
-!     read( runit,*)
-!     read( runit,*) FouCoil(icoil)%NF
-!     
-!     FATAL( rdcoils, Foucoil(icoil)%NF < 0                     , illegal )
-!     
-!     SALLOCATE( FouCoil(icoil)%xc, (0:FouCoil(icoil)%NF), zero ) ! this is inside if( myid.eq.0 ) ; 29 Sep 17;
-!     SALLOCATE( FouCoil(icoil)%xs, (0:FouCoil(icoil)%NF), zero )
-!     SALLOCATE( FouCoil(icoil)%yc, (0:FouCoil(icoil)%NF), zero )
-!     SALLOCATE( FouCoil(icoil)%ys, (0:FouCoil(icoil)%NF), zero )
-!     SALLOCATE( FouCoil(icoil)%zc, (0:FouCoil(icoil)%NF), zero )
-!     SALLOCATE( FouCoil(icoil)%zs, (0:FouCoil(icoil)%NF), zero )
-!     
-!     read( runit,*)
-!     read( runit,*) FouCoil(icoil)%xc(0:FouCoil(icoil)%NF)
-!     read( runit,*) FouCoil(icoil)%xs(0:FouCoil(icoil)%NF)
-!     read( runit,*) FouCoil(icoil)%yc(0:FouCoil(icoil)%NF)
-!     read( runit,*) FouCoil(icoil)%ys(0:FouCoil(icoil)%NF)
-!     read( runit,*) FouCoil(icoil)%zc(0:FouCoil(icoil)%NF)
-!     read( runit,*) FouCoil(icoil)%zs(0:FouCoil(icoil)%NF)
-!     
-!    enddo ! end of do icoil;
-!    
-!    close( runit )
-!    
-!   endif ! end of if( myid == 0 );
-!   
-!   do icoil = 1, Ncoils
-!    
-!    IlBCAST(    coil(icoil)%itype,  1,  0 )
-!    ClBCAST(    coil(icoil)%name , 10,  0 )
-!    IlBCAST(    coil(icoil)%NS   ,  1,  0 )
-!    RlBCAST(    coil(icoil)%I    ,  1,  0 )
-!    IlBCAST(    coil(icoil)%If   ,  1,  0 )
-!    RlBCAST(    coil(icoil)%L    ,  1,  0 )
-!    IlBCAST(    coil(icoil)%Lf   ,  1,  0 )
-!    RlBCAST(    coil(icoil)%Lo   ,  1,  0 )
-!    
-!    IlBCAST( FouCoil(icoil)%NF   ,  1,  0 )
-!    
-!    if (.not. allocated(FouCoil(icoil)%xc) ) then ! the above allocation was inside if( myid.eq.0 ) ; 29 Sep 17;
-!     SALLOCATE( FouCoil(icoil)%xc, (0:FouCoil(icoil)%NF), zero )
-!     SALLOCATE( FouCoil(icoil)%xs, (0:FouCoil(icoil)%NF), zero )
-!     SALLOCATE( FouCoil(icoil)%yc, (0:FouCoil(icoil)%NF), zero )
-!     SALLOCATE( FouCoil(icoil)%ys, (0:FouCoil(icoil)%NF), zero )
-!     SALLOCATE( FouCoil(icoil)%zc, (0:FouCoil(icoil)%NF), zero )
-!     SALLOCATE( FouCoil(icoil)%zs, (0:FouCoil(icoil)%NF), zero ) 
-!    endif
-!    
-!    RlBCAST( FouCoil(icoil)%xc(0:FouCoil(icoil)%NF) , 1+FouCoil(icoil)%NF ,  0 )
-!    RlBCAST( FouCoil(icoil)%xs(0:FouCoil(icoil)%NF) , 1+FouCoil(icoil)%NF ,  0 )
-!    RlBCAST( FouCoil(icoil)%yc(0:FouCoil(icoil)%NF) , 1+FouCoil(icoil)%NF ,  0 )
-!    RlBCAST( FouCoil(icoil)%ys(0:FouCoil(icoil)%NF) , 1+FouCoil(icoil)%NF ,  0 )
-!    RlBCAST( FouCoil(icoil)%zc(0:FouCoil(icoil)%NF) , 1+FouCoil(icoil)%NF ,  0 )
-!    RlBCAST( FouCoil(icoil)%zs(0:FouCoil(icoil)%NF) , 1+FouCoil(icoil)%NF ,  0 )
-!    
-!    if( coil(icoil)%If == 0 ) Nfixcur = Nfixcur + 1
-!    if( coil(icoil)%Lf == 0 ) Nfixgeo = Nfixgeo + 1
-!    
-!   enddo ! end of do icoil; 29 Sep 17;
-
+   if( myid.eq.0 ) write(ounit,'("rdcoils : "f10.1" : reading ",A," ;")') tnow-tstart, trim(coilfile)
+   
+   inquire( file=trim(coilfile), exist=exist )
+   
+   if( exist ) then
+    if( myid.eq.0 ) open( runit, file=trim(coilfile), status="old", action='read' )
+   else
+    inquire( file=".fo.coils", exist=exist ) ! backup coils file;
+    FATAL( rdaxis , .not.exist, coilfile or .fo.coils does not exist )
+    if( myid.eq.0 ) open( runit, file=".fo.coils", status="old", action='read' )
+   endif
+   
+   if( myid.eq.0 ) then
+    read( runit,* )
+    read( runit,* ) Ncoils
+    write(ounit,'("rdcoils : " 10x " : Ncoils =",i4," ; Nsegments =",i4," ;")') Ncoils, Ns
+   endif
+   
+   IlBCAST( Ncoils, 1, 0 )
+   
+   allocate( coil(1:Ncoils) ) ! coil is type( spacecurve );
+   
+   do icoil = 1, Ncoils
+    
+    if( myid.eq.0 ) then
+     read( runit,* )
+     read( runit,* )
+     read( runit,* ) coil(icoil)%itype, coil(icoil)%name
+    endif
+    
+    IlBCAST( coil(icoil)%itype,  1,  0 )
+    ClBCAST( coil(icoil)%name , 10,  0 )
+    
+    if( myid.eq.0 ) then
+     read( runit,* )
+     read( runit,* ) coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ifree, rdummy, coil(icoil)%Lfree, coil(icoil)%Lo
+    endif
+    
+    IlBCAST( coil(icoil)%NS   , 1, 0 )
+    RlBCAST( coil(icoil)%I    , 1, 0 )
+    IlBCAST( coil(icoil)%Ifree, 1, 0 )
+    IlBCAST( coil(icoil)%Lfree, 1, 0 )
+    RlBCAST( coil(icoil)%Lo   , 1, 0 )
+    
+    FATAL( rdcoils, coil(icoil)%NS    < 0                           , illegal )
+    FATAL( rdcoils, coil(icoil)%Ifree < 0 .or. coil(icoil)%Ifree > 1, illegal )
+    FATAL( rdcoils, coil(icoil)%Lfree < 0 .or. coil(icoil)%Lfree > 1, illegal )
+    FATAL( rdcoils, coil(icoil)%Lo    < zero                        , illegal )     
+    
+    if( myid.eq.0 ) then
+     read( runit,* )
+     read( runit,* ) coil(icoil)%NF
+    endif
+    
+    IlBCAST( coil(icoil)%NF, 1, 0 )
+    
+    FATAL( rdcoils, coil(icoil)%NF < 0, illegal )
+    
+    if( NFcoil.gt.0 ) then ; NF = NFcoil         ! over-ride Fourier resolution;
+    else                   ; NF = coil(icoil)%NF
+    endif
+    
+    SALLOCATE( coil(icoil)%xc, (0:NF), zero ) ! this is inside if( myid.eq.0 );
+    SALLOCATE( coil(icoil)%xs, (0:NF), zero )
+    SALLOCATE( coil(icoil)%yc, (0:NF), zero )
+    SALLOCATE( coil(icoil)%ys, (0:NF), zero )
+    SALLOCATE( coil(icoil)%zc, (0:NF), zero )
+    SALLOCATE( coil(icoil)%zs, (0:NF), zero )
+    
+    lNF = min( NF, coil(icoil)%NF )
+    
+    if( myid.eq.0 ) then
+     read( runit,* )
+     read( runit,* ) coil(icoil)%xc(0:lNF)
+     read( runit,* ) coil(icoil)%xs(0:lNF)
+     read( runit,* ) coil(icoil)%yc(0:lNF)
+     read( runit,* ) coil(icoil)%ys(0:lNF)
+     read( runit,* ) coil(icoil)%zc(0:lNF)
+     read( runit,* ) coil(icoil)%zs(0:lNF)
+    endif
+    
+    RlBCAST( coil(icoil)%xc(0:lNF), 1+lNF,  0 )
+    RlBCAST( coil(icoil)%xs(0:lNF), 1+lNF,  0 )
+    RlBCAST( coil(icoil)%yc(0:lNF), 1+lNF,  0 )
+    RlBCAST( coil(icoil)%ys(0:lNF), 1+lNF,  0 )
+    RlBCAST( coil(icoil)%zc(0:lNF), 1+lNF,  0 )
+    RlBCAST( coil(icoil)%zs(0:lNF), 1+lNF,  0 )
+    
+    coil(icoil)%NF = NF ! over-ride Fourier resolution;
+    
+   enddo ! end of do icoil;
+   
+   if( myid.eq.0 ) close( runit )
+   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
    
-  case( 1 ) ! case_init = 1 : construct initial coil set ; 29 Sep 17;
-   
+  case( 1 ) ! Initialize = 1 : construct initial coil set ; 29 Sep 17;
+      
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
    
    if( myid.eq.0 ) then
     
-    select case( case_surface )
-    case( 0 ) ; write(ounit,1000) Ncoils, Nseg, init_current
-    case( 1 ) ; write(ounit,1000) Ncoils, Nseg, init_current, init_radius
+    FATAL( rdcoils, NFcoil.lt.0, illegal )
+    
+    select case( Isurface )
+    case( 0 ) ; write(ounit,1000) Ncoils, NFcoil, Ns, init_current
+    case( 1 ) ; write(ounit,1000) Ncoils, NFcoil, Ns, init_current, init_radius
     end select
     
-1000 format("rdcoils : " 10x " : initializing ",i6," coils ; Nseg ="i5" ; initial current =",es13.5" ; ":"initial radius =",f6.2" ;")
+1000 format("rdcoils : ", 10x ," : initializing ",i4," coils ; NF =",i3," ; Ns =",i4," ; initial current =",es13.5," ; ":"initial radius =",f6.2," ;")
     
-   endif ! end of if( myid.eq.0 ) ; 04 Sep 17;
-   
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+   endif ! end of if( myid.eq.0 );
    
    allocate( coil(1:Ncoils) )
-      
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-   select case( case_surface )
+   
+   select case( Isurface )
    case( 0 ) ! coilsX,Y,Z not required if fourier harmonics of coils are read from file; 29 Sep 17;
    case( 1 )
-    SALLOCATE( coilsX, (1:Nseg,1:Ncoils), zero )    
-    SALLOCATE( coilsY, (1:Nseg,1:Ncoils), zero )
-    SALLOCATE( coilsZ, (1:Nseg,1:Ncoils), zero )
+    SALLOCATE( coilsX, (1:Ns,1:Ncoils), zero ) ! THIS IS VERY CLUMSY;
+    SALLOCATE( coilsY, (1:Ns,1:Ncoils), zero )
+    SALLOCATE( coilsZ, (1:Ns,1:Ncoils), zero )
    case default
-    FATAL( rdcoils, .true., selected case_surface not supported )
+    FATAL( rdcoils, .true., selected Isurface not supported )
    end select
-   
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
    
    do icoil = 1, Ncoils
     
-    coil(icoil)%NF = NFcoil    
-    coil(icoil)%I  = init_current
-    coil(icoil)%If = IsVaryCurrent
-    coil(icoil)%L  = pi2*init_radius ! not general; 28 Aug 17;
-    coil(icoil)%Lf = IsVaryGeometry
-    coil(icoil)%Lo = target_length
+    coil(icoil)%NF    = NFcoil    
+    coil(icoil)%I     = init_current
+    coil(icoil)%Ifree = IsVaryCurrent
+    coil(icoil)%Lfree = IsVaryGeometry
+    coil(icoil)%Lo    = target_length
     
     write(coil(icoil)%name,'("mod_"I3.3)') icoil
     
@@ -338,9 +330,13 @@ subroutine rdcoils
     SALLOCATE( coil(icoil)%zc, (0:NFcoil), zero )
     SALLOCATE( coil(icoil)%zs, (0:NFcoil), zero )
     
-    zeta = ( icoil - 1 + half ) * pi2 / Ncoils
+    coil(icoil)%gdof = -1
+    coil(icoil)%idof = -1
     
-    select case( case_surface )
+    zeta = ( icoil - 1 + zero ) * pi2 / Ncoils
+!   zeta = ( icoil - 1 + half ) * pi2 / Ncoils
+    
+    select case( Isurface )
      
     case( 0 ) ! VMEC-like boundary; 28 Aug 17;
      
@@ -359,9 +355,9 @@ subroutine rdcoils
      
     case( 1 ) ! axis-style boundary; 28 Aug 17;
      
-     do jj = 1, Nseg ! Nseg is input; 29 Sep 17;
+     do jj = 1, Ns ! Ns is input; 29 Sep 17;
       
-      tt = (jj-1) * pi2 / Nseg !poloidal angle;
+      tt = (jj-1) * pi2 / Ns !poloidal angle;
       
       call knotxx( init_radius, tt, zeta, ax, at, az, xx, xt, xz )
       
@@ -371,37 +367,37 @@ subroutine rdcoils
       
      enddo ! end of do jj ; 28 Aug 17;
      
-     call fourier( coilsX(1:Nseg,icoil), coil(icoil)%xc(0:NFcoil), coil(icoil)%xs(0:NFcoil), Nseg, NFcoil )
-     call fourier( coilsY(1:Nseg,icoil), coil(icoil)%yc(0:NFcoil), coil(icoil)%ys(0:NFcoil), Nseg, NFcoil )
-     call fourier( coilsZ(1:Nseg,icoil), coil(icoil)%zc(0:NFcoil), coil(icoil)%zs(0:NFcoil), Nseg, NFcoil )
+     call fourier( coilsX(1:Ns,icoil), coil(icoil)%xc(0:NFcoil), coil(icoil)%xs(0:NFcoil), Ns, NFcoil )
+     call fourier( coilsY(1:Ns,icoil), coil(icoil)%yc(0:NFcoil), coil(icoil)%ys(0:NFcoil), Ns, NFcoil )
+     call fourier( coilsZ(1:Ns,icoil), coil(icoil)%zc(0:NFcoil), coil(icoil)%zs(0:NFcoil), Ns, NFcoil )
      
-    end select ! end of select case( case_surface ) ; 28 Aug 17;
+    end select ! end of select case( Isurface );
     
    enddo ! end of do icoil;
    
-   select case( case_surface )
-   case( 0 ) ! coilsX,Y,Z not required if fourier harmonics of coils are read from file; 29 Sep 17;
+   select case( Isurface )
+   case( 0 ) ! coilsX,Y,Z not required if Fourier harmonics of coils are read from file; 29 Sep 17;
    case( 1 )
     DALLOCATE( coilsX )
     DALLOCATE( coilsY )
     DALLOCATE( coilsZ )
    case default
-    FATAL( rdcoils, .true., selected case_surface not supported )
+    FATAL( rdcoils, .true., selected Isurface not supported )
    end select
    
   case default
    
-   FATAL( rdcoils, .true., selected case_init not supported )
+   FATAL( rdcoils, .true., selected Initialize not supported )
    
-  end select ! end of select case( case_init) ; 28 Aug 17;
+  end select ! end of select case( Initialize);
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   do icoil = 1, Ncoils
    
-   FATAL( rdcoils, coil(icoil)%If < 0 .or. coil(icoil)%If > 1, illegal )
-   FATAL( rdcoils, coil(icoil)%Lf < 0 .or. coil(icoil)%Lf > 1, illegal )
-   FATAL( rdcoils, coil(icoil)%Lo < zero                     , illegal )
+   FATAL( rdcoils, coil(icoil)%Ifree < 0    .or. coil(icoil)%Ifree > 1, illegal )
+   FATAL( rdcoils, coil(icoil)%Lfree < 0    .or. coil(icoil)%Lfree > 1, illegal )
+   FATAL( rdcoils, coil(icoil)%Lo    < zero                           , illegal )
    
   enddo
   
@@ -409,18 +405,18 @@ subroutine rdcoils
   
   do icoil = 1, Ncoils
    
-   SALLOCATE( coil(icoil)%xx, (0:Nseg), zero )
-   SALLOCATE( coil(icoil)%yy, (0:Nseg), zero )
-   SALLOCATE( coil(icoil)%zz, (0:Nseg), zero )
-   SALLOCATE( coil(icoil)%xt, (0:Nseg), zero )
-   SALLOCATE( coil(icoil)%yt, (0:Nseg), zero )
-   SALLOCATE( coil(icoil)%zt, (0:Nseg), zero )
-   SALLOCATE( coil(icoil)%xa, (0:Nseg), zero )
-   SALLOCATE( coil(icoil)%ya, (0:Nseg), zero )
-   SALLOCATE( coil(icoil)%za, (0:Nseg), zero )
+   SALLOCATE( coil(icoil)%xx, (0:Ns), zero )
+   SALLOCATE( coil(icoil)%yy, (0:Ns), zero )
+   SALLOCATE( coil(icoil)%zz, (0:Ns), zero )
+   SALLOCATE( coil(icoil)%xt, (0:Ns), zero )
+   SALLOCATE( coil(icoil)%yt, (0:Ns), zero )
+   SALLOCATE( coil(icoil)%zt, (0:Ns), zero )
+   SALLOCATE( coil(icoil)%xa, (0:Ns), zero )
+   SALLOCATE( coil(icoil)%ya, (0:Ns), zero )
+   SALLOCATE( coil(icoil)%za, (0:Ns), zero )
 
-   enddo ! end of do icoil; 29 Sep 17;
-   
+  enddo ! end of do icoil; 29 Sep 17;
+  
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
 ! SALLOCATE( cosip, (0:Npc),  one )  ! cos( ip * pi / Np ) ; default  one;
@@ -460,7 +456,7 @@ subroutine rdcoils
    
 !  call mapcoil ! map perodic coils;
    
-! endif ! end of if( Npc.ge.2 ) ; 29 Sep 17;
+! endif ! end of if( Npc.ge.2 );
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -494,7 +490,33 @@ subroutine rdcoils
 !  itmp   = -1 ; call AllocData(itmp)
 !
 !  ifirst =  1 ; call discoil(ifirst) ; ifirst = 0
-
+  
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+  
+  maxNF = 0
+  
+  do icoil = 1, Ncoils
+   
+   maxNF = max( coil(icoil)%NF, maxNF ) ! determine max. Fourier resolution;
+   
+  enddo
+  
+  SALLOCATE( cmt, (0:Ns, 0:maxNF), zero ) ! trigonometric factors mapping coils from `Fourier' to real space;
+  SALLOCATE( smt, (0:Ns, 0:maxNF), zero )
+  
+  do kk = 0, Ns
+   
+   tt = kk * discretecurve
+   
+   do mm = 0, maxNF
+    
+    cmt(kk,mm) = cos( mm * tt )
+    smt(kk,mm) = sin( mm * tt )
+    
+   enddo ! end of do mm;
+   
+  enddo ! end of do kk;
+  
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   return
@@ -506,57 +528,12 @@ end subroutine rdcoils
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-!subroutine mapcoil
-!
-!  use globals, only: zero, pi2, myid, ounit, ierr, coil, FouCoil, Ncoils, DoF, cosip, sinip
-!  implicit none
-!  include "mpif.h"
-!
-!  INTEGER  :: ip, icoil, NF
-!
-!  do ip = 1, Npc-1
-!     
-!     do icoil = 1, Ncoils
-!
-!        coil(icoil+ip*Ncoils)%itype   = coil(icoil)%itype
-!        coil(icoil+ip*Ncoils)%NS      = coil(icoil)%NS
-!        coil(icoil+ip*Ncoils)%If      = coil(icoil)%If
-!        coil(icoil+ip*Ncoils)%Lf      = coil(icoil)%Lf
-!        coil(icoil+ip*Ncoils)%I       = coil(icoil)%I 
-!        coil(icoil+ip*Ncoils)%L       = coil(icoil)%L 
-!        coil(icoil+ip*Ncoils)%Lo      = coil(icoil)%Lo
-!        coil(icoil+ip*Ncoils)%maxcurv = coil(icoil)%maxcurv
-!        coil(icoil+ip*Ncoils)%name    = coil(icoil)%name
-!
-!        select case (coil(icoil)%itype)
-!        case( 1 )
-!           Foucoil(icoil+ip*Ncoils)%NF = Foucoil(icoil)%NF
-!           Foucoil(icoil+ip*Ncoils)%xc = Foucoil(icoil)%xc * cosip(ip) - Foucoil(icoil)%yc * sinip(ip)
-!           Foucoil(icoil+ip*Ncoils)%xs = Foucoil(icoil)%xs * cosip(ip) - Foucoil(icoil)%ys * sinip(ip)
-!           Foucoil(icoil+ip*Ncoils)%yc = Foucoil(icoil)%yc * cosip(ip) + Foucoil(icoil)%xc * sinip(ip)
-!           Foucoil(icoil+ip*Ncoils)%ys = Foucoil(icoil)%ys * cosip(ip) + Foucoil(icoil)%xs * sinip(ip)
-!           Foucoil(icoil+ip*Ncoils)%zc = Foucoil(icoil)%zc
-!           Foucoil(icoil+ip*Ncoils)%zs = Foucoil(icoil)%zs
-!        case default
-!           FATAL(discoil, .true., not supported coil types)
-!        end select
-!
-!     enddo
-!  enddo
-!
-!  return
-!
-!END subroutine mapcoil
-           
-
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
 SUBROUTINE readcoils(filename, maxnseg)
-  use globals, only : zero, coilsX, coilsY, coilsZ, coilsI, coilseg, coilname, Ncoils, ounit, myid
+  use globals, only : zero, coilseg, coilname, Ncoils, ounit, myid
   implicit none
   include "mpif.h"
 
@@ -567,6 +544,7 @@ SUBROUTINE readcoils(filename, maxnseg)
   CHARACTER*200              :: line
   REAL                       :: tmp
   CHARACTER (LEN=20), dimension(mcoil) :: name
+  REAL,    allocatable :: coilsX(:,:), coilsY(:,:), coilsZ(:,:), coilsI(:)
 
   cunit = 99; I = 1.0; Ncoils= 1; maxnseg = 0; seg = 0;
 
@@ -577,9 +555,9 @@ SUBROUTINE readcoils(filename, maxnseg)
   endif
      
   ! read coils and segments data
-  read(cunit,*)
-  read(cunit,*)
-  read(cunit,*)
+  read(cunit,* )
+  read(cunit,* )
+  read(cunit,* )
 
   do
      read(cunit,'(a)', IOSTAT = istat) line
@@ -628,7 +606,11 @@ SUBROUTINE readcoils(filename, maxnseg)
 
 end SUBROUTINE READCOILS
 
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE fourier( X, XFC, XFS, Nsegs, NFcoil)
   use globals, only: ounit, zero, pi2, half, myid
@@ -668,6 +650,10 @@ end SUBROUTINE fourier
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
 subroutine surfcoord( theta, zeta, r, z)
   use globals, only: zero, Nfou, bim, bin, Rbc, Rbs, Zbc, Zbs
   implicit none
@@ -692,3 +678,6 @@ subroutine surfcoord( theta, zeta, r, z)
 end subroutine surfcoord
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+

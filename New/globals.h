@@ -16,7 +16,6 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
-!latex \subsection{Useful parameters}
   REAL, parameter      :: zero       =         0.0
   REAL, parameter      :: one        =         1.0
   REAL, parameter      :: two        =         2.0
@@ -30,7 +29,7 @@ module globals
   REAL, parameter      :: ten        =        10.0
   REAL, parameter      :: eleven     =        11.0
   REAL, parameter      :: twelve     =        12.0
-
+  
   REAL, parameter      :: hundred    =       100.0
   REAL, parameter      :: thousand   =      1000.0
   
@@ -47,7 +46,6 @@ module globals
   REAL, parameter      :: mu0        =  2.0E-07 * pi2
   REAL, parameter      :: goldenmean =  1.618033988749895 ! golden mean = ( one + sqrt(five) ) / two ;    
   
-!latex \subsection{IO units}
   INTEGER              :: ounit      =  6 ! output to screen
   INTEGER              :: eunit      =  0 ! error unit
   INTEGER              :: wunit      =  7 ! write unit
@@ -55,248 +53,147 @@ module globals
   INTEGER              :: funit      =  9 ! general I/O
   INTEGER              :: bunit      = 10 ! backup unit for I/O
   
-  CHARACTER(LEN=100)   :: ext       ! extention
-  CHARACTER(LEN=100)   :: inputfile ! input namelist
-  CHARACTER(LEN=100)   :: surffile  ! surface file
- !CHARACTER(LEN=100)   :: knotfile  ! knototran file
+  CHARACTER(LEN=100)   :: ext       ! extention;
+  CHARACTER(LEN=100)   :: inputfile ! input namelist;
+  CHARACTER(LEN=100)   :: surffile  ! surface file;
+  CHARACTER(LEN=100)   :: axisfile  ! axis file;
   CHARACTER(LEN=100)   :: coilfile  ! FOCUS coil file ! set in initial; SRH; 29 Sep 17;
-  CHARACTER(LEN=100)   :: harmfile  ! harmonics file
-  CHARACTER(LEN=100)   :: hdf5file  ! hdf5 file
   CHARACTER(LEN=100)   :: inpcoils  ! input coils.ext file
+ !CHARACTER(LEN=100)   :: harmfile  ! harmonics file
+  CHARACTER(LEN=100)   :: hdf5file  ! hdf5 file
   CHARACTER(LEN=100)   :: outcoils  ! output ext.coils file
   
-!latex \subsection{Input namelist: \type{focusin}}
-  INTEGER              :: IsQuiet        =       -1        
-  INTEGER              :: IsSymmetric    =        0 
-        
-  INTEGER              :: case_surface   =        0         
-  REAL                 :: knotsurf       =        0.200D-00
-  REAL                 :: ellipticity    =        0.000D+00
-  INTEGER              :: Nteta          =       64           
-  INTEGER              :: Nzeta          =       64  
+  INTEGER              :: Icheck         =        0         ! checking;
 
-  INTEGER              :: case_init      =        0
- !INTEGER              :: case_coils     =        1
+  INTEGER              :: Isurface       =        1         
+  INTEGER              :: case_surface   =        0         ! redundant;
+  REAL                 :: minorrad       =        0.100D-00
+  REAL                 :: knotsurf       =        0.200D-00 ! redundant;
+  REAL                 :: ellipticity    =        0.000D+00
+
+  INTEGER              :: Nteta          =       64
+  INTEGER              :: Nzeta          =       64
+
+  INTEGER              :: Initialize     =        0
+  INTEGER              :: case_init      =        0 ! redundant;
   INTEGER              :: Ncoils         =        0
-  REAL                 :: init_current   =        1.000D+06        
+  REAL                 :: init_current   =        1.000D+06
   REAL                 :: init_radius    =        1.000D+00
-  INTEGER              :: IsVaryCurrent  =        1         
-  INTEGER              :: IsVaryGeometry =        1         
-  INTEGER              :: NFcoil         =        4         
-  INTEGER              :: Nseg           =      128 
-              
-  INTEGER              :: IsNormalize    =        1
-  INTEGER              :: IsNormWeight   =        1
-  INTEGER              :: case_bnormal   =        0
-  INTEGER              :: case_length    =        1         
+  INTEGER              :: IsVaryCurrent  =        1
+  INTEGER              :: IsVaryGeometry =        1
+  INTEGER              :: NFcoil         =        2
+
+  INTEGER              :: Nsegments      =       64
+  INTEGER              :: Nseg           =      128 ! redundant;
+
+  INTEGER              :: case_length    =        1
   REAL                 :: weight_bnorm   =        1.000D+00
   REAL                 :: weight_bharm   =        0.000D+00
   REAL                 :: weight_tflux   =        0.000D+00
   REAL                 :: target_tflux   =        0.000D+00
-  REAL                 :: weight_length  =        0.000D+00
-  REAL                 :: target_length  =        0.000D+00 
-  REAL                 :: weight_specw   =        0.000D+00
-  REAL                 :: weight_ccsep   =        0.000D+00
-  REAL                 :: weight_inorm   =        1.000D+00
-  REAL                 :: weight_gnorm   =        1.000D+00
+  REAL                 :: weight_ttlen   =        0.000D+00
+  REAL                 :: target_length  =        0.000D+00
 
-  INTEGER              :: case_optimize  =        1
-  REAL                 :: exit_tol       =        1.000D-04
-  INTEGER              :: DF_maxiter     =        0
-  REAL                 :: DF_xtol        =        1.000D-08     
-  REAL                 :: DF_tausta      =        0.000D+00
-  REAL                 :: DF_tauend      =        1.000D+00               
- 
-  INTEGER              :: CG_maxiter     =        0
-  REAL                 :: CG_xtol        =        1.000D-08
-  REAL                 :: CG_wolfe_c1    =        1.000D-04
-  REAL                 :: CG_wolfe_c2    =        0.1
+  REAL                 :: converged      =        1.000D-03
 
-  INTEGER              :: HN_maxiter     =        0
-  REAL                 :: HN_xtol        =        1.000D-08
-  REAL                 :: HN_factor      =      100.0
+  REAL                 ::  tauend        =        1.000D-00
+  INTEGER              :: Ntauout        =       10
+  REAL                 ::  tautol        =        1.000D-03
 
-  INTEGER              :: TN_maxiter     =        0
-  REAL                 :: TN_xtol        =        1.000D-08
-  INTEGER              :: TN_reorder     =        0
-  REAL                 :: TN_cr          =        0.1
+  INTEGER              :: DF_maxiter     =       10         ! redundant;
+  REAL                 :: DF_xtol        =        1.000D-08 ! redundant;
+  REAL                 :: DF_tauend      =        1.000D+00 ! redundant;
 
-  INTEGER              :: case_postproc  =        1
-  INTEGER              :: save_freq      =        1
-  INTEGER              :: save_coils     =        0 
-  INTEGER              :: save_harmonics =        0
-  INTEGER              :: save_filaments =        0              
+  REAL                 :: friction       =        0.500D-00
 
-  namelist / focusin /  IsQuiet        , &
-                        IsSymmetric    , & 
-                        case_surface   , &
-                        knotsurf       , &
-                        ellipticity    , & 
+  INTEGER              :: Iminimize      =        0
+
+  namelist / focusin /  Icheck         , &
+                        Isurface       , &
+                        case_surface   , & ! redundant;
+                        minorrad       , &
+                        knotsurf       , & ! redundant;
+                        ellipticity    , &
                         Nteta          , &
-                        Nzeta          , & 
-                        case_init      , &
-!                       case_coils     , &  
+                        Nzeta          , &
+                        Initialize     , &
+                        case_init      , & ! redundant;
                         Ncoils         , &
-                        init_current   , & 
-                        init_radius    , & 
-                        IsVaryCurrent  , & 
-                        IsVaryGeometry , & 
+                        init_current   , &
+                        init_radius    , &
+                        IsVaryCurrent  , &
+                        IsVaryGeometry , &
                         NFcoil         , &
-                        Nseg           , &
-                        IsNormalize    , &
-                        IsNormWeight   , &
-                        case_bnormal   , &
+                        Nsegments      , &
+                        Nseg           , & ! redundant;
                         case_length    , &
                         weight_bnorm   , &
-                        weight_bharm   , &
                         weight_tflux   , &
                         target_tflux   , &
-                        weight_length  , &
+                        weight_ttlen   , &
                         target_length  , &
-                        weight_specw   , &
-                        weight_ccsep   , &
-                        weight_inorm   , &
-                        weight_gnorm   , &
-                        case_optimize  , &
-                        exit_tol       , &
-                        DF_maxiter     , & 
-                        DF_xtol        , & 
-                        DF_tausta      , &  
-                        DF_tauend      , &       
-                        CG_maxiter     , & 
-                        CG_xtol        , & 
-                        CG_wolfe_c1    , &
-                        CG_wolfe_c2    , &
-                        HN_maxiter     , &  
-                        HN_xtol        , & 
-                        HN_factor      , & 
-                        TN_maxiter     , &
-                        TN_reorder     , &
-                        TN_xtol        , &
-                        TN_cr          , &  
-                        case_postproc  , & 
-                        save_freq      , & 
-                        save_coils     , &
-                        save_harmonics , &
-                        save_filaments
-  
-  
-!latex  \subsection{MPI stuffs}
+                        converged      , &
+                         tauend        , &
+                        Ntauout        , &
+                         tautol        , &
+                        DF_xtol        , & ! redundant;
+                        DF_maxiter     , & ! redundant;
+                        DF_tauend      , & ! redundant;
+                        friction       , &
+                        Iminimize
+
   INTEGER              :: myid, ncpu
   REAL                 :: machprec, vsmall, small, sqrtmachprec
   CHARACTER            :: nodelabel*3
 
+  INTEGER              :: Nt, Nz, Ntz, Ns ! shorthand;
 
-!latex \subsection{surface and coils data}
   type toroidalsurface
      INTEGER              :: Nteta, Nzeta
+     REAL                 :: area ! surface area;
+     REAL   , allocatable :: csarea(:) ! cross section area;
      REAL   , allocatable :: xx(:,:), yy(:,:), zz(:,:), nx(:,:), ny(:,:), nz(:,:), ds(:,:), xt(:,:), yt(:,:), zt(:,:)
-     REAL   , allocatable :: pb(:,:)
+     REAL   , allocatable :: dL(:), dT(:,:), dB(:,:,:), Bp(:,:) ! total normal magnetic field; plasma normal magnetic field;
   end type toroidalsurface
 
   type spacecurve
-     INTEGER              :: NF, If, Lf
-     REAL                 ::     I , L , Lo, Le, maxcurv
+     INTEGER              :: itype, NF, Ifree, Lfree, NS
+     REAL                 ::     I    , Lo   , Le, maxcurv
      REAL   , allocatable :: xc(:), xs(:), yc(:), ys(:), zc(:), zs(:)
      REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:)
-     REAL   , allocatable :: Ph(  :)! Ax(  :), Ay(  :), Az(  :)
-     REAL   , allocatable :: Al(  :)! Ax(  :), Ay(  :), Az(  :)
-     REAL   , allocatable :: Bn(:,:)! Bx(:,:), By(:,:), Bz(:,:)
+     REAL   , allocatable :: dL(:), dT(:,:), dB(:,:,:)
+     INTEGER              :: gdof, idof
      character(LEN=10)    :: name
   end type spacecurve
 
-! type FourierCoil
-!    INTEGER              :: NF
-!    REAL   , allocatable :: xc(:), xs(:), yc(:), ys(:), zc(:), zs(:)
-! end type FourierCoil
-
-! type DegreeOfFreedom
-!    INTEGER              :: ND
-!    REAL   , allocatable :: xdof(:), xof(:,:), yof(:,:), zof(:,:)
-! end type DegreeOfFreedom
-  
   type(spacecurve)     , allocatable :: coil(:)  
   type(toroidalsurface)              :: surf
-! type(FourierCoil)    , allocatable :: FouCoil(:)
-! type(DegreeOfFreedom), allocatable :: DoF(:)
 
   INTEGER              :: Nfp
-
   INTEGER              :: Nfou = 0, NBnf = 0 ! this should be local to readsrf; 04 Sep 17;
   INTEGER, allocatable :: bim(:), bin(:), Bnim(:), Bnin(:)
   REAL   , allocatable :: Rbc(:), Zbs(:), Rbs(:), Zbc(:), Bnc(:), Bns(:), cosip(:), sinip(:)
     
-
-!latex \subsection{Packing and unpacking}
-  INTEGER              :: Cdof, Ndof, nfixcur, nfixgeo, Tdof
   REAL                 :: Inorm = one, Gnorm = one                !current and geometry normalizations;
-  REAL   , allocatable :: xdof(:), dofnorm(:)
 
+  REAL                 :: Tfluxerr
+  REAL   , allocatable :: totlengt(:), Tfluxave(:), Bdotnsqd(:)
 
-!latex \subsection{Optimization}
-  ! General target functions;
-  INTEGER              :: iout, Nouts
-  REAL                 :: chi, discretefactor
-  REAL   , allocatable :: t1E(:), t2E(:,:), evolution(:,:), coilspace(:,:), deriv(:,:)
-  LOGICAL              :: exit_signal = .False.
-
-  ! Bn surface integration;
-  REAL                 :: Bdotnsquared
-  REAL   , allocatable :: t1B(:), t2B(:,:), bn(:,:), dB(:,:,:)
-
-  ! Bn resonant harmonics;
-  INTEGER              :: NBmn
-  INTEGER, allocatable :: Bmnin(:), Bmnim(:)
-  REAL                 :: bharm
-  REAL   , allocatable :: t1H(:), t2H(:,:), Bmnc(:),Bmns(:), wBmn(:), tBmnc(:), tBmns(:), &
-                          carg(:,:), sarg(:,:), iBmnc(:), iBmns(:)
-
-  ! Tflux error;
-  REAL                 :: toroidalfluxerror, toroidalfluxaverage
-  REAL   , allocatable :: t1F(:), t2F(:,:)
-
-  ! Length constraint
-  REAL                 :: coillengtherror
-  REAL   , allocatable :: t1L(:), t2L(:,:)
-  ! Coil-coil spearation
-  REAL                 :: ccsep
-  REAL   , allocatable :: t1C(:), t2C(:,:)
-  ! Spectral condensation;
-  REAL                 :: specw
-  REAL   , allocatable :: t1S(:), t2S(:,:)
-
-
-!latex \subsection{Axis parameters}
- !REAL                 :: knotphase
   INTEGER              :: axisNF
   REAL   , allocatable :: axisxc(:), axisxs(:), axisyc(:), axisys(:), axiszc(:), axiszs(:)
   
-
-!latex \subsection{Reading coils file}
-  REAL,    allocatable :: coilsX(:,:), coilsY(:,:), coilsZ(:,:)
   REAL,    allocatable :: coilsI(:) !coilsI stores the true currents, coil%I stores scaled current;?
   INTEGER, allocatable :: coilseg(:)
   character(LEN=20), allocatable :: coilname(:)
 
+  REAL                 :: tstart, ffbest, fforig
 
-!latex \subsection{Time counting}
-  REAL                 :: tstart, tfinish, time_initialize, time_optimize, time_postproc
+  LOGICAL              :: Ldescent
 
+  REAL                 :: discretecurve, deltatheta, discretesurface
+  REAL, allocatable    :: cmt(:,:), smt(:,:)
 
-!latex \subsection{Miscellaneous}
-  REAL                 :: tmpw_bnorm, tmpw_tflux ,tmpt_tflux, tmpw_ttlen, tmpw_specw, tmpw_ccsep, tmpw_bharm
-                          !tmp weight for saving to restart file
-  REAL, allocatable    :: mincc(:,:)!
-  INTEGER              :: ierr, astat
-
-  LOGICAL :: Ltflux, Llength
-
-  LOGICAL :: Ldescent, Lcgradient
-
-  INTEGER :: Ntz
-
-  REAL              :: deltacurveparameter, deltatheta
-  REAL, allocatable :: cmt(:,:), smt(:,:)
+  INTEGER              :: iarchive
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 

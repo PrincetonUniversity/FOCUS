@@ -43,7 +43,7 @@ subroutine torflux( ideriv )
   
   do jzeta = 0, Nzeta-1
    
-   if( myid.ne.modulo(jzeta,ncpu) ) cycle
+!  if( myid.ne.modulo(jzeta,ncpu) ) cycle
    
    toroidalflux = zero
    
@@ -162,7 +162,7 @@ end subroutine torflux
 !  
 !  use globals, only : zero, one, sqrtmachprec, myid, myid, ounit, &
 !                      surf, Nteta, Nzeta, &
-!                      Ncoils, coil, Nseg, deltacurveparameter
+!                      Ncoils, coil, Nseg, discretecurve
 !  
 !  implicit none
 !  
@@ -198,15 +198,15 @@ end subroutine torflux
 !   
 !   invr = one / rr(1)
 !   
-!   dAdx(ii,1,0) = coil(icoil)%xt(ii) * invr ! * deltacurveparameter
+!   dAdx(ii,1,0) = coil(icoil)%xt(ii) * invr ! * discretecurve
 !   dAdx(ii,2,0) = coil(icoil)%yt(ii) * invr
 !   dAdx(ii,3,0) = coil(icoil)%zt(ii) * invr
 !   
 !  enddo ! end do ii;
 !
-!  dAdx(0,1,0) = sum( dAdx(1:NS,1,0) ) ! * deltacurveparameter
-!  dAdx(0,2,0) = sum( dAdx(1:NS,2,0) ) ! * deltacurveparameter
-!  dAdx(0,3,0) = sum( dAdx(1:NS,3,0) ) ! * deltacurveparameter
+!  dAdx(0,1,0) = sum( dAdx(1:NS,1,0) ) ! * discretecurve
+!  dAdx(0,2,0) = sum( dAdx(1:NS,2,0) ) ! * discretecurve
+!  dAdx(0,3,0) = sum( dAdx(1:NS,3,0) ) ! * discretecurve
 !
 !!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 !  

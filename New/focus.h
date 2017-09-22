@@ -12,30 +12,41 @@
 
 !latex  \subsection{Brief introduction}
 
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+! to set keyboard shortcut in emacs                                        
+
+! (1) define macro         , e.g. \C-x \C-( . . . \C-x \C-)              
+! (2) name macro           , e.g. Esc-x name-last-kbd-macro arbitraryname ! 11 Oct 12; 
+! (3) set keyboard shortcut, e.g. Esc-x global-set-key F12 arbitraryname 
+
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
-PROGRAM focus
+program focus
   
-  use globals, only : zero, ncpu, myid, ounit, ierr, astat, ext, &
-                      Nseg, &
-                      Ndof, xdof, &
-                      tstart, &
-                      Ldescent, &
-             !         case_surface, case_optimize, &
-             !         case_postproc, xdof, tstart, tfinish, time_initialize, time_optimize, time_postproc, surf, pi2, &
-             !         Nfp, knotsurf, half, Nteta, Nzeta, zero, IsSymmetric, discretefactor, &
-                      inputfile, surffile, coilfile, harmfile, hdf5file, inpcoils, outcoils
-             !         Ncoils, coil
-                      
-  
+  use globals, only : zero, one, two, pi2, sqrtmachprec, ncpu, myid, ounit, tstart, &
+                      ext, inputfile, surffile, axisfile, coilfile, inpcoils, hdf5file, outcoils, &
+                      Nt, Nz, surf, Ncoils, Ns, coil, &
+                      cmt, smt, discretecurve, &
+                      totlengt, Tfluxave, Bdotnsqd, &
+                      target_length, target_tflux, &
+                      Ldescent, Iminimize, &
+                      fforig, ffbest, iarchive, &
+                      weight_ttlen, weight_tflux, weight_bnorm, &
+                      friction
+
   use mpi
   
   implicit none
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-  INTEGER :: icoil
-  
+  INTEGER                :: icoil, mm, maxNF, Ndof, ii, iwrite, ierr, astat! Lrwork, Liwork, IBOUND, ie04kzf, iuser(1:1)
+ !INTEGER  , allocatable :: iwork(:)
+  REAL                   :: tnow, told, ff, ferr! ruser(1:1)
+  REAL     , allocatable :: xdof(:), fdof(:)! rwork(:), BL(:), BU(:)
+  CHARACTER              :: packorunpack
+
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   myid = 0 ; ncpu = 1
@@ -44,24 +55,26 @@ PROGRAM focus
   call MPI_COMM_RANK( MPI_COMM_WORLD, myid, ierr )
   call MPI_COMM_SIZE( MPI_COMM_WORLD, ncpu, ierr )
   
-  tstart =  MPI_WTIME()
-  if( myid == 0 ) write(ounit,'("focus   : " 10x " : start ; ncpu =",i5," ;")') ncpu
+  tstart = MPI_WTIME()
+
+  if( myid.eq.0 ) write(ounit,'("focus   :   cpu time : start ; ncpu =",i5," ;")') ncpu
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-  if( myid == 0 ) call getarg(1,ext) ! read command line input;
+  if( myid.eq.0 ) call getarg(1,ext) ! read command line input;
   
   ClBCAST( ext, 100, 0 )
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-  inputfile = trim(ext)//".input"
-  surffile  = "plasma.boundary"
-  coilfile  = trim(ext)//".focus"
-  harmfile  = trim(ext)//".harmonics"
-  hdf5file  = "focus_"//trim(ext)//".h5"
-  inpcoils  = "coils."//trim(ext)
-  outcoils  = trim(ext)//".coils"
+  
+  inputfile = trim(ext)//".fo.in"    ! namelist input;
+  surffile  = trim(ext)//".fo.bdy"   ! Fourier harmonics of reference boundary;
+  axisfile  = trim(ext)//".fo.axis"  ! Fourier harmonics of magnetic axis;
+  coilfile  = trim(ext)//".fo.coils" ! Fourier harmonics of coils (FOCUS format);
+  inpcoils  = "coils."//trim(ext)    ! xgrid-style coils (input);
+ !harmfile  = trim(ext)//".fo.Bmn"   ! Fourier harmonics of target normal field;
+  hdf5file  = trim(ext)//".fo.h5"    ! output file;
+  outcoils  = "coils.fo."//trim(ext) ! xgrid-style coils (input);
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
@@ -70,121 +83,175 @@ PROGRAM focus
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   call readsrf ! reads reference surface;
-
+  
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+  
+8000 continue
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
   call rdcoils ! reads/initializes coil geometries etc. ;
   
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+  
+  Ndof = 0 ! total number of degrees-of-freedom in coil representation;
+  
+  do icoil = 1, Ncoils
+   
+   if( coil(icoil)%Lfree.ne.0 ) Ndof = Ndof + 6 * coil(icoil)%NF + 3 ! allow geometry to vary;
+   if( coil(icoil)%Ifree.ne.0 ) Ndof = Ndof + 1                      ! allow current  to vary;
+   
+  enddo
+  
+  tnow = MPI_WTIME()
+  
+  if( myid.eq.0 ) write(ounit,'("focus   : ",f10.1," : Ndof =",i8," ;")') tnow-tstart, Ndof
+  
+  if( Ndof.le.0 ) goto 9999
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+  
+  SALLOCATE( xdof, (1:Ndof), zero ) ! position = geometry of coils             ;
+  SALLOCATE( fdof, (1:Ndof), zero ) ! force    = gradient of objective function;
+  
+  packorunpack = 'P' ; call packdof( Ndof, xdof(1:Ndof), packorunpack )
+  
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+  
+   SALLOCATE(        surf%dL, (              0:Ndof), zero )
+   SALLOCATE(        surf%dT, (       0:Nz-1,0:Ndof), zero )
+   SALLOCATE(        surf%dB, (0:Nt-1,0:Nz-1,0:Ndof), zero )
+  
+  do icoil = 1, Ncoils
+   
+   SALLOCATE( coil(icoil)%dL, (              0:Ndof), zero )
+   SALLOCATE( coil(icoil)%dT, (       0:Nz-1,0:Ndof), zero )
+   SALLOCATE( coil(icoil)%dB, (0:Nt-1,0:Nz-1,0:Ndof), zero )
+   
+  enddo
+  
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+  
+  SALLOCATE( totlengt, (0:Ndof), zero )
+  SALLOCATE( Tfluxave, (0:Ndof), zero )
+  SALLOCATE( Bdotnsqd, (0:Ndof), zero )
+  
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+  
+  if( myid.eq.0 ) write(ounit,1010) tnow-tstart, "setting", target_length, target_tflux
+  
+  told = MPI_WTIME()
+
+  call dforce( Ndof, xdof(1:Ndof), ff, fdof(1:Ndof) )
+
+  fforig = ff ; ffbest = ff
+
+  ferr = sqrt( sum(fdof(1:Ndof)*fdof(1:Ndof)) / Ndof )
+  
+  tnow = MPI_WTIME()
+
+  if( myid.eq.0 ) write(ounit,1010) tnow-tstart, "initial", totlengt(0)-target_length, Tfluxave(0)-target_tflux, Bdotnsqd(0), ff, ferr, tnow-told
+  
+1010 format("focus   : ",f10.1," : ",a7," : L =",es18.10," ; F =",es18.10," ; ":"B =",es17.10," ; O =",es17.10," ; |dO| =",es12.05," ; time =",f9.2,"s ;")  
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+  
+  call setflag( Ndof, xdof(1:Ndof) ) ! initialize weights, etc.  . . . 04 Sep 17;
+  
+  tnow = MPI_WTIME()
+
+  if( myid.eq.0 ) write(ounit,1000) tnow-tstart, weight_ttlen, weight_tflux, weight_bnorm
+
+1000 format("focus   : ",f10.2," : weight_ttlen =",es12.5" ; weight_tflux =",es12.5," ; weight_bnorm =",es12.5," ;")
+
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-!  if( myid.eq.0 ) then
-!   
-!   do icoil = 1, Ncoils
-!    write(ounit,1000), coil(icoil)%name, coil(icoil)%NF, coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic
-!    write(ounit,'("focus   : " 10x " : x_c^"i3.3" ="999es13.5)') icoil, coil(icoil)%xc(0:coil(icoil)%NF)
-!    write(ounit,'("focus   : " 10x " : x_s^"i3.3" ="999es13.5)') icoil, coil(icoil)%xs(0:coil(icoil)%NF)
-!    write(ounit,'("focus   : " 10x " : y_c^"i3.3" ="999es13.5)') icoil, coil(icoil)%yc(0:coil(icoil)%NF)
-!    write(ounit,'("focus   : " 10x " : y_s^"i3.3" ="999es13.5)') icoil, coil(icoil)%ys(0:coil(icoil)%NF)
-!    write(ounit,'("focus   : " 10x " : z_c^"i3.3" ="999es13.5)') icoil, coil(icoil)%zc(0:coil(icoil)%NF)
-!    write(ounit,'("focus   : " 10x " : z_s^"i3.3" ="999es13.5)') icoil, coil(icoil)%zs(0:coil(icoil)%NF)
-!   enddo
-!   
-!1000 format("focus   : " 10x " : name = "a7" ; NF ="i3" ; NS ="i4" ; I ="es13.5" ; Ic ="i2" ;")
-!   
-!  endif
-
+  call archive
+  
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-  call setflag ! this will count/pack degrees-of-freedom, initialize weights, etc.  . . . 04 Sep 17;
-
+  
+  if( Ldescent ) then
+   
+   call descent( Ndof, xdof(1:Ndof) )
+   
+  !deallocate( coil ) 
+  !DALLOCATE( xdof )
+  !DALLOCATE( fdof )
+  !DALLOCATE( surf%dL )
+  !DALLOCATE( surf%dT )
+  !DALLOCATE( surf%dB )
+  !DALLOCATE( totlengt )
+  !DALLOCATE( Tfluxave )
+  !DALLOCATE( Bdotnsqd )
+  !friction = friction + two
+  !goto 8000
+   
+  endif ! end of if( Ldescent ) ;
+  
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+  
+  select case( Iminimize )
+   
+  case( 1 ) 
+   
+   call minimum( Ndof, xdof(1:Ndof) )
 
-  if( Ldescent ) call descent( Ndof, xdof(1:Ndof) )
-
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-! write(ounit,'("focus   : " 10x " : calling drivers ;")') ; pause
-
-! call drivers ! this will call numerical optimization algorithms; 04 Sep 17;
-
-! write(ounit,'("focus   : " 10x " : called  drivers ;")') ; pause
-
-! if ( case_optimize /= 0 ) call solvers ! call different solvers;
-
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-! call MPI_BARRIER( MPI_COMM_WORLD, ierr )
-
-! tstart = MPI_Wtime()
-! time_optimize = tstart - tfinish
-! if( myid  ==  0 ) then
-!    secs = int(time_optimize)
-!    hrs = secs/(60*60)
-!    mins = (secs-hrs*60*60)/60
-!    secs = secs-hrs*60*60-mins*60
-!    if(hrs>0)then
-!        write(ounit, '(A, 3(I6, A3))') "focus   : Optimization took ",hrs," H ", mins," M ",secs," S."
-!    elseif(mins>0)then
-!        write(ounit, '(A, 2(I6, A3))') "focus   : Optimization took ", mins," M ",secs," S."
-!    else
-!        write(ounit, '(A, ES12.5, A3)') "focus   : Optimization took ", time_optimize," S."
-!    endif
-! endif
+  end select
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-  call archive ! this will save information to output/restart files; 04 Sep 17;
-
-! call unpacking( xdof )  ! unpack the optimized xdof array;
-
+ !if( myid.eq.0 ) write(ounit,'("focus   : ", 10x ," : average minor radius of coils =",es12.5," ;")') totlengt(0)/pi2
+  
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-! if (myid == 0) write(ounit, *) "-----------POST-PROCESSING-----------------------------------"
-
-! select case( case_postproc )
-! case( 0 ) ;              ; call saving
-! case( 1 ) ; call diagnos ; call saving 
-! case( 2 ) ; call saving  ; call diagnos ; call wtmgrid  ! write mgrid file;
-! case( 3 ) ; call saving  ; call diagnos ; call poinplot ! Poincare plots; for future; 
-! case( 4 ) ; call saving  ; call diagnos ; call resonant ! resonant harmonics analysis; for future; 
-! case default
-!  FATAL( focus, .true., selected case_postproc not supported )
-! end select
-
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-! call MPI_BARRIER( MPI_COMM_WORLD, ierr )
-
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-! tfinish = MPI_Wtime()
-! time_postproc = tfinish - tstart
-! if( myid  ==  0 )then
-!     secs = int(time_postproc)
-!     hrs = secs/(60*60)
-!     mins = (secs-hrs*60*60)/60
-!     secs = secs-hrs*60*60-mins*60
-!     if(hrs>0)then
-!         write(ounit, '(A, 3(I6, A3))') "focus   : Post-processing took ",hrs," H ", mins," M ",secs," S."
-!     elseif(mins>0)then
-!         write(ounit, '(A, 2(I6, A3))') "focus   : Post-processing took ", mins," M ",secs," S."
-!     else
-!         write(ounit, '(A, ES12.5, A3)') "focus   : Post-processing took ", time_postproc," S."
-!     endif
-!  endif
-!
-!  if(myid == 0) write(ounit, *) "-------------------------------------------------------------"
-
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
+  
+  call MPI_BARRIER( MPI_COMM_WORLD, ierr )
+  
+  tnow = MPI_WTIME()
+  
+  if( myid.eq.0 ) write(ounit,'("focus   : ",f10.1," : finished ; time =",f9.1," min =",f9.2," hours ;")') ( tnow - tstart ) / (/ 1, 60, 3600 /)
+  
   call MPI_FINALIZE( ierr )
-
+  
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  !call cleanup
-
+9999 continue
+  
   stop
   
-END PROGRAM focus
+end program focus
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+
+!subroutine gradobj( Ndof, xdof, ff, fdof, iuser, ruser )
+!  
+!  use globals, only : myid, ounit, tstart, totlengt, Tfluxave, target_tflux, Bdotnsqd, ffbest
+!  
+!  implicit none
+!  
+!  include "mpif.h"
+!  
+!  INTEGER   :: Ndof, iuser(1:1)
+!  REAL      :: xdof(1:Ndof), ff, fdof(1:Ndof ), ruser(1:1)
+!  
+!  REAL      :: ferr, tnow
+!  
+!  call dforce( Ndof, xdof(1:Ndof), ff, fdof(1:Ndof) )
+!
+!  if( ff.lt.ffbest ) then ; ffbest = ff ; call archive
+!  endif
+!  
+!  ferr = sqrt( sum(fdof(1:Ndof)*fdof(1:Ndof)) / Ndof )
+!  
+!  tnow = MPI_WTIME()
+!  
+!  if( myid.eq.0 ) write(ounit,1010) tnow-tstart, "       ", totlengt(0), Tfluxave(0)-target_tflux, Bdotnsqd(0), ff, ferr
+!  
+!1010 format("gradobj : ",f10.1," : ",a7," : L =",es17.10," ; F =",es18.10," ; ":"B =",es17.10," ; O =",es17.10," ; |dO| =",es12.05," ; ":"time =",f9.2,"s ;")
+!  
+!  return
+!  
+!end subroutine gradobj
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-

@@ -15,9 +15,9 @@ subroutine bnormal( ideriv )
   
   use globals, only : zero, half, one, pi2, sqrtmachprec, ncpu, myid, ounit, &
                       bsconstant, &
-                      surf, Nteta, Nzeta, Ntz, Ncoils, coil, Nseg, discretefactor, &
-                      Bdotnsquared, &
-                      t1B, t2B, Ndof, dB, Cdof, weight_bharm
+                      surf, Nteta, Nzeta, Ntz, Ncoils, coil, Nseg, discretesurface, &
+                      Bdotnsqd, &
+                      t1B, t2B, dB, Cdof, weight_bharm
   
   implicit none
 
@@ -38,7 +38,7 @@ subroutine bnormal( ideriv )
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  Bdotnsquared = zero ! initialize intent out; 04 Sep 17;
+  Bdotnsqd = zero ! initialize intent out; 04 Sep 17;
   
   lbx(0:Nteta-1,0:Nzeta-1) = zero
   lby(0:Nteta-1,0:Nzeta-1) = zero
@@ -47,7 +47,7 @@ subroutine bnormal( ideriv )
   do jzeta = 0, Nzeta-1
    do iteta = 0, Nteta-1
     
-    if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;
+!   if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;
     
     do icoil = 1, Ncoils
      
@@ -78,7 +78,7 @@ subroutine bnormal( ideriv )
    
 ! surf(1)%bn(0:Nteta-1,0:Nzeta-1) = surf(1)%Bx*surf(1)%nx + surf(1)%By*surf(1)%ny + surf(1)%Bz*surf(1)%nz + surf(1)%pb ! total Bn, including plasma component;
   
-! Bdotnsquared = sum( surf(1)%bn * surf(1)%bn * surf(1)%ds ) * half * discretefactor * bsconstant
+! Bdotnsquared = sum( surf(1)%bn * surf(1)%bn * surf(1)%ds ) * half * discretesurface * bsconstant
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
@@ -95,7 +95,7 @@ subroutine bnormal( ideriv )
       do jzeta = 0, Nzeta-1
          do iteta = 0, Nteta-1
  
-            if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;
+!           if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;
  
 !           do ip = 1, Npc 
  
@@ -157,7 +157,7 @@ subroutine bnormal( ideriv )
 !     endif
 !
 !     RlBCAST( t1B, Ndof, 0 )
-!     t1B = t1B * discretefactor
+!     t1B = t1B * discretesurface
 
     endif ! end of if( ideriv.ge.1 ) ; 04 Sep 17;
     

@@ -2,7 +2,8 @@
 
 ############################################################################################################################################
 
- ALLFILES= globals initial readsrf rdcoils packdof coilxyz abfield setflag bnormal torflux length descent congrad archive focus
+#ALLFILES= globals initial readsrf rdcoils packdof coilxyz abfield setflag bnormal torflux length descent congrad archive focus
+ ALLFILES= globals initial readsrf rdcoils packdof coilxyz abfield dforce setflag                 descent minimum archive focus
  HFILES= $(ALLFILES:=.h)
  FFILES= $(ALLFILES:=.F90)
  PFILES= $(ALLFILES:=.pdf)
@@ -27,7 +28,7 @@ endif
 
 ############################################################################################################################################
 
- HDF5=-I$(HDF5_HOME)/include -L$(HDF5_HOME)/lib -lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran -lhdf5 -lpthread -lz -lm
+ HDF5=-I$(HDF5_HOME)/include -L$(HDF5_HOME)/lib -lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran -lhdf5 -lpthread -lz -lm -L$(NAG_ROOT)/lib -lnag_nag
 
  WEBDIR=$(HOME)/w3_html
 

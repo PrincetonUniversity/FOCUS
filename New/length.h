@@ -16,7 +16,7 @@ subroutine length( icoil, ideriv )
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  use globals, only : zero, half, myid, Ncoils, Nseg, coil, deltacurveparameter, case_length, coillengtherror
+  use globals, only : zero, half, myid, Ncoils, Nseg, coil, discretecurve, case_length, coillengtherror
 !, half, pi2, machprec, ncpu, myid, ounit, coil, DoF, Ncoils, Nfixgeo, Ndof, coillength, t1L, t2L, case_length
   
   implicit none
@@ -40,7 +40,7 @@ subroutine length( icoil, ideriv )
    
   enddo ! end ii
   
-  coil(icoil)%L = coil(icoil)%L ! * deltacurveparameter
+  coil(icoil)%L = coil(icoil)%L ! * discretecurve
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
