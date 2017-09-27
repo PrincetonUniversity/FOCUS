@@ -17,7 +17,7 @@
 ! to set keyboard shortcut in emacs                                        
 
 ! (1) define macro         , e.g. \C-x \C-( . . . \C-x \C-)              
-! (2) name macro           , e.g. Esc-x name-last-kbd-macro arbitraryname ! 11 Oct 12; 
+! (2) name macro           , e.g. Esc-x name-last-kbd-macro arbitraryname ;
 ! (3) set keyboard shortcut, e.g. Esc-x global-set-key F12 arbitraryname 
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
@@ -25,15 +25,16 @@
 program focus
   
   use globals, only : zero, one, two, pi2, sqrtmachprec, ncpu, myid, ounit, tstart, &
-                      ext, inputfile, surffile, axisfile, coilfile, inpcoils, hdf5file, outcoils, &
+                      ext, inputfile, surffile, axisfile, coilfile, inpcoils, hdf5file, outcoils, outplots, &
                       Nt, Nz, surf, Ncoils, Ns, coil, &
                       cmt, smt, discretecurve, &
+                      tdof, Mdof, &
                       totlengt, Tfluxave, Bdotnsqd, &
                       target_length, target_tflux, &
                       Ldescent, Iminimize, &
                       fforig, ffbest, iarchive, &
-                      weight_ttlen, weight_tflux, weight_bnorm, &
-                      friction
+                      weight_length, weight_tflux, weight_bnorm, wspectral, pspectral, &
+                      Ntrj, Npts
 
   use mpi
   
@@ -41,10 +42,9 @@ program focus
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-  INTEGER                :: icoil, mm, maxNF, Ndof, ii, iwrite, ierr, astat! Lrwork, Liwork, IBOUND, ie04kzf, iuser(1:1)
- !INTEGER  , allocatable :: iwork(:)
-  REAL                   :: tnow, told, ff, ferr! ruser(1:1)
-  REAL     , allocatable :: xdof(:), fdof(:)! rwork(:), BL(:), BU(:)
+  INTEGER                :: icoil, mm, maxNF, Ndof, ii, iwrite, ierr, astat
+  REAL                   :: tnow, told, ff, ferr
+  REAL     , allocatable :: xdof(:), fdof(:)
   CHARACTER              :: packorunpack
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -67,14 +67,15 @@ program focus
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-  inputfile = trim(ext)//".fo.in"    ! namelist input;
-  surffile  = trim(ext)//".fo.bdy"   ! Fourier harmonics of reference boundary;
-  axisfile  = trim(ext)//".fo.axis"  ! Fourier harmonics of magnetic axis;
-  coilfile  = trim(ext)//".fo.coils" ! Fourier harmonics of coils (FOCUS format);
-  inpcoils  = "coils."//trim(ext)    ! xgrid-style coils (input);
- !harmfile  = trim(ext)//".fo.Bmn"   ! Fourier harmonics of target normal field;
-  hdf5file  = trim(ext)//".fo.h5"    ! output file;
-  outcoils  = "coils.fo."//trim(ext) ! xgrid-style coils (input);
+  inputfile =              trim(ext)//".fo.in"    ! namelist input;
+  surffile  =              trim(ext)//".fo.bdy"   ! Fourier harmonics of reference boundary;
+  axisfile  =              trim(ext)//".fo.axis"  ! Fourier harmonics of magnetic axis;
+  coilfile  =              trim(ext)//".fo.coils" ! Fourier harmonics of coils (FOCUS format);
+  inpcoils  =    "coils."//trim(ext)              ! xgrid-style coils (input);
+ !harmfile  =              trim(ext)//".fo.Bmn"   ! Fourier harmonics of target normal field;
+  hdf5file  =              trim(ext)//".fo.h5"    ! output file;
+  outcoils  = "coils.fo."//trim(ext)              ! xgrid-style coils (input);
+  outplots  =         "."//trim(ext)//".fo.dat"
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
@@ -87,7 +88,7 @@ program focus
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
 8000 continue
-
+  
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
   call rdcoils ! reads/initializes coil geometries etc. ;
@@ -114,6 +115,9 @@ program focus
   SALLOCATE( xdof, (1:Ndof), zero ) ! position = geometry of coils             ;
   SALLOCATE( fdof, (1:Ndof), zero ) ! force    = gradient of objective function;
   
+  SALLOCATE( tdof, (1:Ndof), zero ) ! tangent direction in Fourier space       ;
+  SALLOCATE( Mdof, (1:Ndof), zero ) ! spectral gradient in Fourier space       ;
+
   packorunpack = 'P' ; call packdof( Ndof, xdof(1:Ndof), packorunpack )
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
@@ -138,35 +142,35 @@ program focus
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  if( myid.eq.0 ) write(ounit,1010) tnow-tstart, "setting", target_length, target_tflux
+  if( myid.eq.0 ) write(ounit,1010) tnow-tstart, "targets   ", target_length, target_tflux
   
   told = MPI_WTIME()
 
   call dforce( Ndof, xdof(1:Ndof), ff, fdof(1:Ndof) )
-
+  
   fforig = ff ; ffbest = ff
-
+  
   ferr = sqrt( sum(fdof(1:Ndof)*fdof(1:Ndof)) / Ndof )
   
   tnow = MPI_WTIME()
 
-  if( myid.eq.0 ) write(ounit,1010) tnow-tstart, "initial", totlengt(0)-target_length, Tfluxave(0)-target_tflux, Bdotnsqd(0), ff, ferr, tnow-told
+  if( myid.eq.0 ) write(ounit,1010) tnow-tstart, "difference", totlengt(0)-target_length, Tfluxave(0)-target_tflux, Bdotnsqd(0), ff, ferr, tnow-told
   
-1010 format("focus   : ",f10.1," : ",a7," : L =",es18.10," ; F =",es18.10," ; ":"B =",es17.10," ; O =",es17.10," ; |dO| =",es12.05," ; time =",f9.2,"s ;")  
+1010 format("focus   : ",f10.1," : ",a10," : L =",es18.10," ; F =",es18.10," ; ":"B =",es17.10," ; O =",es17.10," ; |dO| =",es12.05," ; time =",f9.2,"s ;")  
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  call setflag( Ndof, xdof(1:Ndof) ) ! initialize weights, etc.  . . . 04 Sep 17;
+  call setflag( Ndof, xdof(1:Ndof) ) ! initialize weights, etc. ;
   
   tnow = MPI_WTIME()
-
-  if( myid.eq.0 ) write(ounit,1000) tnow-tstart, weight_ttlen, weight_tflux, weight_bnorm
-
-1000 format("focus   : ",f10.2," : weight_ttlen =",es12.5" ; weight_tflux =",es12.5," ; weight_bnorm =",es12.5," ;")
-
+  
+  if( myid.eq.0 ) write(ounit,1000) tnow-tstart, weight_length, weight_tflux, weight_bnorm, wspectral, pspectral
+1000 format("focus   : ",f10.1," : weight_length =",es12.5" ; weight_tflux =",es12.5," ; weight_bnorm =",es12.5,&
+                               " ; wspectral =",es12.5," ; pspectral =",f5.2," ;")
+  
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-  call archive
+  call archive( Ndof, xdof(1:Ndof), ferr )
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
@@ -195,13 +199,13 @@ program focus
   case( 1 ) 
    
    call minimum( Ndof, xdof(1:Ndof) )
-
+   
   end select
-
+  
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
- !if( myid.eq.0 ) write(ounit,'("focus   : ", 10x ," : average minor radius of coils =",es12.5," ;")') totlengt(0)/pi2
-  
+  if( Ntrj.gt.0 .and. Npts.gt.1 ) call pcplot
+   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   call MPI_BARRIER( MPI_COMM_WORLD, ierr )
@@ -219,39 +223,5 @@ program focus
   stop
   
 end program focus
-
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-
-!subroutine gradobj( Ndof, xdof, ff, fdof, iuser, ruser )
-!  
-!  use globals, only : myid, ounit, tstart, totlengt, Tfluxave, target_tflux, Bdotnsqd, ffbest
-!  
-!  implicit none
-!  
-!  include "mpif.h"
-!  
-!  INTEGER   :: Ndof, iuser(1:1)
-!  REAL      :: xdof(1:Ndof), ff, fdof(1:Ndof ), ruser(1:1)
-!  
-!  REAL      :: ferr, tnow
-!  
-!  call dforce( Ndof, xdof(1:Ndof), ff, fdof(1:Ndof) )
-!
-!  if( ff.lt.ffbest ) then ; ffbest = ff ; call archive
-!  endif
-!  
-!  ferr = sqrt( sum(fdof(1:Ndof)*fdof(1:Ndof)) / Ndof )
-!  
-!  tnow = MPI_WTIME()
-!  
-!  if( myid.eq.0 ) write(ounit,1010) tnow-tstart, "       ", totlengt(0), Tfluxave(0)-target_tflux, Bdotnsqd(0), ff, ferr
-!  
-!1010 format("gradobj : ",f10.1," : ",a7," : L =",es17.10," ; F =",es18.10," ; ":"B =",es17.10," ; O =",es17.10," ; |dO| =",es12.05," ; ":"time =",f9.2,"s ;")
-!  
-!  return
-!  
-!end subroutine gradobj
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-

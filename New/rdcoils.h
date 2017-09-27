@@ -77,7 +77,7 @@
 
 subroutine rdcoils
   
-  use globals, only : zero, half, pi, pi2, myid, ounit, tstart, &
+  use globals, only : zero, one, half, pi, pi2, myid, ounit, tstart, &
                       NFcoil, Ncoils, IsVaryCurrent, IsVaryGeometry, target_length, &
                       runit, coilfile, discretecurve, &
                       Ns, init_current, init_radius, coil, Initialize, Isurface, &
@@ -89,7 +89,7 @@ subroutine rdcoils
   
   LOGICAL              :: exist
   INTEGER              :: icoil, maxnseg, ifirst, NF, itmp, ip, icoef, jj, kk, ierr, astat, lNF, maxNF, mm
-  REAL                 :: zeta, totalcurrent, Ro, Zo, r1, r2, z1, z2, tt, ax(1:3), at(1:3), az(1:3), xx(1:3), xt(1:3), xz(1:3), rdummy, tnow
+  REAL                 :: zeta, totalcurrent, Ro, Zo, r1, r2, z1, z2, tt, ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3), rdummy, tnow
   REAL   , allocatable :: coilsX(:,:), coilsY(:,:), coilsZ(:,:)
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -203,7 +203,7 @@ subroutine rdcoils
    if( myid.eq.0 ) then
     read( runit,* )
     read( runit,* ) Ncoils
-    write(ounit,'("rdcoils : " 10x " : Ncoils =",i4," ; Nsegments =",i4," ;")') Ncoils, Ns
+    write(ounit,'("rdcoils : " 10x " : Ncoils =",i4," ; Nsegments =",i4," ; NFcoil =",i3," ;")') Ncoils, Ns, NFcoil
    endif
    
    IlBCAST( Ncoils, 1, 0 )
@@ -355,11 +355,13 @@ subroutine rdcoils
      
     case( 1 ) ! axis-style boundary; 28 Aug 17;
      
+     FATAL( rdcoils, init_radius.lt.one, definition of init_radius has changed )
+
      do jj = 1, Ns ! Ns is input; 29 Sep 17;
       
       tt = (jj-1) * pi2 / Ns !poloidal angle;
       
-      call knotxx( init_radius, tt, zeta, ax, at, az, xx, xt, xz )
+      call knotxx( init_radius, tt, zeta, ax, at, az, xx, xs, xt, xz )
       
       coilsX(jj,icoil) = xx(1)
       coilsY(jj,icoil) = xx(2)

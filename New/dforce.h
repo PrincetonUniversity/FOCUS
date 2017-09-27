@@ -20,7 +20,8 @@ subroutine dforce( Ndof, xdof, ff, fdof )
                       Ncoils, coil, cmt, smt, &
                       Nt, Nz, Ns, surf, discretecurve, deltatheta, discretesurface, &
                       totlengt, Tfluxave, Bdotnsqd, &
-                      target_length, target_tflux, weight_ttlen , weight_tflux, weight_bnorm
+                      wspectral, pspectral, Mdof, tdof, &
+                      target_length, target_tflux, weight_length, weight_tflux, weight_bnorm
   
   implicit none
   
@@ -177,12 +178,15 @@ subroutine dforce( Ndof, xdof, ff, fdof )
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  CHECK( dforce, abs(exp(target_length)).lt.sqrtmachprec, illegal )
+  CHECK( dforce, target_length.lt.sqrtmachprec, illegal )
 
   ff = zero ; fdof(1:Ndof) = zero
   
-  ff           =                    exp(totlengt(0)) * weight_ttlen / exp(target_length)
-  fdof(1:Ndof) = totlengt(1:Ndof) * exp(totlengt(0)) * weight_ttlen / exp(target_length)
+! ff           =                    exp(totlengt(0)) * weight_length / exp(target_length)
+! fdof(1:Ndof) = totlengt(1:Ndof) * exp(totlengt(0)) * weight_length / exp(target_length)
+
+  ff           =                                    exp(totlengt(0)/target_length) * weight_length
+  fdof(1:Ndof) = (totlengt(1:Ndof)/target_length) * exp(totlengt(0)/target_length) * weight_length
   
   ;ff         = ff         + weight_tflux * sum( (surf%dT(0:Nz-1,   0)-target_tflux) * (surf%dT(0:Nz-1,0)-target_tflux) ) * half
   do idof = 1, Ndof
@@ -193,6 +197,8 @@ subroutine dforce( Ndof, xdof, ff, fdof )
   fdof(1:Ndof) = fdof(1:Ndof) + weight_bnorm * Bdotnsqd(1:Ndof)
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+
+  fdof(1:Ndof) = fdof(1:Ndof) + wspectral * sum(tdof(1:Ndof)*Mdof(1:Ndof)) * tdof(1:Ndof)
   
 ! ff = totlengt(0) ; fdof(1:Ndof) = totlengt(1:Ndof) ! debugging;
 ! ff = Tfluxave(0) ; fdof(1:Ndof) = Tfluxave(1:Ndof) ! debugging;

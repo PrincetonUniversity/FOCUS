@@ -70,6 +70,8 @@ subroutine initial
   deltatheta      =            (pi2/Nt)
 
   iarchive = 0 ! initialize incremental counter;
+
+  if( weight_length.lt.zero ) weight_length = zero
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   

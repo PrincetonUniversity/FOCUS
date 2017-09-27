@@ -52,6 +52,7 @@ module globals
   INTEGER              :: runit      =  8 ! read  unit
   INTEGER              :: funit      =  9 ! general I/O
   INTEGER              :: bunit      = 10 ! backup unit for I/O
+  INTEGER              :: punit      = 11 ! Poincare
   
   CHARACTER(LEN=100)   :: ext       ! extention;
   CHARACTER(LEN=100)   :: inputfile ! input namelist;
@@ -62,20 +63,20 @@ module globals
  !CHARACTER(LEN=100)   :: harmfile  ! harmonics file
   CHARACTER(LEN=100)   :: hdf5file  ! hdf5 file
   CHARACTER(LEN=100)   :: outcoils  ! output ext.coils file
+  CHARACTER(LEN=100)   :: outplots  ! output ext.coils file
   
   INTEGER              :: Icheck         =        0         ! checking;
 
   INTEGER              :: Isurface       =        1         
-  INTEGER              :: case_surface   =        0         ! redundant;
   REAL                 :: minorrad       =        0.100D-00
-  REAL                 :: knotsurf       =        0.200D-00 ! redundant;
-  REAL                 :: ellipticity    =        0.000D+00
+  REAL                 :: ellipticity    =        1.000D+00
+  INTEGER              :: nrotate        =        0
+  REAL                 :: zetaoff        =        0.000D+00
 
   INTEGER              :: Nteta          =       64
   INTEGER              :: Nzeta          =       64
 
   INTEGER              :: Initialize     =        0
-  INTEGER              :: case_init      =        0 ! redundant;
   INTEGER              :: Ncoils         =        0
   REAL                 :: init_current   =        1.000D+06
   REAL                 :: init_radius    =        1.000D+00
@@ -84,15 +85,17 @@ module globals
   INTEGER              :: NFcoil         =        2
 
   INTEGER              :: Nsegments      =       64
-  INTEGER              :: Nseg           =      128 ! redundant;
 
   INTEGER              :: case_length    =        1
   REAL                 :: weight_bnorm   =        1.000D+00
   REAL                 :: weight_bharm   =        0.000D+00
-  REAL                 :: weight_tflux   =        0.000D+00
-  REAL                 :: target_tflux   =        0.000D+00
-  REAL                 :: weight_ttlen   =        0.000D+00
+  REAL                 :: weight_tflux   =        1.000D+00
+  REAL                 :: target_tflux   =        1.000D+00
+  REAL                 :: weight_length  =        1.000D-02
   REAL                 :: target_length  =        0.000D+00
+
+  REAL                 :: wspectral      =        1.000D-06
+  REAL                 :: pspectral      =        2.000D+00
 
   REAL                 :: converged      =        1.000D-03
 
@@ -100,24 +103,27 @@ module globals
   INTEGER              :: Ntauout        =       10
   REAL                 ::  tautol        =        1.000D-03
 
-  INTEGER              :: DF_maxiter     =       10         ! redundant;
-  REAL                 :: DF_xtol        =        1.000D-08 ! redundant;
-  REAL                 :: DF_tauend      =        1.000D+00 ! redundant;
+  INTEGER              :: NRKsave        =       10
+  INTEGER              :: NRKstep        =       10
+  REAL                 ::  RKstep        =        1.000D-02
 
   REAL                 :: friction       =        0.500D-00
 
   INTEGER              :: Iminimize      =        0
 
+  INTEGER              :: Ntrj           =        0
+  INTEGER              :: Npts           =        0
+  REAL                 :: odetol         =        1.0D-06
+
   namelist / focusin /  Icheck         , &
                         Isurface       , &
-                        case_surface   , & ! redundant;
                         minorrad       , &
-                        knotsurf       , & ! redundant;
                         ellipticity    , &
+                        nrotate        , &
+                        zetaoff        , &
                         Nteta          , &
                         Nzeta          , &
                         Initialize     , &
-                        case_init      , & ! redundant;
                         Ncoils         , &
                         init_current   , &
                         init_radius    , &
@@ -125,22 +131,26 @@ module globals
                         IsVaryGeometry , &
                         NFcoil         , &
                         Nsegments      , &
-                        Nseg           , & ! redundant;
                         case_length    , &
                         weight_bnorm   , &
                         weight_tflux   , &
                         target_tflux   , &
-                        weight_ttlen   , &
+                        weight_length  , &
                         target_length  , &
+                        wspectral      , &
+                        pspectral      , &
                         converged      , &
                          tauend        , &
                         Ntauout        , &
                          tautol        , &
-                        DF_xtol        , & ! redundant;
-                        DF_maxiter     , & ! redundant;
-                        DF_tauend      , & ! redundant;
+                        NRKsave        , &
+                        NRKstep        , &
+                         RKstep        , &
                         friction       , &
-                        Iminimize
+                        Iminimize      , &
+                        Ntrj           , &
+                        Npts           , &
+                        odetol
 
   INTEGER              :: myid, ncpu
   REAL                 :: machprec, vsmall, small, sqrtmachprec
@@ -174,7 +184,7 @@ module globals
   INTEGER, allocatable :: bim(:), bin(:), Bnim(:), Bnin(:)
   REAL   , allocatable :: Rbc(:), Zbs(:), Rbs(:), Zbc(:), Bnc(:), Bns(:), cosip(:), sinip(:)
     
-  REAL                 :: Inorm = one, Gnorm = one                !current and geometry normalizations;
+! REAL                 :: Inorm = one, Gnorm = one                !current and geometry normalizations;
 
   REAL                 :: Tfluxerr
   REAL   , allocatable :: totlengt(:), Tfluxave(:), Bdotnsqd(:)
@@ -194,6 +204,9 @@ module globals
   REAL, allocatable    :: cmt(:,:), smt(:,:)
 
   INTEGER              :: iarchive
+
+  REAL, allocatable    :: tdof(:) ! tangent direction in independent degree-of-freedom (Fourier) space;
+  REAL, allocatable    :: Mdof(:) ! spectral gradient in independent degree-of-freedom (Fourier) space;
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 

@@ -19,8 +19,8 @@ subroutine setflag( Ndof, xdof )
   use globals, only : zero, one, two, half, pi2, sqrtmachprec, myid, ncpu, ounit, tstart, &
                       Icheck, Ns, Ncoils, coil, &
                       totlengt, Tfluxave, Bdotnsqd, Tfluxerr, &
-                      weight_ttlen , target_length, weight_tflux , target_tflux, &
-                      tauend, Ntauout, Ldescent
+                      target_length, weight_tflux , target_tflux, &
+                      NRKsave, NRKstep, RKstep, Ldescent
   
   implicit none
   
@@ -70,6 +70,14 @@ subroutine setflag( Ndof, xdof )
    
 1000 format("setflag : ", 10x ," : ",i3," ; analytic =",es23.15," =",es23.15," = finite diff. ; ",:,"err =",es10.02," ;")
    
+
+   ifd = 0
+   
+   xdof(1:Ndof) = oxdof(1:Ndof)
+   
+   call dforce( Ndof, xdof(1:Ndof), off(ifd), ofdof(1:Ndof,ifd) ) ! just to recover initial values of force;
+
+
   endif ! end of if( Icheck.eq.1 ) ;
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
@@ -114,90 +122,26 @@ subroutine setflag( Ndof, xdof )
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-!  if    ( weight_ttlen .lt.-sqrtmachprec                                      ) then ! target coil length   is initial value   ;
-!   
-!   Llength = .true. ; target_length = totlengt(0)
-!   
-!   write(ounit,'("setflag : " 10x " : L_t =",es12.5," ; ":"L_i ="99(es12.5,","))') totlengt(0)!, ( coil(icoil)%dL(0), icoil = 1, Ncoils )
-!   
-!  elseif( target_length.ge.-sqrtmachprec .and. target_length.le.+sqrtmachprec ) then !        coil length   is not a constraint;
-!   
-!   Llength = .false.
-!   
-!  elseif(                                      target_length.gt.+sqrtmachprec ) then ! target coil length   is input           ;
-!   
-!   Llength = .true.
-!   
-!  endif
+  tnow = MPI_WTIME()
   
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-
-!  if    ( weight_tflux.lt.-sqrtmachprec                                     ) then ! target toroidal flux is initial value   ;
-!   
-!   Ltflux = .true. ; target_tflux = Tfluxave(0)
-!   
-!   Tfluxerr = sum( (surf%dT(0:Nz-1,0)-target_tflux)**2 ) * half
-!   
-!   write(ounit,'("setflag : " 10x " : Tfluxave =",es23.15" ;":" Tfluxerr ="es12.5" ;")') Tfluxave(0), Tfluxerr
-!   
-!  elseif( weight_tflux.ge.-sqrtmachprec .and. weight_tflux.le.+sqrtmachprec ) then !        toroidal flux is not a constraint;
-!   
-!   Ltflux = .false. ; weight_tflux = zero
-!   
-!  elseif(                                     weight_tflux.gt.+sqrtmachprec ) then ! target toroidal flux is input           ;
-!   
-!   Ltflux = .true.
-!   
-!  endif
-  
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-
-!  if    ( weight_bnorm.lt.-sqrtmachprec                                     ) then ! target toroidal flux is initial value   ;
-!   
-!   Lbnorm = .true. ; target_bnorm = zero
-!   
-!  !Tfluxerr = sum( (surf%dT(0:Nz-1,0)-target_tflux)**2 ) * half
-!   
-!   write(ounit,'("setflag : " 10x " : Bdotnsqd =",es12.5" ;")') Bdotnsqd
-!   
-!  elseif( weight_bnorm.ge.-sqrtmachprec .and. weight_bnorm.le.+sqrtmachprec ) then !        toroidal flux is not a constraint;
-!   
-!   FATAL( setflag, .true., nonsense weight_bnorm )
-!   
-!   Lbnorm = .false. ; weight_bnorm = zero
-!   
-!  elseif(                                     weight_bnorm.gt.+sqrtmachprec ) then ! target toroidal flux is input           ;
-!   
-!   Ltflux = .true.
-!   
-!  endif
-  
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-
-  if( tauend.gt.zero ) then
+  if( NRKsave.gt.0 .and. NRKstep.gt.0 ) then
    
    Ldescent = .true.
    
-   tnow = MPI_WTIME()
+   if( myid.eq.0 ) write(ounit,'("setflag : "f10.1" : {{ NRKsave > 0 & NRKstep > 0 }} => {{ Ldescent ="L2" }} ; ")') tnow-tstart, Ldescent
    
-   if( myid.eq.0 ) write(ounit,'("setflag : "f10.1" : {{ tauend > 0.0 }} => {{ Ldescent ="L2" }} ; ")') tnow-tstart, Ldescent
+   if( RKstep.lt.zero ) RKstep = 1.0E-02
    
-   if( Ntauout.le.0 ) Ntauout = 1
+  else
+   
+   Ldescent = .false.
+   
+   if( myid.eq.0 ) write(ounit,'("setflag : "f10.1" : {{ NRKsave < 0 || NRKstep < 0 }} => {{ Ldescent ="L2" }} ; ")') tnow-tstart, Ldescent
    
   endif
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-!  if( CG_maxiter.gt.0 ) then
-!
-!   Lcgradient = .true.
-!
-!   if( myid.eq.0 ) write(ounit,'("setflag : " 10x " : Lcgradient ="L2" ; ")') Lcgradient
-!
-!  endif
-  
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-
   return
   
 end subroutine setflag

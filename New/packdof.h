@@ -13,8 +13,7 @@ subroutine packdof( Ndof, xdof, packorunpack )
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
   use globals, only : zero, myid, ounit, &
-                      Ncoils, coil, &
-                      Inorm, Gnorm
+                      Ncoils, coil, tdof, pspectral, Mdof
   
   implicit none
   
@@ -68,7 +67,7 @@ subroutine packdof( Ndof, xdof, packorunpack )
      
     endif
     
-   enddo ! end of do icoil; 04 Sep 17;
+   enddo ! end of do icoil;
    
   case('U') ! unpacking degrees-of-freedom to curve parameters;
    
@@ -110,8 +109,40 @@ subroutine packdof( Ndof, xdof, packorunpack )
      
     endif
     
-   enddo ! end of do icoil; 04 Sep 17;
+   enddo ! end of do icoil;
 
+   CHECK( packdof, .not.allocated(tdof), error )
+   
+   idof = 0
+   
+   do icoil = 1, Ncoils ; NF = coil(icoil)%NF
+    
+    if( coil(icoil)%Lfree.eq.1 ) then ! geometry of curve is allowed to vary;
+
+     ;  mm = 0     ; idof = idof + 1 ; tdof(idof) = zero                      ; Mdof(idof) = zero
+     ;             ; idof = idof + 1 ; tdof(idof) = zero                      ; Mdof(idof) = zero
+     ;             ; idof = idof + 1 ; tdof(idof) = zero                      ; Mdof(idof) = zero
+     do mm = 1, NF ; idof = idof + 1 ; tdof(idof) = + mm * coil(icoil)%xs(mm) ; Mdof(idof) = mm**pspectral * coil(icoil)%xc(mm) 
+      ;            ; idof = idof + 1 ; tdof(idof) = - mm * coil(icoil)%xc(mm) ; Mdof(idof) = mm**pspectral * coil(icoil)%xs(mm) 
+      ;            ; idof = idof + 1 ; tdof(idof) = + mm * coil(icoil)%ys(mm) ; Mdof(idof) = mm**pspectral * coil(icoil)%yc(mm) 
+      ;            ; idof = idof + 1 ; tdof(idof) = - mm * coil(icoil)%yc(mm) ; Mdof(idof) = mm**pspectral * coil(icoil)%ys(mm) 
+      ;            ; idof = idof + 1 ; tdof(idof) = + mm * coil(icoil)%zs(mm) ; Mdof(idof) = mm**pspectral * coil(icoil)%zc(mm) 
+      ;            ; idof = idof + 1 ; tdof(idof) = - mm * coil(icoil)%zc(mm) ; Mdof(idof) = mm**pspectral * coil(icoil)%zs(mm) 
+     enddo
+
+    endif
+
+    if( coil(icoil)%Ifree.eq.1 ) then ! current of curve is allowed to vary;
+     
+     ;             ; idof = idof + 1 ; tdof(idof) = zero                      ; Mdof(idof) = zero
+
+    !coil(icoil)%I        = xdof(idof+     1            )
+    !idof = idof + 1
+     
+    endif
+   
+   enddo ! end of do icoil;
+ 
   case default
    
    FATAL( packdof, .true., selected packorunpack not supported )

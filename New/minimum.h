@@ -79,17 +79,22 @@ subroutine gradobj( Ndof, xdof, ff, fdof, iuser, ruser )
   REAL      :: ferr, tnow
   
   call dforce( Ndof, xdof(1:Ndof), ff, fdof(1:Ndof) )
-  
-  if( ff.lt.ffbest ) then ; ffbest = ff ; call archive
-  endif
-  
+
   ferr = sqrt( sum(fdof(1:Ndof)*fdof(1:Ndof)) / Ndof )
   
+  if( ff.lt.ffbest ) then
+   
+   ffbest = ff
+   
+   call archive( Ndof, xdof(1:Ndof), ferr )
+
+  endif
+    
   tnow = MPI_WTIME()
   
-  if( myid.eq.0 ) write(ounit,1010) tnow-tstart, "       ", totlengt(0), Tfluxave(0)-target_tflux, Bdotnsqd(0), ff, ferr
+  if( myid.eq.0 ) write(ounit,1010) tnow-tstart, "          ", totlengt(0), Tfluxave(0)-target_tflux, Bdotnsqd(0), ff, ferr
   
-1010 format("gradobj : ",f10.1," : ",a7," : L =",es17.10," ; F =",es18.10," ; ":"B =",es17.10," ; O =",es17.10," ; |dO| =",es12.05," ; ":"time =",f9.2,"s ;")
+1010 format("gradobj : ",f10.1," : ",a10," : L =",es17.10," ; F =",es18.10," ; ":"B =",es17.10," ; O =",es17.10," ; |dO| =",es12.05," ; ":"time =",f9.2,"s ;")
   
   return
   

@@ -16,7 +16,7 @@
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
-subroutine archive
+subroutine archive( Ndof, xdof, ferr )
   
   use globals
   
@@ -28,8 +28,11 @@ subroutine archive
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  INTEGER            :: ii, icoil, ierr
-  REAL               :: tnow
+  INTEGER            :: Ndof
+  REAL               :: xdof(1:Ndof), ferr
+
+  INTEGER            :: ii, icoil, ierr, mm
+  REAL               :: tnow, spectralwidth, term
   CHARACTER(LEN=10)  :: version='h1.0.0'
 
   CHARACTER          :: srestart*6
@@ -47,6 +50,10 @@ subroutine archive
   write(srestart,'(i6.6)') iarchive
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+  
+! packorunpack = 'U' ; call packdof( Ndof, xdof(1:Ndof), packorunpack ) ! must ensure that unpacking is called before calling archive;
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
   call h5open_f( hdfier ) ! initialize Fortran interface;
   FATAL( restart, hdfier.ne.0, error calling h5open_f )
@@ -61,6 +68,8 @@ subroutine archive
   HWRITEIV( 1                ,   Isurface      ,   Isurface                   )
   HWRITERV( 1                ,   minorrad      ,   minorrad                   )
   HWRITERV( 1                ,   ellipticity   ,   ellipticity                )
+  HWRITEIV( 1                ,   nrotate       ,   nrotate                    )
+  HWRITERV( 1                ,   zetaoff       ,   zetaoff                    )
 
   HWRITEIV( 1                ,   Nteta         ,   Nteta                      )
   HWRITEIV( 1                ,   Nzeta         ,   Nzeta                      )
@@ -76,17 +85,23 @@ subroutine archive
   HWRITERV( 1                ,   weight_bnorm  ,   weight_bnorm               )
   HWRITERV( 1                ,   weight_tflux  ,   weight_tflux               )
   HWRITERV( 1                ,   target_tflux  ,   target_tflux               )
-  HWRITERV( 1                ,   weight_ttlen  ,   weight_ttlen               )
+  HWRITERV( 1                ,   weight_length ,   weight_length              )
   HWRITERV( 1                ,   target_length ,   target_length              )
+  HWRITERV( 1                ,   wspectral     ,   wspectral                  )
+  HWRITERV( 1                ,   pspectral     ,   pspectral                  )
 
   HWRITERV( 1                ,   converged     ,   converged                  )
 
-  HWRITERV( 1                ,    tauend       ,    tauend                    )
-  HWRITEIV( 1                ,   Ntauout       ,   Ntauout                    )
-  HWRITERV( 1                ,    tautol       ,    tautol                    )
+  HWRITEIV( 1                ,   NRKsave       ,   NRKsave                    )
+  HWRITEIV( 1                ,   NRKstep       ,   NRKstep                    )
+  HWRITERV( 1                ,    RKstep       ,    RKstep                    )
 
-  HWRITERV( 1                ,   friction      ,   friction                   )
+! HWRITERV( 1                ,   friction      ,   friction                   )
   HWRITEIV( 1                ,   Iminimize     ,   Iminimize                  )
+
+  HWRITEIV( 1                ,   Ntrj          ,   Ntrj                       )
+  HWRITEIV( 1                ,   Npts          ,   Npts                       )
+  HWRITERV( 1                ,   odetol        ,   odetol                     )
 
 ! HWRITEIV( 1                ,   Nfp           ,   Nfp                          )
   HWRITERV( 1                ,   area          ,   surf%area                    )
@@ -97,7 +112,20 @@ subroutine archive
   HWRITERA( Nteta,Nzeta      ,   ny            ,   surf%ny(0:Nteta-1,0:Nzeta-1) )
   HWRITERA( Nteta,Nzeta      ,   nz            ,   surf%nz(0:Nteta-1,0:Nzeta-1) )
 
-  HWRITERV( 1                ,   totlengt      ,   totlengt(0)                  )
+  HWRITEIV(      1           ,   Ndof          ,   Ndof                         )
+  HWRITERV(      1           ,   ferr          ,   ferr                         )
+  HWRITERV( Ndof+1           ,   totlengt      ,   totlengt(0:Ndof)             )
+  HWRITERV( Ndof+1           ,   Tfluxave      ,   Tfluxave(0:Ndof)             )
+  HWRITERV( Ndof+1           ,   Bdotnsqd      ,   Bdotnsqd(0:Ndof)             )
+
+  spectralwidth = zero
+  do icoil = 1, Ncoils
+   do mm = 1, coil(icoil)%NF
+    term = coil(icoil)%xc(mm)**2 + coil(icoil)%xs(mm)**2+ coil(icoil)%yc(mm)**2 + coil(icoil)%ys(mm)**2 + coil(icoil)%zc(mm)**2 + coil(icoil)%zs(mm)**2
+    spectralwidth = spectralwidth + mm**pspectral * term
+   enddo
+  enddo
+  HWRITERV(      1           ,   spectralwidth ,   spectralwidth                )
   
   FATAL( restart, hdfier.ne.0, error calling h5fclose_f )
   

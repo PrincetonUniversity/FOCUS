@@ -21,14 +21,15 @@ end module descentparameters
 
 subroutine descent( Ndof, xdof )
   
-  use globals          , only : zero, one, half, sqrtmachprec, small, myid, ncpu, ounit, tstart, &
-                                tauend, Ntauout, tautol, &
+  use globals          , only : zero, one, six, half, sqrtmachprec, small, myid, ncpu, ounit, tstart, &
+                               !tauend, Ntauout, tautol, &
+                                NRKsave, NRKstep, RKstep, &
                                 totlengt, Tfluxave, Bdotnsqd, &
-                                target_length, target_tflux, &
+                                target_length, target_tflux, converged, &
                                 fforig, ffbest
   use descentparameters
 
-  implicit none  
+  implicit none
   
   include "mpif.h"
   
@@ -36,6 +37,12 @@ subroutine descent( Ndof, xdof )
   
   INTEGER              :: Ndof
   REAL                 :: xdof(1:Ndof)
+
+  INTEGER              :: irksave, irkstep
+  REAL                 :: ffold, ydof(1:Ndof), fk(1:Ndof,1:4) ! Runge-Kutta ;
+
+  REAL                 :: fjac(1:Ndof,1:Ndof), RR(1:Ndof*(Ndof+1)/2), QTF(1:Ndof), Wk(1:Ndof,1:4), xtol, epsfcn, factor
+  INTEGER              :: ML, MU, MODE, Ldfjac, irevcm, ic05ndf, LR
 
 ! INTEGER              :: Mdof
 ! REAL                 :: qdof(1:2*Ndof)
@@ -49,74 +56,150 @@ subroutine descent( Ndof, xdof )
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  FATAL( descent, Ntauout  .le.   0, illegal #intermediate output )
-  FATAL( descent, tauend   .le.zero, illegal integration range )
-  FATAL( descent, tautol   .le.zero, illegal integration tolerance )
-
-  Ndegreeoffreedom = Ndof ! this needs to be passed through to subroutines:odes ;
-
-  call dforce( Ndof, xdof(1:Ndof), ff, fdof(1:Ndof) )
+! Ndegreeoffreedom = Ndof ! this needs to be passed through to subroutines:odes ;
   
 ! Mdof = 2 * Ndof
 ! qdof(     1:Ndof) =   xdof(1:Ndof) ! position ;
 ! qdof(Ndof+1:Mdof) = - fdof(1:Ndof) ! velocity ;
-
+  
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  Lrwork = 100 + ( 21 * Ndof )
+! Lrwork = 100 + ( 21 * Ndof )
 ! Lrwork = 100 + ( 21 * Mdof )
   
-  SALLOCATE( rwork, (1:Lrwork), zero )
+! SALLOCATE( rwork, (1:Lrwork), zero )
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
   tnow = MPI_WTIME()
   
-  if( myid.eq.0 ) write(ounit,1000) tnow-tstart, tauend, Ntauout, tautol
+  if( myid.eq.0 ) write(ounit,1000) tnow-tstart, NRKsave, NRKstep, RKstep, converged
+1000 format("descent : ",f10.1," : Runge-Kutta ; NRKsave (outer loop) =",i9," ; NRKstep (inner loop) =",i5," ; RKstep =",es12.5," ; converged =",es13.5," ;")
   
-1000 format("descent : ",f10.1," : calling ode:odes ; tauend =",es9.2," ; Ntauout =",i9," ; tautol =",es9.2," ;")
+  told = tnow
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  fold = one / small ; relerr = tautol ; abserr = sqrtmachprec
+  call dforce( Ndof, xdof(1:Ndof), ff, fdof(1:Ndof) ) ; fk(1:Ndof,1) = - fdof(1:Ndof)
   
-  do iter = 1, Ntauout    ! allows intermediate output & archive;
+  ferr = sqrt( sum(fdof(1:Ndof)*fdof(1:Ndof)) / Ndof )
+
+  ffold = ff ! initialize;
+  
+  do irksave = 1, NRKsave ! allows intermediate output & archive;
    
-   iflag = 1 ; taustart = zero ; ltauend = tauend /  Ntauout
-   
-   told = MPI_WTIME()
-   
-   call ode( xodes, Ndof, xdof(1:Ndof), taustart, ltauend, relerr, abserr, iflag, rwork(1:Lrwork), iwork(1:Liwork) )
-!  call ode( qodes, Mdof, qdof(1:Mdof), taustart, ltauend, relerr, abserr, iflag, rwork(1:Lrwork), iwork(1:Liwork) )
+   do irkstep = 1, NRKstep ! allows intermediate output & archive;
+    
+    ydof(1:Ndof) = xdof(1:Ndof) + fk(1:Ndof,1) * RKstep * half ; call dforce( Ndof, ydof(1:Ndof), ff, fdof(1:Ndof) ) ; fk(1:Ndof,2) = - fdof(1:Ndof)
+    ydof(1:Ndof) = xdof(1:Ndof) + fk(1:Ndof,2) * RKstep * half ; call dforce( Ndof, ydof(1:Ndof), ff, fdof(1:Ndof) ) ; fk(1:Ndof,3) = - fdof(1:Ndof)
+    ydof(1:Ndof) = xdof(1:Ndof) + fk(1:Ndof,3) * RKstep        ; call dforce( Ndof, ydof(1:Ndof), ff, fdof(1:Ndof) ) ; fk(1:Ndof,4) = - fdof(1:Ndof)
+    
+    xdof(1:Ndof) = xdof(1:Ndof) + ( fk(1:Ndof,1) + 2 * fk(1:Ndof,2) + 2 * fk(1:Ndof,3) + fk(1:Ndof,4) ) * RKstep / six ! Runge-Kutta step;
+    
+    call dforce( Ndof, xdof(1:Ndof), ff, fdof(1:Ndof) ) ; fk(1:Ndof,1) = - fdof(1:Ndof)
+
+    ferr = sqrt( sum(fdof(1:Ndof)*fdof(1:Ndof)) / Ndof )
+    
+    if( ff.gt.ffold ) then
+     if( myid.eq.0 ) write(ounit,1010) tnow-tstart, "difference", totlengt(0)-target_length, Tfluxave(0)-target_tflux, Bdotnsqd(0), ff, ferr, tnow-told
+     return
+    endif
+    
+    ffold = ff
+
+   enddo ! end of do irkstep ;
+      
+   call archive( Ndof, xdof(1:Ndof), ferr )
    
    tnow = MPI_WTIME()
+   
+   if( myid.eq.0 ) write(ounit,1010) tnow-tstart, "difference", totlengt(0)-target_length, Tfluxave(0)-target_tflux, Bdotnsqd(0), ff, ferr, tnow-told
+   
+   told = tnow
+
+   if( ferr.lt.converged ) exit
+    
+  enddo ! end of do irksave ;
+  
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+  
+!  if( myid.eq.0 ) write(ounit,'("descent : ",f10.1," : calling C05NDF ;")') tnow-tstart
+!  
+!  xtol = sqrtmachprec ; Ml = Ndof-1  ; Mu = Ndof-1 ; epsfcn = sqrtmachprec ; mode = 1 ; factor = 1.0E-01 ; Ldfjac = Ndof ; LR = Ndof * ( Ndof + 1 ) / 2
+!  
+!  irevcm = 0 ; ic05ndf = 1
+!  
+!  do
+!   
+!   call C05NDF( irevcm, Ndof, xdof(1:Ndof), fdof(1:Ndof), xtol, Ml, Mu, epsfcn, fk(1:Ndof,1), mode, factor, fjac, Ldfjac, RR, LR, QTF, Wk, ic05ndf )
+!   
+!   select case( irevcm )
+!    
+!   case( 0 ) ! final exit;
+!    
+!    write(ounit,'("descent : " 10x " : finished ; ic05ndf ="i3" ;")') 
+!    
+!    exit
+!    
+!   case( 1 ) ! no action required;
+!    
+!    ferr = sqrt( sum(fdof(1:Ndof)*fdof(1:Ndof)) / Ndof )
+!    
+!    call archive( Ndof, xdof(1:Ndof), ferr )
+!    
+!    tnow = MPI_WTIME()
+!    
+!    if( myid.eq.0 ) write(ounit,1010) tnow-tstart, "intmediate", totlengt(0)-target_length, Tfluxave(0)-target_tflux, Bdotnsqd(0), ff, ferr, tnow-told
+!    
+!    told = tnow
+!    
+!   case( 2 ) ! compute fvec;
+!    
+!    call dforce( Ndof, xdof(1:Ndof), ff, fdof(1:Ndof) )
+!    
+!   end select ! end select case( irevcm );
+!   
+!  enddo ! end of do;
+!  
+!  call dforce( Ndof, xdof(1:Ndof), ff, fdof(1:Ndof) )
+!  
+!  ferr = sqrt( sum(fdof(1:Ndof)*fdof(1:Ndof)) / Ndof )
+!  
+!  call archive( Ndof, xdof(1:Ndof), ferr )
+!  
+!  tnow = MPI_WTIME()
+!  
+!  if( myid.eq.0 ) write(ounit,1010) tnow-tstart, " finished ", totlengt(0)-target_length, Tfluxave(0)-target_tflux, Bdotnsqd(0), ff, ferr, tnow-told
+  
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+
+!  call ode( xodes, Ndof, xdof(1:Ndof), taustart, ltauend, relerr, abserr, iflag, rwork(1:Lrwork), iwork(1:Liwork) )
+!  call ode( qodes, Mdof, qdof(1:Mdof), taustart, ltauend, relerr, abserr, iflag, rwork(1:Lrwork), iwork(1:Liwork) )
+   
+  !tnow = MPI_WTIME()
 
 !  xdof(1:Ndof) = qdof(1:Ndof)
    
-   call dforce( Ndof, xdof(1:Ndof), ff, fdof(1:Ndof) )
+  !call dforce( Ndof, xdof(1:Ndof), ff, fdof(1:Ndof) )
    
-   ferr = sqrt( sum(fdof(1:Ndof)*fdof(1:Ndof)) / Ndof )
-   
-   call archive
-   
-   if( myid.eq. 0) then
+  !if( myid.eq. 0) then
     
-    select case( iflag )
-    case( 2 )
-     write(ounit,1010) tnow-tstart, "descent", totlengt(0)-target_length, Tfluxave(0)-target_tflux, Bdotnsqd(0), ff, ferr, tnow-told  
-    case( 3 )
-     write(ounit,'("descent : ",f10.1," ; called  ode/odes ; iflag =",i3," ; tautol or abserr too small ;")') tnow-tstart, iflag
-    case ( 4 )
-     write(ounit,'("descent : ",f10.1," ; called  ode/odes ; iflag =",i3," ; tauend not reached ; steps > 500 ;")') tnow-tstart, iflag
-    case ( 5 )
-     write(ounit,'("descent : ",f10.1," ; called  ode/odes ; iflag =",i3," ; tauend not reached ; equation is stiff ;")') tnow-tstart, iflag
-    case ( 6 )
-     write(ounit,'("descent : ",f10.1," ; called  ode/odes ; iflag =",i3," ; invalid input ;")') tnow-tstart, iflag
-    case default
-     write(ounit,'("descent : ",f10.1," ; called  ode/odes ; iflag =",i3," ; unrecognized ;")') tnow-tstart, iflag
-    end select
+  ! select case( iflag )
+  ! case( 2 )
+  !  write(ounit,1010) tnow-tstart, "difference", totlengt(0)-target_length, Tfluxave(0)-target_tflux, Bdotnsqd(0), ff, ferr, tnow-told  
+  ! case( 3 )
+  !  write(ounit,'("descent : ",f10.1," ; called  ode/odes ; iflag =",i3," ; tautol or abserr too small ;")') tnow-tstart, iflag
+  ! case ( 4 )
+  !  write(ounit,'("descent : ",f10.1," ; called  ode/odes ; iflag =",i3," ; tauend not reached ; steps > 500 ;")') tnow-tstart, iflag
+  ! case ( 5 )
+  !  write(ounit,'("descent : ",f10.1," ; called  ode/odes ; iflag =",i3," ; tauend not reached ; equation is stiff ;")') tnow-tstart, iflag
+  ! case ( 6 )
+  !  write(ounit,'("descent : ",f10.1," ; called  ode/odes ; iflag =",i3," ; invalid input ;")') tnow-tstart, iflag
+  ! case default
+  !  write(ounit,'("descent : ",f10.1," ; called  ode/odes ; iflag =",i3," ; unrecognized ;")') tnow-tstart, iflag
+  ! end select
     
-   endif ! end of if( myid.eq.0 ) ;
+  !endif ! end of if( myid.eq.0 ) ;
    
 !  if( sum(qdof(Ndof+1:Mdof)*fdof(1:Ndof)).gt.zero ) qdof(Ndof+1:Mdof) = -fdof(1:Ndof) ! going `uphill';
 
@@ -132,17 +215,13 @@ subroutine descent( Ndof, xdof )
 
 !  fold = ff
 
-  enddo ! end of do iter;
+!  enddo ! end of do iter;
   
-1010 format("descent : ",f10.1," : ",a7," : L =",es18.10," ; F =",es18.10," ; ":"B =",es17.10," ; O =",es17.10," ; |dO| =",es12.05," ; time =",f9.2,"s ;")  
+1010 format("descent : ",f10.1," : ",a10," : L =",es18.10," ; F =",es18.10," ; ":"B =",es17.10," ; O =",es17.10," ; |dO| =",es12.05," ; time =",f9.2,"s ;")
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  DALLOCATE( rwork )
-
- !tautol = relerr
-  
-  call archive
+! DALLOCATE( rwork )
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
@@ -182,29 +261,29 @@ end subroutine xodes
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
-subroutine qodes( tau, qdof, fdof )
-  
-  use globals          , only : friction
-  use descentparameters
-  
-  implicit none
-  
-  include "mpif.h"
-  
-  REAL                 :: tau, qdof(*), fdof(*)
-  
-  INTEGER              :: Ndof, ierr
-  REAL                 :: ff
-  
-  Ndof = Ndegreeoffreedom
-  
-  call dforce( Ndof, qdof(1:Ndof), ff, fdof(1:Ndof) )
-  
-  fdof(     1:  Ndof) =                             qdof(Ndof+1:2*Ndof)
-  fdof(Ndof+1:2*Ndof) = - fdof(1:Ndof) - friction * qdof(Ndof+1:2*Ndof)
-
-  return
-  
-end subroutine qodes
+!subroutine qodes( tau, qdof, fdof )
+!  
+!  use globals          , only : friction
+!  use descentparameters
+!  
+!  implicit none
+!  
+!  include "mpif.h"
+!  
+!  REAL                 :: tau, qdof(*), fdof(*)
+!  
+!  INTEGER              :: Ndof, ierr
+!  REAL                 :: ff
+!  
+!  Ndof = Ndegreeoffreedom
+!  
+!  call dforce( Ndof, qdof(1:Ndof), ff, fdof(1:Ndof) )
+!  
+!  fdof(     1:  Ndof) =                             qdof(Ndof+1:2*Ndof)
+!  fdof(Ndof+1:2*Ndof) = - fdof(1:Ndof) - friction * qdof(Ndof+1:2*Ndof)
+!
+!  return
+!  
+!end subroutine qodes
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
