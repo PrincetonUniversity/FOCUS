@@ -20,7 +20,7 @@ subroutine initial
   include "mpif.h"
   
   LOGICAL :: exist
-  INTEGER :: icpu, ierr
+  INTEGER :: icpu, ierr, astat
   REAL    :: tnow
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -73,6 +73,12 @@ subroutine initial
 
   if( weight_length.lt.zero ) weight_length = zero
   
+  FATAL( initial, Ntrj.lt.1, illegal )
+
+  SALLOCATE( iota, (0:Ntrj,1:2), zero )
+
+  xyaxis(1:2) = zero
+
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   return

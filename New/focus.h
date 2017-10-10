@@ -42,7 +42,7 @@ program focus
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-  INTEGER                :: icoil, mm, maxNF, Ndof, ii, iwrite, ierr, astat
+  INTEGER                :: icoil, mm, maxNF, Ndof, ii, ierr, astat
   REAL                   :: tnow, told, ff, ferr
   REAL     , allocatable :: xdof(:), fdof(:)
   CHARACTER              :: packorunpack
@@ -176,7 +176,7 @@ program focus
   
   if( Ldescent ) then
    
-   call descent( Ndof, xdof(1:Ndof) )
+   call descent( Ndof, xdof(1:Ndof), ferr )
    
   !deallocate( coil ) 
   !DALLOCATE( xdof )
@@ -204,7 +204,13 @@ program focus
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-  if( Ntrj.gt.0 .and. Npts.gt.1 ) call pcplot
+  if( Npts.ge.1 ) then
+
+   call pcplot
+
+   call archive( Ndof, xdof(1:Ndof), ferr )
+
+  endif
    
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   

@@ -16,104 +16,104 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
-  REAL, parameter      :: zero       =         0.0
-  REAL, parameter      :: one        =         1.0
-  REAL, parameter      :: two        =         2.0
-  REAL, parameter      :: three      =         3.0
-  REAL, parameter      :: four       =         4.0
-  REAL, parameter      :: five       =         5.0
-  REAL, parameter      :: six        =         6.0
-  REAL, parameter      :: seven      =         7.0
-  REAL, parameter      :: eight      =         8.0
-  REAL, parameter      :: nine       =         9.0
-  REAL, parameter      :: ten        =        10.0
-  REAL, parameter      :: eleven     =        11.0
-  REAL, parameter      :: twelve     =        12.0
+  REAL, parameter    :: zero       =         0.0
+  REAL, parameter    :: one        =         1.0
+  REAL, parameter    :: two        =         2.0
+  REAL, parameter    :: three      =         3.0
+  REAL, parameter    :: four       =         4.0
+  REAL, parameter    :: five       =         5.0
+  REAL, parameter    :: six        =         6.0
+  REAL, parameter    :: seven      =         7.0
+  REAL, parameter    :: eight      =         8.0
+  REAL, parameter    :: nine       =         9.0
+  REAL, parameter    :: ten        =        10.0
+  REAL, parameter    :: eleven     =        11.0
+  REAL, parameter    :: twelve     =        12.0
   
-  REAL, parameter      :: hundred    =       100.0
-  REAL, parameter      :: thousand   =      1000.0
+  REAL, parameter    :: hundred    =       100.0
+  REAL, parameter    :: thousand   =      1000.0
   
-  REAL, parameter      :: half       =  one / two
-  REAL, parameter      :: third      =  one / three 
-  REAL, parameter      :: quart      =  one / four
-  REAL, parameter      :: fifth      =  one / five
-  REAL, parameter      :: sixth      =  one / six
+  REAL, parameter    :: half       =  one / two
+  REAL, parameter    :: third      =  one / three 
+  REAL, parameter    :: quart      =  one / four
+  REAL, parameter    :: fifth      =  one / five
+  REAL, parameter    :: sixth      =  one / six
   
-  REAL, parameter      :: pi         =  3.141592653589793238462643383279502884197
-  REAL, parameter      :: pi2        =  pi * two
-  REAL, parameter      :: bsconstant =  1.0E-07   !biot-savart constant
-  REAL, parameter      :: antibscont =  1.0E-07 / bsconstant
-  REAL, parameter      :: mu0        =  2.0E-07 * pi2
-  REAL, parameter      :: goldenmean =  1.618033988749895 ! golden mean = ( one + sqrt(five) ) / two ;    
+  REAL, parameter    :: pi         =  3.141592653589793238462643383279502884197
+  REAL, parameter    :: pi2        =  pi * two
+  REAL, parameter    :: bsconstant =  1.0E-07   !biot-savart constant
+  REAL, parameter    :: antibscont =  1.0E-07 / bsconstant
+  REAL, parameter    :: mu0        =  2.0E-07 * pi2
+  REAL, parameter    :: goldenmean =  1.618033988749895 ! golden mean = ( one + sqrt(five) ) / two ;    
   
-  INTEGER              :: ounit      =  6 ! output to screen
-  INTEGER              :: eunit      =  0 ! error unit
-  INTEGER              :: wunit      =  7 ! write unit
-  INTEGER              :: runit      =  8 ! read  unit
-  INTEGER              :: funit      =  9 ! general I/O
-  INTEGER              :: bunit      = 10 ! backup unit for I/O
-  INTEGER              :: punit      = 11 ! Poincare
+  INTEGER            :: ounit      =  6 ! output to screen
+  INTEGER            :: eunit      =  0 ! error unit
+  INTEGER            :: wunit      =  7 ! write unit
+  INTEGER            :: runit      =  8 ! read  unit
+  INTEGER            :: funit      =  9 ! general I/O
+  INTEGER            :: bunit      = 10 ! backup unit for I/O
+  INTEGER            :: punit      = 11 ! Poincare
   
-  CHARACTER(LEN=100)   :: ext       ! extention;
-  CHARACTER(LEN=100)   :: inputfile ! input namelist;
-  CHARACTER(LEN=100)   :: surffile  ! surface file;
-  CHARACTER(LEN=100)   :: axisfile  ! axis file;
-  CHARACTER(LEN=100)   :: coilfile  ! FOCUS coil file ! set in initial; SRH; 29 Sep 17;
-  CHARACTER(LEN=100)   :: inpcoils  ! input coils.ext file
- !CHARACTER(LEN=100)   :: harmfile  ! harmonics file
-  CHARACTER(LEN=100)   :: hdf5file  ! hdf5 file
-  CHARACTER(LEN=100)   :: outcoils  ! output ext.coils file
-  CHARACTER(LEN=100)   :: outplots  ! output ext.coils file
+  CHARACTER(LEN=100) :: ext       ! extention;
+  CHARACTER(LEN=100) :: inputfile ! input namelist;
+  CHARACTER(LEN=100) :: surffile  ! surface file;
+  CHARACTER(LEN=100) :: axisfile  ! axis file;
+  CHARACTER(LEN=100) :: coilfile  ! FOCUS coil file ! set in initial; SRH; 29 Sep 17;
+  CHARACTER(LEN=100) :: inpcoils  ! input coils.ext file
+ !CHARACTER(LEN=100) :: harmfile  ! harmonics file
+  CHARACTER(LEN=100) :: hdf5file  ! hdf5 file
+  CHARACTER(LEN=100) :: outcoils  ! output ext.coils file
+  CHARACTER(LEN=100) :: outplots  ! output ext.coils file
   
-  INTEGER              :: Icheck         =        0         ! checking;
+  INTEGER            :: Icheck         =        0         ! checking;
 
-  INTEGER              :: Isurface       =        1         
-  REAL                 :: minorrad       =        0.100D-00
-  REAL                 :: ellipticity    =        1.000D+00
-  INTEGER              :: nrotate        =        0
-  REAL                 :: zetaoff        =        0.000D+00
+  INTEGER            :: Isurface       =        1         
+  REAL               :: minorrad       =        0.100D-00
+  REAL               :: ellipticity    =        1.000D+00
+  INTEGER            :: nrotate        =        0
+  REAL               :: zetaoff        =        0.000D+00
 
-  INTEGER              :: Nteta          =       64
-  INTEGER              :: Nzeta          =       64
+  INTEGER            :: Nteta          =       64
+  INTEGER            :: Nzeta          =       64
 
-  INTEGER              :: Initialize     =        0
-  INTEGER              :: Ncoils         =        0
-  REAL                 :: init_current   =        1.000D+06
-  REAL                 :: init_radius    =        1.000D+00
-  INTEGER              :: IsVaryCurrent  =        1
-  INTEGER              :: IsVaryGeometry =        1
-  INTEGER              :: NFcoil         =        2
+  INTEGER            :: Initialize     =        0
+  INTEGER            :: Ncoils         =        0
+  REAL               :: init_current   =        1.000D+06
+  REAL               :: init_radius    =        1.000D+00
+  INTEGER            :: IsVaryCurrent  =        1
+  INTEGER            :: IsVaryGeometry =        1
+  INTEGER            :: NFcoil         =        2
 
-  INTEGER              :: Nsegments      =       64
+  INTEGER            :: Nsegments      =       64
 
-  INTEGER              :: case_length    =        1
-  REAL                 :: weight_bnorm   =        1.000D+00
-  REAL                 :: weight_bharm   =        0.000D+00
-  REAL                 :: weight_tflux   =        1.000D+00
-  REAL                 :: target_tflux   =        1.000D+00
-  REAL                 :: weight_length  =        1.000D-02
-  REAL                 :: target_length  =        0.000D+00
+  INTEGER            :: case_length    =        1
+  REAL               :: weight_bnorm   =        1.000D+00
+  REAL               :: weight_bharm   =        0.000D+00
+  REAL               :: weight_tflux   =        1.000D+00
+  REAL               :: target_tflux   =        1.000D+00
+  REAL               :: weight_length  =        1.000D-02
+  REAL               :: target_length  =        0.000D+00
 
-  REAL                 :: wspectral      =        1.000D-06
-  REAL                 :: pspectral      =        2.000D+00
+  REAL               :: wspectral      =        1.000D-06
+  REAL               :: pspectral      =        2.000D+00
 
-  REAL                 :: converged      =        1.000D-03
+  REAL               :: converged      =        1.000D-03
 
-  REAL                 ::  tauend        =        1.000D-00
-  INTEGER              :: Ntauout        =       10
-  REAL                 ::  tautol        =        1.000D-03
+  REAL               ::  tauend        =        1.000D-00
+  INTEGER            :: Ntauout        =       10
+  REAL               ::  tautol        =        1.000D-03
 
-  INTEGER              :: NRKsave        =       10
-  INTEGER              :: NRKstep        =       10
-  REAL                 ::  RKstep        =        1.000D-02
+  INTEGER            :: NRKsave        =       10
+  INTEGER            :: NRKstep        =       10
+  REAL               ::  RKstep        =        1.000D-02
 
-  REAL                 :: friction       =        0.500D-00
+  REAL               :: friction       =        0.500D-00
 
-  INTEGER              :: Iminimize      =        0
+  INTEGER            :: Iminimize      =        0
 
-  INTEGER              :: Ntrj           =        0
-  INTEGER              :: Npts           =        0
-  REAL                 :: odetol         =        1.0D-06
+  INTEGER            :: Ntrj           =        1
+  INTEGER            :: Npts           =        0
+  REAL               :: odetol         =        1.0D-06
 
   namelist / focusin /  Icheck         , &
                         Isurface       , &
@@ -152,11 +152,11 @@ module globals
                         Npts           , &
                         odetol
 
-  INTEGER              :: myid, ncpu
-  REAL                 :: machprec, vsmall, small, sqrtmachprec
-  CHARACTER            :: nodelabel*3
-
-  INTEGER              :: Nt, Nz, Ntz, Ns ! shorthand;
+  INTEGER                 :: myid, ncpu
+  REAL                    :: machprec, vsmall, small, sqrtmachprec
+  CHARACTER               :: nodelabel*3
+  
+  INTEGER                 :: Nt, Nz, Ntz, Ns ! shorthand;
 
   type toroidalsurface
      INTEGER              :: Nteta, Nzeta
@@ -165,6 +165,7 @@ module globals
      REAL   , allocatable :: xx(:,:), yy(:,:), zz(:,:), nx(:,:), ny(:,:), nz(:,:), ds(:,:), xt(:,:), yt(:,:), zt(:,:)
      REAL   , allocatable :: dL(:), dT(:,:), dB(:,:,:), Bp(:,:) ! total normal magnetic field; plasma normal magnetic field;
   end type toroidalsurface
+  type(toroidalsurface)   :: surf
 
   type spacecurve
      INTEGER              :: itype, NF, Ifree, Lfree, NS
@@ -175,38 +176,37 @@ module globals
      INTEGER              :: gdof, idof
      character(LEN=10)    :: name
   end type spacecurve
+  type(spacecurve), allocatable :: coil(:)  
 
-  type(spacecurve)     , allocatable :: coil(:)  
-  type(toroidalsurface)              :: surf
-
-  INTEGER              :: Nfp
-  INTEGER              :: Nfou = 0, NBnf = 0 ! this should be local to readsrf; 04 Sep 17;
-  INTEGER, allocatable :: bim(:), bin(:), Bnim(:), Bnin(:)
-  REAL   , allocatable :: Rbc(:), Zbs(:), Rbs(:), Zbc(:), Bnc(:), Bns(:), cosip(:), sinip(:)
+  INTEGER                 :: Nfp
+  INTEGER                 :: Nfou = 0, NBnf = 0 ! this should be local to readsrf; 04 Sep 17;
+  INTEGER, allocatable    :: bim(:), bin(:), Bnim(:), Bnin(:)
+  REAL   , allocatable    :: Rbc(:), Zbs(:), Rbs(:), Zbc(:), Bnc(:), Bns(:), cosip(:), sinip(:)
     
-! REAL                 :: Inorm = one, Gnorm = one                !current and geometry normalizations;
+  REAL                    :: Tfluxerr
+  REAL   , allocatable    :: totlengt(:), Tfluxave(:), Bdotnsqd(:)
 
-  REAL                 :: Tfluxerr
-  REAL   , allocatable :: totlengt(:), Tfluxave(:), Bdotnsqd(:)
-
-  INTEGER              :: axisNF
-  REAL   , allocatable :: axisxc(:), axisxs(:), axisyc(:), axisys(:), axiszc(:), axiszs(:)
+  INTEGER                 :: axisNF
+  REAL   , allocatable    :: axisxc(:), axisxs(:), axisyc(:), axisys(:), axiszc(:), axiszs(:)
   
-  REAL,    allocatable :: coilsI(:) !coilsI stores the true currents, coil%I stores scaled current;?
-  INTEGER, allocatable :: coilseg(:)
+  REAL,    allocatable    :: coilsI(:) !coilsI stores the true currents, coil%I stores scaled current;?
+  INTEGER, allocatable    :: coilseg(:)
   character(LEN=20), allocatable :: coilname(:)
 
-  REAL                 :: tstart, ffbest, fforig
+  REAL                    :: tstart, ffbest, fforig
 
-  LOGICAL              :: Ldescent
+  LOGICAL                 :: Ldescent
 
-  REAL                 :: discretecurve, deltatheta, discretesurface
-  REAL, allocatable    :: cmt(:,:), smt(:,:)
+  REAL                    :: discretecurve, deltatheta, discretesurface
+  REAL, allocatable       :: cmt(:,:), smt(:,:)
 
-  INTEGER              :: iarchive
+  INTEGER                 :: iarchive
+  REAL, allocatable       :: iota(:,:)
 
-  REAL, allocatable    :: tdof(:) ! tangent direction in independent degree-of-freedom (Fourier) space;
-  REAL, allocatable    :: Mdof(:) ! spectral gradient in independent degree-of-freedom (Fourier) space;
+  REAL, allocatable       :: tdof(:) ! tangent direction in independent degree-of-freedom (Fourier) space;
+  REAL, allocatable       :: Mdof(:) ! spectral gradient in independent degree-of-freedom (Fourier) space;
+
+  REAL                    :: xyaxis(1:2)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 

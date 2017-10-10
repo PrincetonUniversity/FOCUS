@@ -89,7 +89,9 @@ subroutine rdcoils
   
   LOGICAL              :: exist
   INTEGER              :: icoil, maxnseg, ifirst, NF, itmp, ip, icoef, jj, kk, ierr, astat, lNF, maxNF, mm
-  REAL                 :: zeta, totalcurrent, Ro, Zo, r1, r2, z1, z2, tt, ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3), rdummy, tnow
+  REAL                 :: zeta, totalcurrent, Ro, Zo, r1, r2, z1, z2, tt
+  REAL                 :: ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3), v1(1:3), v2(1:3), w1(1:3), w2(1:3)
+  REAL                 :: rdummy, tnow
   REAL   , allocatable :: coilsX(:,:), coilsY(:,:), coilsZ(:,:)
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -361,7 +363,7 @@ subroutine rdcoils
       
       tt = (jj-1) * pi2 / Ns !poloidal angle;
       
-      call knotxx( init_radius, tt, zeta, ax, at, az, xx, xs, xt, xz )
+      call knotxx( init_radius, tt, zeta, ax, at, az, xx, xs, xt, xz, v1, v2, w1, w2 )
       
       coilsX(jj,icoil) = xx(1)
       coilsY(jj,icoil) = xx(2)

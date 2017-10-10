@@ -126,7 +126,11 @@ subroutine archive( Ndof, xdof, ferr )
    enddo
   enddo
   HWRITERV(      1           ,   spectralwidth ,   spectralwidth                )
-  
+
+  HWRITERA( Ntrj+1 , 2       ,   iota          ,   iota(0:Ntrj,1:2)             )
+
+  HWRITERV(      2           ,   xyaxis        ,   xyaxis(1:2)                  )
+
   FATAL( restart, hdfier.ne.0, error calling h5fclose_f )
   
   call h5close_f( hdfier ) ! close Fortran interface;

@@ -29,7 +29,7 @@ subroutine readsrf
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
   INTEGER :: astat, ierr, ii, jj
-  REAL    :: teta, zeta, xx(1:3), xs(1:3), xt(1:3), xz(1:3), bn, ax(1:3), at(1:3), az(1:3), ds(1:3), dd, tnow, srho
+  REAL    :: teta, zeta, xx(1:3), xs(1:3), xt(1:3), xz(1:3), bn, ax(1:3), at(1:3), az(1:3), ds(1:3), dd, tnow, srho, v1(1:3), v2(1:3), w1(1:3), w2(1:3)
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
@@ -91,8 +91,8 @@ subroutine readsrf
    do jj = 0, Nz ; zeta = ( jj + half ) * pi2 / Nz
     
     select case( Isurface )
-    case( 0 ) ; call surfxx(       teta, zeta,                            xx(1:3),          xt(1:3), xz(1:3), bn )
-    case( 1 ) ; call knotxx( srho, teta, zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3)     ) ; bn = zero
+    case( 0 ) ; call surfxx(       teta, zeta,             xx,     xt, xz,                    bn )
+    case( 1 ) ; call knotxx( srho, teta, zeta, ax, at, az, xx, xs, xt, xz, v1, v2, w1, w2 ) ; bn = zero
     case default
      FATAL( focus , .true., selected Isurface is not supported )
     end select
@@ -598,7 +598,7 @@ end subroutine rdaxis
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
-subroutine knotxx( srho, teta, zeta, ax, at, az, xx, xs, xt, xz )
+subroutine knotxx( srho, teta, zeta, ax, at, az, xx, xs, xt, xz, v1, v2, w1, w2 )
   
   use globals, only : zero, one, half, pi2, small, myid, ounit, sqrtmachprec, &
                       axisNF, axisxc, axisxs, axisyc, axisys, axiszc, axiszs, &
@@ -610,14 +610,12 @@ subroutine knotxx( srho, teta, zeta, ax, at, az, xx, xs, xt, xz )
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  REAL                 :: srho, teta, zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3)
+  REAL                 :: srho, teta, zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3), v1(1:3), v2(1:3), w1(1:3), w2(1:3)
   
   INTEGER              :: ierr, p(1:3), q(1:3), mm
-  REAL                 :: cqz, sqz, cpz, spz, RR(0:3), ZZ(0:3), x0(1:3), x1(1:3), x2(1:3), x3(1:3), arg, v1(1:3), v2(1:3), w1(1:3), w2(1:3)
+  REAL                 :: cqz, sqz, cpz, spz, RR(0:3), ZZ(0:3), x0(1:3), x1(1:3), x2(1:3), x3(1:3), arg
   REAL                 :: a0, a1, a2, b0, b1, carg, sarg, cost, sint
   REAL                 :: tt(1:3), td(1:3), dd(1:3), xa, ya, za, ff, nn(1:3), nz(1:3), bb(1:3), bz(1:3)
-  
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
@@ -637,8 +635,6 @@ subroutine knotxx( srho, teta, zeta, ax, at, az, xx, xs, xt, xz )
   x2(1:3) = (/   zero   ,   zero   ,   zero    /)
   x3(1:3) = (/   zero   ,   zero   ,   zero    /)
   
-! if( srho.gt.zero ) then ! will need additional derivatives to construct normal and binormal; 14 Apr 16;
-  
   do mm = 1, axisNF ; carg = cos(mm*zeta) ; sarg = sin(mm*zeta)
    x0(1:3) = x0(1:3) + ( + (/ axisxc(mm), axisyc(mm), axiszc(mm) /) * carg &
                          + (/ axisxs(mm), axisys(mm), axiszs(mm) /) * sarg ) 
@@ -650,17 +646,6 @@ subroutine knotxx( srho, teta, zeta, ax, at, az, xx, xs, xt, xz )
                          - (/ axisxs(mm), axisys(mm), axiszs(mm) /) * carg ) * mm**3
   enddo
    
-!else
-   
-! do mm = 1, axisNF ; carg = cos(mm*zeta) ; sarg = sin(mm*zeta)
-!  x0(1:3) = x0(1:3) + ( + (/ axisxc(mm), axisyc(mm), axiszc(mm) /) * carg &
-!                        + (/ axisxs(mm), axisys(mm), axiszs(mm) /) * sarg )       
-!  x1(1:3) = x1(1:3) + ( - (/ axisxc(mm), axisyc(mm), axiszc(mm) /) * sarg &
-!                        + (/ axisxs(mm), axisys(mm), axiszs(mm) /) * carg ) * mm   
-! enddo
-    
-! endif ! end of if( srho.gt.zero ) ;
-   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
   ax(1:3) = x0(1:3)
@@ -668,8 +653,6 @@ subroutine knotxx( srho, teta, zeta, ax, at, az, xx, xs, xt, xz )
   az(1:3) = x1(1:3)
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-  
-! if( srho.gt.zero ) then
   
   a0      = sqrt( x1(1)*x1(1) + x1(2)*x1(2) + x1(3)*x1(3) )               
   
@@ -723,157 +706,6 @@ subroutine knotxx( srho, teta, zeta, ax, at, az, xx, xs, xt, xz )
   xt(1:3) = at(1:3) + srho * minorrad * ( - ellipticity * sin(teta) * v1(1:3) + cos(teta) * v2(1:3) )
   xz(1:3) = az(1:3) + srho * minorrad * (   ellipticity * cos(teta) * w1(1:3) + sin(teta) * w2(1:3) )
    
- !xx(1:3) = x0(1:3) + srho * (   cost * nn(1:3) - sint * bb(1:3) ) ! srho is minor radius;
- !xs(1:3) = zero    +      (   cost * nn(1:3) - sint * bb(1:3) )
- !xt(1:3) = zero    + srho * ( - sint * nn(1:3) - cost * bb(1:3) )
- !xz(1:3) = x1(1:3) + srho * (   cost * nz(1:3) - sint * bz(1:3) )
-  
-! else
-   
-!  xx(1:3) = ax(1:3)
-!  xs(1:3) = zero
-!  xt(1:3) = zero
-!  xz(1:3) = zero
-   
-! endif ! end of if( srho.gt.zero );
-  
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-
-#ifdef OLD
-
-   x0(1:3) = (/ xkc(0), ykc(0), zkc(0) /)
-   x1(1:3) = (/ zero  , zero  , zero   /)
-   x2(1:3) = (/ zero  , zero  , zero   /)
-   x3(1:3) = (/ zero  , zero  , zero   /)
-   
-   if( srho.gt.zero ) then ! will need additional derivatives to construct normal and binormal; 14 Apr 16;
-    
-    do mm = 1, knotNF ; carg = cos(mm*zeta) ; sarg = sin(mm*zeta)
-     x0(1:3) = x0(1:3) + ( + (/ xkc(mm), ykc(mm), zkc(mm) /) * carg + (/ xks(mm), yks(mm), zks(mm) /) * sarg ) 
-     x1(1:3) = x1(1:3) + ( - (/ xkc(mm), ykc(mm), zkc(mm) /) * sarg + (/ xks(mm), yks(mm), zks(mm) /) * carg ) * mm   
-     x2(1:3) = x2(1:3) + ( - (/ xkc(mm), ykc(mm), zkc(mm) /) * carg - (/ xks(mm), yks(mm), zks(mm) /) * sarg ) * mm**2
-     x3(1:3) = x3(1:3) + ( + (/ xkc(mm), ykc(mm), zkc(mm) /) * sarg - (/ xks(mm), yks(mm), zks(mm) /) * carg ) * mm**3
-    enddo
-    
-   else
-    
-    do mm = 1, knotNF ; carg = cos(mm*zeta) ; sarg = sin(mm*zeta)
-     x0(1:3) = x0(1:3) + ( + (/ xkc(mm), ykc(mm), zkc(mm) /) * carg + (/ xks(mm), yks(mm), zks(mm) /) * sarg )       
-     x1(1:3) = x1(1:3) + ( - (/ xkc(mm), ykc(mm), zkc(mm) /) * sarg + (/ xks(mm), yks(mm), zks(mm) /) * carg ) * mm   
-    !x2(1:3) = x2(1:3) + ( - (/ xkc(mm), ykc(mm), zkc(mm) /) * carg - (/ xks(mm), yks(mm), zks(mm) /) * sarg ) * mm**2
-    !x3(1:3) = x3(1:3) + ( + (/ xkc(mm), ykc(mm), zkc(mm) /) * sarg - (/ xks(mm), yks(mm), zks(mm) /) * carg ) * mm**3
-    enddo
-    
-   endif ! end of if( srho.gt.zero ) ; 14 Apr 16;
-   
-  case default
-   
-   FATAL( knotxx, .true., selected Itopology is not supported )
-   
-  end select
-  
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  
-  ax(1:3) = x0(1:3)                                                        ! Nov 12 15;
-  at(1:3) = zero                                                           ! Nov 12 15;
-  az(1:3) = x1(1:3)                                                        ! Nov 12 15;
-  
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  
-  if( srho.gt.zero ) then
-   
-   a0      = sqrt( x1(1)*x1(1) + x1(2)*x1(2) + x1(3)*x1(3) )                                   ! Nov 12 15;
-   a1      =     ( x1(1)*x2(1) + x1(2)*x2(2) + x1(3)*x2(3) ) / a0                              ! Nov 12 15;
-   a2      =     ( x2(1)*x2(1) + x2(2)*x2(2) + x2(3)*x2(3)   &
-               +   x1(1)*x3(1) + x1(2)*x3(2) + x1(3)*x3(3) - a1 * a1 ) / a0                    ! Nov 12 15;
-
-   tt(1:3) =   x1(1:3)                                                / a0                     ! Nov 12 15;
-   td(1:3) = ( x2(1:3) - tt(1:3) * a1                               ) / a0                     ! Nov 12 15;
-   dd(1:3) = ( x3(1:3) - td(1:3) * a1 - tt(1:3) * a2 - td(1:3) * a1 ) / a0                     ! Nov 12 15;
-   
-   xa = ( x2(1) - tt(1) * a1 ) ! Nov 12 15;
-   ya = ( x2(2) - tt(2) * a1 ) ! Nov 12 15;
-   za = ( x2(3) - tt(3) * a1 ) ! Nov 12 15;
-   
-   ff = sqrt( xa**2 + ya**2 + za**2 ) ! Nov 12 15;
-   
-   b0 = ff / a0 ! Nov 12 15;
-   
-   b1 = ( ( xa * ( x3(1) - td(1) * a1 - tt(1) * a2 ) &
-          + ya * ( x3(2) - td(2) * a1 - tt(2) * a2 ) &
-          + za * ( x3(3) - td(3) * a1 - tt(3) * a2 ) ) / ff - b0 * a1 ) / a0 ! Nov 12 15;
-
-   nn(1:3) =   td(1:3)                  / b0                                                   ! Nov 12 15;
-   nz(1:3) = ( dd(1:3) - nn(1:3) * b1 ) / b0                                                   ! Nov 12 15;
-   
-   bb(1:3) = (/ tt(2)*nn(3)-tt(3)*nn(2), tt(3)*nn(1)-tt(1)*nn(3), tt(1)*nn(2)-tt(2)*nn(1) /)   ! Nov 12 15;
-   bz(1:3) = (/ td(2)*nn(3)-td(3)*nn(2), td(3)*nn(1)-td(1)*nn(3), td(1)*nn(2)-td(2)*nn(1) /) &
-           + (/ tt(2)*nz(3)-tt(3)*nz(2), tt(3)*nz(1)-tt(1)*nz(3), tt(1)*nz(2)-tt(2)*nz(1) /)   ! Nov 12 15;
-
-   arg = nrotate * zeta + zetaoff
-
-   v1(1:3) =     cos(arg) * nn(1:3) + sin(arg) * bb(1:3)
-
-   w1(1:3) = ( - sin(arg) * nn(1:3) + cos(arg) * bb(1:3) ) * nrotate &
-           + (   cos(arg) * nz(1:3) + sin(arg) * bz(1:3) )
-
-   v2(1:3) =   - sin(arg) * nn(1:3) + cos(arg) * bb(1:3)
-
-   w2(1:3) = ( - cos(arg) * nn(1:3) - sin(arg) * bb(1:3) ) * nrotate &
-           + ( - sin(arg) * nz(1:3) + cos(arg) * bz(1:3) )
-
-   xx(1:3) = ax(1:3) + srho * minorrad * (   ellipticity * cos(teta) * v1(1:3) + sin(teta) * v2(1:3) )
-
-   xt(1:3) = at(1:3) + srho * minorrad * ( - ellipticity * sin(teta) * v1(1:3) + cos(teta) * v2(1:3) )
-
-   xz(1:3) = az(1:3) + srho * minorrad * (   ellipticity * cos(teta) * w1(1:3) + sin(teta) * w2(1:3) )
-
-!  xx(1:3) = ax(1:3) + srho * minorrad * ( (   ellipticity * cos(teta) * cos(zeta) + sin(teta) * sin(zeta) ) * nn(1:3)   &
-!                                      + (   ellipticity * cos(teta) * sin(zeta) - sin(teta) * cos(zeta) ) * bb(1:3) )   ! 31 May 17;
-
-!  xt(1:3) = at(1:3) + srho * minorrad * ( ( - ellipticity * sin(teta) * cos(zeta) + cos(teta) * sin(zeta) ) * nn(1:3)   &
-!                                      + ( - ellipticity * sin(teta) * sin(zeta) - cos(teta) * cos(zeta) ) * bb(1:3) )   ! 31 May 17;
-
-!  xz(1:3) = az(1:3) + srho * minorrad * ( ( - ellipticity * cos(teta) * sin(zeta) + sin(teta) * cos(zeta) ) * nn(1:3)   &
-!                                      + ( + ellipticity * cos(teta) * cos(zeta) + sin(teta) * sin(zeta) ) * bb(1:3) ) & 
-!                    + srho * minorrad * ( (   ellipticity * cos(teta) * cos(zeta) + sin(teta) * sin(zeta) ) * nz(1:3)   &
-!                                      + (   ellipticity * cos(teta) * sin(zeta) - sin(teta) * cos(zeta) ) * bz(1:3) )
-
-
-!  xx(1:3)  = ax(1:3) + srho * minorrad * (   ellipticity * cos(teta) * nn(1:3) + sin(teta) * bb(1:3) )   ! 31 May 17;
-
-!  xt(1:3)  = at(1:3) + srho * minorrad * ( - ellipticity * sin(teta) * nn(1:3) + cos(teta) * bb(1:3) )   ! 31 May 17;
-
-!  xz(1:3)  = az(1:3) + srho * minorrad * ( + ellipticity * sin(teta) * nn(1:3) - cos(teta) * bb(1:3) ) & ! 31 May 17;
-!                     + srho * minorrad * (   ellipticity * cos(teta) * nz(1:3) + sin(teta) * bz(1:3) )   ! 31 May 17;
-
-!  rr = srho * ( minorrad + ellipticity * cos( teta - zeta )        )
-!  rt = srho * (     zero - ellipticity * sin( teta - zeta ) * (+1) )
-!  rz = srho * (     zero - ellipticity * sin( teta - zeta ) * (-1) )
-   
-!  xx(1:3) = ax(1:3) + rr * (   cos(teta) * nn(1:3) - sin(teta) * bb(1:3) ) ! srho is minor radius;
-
-
-!  xt(1:3) = at(1:3) + rt * (   cos(teta) * nn(1:3) - sin(teta) * bb(1:3) ) &
-!                    + rr * ( - sin(teta) * nn(1:3) - cos(teta) * bb(1:3) )
-
-!  xz(1:3) = az(1:3) + rz * (   cos(teta) * nn(1:3) - sin(teta) * bb(1:3) ) &
-!                    + rr * (   cos(teta) * nz(1:3) - sin(teta) * bz(1:3) )
-   
-!  xx(1:3) = x0(1:3) + srho * (   cos(teta) * nn(1:3) - sin(teta) * bb(1:3) ) ! srho is minor radius;
-!  xt(1:3) = zero    + srho * ( - sin(teta) * nn(1:3) - cos(teta) * bb(1:3) )
-!  xz(1:3) = x1(1:3) + srho * (   cos(teta) * nz(1:3) - sin(teta) * bz(1:3) )
-   
-  else
-   
-   xx(1:3) = zero
-   xt(1:3) = zero
-   xz(1:3) = zero
-   
-  endif
-
-#endif
-
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
   return
