@@ -187,7 +187,7 @@ module globals
   REAL   , allocatable    :: totlengt(:), Tfluxave(:), Bdotnsqd(:)
 
   INTEGER                 :: axisNF
-  REAL   , allocatable    :: axisxc(:), axisxs(:), axisyc(:), axisys(:), axiszc(:), axiszs(:)
+  REAL   , allocatable    :: axisxc(:), axisxs(:), axisyc(:), axisys(:), axiszc(:), axiszs(:), axistc(:), axists(:)
   
   REAL,    allocatable    :: coilsI(:) !coilsI stores the true currents, coil%I stores scaled current;?
   INTEGER, allocatable    :: coilseg(:)

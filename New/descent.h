@@ -75,7 +75,8 @@ subroutine descent( Ndof, xdof, ferr )
     
     if( ff.gt.ffold ) then
      if( myid.eq.0 ) write(ounit,1010) tnow-tstart, "increasing", totlengt(0)-target_length, Tfluxave(0)-target_tflux, Bdotnsqd(0), ff, ferr, tnow-told
-     return
+     RKstep = RKstep * half
+    !return
     endif
     
     ffold = ff

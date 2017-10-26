@@ -513,7 +513,7 @@ subroutine rdaxis
   
   use globals, only : zero, one, half, ten, pi2, myid, ncpu, ounit, runit, &
                       ext, axisfile, &
-                      axisNF, axisxc, axisxs, axisyc, axisys, axiszc, axiszs, Nfp, &
+                      axisNF, axisxc, axisxs, axisyc, axisys, axiszc, axiszs, axistc, axists, Nfp, &
                       minorrad, Nt, Nz, surf
   
   implicit none
@@ -523,9 +523,11 @@ subroutine rdaxis
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
   LOGICAL              :: exist
-  INTEGER              :: iostat, astat, ierr
+  INTEGER              :: iostat, astat, ierr, mm, NK 
+  INTEGER, allocatable :: il(:), im(:), in(:)
   REAL                 :: teta, zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xt(1:3), xz(1:3), ds(1:3), dd
-  
+  REAL   , allocatable :: dx(:,:), dy(:,:), dz(:,:), a(:), b(:), c(:), d(:), tau(:)
+    
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
   inquire( file=trim(axisfile), exist=exist )
@@ -550,6 +552,9 @@ subroutine rdaxis
   SALLOCATE( axisys, (0:axisNF), zero )
   SALLOCATE( axiszc, (0:axisNF), zero )
   SALLOCATE( axiszs, (0:axisNF), zero )
+
+  SALLOCATE( axistc, (0:axisNF), zero )
+  SALLOCATE( axists, (0:axisNF), zero )
   
   if( myid.eq.0 ) then
    
@@ -587,7 +592,69 @@ subroutine rdaxis
 !   write(ounit,'("readsrf : " 10x " : axiszc =",    999es11.03)') axiszc(0:axisNF)
 !   write(ounit,'("readsrf : " 10x " : axiszs =",11x,999es11.03)') axiszs(1:axisNF)
 !  endif
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
+  SALLOCATE( il, (0:axisNF), (/ ( mm   , mm = 0, axisNF ) /) )
+  SALLOCATE( im, (0:axisNF), (/ ( mm**2, mm = 0, axisNF ) /) )
+  SALLOCATE( in, (0:axisNF), (/ ( mm**3, mm = 0, axisNF ) /) )
+  
+  NK = 3 * 4 * axisNF ! discrete resolution for resolving torsion;
+  
+  SALLOCATE( dx, (0:NK-1,0:3), zero )
+  SALLOCATE( dy, (0:NK-1,0:3), zero )
+  SALLOCATE( dz, (0:NK-1,0:3), zero )
+  
+  call fft( NK, dx(0:NK-1,0), axisNF,                  axisxc(0:axisNF),                  axisxs(0:axisNF), 1 )
+  call fft( NK, dy(0:NK-1,0), axisNF,                  axisyc(0:axisNF),                  axisys(0:axisNF), 1 )
+  call fft( NK, dz(0:NK-1,0), axisNF,                  axiszc(0:axisNF),                  axiszs(0:axisNF), 1 )
+  
+  call fft( NK, dx(0:NK-1,1), axisNF, + il(0:axisNF) * axisxs(0:axisNF), - il(0:axisNF) * axisxc(0:axisNF), 1 )
+  call fft( NK, dy(0:NK-1,1), axisNF, + il(0:axisNF) * axisys(0:axisNF), - il(0:axisNF) * axisyc(0:axisNF), 1 )
+  call fft( NK, dz(0:NK-1,1), axisNF, + il(0:axisNF) * axiszs(0:axisNF), - il(0:axisNF) * axiszc(0:axisNF), 1 )
+  
+  call fft( NK, dx(0:NK-1,2), axisNF, - im(0:axisNF) * axisxc(0:axisNF), - im(0:axisNF) * axisxs(0:axisNF), 1 )
+  call fft( NK, dy(0:NK-1,2), axisNF, - im(0:axisNF) * axisyc(0:axisNF), - im(0:axisNF) * axisys(0:axisNF), 1 )
+  call fft( NK, dz(0:NK-1,2), axisNF, - im(0:axisNF) * axiszc(0:axisNF), - im(0:axisNF) * axiszs(0:axisNF), 1 )
+  
+  call fft( NK, dx(0:NK-1,3), axisNF, - in(0:axisNF) * axisxs(0:axisNF), + in(0:axisNF) * axisxc(0:axisNF), 1 )
+  call fft( NK, dy(0:NK-1,3), axisNF, - in(0:axisNF) * axisys(0:axisNF), + in(0:axisNF) * axisyc(0:axisNF), 1 )
+  call fft( NK, dz(0:NK-1,3), axisNF, - in(0:axisNF) * axiszs(0:axisNF), + in(0:axisNF) * axiszc(0:axisNF), 1 )
+  
+  SALLOCATE( a, (0:NK-1), zero )
+  SALLOCATE( b, (0:NK-1), zero )
+  SALLOCATE( c, (0:NK-1), zero )
+  SALLOCATE( d, (0:NK-1), zero )
+
+  a(0:NK-1) = dy(0:NK-1,1) * dz(0:NK-1,2) - dy(0:NK-1,2) * dz(0:NK-1,1)
+  b(0:NK-1) = dz(0:NK-1,1) * dx(0:NK-1,2) - dz(0:NK-1,2) * dx(0:NK-1,1)
+  c(0:NK-1) = dx(0:NK-1,1) * dy(0:NK-1,2) - dx(0:NK-1,2) * dy(0:NK-1,1)
+  
+  d(0:NK-1) = a(0:NK-1)**2 + b(0:NK-1)**2 + c(0:NK-1)**2
+  
+  SALLOCATE( tau, (0:NK-1), zero )
+
+  tau(0:NK-1) = ( dx(0:NK-1,3) * a(0:NK-1) + dy(0:NK-1,3) * b(0:NK-1) + dz(0:NK-1,3) * c(0:NK-1) ) / d(0:NK-1)
+  
+  call fft( NK, tau(0:NK-1), axisNF, axistc(0:axisNF), axists(0:axisNF), 0 )
+
+  write(ounit,'("rdaxis  : " 10x " : integrated torsion ;")')
+
+  DALLOCATE( il )
+  DALLOCATE( im )
+  DALLOCATE( in )
+
+  DALLOCATE( dx )
+  DALLOCATE( dy )
+  DALLOCATE( dz )
+
+  DALLOCATE( a  )
+  DALLOCATE( b  )
+  DALLOCATE( c  )
+  DALLOCATE( d  )
+  
+  DALLOCATE( tau )
+
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
   return
@@ -601,7 +668,7 @@ end subroutine rdaxis
 subroutine knotxx( srho, teta, zeta, ax, at, az, xx, xs, xt, xz, v1, v2, w1, w2 )
   
   use globals, only : zero, one, half, pi2, small, myid, ounit, sqrtmachprec, &
-                      axisNF, axisxc, axisxs, axisyc, axisys, axiszc, axiszs, &
+                      axisNF, axisxc, axisxs, axisyc, axisys, axiszc, axiszs, axistc, axists, &
                       minorrad, ellipticity, nrotate, zetaoff
   
   implicit none
@@ -613,7 +680,7 @@ subroutine knotxx( srho, teta, zeta, ax, at, az, xx, xs, xt, xz, v1, v2, w1, w2 
   REAL                 :: srho, teta, zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3), v1(1:3), v2(1:3), w1(1:3), w2(1:3)
   
   INTEGER              :: ierr, p(1:3), q(1:3), mm
-  REAL                 :: cqz, sqz, cpz, spz, RR(0:3), ZZ(0:3), x0(1:3), x1(1:3), x2(1:3), x3(1:3), arg
+  REAL                 :: cqz, sqz, cpz, spz, RR(0:3), ZZ(0:3), x0(1:3), x1(1:3), x2(1:3), x3(1:3), arg, darg
   REAL                 :: a0, a1, a2, b0, b1, carg, sarg, cost, sint
   REAL                 :: tt(1:3), td(1:3), dd(1:3), xa, ya, za, ff, nn(1:3), nz(1:3), bb(1:3), bz(1:3)
   
@@ -689,22 +756,35 @@ subroutine knotxx( srho, teta, zeta, ax, at, az, xx, xs, xt, xz, v1, v2, w1, w2 
   bz(1:3) = (/ td(2)*nn(3)-td(3)*nn(2), td(3)*nn(1)-td(1)*nn(3), td(1)*nn(2)-td(2)*nn(1) /) &
           + (/ tt(2)*nz(3)-tt(3)*nz(2), tt(3)*nz(1)-tt(1)*nz(3), tt(1)*nz(2)-tt(2)*nz(1) /)
   
-  arg = (nrotate*half) * zeta + zetaoff
+!#ifdef DEBUG
+!  
+!  ;                 ;  arg = (nrotate*half) * zeta + zetaoff - axistc(0) * zeta
+!  ;                 ; darg = (nrotate*half)                  - axistc(0)
+!  do mm = 1, axisNF ;  arg =  arg - ( axistc(mm) * sin(mm*zeta) - axists(mm) * cos(mm*zeta) ) / mm ! integrated torsion;
+!   ;                ; darg = darg - ( axistc(mm) * cos(mm*zeta) + axists(mm) * sin(mm*zeta) )      ! 
+!  enddo
+!  
+!#else
   
+  ;                 ;  arg = (nrotate*half) * zeta + zetaoff
+  ;                 ; darg = (nrotate*half)                 
+  
+!#endif
+
   v1(1:3) =     cos(arg) * nn(1:3) + sin(arg) * bb(1:3)
   
-  w1(1:3) = ( - sin(arg) * nn(1:3) + cos(arg) * bb(1:3) ) * (nrotate*half) &
+  w1(1:3) = ( - sin(arg) * nn(1:3) + cos(arg) * bb(1:3) ) * darg &
           + (   cos(arg) * nz(1:3) + sin(arg) * bz(1:3) )
 
   v2(1:3) =   - sin(arg) * nn(1:3) + cos(arg) * bb(1:3)
 
-  w2(1:3) = ( - cos(arg) * nn(1:3) - sin(arg) * bb(1:3) ) * (nrotate*half) &
+  w2(1:3) = ( - cos(arg) * nn(1:3) - sin(arg) * bb(1:3) ) * darg &
           + ( - sin(arg) * nz(1:3) + cos(arg) * bz(1:3) )
 
-  xx(1:3) = ax(1:3) + srho * minorrad * (   ellipticity * cos(teta) * v1(1:3) + sin(teta) * v2(1:3) )
-  xs(1:3) =                  minorrad * (   ellipticity * cos(teta) * v1(1:3) + sin(teta) * v2(1:3) )
-  xt(1:3) = at(1:3) + srho * minorrad * ( - ellipticity * sin(teta) * v1(1:3) + cos(teta) * v2(1:3) )
-  xz(1:3) = az(1:3) + srho * minorrad * (   ellipticity * cos(teta) * w1(1:3) + sin(teta) * w2(1:3) )
+  xx(1:3) = ax(1:3) + srho * minorrad * (   ellipticity * cost * v1(1:3) + sint * v2(1:3) )
+  xs(1:3) =                  minorrad * (   ellipticity * cost * v1(1:3) + sint * v2(1:3) )
+  xt(1:3) =           srho * minorrad * ( - ellipticity * sint * v1(1:3) + cost * v2(1:3) )
+  xz(1:3) = az(1:3) + srho * minorrad * (   ellipticity * cost * w1(1:3) + sint * w2(1:3) )
    
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
@@ -713,3 +793,55 @@ subroutine knotxx( srho, teta, zeta, ax, at, az, xx, xs, xt, xz, v1, v2, w1, w2 
 end subroutine knotxx
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+subroutine fft( NN, xi, NF, xc, xs, iflag )
+  
+  use globals, only : zero, one, two, half, myid
+  
+  implicit none
+  
+  include "mpif.h"
+  
+  INTEGER, intent(in) :: NN, NF, iflag
+  REAL                :: xi(0:NN-1)
+  REAL                :: xc(0:NF), xs(0:NF)
+  
+  INTEGER             :: ierr, ifail
+  REAL                :: xm(0:NN-1), rwk(0:NN-1), sqrtN
+
+  select case( iflag )
+   
+  case( 0 )
+   
+   sqrtN = one / sqrt(NN*one)
+
+   xm(0:NN-1) = xi(0:NN-1)
+   
+   ifail = 0 ; call C06FAF( xm(0:NN-1) , NN , rwk(0:NN-1) , ifail )
+   
+   xc(0) = xm(0) * sqrtN ; xc(1:NF) = xm(1:NF) * two * sqrtN ; xs(1:NF) = - xm(NN-1:NN-NF:-1) * two * sqrtN
+   
+  case( 1 )
+
+   sqrtN = sqrt(NN*one)
+   
+   xi(0:NN-1) = zero
+   
+   xi(0) = xc(0) * sqrtN ; xi(1:NF) = xc(1:NF) * sqrtN * half ; xi(NN-1:NN-NF:-1) = - xs(1:NF) * sqrtN * half
+
+   ifail = 0 ; call C06GBF( xi(0:NN-1) , NN , ifail )
+   ifail = 0 ; call C06EBF( xi(0:NN-1) , NN , ifail )
+   
+  case default
+   
+   FATAL( fft, .true., illegal iflag )
+   
+  end select
+  
+  return
+  
+end subroutine fft
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
