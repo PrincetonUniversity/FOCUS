@@ -154,7 +154,7 @@ program focus
   
   tnow = MPI_WTIME()
 
-  if( myid.eq.0 ) write(ounit,1010) tnow-tstart, "difference", totlengt(0)-target_length, Tfluxave(0)-target_tflux, Bdotnsqd(0), ff, ferr, tnow-told
+  if( myid.eq.0 ) write(ounit,1010) tnow-tstart, "difference", totlengt(0)/pi2, Tfluxave(0)-target_tflux, Bdotnsqd(0), ff, ferr, tnow-told
   
 1010 format("focus   : ",f10.1," : ",a10," : L =",es18.10," ; F =",es18.10," ; ":"B =",es17.10," ; O =",es17.10," ; |dO| =",es12.05," ; time =",f9.2,"s ;")  
 
@@ -177,18 +177,6 @@ program focus
   if( Ldescent ) then
    
    call descent( Ndof, xdof(1:Ndof), ferr )
-   
-  !deallocate( coil ) 
-  !DALLOCATE( xdof )
-  !DALLOCATE( fdof )
-  !DALLOCATE( surf%dL )
-  !DALLOCATE( surf%dT )
-  !DALLOCATE( surf%dB )
-  !DALLOCATE( totlengt )
-  !DALLOCATE( Tfluxave )
-  !DALLOCATE( Bdotnsqd )
-  !friction = friction + two
-  !goto 8000
    
   endif ! end of if( Ldescent ) ;
   

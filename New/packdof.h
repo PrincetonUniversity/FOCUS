@@ -58,7 +58,7 @@ subroutine packdof( Ndof, xdof, packorunpack )
      
     endif
     
-    if( coil(icoil)%Ifree.eq.1 ) then ; coil(icoil)%idof = idof ! current of curve is allowed to vary;
+    if( coil(icoil)%Ifree.ne.0 ) then ; coil(icoil)%idof = idof ! current of curve is allowed to vary;
      
      ;             ; idof = idof + 1 ; xdof(idof) = coil(icoil)%I
 
@@ -100,7 +100,7 @@ subroutine packdof( Ndof, xdof, packorunpack )
      
     endif
     
-    if( coil(icoil)%Ifree.eq.1 ) then ! current of curve is allowed to vary;
+    if( coil(icoil)%Ifree.ne.0 ) then ! current of curve is allowed to vary;
      
      ;             ; idof = idof + 1 ; coil(icoil)%I      = xdof(idof)
 
@@ -132,7 +132,7 @@ subroutine packdof( Ndof, xdof, packorunpack )
 
     endif
 
-    if( coil(icoil)%Ifree.eq.1 ) then ! current of curve is allowed to vary;
+    if( coil(icoil)%Ifree.ne.0 ) then ! current of curve is allowed to vary;
      
      ;             ; idof = idof + 1 ; tdof(idof) = zero                      ; Mdof(idof) = zero
 

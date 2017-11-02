@@ -21,7 +21,8 @@ end module descentparameters
 
 subroutine descent( Ndof, xdof, ferr )
   
-  use globals          , only : zero, one, six, half, sqrtmachprec, small, myid, ncpu, ounit, tstart, &
+  use globals          , only : zero, one, six, half, pi2, sqrtmachprec, small, myid, ncpu, ounit, tstart, &
+                                Ncoils, &
                                 NRKsave, NRKstep, RKstep, &
                                 totlengt, Tfluxave, Bdotnsqd, &
                                 target_length, target_tflux, converged, &
@@ -74,7 +75,7 @@ subroutine descent( Ndof, xdof, ferr )
     ferr = sqrt( sum(fdof(1:Ndof)*fdof(1:Ndof)) / Ndof )
     
     if( ff.gt.ffold ) then
-     if( myid.eq.0 ) write(ounit,1010) tnow-tstart, "increasing", totlengt(0)-target_length, Tfluxave(0)-target_tflux, Bdotnsqd(0), ff, ferr, tnow-told
+     if( myid.eq.0 ) write(ounit,1010) tnow-tstart, "increasing", totlengt(0)/pi2, Tfluxave(0)-target_tflux, Bdotnsqd(0), ff, ferr, tnow-told
      RKstep = RKstep * half
     !return
     endif
@@ -87,7 +88,7 @@ subroutine descent( Ndof, xdof, ferr )
    
    tnow = MPI_WTIME()
    
-   if( myid.eq.0 ) write(ounit,1010) tnow-tstart, "difference", totlengt(0)-target_length, Tfluxave(0)-target_tflux, Bdotnsqd(0), ff, ferr, tnow-told
+   if( myid.eq.0 ) write(ounit,1010) tnow-tstart, "difference", totlengt(0)/pi2, Tfluxave(0)-target_tflux, Bdotnsqd(0), ff, ferr, tnow-told
    
    told = tnow
 

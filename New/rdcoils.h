@@ -248,9 +248,13 @@ subroutine rdcoils
     
     FATAL( rdcoils, coil(icoil)%NF < 0, illegal )
     
-    if( NFcoil.gt.0 ) then ; NF = NFcoil         ! over-ride Fourier resolution;
+    if( NFcoil.gt.0 ) then ; NF = NFcoil         ! override Fourier resolution;
     else                   ; NF = coil(icoil)%NF
     endif
+
+    coil(icoil)%Ifree = IsVaryCurrent  ! override variation of current ;
+    coil(icoil)%I     = init_current   ! override              current ;
+    coil(icoil)%Lfree = IsVaryGeometry ! override variation of geometry ;
     
     SALLOCATE( coil(icoil)%xc, (0:NF), zero ) ! this is inside if( myid.eq.0 );
     SALLOCATE( coil(icoil)%xs, (0:NF), zero )
@@ -284,6 +288,8 @@ subroutine rdcoils
    
    if( myid.eq.0 ) close( runit )
    
+   write( ounit,'("rdcoils : " 10x " : I ="99es09.02" ;")') (/ ( coil(icoil)%I, icoil = 1, Ncoils ) /)
+
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
    
   case( 1 ) ! Initialize = 1 : construct initial coil set ; 29 Sep 17;

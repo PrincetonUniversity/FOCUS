@@ -92,8 +92,10 @@ subroutine dforce( Ndof, xdof, ff, fdof )
       ;            ; idof = idof + 1         ; coil(icoil)%dT(   jj,idof) = coil(icoil)%dT(jj,idof) + sum( dFdx(1:Ns,3) * smt(1:Ns,mm) ) * CC
       ;            ;                         ; coil(icoil)%dB(ii,jj,idof) =                           sum( dBdx(1:Ns,3) * smt(1:Ns,mm) ) * CC
      enddo
+     if( coil(icoil)%Ifree.ne.0 ) then
      ;             ; idof = idof + 1         ; coil(icoil)%dT(   jj,idof) = coil(icoil)%dT(jj,idof) + sum( dFdx(1:Ns,0)                )
      ;             ;                         ; coil(icoil)%dB(ii,jj,idof) =                           sum( dBdx(1:Ns,0)                )
+     endif
      
     enddo ! end do ii;
     
@@ -126,7 +128,9 @@ subroutine dforce( Ndof, xdof, ff, fdof )
     ;            ; idof = idof + 1         ; coil(icoil)%dL(idof) = sum( ( txax(1:Ns) * tz(1:Ns) - txtx(1:Ns) * az(1:Ns) ) * cmt(1:Ns,mm) / denom(1:Ns) )
     ;            ; idof = idof + 1         ; coil(icoil)%dL(idof) = sum( ( txax(1:Ns) * tz(1:Ns) - txtx(1:Ns) * az(1:Ns) ) * smt(1:Ns,mm) / denom(1:Ns) )
    enddo
+   if( coil(icoil)%Ifree.ne.0 ) then
    ;             ; idof = idof + 1         ; coil(icoil)%dL(idof) = zero ! length does not depend on current;
+   endif
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
    
@@ -182,11 +186,11 @@ subroutine dforce( Ndof, xdof, ff, fdof )
 
   ff = zero ; fdof(1:Ndof) = zero
   
-! ff           =                    exp(totlengt(0)) * weight_length / exp(target_length)
-! fdof(1:Ndof) = totlengt(1:Ndof) * exp(totlengt(0)) * weight_length / exp(target_length)
+ !ff           =                                    exp(totlengt(0)/target_length) * weight_length
+ !fdof(1:Ndof) = (totlengt(1:Ndof)/target_length) * exp(totlengt(0)/target_length) * weight_length
 
-  ff           =                                    exp(totlengt(0)/target_length) * weight_length
-  fdof(1:Ndof) = (totlengt(1:Ndof)/target_length) * exp(totlengt(0)/target_length) * weight_length
+  ff           =  totlengt(0     ) * weight_length
+  fdof(1:Ndof) =  totlengt(1:Ndof) * weight_length
   
   ;ff         = ff         + weight_tflux * sum( (surf%dT(0:Nz-1,   0)-target_tflux) * (surf%dT(0:Nz-1,0)-target_tflux) ) * half
   do idof = 1, Ndof
