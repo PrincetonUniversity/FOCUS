@@ -1,6 +1,6 @@
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
-!title (restart) ! Writes output and restart files.
+!title (archive) ! Writes output and restart files.
 
 !latex \briefly{Writes output and restart files.}
 
@@ -33,9 +33,9 @@ subroutine archive( Ndof, xdof, ferr )
 
   INTEGER            :: ii, icoil, ierr, mm
   REAL               :: tnow, spectralwidth, term
-  CHARACTER(LEN=10)  :: version='h1.0.0'
+! CHARACTER(LEN=10)  :: version='h1.0.0'
 
-  CHARACTER          :: srestart*6
+  CHARACTER          :: sarchive*6
     
 ! the following are used by the macros HWRITEXX below; do not alter/remove;
   INTEGER            :: hdfier, rank, imn
@@ -47,7 +47,7 @@ subroutine archive( Ndof, xdof, ferr )
 
   if( myid.ne.0 ) return
 
-  write(srestart,'(i6.6)') iarchive
+  write(sarchive,'(i6.6)') iarchive
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
@@ -55,13 +55,15 @@ subroutine archive( Ndof, xdof, ferr )
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
+ !write(ounit,'("archive : " 10x " : opening ext.fo.h5 ;")')
+
   call h5open_f( hdfier ) ! initialize Fortran interface;
-  FATAL( restart, hdfier.ne.0, error calling h5open_f )
+  FATAL( archive, hdfier.ne.0, error calling h5open_f )
   
   call h5fcreate_f( trim(hdf5file), H5F_ACC_TRUNC_F, file_id, hdfier ) ! create new file;
-  FATAL( restart, hdfier.ne.0, error calling h5fcreate_f )
+  FATAL( archive, hdfier.ne.0, error calling h5fcreate_f )
   
-  HWRITECH( 10               ,   version       ,   version                    )
+! HWRITECH( 10               ,   version       ,   version                    )
   
   HWRITEIV( 1                ,   Icheck        ,   Icheck                     )
 
@@ -131,10 +133,13 @@ subroutine archive( Ndof, xdof, ferr )
 
   HWRITERV(      2           ,   xyaxis        ,   xyaxis(1:2)                  )
 
-  FATAL( restart, hdfier.ne.0, error calling h5fclose_f )
+  call h5fclose_f( file_id, hdfier ) ! close Fortran interface;
+  FATAL( archive, hdfier.ne.0, error calling h5fclose_f )
   
   call h5close_f( hdfier ) ! close Fortran interface;
-  FATAL( restart, hdfier.ne.0, error calling h5close_f )
+  FATAL( archive, hdfier.ne.0, error calling h5close_f )
+
+ !write(ounit,'("archive : " 10x " : closed  ext.fo.h5 ;")')
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
@@ -197,7 +202,7 @@ subroutine archive( Ndof, xdof, ferr )
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  open( funit, file="."//trim(ext)//".fo.filaments."//srestart, status="unknown", form="unformatted" )  
+  open( funit, file="."//trim(ext)//".fo.filaments."//sarchive, status="unknown", form="unformatted" )  
   
   write(funit) Ncoils, Ns
   

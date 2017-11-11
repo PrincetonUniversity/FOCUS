@@ -25,7 +25,7 @@ subroutine pcplot
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
   INTEGER, parameter :: Node = 2, Nxyaxis = 2, Lrwork = Nxyaxis * ( 3 * Nxyaxis + 13 ) / 2
-  INTEGER            :: NN, itrj, ipt, Lwa, ic05nbf, izeta
+  INTEGER            :: ierr, NN, itrj, ipt, Lwa, ic05nbf, izeta
   REAL               :: Fxy(1:Nxyaxis), tnow, told, rwork(1:Lrwork), tol, xy(1:Node)
 
   REAL               :: srho, teta, zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3), v1(1:3), v2(1:3), w1(1:3), w2(1:3)
@@ -63,7 +63,8 @@ subroutine pcplot
   NN = Nxyaxis ; tol = odetol * ten ; Lwa = Lrwork ; ic05nbf = 1
   
   ;            ; write(ounit,'("pcplot  : ",f10.1," : calling C05NBF ;")') told-tstart
-  
+
+ !FATAL( pcplot , .true., need to replace C05NBF )
   call C05NBF( fxyaxis, NN, xyaxis(1:NN), Fxy(1:NN), tol, rwork(1:Lwa), Lwa, ic05nbf )
   
   tnow = MPI_WTIME()

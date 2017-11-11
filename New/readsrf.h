@@ -818,7 +818,7 @@ subroutine fft( NN, xi, NF, xc, xs, iflag )
    sqrtN = one / sqrt(NN*one)
 
    xm(0:NN-1) = xi(0:NN-1)
-   
+  
    ifail = 0 ; call C06FAF( xm(0:NN-1) , NN , rwk(0:NN-1) , ifail )
    
    xc(0) = xm(0) * sqrtN ; xc(1:NF) = xm(1:NF) * two * sqrtN ; xs(1:NF) = - xm(NN-1:NN-NF:-1) * two * sqrtN

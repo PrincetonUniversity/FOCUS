@@ -48,9 +48,11 @@ program focus
   CHARACTER              :: packorunpack
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+! call A00AAF() ! check NAG version;
   
   myid = 0 ; ncpu = 1
-  
+
   call MPI_INIT( ierr )
   call MPI_COMM_RANK( MPI_COMM_WORLD, myid, ierr )
   call MPI_COMM_SIZE( MPI_COMM_WORLD, ncpu, ierr )
@@ -184,9 +186,15 @@ program focus
   
   select case( Iminimize )
    
-  case( 1 ) 
+  case( 0 )
+   
+  case( 1 )
    
    call minimum( Ndof, xdof(1:Ndof) )
+   
+  case default
+   
+   FATAL( focus, .true., selected Iminimize is not supported )
    
   end select
   
