@@ -94,6 +94,8 @@ subroutine saving
   HWRITERV( 1                ,   weight_bharm  ,   weight_bharm                  )
   HWRITERV( 1                ,   weight_tflux  ,   weight_tflux                  )
   HWRITERV( 1                ,   target_tflux  ,   target_tflux                  )
+  HWRITERV( 1                ,   weight_icost  ,   weight_icost                  )
+  HWRITERV( 1                ,   target_current,   target_current                )
   HWRITERV( 1                ,   weight_ttlen  ,   weight_ttlen                  )
   HWRITERV( 1                ,   target_length ,   target_length                 )
   HWRITERV( 1                ,   weight_specw  ,   weight_specw                  )

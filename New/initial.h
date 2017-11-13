@@ -446,6 +446,7 @@ subroutine initial
      FATAL( initial, weight_bharm  < zero, illegal )
      FATAL( initial, weight_tflux  < zero, illegal )
      FATAL( initial, weight_ttlen  < zero, illegal )
+     FATAL( initial, weight_icost  < zero, illegal )
      FATAL( initial, weight_specw  < zero, illegal )
      FATAL( initial, weight_ccsep  < zero, illegal )
      if (IsQuiet < 1) write(ounit, '(8X,": weights are set as: "6A12)') "bnorm", "bharm", "tflux", &
@@ -454,6 +455,7 @@ subroutine initial
           weight_ttlen, weight_specw, weight_ccsep
 
      FATAL( initial, target_length  < zero, illegal )
+     FATAL( initial, abs(target_current) < sqrtmachprec, illegal )
      if (IsQuiet < 1) write(ounit, '(8X,": target_tflux = "ES12.5" ; target_length = "ES12.5)') &
           target_tflux, target_length
 
@@ -478,7 +480,7 @@ subroutine initial
 
   endif
 
-  FATAL( initial, ncpu >= 1000 , too macy cpus, modify nodelabel)
+  FATAL( initial, ncpu >= 1000 , too many cpus, please modify nodelabel naming convention )
   write(nodelabel,'(i3.3)') myid ! nodelabel is global; 30 Oct 15;
 
   ! initialize iteration and total iterations;
@@ -493,6 +495,7 @@ subroutine initial
   tmpw_tflux = weight_tflux
   tmpt_tflux = target_tflux
   tmpw_ttlen = weight_ttlen
+  tmpw_ttlen = weight_icost
   tmpw_specw = weight_specw
   tmpw_ccsep = weight_ccsep
 

@@ -125,6 +125,11 @@ subroutine AllocData(itype)
         SALLOCATE( t1L,  (1:Ndof), zero )
      endif
 
+     ! icost needed;
+     if (weight_icost > sqrtmachprec) then
+        SALLOCATE( t1I,  (1:Ndof), zero )
+     endif
+
   endif
   !--------------------------------------------------------------------------------------------- 
 

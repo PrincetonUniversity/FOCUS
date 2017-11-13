@@ -72,6 +72,8 @@ subroutine length(ideriv)
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
+  !FATAL( length , Nfixgeo .eq. Ncoils, No free geometries )
+
   ttlen = zero
 
   if( ideriv >= 0 ) then
@@ -131,7 +133,7 @@ subroutine length(ideriv)
         endif
 
      enddo !end icoil;
-     FATAL( torflux , idof .ne. Ndof, counting error in packing )
+     FATAL( length , idof .ne. Ndof, counting error in packing )
 
      t1L = t1L / (Ncoils - Nfixgeo + machprec)
 

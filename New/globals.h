@@ -100,6 +100,8 @@ module globals
   REAL                 :: target_tflux   =        0.000D+00
   REAL                 :: weight_ttlen   =        0.000D+00
   REAL                 :: target_length  =        0.000D+00 
+  REAL                 :: weight_icost   =        0.000D+00
+  REAL                 :: target_current =        0.000D+00 
   REAL                 :: weight_specw   =        0.000D+00
   REAL                 :: weight_ccsep   =        0.000D+00
   REAL                 :: weight_inorm   =        1.000D+00
@@ -161,6 +163,8 @@ module globals
                         target_tflux   , &
                         weight_ttlen   , &
                         target_length  , &
+                        weight_icost   , &
+                        target_current , &
                         weight_specw   , &
                         weight_ccsep   , &
                         weight_inorm   , &
@@ -268,6 +272,9 @@ module globals
   ! Spectral condensation;
   REAL                 :: specw
   REAL   , allocatable :: t1S(:), t2S(:,:)
+  ! current constraints;
+  REAL                 :: icost
+  REAL   , allocatable :: t1I(:), t2I(:,:)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -291,7 +298,8 @@ module globals
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 !latex \subsection{Miscellaneous}
-  REAL                 :: tmpw_bnorm, tmpw_tflux ,tmpt_tflux, tmpw_ttlen, tmpw_specw, tmpw_ccsep, tmpw_bharm
+  REAL                 :: tmpw_bnorm, tmpw_tflux ,tmpt_tflux, tmpw_ttlen, tmpw_specw, tmpw_ccsep, & 
+                          tmpw_bharm, tmpw_icost
                           !tmp weight for saving to restart file
   REAL, allocatable    :: mincc(:,:)!
   INTEGER              :: ierr, astat
