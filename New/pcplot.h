@@ -29,6 +29,7 @@ subroutine pcplot
   REAL               :: Fxy(1:Nxyaxis), tnow, told, rwork(1:Lrwork), tol, xy(1:Node)
 
   REAL               :: srho, teta, zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3), v1(1:3), v2(1:3), w1(1:3), w2(1:3)
+  REAL               :: xtt(1:3), xtz(1:3), xzz(1:3)
 
   external           :: fxyaxis
   
@@ -36,27 +37,27 @@ subroutine pcplot
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-#ifdef DEBUG
-  
-  srho = one ; teta = zero
-  
-  do izeta = 0, 1
-   zeta = izeta * pi2
-   call knotxx( srho, teta, zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3), v1(1:3), v2(1:3), w1(1:3), w2(1:3) )
-   write(ounit,'("pcplot : " 10x " : "3es23.15)') ax(1:3) + minorrad * ( xy(1) * ellipticity * v1(1:3) + xy(2) * v2(1:3) )
-  enddo ! ;
-  
-#endif
+!#ifdef DEBUG
+!  
+!  srho = one ; teta = zero
+!  
+!  do izeta = 0, 1
+!   zeta = izeta * pi2
+!   call knotxx( srho, teta, zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3), xtt, xtz, xzz, v1(1:3), v2(1:3), w1(1:3), w2(1:3) )
+!   write(ounit,'("pcplot : " 10x " : "3es23.15)') ax(1:3) + minorrad * ( xy(1) * ellipticity * v1(1:3) + xy(2) * v2(1:3) )
+!  enddo ! ;
+!  
+!#endif
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-#ifdef DEBUG
-
-  xyaxis(1:Node) = zero ! this was already initialized in initial;
-
-  tnow = MPI_WTIME()
-
-#else
+!#ifdef DEBUG
+!
+!  xyaxis(1:Node) = zero ! this was already initialized in initial;
+!
+!  tnow = MPI_WTIME()
+!
+!#else
 
   xyaxis(1:Node) = zero ! this was already initialized in initial;
   
@@ -74,7 +75,7 @@ subroutine pcplot
   case default ; write(ounit,'("pcplot  : ",f10.1," : called  C05NBF ; error   ; time ="f10.2"s ;")') tnow-tstart, tnow-told ; xyaxis(1:Node) = zero
   end select
   
-#endif
+!#endif
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
@@ -228,6 +229,7 @@ subroutine bxyfield( zeta, xy, Bxy )
   INTEGER :: icoil, kk, ierr
   REAL    :: st(1:2)
   REAL    :: ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3), v1(1:3), v2(1:3), w1(1:3), w2(1:3)
+  REAL    :: xtt(1:3), xtz(1:3), xzz(1:3)
   REAL    :: a, b, c, d, e, f, g, h, i, idet, inversematrix(1:3,1:3)
   REAL    :: dx, dy, dz, rr(1:3), dd(1:3), tx, ty, tz, Bt(1:3), Bi(1:3), Bs(1:3)
   REAL    :: ssmax, srho, teta
@@ -246,7 +248,7 @@ subroutine bxyfield( zeta, xy, Bxy )
 
   srho = one ; teta = zero
 
-  call knotxx( st(1), st(2), zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3), v1(1:3), v2(1:3), w1(1:3), w2(1:3) )
+  call knotxx( st(1), st(2), zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3), xtt, xtz, xzz, v1(1:3), v2(1:3), w1(1:3), w2(1:3) )
   
   xx(1:3) = ax(1:3) + minorrad * ( xy(1) * ellipticity * v1(1:3) + xy(2) * v2(1:3) )
   

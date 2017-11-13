@@ -160,10 +160,13 @@ module globals
 
   type toroidalsurface
      INTEGER              :: Nteta, Nzeta
-     REAL                 :: area ! surface area;
+     REAL                 :: area, vol ! surface area;
      REAL   , allocatable :: csarea(:) ! cross section area;
      REAL   , allocatable :: xx(:,:), yy(:,:), zz(:,:), nx(:,:), ny(:,:), nz(:,:), ds(:,:), xt(:,:), yt(:,:), zt(:,:)
      REAL   , allocatable :: dL(:), dT(:,:), dB(:,:,:), Bp(:,:) ! total normal magnetic field; plasma normal magnetic field;
+     REAL   , allocatable :: EE(:,:), FF(:,:), GG(:,:) ! coefficients of 1st fundamental form;
+     REAL   , allocatable :: LL(:,:), MM(:,:), PP(:,:) ! coefficients of 2nd fundamental form;
+     REAL   , allocatable :: HH(:,:)                   ! mean curvature;
   end type toroidalsurface
   type(toroidalsurface)   :: surf
 

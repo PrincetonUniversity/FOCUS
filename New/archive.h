@@ -107,12 +107,16 @@ subroutine archive( Ndof, xdof, ferr )
 
 ! HWRITEIV( 1                ,   Nfp           ,   Nfp                          )
   HWRITERV( 1                ,   area          ,   surf%area                    )
+  HWRITERV( 1                ,   vol           ,   surf%vol                     )
+
   HWRITERA( Nteta,Nzeta      ,   xsurf         ,   surf%xx(0:Nteta-1,0:Nzeta-1) )
   HWRITERA( Nteta,Nzeta      ,   ysurf         ,   surf%yy(0:Nteta-1,0:Nzeta-1) )
   HWRITERA( Nteta,Nzeta      ,   zsurf         ,   surf%zz(0:Nteta-1,0:Nzeta-1) )
   HWRITERA( Nteta,Nzeta      ,   nx            ,   surf%nx(0:Nteta-1,0:Nzeta-1) )
   HWRITERA( Nteta,Nzeta      ,   ny            ,   surf%ny(0:Nteta-1,0:Nzeta-1) )
   HWRITERA( Nteta,Nzeta      ,   nz            ,   surf%nz(0:Nteta-1,0:Nzeta-1) )
+
+  HWRITERA( Nteta,Nzeta      ,   HH            ,   surf%HH(0:Nteta-1,0:Nzeta-1) )
 
   HWRITEIV(      1           ,   Ndof          ,   Ndof                         )
   HWRITERV(      1           ,   ferr          ,   ferr                         )

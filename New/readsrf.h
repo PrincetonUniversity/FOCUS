@@ -18,7 +18,7 @@ subroutine readsrf
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  use globals, only : zero, one, half, three, pi2, sqrtmachprec, myid, ounit, tstart, &
+  use globals, only : zero, one, two, half, three, pi, pi2, sqrtmachprec, myid, ounit, tstart, &
                       axisfile, &
                       Nt, Nz, surf, Isurface, minorrad, ellipticity, nrotate, zetaoff
   
@@ -30,11 +30,12 @@ subroutine readsrf
   
   INTEGER :: astat, ierr, ii, jj
   REAL    :: teta, zeta, xx(1:3), xs(1:3), xt(1:3), xz(1:3), bn, ax(1:3), at(1:3), az(1:3), ds(1:3), dd, tnow, srho, v1(1:3), v2(1:3), w1(1:3), w2(1:3)
+  REAL    :: xtt(1:3), xtz(1:3), xzz(1:3)
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
   tnow = MPI_WTIME()
-
+  
   if( myid.eq.0 ) write(ounit,'("readsrf : ",f10.1," : Isurface ="i2" ; Nt ="i5", Nz ="i5" ;")') tnow-tstart, Isurface, Nt, Nz
   
   select case( Isurface )
@@ -46,7 +47,7 @@ subroutine readsrf
   case( 1 )
    
    if( myid.eq.0 ) write(ounit,1000) minorrad, ellipticity, nrotate, zetaoff, trim(axisfile)
-
+   
 1000 format("readsrf : ", 10x ," : minorrad ="f12.6" ; ellipticity ="f12.6" ; nrotate ="i3" ; zetaoff ="f12.6" ; reading ",a," ;")
    
    call rdaxis   ! axis  -style plasma boundary;
@@ -65,41 +66,58 @@ subroutine readsrf
   CHECK( readsrf, Nt.le.0, error )
   CHECK( readsrf, Nz.le.0, error )
   
-  SALLOCATE( surf%xx, (0:Nt,0:Nz ), zero )
-  SALLOCATE( surf%yy, (0:Nt,0:Nz ), zero )
-  SALLOCATE( surf%zz, (0:Nt,0:Nz ), zero )
+  SALLOCATE( surf%xx, (0:Nt-1,0:Nz-1 ), zero )
+  SALLOCATE( surf%yy, (0:Nt-1,0:Nz-1 ), zero )
+  SALLOCATE( surf%zz, (0:Nt-1,0:Nz-1 ), zero )
   
-  SALLOCATE( surf%nx, (0:Nt,0:Nz ), zero )
-  SALLOCATE( surf%ny, (0:Nt,0:Nz ), zero )
-  SALLOCATE( surf%nz, (0:Nt,0:Nz ), zero )
+  SALLOCATE( surf%nx, (0:Nt-1,0:Nz-1 ), zero )
+  SALLOCATE( surf%ny, (0:Nt-1,0:Nz-1 ), zero )
+  SALLOCATE( surf%nz, (0:Nt-1,0:Nz-1 ), zero )
   
-  SALLOCATE( surf%ds, (0:Nt,0:Nz ), zero )
+  SALLOCATE( surf%ds, (0:Nt-1,0:Nz-1 ), zero )
   
-  SALLOCATE( surf%xt, (0:Nt,0:Nz ), zero )
-  SALLOCATE( surf%yt, (0:Nt,0:Nz ), zero )
-  SALLOCATE( surf%zt, (0:Nt,0:Nz ), zero )
+  SALLOCATE( surf%xt, (0:Nt-1,0:Nz-1 ), zero )
+  SALLOCATE( surf%yt, (0:Nt-1,0:Nz-1 ), zero )
+  SALLOCATE( surf%zt, (0:Nt-1,0:Nz-1 ), zero )
   
-! SALLOCATE( surf%Bn, (0:Nt,0:Nz ), zero ) ! normal field;
+! SALLOCATE( surf%Bn, (0:Nt-1,0:Nz-1 ), zero ) ! normal field;
 ! SALLOCATE( surf%Tf, (     0:Nz ), zero ) ! toroidal flux;
-  SALLOCATE( surf%Bp, (0:Nt,0:Nz ), zero ) ! normal field;
+  SALLOCATE( surf%Bp, (0:Nt-1,0:Nz-1 ), zero ) ! normal field;
+  
+  SALLOCATE( surf%EE, (0:Nt-1,0:Nz-1 ), zero )
+  SALLOCATE( surf%FF, (0:Nt-1,0:Nz-1 ), zero )
+  SALLOCATE( surf%GG, (0:Nt-1,0:Nz-1 ), zero )
+  SALLOCATE( surf%LL, (0:Nt-1,0:Nz-1 ), zero )
+  SALLOCATE( surf%MM, (0:Nt-1,0:Nz-1 ), zero )
+  SALLOCATE( surf%PP, (0:Nt-1,0:Nz-1 ), zero )
+  SALLOCATE( surf%HH, (0:Nt-1,0:Nz-1 ), zero )
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  srho = one
+! srho = one ; teta = zero ; zeta = zero ; call knotxx( srho, teta, zeta, ax, at, az, xx, xs, xt, xz, xtt, xtz, xzz, v1, v2, w1, w2 )
+  
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+  
+  srho = one ; surf%area = zero ; surf%vol = zero
 
-  do ii = 0, Nt ; teta = ( ii + half ) * pi2 / Nt ! grid center;
-   do jj = 0, Nz ; zeta = ( jj + half ) * pi2 / Nz
+  do ii = 0, Nt-1 ; teta = ( ii + half ) * (pi2/Nt) ! half-grid;
+   do jj = 0, Nz-1 ; zeta = ( jj + half ) * (pi2/Nz) ! half-grid;
     
     select case( Isurface )
-    case( 0 ) ; call surfxx(       teta, zeta,             xx,     xt, xz,                    bn )
-    case( 1 ) ; call knotxx( srho, teta, zeta, ax, at, az, xx, xs, xt, xz, v1, v2, w1, w2 ) ; bn = zero
+    case( 0 ) ; call surfxx(       teta, zeta,             xx,     xt, xz, xtt, xtz, xzz,                    bn )
+    case( 1 ) ; call knotxx( srho, teta, zeta, ax, at, az, xx, xs, xt, xz, xtt, xtz, xzz, v1, v2, w1, w2 ) ; bn = zero
     case default
      FATAL( focus , .true., selected Isurface is not supported )
     end select
     
-    ds(1:3) = - (/ xt(2) * xz(3) - xt(3) * xz(2), &
-                   xt(3) * xz(1) - xt(1) * xz(3), &
-                   xt(1) * xz(2) - xt(2) * xz(1) /) ! negative sign = counterclockwise;
+    ds(1:3) = zero
+    call cross( xt(1:3), xz(1:3), ds(1:3) )
+    
+   !ds(1:3) = - ds(1:3) ! negative sign = counter-clockwise; ???; 12 Nov 17;
+
+   !ds(1:3) = - (/ xt(2) * xz(3) - xt(3) * xz(2), &
+   !               xt(3) * xz(1) - xt(1) * xz(3), &
+   !               xt(1) * xz(2) - xt(2) * xz(1) /) ! negative sign = counterclockwise;
     
     dd = sqrt( sum( ds(1:3)*ds(1:3) ) )
     
@@ -121,14 +139,46 @@ subroutine readsrf
     
     surf%Bp(ii,jj) = bn ! target/plasma normal field;
     
-    surf%area = surf%area + sum( xx(1:3) * ds(1:3) )
+    surf%area = surf%area +              dd        ! area  ; 12 Nov 17;
+    surf%vol  = surf%vol  + sum( xx(1:3)*ds(1:3) ) ! volume; 12 Nov 17;
+
+    surf%EE(ii,jj) = sum( xt(1:3) *  xt(1:3) )
+    surf%FF(ii,jj) = sum( xt(1:3) *  xz(1:3) )
+    surf%GG(ii,jj) = sum( xz(1:3) *  xz(1:3) )
+
+    surf%LL(ii,jj) = sum( ds(1:3) * xtt(1:3) ) / dd
+    surf%MM(ii,jj) = sum( ds(1:3) * xtz(1:3) ) / dd
+    surf%PP(ii,jj) = sum( ds(1:3) * xzz(1:3) ) / dd
 
    enddo ! end of do jj;
+
+!#ifdef DEBUG
+!   write(ounit,'("readsrf : " 10x " : E, F, G = ",3(2f7.3,",")," ;")')  minorrad**2               , surf%EE(ii, 0), &
+!                                                                        zero                      , surf%FF(ii, 0), &
+!                                                                       (one+minorrad*cos(teta))**2, surf%GG(ii, 0)
+!   write(ounit,'("readsrf : " 10x " : L, M, P = ",3(2f7.3,",")," ;")')  - minorrad                , surf%LL(ii, 0), &
+!                                                                        zero                      , surf%MM(ii, 0), &
+!                                                           - ( one + minorrad*cos(teta))*cos(teta), surf%PP(ii, 0)
+!#endif
+
   enddo ! end of do ii;
 
-  surf%area = surf%area * (pi2/Nt) * (pi2/Nz) / three
+  surf%area = surf%area * (pi2/Nt) * (pi2/Nz)
+  surf%vol  = surf%vol  * (pi2/Nt) * (pi2/Nz) / three
+  
+  surf%HH = ( surf%LL*surf%GG + surf%PP*surf%EE - two*surf%MM*surf%FF ) / ( surf%EE*surf%GG - surf%FF*surf%FF ) ! mean curvature;
 
-! if( myid.eq.0 ) write(ounit,'("readsrf : ", 10x ," : surface area =",e13.5," ;")') surf%area
+! if( myid.eq.0 ) write(ounit,'("readsrf : ", 10x ," : area =",2e13.5," ;")') surf%area, (pi2*minorrad    * pi2*one)
+! if( myid.eq.0 ) write(ounit,'("readsrf : ", 10x ," : vol  =",2e13.5," ;")') surf%vol , (pi *minorrad**2 * pi2*one)
+  
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+  
+  select case( Isurface )
+  case( 0 ) ; write(ounit,'("readsrf : " 10x " : mean curvature not calculated for Isurface = 0 ; please revise surfxx ;")')
+  case( 1 ) ; 
+  case default
+   FATAL( focus , .true., selected Isurface is not supported )
+  end select
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
@@ -420,7 +470,7 @@ end subroutine fousurf
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
-subroutine surfxx( teta, zeta, xx, xt, xz, bn )
+subroutine surfxx( teta, zeta, xx, xt, xz, xtt, xtz, xzz, bn )
   
   use globals, only : zero, half, pi2, myid, ounit, runit, surffile, &
                       Nfou, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
@@ -434,8 +484,7 @@ subroutine surfxx( teta, zeta, xx, xt, xz, bn )
 
   LOGICAL :: exist
   INTEGER :: iosta, astat, ierr, imn
-  REAL    :: RR(0:2), ZZ(0:2), szeta, czeta, xx(1:3), xt(1:3), xz(1:3), ds(1:3), bn(1:3), &
-             teta, zeta, arg, dd
+  REAL    :: RR(0:2), ZZ(0:2), szeta, czeta, xx(1:3), xt(1:3), xz(1:3), ds(1:3), bn(1:3), xtt(1:3), xtz(1:3), xzz(1:3), teta, zeta, arg, dd
   
   RR(0:2) = zero ; ZZ(0:2) = zero
   
@@ -464,9 +513,12 @@ subroutine surfxx( teta, zeta, xx, xt, xz, bn )
                 xt(1) * xz(2) - xt(2) * xz(1) /)
 
   dd = sqrt( sum( ds(1:3)*ds(1:3) ) )
-
-
-   bn = zero
+  
+  bn = zero
+  
+  xtt(1:3) = zero ! second derivatives;
+  xtz(1:3) = zero ! second derivatives;
+  xzz(1:3) = zero ! second derivatives;
   
 ! if(NBnf >  0) then
 
@@ -584,15 +636,15 @@ subroutine rdaxis
 
   Nfp = 1
   
-!  if( myid.eq.0 ) then
-!   write(ounit,'("readsrf : " 10x " : axisxc =",    999es11.03)') axisxc(0:axisNF)
-!   write(ounit,'("readsrf : " 10x " : axisxs =",11x,998es11.03)') axisxs(1:axisNF)
-!   write(ounit,'("readsrf : " 10x " : axisyc =",    999es11.03)') axisyc(0:axisNF)
-!   write(ounit,'("readsrf : " 10x " : axisys =",11x,999es11.03)') axisys(1:axisNF)
-!   write(ounit,'("readsrf : " 10x " : axiszc =",    999es11.03)') axiszc(0:axisNF)
-!   write(ounit,'("readsrf : " 10x " : axiszs =",11x,999es11.03)') axiszs(1:axisNF)
-!  endif
-
+  if( myid.eq.0 ) then
+   write(ounit,'("rdaxis  : " 10x " : axisxc =",    999f11.07)') axisxc(0:axisNF)
+   write(ounit,'("rdaxis  : " 10x " : axisxs =",11x,998f11.07)') axisxs(1:axisNF)
+   write(ounit,'("rdaxis  : " 10x " : axisyc =",    999f11.07)') axisyc(0:axisNF)
+   write(ounit,'("rdaxis  : " 10x " : axisys =",11x,999f11.07)') axisys(1:axisNF)
+   write(ounit,'("rdaxis  : " 10x " : axiszc =",    999f11.07)') axiszc(0:axisNF)
+   write(ounit,'("rdaxis  : " 10x " : axiszs =",11x,999f11.07)') axiszs(1:axisNF)
+  endif
+  
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   SALLOCATE( il, (0:axisNF), (/ ( mm   , mm = 0, axisNF ) /) )
@@ -665,9 +717,9 @@ end subroutine rdaxis
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
-subroutine knotxx( srho, teta, zeta, ax, at, az, xx, xs, xt, xz, v1, v2, w1, w2 )
+subroutine knotxx( srho, teta, zeta, ax, at, az, xx, xs, xt, xz, xtt, xtz, xzz, v1, v2, w1, w2 )
   
-  use globals, only : zero, one, half, pi2, small, myid, ounit, sqrtmachprec, &
+  use globals, only : zero, one, two, half, pi2, small, myid, ounit, sqrtmachprec, &
                       axisNF, axisxc, axisxs, axisyc, axisys, axiszc, axiszs, axistc, axists, &
                       minorrad, ellipticity, nrotate, zetaoff
   
@@ -678,11 +730,13 @@ subroutine knotxx( srho, teta, zeta, ax, at, az, xx, xs, xt, xz, v1, v2, w1, w2 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
   REAL                 :: srho, teta, zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3), v1(1:3), v2(1:3), w1(1:3), w2(1:3)
+  REAL                 :: xtt(1:3), xtz(1:3), xzz(1:3), z1(1:3), z2(1:3)
   
   INTEGER              :: ierr, p(1:3), q(1:3), mm
-  REAL                 :: cqz, sqz, cpz, spz, RR(0:3), ZZ(0:3), x0(1:3), x1(1:3), x2(1:3), x3(1:3), arg, darg
-  REAL                 :: a0, a1, a2, b0, b1, carg, sarg, cost, sint
-  REAL                 :: tt(1:3), td(1:3), dd(1:3), xa, ya, za, ff, nn(1:3), nz(1:3), bb(1:3), bz(1:3)
+  REAL                 :: cqz, sqz, cpz, spz, RR(0:3), ZZ(0:3), x0(1:3), x1(1:3), x2(1:3), x3(1:3), x4(1:3), arg, darg
+  REAL                 :: a0, a1, a2, a3, b0, b1, b2, carg, sarg, cost, sint
+  REAL                 :: tt(1:3), td(1:3), dd(1:3), dt(1:3), xa, ya, za, xb, yb, zb, xc, yc, zc, nn(1:3), nz(1:3), bb(1:3), bz(1:3), nzz(1:3), bzz(1:3)
+  REAL                 :: fa, fb, fc
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
@@ -701,6 +755,7 @@ subroutine knotxx( srho, teta, zeta, ax, at, az, xx, xs, xt, xz, v1, v2, w1, w2 
   x1(1:3) = (/   zero   ,   zero   ,   zero    /)
   x2(1:3) = (/   zero   ,   zero   ,   zero    /)
   x3(1:3) = (/   zero   ,   zero   ,   zero    /)
+  x4(1:3) = (/   zero   ,   zero   ,   zero    /)
   
   do mm = 1, axisNF ; carg = cos(mm*zeta) ; sarg = sin(mm*zeta)
    x0(1:3) = x0(1:3) + ( + (/ axisxc(mm), axisyc(mm), axiszc(mm) /) * carg &
@@ -711,6 +766,8 @@ subroutine knotxx( srho, teta, zeta, ax, at, az, xx, xs, xt, xz, v1, v2, w1, w2 
                          - (/ axisxs(mm), axisys(mm), axiszs(mm) /) * sarg ) * mm**2
    x3(1:3) = x3(1:3) + ( + (/ axisxc(mm), axisyc(mm), axiszc(mm) /) * sarg &
                          - (/ axisxs(mm), axisys(mm), axiszs(mm) /) * carg ) * mm**3
+   x4(1:3) = x4(1:3) + ( + (/ axisxc(mm), axisyc(mm), axiszc(mm) /) * carg &
+                         + (/ axisxs(mm), axisys(mm), axiszs(mm) /) * sarg ) * mm**4
   enddo
    
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
@@ -728,33 +785,48 @@ subroutine knotxx( srho, teta, zeta, ax, at, az, xx, xs, xt, xz, v1, v2, w1, w2 
   a1      =     ( x1(1)*x2(1) + x1(2)*x2(2) + x1(3)*x2(3) ) / a0          
   a2      =     ( x2(1)*x2(1) + x2(2)*x2(2) + x2(3)*x2(3) &
               +   x1(1)*x3(1) + x1(2)*x3(2) + x1(3)*x3(3) - a1 * a1 ) / a0
+  a3      = ( two * sum( x3(1:3)*x2(1:3) ) + sum( x2(1:3)*x3(1:3) ) + sum( x1(1:3)*x4(1:3) ) - 2 * a1 * a2 - a2 * a1 ) / a0
 
-  tt(1:3) =   x1(1:3)                                                / a0 
-  td(1:3) = ( x2(1:3) - tt(1:3) * a1                               ) / a0 
-  dd(1:3) = ( x3(1:3) - td(1:3) * a1 - tt(1:3) * a2 - td(1:3) * a1 ) / a0 
+  tt(1:3) = ( x1(1:3)                                                                                 ) / a0 
+  td(1:3) = ( x2(1:3)                                                                  - tt(1:3) * a1 ) / a0 ! curvature;
+  dd(1:3) = ( x3(1:3) - td(1:3) * a1                          - tt(1:3) * a2           - td(1:3) * a1 ) / a0 
+  dt(1:3) = ( x4(1:3) - two * ( dd(1:3) * a1 - td(1:3) * a2 ) - td(1:3) * a2 - tt * a3 - dd(1:3) * a1 ) / a0 ! please check; 12 Nov 17;
   
-  xa = ( x2(1) - tt(1) * a1 )
-  ya = ( x2(2) - tt(2) * a1 )
-  za = ( x2(3) - tt(3) * a1 )
+  xa = x2(1) - tt(1) * a1 ; xb = x3(1) - td(1) * a1 - tt(1) * a2 ; xc = x4(1) - dd(1) * a1 - two * td(1) * a2 - tt(1) * a3
+  ya = x2(2) - tt(2) * a1 ; yb = x3(2) - td(2) * a1 - tt(2) * a2 ; yc = x4(2) - dd(2) * a1 - two * td(2) * a2 - tt(2) * a3
+  za = x2(3) - tt(3) * a1 ; zb = x3(3) - td(3) * a1 - tt(3) * a2 ; zc = x4(3) - dd(3) * a1 - two * td(3) * a2 - tt(3) * a3
   
-  ff = sqrt( xa**2 + ya**2 + za**2 )
+  fa = sqrt( xa**2+ya**2+za**2 ) ; fb = ( xa*xb+ya*yb+za*zb ) / fa ; fc = ( xb*xb+yb*yb+zb*zb + xa*xc+ya*yc+za*zc - fb*fb ) / fa
   
-  CHECK( readsrf, abs(ff).lt.sqrtmachprec, divide by zero )
+  CHECK( readsrf, abs(fa).lt.sqrtmachprec, divide by zero )
   
-  b0 = ff / a0
-  
-  b1 = ( ( xa * ( x3(1) - td(1) * a1 - tt(1) * a2 ) &
-         + ya * ( x3(2) - td(2) * a1 - tt(2) * a2 ) &
-         + za * ( x3(3) - td(3) * a1 - tt(3) * a2 ) ) / ff - b0 * a1 ) / a0
+  b0 = ( fa                               ) / a0 ! magnitude of tangent;
+  b1 = ( fb - b0 * a1                     ) / a0
+  b2 = ( fc - b1 * a1 - b0 * a2 - b1 * a2 ) / a0
 
   CHECK( readsrf, abs(b0).lt.sqrtmachprec, divide by zero )
   
-  nn(1:3) =   td(1:3)                  / b0
-  nz(1:3) = ( dd(1:3) - nn(1:3) * b1 ) / b0
+   nn(1:3) = ( td(1:3)                                              ) / b0
+   nz(1:3) = ( dd(1:3) - nn(1:3) * b1                               ) / b0
+  nzz(1:3) = ( dt(1:3) - nz(1:3) * b1 - nn(1:3) * b2 - nz(1:3) * b1 ) / b0
   
-  bb(1:3) = (/ tt(2)*nn(3)-tt(3)*nn(2), tt(3)*nn(1)-tt(1)*nn(3), tt(1)*nn(2)-tt(2)*nn(1) /)
-  bz(1:3) = (/ td(2)*nn(3)-td(3)*nn(2), td(3)*nn(1)-td(1)*nn(3), td(1)*nn(2)-td(2)*nn(1) /) &
-          + (/ tt(2)*nz(3)-tt(3)*nz(2), tt(3)*nz(1)-tt(1)*nz(3), tt(1)*nz(2)-tt(2)*nz(1) /)
+  !bb(1:3) = (/ tt(2)*nn(3)-tt(3)*nn(2), tt(3)*nn(1)-tt(1)*nn(3), tt(1)*nn(2)-tt(2)*nn(1) /)
+
+   bb(1:3) = zero
+   call cross( tt(1:3), nn(1:3), bb(1:3) ) ! 12 Nov 17;
+
+  !bz(1:3) = (/ td(2)*nn(3)-td(3)*nn(2), td(3)*nn(1)-td(1)*nn(3), td(1)*nn(2)-td(2)*nn(1) /) &
+  !        + (/ tt(2)*nz(3)-tt(3)*nz(2), tt(3)*nz(1)-tt(1)*nz(3), tt(1)*nz(2)-tt(2)*nz(1) /)
+
+   ;                             bz(1:3) = zero
+   call cross( td(1:3), nn(1:3), bz(1:3) ) !                                 ; 12 Nov 17;
+   call cross( tt(1:3), nz(1:3), bz(1:3) ) ! take care that cross accumulates; 12 Nov 17;
+   
+   ;                              bzz(1:3) = zero
+   call cross( dd(1:3),  nn(1:3), bzz(1:3) )
+   call cross( td(1:3),  nz(1:3), bzz(1:3) ) ! recall that cross appends/adds; 12 Nov 17;
+   call cross( td(1:3),  nz(1:3), bzz(1:3) )
+   call cross( tt(1:3), nzz(1:3), bzz(1:3) )
   
 !#ifdef DEBUG
 !  
@@ -771,21 +843,45 @@ subroutine knotxx( srho, teta, zeta, ax, at, az, xx, xs, xt, xz, v1, v2, w1, w2 
   
 !#endif
 
-  v1(1:3) =     cos(arg) * nn(1:3) + sin(arg) * bb(1:3)
+  v1(1:3)  =     cos(arg) *  nn(1:3) + sin(arg) *  bb(1:3)
   
-  w1(1:3) = ( - sin(arg) * nn(1:3) + cos(arg) * bb(1:3) ) * darg &
-          + (   cos(arg) * nz(1:3) + sin(arg) * bz(1:3) )
+  w1(1:3)  = ( - sin(arg) *  nn(1:3) + cos(arg) *  bb(1:3) ) * darg    &
+           + (   cos(arg) *  nz(1:3) + sin(arg) *  bz(1:3) )
 
-  v2(1:3) =   - sin(arg) * nn(1:3) + cos(arg) * bb(1:3)
+  z1(1:3)  = ( - cos(arg) *  nn(1:3) - sin(arg) *  bb(1:3) ) * darg**2 &
+           + ( - sin(arg) *  nz(1:3) + cos(arg) *  bz(1:3) ) * darg    &
+           + ( - sin(arg) *  nz(1:3) + cos(arg) *  bz(1:3) ) * darg    &
+           + (   cos(arg) * nzz(1:3) + sin(arg) * bzz(1:3) )
 
-  w2(1:3) = ( - cos(arg) * nn(1:3) - sin(arg) * bb(1:3) ) * darg &
-          + ( - sin(arg) * nz(1:3) + cos(arg) * bz(1:3) )
+! v1 = - v1 ; w1 = - w1 ; z1 = - z1 ! DEBUGGING TEST; 12 Nov 17;
 
-  xx(1:3) = ax(1:3) + srho * minorrad * (   ellipticity * cost * v1(1:3) + sint * v2(1:3) )
-  xs(1:3) =                  minorrad * (   ellipticity * cost * v1(1:3) + sint * v2(1:3) )
-  xt(1:3) =           srho * minorrad * ( - ellipticity * sint * v1(1:3) + cost * v2(1:3) )
-  xz(1:3) = az(1:3) + srho * minorrad * (   ellipticity * cost * w1(1:3) + sint * w2(1:3) )
+  v2(1:3)  =   - sin(arg) *  nn(1:3) + cos(arg) *  bb(1:3)
+
+  w2(1:3)  = ( - cos(arg) *  nn(1:3) - sin(arg) *  bb(1:3) ) * darg &
+           + ( - sin(arg) *  nz(1:3) + cos(arg) *  bz(1:3) )
+
+  z2(1:3)  = ( + sin(arg) *  nn(1:3) - cos(arg) *  bb(1:3) ) * darg**2 &
+           + ( - cos(arg) *  nz(1:3) - sin(arg) *  bz(1:3) ) * darg    &
+           + ( - cos(arg) *  nz(1:3) - sin(arg) *  bz(1:3) ) * darg    &
+           + ( - sin(arg) * nzz(1:3) + cos(arg) * bzz(1:3) )
+
+  xx(1:3)  = ax(1:3) + srho * minorrad * (   ellipticity * cost * v1(1:3) + sint * v2(1:3) )
+
+  xs(1:3)  =                  minorrad * (   ellipticity * cost * v1(1:3) + sint * v2(1:3) )
+  xt(1:3)  =           srho * minorrad * ( - ellipticity * sint * v1(1:3) + cost * v2(1:3) )
+  xz(1:3)  = az(1:3) + srho * minorrad * (   ellipticity * cost * w1(1:3) + sint * w2(1:3) )
+
+  xtt(1:3) =           srho * minorrad * ( - ellipticity * cost * v1(1:3) - sint * v2(1:3) )
+  xtz(1:3) =           srho * minorrad * ( - ellipticity * sint * w1(1:3) + cost * w2(1:3) )
+  xzz(1:3) = x2(1:3) + srho * minorrad * (   ellipticity * cost * z1(1:3) + sint * z2(1:3) )
    
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+
+!#ifdef DEBUG
+!  write(ounit,'("knotxx  : " 10x " : xx(1:3), nn(1:3), bb(1:3) =",9f9.4)') xx(1:3), nn(1:3), bb(1:3)
+!  FATAL(knotxx  , .true., just checking)
+!#endif
+  
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
   return
@@ -843,5 +939,27 @@ subroutine fft( NN, xi, NF, xc, xs, iflag )
   return
   
 end subroutine fft
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+subroutine cross( aa, bb, cc )
+  
+  use globals, only : 
+  
+  implicit none
+  
+  include "mpif.h"
+  
+  REAL :: aa(1:3), bb(1:3), cc(1:3)
+  
+  cc(1:3) = cc(1:3) + (/ aa(2)*bb(3)-aa(3)*bb(2), &
+                         aa(3)*bb(1)-aa(1)*bb(3), &
+                         aa(1)*bb(2)-aa(2)*bb(1) /) ! note that this accumulates; 12 Nov 17;
+  
+  return
+  
+end subroutine cross
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
