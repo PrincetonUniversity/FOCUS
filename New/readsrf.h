@@ -60,8 +60,7 @@ subroutine readsrf
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  surf%Nteta = Nt
-  surf%Nzeta = Nz
+  surf%Nteta = Nt ; surf%Nzeta = Nz
   
   CHECK( readsrf, Nt.le.0, error )
   CHECK( readsrf, Nz.le.0, error )
@@ -81,7 +80,12 @@ subroutine readsrf
   SALLOCATE( surf%zt, (0:Nt-1,0:Nz-1 ), zero )
   
 ! SALLOCATE( surf%Bn, (0:Nt-1,0:Nz-1 ), zero ) ! normal field;
-! SALLOCATE( surf%Tf, (     0:Nz ), zero ) ! toroidal flux;
+! SALLOCATE( surf%Tf, (       0:Nz   ), zero ) ! toroidal flux;
+
+  SALLOCATE( surf%Bs, (0:Nt-1,0:Nz-1 ), zero ) ! \bB \cdot \nabla s;
+  SALLOCATE( surf%Bt, (0:Nt-1,0:Nz-1 ), zero ) ! \bB \cdot \nabla t;
+  SALLOCATE( surf%Bz, (0:Nt-1,0:Nz-1 ), zero ) ! \bB \cdot \nabla z;
+
   SALLOCATE( surf%Bp, (0:Nt-1,0:Nz-1 ), zero ) ! normal field;
   
   SALLOCATE( surf%EE, (0:Nt-1,0:Nz-1 ), zero )
@@ -99,9 +103,9 @@ subroutine readsrf
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
   srho = one ; surf%area = zero ; surf%vol = zero
-
-  do ii = 0, Nt-1 ; teta = ( ii + half ) * (pi2/Nt) ! half-grid;
-   do jj = 0, Nz-1 ; zeta = ( jj + half ) * (pi2/Nz) ! half-grid;
+  
+  do ii = 0, Nt-1 ; teta = ( ii + half ) * (pi2/Nt) ! please remind me why half-grid is required;
+   do jj = 0, Nz-1 ; zeta = ( jj + half ) * (pi2/Nz) ! please remind me why half-grid is required;
     
     select case( Isurface )
     case( 0 ) ; call surfxx(       teta, zeta,             xx,     xt, xz, xtt, xtz, xzz,                    bn )
@@ -111,13 +115,7 @@ subroutine readsrf
     end select
     
     ds(1:3) = zero
-    call cross( xt(1:3), xz(1:3), ds(1:3) )
-    
-   !ds(1:3) = - ds(1:3) ! negative sign = counter-clockwise; ???; 12 Nov 17;
-
-   !ds(1:3) = - (/ xt(2) * xz(3) - xt(3) * xz(2), &
-   !               xt(3) * xz(1) - xt(1) * xz(3), &
-   !               xt(1) * xz(2) - xt(2) * xz(1) /) ! negative sign = counterclockwise;
+    call cross( xt(1:3), xz(1:3), ds(1:3) ) ! surface element; 12 Nov 17;
     
     dd = sqrt( sum( ds(1:3)*ds(1:3) ) )
     
@@ -141,7 +139,7 @@ subroutine readsrf
     
     surf%area = surf%area +              dd        ! area  ; 12 Nov 17;
     surf%vol  = surf%vol  + sum( xx(1:3)*ds(1:3) ) ! volume; 12 Nov 17;
-
+    
     surf%EE(ii,jj) = sum( xt(1:3) *  xt(1:3) )
     surf%FF(ii,jj) = sum( xt(1:3) *  xz(1:3) )
     surf%GG(ii,jj) = sum( xz(1:3) *  xz(1:3) )
@@ -179,18 +177,6 @@ subroutine readsrf
   case default
    FATAL( focus , .true., selected Isurface is not supported )
   end select
-  
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-  
-! SALLOCATE( surf%area, (0:Nt-1), zero )
-  
-! do jj = 0, Nz-1
-   
-!  surf%area(jj) = sum( surf%xx(0:Nt-1,jj)*surf%yt(0:Nt-1,jj)-surf%yy(0:Nt-1,jj)*surf%xt(0:Nt-1,jj) ) * (pi2/Nt)
-   
-!  if( myid.eq.0 .and. jj.eq.0 ) write(ounit,'("readsrf : ", 10x ," : ",i4," cross-section area =",e13.5" ;")') jj, surf%area(jj)
-   
-! enddo
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   

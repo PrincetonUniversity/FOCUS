@@ -31,6 +31,8 @@ subroutine minimum( Ndof, xdof )
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
+  write(ounit,'("minimum : " 10x " : calling E04KZF ;")')
+
   Liwork = Ndof + 2
   
   Lrwork = Ndof * ( Ndof + 7 )  
@@ -43,20 +45,22 @@ subroutine minimum( Ndof, xdof )
                iuser(1:1), ruser(1:1), ie04kzf )
    
   select case( ie04kzf )
-  case( 0 )    ; write(ounit,'("focus   : " 10x " : ie04kzf =",i3," ; success ;           ")') ie04kzf
-  case( 1 )    ; write(ounit,'("focus   : " 10x " : ie04kzf =",i3," ; input error ;       ")') ie04kzf
-  case( 2 )    ; write(ounit,'("focus   : " 10x " : ie04kzf =",i3," ; large #calc. ;      ")') ie04kzf
-  case( 3 )    ; write(ounit,'("focus   : " 10x " : ie04kzf =",i3," ; quasi minimum ;     ")') ie04kzf
-! case( 4 )    ; write(ounit,'("focus   : " 10x " : ie04kzf =",i3," ; not used ;          ")') ie04kzf
-  case( 5 )    ; write(ounit,'("focus   : " 10x " : ie04kzf =",i3," ; some doubt ;        ")') ie04kzf
-  case( 6 )    ; write(ounit,'("focus   : " 10x " : ie04kzf =",i3," ; some doubt ;        ")') ie04kzf
-  case( 7 )    ; write(ounit,'("focus   : " 10x " : ie04kzf =",i3," ; some doubt ;        ")') ie04kzf
-  case( 8 )    ; write(ounit,'("focus   : " 10x " : ie04kzf =",i3," ; some doubt ;        ")') ie04kzf
-  case( 9 )    ; write(ounit,'("focus   : " 10x " : ie04kzf =",i3," ; unbounded ;         ")') ie04kzf
-  case(10 )    ; write(ounit,'("focus   : " 10x " : ie04kzf =",i3," ; gradient error ;    ")') ie04kzf
-  case default ; write(ounit,'("focus   : " 10x " : ie04kzf =",i3," ; unrecognized ifail ;")') ie04kzf
+  case(  0 )   ; write(ounit,'("minimum : " 10x " : ie04kzf =",i3," ; success ;           ")') ie04kzf
+  case(  1 )   ; write(ounit,'("minimum : " 10x " : ie04kzf =",i3," ; input error ;       ")') ie04kzf
+  case(  2 )   ; write(ounit,'("minimum : " 10x " : ie04kzf =",i3," ; large #calc. ;      ")') ie04kzf
+  case(  3 )   ; write(ounit,'("minimum : " 10x " : ie04kzf =",i3," ; quasi minimum ;     ")') ie04kzf
+! case(  4 )   ; write(ounit,'("minimum : " 10x " : ie04kzf =",i3," ; not used ;          ")') ie04kzf
+  case(  5 )   ; write(ounit,'("minimum : " 10x " : ie04kzf =",i3," ; some doubt ;        ")') ie04kzf
+  case(  6 )   ; write(ounit,'("minimum : " 10x " : ie04kzf =",i3," ; some doubt ;        ")') ie04kzf
+  case(  7 )   ; write(ounit,'("minimum : " 10x " : ie04kzf =",i3," ; some doubt ;        ")') ie04kzf
+  case(  8 )   ; write(ounit,'("minimum : " 10x " : ie04kzf =",i3," ; some doubt ;        ")') ie04kzf
+  case(  9 )   ; write(ounit,'("minimum : " 10x " : ie04kzf =",i3," ; unbounded ;         ")') ie04kzf
+  case( 10 )   ; write(ounit,'("minimum : " 10x " : ie04kzf =",i3," ; gradient error ;    ")') ie04kzf
+  case default ; write(ounit,'("minimum : " 10x " : ie04kzf =",i3," ; unrecognized ifail ;")') ie04kzf
   end select
   
+  FATAL( minimum, ie04kzf.ne.1, under construction )
+
   return
   
 end subroutine minimum
@@ -67,7 +71,7 @@ end subroutine minimum
 
 subroutine gradobj( Ndof, xdof, ff, fdof, iuser, ruser )
   
-  use globals, only : myid, ounit, tstart, totlengt, Tfluxave, target_tflux, Bdotnsqd, ffbest
+  use globals, only : zero, half, myid, ounit, tstart, totlengt, Tfluxave, target_tflux, Bdotnsqd, ffbest
   
   implicit none
   
@@ -81,15 +85,16 @@ subroutine gradobj( Ndof, xdof, ff, fdof, iuser, ruser )
   call dforce( Ndof, xdof(1:Ndof), ff, fdof(1:Ndof) )
 
   ferr = sqrt( sum(fdof(1:Ndof)*fdof(1:Ndof)) / Ndof )
-  
-  if( ff.lt.ffbest ) then
-   
-   ffbest = ff
-   
-   call archive( Ndof, xdof(1:Ndof), ferr )
 
+  if( ff.lt.ffbest ) then
+   ffbest = ff
+   call archive( Ndof, xdof(1:Ndof), ferr )
   endif
-    
+  
+! ferr = zero
+! ff           = half * sum( xdof(1:Ndof)**2 ) ! debugging; 12 Nov 17;
+! fdof(1:Ndof) =             xdof(1:Ndof)      ! debugging; 12 Nov 17;
+  
   tnow = MPI_WTIME()
   
   if( myid.eq.0 ) write(ounit,1010) tnow-tstart, "          ", totlengt(0), Tfluxave(0)-target_tflux, Bdotnsqd(0), ff, ferr

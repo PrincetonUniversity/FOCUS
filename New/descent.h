@@ -11,11 +11,11 @@
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
-module descentparameters
+!module descentparameters
   
-  INTEGER :: Ndegreeoffreedom ! do you know a better way of passing this through to subroutine:odes ;
+!  INTEGER :: Ndegreeoffreedom ! do you know a better way of passing this through to subroutine:odes ;
   
-end module descentparameters
+!end module descentparameters
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
@@ -25,9 +25,9 @@ subroutine descent( Ndof, xdof, ferr )
                                 Ncoils, &
                                 NRKsave, NRKstep, RKstep, &
                                 totlengt, Tfluxave, Bdotnsqd, &
-                                target_length, target_tflux, converged, &
+                                target_tflux, converged, &
                                 fforig, ffbest
-  use descentparameters
+ !use descentparameters
 
   implicit none
   
@@ -55,9 +55,9 @@ subroutine descent( Ndof, xdof, ferr )
   call dforce( Ndof, xdof(1:Ndof), ff, fdof(1:Ndof) ) ; fk(1:Ndof,1) = - fdof(1:Ndof)
   
   ferr = sqrt( sum(fdof(1:Ndof)*fdof(1:Ndof)) / Ndof )
-
+  
   if( ferr.lt.converged ) return
-
+  
   ffold = ff ! initialize;
   
   do irksave = 1, NRKsave ! allows intermediate output & archive;

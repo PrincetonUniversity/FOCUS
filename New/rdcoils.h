@@ -78,7 +78,7 @@
 subroutine rdcoils
   
   use globals, only : zero, one, half, pi, pi2, myid, ounit, tstart, &
-                      NFcoil, Ncoils, IsVaryCurrent, IsVaryGeometry, target_length, &
+                      NFcoil, Ncoils, IsVaryCurrent, IsVaryGeometry, &
                       runit, coilfile, discretecurve, &
                       Ns, init_current, init_radius, coil, Initialize, Isurface, &
                       cmt, smt
@@ -225,19 +225,19 @@ subroutine rdcoils
     
     if( myid.eq.0 ) then
      read( runit,* )
-     read( runit,* ) coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ifree, rdummy, coil(icoil)%Lfree, coil(icoil)%Lo
+     read( runit,* ) coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ifree, rdummy, coil(icoil)%Lfree! coil(icoil)%Lo
     endif
     
     IlBCAST( coil(icoil)%NS   , 1, 0 )
     RlBCAST( coil(icoil)%I    , 1, 0 )
     IlBCAST( coil(icoil)%Ifree, 1, 0 )
     IlBCAST( coil(icoil)%Lfree, 1, 0 )
-    RlBCAST( coil(icoil)%Lo   , 1, 0 )
+   !RlBCAST( coil(icoil)%Lo   , 1, 0 )
     
     FATAL( rdcoils, coil(icoil)%NS    < 0                           , illegal )
     FATAL( rdcoils, coil(icoil)%Ifree < 0 .or. coil(icoil)%Ifree > 1, illegal )
     FATAL( rdcoils, coil(icoil)%Lfree < 0 .or. coil(icoil)%Lfree > 1, illegal )
-    FATAL( rdcoils, coil(icoil)%Lo    < zero                        , illegal )     
+   !FATAL( rdcoils, coil(icoil)%Lo    < zero                        , illegal )     
     
     if( myid.eq.0 ) then
      read( runit,* )
@@ -327,7 +327,7 @@ subroutine rdcoils
     coil(icoil)%I     = init_current
     coil(icoil)%Ifree = IsVaryCurrent
     coil(icoil)%Lfree = IsVaryGeometry
-    coil(icoil)%Lo    = target_length
+   !coil(icoil)%Lo    = zero ! target_length ! 12 Nov 17;
     
     write(coil(icoil)%name,'("mod_"I3.3)') icoil
     
@@ -407,7 +407,7 @@ subroutine rdcoils
    
    FATAL( rdcoils, coil(icoil)%Ifree < 0    .or. coil(icoil)%Ifree > 1, illegal )
    FATAL( rdcoils, coil(icoil)%Lfree < 0    .or. coil(icoil)%Lfree > 1, illegal )
-   FATAL( rdcoils, coil(icoil)%Lo    < zero                           , illegal )
+  !FATAL( rdcoils, coil(icoil)%Lo    < zero                           , illegal )
    
   enddo
   
@@ -415,15 +415,15 @@ subroutine rdcoils
   
   do icoil = 1, Ncoils
    
-   SALLOCATE( coil(icoil)%xx, (0:Ns), zero )
-   SALLOCATE( coil(icoil)%yy, (0:Ns), zero )
-   SALLOCATE( coil(icoil)%zz, (0:Ns), zero )
-   SALLOCATE( coil(icoil)%xt, (0:Ns), zero )
-   SALLOCATE( coil(icoil)%yt, (0:Ns), zero )
-   SALLOCATE( coil(icoil)%zt, (0:Ns), zero )
-   SALLOCATE( coil(icoil)%xa, (0:Ns), zero )
-   SALLOCATE( coil(icoil)%ya, (0:Ns), zero )
-   SALLOCATE( coil(icoil)%za, (0:Ns), zero )
+   SALLOCATE( coil(icoil)%xx, (0:Ns-1), zero )
+   SALLOCATE( coil(icoil)%yy, (0:Ns-1), zero )
+   SALLOCATE( coil(icoil)%zz, (0:Ns-1), zero )
+   SALLOCATE( coil(icoil)%xt, (0:Ns-1), zero )
+   SALLOCATE( coil(icoil)%yt, (0:Ns-1), zero )
+   SALLOCATE( coil(icoil)%zt, (0:Ns-1), zero )
+   SALLOCATE( coil(icoil)%xa, (0:Ns-1), zero )
+   SALLOCATE( coil(icoil)%ya, (0:Ns-1), zero )
+   SALLOCATE( coil(icoil)%za, (0:Ns-1), zero )
 
   enddo ! end of do icoil; 29 Sep 17;
   
@@ -511,10 +511,10 @@ subroutine rdcoils
    
   enddo
   
-  SALLOCATE( cmt, (0:Ns, 0:maxNF), zero ) ! trigonometric factors mapping coils from `Fourier' to real space;
-  SALLOCATE( smt, (0:Ns, 0:maxNF), zero )
+  SALLOCATE( cmt, (0:Ns-1, 0:maxNF), zero ) ! trigonometric factors mapping coils from `Fourier' to real space;
+  SALLOCATE( smt, (0:Ns-1, 0:maxNF), zero )
   
-  do kk = 0, Ns
+  do kk = 0, Ns-1 ! 12 Nov 17;
    
    tt = kk * discretecurve
    

@@ -31,7 +31,7 @@ subroutine archive( Ndof, xdof, ferr )
   INTEGER            :: Ndof
   REAL               :: xdof(1:Ndof), ferr
 
-  INTEGER            :: ii, icoil, ierr, mm
+  INTEGER            :: kk, icoil, ierr, mm
   REAL               :: tnow, spectralwidth, term
 ! CHARACTER(LEN=10)  :: version='h1.0.0'
 
@@ -88,7 +88,7 @@ subroutine archive( Ndof, xdof, ferr )
   HWRITERV( 1                ,   weight_tflux  ,   weight_tflux               )
   HWRITERV( 1                ,   target_tflux  ,   target_tflux               )
   HWRITERV( 1                ,   weight_length ,   weight_length              )
-  HWRITERV( 1                ,   target_length ,   target_length              )
+! HWRITERV( 1                ,   target_length ,   target_length              )
   HWRITERV( 1                ,   wspectral     ,   wspectral                  )
   HWRITERV( 1                ,   pspectral     ,   pspectral                  )
 
@@ -159,8 +159,8 @@ subroutine archive( Ndof, xdof, ferr )
    write(wunit, *) "#coil_type     coil_name"
    write(wunit,'(3X,I3,4X, A10)') 1, coil(icoil)%name
    
-   write(wunit, '(3(A6, A15, 8X))') " #Nseg", "current",  "Ifree", "Length", "Lfree", "target_length"
-   write(wunit,'(2X,I4,ES23.15,3X,I3,ES23.15,3X,I3,ES23.15)') Ns, coil(icoil)%I, coil(icoil)%Ifree, coil(icoil)%dL(0), coil(icoil)%Lfree, coil(icoil)%Lo
+   write(wunit, '(3(A6, A15, 8X))') " #Nseg", "current",  "Ifree", "Length", "Lfree", "xxREDUNDANTxx"
+   write(wunit,'(2X,I4,ES23.15,3X,I3,ES23.15,3X,I3,ES23.15)') Ns, coil(icoil)%I, coil(icoil)%Ifree, coil(icoil)%dL(0), coil(icoil)%Lfree, zero
    
    write(wunit, *) "#NFcoil"
    write(wunit, '(I3)') coil(icoil)%NF
@@ -188,13 +188,9 @@ subroutine archive( Ndof, xdof, ferr )
   
   do icoil = 1, Ncoils
    
-   do ii = 0, Ns-1
-    write(funit,1010) coil(icoil)%xx(ii), coil(icoil)%yy(ii), coil(icoil)%zz(ii), coil(icoil)%I
+   do kk = 0, Ns-1 ; write(funit,1010) coil(icoil)%xx(kk), coil(icoil)%yy(kk), coil(icoil)%zz(kk), coil(icoil)%I
    enddo
-   
-   ii =  Ns
-   
-   write(funit,1010) coil(icoil)%xx(ii), coil(icoil)%yy(ii), coil(icoil)%zz(ii), zero, icoil, coil(icoil)%name
+   ;  kk = 0       ; write(funit,1010) coil(icoil)%xx(kk), coil(icoil)%yy(kk), coil(icoil)%zz(kk),          zero, icoil, coil(icoil)%name
    
   enddo
   
@@ -211,9 +207,9 @@ subroutine archive( Ndof, xdof, ferr )
   write(funit) Ncoils, Ns
   
   do icoil = 1, Ncoils
-   write(funit) coil(icoil)%xx(0:Ns)
-   write(funit) coil(icoil)%yy(0:Ns)
-   write(funit) coil(icoil)%zz(0:Ns)
+   write(funit) coil(icoil)%xx(0:Ns-1) ! 12 Nov 17;
+   write(funit) coil(icoil)%yy(0:Ns-1) ! 12 Nov 17;
+   write(funit) coil(icoil)%zz(0:Ns-1) ! 12 Nov 17;
   enddo
   
   close( funit )

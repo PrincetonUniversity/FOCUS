@@ -270,7 +270,7 @@ subroutine bxyfield( zeta, xy, Bxy )
    
    Bi(1:3) = zero
    
-   do kk = 1, Ns
+   do kk = 0, Ns-1 ! 12 Nov 17;
     
     dx = xx(1) - coil(icoil)%xx(kk) ! distance from evaluation point to curve;
     dy = xx(2) - coil(icoil)%yy(kk)

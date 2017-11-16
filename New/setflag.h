@@ -19,7 +19,7 @@ subroutine setflag( Ndof, xdof )
   use globals, only : zero, one, two, half, pi2, sqrtmachprec, myid, ncpu, ounit, tstart, &
                       Icheck, Ns, Ncoils, coil, &
                       totlengt, Tfluxave, Bdotnsqd, Tfluxerr, &
-                      target_length, weight_tflux , target_tflux, &
+                      weight_tflux , target_tflux, &
                       NRKsave, NRKstep, RKstep, Ldescent
   
   implicit none
@@ -68,7 +68,7 @@ subroutine setflag( Ndof, xdof )
     
    enddo ! end of do idof;
    
-1000 format("setflag : ", 10x ," : ",i3," ; analytic =",es23.15," =",es23.15," = finite diff. ; ",:,"err =",es10.02," ;")
+1000 format("setflag : ", 10x ," : check derivatives : ",i3," ; analytic =",es23.15," =",es23.15," = finite diff. ; ",:," relative err. =",es10.02," ;")
    
 
    ifd = 0
@@ -119,7 +119,7 @@ subroutine setflag( Ndof, xdof )
 !   FATAL( rdcoils, .true., selected IsNormalize is not supported )
 !   
 !  end select
-
+  
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
   tnow = MPI_WTIME()

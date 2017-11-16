@@ -13,7 +13,7 @@
 
 subroutine coilxyz( icoil )
   
-  use globals, only : zero, myid, coil, cmt, smt, Ns
+  use globals, only : zero, one, myid, coil, cmt, smt, Ns, surf, Nt, Nz
   
   implicit none
   
@@ -21,7 +21,8 @@ subroutine coilxyz( icoil )
   
   INTEGER, intent(in) :: icoil
   
-  INTEGER :: mm, ierr, idof
+  INTEGER :: mm, ierr, idof, ii, jj, kk
+  REAL    :: rx, ry, rz, dist
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -42,26 +43,45 @@ subroutine coilxyz( icoil )
   
   ;  mm = 0
   
-  coil(icoil)%xx(0:Ns) = cmt(0:Ns,mm) * coil(icoil)%xc(mm)
-  coil(icoil)%yy(0:Ns) = cmt(0:Ns,mm) * coil(icoil)%yc(mm)
-  coil(icoil)%zz(0:Ns) = cmt(0:Ns,mm) * coil(icoil)%zc(mm)    
+  coil(icoil)%xx(0:Ns-1) = cmt(0:Ns-1,mm) * coil(icoil)%xc(mm)
+  coil(icoil)%yy(0:Ns-1) = cmt(0:Ns-1,mm) * coil(icoil)%yc(mm)
+  coil(icoil)%zz(0:Ns-1) = cmt(0:Ns-1,mm) * coil(icoil)%zc(mm)    
   
   do mm = 1, coil(icoil)%NF   
    
-   coil(icoil)%xx(0:Ns) = coil(icoil)%xx(0:Ns) + (   cmt(0:Ns,mm) * coil(icoil)%xc(mm) + smt(0:Ns,mm) * coil(icoil)%xs(mm) )
-   coil(icoil)%yy(0:Ns) = coil(icoil)%yy(0:Ns) + (   cmt(0:Ns,mm) * coil(icoil)%yc(mm) + smt(0:Ns,mm) * coil(icoil)%ys(mm) )
-   coil(icoil)%zz(0:Ns) = coil(icoil)%zz(0:Ns) + (   cmt(0:Ns,mm) * coil(icoil)%zc(mm) + smt(0:Ns,mm) * coil(icoil)%zs(mm) )
+   coil(icoil)%xx(0:Ns-1) = coil(icoil)%xx(0:Ns-1) + (   cmt(0:Ns-1,mm) * coil(icoil)%xc(mm) + smt(0:Ns-1,mm) * coil(icoil)%xs(mm) )
+   coil(icoil)%yy(0:Ns-1) = coil(icoil)%yy(0:Ns-1) + (   cmt(0:Ns-1,mm) * coil(icoil)%yc(mm) + smt(0:Ns-1,mm) * coil(icoil)%ys(mm) )
+   coil(icoil)%zz(0:Ns-1) = coil(icoil)%zz(0:Ns-1) + (   cmt(0:Ns-1,mm) * coil(icoil)%zc(mm) + smt(0:Ns-1,mm) * coil(icoil)%zs(mm) )
    
-   coil(icoil)%xt(0:Ns) = coil(icoil)%xt(0:Ns) + ( - smt(0:Ns,mm) * coil(icoil)%xc(mm) + cmt(0:Ns,mm) * coil(icoil)%xs(mm) ) * mm
-   coil(icoil)%yt(0:Ns) = coil(icoil)%yt(0:Ns) + ( - smt(0:Ns,mm) * coil(icoil)%yc(mm) + cmt(0:Ns,mm) * coil(icoil)%ys(mm) ) * mm
-   coil(icoil)%zt(0:Ns) = coil(icoil)%zt(0:Ns) + ( - smt(0:Ns,mm) * coil(icoil)%zc(mm) + cmt(0:Ns,mm) * coil(icoil)%zs(mm) ) * mm
+   coil(icoil)%xt(0:Ns-1) = coil(icoil)%xt(0:Ns-1) + ( - smt(0:Ns-1,mm) * coil(icoil)%xc(mm) + cmt(0:Ns-1,mm) * coil(icoil)%xs(mm) ) * mm
+   coil(icoil)%yt(0:Ns-1) = coil(icoil)%yt(0:Ns-1) + ( - smt(0:Ns-1,mm) * coil(icoil)%yc(mm) + cmt(0:Ns-1,mm) * coil(icoil)%ys(mm) ) * mm
+   coil(icoil)%zt(0:Ns-1) = coil(icoil)%zt(0:Ns-1) + ( - smt(0:Ns-1,mm) * coil(icoil)%zc(mm) + cmt(0:Ns-1,mm) * coil(icoil)%zs(mm) ) * mm
    
-   coil(icoil)%xa(0:Ns) = coil(icoil)%xa(0:Ns) + ( - cmt(0:Ns,mm) * coil(icoil)%xc(mm) - smt(0:Ns,mm) * coil(icoil)%xs(mm) ) * mm*mm
-   coil(icoil)%ya(0:Ns) = coil(icoil)%ya(0:Ns) + ( - cmt(0:Ns,mm) * coil(icoil)%yc(mm) - smt(0:Ns,mm) * coil(icoil)%ys(mm) ) * mm*mm
-   coil(icoil)%za(0:Ns) = coil(icoil)%za(0:Ns) + ( - cmt(0:Ns,mm) * coil(icoil)%zc(mm) - smt(0:Ns,mm) * coil(icoil)%zs(mm) ) * mm*mm
+   coil(icoil)%xa(0:Ns-1) = coil(icoil)%xa(0:Ns-1) + ( - cmt(0:Ns-1,mm) * coil(icoil)%xc(mm) - smt(0:Ns-1,mm) * coil(icoil)%xs(mm) ) * mm*mm
+   coil(icoil)%ya(0:Ns-1) = coil(icoil)%ya(0:Ns-1) + ( - cmt(0:Ns-1,mm) * coil(icoil)%yc(mm) - smt(0:Ns-1,mm) * coil(icoil)%ys(mm) ) * mm*mm
+   coil(icoil)%za(0:Ns-1) = coil(icoil)%za(0:Ns-1) + ( - cmt(0:Ns-1,mm) * coil(icoil)%zc(mm) - smt(0:Ns-1,mm) * coil(icoil)%zs(mm) ) * mm*mm
    
   enddo ! end of do mm; 
    
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+  
+  do kk = 0, Ns-1
+   do ii = 0, Nt-1
+    do jj = 0, Nz-1
+     
+     rx = surf%xx(ii,jj) - coil(icoil)%xx(kk)
+     ry = surf%yy(ii,jj) - coil(icoil)%yy(kk)
+     rz = surf%zz(ii,jj) - coil(icoil)%zz(kk)
+     
+     dist = sqrt( rx*rx + ry*ry + rz*rz )
+     
+     coil(icoil)%RR(1:9,ii,jj,kk) = (/ rx * rx, rx * ry, rx * rz, ry * rx, ry * ry, ry * rz, rz * rx, rz * ry, rz * rz /) / dist**5 &
+                                  + (/   one  ,  zero  ,  zero  ,  zero  ,   one  ,  zero  ,  zero  ,  zero  ,   one   /) / dist**3
+     
+    enddo
+   enddo
+  enddo
+  
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
   return

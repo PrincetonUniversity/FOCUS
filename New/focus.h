@@ -27,10 +27,10 @@ program focus
   use globals, only : zero, one, two, pi2, sqrtmachprec, ncpu, myid, ounit, tstart, &
                       ext, inputfile, surffile, axisfile, coilfile, inpcoils, hdf5file, outcoils, outplots, &
                       Nt, Nz, surf, Ncoils, Ns, coil, &
-                      cmt, smt, discretecurve, &
+                     !cmt, smt, discretecurve, &
                       tdof, Mdof, &
                       totlengt, Tfluxave, Bdotnsqd, &
-                      target_length, target_tflux, &
+                      target_tflux, &
                       Ldescent, Iminimize, &
                       fforig, ffbest, iarchive, &
                       weight_length, weight_tflux, weight_bnorm, wspectral, pspectral, &
@@ -81,7 +81,7 @@ program focus
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-  call initial ! reads input;
+  call initial ! reads input; note that Ncoils is not yet known;
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
@@ -129,6 +129,8 @@ program focus
    SALLOCATE( coil(icoil)%dL, (              0:Ndof), zero )
    SALLOCATE( coil(icoil)%dT, (       0:Nz-1,0:Ndof), zero )
    SALLOCATE( coil(icoil)%dB, (0:Nt-1,0:Nz-1,0:Ndof), zero )
+
+   SALLOCATE( coil(icoil)%RR, (1:9,0:Nt-1,0:Nz-1,0:Ns-1), zero )
    
   enddo
   
@@ -140,7 +142,7 @@ program focus
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  if( myid.eq.0 ) write(ounit,1010) tnow-tstart, "targets   ", target_length, target_tflux
+  if( myid.eq.0 ) write(ounit,1010) tnow-tstart, "targets   ", zero         , target_tflux
   
   told = MPI_WTIME()
 
@@ -193,6 +195,12 @@ program focus
    FATAL( focus, .true., selected Iminimize is not supported )
    
   end select
+  
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+  
+!#ifdef DEBUG 
+!  call varysrf( Ndof, xdof(1:Ndof), ff, fdof(1:Ndof) )
+!#endif
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   

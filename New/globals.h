@@ -92,7 +92,7 @@ module globals
   REAL               :: weight_tflux   =        1.000D+00
   REAL               :: target_tflux   =        1.000D+00
   REAL               :: weight_length  =        1.000D-02
-  REAL               :: target_length  =        0.000D+00
+  REAL               :: target_length  =        0.000D+00 ! REDUNDANT; 12 Nov 17;
 
   REAL               :: wspectral      =        1.000D-06
   REAL               :: pspectral      =        2.000D+00
@@ -136,7 +136,7 @@ module globals
                         weight_tflux   , &
                         target_tflux   , &
                         weight_length  , &
-                        target_length  , &
+                        target_length  , & ! REDUNDANT; 12 Nov 17;
                         wspectral      , &
                         pspectral      , &
                         converged      , &
@@ -164,6 +164,7 @@ module globals
      REAL   , allocatable :: csarea(:) ! cross section area;
      REAL   , allocatable :: xx(:,:), yy(:,:), zz(:,:), nx(:,:), ny(:,:), nz(:,:), ds(:,:), xt(:,:), yt(:,:), zt(:,:)
      REAL   , allocatable :: dL(:), dT(:,:), dB(:,:,:), Bp(:,:) ! total normal magnetic field; plasma normal magnetic field;
+     REAL   , allocatable :: Bs(:,:), Bt(:,:), Bz(:,:) ! components of magnetic field at surface; 12 Nov 17;
      REAL   , allocatable :: EE(:,:), FF(:,:), GG(:,:) ! coefficients of 1st fundamental form;
      REAL   , allocatable :: LL(:,:), MM(:,:), PP(:,:) ! coefficients of 2nd fundamental form;
      REAL   , allocatable :: HH(:,:)                   ! mean curvature;
@@ -172,10 +173,10 @@ module globals
 
   type spacecurve
      INTEGER              :: itype, NF, Ifree, Lfree, NS
-     REAL                 ::     I    , Lo   , Le, maxcurv
+     REAL                 ::     I           , Le, maxcurv
      REAL   , allocatable :: xc(:), xs(:), yc(:), ys(:), zc(:), zs(:)
      REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:)
-     REAL   , allocatable :: dL(:), dT(:,:), dB(:,:,:)
+     REAL   , allocatable :: dL(:), dT(:,:), dB(:,:,:), RR(:,:,:,:)
      INTEGER              :: gdof, idof
      character(LEN=10)    :: name
   end type spacecurve

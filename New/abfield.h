@@ -28,7 +28,7 @@ subroutine abfield( icoil, ii, jj, Ns, dFdx, dBdx )
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
   INTEGER, intent(in ) :: icoil, ii, jj, Ns
-  REAL   , intent(out) :: dFdx(0:Ns,0:3), dBdx(0:Ns,0:3)
+  REAL   , intent(out) :: dFdx(0:Ns-1,0:3), dBdx(0:Ns-1,0:3)
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
@@ -48,12 +48,12 @@ subroutine abfield( icoil, ii, jj, Ns, dFdx, dBdx )
   xt = surf%xt(ii,jj) ! poloidal tangent to surface (shorthand);
   yt = surf%yt(ii,jj)
   zt = surf%zt(ii,jj)
-
+  
   xn = surf%nx(ii,jj) !          normal  to surface (shorthand);
   yn = surf%ny(ii,jj)
   zn = surf%nz(ii,jj)
-
-  do kk = 1, Ns
+  
+  do kk = 0, Ns-1 ! 12 Nov 17;
    
    dx = surf%xx(ii,jj) - coil(icoil)%xx(kk) ! distance from evaluation point to curve;
    dy = surf%yy(ii,jj) - coil(icoil)%yy(kk)
@@ -71,9 +71,9 @@ subroutine abfield( icoil, ii, jj, Ns, dFdx, dBdx )
    ty = coil(icoil)%yt(kk)
    tz = coil(icoil)%zt(kk)
    
-   dxtx = dx*tx ; dxty = dx*ty ; dxtz = dx*tz
-   dytx = dy*tx ; dyty = dy*ty ; dytz = dy*tz
-   dztx = dz*tx ; dzty = dz*ty ; dztz = dz*tz
+   dxtx = dx * tx ; dxty = dx * ty ; dxtz = dx * tz
+   dytx = dy * tx ; dyty = dy * ty ; dytz = dy * tz
+   dztx = dz * tx ; dzty = dz * ty ; dztz = dz * tz
    
    rdl = dxtx + dyty + dztz ! r dot dl;
    
@@ -87,24 +87,23 @@ subroutine abfield( icoil, ii, jj, Ns, dFdx, dBdx )
    zx = dxtz - dztx
    xy = dytx - dxty
 
-   td3 = two * dd(3)
+   td3 = two * dd(3) ! WHERE DID THE FACTOR OF TWO COME FROM; 12 Nov 17;
    
-   dBdx(kk,0) = ( xn*yz + yn*zx + zn*xy ) * td3 ! Bn;
+   dBdx(kk,0  ) = ( xn*yz + yn*zx + zn*xy ) * td3 ! Bn;
+   
+   dBdx(kk,1  ) = xn * ( dd(5) * ( yz * dx            )            ) &
+                + yn * ( dd(5) * ( zx * dx + dz * rdl ) - tz * td3 ) &
+                + zn * ( dd(5) * ( xy * dx - dy * rdl ) + ty * td3 ) ! dBn/dx;
 
-   dBdx(kk,1) = xn * ( dd(5) * ( yz * dx            )            ) &
-              + yn * ( dd(5) * ( zx * dx + dz * rdl ) - tz * td3 ) &
-              + zn * ( dd(5) * ( xy * dx - dy * rdl ) + ty * td3 ) ! dBn/dx;
+   dBdx(kk,2  ) = xn * ( dd(5) * ( yz * dy - dz * rdl ) + tz * td3 ) &
+                + yn * ( dd(5) * ( zx * dy            )            ) &
+                + zn * ( dd(5) * ( xy * dy + dx * rdl ) - tx * td3 ) ! dBn/dy;
 
-   dBdx(kk,2) = xn * ( dd(5) * ( yz * dy - dz * rdl ) + tz * td3 ) &
-              + yn * ( dd(5) * ( zx * dy            )            ) &
-              + zn * ( dd(5) * ( xy * dy + dx * rdl ) - tx * td3 ) ! dBn/dy;
+   dBdx(kk,3  ) = xn * ( dd(5) * ( yz * dz + dy * rdl ) - ty * td3 ) &
+                + yn * ( dd(5) * ( zx * dz - dx * rdl ) + tx * td3 ) &
+                + zn * ( dd(5) * ( xy * dz            )            ) ! dBn/dz;
 
-   dBdx(kk,3) = xn * ( dd(5) * ( yz * dz + dy * rdl ) - ty * td3 ) &
-              + yn * ( dd(5) * ( zx * dz - dx * rdl ) + tx * td3 ) &
-              + zn * ( dd(5) * ( xy * dz            )            ) ! dBn/dz;
-
-
-   dBdx(kk,1:3) = dBdx(kk,1:3) * two ! WHERE DID THIS FACTOR OF TWO COME FROM;
+   dBdx(kk,1:3) = dBdx(kk,1:3) * two ! WHERE DID THIS FACTOR OF TWO COME FROM; 12 Nov 17;
 
   enddo ! end of do kk;
   
@@ -115,47 +114,3 @@ subroutine abfield( icoil, ii, jj, Ns, dFdx, dBdx )
 end subroutine abfield
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-
-!dAdx(kk,1,0) = tx * dd(1) ! Ax;
-!dAdx(kk,2,0) = ty * dd(1) ! Ay;
-!dAdx(kk,3,0) = tz * dd(1) ! Az;
-
-!dAdx(kk,1,1) = - ( dyty + dztz ) * dd(3) ! dAx/dx;
-!dAdx(kk,1,2) =     dytx          * dd(3) ! dAx/dy;
-!dAdx(kk,1,3) =     dztx          * dd(3) ! dAx/dz;
-
-!dAdx(kk,2,1) =     dxty          * dd(3) ! dAy/dx;
-!dAdx(kk,2,2) = - ( dxtx + dztz ) * dd(3) ! dAy/dy;
-!dAdx(kk,2,3) =     dzty          * dd(3) ! dAy/dz;
-
-!dAdx(kk,3,1) =     dxtz          * dd(3) ! dAz/dx;
-!dAdx(kk,3,2) =     dytz          * dd(3) ! dAz/dy;
-!dAdx(kk,3,3) = - ( dxtx + dyty ) * dd(3) ! dAz/dz;
-
-!dAdx(kk,1,1) = ( - rdl + dxtx               ) * dd(3) ! dAx/dx;
-!dAdx(kk,1,2) = (                   dytx        ) * dd(3) ! dAx/dy;
-!dAdx(kk,1,3) = (                          dztx ) * dd(3) ! dAx/dz;
-
-!dAdx(kk,2,1) = (            dxty               ) * dd(3) ! dAy/dx;
-!dAdx(kk,2,2) = ( - rdl        + dyty        ) * dd(3) ! dAy/dy;
-!dAdx(kk,2,3) = (                          dzty ) * dd(3) ! dAy/dz;
-
-!dAdx(kk,3,1) = (            dxtz               ) * dd(3) ! dAz/dx;
-!dAdx(kk,3,2) = (                   dytz        ) * dd(3) ! dAz/dy;
-!dAdx(kk,3,3) = ( - rdl               + dztz ) * dd(3) ! dAz/dz;
-
-!dBdx(kk,1,0) = yz * dd(3) ! Bx;
-!dBdx(kk,2,0) = zx * dd(3) ! By;
-!dBdx(kk,3,0) = xy * dd(3) ! Bz;
-
-!dBdx(kk,1,1) = three * yz * dx * dd(5)                                                  ! dBx/dx;
-!dBdx(kk,1,2) = three * yz * dy * dd(5) - three * dz * rdl * dd(5) + two * tz * dd(3) ! dBx/dy;
-!dBdx(kk,1,3) = three * yz * dz * dd(5) + three * dy * rdl * dd(5) - two * ty * dd(3) ! dBx/dz;
-
-!dBdx(kk,2,1) = three * zx * dx * dd(5) + three * dz * rdl * dd(5) - two * tz * dd(3) ! dBy/dx;
-!dBdx(kk,2,2) = three * zx * dy * dd(5)                                                  ! dBy/dy;
-!dBdx(kk,2,3) = three * zx * dz * dd(5) - three * dx * rdl * dd(5) + two * tx * dd(3) ! dBy/dz;
-
-!dBdx(kk,3,1) = three * xy * dx * dd(5) - three * dy * rdl * dd(5) + two * ty * dd(3) ! dBz/dx;
-!dBdx(kk,3,2) = three * xy * dy * dd(5) + three * dx * rdl * dd(5) - two * tx * dd(3) ! dBz/dy;
-!dBdx(kk,3,3) = three * xy * dz * dd(5)                                                  ! dBz/dz;

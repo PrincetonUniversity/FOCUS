@@ -2,14 +2,12 @@
 
 ############################################################################################################################################
 
-#ALLFILES= globals initial readsrf rdcoils packdof coilxyz abfield setflag bnormal torflux length descent congrad        archive focus
- ALLFILES= globals initial readsrf rdcoils packdof coilxyz abfield dforce setflag                 descent minimum pcplot archive focus
+ ALLFILES= globals initial readsrf rdcoils packdof coilxyz abfield brfield dforce setflag descent minimum pcplot archive varysrf focus
  HFILES= $(ALLFILES:=.h)
  FFILES= $(ALLFILES:=.F90)
  PFILES= $(ALLFILES:=.pdf)
  ROBJS=$(ALLFILES:=_r.o)
  DOBJS=$(ALLFILES:=_d.o)
-#NUMOBJ= ode.o
  NUMOBJ= 
 
 ############################################################################################################################################
