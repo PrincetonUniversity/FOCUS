@@ -99,7 +99,9 @@ PROGRAM focus
 ! case(  4 )   ; call Newton      ; irestart=1  ! Newton minimum finder  ; NAG E04LYF; with    derivs;
   case(  5 )   ; call congrad     ; irestart=1  ! conjugate gradient                 ; with    derivs;
 !  case(  6 )   ; call congrad     ; call hybrid  ; irestart=1
-  case(  6 )   ; call congrad     ; call mod_newton; irestart=1  
+  case(  6 )   ; call congrad     ; call mod_newton; irestart=1 
+  case(  7 )   ; call congrad     ; call truncnt   ; irestart=1 
+  case(  8 )   ; call congrad     ; call hybrid    ; irestart=1
 ! case(  9 )   ; call SVD         ; irestart=1  ! Analyze current Heissian matrix using SVD; F08KBF  ;
   case(  9 )   ; call congrad     ; call truncnt; call svd;  irestart=1  
 ! case(  9 )   ; call truncnt ; call svd ;  call hessian    ; irestart=1  
