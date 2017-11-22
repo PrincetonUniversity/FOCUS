@@ -226,7 +226,7 @@ subroutine bxyfield( zeta, xy, Bxy )
   
   REAL    :: zeta, xy(*), Bxy(*)
   
-  INTEGER :: icoil, kk, ierr
+  INTEGER :: icoil, kk, ierr, isurf
   REAL    :: st(1:2)
   REAL    :: ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3), v1(1:3), v2(1:3), w1(1:3), w2(1:3)
   REAL    :: xtt(1:3), xtz(1:3), xzz(1:3)
@@ -246,9 +246,9 @@ subroutine bxyfield( zeta, xy, Bxy )
 
 #endif
 
-  srho = one ; teta = zero
+  isurf = 1 ; srho = one ; teta = zero
 
-  call knotxx( st(1), st(2), zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3), xtt, xtz, xzz, v1(1:3), v2(1:3), w1(1:3), w2(1:3) )
+  call knotxx( isurf, st(1), st(2), zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3), xtt, xtz, xzz, v1(1:3), v2(1:3), w1(1:3), w2(1:3) )
   
   xx(1:3) = ax(1:3) + minorrad * ( xy(1) * ellipticity * v1(1:3) + xy(2) * v2(1:3) )
   
@@ -272,9 +272,9 @@ subroutine bxyfield( zeta, xy, Bxy )
    
    do kk = 0, Ns-1 ! 12 Nov 17;
     
-    dx = xx(1) - coil(icoil)%xx(kk) ! distance from evaluation point to curve;
-    dy = xx(2) - coil(icoil)%yy(kk)
-    dz = xx(3) - coil(icoil)%zz(kk)
+    dx = xx(1) - coil(icoil)%xx(1,kk) ! distance from evaluation point to curve;
+    dy = xx(2) - coil(icoil)%xx(2,kk)
+    dz = xx(3) - coil(icoil)%xx(3,kk)
 
     rr(2) = dx**2 + dy**2 + dz**2 ; rr(1) = sqrt(rr(2)) ; rr(3) = rr(1) * rr(2)
 
@@ -282,9 +282,9 @@ subroutine bxyfield( zeta, xy, Bxy )
 
     ;                             ;                     ; dd(3) = one / rr(3)
     
-    tx = coil(icoil)%xt(kk) ! tangent to coil (shorthand);
-    ty = coil(icoil)%yt(kk)
-    tz = coil(icoil)%zt(kk)
+    tx = coil(icoil)%xt(1,kk) ! tangent to coil (shorthand);
+    ty = coil(icoil)%xt(2,kk)
+    tz = coil(icoil)%xt(3,kk)
     
     Bi(1:3) = Bi(1:3) + (/ ty * dz - tz * dy, tz * dx - tx * dz, tx * dy - ty * dx /) * dd(3)
     

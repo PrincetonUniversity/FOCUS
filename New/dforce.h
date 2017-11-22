@@ -18,7 +18,7 @@ subroutine dforce( Ndof, xdof, ff, fdof )
   
   use globals, only : zero, half, pi2, sqrtmachprec, myid, ncpu, ounit, &
                       Ncoils, coil, cmt, smt, &
-                      Nt, Nz, Ns, surf, discretecurve, deltatheta, discretesurface, &
+                      Nt, Nz, Ns, surf, discretecurve, deltateta, discretesurface, &
                       totlengt, Tfluxave, Bdotnsqd, &
                       wspectral, pspectral, Mdof, tdof, &
                       target_tflux, weight_length, weight_tflux, weight_bnorm
@@ -30,7 +30,7 @@ subroutine dforce( Ndof, xdof, ff, fdof )
   INTEGER               :: Ndof
   REAL                  :: xdof(1:Ndof), ff, fdof(1:Ndof)
   
-  INTEGER               :: ierr, icoil, mm, ii, jj, kk, idof, NF, icmodNc
+  INTEGER               :: ierr, icoil, mm, ii, jj, kk, idof, NF, icmodNc, isurf
   REAL                  :: dFdx(0:Ns-1,0:3), dBdx(0:Ns-1,0:3), CC
   REAL                  :: length(0:Ns-1), tx(0:Ns-1), ty(0:Ns-1), tz(0:Ns-1), ax(0:Ns-1), ay(0:Ns-1), az(0:Ns-1), txtx(0:Ns-1), txax(0:Ns-1), dd(0:Ns-1)
   CHARACTER             :: packorunpack
@@ -99,13 +99,13 @@ subroutine dforce( Ndof, xdof, ff, fdof )
      
     enddo ! end do ii;
     
-    coil(icoil)%dT(jj,0:Ndof) = coil(icoil)%dT(jj,0:Ndof) * discretecurve * deltatheta
+    coil(icoil)%dT(jj,0:Ndof) = coil(icoil)%dT(jj,0:Ndof) * discretecurve * deltateta
 
    enddo ! end do jj;
    
-   tx(0:Ns-1) = coil(icoil)%xt(0:Ns-1) ; ax(0:Ns-1) = coil(icoil)%xa(0:Ns-1) ! tangent to coil (shorthand);
-   ty(0:Ns-1) = coil(icoil)%yt(0:Ns-1) ; ay(0:Ns-1) = coil(icoil)%ya(0:Ns-1) ! tangent to coil (shorthand);
-   tz(0:Ns-1) = coil(icoil)%zt(0:Ns-1) ; az(0:Ns-1) = coil(icoil)%za(0:Ns-1) ! tangent to coil (shorthand);
+   tx(0:Ns-1) = coil(icoil)%xt(1,0:Ns-1) ; ax(0:Ns-1) = coil(icoil)%xa(0:Ns-1) ! tangent to coil (shorthand);
+   ty(0:Ns-1) = coil(icoil)%xt(2,0:Ns-1) ; ay(0:Ns-1) = coil(icoil)%ya(0:Ns-1) ! tangent to coil (shorthand);
+   tz(0:Ns-1) = coil(icoil)%xt(3,0:Ns-1) ; az(0:Ns-1) = coil(icoil)%za(0:Ns-1) ! tangent to coil (shorthand);
    
    txtx(0:Ns-1) = tx(0:Ns-1)*tx(0:Ns-1) + ty(0:Ns-1)*ty(0:Ns-1) + tz(0:Ns-1)*tz(0:Ns-1)
    txax(0:Ns-1) = tx(0:Ns-1)*ax(0:Ns-1) + ty(0:Ns-1)*ay(0:Ns-1) + tz(0:Ns-1)*az(0:Ns-1)
@@ -148,19 +148,21 @@ subroutine dforce( Ndof, xdof, ff, fdof )
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  CHECK( dforce , .not.allocated(surf%dL), fatal )
-  CHECK( dforce , .not.allocated(surf%dT), fatal )
-  CHECK( dforce , .not.allocated(surf%dB), fatal )
+  isurf = 1
+
+  CHECK( dforce , .not.allocated(surf(isurf)%dL), fatal )
+  CHECK( dforce , .not.allocated(surf(isurf)%dT), fatal )
+  CHECK( dforce , .not.allocated(surf(isurf)%dB), fatal )
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  surf%dL(              0:Ndof) = zero
-  surf%dT(       0:Nz-1,0:Ndof) = zero
-  surf%dB(0:Nt-1,0:Nz-1,0:Ndof) = zero
+  surf(isurf)%dL(              0:Ndof) = zero
+  surf(isurf)%dT(       0:Nz-1,0:Ndof) = zero
+  surf(isurf)%dB(0:Nt-1,0:Nz-1,0:Ndof) = zero
   do icoil = 1, Ncoils
-   surf%dL(              0:Ndof) = surf%dL(              0:Ndof) + coil(icoil)%dL(              0:Ndof)
-   surf%dT(       0:Nz-1,0:Ndof) = surf%dT(       0:Nz-1,0:Ndof) + coil(icoil)%dT(       0:Nz-1,0:Ndof)
-   surf%dB(0:Nt-1,0:Nz-1,0:Ndof) = surf%dB(0:Nt-1,0:Nz-1,0:Ndof) + coil(icoil)%dB(0:Nt-1,0:Nz-1,0:Ndof)
+   surf(isurf)%dL(              0:Ndof) = surf(isurf)%dL(              0:Ndof) + coil(icoil)%dL(              0:Ndof)
+   surf(isurf)%dT(       0:Nz-1,0:Ndof) = surf(isurf)%dT(       0:Nz-1,0:Ndof) + coil(icoil)%dT(       0:Nz-1,0:Ndof)
+   surf(isurf)%dB(0:Nt-1,0:Nz-1,0:Ndof) = surf(isurf)%dB(0:Nt-1,0:Nz-1,0:Ndof) + coil(icoil)%dB(0:Nt-1,0:Nz-1,0:Ndof)
   enddo
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
@@ -175,12 +177,12 @@ subroutine dforce( Ndof, xdof, ff, fdof )
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
   do idof = 0, Ndof
-   totlengt(idof) =      surf%dL(              idof)                                                       * discretecurve / Ncoils
-   Tfluxave(idof) = sum( surf%dT(       0:Nz-1,idof)                                                     ) / Nz
-   Bdotnsqd(idof) = sum( surf%dB(0:Nt-1,0:Nz-1,idof) * surf%dB(0:Nt-1,0:Nz-1,0) * surf%ds(0:Nt-1,0:Nz-1) ) * discretesurface
+   totlengt(idof) =      surf(isurf)%dL(              idof)                                                     * discretecurve / Ncoils
+   Tfluxave(idof) = sum( surf(isurf)%dT(       0:Nz-1,idof)                                                                   ) / Nz
+   Bdotnsqd(idof) = sum( surf(isurf)%dB(0:Nt-1,0:Nz-1,idof) * surf(isurf)%dB(0:Nt-1,0:Nz-1,0) * surf(isurf)%ds(0:Nt-1,0:Nz-1) ) * discretesurface
   enddo
   
-  Bdotnsqd(0) = Bdotnsqd(0) * half ! / surf%area
+  Bdotnsqd(0) = Bdotnsqd(0) * half ! / surf(isurf)%area
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
@@ -193,13 +195,13 @@ subroutine dforce( Ndof, xdof, ff, fdof )
   ff           =  totlengt(0     ) * weight_length ! 12 Nov 17;
   fdof(1:Ndof) =  totlengt(1:Ndof) * weight_length ! 12 Nov 17;
   
-  ff           = ff         + weight_tflux * sum( (surf%dT(0:Nz-1,   0)-target_tflux) * (surf%dT(0:Nz-1,0)-target_tflux) ) * half
+  ff           = ff         + weight_tflux * sum( (surf(isurf)%dT(0:Nz-1,   0)-target_tflux) * (surf(isurf)%dT(0:Nz-1,0)-target_tflux) ) * half
   do idof = 1, Ndof
-  fdof(idof)   = fdof(idof) + weight_tflux * sum( (surf%dT(0:Nz-1,idof)             ) * (surf%dT(0:Nz-1,0)-target_tflux) )
+  fdof(idof)   = fdof(idof) + weight_tflux * sum( (surf(isurf)%dT(0:Nz-1,idof)             ) * (surf(isurf)%dT(0:Nz-1,0)-target_tflux) )
   enddo
   
   ff           = ff           + weight_bnorm * Bdotnsqd(0     )
-  fdof(1:Ndof) = fdof(1:Ndof) + weight_bnorm * Bdotnsqd(1:Ndof) ! / surf%area
+  fdof(1:Ndof) = fdof(1:Ndof) + weight_bnorm * Bdotnsqd(1:Ndof) ! / surf(isurf)%area
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 

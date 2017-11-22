@@ -64,10 +64,14 @@ subroutine initial
   FATAL( initial, Nsegments .le.0, illegal )
   
   Nt = Nteta ; Nz = Nzeta ; Ntz = Nt*Nz ; Ns = Nsegments
-  
-  discretesurface = (pi2/Ns) * (pi2/Nt) * (pi2/Nz)
+
   discretecurve   = (pi2/Ns)
-  deltatheta      =            (pi2/Nt)
+  deltateta       = (pi2/Nt)
+  deltazeta       = (pi2/Nz)
+
+  discretesurface = discretecurve * deltateta * deltazeta
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   iarchive = 0 ! initialize incremental counter;
 
@@ -79,10 +83,6 @@ subroutine initial
 
   xyaxis(1:2) = zero
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  
-
-  
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   return

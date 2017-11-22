@@ -88,7 +88,7 @@ subroutine rdcoils
   include "mpif.h"
   
   LOGICAL              :: exist
-  INTEGER              :: icoil, maxnseg, ifirst, NF, itmp, ip, icoef, jj, kk, ierr, astat, lNF, maxNF, mm
+  INTEGER              :: icoil, maxnseg, ifirst, NF, itmp, ip, icoef, jj, kk, ierr, astat, lNF, maxNF, mm, isurf
   REAL                 :: zeta, totalcurrent, Ro, Zo, r1, r2, z1, z2, tt
   REAL                 :: ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3), xtt(1:3), xtz(1:3), xzz(1:3), v1(1:3), v2(1:3), w1(1:3), w2(1:3)
   REAL                 :: rdummy, tnow
@@ -363,13 +363,15 @@ subroutine rdcoils
      
     case( 1 ) ! axis-style boundary; 28 Aug 17;
      
+     isurf = 1
+
      FATAL( rdcoils, init_radius.lt.one, definition of init_radius has changed )
 
      do jj = 1, Ns ! Ns is input; 29 Sep 17;
       
       tt = (jj-1) * pi2 / Ns !poloidal angle;
       
-      call knotxx( init_radius, tt, zeta, ax, at, az, xx, xs, xt, xz, xtt, xtz, xzz, v1, v2, w1, w2 )
+      call knotxx( isurf, init_radius, tt, zeta, ax, at, az, xx, xs, xt, xz, xtt, xtz, xzz, v1, v2, w1, w2 )
       
       coilsX(jj,icoil) = xx(1)
       coilsY(jj,icoil) = xx(2)
@@ -415,12 +417,12 @@ subroutine rdcoils
   
   do icoil = 1, Ncoils
    
-   SALLOCATE( coil(icoil)%xx, (0:Ns-1), zero )
-   SALLOCATE( coil(icoil)%yy, (0:Ns-1), zero )
-   SALLOCATE( coil(icoil)%zz, (0:Ns-1), zero )
-   SALLOCATE( coil(icoil)%xt, (0:Ns-1), zero )
-   SALLOCATE( coil(icoil)%yt, (0:Ns-1), zero )
-   SALLOCATE( coil(icoil)%zt, (0:Ns-1), zero )
+   SALLOCATE( coil(icoil)%xx, (1:3,0:Ns-1), zero )
+  !SALLOCATE( coil(icoil)%yy, (0:Ns-1), zero )
+  !SALLOCATE( coil(icoil)%zz, (0:Ns-1), zero )
+   SALLOCATE( coil(icoil)%xt, (1:3,0:Ns-1), zero )
+  !SALLOCATE( coil(icoil)%yt, (0:Ns-1), zero )
+  !SALLOCATE( coil(icoil)%zt, (0:Ns-1), zero )
    SALLOCATE( coil(icoil)%xa, (0:Ns-1), zero )
    SALLOCATE( coil(icoil)%ya, (0:Ns-1), zero )
    SALLOCATE( coil(icoil)%za, (0:Ns-1), zero )

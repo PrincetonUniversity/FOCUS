@@ -42,7 +42,7 @@ program focus
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-  INTEGER                :: icoil, mm, maxNF, Ndof, ii, ierr, astat
+  INTEGER                :: icoil, mm, maxNF, Ndof, ii, ierr, astat, isurf
   REAL                   :: tnow, told, ff, ferr
   REAL     , allocatable :: xdof(:), fdof(:)
   CHARACTER              :: packorunpack
@@ -63,21 +63,27 @@ program focus
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-  if( myid.eq.0 ) call getarg(1,ext) ! read command line input;
+  if( myid.eq.0 ) call getarg(1,ext(1)) ! read command line input;
+  if( myid.eq.0 ) call getarg(2,ext(2)) ! read command line input;
   
-  ClBCAST( ext, 100, 0 )
+  ClBCAST( ext(1), 100, 0 )
+  ClBCAST( ext(2), 100, 0 )
+
+  write(ounit,'("focus   : " 10x " : ext(1) = ",a," ;")') trim(ext(1))
+  write(ounit,'("focus   : " 10x " : ext(2) = ",a," ;")') trim(ext(2))
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-  inputfile =              trim(ext)//".fo.in"    ! namelist input;
-  surffile  =              trim(ext)//".fo.bdy"   ! Fourier harmonics of reference boundary;
-  axisfile  =              trim(ext)//".fo.axis"  ! Fourier harmonics of magnetic axis;
-  coilfile  =              trim(ext)//".fo.coils" ! Fourier harmonics of coils (FOCUS format);
-  inpcoils  =    "coils."//trim(ext)              ! xgrid-style coils (input);
- !harmfile  =              trim(ext)//".fo.Bmn"   ! Fourier harmonics of target normal field;
-  hdf5file  =              trim(ext)//".fo.h5"    ! output file;
-  outcoils  = "coils.fo."//trim(ext)              ! xgrid-style coils (input);
-  outplots  =         "."//trim(ext)//".fo.dat"
+  inputfile   =              trim(ext(1))//".fo.in"    ! namelist input;
+  surffile    =              trim(ext(1))//".fo.bdy"   ! Fourier harmonics of reference boundary;
+  axisfile(1) =              trim(ext(1))//".fo.axis"  ! Fourier harmonics of magnetic axis;
+  axisfile(2) =              trim(ext(2))//".fo.axis"  ! Fourier harmonics of magnetic axis;
+  coilfile    =              trim(ext(1))//".fo.coils" ! Fourier harmonics of coils (FOCUS format);
+  inpcoils    =    "coils."//trim(ext(1))              ! xgrid-style coils (input);
+ !harmfile    =              trim(ext(1))//".fo.Bmn"   ! Fourier harmonics of target normal field;
+  hdf5file    =              trim(ext(1))//".fo.h5"    ! output file;
+  outcoils    = "coils.fo."//trim(ext(1))              ! xgrid-style coils (input);
+  outplots    =         "."//trim(ext(1))//".fo.dat"
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
@@ -120,9 +126,11 @@ program focus
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-   SALLOCATE(        surf%dL, (              0:Ndof), zero )
-   SALLOCATE(        surf%dT, (       0:Nz-1,0:Ndof), zero )
-   SALLOCATE(        surf%dB, (0:Nt-1,0:Nz-1,0:Ndof), zero )
+  isurf = 1
+
+   SALLOCATE(        surf(isurf)%dL, (              0:Ndof), zero )
+   SALLOCATE(        surf(isurf)%dT, (       0:Nz-1,0:Ndof), zero )
+   SALLOCATE(        surf(isurf)%dB, (0:Nt-1,0:Nz-1,0:Ndof), zero )
   
   do icoil = 1, Ncoils
    
@@ -131,6 +139,7 @@ program focus
    SALLOCATE( coil(icoil)%dB, (0:Nt-1,0:Nz-1,0:Ndof), zero )
 
    SALLOCATE( coil(icoil)%RR, (1:9,0:Nt-1,0:Nz-1,0:Ns-1), zero )
+   SALLOCATE( coil(icoil)%Rn, (1:3,0:Nt-1,0:Nz-1,0:Ns-1), zero )
    
   enddo
   
@@ -198,9 +207,7 @@ program focus
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-!#ifdef DEBUG 
-!  call varysrf( Ndof, xdof(1:Ndof), ff, fdof(1:Ndof) )
-!#endif
+  call varysrf( Ndof, xdof(1:Ndof) )
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   

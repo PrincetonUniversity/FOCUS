@@ -54,16 +54,16 @@ module globals
   INTEGER            :: bunit      = 10 ! backup unit for I/O
   INTEGER            :: punit      = 11 ! Poincare
   
-  CHARACTER(LEN=100) :: ext       ! extention;
-  CHARACTER(LEN=100) :: inputfile ! input namelist;
-  CHARACTER(LEN=100) :: surffile  ! surface file;
-  CHARACTER(LEN=100) :: axisfile  ! axis file;
-  CHARACTER(LEN=100) :: coilfile  ! FOCUS coil file ! set in initial; SRH; 29 Sep 17;
-  CHARACTER(LEN=100) :: inpcoils  ! input coils.ext file
- !CHARACTER(LEN=100) :: harmfile  ! harmonics file
-  CHARACTER(LEN=100) :: hdf5file  ! hdf5 file
-  CHARACTER(LEN=100) :: outcoils  ! output ext.coils file
-  CHARACTER(LEN=100) :: outplots  ! output ext.coils file
+  CHARACTER(LEN=100) :: ext(1:2)        ! extention;
+  CHARACTER(LEN=100) :: inputfile       ! input namelist;
+  CHARACTER(LEN=100) :: surffile        ! surface file;
+  CHARACTER(LEN=100) :: axisfile(1:2)   ! axis file;
+  CHARACTER(LEN=100) :: coilfile        ! FOCUS coil file ! set in initial; SRH; 29 Sep 17;
+  CHARACTER(LEN=100) :: inpcoils        ! input coils.ext file
+ !CHARACTER(LEN=100) :: harmfile        ! harmonics file
+  CHARACTER(LEN=100) :: hdf5file        ! hdf5 file
+  CHARACTER(LEN=100) :: outcoils        ! output ext.coils file
+  CHARACTER(LEN=100) :: outplots        ! output ext.coils file
   
   INTEGER            :: Icheck         =        0         ! checking;
 
@@ -157,30 +157,37 @@ module globals
   CHARACTER               :: nodelabel*3
   
   INTEGER                 :: Nt, Nz, Ntz, Ns ! shorthand;
-
+  
   type toroidalsurface
      INTEGER              :: Nteta, Nzeta
-     REAL                 :: area, vol ! surface area;
-     REAL   , allocatable :: csarea(:) ! cross section area;
-     REAL   , allocatable :: xx(:,:), yy(:,:), zz(:,:), nx(:,:), ny(:,:), nz(:,:), ds(:,:), xt(:,:), yt(:,:), zt(:,:)
-     REAL   , allocatable :: dL(:), dT(:,:), dB(:,:,:), Bp(:,:) ! total normal magnetic field; plasma normal magnetic field;
-     REAL   , allocatable :: Bs(:,:), Bt(:,:), Bz(:,:) ! components of magnetic field at surface; 12 Nov 17;
-     REAL   , allocatable :: EE(:,:), FF(:,:), GG(:,:) ! coefficients of 1st fundamental form;
-     REAL   , allocatable :: LL(:,:), MM(:,:), PP(:,:) ! coefficients of 2nd fundamental form;
-     REAL   , allocatable :: HH(:,:)                   ! mean curvature;
+     REAL                 :: area, vol
+     REAL   , allocatable :: xx(:,:,:), xs(:,:,:), xu(:,:,:), xv(:,:,:), sg(:,:), guv(:,:,:), nn(:,:,:), ds(:,:)
+     REAL   , allocatable :: gs(:,:,:), gu(:,:,:), gv(:,:,:)
+     REAL   , allocatable :: dL(:), dT(:,:), dB(:,:,:), Bp(:,:)
+     REAL   , allocatable :: BB(:,:,:)
+     REAL   , allocatable :: Bn(:,:)
+     REAL   , allocatable :: EE(:,:), FF(:,:), GG(:,:)
+     REAL   , allocatable :: LL(:,:), MM(:,:), PP(:,:)
+     REAL   , allocatable :: HH(:,:)
   end type toroidalsurface
-  type(toroidalsurface)   :: surf
+  type(toroidalsurface), allocatable :: surf(:)
 
   type spacecurve
      INTEGER              :: itype, NF, Ifree, Lfree, NS
      REAL                 ::     I           , Le, maxcurv
      REAL   , allocatable :: xc(:), xs(:), yc(:), ys(:), zc(:), zs(:)
-     REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:)
-     REAL   , allocatable :: dL(:), dT(:,:), dB(:,:,:), RR(:,:,:,:)
+     REAL   , allocatable :: xx(:,:), xt(:,:), xa(:), ya(:), za(:)
+     REAL   , allocatable :: dL(:), dT(:,:), dB(:,:,:), RR(:,:,:,:), Rn(:,:,:,:)
      INTEGER              :: gdof, idof
      character(LEN=10)    :: name
   end type spacecurve
   type(spacecurve), allocatable :: coil(:)  
+
+  type axiscurve
+     INTEGER              :: NF
+     REAL   , allocatable :: xc(:), xs(:), yc(:), ys(:), zc(:), zs(:), tc(:), ts(:)
+  end type axiscurve
+  type(axiscurve), allocatable :: axis(:)  
 
   INTEGER                 :: Nfp
   INTEGER                 :: Nfou = 0, NBnf = 0 ! this should be local to readsrf; 04 Sep 17;
@@ -190,8 +197,8 @@ module globals
   REAL                    :: Tfluxerr
   REAL   , allocatable    :: totlengt(:), Tfluxave(:), Bdotnsqd(:)
 
-  INTEGER                 :: axisNF
-  REAL   , allocatable    :: axisxc(:), axisxs(:), axisyc(:), axisys(:), axiszc(:), axiszs(:), axistc(:), axists(:)
+! INTEGER                 :: axisNF
+! REAL   , allocatable    :: axisxc(:), axisxs(:), axisyc(:), axisys(:), axiszc(:), axiszs(:), axistc(:), axists(:)
   
   REAL,    allocatable    :: coilsI(:) !coilsI stores the true currents, coil%I stores scaled current;?
   INTEGER, allocatable    :: coilseg(:)
@@ -201,7 +208,7 @@ module globals
 
   LOGICAL                 :: Ldescent
 
-  REAL                    :: discretecurve, deltatheta, discretesurface
+  REAL                    :: discretecurve, deltateta, deltazeta, discretesurface
   REAL, allocatable       :: cmt(:,:), smt(:,:)
 
   INTEGER                 :: iarchive

@@ -13,7 +13,7 @@
 
 subroutine coilxyz( icoil )
   
-  use globals, only : zero, one, myid, coil, cmt, smt, Ns, surf, Nt, Nz
+  use globals, only : zero, one, three, myid, coil, cmt, smt, Ns, surf, Nt, Nz
   
   implicit none
   
@@ -21,8 +21,8 @@ subroutine coilxyz( icoil )
   
   INTEGER, intent(in) :: icoil
   
-  INTEGER :: mm, ierr, idof, ii, jj, kk
-  REAL    :: rx, ry, rz, dist
+  INTEGER :: mm, ierr, idof, ii, jj, kk, isurf
+  REAL    :: rx, ry, rz, dist, lx, ly, lz, rdotn
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -31,31 +31,31 @@ subroutine coilxyz( icoil )
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-  coil(icoil)%xx = zero
-  coil(icoil)%yy = zero
-  coil(icoil)%zz = zero
-  coil(icoil)%xt = zero
-  coil(icoil)%yt = zero
-  coil(icoil)%zt = zero
+  coil(icoil)%xx(1:3,0:Ns-1) = zero
+ !coil(icoil)%yy = zero
+ !coil(icoil)%zz = zero
+  coil(icoil)%xt(1:3,0:Ns-1) = zero
+ !coil(icoil)%yt = zero
+ !coil(icoil)%zt = zero
   coil(icoil)%xa = zero
   coil(icoil)%ya = zero
   coil(icoil)%za = zero
   
   ;  mm = 0
   
-  coil(icoil)%xx(0:Ns-1) = cmt(0:Ns-1,mm) * coil(icoil)%xc(mm)
-  coil(icoil)%yy(0:Ns-1) = cmt(0:Ns-1,mm) * coil(icoil)%yc(mm)
-  coil(icoil)%zz(0:Ns-1) = cmt(0:Ns-1,mm) * coil(icoil)%zc(mm)    
+  coil(icoil)%xx(1,0:Ns-1) = cmt(0:Ns-1,mm) * coil(icoil)%xc(mm)
+  coil(icoil)%xx(2,0:Ns-1) = cmt(0:Ns-1,mm) * coil(icoil)%yc(mm)
+  coil(icoil)%xx(3,0:Ns-1) = cmt(0:Ns-1,mm) * coil(icoil)%zc(mm)    
   
   do mm = 1, coil(icoil)%NF   
    
-   coil(icoil)%xx(0:Ns-1) = coil(icoil)%xx(0:Ns-1) + (   cmt(0:Ns-1,mm) * coil(icoil)%xc(mm) + smt(0:Ns-1,mm) * coil(icoil)%xs(mm) )
-   coil(icoil)%yy(0:Ns-1) = coil(icoil)%yy(0:Ns-1) + (   cmt(0:Ns-1,mm) * coil(icoil)%yc(mm) + smt(0:Ns-1,mm) * coil(icoil)%ys(mm) )
-   coil(icoil)%zz(0:Ns-1) = coil(icoil)%zz(0:Ns-1) + (   cmt(0:Ns-1,mm) * coil(icoil)%zc(mm) + smt(0:Ns-1,mm) * coil(icoil)%zs(mm) )
+   coil(icoil)%xx(1,0:Ns-1) = coil(icoil)%xx(1,0:Ns-1) + (   cmt(0:Ns-1,mm) * coil(icoil)%xc(mm) + smt(0:Ns-1,mm) * coil(icoil)%xs(mm) )
+   coil(icoil)%xx(2,0:Ns-1) = coil(icoil)%xx(2,0:Ns-1) + (   cmt(0:Ns-1,mm) * coil(icoil)%yc(mm) + smt(0:Ns-1,mm) * coil(icoil)%ys(mm) )
+   coil(icoil)%xx(3,0:Ns-1) = coil(icoil)%xx(3,0:Ns-1) + (   cmt(0:Ns-1,mm) * coil(icoil)%zc(mm) + smt(0:Ns-1,mm) * coil(icoil)%zs(mm) )
    
-   coil(icoil)%xt(0:Ns-1) = coil(icoil)%xt(0:Ns-1) + ( - smt(0:Ns-1,mm) * coil(icoil)%xc(mm) + cmt(0:Ns-1,mm) * coil(icoil)%xs(mm) ) * mm
-   coil(icoil)%yt(0:Ns-1) = coil(icoil)%yt(0:Ns-1) + ( - smt(0:Ns-1,mm) * coil(icoil)%yc(mm) + cmt(0:Ns-1,mm) * coil(icoil)%ys(mm) ) * mm
-   coil(icoil)%zt(0:Ns-1) = coil(icoil)%zt(0:Ns-1) + ( - smt(0:Ns-1,mm) * coil(icoil)%zc(mm) + cmt(0:Ns-1,mm) * coil(icoil)%zs(mm) ) * mm
+   coil(icoil)%xt(1,0:Ns-1) = coil(icoil)%xt(1,0:Ns-1) + ( - smt(0:Ns-1,mm) * coil(icoil)%xc(mm) + cmt(0:Ns-1,mm) * coil(icoil)%xs(mm) ) * mm
+   coil(icoil)%xt(2,0:Ns-1) = coil(icoil)%xt(2,0:Ns-1) + ( - smt(0:Ns-1,mm) * coil(icoil)%yc(mm) + cmt(0:Ns-1,mm) * coil(icoil)%ys(mm) ) * mm
+   coil(icoil)%xt(3,0:Ns-1) = coil(icoil)%xt(3,0:Ns-1) + ( - smt(0:Ns-1,mm) * coil(icoil)%zc(mm) + cmt(0:Ns-1,mm) * coil(icoil)%zs(mm) ) * mm
    
    coil(icoil)%xa(0:Ns-1) = coil(icoil)%xa(0:Ns-1) + ( - cmt(0:Ns-1,mm) * coil(icoil)%xc(mm) - smt(0:Ns-1,mm) * coil(icoil)%xs(mm) ) * mm*mm
    coil(icoil)%ya(0:Ns-1) = coil(icoil)%ya(0:Ns-1) + ( - cmt(0:Ns-1,mm) * coil(icoil)%yc(mm) - smt(0:Ns-1,mm) * coil(icoil)%ys(mm) ) * mm*mm
@@ -65,22 +65,26 @@ subroutine coilxyz( icoil )
    
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
+  isurf = 1
+
   do kk = 0, Ns-1
    do ii = 0, Nt-1
     do jj = 0, Nz-1
      
-     rx = surf%xx(ii,jj) - coil(icoil)%xx(kk)
-     ry = surf%yy(ii,jj) - coil(icoil)%yy(kk)
-     rz = surf%zz(ii,jj) - coil(icoil)%zz(kk)
+     rx = surf(isurf)%xx(1,ii,jj) - coil(icoil)%xx(1,kk) ; lx = surf(isurf)%nn(1,ii,jj)
+     ry = surf(isurf)%xx(2,ii,jj) - coil(icoil)%xx(2,kk) ; ly = surf(isurf)%nn(2,ii,jj)
+     rz = surf(isurf)%xx(3,ii,jj) - coil(icoil)%xx(3,kk) ; lz = surf(isurf)%nn(3,ii,jj)
      
-     dist = sqrt( rx*rx + ry*ry + rz*rz )
+     dist = sqrt( rx*rx + ry*ry + rz*rz ) ; rdotn = rx*lx + ry*ly + rz*lz
      
-     coil(icoil)%RR(1:9,ii,jj,kk) = (/ rx * rx, rx * ry, rx * rz, ry * rx, ry * ry, ry * rz, rz * rx, rz * ry, rz * rz /) / dist**5 &
-                                  + (/   one  ,  zero  ,  zero  ,  zero  ,   one  ,  zero  ,  zero  ,  zero  ,   one   /) / dist**3
+     coil(icoil)%RR(1:9,ii,jj,kk) = three * (/ rx * rx, rx * ry, rx * rz, ry * rx, ry * ry, ry * rz, rz * rx, rz * ry, rz * rz /) / dist**5 &
+                                  +         (/   one  ,  zero  ,  zero  ,  zero  ,   one  ,  zero  ,  zero  ,  zero  ,   one   /) / dist**3
+
+     coil(icoil)%Rn(1:3,ii,jj,kk) = three * (/ rx, ry, rz/) * rdotn / dist**5 + (/ lx, ly, lz /) / dist**3
      
-    enddo
-   enddo
-  enddo
+    enddo ! end of do jj; 16 Nov 17;
+   enddo ! end of do ii; 16 Nov 17;
+  enddo ! end of do kk; 16 Nov 17;
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 

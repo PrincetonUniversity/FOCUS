@@ -31,7 +31,7 @@ subroutine archive( Ndof, xdof, ferr )
   INTEGER            :: Ndof
   REAL               :: xdof(1:Ndof), ferr
 
-  INTEGER            :: kk, icoil, ierr, mm
+  INTEGER            :: kk, icoil, ierr, mm, isurf
   REAL               :: tnow, spectralwidth, term
 ! CHARACTER(LEN=10)  :: version='h1.0.0'
 
@@ -63,8 +63,6 @@ subroutine archive( Ndof, xdof, ferr )
   call h5fcreate_f( trim(hdf5file), H5F_ACC_TRUNC_F, file_id, hdfier ) ! create new file;
   FATAL( archive, hdfier.ne.0, error calling h5fcreate_f )
   
-! HWRITECH( 10               ,   version       ,   version                    )
-  
   HWRITEIV( 1                ,   Icheck        ,   Icheck                     )
 
   HWRITEIV( 1                ,   Isurface      ,   Isurface                   )
@@ -75,6 +73,7 @@ subroutine archive( Ndof, xdof, ferr )
 
   HWRITEIV( 1                ,   Nteta         ,   Nteta                      )
   HWRITEIV( 1                ,   Nzeta         ,   Nzeta                      )
+
   HWRITEIV( 1                ,   Initialize    ,   Initialize                 )
   HWRITEIV( 1                ,   Ncoils        ,   Ncoils                     )
   HWRITERV( 1                ,   init_current  ,   init_current               )
@@ -88,7 +87,6 @@ subroutine archive( Ndof, xdof, ferr )
   HWRITERV( 1                ,   weight_tflux  ,   weight_tflux               )
   HWRITERV( 1                ,   target_tflux  ,   target_tflux               )
   HWRITERV( 1                ,   weight_length ,   weight_length              )
-! HWRITERV( 1                ,   target_length ,   target_length              )
   HWRITERV( 1                ,   wspectral     ,   wspectral                  )
   HWRITERV( 1                ,   pspectral     ,   pspectral                  )
 
@@ -98,25 +96,21 @@ subroutine archive( Ndof, xdof, ferr )
   HWRITEIV( 1                ,   NRKstep       ,   NRKstep                    )
   HWRITERV( 1                ,    RKstep       ,    RKstep                    )
 
-! HWRITERV( 1                ,   friction      ,   friction                   )
   HWRITEIV( 1                ,   Iminimize     ,   Iminimize                  )
 
   HWRITEIV( 1                ,   Ntrj          ,   Ntrj                       )
   HWRITEIV( 1                ,   Npts          ,   Npts                       )
   HWRITERV( 1                ,   odetol        ,   odetol                     )
 
-! HWRITEIV( 1                ,   Nfp           ,   Nfp                          )
-  HWRITERV( 1                ,   area          ,   surf%area                    )
-  HWRITERV( 1                ,   vol           ,   surf%vol                     )
+  isurf = 1
 
-  HWRITERA( Nteta,Nzeta      ,   xsurf         ,   surf%xx(0:Nteta-1,0:Nzeta-1) )
-  HWRITERA( Nteta,Nzeta      ,   ysurf         ,   surf%yy(0:Nteta-1,0:Nzeta-1) )
-  HWRITERA( Nteta,Nzeta      ,   zsurf         ,   surf%zz(0:Nteta-1,0:Nzeta-1) )
-  HWRITERA( Nteta,Nzeta      ,   nx            ,   surf%nx(0:Nteta-1,0:Nzeta-1) )
-  HWRITERA( Nteta,Nzeta      ,   ny            ,   surf%ny(0:Nteta-1,0:Nzeta-1) )
-  HWRITERA( Nteta,Nzeta      ,   nz            ,   surf%nz(0:Nteta-1,0:Nzeta-1) )
+  HWRITERV( 1                ,   area          ,   surf(isurf)%area                    )
+  HWRITERV( 1                ,   vol           ,   surf(isurf)%vol                     )
 
-  HWRITERA( Nteta,Nzeta      ,   HH            ,   surf%HH(0:Nteta-1,0:Nzeta-1) )
+  HWRITERC( 3, Nteta,Nzeta   ,   surf          ,   surf(isurf)%xx(1:3,0:Nteta-1,0:Nzeta-1) )
+  HWRITERC( 3, Nteta,Nzeta   ,   normal        ,   surf(isurf)%nn(1:3,0:Nteta-1,0:Nzeta-1) )
+
+  HWRITERA( Nteta,Nzeta      ,   meancurv      ,   surf(isurf)%HH(0:Nteta-1,0:Nzeta-1) )
 
   HWRITEIV(      1           ,   Ndof          ,   Ndof                         )
   HWRITERV(      1           ,   ferr          ,   ferr                         )
@@ -188,9 +182,9 @@ subroutine archive( Ndof, xdof, ferr )
   
   do icoil = 1, Ncoils
    
-   do kk = 0, Ns-1 ; write(funit,1010) coil(icoil)%xx(kk), coil(icoil)%yy(kk), coil(icoil)%zz(kk), coil(icoil)%I
+   do kk = 0, Ns-1 ; write(funit,1010) coil(icoil)%xx(1,kk), coil(icoil)%xx(2,kk), coil(icoil)%xx(3,kk), coil(icoil)%I
    enddo
-   ;  kk = 0       ; write(funit,1010) coil(icoil)%xx(kk), coil(icoil)%yy(kk), coil(icoil)%zz(kk),          zero, icoil, coil(icoil)%name
+   ;  kk = 0       ; write(funit,1010) coil(icoil)%xx(1,kk), coil(icoil)%xx(2,kk), coil(icoil)%xx(3,kk),          zero, icoil, coil(icoil)%name
    
   enddo
   
@@ -202,14 +196,14 @@ subroutine archive( Ndof, xdof, ferr )
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  open( funit, file="."//trim(ext)//".fo.filaments."//sarchive, status="unknown", form="unformatted" )  
+  open( funit, file="."//trim(ext(1))//".fo.filaments."//sarchive, status="unknown", form="unformatted" )  
   
   write(funit) Ncoils, Ns
   
   do icoil = 1, Ncoils
-   write(funit) coil(icoil)%xx(0:Ns-1) ! 12 Nov 17;
-   write(funit) coil(icoil)%yy(0:Ns-1) ! 12 Nov 17;
-   write(funit) coil(icoil)%zz(0:Ns-1) ! 12 Nov 17;
+   write(funit) coil(icoil)%xx(1:3,0:Ns-1) ! 12 Nov 17;
+  !write(funit) coil(icoil)%xx(2,0:Ns-1) ! 12 Nov 17;
+  !write(funit) coil(icoil)%xx(3,0:Ns-1) ! 12 Nov 17;
   enddo
   
   close( funit )
