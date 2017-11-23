@@ -14,7 +14,7 @@
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
-subroutine dforce( Ndof, xdof, ff, fdof )
+subroutine dforce( isurf, Ndof, xdof, ff, fdof )
   
   use globals, only : zero, half, pi2, sqrtmachprec, myid, ncpu, ounit, &
                       Ncoils, coil, cmt, smt, &
@@ -27,10 +27,10 @@ subroutine dforce( Ndof, xdof, ff, fdof )
   
   include "mpif.h"
   
-  INTEGER               :: Ndof
+  INTEGER               :: isurf, Ndof
   REAL                  :: xdof(1:Ndof), ff, fdof(1:Ndof)
   
-  INTEGER               :: ierr, icoil, mm, ii, jj, kk, idof, NF, icmodNc, isurf
+  INTEGER               :: ierr, icoil, mm, ii, jj, kk, idof, NF, icmodNc
   REAL                  :: dFdx(0:Ns-1,0:3), dBdx(0:Ns-1,0:3), CC
   REAL                  :: length(0:Ns-1), tx(0:Ns-1), ty(0:Ns-1), tz(0:Ns-1), ax(0:Ns-1), ay(0:Ns-1), az(0:Ns-1), txtx(0:Ns-1), txax(0:Ns-1), dd(0:Ns-1)
   CHARACTER             :: packorunpack
@@ -68,7 +68,7 @@ subroutine dforce( Ndof, xdof, ff, fdof )
    do jj = 0, Nz-1
     do ii = 0, Nt-1
      
-     call abfield( icoil, ii, jj, Ns, dFdx(0:Ns-1,0:3), dBdx(0:Ns-1,0:3) ) ! compute toroidal flux and B.n produced by i-th coil on surface;
+     call abfield( isurf, icoil, ii, jj, Ns, dFdx(0:Ns-1,0:3), dBdx(0:Ns-1,0:3) ) ! compute toroidal flux and B.n produced by i-th coil on surface;
      
      ;             ; idof =        0         ; coil(icoil)%dT(   jj,idof) = coil(icoil)%dT(jj,idof) + sum( dFdx(0:Ns-1,0)                  ) * CC
      ;             ;                         ; coil(icoil)%dB(ii,jj,idof) =                           sum( dBdx(0:Ns-1,0)                  ) * CC
@@ -148,8 +148,6 @@ subroutine dforce( Ndof, xdof, ff, fdof )
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  isurf = 1
-
   CHECK( dforce , .not.allocated(surf(isurf)%dL), fatal )
   CHECK( dforce , .not.allocated(surf(isurf)%dT), fatal )
   CHECK( dforce , .not.allocated(surf(isurf)%dB), fatal )
@@ -189,7 +187,7 @@ subroutine dforce( Ndof, xdof, ff, fdof )
   ff           = zero
   fdof(1:Ndof) = zero
   
-! ff           =                                    exp(totlengt(0)/target_length) * weight_length
+! ff           =                                    exp(totlengt(0)/target_length) * weight_length ! exponential weight; 22 Nov 17;
 ! fdof(1:Ndof) = (totlengt(1:Ndof)/target_length) * exp(totlengt(0)/target_length) * weight_length
   
   ff           =  totlengt(0     ) * weight_length ! 12 Nov 17;

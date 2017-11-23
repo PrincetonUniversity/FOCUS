@@ -30,7 +30,7 @@ subroutine setflag( Ndof, xdof )
   REAL    ::  xdof(1:Ndof)
   REAL    :: oxdof(1:Ndof), off(-1:1), ofdof(1:Ndof,-1:1)
   
-  INTEGER :: icoil, mm, idof, ifd, ierr
+  INTEGER :: icoil, mm, idof, ifd, ierr, isurf
   REAL    :: fd, est, tnow
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
@@ -53,7 +53,7 @@ subroutine setflag( Ndof, xdof )
      
      xdof(1:Ndof) = oxdof(1:Ndof) ; xdof(idof) = xdof(idof) + ifd * fd * half
      
-     call dforce( Ndof, xdof(1:Ndof), off(ifd), ofdof(1:Ndof,ifd) )
+     isurf = 1 ; call dforce( isurf, Ndof, xdof(1:Ndof), off(ifd), ofdof(1:Ndof,ifd) )
      
     enddo ! end of do ifd;
     
@@ -75,7 +75,7 @@ subroutine setflag( Ndof, xdof )
    
    xdof(1:Ndof) = oxdof(1:Ndof)
    
-   call dforce( Ndof, xdof(1:Ndof), off(ifd), ofdof(1:Ndof,ifd) ) ! just to recover initial values of force;
+   isurf = 1 ; call dforce( isurf, Ndof, xdof(1:Ndof), off(ifd), ofdof(1:Ndof,ifd) ) ! just to recover initial values of force;
 
 
   endif ! end of if( Icheck.eq.1 ) ;

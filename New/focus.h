@@ -125,22 +125,24 @@ program focus
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  isurf = 1
-
-   SALLOCATE(        surf(isurf)%dL, (              0:Ndof), zero )
-   SALLOCATE(        surf(isurf)%dT, (       0:Nz-1,0:Ndof), zero )
-   SALLOCATE(        surf(isurf)%dB, (0:Nt-1,0:Nz-1,0:Ndof), zero )
+  do isurf = 1, 2
+   
+   SALLOCATE( surf(isurf)%dL, (              0:Ndof), zero )
+   SALLOCATE( surf(isurf)%dT, (       0:Nz-1,0:Ndof), zero )
+   SALLOCATE( surf(isurf)%dB, (0:Nt-1,0:Nz-1,0:Ndof), zero )
+   
+  enddo
   
   do icoil = 1, Ncoils
    
    SALLOCATE( coil(icoil)%dL, (              0:Ndof), zero )
    SALLOCATE( coil(icoil)%dT, (       0:Nz-1,0:Ndof), zero )
    SALLOCATE( coil(icoil)%dB, (0:Nt-1,0:Nz-1,0:Ndof), zero )
-
+   
    SALLOCATE( coil(icoil)%RR, (1:9,0:Nt-1,0:Nz-1,0:Ns-1), zero )
    SALLOCATE( coil(icoil)%Rn, (1:3,0:Nt-1,0:Nz-1,0:Ns-1), zero )
    
-  enddo
+  enddo ! 22 Nov 17;
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
@@ -154,7 +156,7 @@ program focus
   
   told = MPI_WTIME()
 
-  call dforce( Ndof, xdof(1:Ndof), ff, fdof(1:Ndof) )
+  isurf = 1 ; call dforce( isurf, Ndof, xdof(1:Ndof), ff, fdof(1:Ndof) )
   
   fforig = ff ; ffbest = ff
   

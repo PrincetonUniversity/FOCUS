@@ -80,9 +80,10 @@ subroutine gradobj( Ndof, xdof, ff, fdof, iuser, ruser )
   INTEGER   :: Ndof, iuser(1:1)
   REAL      :: xdof(1:Ndof), ff, fdof(1:Ndof ), ruser(1:1)
   
+  INTEGER   :: isurf
   REAL      :: ferr, tnow
   
-  call dforce( Ndof, xdof(1:Ndof), ff, fdof(1:Ndof) )
+  isurf = 1 ; call dforce( isurf, Ndof, xdof(1:Ndof), ff, fdof(1:Ndof) )
 
   ferr = sqrt( sum(fdof(1:Ndof)*fdof(1:Ndof)) / Ndof )
 

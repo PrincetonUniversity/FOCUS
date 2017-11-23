@@ -38,7 +38,7 @@ subroutine descent( Ndof, xdof, ferr )
   INTEGER              :: Ndof
   REAL                 :: xdof(1:Ndof), ferr
 
-  INTEGER              :: irksave, irkstep
+  INTEGER              :: irksave, irkstep, isurf
   REAL                 :: ffold, ydof(1:Ndof), fk(1:Ndof,1:4), tnow, told, ff, fdof(1:Ndof), fold
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
@@ -52,7 +52,11 @@ subroutine descent( Ndof, xdof, ferr )
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  call dforce( Ndof, xdof(1:Ndof), ff, fdof(1:Ndof) ) ; fk(1:Ndof,1) = - fdof(1:Ndof)
+  isurf = 1
+  
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+
+  call dforce( isurf, Ndof, xdof(1:Ndof), ff, fdof(1:Ndof) ) ; fk(1:Ndof,1) = - fdof(1:Ndof)
   
   ferr = sqrt( sum(fdof(1:Ndof)*fdof(1:Ndof)) / Ndof )
   
@@ -64,13 +68,13 @@ subroutine descent( Ndof, xdof, ferr )
    
    do irkstep = 1, NRKstep ! allows intermediate output & archive;
     
-    ydof(1:Ndof) = xdof(1:Ndof) + fk(1:Ndof,1) * RKstep * half ; call dforce( Ndof, ydof(1:Ndof), ff, fdof(1:Ndof) ) ; fk(1:Ndof,2) = - fdof(1:Ndof)
-    ydof(1:Ndof) = xdof(1:Ndof) + fk(1:Ndof,2) * RKstep * half ; call dforce( Ndof, ydof(1:Ndof), ff, fdof(1:Ndof) ) ; fk(1:Ndof,3) = - fdof(1:Ndof)
-    ydof(1:Ndof) = xdof(1:Ndof) + fk(1:Ndof,3) * RKstep        ; call dforce( Ndof, ydof(1:Ndof), ff, fdof(1:Ndof) ) ; fk(1:Ndof,4) = - fdof(1:Ndof)
+    ydof(1:Ndof) = xdof(1:Ndof) + fk(1:Ndof,1) * RKstep * half ; call dforce( isurf, Ndof, ydof(1:Ndof), ff, fdof(1:Ndof) ) ; fk(1:Ndof,2) = - fdof(1:Ndof)
+    ydof(1:Ndof) = xdof(1:Ndof) + fk(1:Ndof,2) * RKstep * half ; call dforce( isurf, Ndof, ydof(1:Ndof), ff, fdof(1:Ndof) ) ; fk(1:Ndof,3) = - fdof(1:Ndof)
+    ydof(1:Ndof) = xdof(1:Ndof) + fk(1:Ndof,3) * RKstep        ; call dforce( isurf, Ndof, ydof(1:Ndof), ff, fdof(1:Ndof) ) ; fk(1:Ndof,4) = - fdof(1:Ndof)
     
     xdof(1:Ndof) = xdof(1:Ndof) + ( fk(1:Ndof,1) + 2 * fk(1:Ndof,2) + 2 * fk(1:Ndof,3) + fk(1:Ndof,4) ) * RKstep / six ! Runge-Kutta step;
     
-    call dforce( Ndof, xdof(1:Ndof), ff, fdof(1:Ndof) ) ; fk(1:Ndof,1) = - fdof(1:Ndof)
+    call dforce( isurf, Ndof, xdof(1:Ndof), ff, fdof(1:Ndof) ) ; fk(1:Ndof,1) = - fdof(1:Ndof)
 
     ferr = sqrt( sum(fdof(1:Ndof)*fdof(1:Ndof)) / Ndof )
     

@@ -179,7 +179,7 @@ subroutine varysrf( Ndof, xdof, fdof )
 
   tnow = MPI_WTIME()
 
-  write(ounit,'("varysrf : ",f10.1," : |B.n|^2 =",2es23.15," ; time =",f8.2,"s ;" )') tnow-tstart, lBdotnsqd, Bdotnsqd(0), tnow-told
+  write(ounit,'("varysrf : ",f10.1," : |B.n|^2 =",es23.15," = ",es23.15," ; time =",f8.2,"s ;" )') tnow-tstart, lBdotnsqd, Bdotnsqd(0), tnow-told
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   

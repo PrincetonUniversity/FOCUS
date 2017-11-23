@@ -13,7 +13,7 @@
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
-subroutine abfield( icoil, ii, jj, Ns, dFdx, dBdx )
+subroutine abfield( isurf, icoil, ii, jj, Ns, dFdx, dBdx )
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
@@ -27,12 +27,12 @@ subroutine abfield( icoil, ii, jj, Ns, dFdx, dBdx )
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  INTEGER, intent(in ) :: icoil, ii, jj, Ns
+  INTEGER, intent(in ) :: icoil, ii, jj, Ns, isurf
   REAL   , intent(out) :: dFdx(0:Ns-1,0:3), dBdx(0:Ns-1,0:3)
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  INTEGER :: ierr, astat, kk, isurf
+  INTEGER :: ierr, astat, kk
   
   REAL    :: dx, dy, dz, rr(1:5), dd(1:5), tx, ty, tz, rdl, yz, zx, xy, xt, yt, zt, xn, yn, zn
   REAL    :: dxtx, dxty, dxtz, dytx, dyty, dytz, dztx, dzty, dztz, td3
@@ -45,7 +45,7 @@ subroutine abfield( icoil, ii, jj, Ns, dFdx, dBdx )
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
-  isurf = 1
+! isurf = 1 ! 22 Nov 17;
 
   xt = surf(isurf)%xu(1,ii,jj) ! poloidal tangent to surface (shorthand);
   yt = surf(isurf)%xu(2,ii,jj)
