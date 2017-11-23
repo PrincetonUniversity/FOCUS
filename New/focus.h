@@ -27,7 +27,6 @@ program focus
   use globals, only : zero, one, two, pi2, sqrtmachprec, ncpu, myid, ounit, tstart, &
                       ext, inputfile, surffile, axisfile, coilfile, inpcoils, hdf5file, outcoils, outplots, &
                       Nt, Nz, surf, Ncoils, Ns, coil, &
-                     !cmt, smt, discretecurve, &
                       tdof, Mdof, &
                       totlengt, Tfluxave, Bdotnsqd, &
                       target_tflux, &
@@ -207,7 +206,7 @@ program focus
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-  call varysrf( Ndof, xdof(1:Ndof) )
+  call varysrf( Ndof, xdof(1:Ndof), fdof(1:Ndof) )
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   

@@ -112,7 +112,7 @@ subroutine pcplot
    
    tnow = MPI_WTIME()
    
-   if( myid.eq.0 ) write(ounit,'("pcplot  : ",f10.1," : ",i4," : iota =",es23.15," ; time =",f10.2," ;")') tnow-tstart, itrj, iota(itrj,2), tnow-told
+!  if( myid.eq.0 ) write(ounit,'("pcplot  : ",f10.1," : ",i4," : iota =",es23.15," ; time =",f10.2," ;")') tnow-tstart, itrj, iota(itrj,2), tnow-told
    
    told = tnow
    

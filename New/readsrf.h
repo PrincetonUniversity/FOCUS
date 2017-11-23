@@ -46,7 +46,7 @@ subroutine readsrf
    
   case( 1 )
    
-   if( myid.eq.0 ) write(ounit,1000) minorrad, ellipticity, nrotate, zetaoff, trim(axisfile(1))//" ; "//trim(axisfile(2))
+   if( myid.eq.0 ) write(ounit,1000) minorrad, ellipticity, nrotate, zetaoff, trim(axisfile(1))//" & "//trim(axisfile(2))
    
 1000 format("readsrf : ", 10x ," : minorrad ="f12.6" ; ellipticity ="f12.6" ; nrotate ="i3" ; zetaoff ="f12.6" ; reading ",a," ;")
    
@@ -169,13 +169,11 @@ subroutine readsrf
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
-  do ii = 0, Nt-1
-   do jj = 0, Nz-1
-    
-    surf(2)%xx(1:3,ii,jj) = surf(2)%xx(1:3,ii,jj) - surf(1)%xx(1:3,ii,jj) ! difference in position; 22 Nov 17;
-    
-   enddo
-  enddo
+! do ii = 0, Nt-1
+!  do jj = 0, Nz-1
+!   surf(2)%xx(1:3,ii,jj) = surf(2)%xx(1:3,ii,jj) - surf(1)%xx(1:3,ii,jj) ! difference in position; 22 Nov 17;
+!  enddo
+! enddo
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
