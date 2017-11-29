@@ -80,7 +80,7 @@ subroutine coilxyz( icoil )
      coil(icoil)%RR(1:9,ii,jj,kk) = three * (/ rx * rx, rx * ry, rx * rz, ry * rx, ry * ry, ry * rz, rz * rx, rz * ry, rz * rz /) / dist**5 &
                                   +         (/   one  ,  zero  ,  zero  ,  zero  ,   one  ,  zero  ,  zero  ,  zero  ,   one   /) / dist**3
 
-     coil(icoil)%Rn(1:3,ii,jj,kk) = three * (/ rx, ry, rz/) * rdotn / dist**5 + (/ lx, ly, lz /) / dist**3
+     coil(icoil)%Rn(1:3,ii,jj,kk) = three * (/ rx, ry, rz /) * rdotn / dist**5 - (/ lx, ly, lz /) / dist**3 ! 28 Nov 17;
      
     enddo ! end of do jj; 16 Nov 17;
    enddo ! end of do ii; 16 Nov 17;

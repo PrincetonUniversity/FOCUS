@@ -19,7 +19,7 @@ subroutine varysrf( Ndof, xdof, fdof )
   use globals, only : zero, two, three, half, pi2, sqrtmachprec, myid, ncpu, ounit, tstart, &
                       Ncoils, coil, cmt, smt, &
                       Nt, Nz, Ns, surf, discretecurve, deltateta, deltazeta, discretesurface, &
-                      totlengt, Tfluxave, Bdotnsqd
+                      totlengt, Tfluxave, Bdotnsqd, weight_bnorm
                      !wspectral, pspectral, Mdof, tdof, &
                      !target_tflux, weight_length, weight_tflux, weight_bnorm
   
@@ -31,18 +31,15 @@ subroutine varysrf( Ndof, xdof, fdof )
   REAL                  :: xdof(1:Ndof), fdof(1:Ndof)
   
   INTEGER               :: ierr, icoil, mm, ii, jj, kk, idof, NF, icmodNc, isurf, isum, astat, il, iu, jl, ju
-  REAL                  :: BB(0:Ns-1,1:3), CC, lBdotnsqd, ndotdx, BnRnH(1:3), dFds(1:3), Bs, Bu, Bv, gss, gst, gsz, BsgradRn(1:3), RsgradBn(1:3)
+  REAL                  :: BB(0:Ns-1,1:3), CC, lBdotnsqd, ndotdx, BnRnH(1:3), dFds(1:3), Bs, Bu, Bv, gss, gst, gsz, gtt, gtz, gzz, BsgradRn(1:3), RsgradBn(1:3)
   REAL                  :: rr(1:3), rs, ru, rv, RRs(1:3), RRu(1:3), RRv(1:3), dist(1:5), tnow, told
   REAL   , allocatable  :: dxdtau(:,:)
-! REAL                  :: tx(0:Ns-1), ty(0:Ns-1), tz(0:Ns-1), ax(0:Ns-1), ay(0:Ns-1), az(0:Ns-1), txtx(0:Ns-1), txax(0:Ns-1), denom(0:Ns-1)
   CHARACTER             :: packorunpack
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-! write(ounit,'("varysrf : " 10x " : return ; 0 ;")') ; return
- 
   told = MPI_WTIME()
- 
+  
   packorunpack = 'U' ; call packdof( Ndof, xdof(1:Ndof), packorunpack )
   
   isurf = 1
@@ -50,9 +47,7 @@ subroutine varysrf( Ndof, xdof, fdof )
   CHECK( varysrf, .not.allocated( surf(isurf)%BB ), fatal )
   
   surf(isurf)%BB(1:3,0:Nt-1,0:Nz-1) = zero ! initialize summation for components of total magnetic field; 16 Nov 17;
- 
-! write(ounit,'("varysrf : " 10x " : return ; 1 ;")') ; return
- 
+  
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
   do icoil = 1, Ncoils
@@ -72,8 +67,6 @@ subroutine varysrf( Ndof, xdof, fdof )
    enddo ! end do jj;
    
   enddo ! end of do icoil = 1, Ncoils;
- 
-! write(ounit,'("varysrf : " 10x " : return ; 2 ;")') ; return
  
   do jj = 0, Nz-1
    do ii = 0, Nt-1
@@ -95,7 +88,7 @@ subroutine varysrf( Ndof, xdof, fdof )
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  do icoil = 1, Ncoils
+  do icoil = 1, Ncoils ! 28 Nov 17;
    
    do kk = 0, Ns-1 ! line segments describing curve; 22 Nov 17;
     
@@ -104,12 +97,12 @@ subroutine varysrf( Ndof, xdof, fdof )
     do ii = 0, Nt-1 ; il = ii-1 ; iu = ii+1
 
      if( il.lt. 0 ) il = Nt-1
-     if( iu.ge.Nt ) iu = 0
+     if( iu.eq.Nt ) iu = 0
 
      do jj = 0, Nz-1 ; jl = jj-1 ; ju = jj+1
       
       if( jl.lt. 0 ) jl = Nz-1
-      if( ju.ge.Nz ) ju = 0
+      if( ju.eq.Nz ) ju = 0
 
 
      !ndotdx = sum( surf(isurf)%nn(1:3,ii,jj) * surf(2)%xx(1:3,ii,jj) )
@@ -117,22 +110,35 @@ subroutine varysrf( Ndof, xdof, fdof )
       ndotdx = sum( surf(isurf)%nn(1:3,ii,jj) * ( surf(2)%xx(1:3,ii,jj) - surf(1)%xx(1:3,ii,jj) ) )
 
       
-      Bs = sum( surf(isurf)%BB(1:3,ii,jj) * surf(isurf)%gs(1:3,ii,jj) )
-      Bu = sum( surf(isurf)%BB(1:3,ii,jj) * surf(isurf)%gu(1:3,ii,jj) )
-      Bv = sum( surf(isurf)%BB(1:3,ii,jj) * surf(isurf)%gv(1:3,ii,jj) )
+!     Bs = sum( surf(isurf)%BB(1:3,ii,jj) * surf(isurf)%gs(1:3,ii,jj) )
+!     Bu = sum( surf(isurf)%BB(1:3,ii,jj) * surf(isurf)%gu(1:3,ii,jj) )
+!     Bv = sum( surf(isurf)%BB(1:3,ii,jj) * surf(isurf)%gv(1:3,ii,jj) )
 
-      gss = surf(isurf)%guv(4,ii,jj) * surf(isurf)%guv(6,ii,jj) - surf(isurf)%guv(5,ii,jj) * surf(isurf)%guv(5,ii,jj) ! Jacobian factors cancel; 16 Nov 17;
-      gst = surf(isurf)%guv(5,ii,jj) * surf(isurf)%guv(3,ii,jj) - surf(isurf)%guv(2,ii,jj) * surf(isurf)%guv(6,ii,jj)
-      gsz = surf(isurf)%guv(2,ii,jj) * surf(isurf)%guv(5,ii,jj) - surf(isurf)%guv(4,ii,jj) * surf(isurf)%guv(3,ii,jj)
-      
-      BsgradRn(1:3) = ( Bu - Bs * gst/gss ) * ( coil(icoil)%Rn(1:3,iu,jj,kk) - coil(icoil)%Rn(1:3,il,jj,kk) ) / ( two * deltateta ) & 
-                    + ( Bv - Bs * gsz/gss ) * ( coil(icoil)%Rn(1:3,ii,ju,kk) - coil(icoil)%Rn(1:3,ii,jl,kk) ) / ( two * deltazeta )
-      
+!     gss = surf(isurf)%guv(4,ii,jj) * surf(isurf)%guv(6,ii,jj) - surf(isurf)%guv(5,ii,jj) * surf(isurf)%guv(5,ii,jj) ! Jacobian factors cancel; 16 Nov 17;
+!     gst = surf(isurf)%guv(5,ii,jj) * surf(isurf)%guv(3,ii,jj) - surf(isurf)%guv(2,ii,jj) * surf(isurf)%guv(6,ii,jj)
+!     gsz = surf(isurf)%guv(2,ii,jj) * surf(isurf)%guv(5,ii,jj) - surf(isurf)%guv(4,ii,jj) * surf(isurf)%guv(3,ii,jj)
+
+!     BsgradRn(1:3) = ( Bu - Bs * gst/gss ) * ( coil(icoil)%Rn(1:3,iu,jj,kk) - coil(icoil)%Rn(1:3,il,jj,kk) ) / ( two * deltateta ) & 
+!                   + ( Bv - Bs * gsz/gss ) * ( coil(icoil)%Rn(1:3,ii,ju,kk) - coil(icoil)%Rn(1:3,ii,jl,kk) ) / ( two * deltazeta )
+            
+     !Bs = sum( surf(isurf)%BB(1:3,ii,jj) * surf(isurf)%gs(1:3,ii,jj) )
+      Bu = sum( surf(isurf)%BB(1:3,ii,jj) * surf(isurf)%xu(1:3,ii,jj) )
+      Bv = sum( surf(isurf)%BB(1:3,ii,jj) * surf(isurf)%xv(1:3,ii,jj) )
+
+      gtt = surf(isurf)%guv(4,ii,jj) ; gtz = surf(isurf)%guv(5,ii,jj) ; gzz = surf(isurf)%guv(6,ii,jj) ; gss = gtt * gzz - gtz * gtz
+
+     !gss = surf(isurf)%guv(4,ii,jj) * surf(isurf)%guv(6,ii,jj) - surf(isurf)%guv(5,ii,jj) * surf(isurf)%guv(5,ii,jj) ! Jacobian factors cancel; 16 Nov 17;
+     !gst = surf(isurf)%guv(5,ii,jj) * surf(isurf)%guv(3,ii,jj) - surf(isurf)%guv(2,ii,jj) * surf(isurf)%guv(6,ii,jj)
+     !gsz = surf(isurf)%guv(2,ii,jj) * surf(isurf)%guv(5,ii,jj) - surf(isurf)%guv(4,ii,jj) * surf(isurf)%guv(3,ii,jj)
+
+      BsgradRn(1:3) = ( ( Bu * gzz - Bv * gtz ) * ( coil(icoil)%Rn(1:3,iu,jj,kk) - coil(icoil)%Rn(1:3,il,jj,kk) ) / ( two * deltateta )   & 
+                      + ( Bv * gtt - Bu * gtz ) * ( coil(icoil)%Rn(1:3,ii,ju,kk) - coil(icoil)%Rn(1:3,ii,jl,kk) ) / ( two * deltazeta ) ) / gss
+
       rr(1:3) = surf(isurf)%xx(1:3,ii,jj) - coil(icoil)%xx(1:3,kk)
 
-      rs = sum( ( surf(isurf)%xx(1:3,ii,jj)-coil(icoil)%xx(1:3,kk) ) * surf(isurf)%gs(1:3,ii,jj) )
-      ru = sum( ( surf(isurf)%xx(1:3,ii,jj)-coil(icoil)%xx(1:3,kk) ) * surf(isurf)%gu(1:3,ii,jj) )
-      rv = sum( ( surf(isurf)%xx(1:3,ii,jj)-coil(icoil)%xx(1:3,kk) ) * surf(isurf)%gv(1:3,ii,jj) )
+      rs = sum( rr(1:3) * surf(isurf)%gs(1:3,ii,jj) )
+      ru = sum( rr(1:3) * surf(isurf)%gu(1:3,ii,jj) )
+      rv = sum( rr(1:3) * surf(isurf)%gv(1:3,ii,jj) )
       
       dist(2) = sum((rr(1:3))**2) ; dist(1) = sqrt(dist(2)) ; dist(3) = dist(2)*dist(1) ; dist(5) = dist(3)*dist(2)
 
@@ -141,13 +147,13 @@ subroutine varysrf( Ndof, xdof, fdof )
       RRv(1:3) = three * rr(1:3) * rv / dist(5) - surf(isurf)%gv(1:3,ii,jj) / dist(3)
       
       RsgradBn(1:3) = ( RRu(1:3) - RRs(1:3) * gst/gss ) * ( surf(isurf)%Bn(iu,jj) - surf(isurf)%Bn(il,jj) ) / ( two * deltateta ) & 
-                    + ( RRv(1:3) - RRs(1:3) * gsz/gss ) * ( surf(isurf)%Bn(ii,ju) - surf(isurf)%Bn(ii,jl) ) / ( two * deltateta )
+                    + ( RRv(1:3) - RRs(1:3) * gsz/gss ) * ( surf(isurf)%Bn(ii,ju) - surf(isurf)%Bn(ii,jl) ) / ( two * deltazeta )
 
 
       BnRnH(1:3) = surf(isurf)%Bn(ii,jj) * coil(icoil)%Rn(1:3,ii,jj,kk) * surf(isurf)%HH(ii,jj)
       
 
-      dFds(1:3) = dFds(1:3) + ndotdx * ( RsgradBn(1:3) + BsgradRn(1:3) + BnRnH(1:3) )
+      dFds(1:3) = dFds(1:3) + ndotdx * ( RsgradBn(1:3) + BsgradRn(1:3) + BnRnH(1:3) ) * surf(isurf)%ds(ii,jj)
       
 
      enddo ! end of do jj; 16 Nov 17;
@@ -173,6 +179,8 @@ subroutine varysrf( Ndof, xdof, fdof )
 
   enddo ! end of do icoil; 16 Nov 17;
   
+  fdof(1:Ndof) = fdof(1:Ndof) * weight_bnorm
+
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
   DALLOCATE( dxdtau )

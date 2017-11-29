@@ -131,8 +131,8 @@ subroutine readsrf
      surf(isurf)%sg(ii,jj) = sum( xs(1:3)*ds(1:3) )
      
      isum = 0 ; call cross( isum, xu(1:3), xv(1:3), surf(isurf)%gs(1:3,ii,jj) ) ; surf(isurf)%gs(1:3,ii,jj) = surf(isurf)%gs(1:3,ii,jj) / surf(isurf)%sg(ii,jj)
-     isum = 0 ; call cross( isum, xv(1:3), xs(1:3), surf(isurf)%gu(1:3,ii,jj) ) ; surf(isurf)%gs(1:3,ii,jj) = surf(isurf)%gs(1:3,ii,jj) / surf(isurf)%sg(ii,jj)
-     isum = 0 ; call cross( isum, xs(1:3), xu(1:3), surf(isurf)%gv(1:3,ii,jj) ) ; surf(isurf)%gs(1:3,ii,jj) = surf(isurf)%gs(1:3,ii,jj) / surf(isurf)%sg(ii,jj)
+     isum = 0 ; call cross( isum, xv(1:3), xs(1:3), surf(isurf)%gu(1:3,ii,jj) ) ; surf(isurf)%gu(1:3,ii,jj) = surf(isurf)%gu(1:3,ii,jj) / surf(isurf)%sg(ii,jj)
+     isum = 0 ; call cross( isum, xs(1:3), xu(1:3), surf(isurf)%gv(1:3,ii,jj) ) ; surf(isurf)%gv(1:3,ii,jj) = surf(isurf)%gv(1:3,ii,jj) / surf(isurf)%sg(ii,jj)
      
      dd = sqrt( sum( ds(1:3)*ds(1:3) ) )
      

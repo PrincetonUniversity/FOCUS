@@ -89,7 +89,8 @@ subroutine brfield( icoil, ii, jj, Ns, BB )
    zx = dxtz - dztx
    xy = dytx - dxty
 
-   td3 = two * dd(3) ! seems unneccessary; 16 Nov 17;
+!  td3 = two * dd(3) ! seems unneccessary; 16 Nov 17;
+   td3 =       dd(3) !                   ;          ; 28 Nov 17;
    
    BB(kk,1) =      yz                   * td3 ! Bx;
    BB(kk,2) =              zx           * td3 ! By;

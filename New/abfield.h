@@ -42,10 +42,9 @@ subroutine abfield( isurf, icoil, ii, jj, Ns, dFdx, dBdx )
   CHECK( abfield, icoil.lt.1 .or. icoil.gt.Ncoils, icoil not in range )
   CHECK( abfield, ii   .lt.0 .or. ii   .ge.Nt    , ii    not in range )
   CHECK( abfield, jj   .lt.0 .or. jj   .ge.Nz    , jj    not in range )
+  CHECK( abfield, isurf.lt.1 .or. isurf.gt.2     , isurf not in range ) ! 28 Nov 17;
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-
-! isurf = 1 ! 22 Nov 17;
 
   xt = surf(isurf)%xu(1,ii,jj) ! poloidal tangent to surface (shorthand);
   yt = surf(isurf)%xu(2,ii,jj)
@@ -88,11 +87,13 @@ subroutine abfield( isurf, icoil, ii, jj, Ns, dFdx, dBdx )
    yz = dzty - dytz
    zx = dxtz - dztx
    xy = dytx - dxty
+   
+   td3 =       dd(3)
 
-   td3 = two * dd(3) ! WHERE DID THE FACTOR OF TWO COME FROM; 12 Nov 17;
-   
    dBdx(kk,0  ) = ( xn*yz + yn*zx + zn*xy ) * td3 ! Bn;
-   
+ 
+   td3 = two * dd(3)
+  
    dBdx(kk,1  ) = xn * ( dd(5) * ( yz * dx            )            ) &
                 + yn * ( dd(5) * ( zx * dx + dz * rdl ) - tz * td3 ) &
                 + zn * ( dd(5) * ( xy * dx - dy * rdl ) + ty * td3 ) ! dBn/dx;
@@ -105,7 +106,25 @@ subroutine abfield( isurf, icoil, ii, jj, Ns, dFdx, dBdx )
                 + yn * ( dd(5) * ( zx * dz - dx * rdl ) + tx * td3 ) &
                 + zn * ( dd(5) * ( xy * dz            )            ) ! dBn/dz;
 
-   dBdx(kk,1:3) = dBdx(kk,1:3) * two ! WHERE DID THIS FACTOR OF TWO COME FROM; 12 Nov 17;
+!  dBdx(kk,1:3) = dBdx(kk,1:3) * two ! WHERE DID THIS FACTOR OF TWO COME FROM; 12 Nov 17;
+
+!  td3 = two * dd(3) ! WHERE DID THE FACTOR OF TWO COME FROM; 12 Nov 17;
+   
+!  dBdx(kk,0  ) = ( xn*yz + yn*zx + zn*xy ) * td3 ! Bn;
+   
+!  dBdx(kk,1  ) = xn * ( dd(5) * ( yz * dx            )            ) &
+!               + yn * ( dd(5) * ( zx * dx + dz * rdl ) - tz * td3 ) &
+!               + zn * ( dd(5) * ( xy * dx - dy * rdl ) + ty * td3 ) ! dBn/dx;
+
+!  dBdx(kk,2  ) = xn * ( dd(5) * ( yz * dy - dz * rdl ) + tz * td3 ) &
+!               + yn * ( dd(5) * ( zx * dy            )            ) &
+!               + zn * ( dd(5) * ( xy * dy + dx * rdl ) - tx * td3 ) ! dBn/dy;
+
+!  dBdx(kk,3  ) = xn * ( dd(5) * ( yz * dz + dy * rdl ) - ty * td3 ) &
+!               + yn * ( dd(5) * ( zx * dz - dx * rdl ) + tx * td3 ) &
+!               + zn * ( dd(5) * ( xy * dz            )            ) ! dBn/dz;
+
+!  dBdx(kk,1:3) = dBdx(kk,1:3) * two ! WHERE DID THIS FACTOR OF TWO COME FROM; 12 Nov 17;
 
   enddo ! end of do kk;
   

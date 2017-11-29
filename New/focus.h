@@ -24,9 +24,9 @@
 
 program focus
   
-  use globals, only : zero, one, two, pi2, sqrtmachprec, ncpu, myid, ounit, tstart, &
+  use globals, only : zero, one, two, pi2, sqrtmachprec, small, ncpu, myid, ounit, tstart, &
                       ext, inputfile, surffile, axisfile, coilfile, inpcoils, hdf5file, outcoils, outplots, &
-                      Nt, Nz, surf, Ncoils, Ns, coil, &
+                      Nt, Nz, surf, Ncoils, Ns, coil, NFcoil, &
                       tdof, Mdof, &
                       totlengt, Tfluxave, Bdotnsqd, &
                       target_tflux, &
@@ -41,9 +41,9 @@ program focus
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-  INTEGER                :: icoil, mm, maxNF, Ndof, ii, ierr, astat, isurf
-  REAL                   :: tnow, told, ff, ferr
-  REAL     , allocatable :: xdof(:), fdof(:)
+  INTEGER                :: icoil, mm, maxNF, Ndof, ii, ierr, astat, isurf, idof
+  REAL                   :: tnow, told, ff, ferr, compare
+  REAL     , allocatable :: xdof(:), fdof(:), gdof(:)
   CHARACTER              :: packorunpack
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -160,7 +160,7 @@ program focus
   
   fforig = ff ; ffbest = ff
   
-  ferr = sqrt( sum(fdof(1:Ndof)*fdof(1:Ndof)) / Ndof )
+  ferr = sqrt( sum(fdof(1:Ndof)*fdof(1:Ndof)) / Ndof ) / ff
   
   tnow = MPI_WTIME()
 
@@ -200,15 +200,29 @@ program focus
    
    call minimum( Ndof, xdof(1:Ndof) )
    
+  case( 2 )
+   
+   SALLOCATE( gdof, (1:Ndof), zero ) ! force    = gradient of objective function;
+   
+   ;         ; call varysrf(       Ndof, xdof(1:Ndof),     gdof(1:Ndof) ) ! analytic  derivative; 28 Nov 17;
+   isurf = 2 ; call dforce( isurf, Ndof, xdof(1:Ndof), ff, fdof(1:Ndof) ) ! numerical            ;28 Nov 17;
+   
+   do idof = 1 * ( 3 + 6 * NFcoil ) + 1 , 2 * ( 3 + 6 * NFcoil ) + 1
+    if( abs(fdof(idof)).gt.small ) then ; write(ounit,1020) fdof(idof), gdof(idof), gdof(idof)/fdof(idof)
+   !else                                ; write(ounit,1020) fdof(idof), gdof(idof)
+    endif
+   enddo
+   
+1020 format("focus   : ", 10x ," : numerical fdof =",es13.5," ; analytic gdof =",es13.5," ; ",:,"ratio = ",es13.5," ;")
+
+   DALLOCATE( gdof )
+   DALLOCATE( fdof )
+   
   case default
    
    FATAL( focus, .true., selected Iminimize is not supported )
    
   end select
-  
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  
-  call varysrf( Ndof, xdof(1:Ndof), fdof(1:Ndof) )
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   

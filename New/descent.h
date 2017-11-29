@@ -11,14 +11,6 @@
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
-!module descentparameters
-  
-!  INTEGER :: Ndegreeoffreedom ! do you know a better way of passing this through to subroutine:odes ;
-  
-!end module descentparameters
-
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-
 subroutine descent( Ndof, xdof, ferr )
   
   use globals          , only : zero, one, six, half, pi2, sqrtmachprec, small, myid, ncpu, ounit, tstart, &
@@ -27,7 +19,6 @@ subroutine descent( Ndof, xdof, ferr )
                                 totlengt, Tfluxave, Bdotnsqd, &
                                 target_tflux, converged, &
                                 fforig, ffbest
- !use descentparameters
 
   implicit none
   
@@ -58,7 +49,7 @@ subroutine descent( Ndof, xdof, ferr )
 
   call dforce( isurf, Ndof, xdof(1:Ndof), ff, fdof(1:Ndof) ) ; fk(1:Ndof,1) = - fdof(1:Ndof)
   
-  ferr = sqrt( sum(fdof(1:Ndof)*fdof(1:Ndof)) / Ndof )
+  ferr = sqrt( sum(fdof(1:Ndof)*fdof(1:Ndof)) / Ndof ) / ff
   
   if( ferr.lt.converged ) return
   
@@ -76,10 +67,10 @@ subroutine descent( Ndof, xdof, ferr )
     
     call dforce( isurf, Ndof, xdof(1:Ndof), ff, fdof(1:Ndof) ) ; fk(1:Ndof,1) = - fdof(1:Ndof)
 
-    ferr = sqrt( sum(fdof(1:Ndof)*fdof(1:Ndof)) / Ndof )
+    ferr = sqrt( sum(fdof(1:Ndof)*fdof(1:Ndof)) / Ndof ) / ff
     
     if( ff.gt.ffold ) then
-     if( myid.eq.0 ) write(ounit,1010) tnow-tstart, "increasing", totlengt(0)/pi2, Tfluxave(0)-target_tflux, Bdotnsqd(0), ff, ferr, tnow-told
+     if( myid.eq.0 ) write(ounit,1010) tnow-tstart, "INCREASING", totlengt(0)/pi2, Tfluxave(0)-target_tflux, Bdotnsqd(0), ff, ferr, tnow-told
      RKstep = RKstep * half
     !return
     endif
