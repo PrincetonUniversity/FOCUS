@@ -17,6 +17,8 @@ subroutine pcplot
                       minorrad, ellipticity, nrotate, &
                       outplots, punit, &
                       Ntrj, Npts, odetol, iota, xyaxis
+
+  use oculus, only : magneticaxis, ga00aa, transformdata, tr00aa
   
   implicit none  
   
@@ -24,12 +26,16 @@ subroutine pcplot
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
+  type(magneticaxis)  :: oaxis
+  type(transformdata) :: transform
+
   INTEGER, parameter :: Node = 2, Nxyaxis = 2, Lrwork = Nxyaxis * ( 3 * Nxyaxis + 13 ) / 2
   INTEGER            :: ierr, NN, itrj, ipt, Lwa, ic05nbf, izeta
   REAL               :: Fxy(1:Nxyaxis), tnow, told, rwork(1:Lrwork), tol, xy(1:Node)
 
-  REAL               :: srho, teta, zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3), v1(1:3), v2(1:3), w1(1:3), w2(1:3)
-  REAL               :: xtt(1:3), xtz(1:3), xzz(1:3)
+  INTEGER            :: isurf, ifail , iguess
+  REAL               :: srho, teta, zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3), xtt(1:3), xtz(1:3), xzz(1:3)
+  REAL               :: v1(1:3), v2(1:3), w1(1:3), w2(1:3)
 
   external           :: fxyaxis
   
@@ -37,52 +43,87 @@ subroutine pcplot
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-!#ifdef DEBUG
-!  
-!  srho = one ; teta = zero
-!  
-!  do izeta = 0, 1
-!   zeta = izeta * pi2
-!   call knotxx( srho, teta, zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3), xtt, xtz, xzz, v1(1:3), v2(1:3), w1(1:3), w2(1:3) )
-!   write(ounit,'("pcplot : " 10x " : "3es23.15)') ax(1:3) + minorrad * ( xy(1) * ellipticity * v1(1:3) + xy(2) * v2(1:3) )
-!  enddo ! ;
-!  
-!#endif
+  oaxis%Nfp  = 1
+  oaxis%Ntor = 4
   
+  oaxis%error       = zero
+  oaxis%residue     = zero
+  oaxis%iota        = zero
+  oaxis%wr(1:2    ) = zero
+  oaxis%wi(1:2    ) = zero
+  oaxis%vr(1:2,1:2) = zero
+  oaxis%vi(1:2,1:2) = zero
+  
+  isurf = 1 ; srho = one ; teta = zero ; zeta = zero
+  call knotxx( isurf, srho , teta , zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3), xtt(1:3), xtz(1:3), xzz(1:3), &
+v1(1:3), v2(1:3), w1(1:3), w2(1:3) )
+  
+ !write(ounit,'("pcplot  : " 10x " knot axis = ",es13.5," ;")') ax(1:3)
+  
+  oaxis%R    = 1.029
+  oaxis%Z    = zero
+  
+  oaxis%maxits = 16
+  oaxis%tol    = 1.0E-08
+  oaxis%odetol = 1.0E-08
+  oaxis%Lallocated = 0
+  
+  ifail = -3 ; call ga00aa( oaxis, ifail )
+  
+! deallocate( oaxis%Ri )
+! deallocate( oaxis%Zi )
+  
+! deallocate( oaxis%Rnc )
+! deallocate( oaxis%Zns )
+! deallocate( oaxis%Rns )
+! deallocate( oaxis%Znc )
+
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-!#ifdef DEBUG
-!
-!  xyaxis(1:Node) = zero ! this was already initialized in initial;
-!
-!  tnow = MPI_WTIME()
-!
-!#else
+  transform%Nfp    = 1
+  transform%Ppts   = Npts
+  transform%odetol = 1.0E-08
+  transform%Ra     = oaxis%R
+  transform%Za     = oaxis%Z
+  
+  open( punit, file=trim(outplots)//".oculus", status="unknown", form="formatted" )
+  write( punit,'(i9)') transform%Ppts
+  
+  do itrj = 1, Ntrj
+   
+   transform%R      = oaxis%R + itrj * 0.2 / Ntrj
+   transform%Z      = oaxis%Z
+   
+   ifail = 0 ; call tr00aa( transform, ifail )
+   
+   write(ounit,'("pcplot : " 10x " : tr00aa : iota =",es13.5," ;")') transform%iota
+   
+   write( punit,'(2es23.15)') transform%RZ
+   
+  enddo
+  
+  close( punit )
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
   xyaxis(1:Node) = zero ! this was already initialized in initial;
-  
   NN = Nxyaxis ; tol = odetol * ten ; Lwa = Lrwork ; ic05nbf = 1
-  
-  ;            ; write(ounit,'("pcplot  : ",f10.1," : calling C05NBF ;")') told-tstart
-
- !FATAL( pcplot , .true., need to replace C05NBF )
-  call C05NBF( fxyaxis, NN, xyaxis(1:NN), Fxy(1:NN), tol, rwork(1:Lwa), Lwa, ic05nbf )
+  write(ounit,'("pcplot  : ",f10.1," : calling C05NBF ;")') told-tstart 
+  call C05NBF( fxyaxis, NN, xyaxis(1:NN), Fxy(1:NN), tol, rwork(1:Lwa), Lwa, ic05nbf ) 
   
   tnow = MPI_WTIME()
-
-  select case( ic05nbf )
-  case( 0 )    ; write(ounit,'("pcplot  : ",f10.1," : called  C05NBF ; success ; time ="f10.2"s ;")') tnow-tstart, tnow-told
-  case default ; write(ounit,'("pcplot  : ",f10.1," : called  C05NBF ; error   ; time ="f10.2"s ;")') tnow-tstart, tnow-told ; xyaxis(1:Node) = zero
-  end select
   
-!#endif
-
+!select case( ic05nbf ) ! 28 Nov 17;
+!case( 0 )    ; write(ounit,'("pcplot  : ",f10.1," : called  C05NBF ; success ; time ="f10.2"s ;")') tnow-tstart, tnow-told ! 02 Dec 12;
+!case default ; write(ounit,'("pcplot  : ",f10.1," : called  C05NBF ; error   ; time ="f10.2"s ;")') tnow-tstart, tnow-told ; xyaxis(1:Node) = zero
+!end select
+  
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
   if( myid.eq.0 ) write(ounit,'("pcplot  : ",f10.1," : Ntrj =",i4," ; Npts =",i6," ; odetol =",es12.5," ;")') tnow-tstart, Ntrj, Npts, odetol
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-
+  
   open( punit, file=trim(outplots), status="unknown", form="formatted" )
   
   write( punit,'(2i9)' ) Ntrj, Npts
@@ -93,26 +134,35 @@ subroutine pcplot
    
    iota(itrj,1) = itrj * one / Ntrj
    
+!#ifdef DEBUG
+!  xy(1:Node) = (/ iota(itrj,1), zero /) ! 28 Nov 17;
+!  if( myid.eq.0 ) write(punit,'(2es23.15)') xy(1) * minorrad * (/ ellipticity * cos(xy(2)), sin(xy(2)) /) ! 28 Nov 17;
+!#else
    xy(1:Node) = xyaxis(1:Node) + itrj * ( (/ one, zero /) - xyaxis(1:2) ) / Ntrj ! set starting point;
    if( myid.eq.0 ) write(punit,'(2es23.15)') xy(1:2) * minorrad * (/ ellipticity             , one        /)
-!  xy(1:Node) = (/ iota(itrj,1), zero /)
-!  if( myid.eq.0 ) write(punit,'(2es23.15)') xy(1) * minorrad * (/ ellipticity * cos(xy(2)), sin(xy(2)) /)
-   
+!#endif   
    do ipt = 1, Npts
     
     call pmap( Node, xy(1:Node) )
     
+!#ifdef DEBUG
+!   if( myid.eq.0 ) write(punit,'(2es23.15)') xy(1) * minorrad * (/ ellipticity * cos(xy(2)), sin(xy(2)) /) ! 28 Nov 17;
+!#else
     if( myid.eq.0 ) write(punit,'(2es23.15)') xy(1:2) * minorrad * (/ ellipticity             , one        /)
-!   if( myid.eq.0 ) write(punit,'(2es23.15)') xy(1) * minorrad * (/ ellipticity * cos(xy(2)), sin(xy(2)) /)
+!   if( myid.eq.0 ) write(punit,'(2es23.15)') ax(1) + xy(1) * minorrad * ellipticity, &
+!                                             ax(3) + xy(2) * minorrad * one
+!#endif   
     
    enddo ! end of do ipt;
    
-   iota(itrj,2) = zero
+!#ifdef DEBUG
 !  iota(itrj,2) = xy(2) / (Npts*pi2)
-   
+!#else
+   iota(itrj,2) = zero
+!#endif      
    tnow = MPI_WTIME()
    
-!  if( myid.eq.0 ) write(ounit,'("pcplot  : ",f10.1," : ",i4," : iota =",es23.15," ; time =",f10.2," ;")') tnow-tstart, itrj, iota(itrj,2), tnow-told
+   if( myid.eq.0 ) write(ounit,'("pcplot  : ",f10.1," : ",i4," : iota =",es23.15," ; time =",f10.2," ;")') tnow-tstart, itrj, iota(itrj,2), tnow-told
    
    told = tnow
    
@@ -130,88 +180,90 @@ end subroutine pcplot
 
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-!
-!subroutine bstfield( zeta, st, Bst )
-!  
-!  use globals, only : zero, one, pi2, sqrtmachprec, ounit, myid, ncpu, Ncoils, Ns, coil, minorrad, ellipticity
-!  
-!  implicit none  
-!  
-!  include "mpif.h"
-!  
-!  REAL    :: zeta, st(*), Bst(*)
-!  
-!  INTEGER :: icoil, kk, ierr
-!  REAL    :: ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3), v1(1:3), v2(1:3), w1(1:3), w2(1:3)
-!  REAL    :: a, b, c, d, e, f, g, h, i, idet, inversematrix(1:3,1:3)
-!  REAL    :: dx, dy, dz, rr(1:3), dd(1:3), tx, ty, tz, Bt(1:3), Bi(1:3), Bs(1:3)
-!  REAL    :: ssmax
-!
-!  ssmax = 1.1
-!
-!  if( st(1).lt.sqrtmachprec .or. st(1).gt.ssmax ) then ; Bst(1:2) = zero ; return
-!  endif
-!  
-!  call knotxx( st(1), st(2), zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3), v1(1:3), v2(1:3), w1(1:3), w2(1:3) )
-!  
-!  a = xs(1) ; b = xt(1) ; c = xz(1)
-!  d = xs(2) ; e = xt(2) ; f = xz(2)
-!  g = xs(3) ; h = xt(3) ; i = xz(3)
-!
-! !idet = one / ( - c * e * g + b * f * g + c * d * h - a * f * h - b * d * i + a * e * i ) ! this factor will cancel; not required;
-!  
-!  inversematrix(1,1) = ( -f * h + e * i ) ; inversematrix(1,2) = (  c * h - b * i ) ; inversematrix(1,3) = ( -c * e + b * f )
-!  inversematrix(2,1) = (  f * g - d * i ) ; inversematrix(2,2) = ( -c * g + a * i ) ; inversematrix(2,3) = (  c * d - a * f )  
-!  inversematrix(3,1) = ( -e * g + d * h ) ; inversematrix(3,2) = (  b * g - a * h ) ; inversematrix(3,3) = ( -b * d + a * e )
-!  
-!  Bt(1:3) = zero
-!
-!  do icoil = 1, Ncoils
-!   
-!  !if( myid.ne.modulo(icoil-1,ncpu) ) cycle ! parallelization loop;
-!   
-!   Bi(1:3) = zero
-!   
-!   do kk = 1, Ns
-!    
-!    dx = xx(1) - coil(icoil)%xx(kk) ! distance from evaluation point to curve;
-!    dy = xx(2) - coil(icoil)%yy(kk)
-!    dz = xx(3) - coil(icoil)%zz(kk)
-!
-!    rr(2) = dx**2 + dy**2 + dz**2 ; rr(1) = sqrt(rr(2)) ; rr(3) = rr(1) * rr(2)
-!
-!    FATAL( pcplot , abs(rr(3)).lt.sqrtmachprec, divide by zero )
-!
-!    ;                             ;                     ; dd(3) = one / rr(3)
-!    
-!    tx = coil(icoil)%xt(kk) ! tangent to coil (shorthand);
-!    ty = coil(icoil)%yt(kk)
-!    tz = coil(icoil)%zt(kk)
-!    
-!    Bi(1:3) = Bi(1:3) + (/ ty * dz - tz * dy, tz * dx - tx * dz, tx * dy - ty * dx /) * dd(3)
-!    
-!   enddo ! end of do kk;
-!   
-!  !Bi(1:3,icoil) = Bi(1:3,icoil) * coil(icoil)%I
-!
-!   Bt(1:3) = Bt(1:3) + Bi(1:3) * coil(icoil)%I
-!   
-!  enddo ! end of do icoil;
-!  
-! !call MPI_REDUCE( Bi(1:3), Bt(1:3), 3, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
-!
-! !RlBCAST( Bt(1:3), 3, 0 )
-!
-!  Bs(1:3) = matmul( inversematrix(1:3,1:3), Bt(1:3) )
-!  
-!  FATAL( pcplot , abs(Bs(3)).lt.sqrtmachprec, divide by zero )
-!
-!  Bst(1:2) = Bs(1:2) / Bs(3)
-!
-!  return
-!  
-!end subroutine bstfield
-!
+
+subroutine bstfield( zeta, st, Bst )
+  
+  use globals, only : zero, one, pi2, sqrtmachprec, ounit, myid, ncpu, Ncoils, Ns, coil, minorrad, ellipticity
+  
+  implicit none  
+  
+  include "mpif.h"
+  
+  REAL    :: zeta, st(*), Bst(*)
+  
+  INTEGER :: icoil, kk, ierr, isurf
+  REAL    :: ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3), v1(1:3), v2(1:3), w1(1:3), w2(1:3)
+  REAL    :: xtt(1:3), xtz(1:3), xzz(1:3)
+  REAL    :: a, b, c, d, e, f, g, h, i, idet, inversematrix(1:3,1:3)
+  REAL    :: dx, dy, dz, rr(1:3), dd(1:3), tx, ty, tz, Bt(1:3), Bi(1:3), Bs(1:3)
+  REAL    :: ssmax
+  
+  ssmax = 1.1 ; isurf = 1
+  
+  if( st(1).lt.sqrtmachprec .or. st(1).gt.ssmax ) then ; Bst(1:2) = zero ; return
+  endif
+  
+  call knotxx( isurf, st(1), st(2), zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3), xtt(1:3), xtz(1:3), xzz(1:3), &
+v1(1:3), v2(1:3), w1(1:3), w2(1:3) )
+
+  a = xs(1) ; b = xt(1) ; c = xz(1)
+  d = xs(2) ; e = xt(2) ; f = xz(2)
+  g = xs(3) ; h = xt(3) ; i = xz(3)
+  
+! idet = one / ( - c * e * g + b * f * g + c * d * h - a * f * h - b * d * i + a * e * i ) ! this factor will cancel; not required;
+  
+  inversematrix(1,1) = ( -f * h + e * i ) ; inversematrix(1,2) = (  c * h - b * i ) ; inversematrix(1,3) = ( -c * e + b * f )
+  inversematrix(2,1) = (  f * g - d * i ) ; inversematrix(2,2) = ( -c * g + a * i ) ; inversematrix(2,3) = (  c * d - a * f )  
+  inversematrix(3,1) = ( -e * g + d * h ) ; inversematrix(3,2) = (  b * g - a * h ) ; inversematrix(3,3) = ( -b * d + a * e )
+  
+  Bt(1:3) = zero
+  
+  do icoil = 1, Ncoils
+   
+!  if( myid.ne.modulo(icoil-1,ncpu) ) cycle ! parallelization loop;
+   
+   Bi(1:3) = zero
+   
+   do kk = 0, Ns-1 ! 28 Nov 17;
+    
+    dx = xx(1) - coil(icoil)%xx(1,kk) ! distance from evaluation point to curve;
+    dy = xx(2) - coil(icoil)%xx(2,kk)
+    dz = xx(3) - coil(icoil)%xx(3,kk)
+    
+    rr(2) = dx**2 + dy**2 + dz**2 ; rr(1) = sqrt(rr(2)) ; rr(3) = rr(1) * rr(2)
+    
+    FATAL( pcplot , abs(rr(3)).lt.sqrtmachprec, divide by zero )
+    
+    ;                             ;                     ; dd(3) = one / rr(3)
+    
+    tx = coil(icoil)%xt(1,kk) ! tangent to coil (shorthand);
+    ty = coil(icoil)%xt(2,kk)
+    tz = coil(icoil)%xt(3,kk)
+    
+    Bi(1:3) = Bi(1:3) + (/ ty * dz - tz * dy, tz * dx - tx * dz, tx * dy - ty * dx /) * dd(3)
+    
+   enddo ! end of do kk;
+   
+!  Bi(1:3,icoil) = Bi(1:3,icoil) * coil(icoil)%I
+   
+   Bt(1:3) = Bt(1:3) + Bi(1:3) * coil(icoil)%I
+   
+  enddo ! end of do icoil;
+  
+! call MPI_REDUCE( Bi(1:3), Bt(1:3), 3, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
+  
+! RlBCAST( Bt(1:3), 3, 0 )
+  
+  Bs(1:3) = matmul( inversematrix(1:3,1:3), Bt(1:3) )
+  
+  FATAL( pcplot , abs(Bs(3)).lt.sqrtmachprec, divide by zero )
+  
+  Bst(1:2) = Bs(1:2) / Bs(3)
+  
+  return
+  
+end subroutine bstfield
+
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
@@ -248,7 +300,9 @@ subroutine bxyfield( zeta, xy, Bxy )
 
   isurf = 1 ; srho = one ; teta = zero
 
-  call knotxx( isurf, st(1), st(2), zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3), xtt, xtz, xzz, v1(1:3), v2(1:3), w1(1:3), w2(1:3) )
+ !call knotxx( isurf, st(1), st(2), zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3), xtt, xtz, xzz, v1(1:3), v2(1:3), w1(1:3), w2(1:3) )
+  call knotxx( isurf, srho , teta , zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3), xtt(1:3), xtz(1:3), xzz(1:3), &
+v1(1:3), v2(1:3), w1(1:3), w2(1:3) )
   
   xx(1:3) = ax(1:3) + minorrad * ( xy(1) * ellipticity * v1(1:3) + xy(2) * v2(1:3) )
   
@@ -319,7 +373,7 @@ end subroutine bxyfield
 
 subroutine pmap( Node, xy )
   
-  use globals, only : zero, pi2, odetol, nrotate
+  use globals, only : zero, pi, pi2, odetol, nrotate
   
   implicit none  
   
@@ -333,11 +387,13 @@ subroutine pmap( Node, xy )
   
   zeta = zero ; zetaend = pi2 ; relabs = 'D' ; tol = odetol ; id02bjf = 1
   
+!#ifdef DEBUG  
+! call D02BJF( zeta, zetaend, Node, xy(1:Node), bstfield, odetol, relabs, D02BJX, D02BJW, rwork(1:20*Node), id02bjf ) ! 28 Nov 17;
+! xy(2) = xy(2) + nrotate * pi ! 28 Nov 17;
+!#else
   call D02BJF( zeta, zetaend, Node, xy(1:Node), bxyfield, odetol, relabs, D02BJX, D02BJW, rwork(1:20*Node), id02bjf )
   xy(1:2) = xy(1:2) * (-1)**nrotate
-
-! call D02BJF( zeta, zetaend, Node, xy(1:Node), bstfield, odetol, relabs, D02BJX, D02BJW, rwork(1:20*Node), id02bjf )
-! xy(2) = xy(2) + nrotate * pi
+!#endif
   
   return
   
@@ -370,5 +426,125 @@ subroutine fxyaxis( Nxyaxis, xyi, Fxy, iflag )
   return
 
 end subroutine fxyaxis
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+
+subroutine bfield( RpZ, itangent, BRpZ, ifail )
+  
+  use globals, only : zero, one, pi2, three, sqrtmachprec, ounit, myid, ncpu, Ncoils, Ns, coil, minorrad, ellipticity
+  
+  implicit none  
+  
+  include "mpif.h"
+  
+  REAL    :: RpZ(1:3), BRpZ(1:3,0:3)
+  INTEGER :: itangent, ifail
+  
+  INTEGER :: icoil, kk, ierr
+  REAL    :: xx(1:3), R, zeta, czeta, szeta
+  REAL    :: inversematrix(1:3,1:3), derivatmatrix(1:3,1:3)
+  REAL    :: dx, dy, dz, rr(1:3), dd(1:3), tx, ty, tz, lBi(1:3), Bi(1:3,0:3), Bxyz(1:3,0:3)
+  
+  R = RpZ(1) ; zeta = RpZ(2) ; czeta = cos(zeta) ; szeta = sin(zeta)
+
+  xx(1) = R * czeta ; xx(2) = R * szeta ; xx(3) = RpZ(3)
+
+  Bxyz(1:3,0:3) = zero ! total magnetic field; 02 Dec 12;
+
+  do icoil = 1, Ncoils
+   
+  !if( myid.ne.modulo(icoil-1,ncpu) ) cycle ! parallelization loop;
+   
+   Bi(1:3,0:3) = zero ! i-th magnetic field; 02 Dec 12;
+   
+   do kk = 0, Ns-1 ! 12 Nov 17;
+    
+    dx = xx(1) - coil(icoil)%xx(1,kk) ! distance from evaluation point to curve;
+    dy = xx(2) - coil(icoil)%xx(2,kk)
+    dz = xx(3) - coil(icoil)%xx(3,kk)
+
+    rr(2) = dx**2 + dy**2 + dz**2 ; rr(1) = sqrt(rr(2)) ; rr(3) = rr(1) * rr(2)
+
+    FATAL( pcplot , abs(rr(3)).lt.sqrtmachprec, divide by zero )
+
+    ;                             ;                     ; dd(3) = one / rr(3)
+    
+    tx = coil(icoil)%xt(1,kk) ! tangent to coil (shorthand);
+    ty = coil(icoil)%xt(2,kk)
+    tz = coil(icoil)%xt(3,kk)
+    
+    lBi(1:3) =                (/ ty * dz - tz * dy, tz * dx - tx * dz, tx * dy - ty * dx /) * dd(3)
+
+    Bi(1:3,0) = Bi(1:3,0)                                                                   + lBi(1:3)
+    Bi(1:3,1) = Bi(1:3,1) + ( (/       zero       , tz               ,         - ty      /) - lBi(1:3) * three * rr(1) * dx ) * dd(3)
+    Bi(1:3,2) = Bi(1:3,2) + ( (/         - tz     ,       zero       , tx                /) - lBi(1:3) * three * rr(1) * dy ) * dd(3)
+    Bi(1:3,3) = Bi(1:3,3) + ( (/ ty               ,         - tx     ,       zero        /) - lBi(1:3) * three * rr(1) * dz ) * dd(3)
+    
+   enddo ! end of do kk;
+   
+   Bxyz(1:3,0:3) = Bxyz(1:3,0:3) + Bi(1:3,0:3) * coil(icoil)%I
+   
+  enddo ! end of do icoil;
+  
+ !call MPI_REDUCE( Bi(1:3), Bxyz(1:3), 3, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
+
+ !RlBCAST( Bxyz(1:3), 3, 0 )
+  
+  BRpZ(1:3,0:3) = zero
+  
+  inversematrix(1,1) =   czeta         ; inversematrix(1,2) =   szeta         ; inversematrix(1,3) = zero
+  inversematrix(2,1) = - szeta / R     ; inversematrix(2,2) =   czeta / R     ; inversematrix(2,3) = zero
+  inversematrix(3,1) =    zero         ; inversematrix(3,2) =    zero         ; inversematrix(3,3) =  one
+  
+  BRpZ(1:3,0) = matmul( inversematrix(1:3,1:3), Bxyz(1:3,0) ) ! transform back to cylindrical; 02 Dec 12;
+  
+  derivatmatrix(1,1) =    zero         ; derivatmatrix(1,2) =    zero         ; derivatmatrix(1,3) = zero
+  derivatmatrix(2,1) = + szeta / R**2  ; derivatmatrix(2,2) = - czeta / R**2  ; derivatmatrix(2,3) = zero
+  derivatmatrix(3,1) =    zero         ; derivatmatrix(3,2) =    zero         ; derivatmatrix(3,3) = zero
+  
+  lBi(1:3) =     Bxyz(1:3,1) * czeta + Bxyz(1:3,2) * szeta
+  
+  BRpZ(1:3,1) = matmul( derivatmatrix(1:3,1:3), Bxyz(1:3,0) ) + matmul( inversematrix(1:3,1:3),   lBi(1:3) )
+  
+  derivatmatrix(1,1) = - szeta         ; derivatmatrix(1,2) =   czeta         ; derivatmatrix(1,3) = zero
+  derivatmatrix(2,1) = - czeta / R     ; derivatmatrix(2,2) = - szeta / R     ; derivatmatrix(2,3) = zero
+  derivatmatrix(3,1) =    zero         ; derivatmatrix(3,2) =    zero         ; derivatmatrix(3,3) = zero
+  
+  lBi(1:3) = ( - Bxyz(1:3,1) * szeta + Bxyz(1:3,2) * czeta                       ) * R
+  
+  BRpZ(1:3,2) = matmul( derivatmatrix(1:3,1:3), Bxyz(1:3,0) ) + matmul( inversematrix(1:3,1:3), lBi(1:3) )
+  
+  lBi(1:3) =                                                 Bxyz(1:3,3)
+  
+  BRpZ(1:3,3) =                                                 matmul( inversematrix(1:3,1:3), lBi(1:3) )
+  
+  ifail = 0 ! calculation was ok; 02 Dec 12;
+  
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+  
+  return
+  
+end subroutine bfield
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+
+subroutine iccoil( t, x, y, z, ifail )
+
+  use globals, only : myid
+  
+  implicit none
+
+  include "mpif.h"
+  
+  REAL                 :: t, x(0:1), y(0:1), z(0:1)
+  INTEGER              :: ifail, ierr
+
+  REAL                 :: Rmaj, rmin
+
+  FATAL( pcplot, .true., what is iccoil )
+
+  return
+  
+end subroutine iccoil
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-

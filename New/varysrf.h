@@ -114,9 +114,9 @@ subroutine varysrf( Ndof, xdof, fdof )
 !     Bu = sum( surf(isurf)%BB(1:3,ii,jj) * surf(isurf)%gu(1:3,ii,jj) )
 !     Bv = sum( surf(isurf)%BB(1:3,ii,jj) * surf(isurf)%gv(1:3,ii,jj) )
 
-!     gss = surf(isurf)%guv(4,ii,jj) * surf(isurf)%guv(6,ii,jj) - surf(isurf)%guv(5,ii,jj) * surf(isurf)%guv(5,ii,jj) ! Jacobian factors cancel; 16 Nov 17;
-!     gst = surf(isurf)%guv(5,ii,jj) * surf(isurf)%guv(3,ii,jj) - surf(isurf)%guv(2,ii,jj) * surf(isurf)%guv(6,ii,jj)
-!     gsz = surf(isurf)%guv(2,ii,jj) * surf(isurf)%guv(5,ii,jj) - surf(isurf)%guv(4,ii,jj) * surf(isurf)%guv(3,ii,jj)
+      gss = surf(isurf)%guv(4,ii,jj) * surf(isurf)%guv(6,ii,jj) - surf(isurf)%guv(5,ii,jj) * surf(isurf)%guv(5,ii,jj) ! Jacobian factors cancel; 16 Nov 17;
+      gst = surf(isurf)%guv(5,ii,jj) * surf(isurf)%guv(3,ii,jj) - surf(isurf)%guv(2,ii,jj) * surf(isurf)%guv(6,ii,jj)
+      gsz = surf(isurf)%guv(2,ii,jj) * surf(isurf)%guv(5,ii,jj) - surf(isurf)%guv(4,ii,jj) * surf(isurf)%guv(3,ii,jj)
 
 !     BsgradRn(1:3) = ( Bu - Bs * gst/gss ) * ( coil(icoil)%Rn(1:3,iu,jj,kk) - coil(icoil)%Rn(1:3,il,jj,kk) ) / ( two * deltateta ) & 
 !                   + ( Bv - Bs * gsz/gss ) * ( coil(icoil)%Rn(1:3,ii,ju,kk) - coil(icoil)%Rn(1:3,ii,jl,kk) ) / ( two * deltazeta )
@@ -126,10 +126,6 @@ subroutine varysrf( Ndof, xdof, fdof )
       Bv = sum( surf(isurf)%BB(1:3,ii,jj) * surf(isurf)%xv(1:3,ii,jj) )
 
       gtt = surf(isurf)%guv(4,ii,jj) ; gtz = surf(isurf)%guv(5,ii,jj) ; gzz = surf(isurf)%guv(6,ii,jj) ; gss = gtt * gzz - gtz * gtz
-
-     !gss = surf(isurf)%guv(4,ii,jj) * surf(isurf)%guv(6,ii,jj) - surf(isurf)%guv(5,ii,jj) * surf(isurf)%guv(5,ii,jj) ! Jacobian factors cancel; 16 Nov 17;
-     !gst = surf(isurf)%guv(5,ii,jj) * surf(isurf)%guv(3,ii,jj) - surf(isurf)%guv(2,ii,jj) * surf(isurf)%guv(6,ii,jj)
-     !gsz = surf(isurf)%guv(2,ii,jj) * surf(isurf)%guv(5,ii,jj) - surf(isurf)%guv(4,ii,jj) * surf(isurf)%guv(3,ii,jj)
 
       BsgradRn(1:3) = ( ( Bu * gzz - Bv * gtz ) * ( coil(icoil)%Rn(1:3,iu,jj,kk) - coil(icoil)%Rn(1:3,il,jj,kk) ) / ( two * deltateta )   & 
                       + ( Bv * gtt - Bu * gtz ) * ( coil(icoil)%Rn(1:3,ii,ju,kk) - coil(icoil)%Rn(1:3,ii,jl,kk) ) / ( two * deltazeta ) ) / gss

@@ -27,7 +27,10 @@ endif
 
 ############################################################################################################################################
 
- HDF5=-I$(HDF5_HOME)/include -L$(HDF5_HOME)/lib -lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran -lhdf5 -lpthread -lz -lm -L${NAG_ROOT} -lnag
+ OCULUSVERSION=17
+ OCULUSFLAGS=-L$(OCULUS) -loculus.$(OCULUSVERSION) -I$(OCULUS)
+
+ HDF5=-I$(HDF5_HOME)/include -L$(HDF5_HOME)/lib -lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran -lhdf5 -lpthread -lz -lm $(OCULUSFLAGS) -L${NAG_ROOT} -lnag
 
  WEBDIR=$(HOME)/w3_html
 

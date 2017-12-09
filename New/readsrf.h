@@ -569,7 +569,7 @@ subroutine rdaxis
   LOGICAL              :: exist
   INTEGER              :: iostat, astat, ierr, mm, NK , iaxis
   INTEGER, allocatable :: il(:), im(:), in(:)
-  REAL                 :: teta, zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xt(1:3), xz(1:3), ds(1:3), dd
+  REAL                 :: teta, zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xt(1:3), xz(1:3), ds(1:3), dd, integratedtorsion
   REAL   , allocatable :: dx(:,:), dy(:,:), dz(:,:), a(:), b(:), c(:), d(:), tau(:)
     
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
@@ -647,9 +647,11 @@ subroutine rdaxis
 !  endif
    
   enddo ! end of do iaxis = 1, 2 ; 16 Nov 17;
-
+  
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-   
+
+  call inttorsion( axis(1)%NF, axis(1)%xc, axis(1)%xs, axis(1)%yc, axis(1)%ys, axis(1)%zc, axis(1)%zs, integratedtorsion )
+  
 !  SALLOCATE( il, (0:axis(1)%NF), (/ ( mm   , mm = 0, axis(1)%NF ) /) )
 !  SALLOCATE( im, (0:axis(1)%NF), (/ ( mm**2, mm = 0, axis(1)%NF ) /) )
 !  SALLOCATE( in, (0:axis(1)%NF), (/ ( mm**3, mm = 0, axis(1)%NF ) /) )
@@ -680,7 +682,7 @@ subroutine rdaxis
 !  SALLOCATE( b, (0:NK-1), zero )
 !  SALLOCATE( c, (0:NK-1), zero )
 !  SALLOCATE( d, (0:NK-1), zero )
-!
+!  
 !  a(0:NK-1) = dy(0:NK-1,1) * dz(0:NK-1,2) - dy(0:NK-1,2) * dz(0:NK-1,1)
 !  b(0:NK-1) = dz(0:NK-1,1) * dx(0:NK-1,2) - dz(0:NK-1,2) * dx(0:NK-1,1)
 !  c(0:NK-1) = dx(0:NK-1,1) * dy(0:NK-1,2) - dx(0:NK-1,2) * dy(0:NK-1,1)
@@ -688,13 +690,13 @@ subroutine rdaxis
 !  d(0:NK-1) = a(0:NK-1)**2 + b(0:NK-1)**2 + c(0:NK-1)**2
 !  
 !  SALLOCATE( tau, (0:NK-1), zero )
-!
+!  
 !  tau(0:NK-1) = ( dx(0:NK-1,3) * a(0:NK-1) + dy(0:NK-1,3) * b(0:NK-1) + dz(0:NK-1,3) * c(0:NK-1) ) / d(0:NK-1)
 !  
 !  call fft( NK, tau(0:NK-1), axis(1)%NF, axis(1)%tc(0:axis(1)%NF), axis(1)%ts(0:axis(1)%NF), 0 )
-!
-!  write(ounit,'("rdaxis  : " 10x " : integrated torsion ;")')
-!
+!  
+!  write(ounit,'("rdaxis  : " 10x " : integrated torsion =",es13.5," ;")') pi2 * axis(1)%tc(0)
+!  
 !  DALLOCATE( il )
 !  DALLOCATE( im )
 !  DALLOCATE( in )
@@ -965,5 +967,91 @@ subroutine cross( isum, aa, bb, cc )
   return
   
 end subroutine cross
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+subroutine inttorsion( NF, xc, xs, yc, ys, zc, zs, integratedtorsion )
+  
+  use globals, only : zero, pi2, ounit
+  
+  implicit none
+  
+  include "mpif.h"
+
+  INTEGER              :: NF
+  REAL                 :: xc(0:NF), xs(0:NF), yc(0:NF), ys(0:NF), zc(0:NF), zs(0:NF), integratedtorsion
+  
+  INTEGER              :: mm, NK, astat
+  INTEGER, allocatable :: il(:), im(:), in(:)
+  REAL                 :: tc(0:NF), ts(0:NF)
+  REAL   , allocatable :: dx(:,:), dy(:,:), dz(:,:), a(:), b(:), c(:), d(:), tau(:)
+  
+  SALLOCATE( il, (0:NF), (/ ( mm   , mm = 0, NF ) /) )
+  SALLOCATE( im, (0:NF), (/ ( mm**2, mm = 0, NF ) /) )
+  SALLOCATE( in, (0:NF), (/ ( mm**3, mm = 0, NF ) /) )
+  
+  NK = 3 * 4 * NF ! discrete resolution for resolving torsion;
+  
+  SALLOCATE( dx, (0:NK-1,0:3), zero )
+  SALLOCATE( dy, (0:NK-1,0:3), zero )
+  SALLOCATE( dz, (0:NK-1,0:3), zero )
+  
+  call fft( NK, dx(0:NK-1,0), NF,                      xc(0:NF),                      xs(0:NF), 1 )
+  call fft( NK, dy(0:NK-1,0), NF,                      yc(0:NF),                      ys(0:NF), 1 )
+  call fft( NK, dz(0:NK-1,0), NF,                      zc(0:NF),                      zs(0:NF), 1 )
+  
+  call fft( NK, dx(0:NK-1,1), NF, + il(0:NF) * xs(0:NF), - il(0:NF) * xc(0:NF), 1 )
+  call fft( NK, dy(0:NK-1,1), NF, + il(0:NF) * ys(0:NF), - il(0:NF) * yc(0:NF), 1 )
+  call fft( NK, dz(0:NK-1,1), NF, + il(0:NF) * zs(0:NF), - il(0:NF) * zc(0:NF), 1 )
+  
+  call fft( NK, dx(0:NK-1,2), NF, - im(0:NF) * xc(0:NF), - im(0:NF) * xs(0:NF), 1 )
+  call fft( NK, dy(0:NK-1,2), NF, - im(0:NF) * yc(0:NF), - im(0:NF) * ys(0:NF), 1 )
+  call fft( NK, dz(0:NK-1,2), NF, - im(0:NF) * zc(0:NF), - im(0:NF) * zs(0:NF), 1 )
+  
+  call fft( NK, dx(0:NK-1,3), NF, - in(0:NF) * xs(0:NF), + in(0:NF) * xc(0:NF), 1 )
+  call fft( NK, dy(0:NK-1,3), NF, - in(0:NF) * ys(0:NF), + in(0:NF) * yc(0:NF), 1 )
+  call fft( NK, dz(0:NK-1,3), NF, - in(0:NF) * zs(0:NF), + in(0:NF) * zc(0:NF), 1 )
+  
+  SALLOCATE( a, (0:NK-1), zero )
+  SALLOCATE( b, (0:NK-1), zero )
+  SALLOCATE( c, (0:NK-1), zero )
+  SALLOCATE( d, (0:NK-1), zero )
+  
+  a(0:NK-1) = dy(0:NK-1,1) * dz(0:NK-1,2) - dy(0:NK-1,2) * dz(0:NK-1,1)
+  b(0:NK-1) = dz(0:NK-1,1) * dx(0:NK-1,2) - dz(0:NK-1,2) * dx(0:NK-1,1)
+  c(0:NK-1) = dx(0:NK-1,1) * dy(0:NK-1,2) - dx(0:NK-1,2) * dy(0:NK-1,1)
+  
+  d(0:NK-1) = a(0:NK-1)**2 + b(0:NK-1)**2 + c(0:NK-1)**2
+  
+  SALLOCATE( tau, (0:NK-1), zero )
+  
+  tau(0:NK-1) = ( dx(0:NK-1,3) * a(0:NK-1) + dy(0:NK-1,3) * b(0:NK-1) + dz(0:NK-1,3) * c(0:NK-1) ) / d(0:NK-1)
+  
+  call fft( NK, tau(0:NK-1), NF, tc(0:NF), ts(0:NF), 0 )
+  
+  integratedtorsion = pi2 * tc(0)
+
+  write(ounit,'("rdaxis  : " 10x " : integrated torsion =",es13.5," ;")') integratedtorsion
+  
+  DALLOCATE( il )
+  DALLOCATE( im )
+  DALLOCATE( in )
+  
+  DALLOCATE( dx )
+  DALLOCATE( dy )
+  DALLOCATE( dz )
+  
+  DALLOCATE( a  )
+  DALLOCATE( b  )
+  DALLOCATE( c  )
+  DALLOCATE( d  )
+  
+  DALLOCATE( tau )
+  
+  return
+  
+end subroutine inttorsion
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!

@@ -32,7 +32,7 @@ subroutine archive( Ndof, xdof, ferr )
   REAL               :: xdof(1:Ndof), ferr
 
   INTEGER            :: kk, icoil, ierr, mm, isurf
-  REAL               :: tnow, spectralwidth, term
+  REAL               :: tnow, spectralwidth, term, integratedtorsion, summedintegratedtorsion
 ! CHARACTER(LEN=10)  :: version='h1.0.0'
 
   CHARACTER          :: sarchive*6
@@ -200,10 +200,7 @@ subroutine archive( Ndof, xdof, ferr )
   
   write(funit) Ncoils, Ns
   
-  do icoil = 1, Ncoils
-   write(funit) coil(icoil)%xx(1:3,0:Ns-1) ! 12 Nov 17;
-  !write(funit) coil(icoil)%xx(2,0:Ns-1) ! 12 Nov 17;
-  !write(funit) coil(icoil)%xx(3,0:Ns-1) ! 12 Nov 17;
+  do icoil = 1, Ncoils ; write(funit) coil(icoil)%xx(1:3,0:Ns-1) ! 12 Nov 17;
   enddo
   
   close( funit )

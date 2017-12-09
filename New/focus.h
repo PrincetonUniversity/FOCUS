@@ -42,7 +42,7 @@ program focus
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   INTEGER                :: icoil, mm, maxNF, Ndof, ii, ierr, astat, isurf, idof
-  REAL                   :: tnow, told, ff, ferr, compare
+  REAL                   :: tnow, told, ff, ferr, compare, summedintegratedtorsion, integratedtorsion
   REAL     , allocatable :: xdof(:), fdof(:), gdof(:)
   CHARACTER              :: packorunpack
 
@@ -207,9 +207,10 @@ program focus
    ;         ; call varysrf(       Ndof, xdof(1:Ndof),     gdof(1:Ndof) ) ! analytic  derivative; 28 Nov 17;
    isurf = 2 ; call dforce( isurf, Ndof, xdof(1:Ndof), ff, fdof(1:Ndof) ) ! numerical            ;28 Nov 17;
    
-   do idof = 1 * ( 3 + 6 * NFcoil ) + 1 , 2 * ( 3 + 6 * NFcoil ) + 1
+  !do idof = 1 * ( 3 + 6 * NFcoil ) + 1 , 2 * ( 3 + 6 * NFcoil ) + 1
+   do idof = 1, Ndof
     if( abs(fdof(idof)).gt.small ) then ; write(ounit,1020) fdof(idof), gdof(idof), gdof(idof)/fdof(idof)
-   !else                                ; write(ounit,1020) fdof(idof), gdof(idof)
+    else                                ; write(ounit,1020) fdof(idof), gdof(idof)
     endif
    enddo
    
@@ -223,6 +224,22 @@ program focus
    FATAL( focus, .true., selected Iminimize is not supported )
    
   end select
+  
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+  
+  summedintegratedtorsion = zero
+  
+  do icoil = 1, Ncoils
+   
+   call inttorsion( coil(icoil)%NF, coil(icoil)%xc, coil(icoil)%xs, coil(icoil)%yc, coil(icoil)%ys, coil(icoil)%zc, coil(icoil)%zs, integratedtorsion )
+   
+   summedintegratedtorsion = summedintegratedtorsion + integratedtorsion
+   
+  enddo
+  
+  summedintegratedtorsion = summedintegratedtorsion / Ncoils
+  
+  write(ounit,'("focus   : " 10x " : average integrated torsion = ",es13.5," ;")') summedintegratedtorsion
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
