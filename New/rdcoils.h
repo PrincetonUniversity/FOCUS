@@ -263,6 +263,9 @@ subroutine rdcoils
     SALLOCATE( coil(icoil)%zc, (0:NF), zero )
     SALLOCATE( coil(icoil)%zs, (0:NF), zero )
     
+    SALLOCATE( coil(icoil)%tc, (0:NF), zero )
+    SALLOCATE( coil(icoil)%ts, (0:NF), zero )
+    
     lNF = min( NF, coil(icoil)%NF )
     
     if( myid.eq.0 ) then
@@ -336,7 +339,10 @@ subroutine rdcoils
     SALLOCATE( coil(icoil)%yc, (0:NFcoil), zero )
     SALLOCATE( coil(icoil)%ys, (0:NFcoil), zero )
     SALLOCATE( coil(icoil)%zc, (0:NFcoil), zero )
-    SALLOCATE( coil(icoil)%zs, (0:NFcoil), zero )
+    SALLOCATE( coil(icoil)%zs, (0:NFcoil), zero ) 
+
+    SALLOCATE( coil(icoil)%tc, (0:NF), zero )
+    SALLOCATE( coil(icoil)%ts, (0:NF), zero )
     
     coil(icoil)%gdof = -1
     coil(icoil)%idof = -1

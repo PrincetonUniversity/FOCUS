@@ -16,96 +16,115 @@ subroutine pcplot
   use globals, only : zero, one, ten, half, pi2, pi, ounit, myid, tstart, &
                       minorrad, ellipticity, nrotate, &
                       outplots, punit, &
-                      Ntrj, Npts, odetol, iota, xyaxis
+                      Ntrj, Etrj, Npts, odetol, iota, xyaxis, &
+                      ga00aainput, ga01aaX, ga01aaO, tr00aainput, &
+                      surf, pp, qq
 
-  use oculus, only : magneticaxis, ga00aa, transformdata, tr00aa
-  
+ !use oculus, only : oculustr00aa
+
   implicit none  
   
   include "mpif.h"
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-  
-  type(magneticaxis)  :: oaxis
-  type(transformdata) :: transform
 
   INTEGER, parameter :: Node = 2, Nxyaxis = 2, Lrwork = Nxyaxis * ( 3 * Nxyaxis + 13 ) / 2
   INTEGER            :: ierr, NN, itrj, ipt, Lwa, ic05nbf, izeta
   REAL               :: Fxy(1:Nxyaxis), tnow, told, rwork(1:Lrwork), tol, xy(1:Node)
 
-  INTEGER            :: isurf, ifail , iguess
+  INTEGER            :: isurf, ifail , iguess, astat
   REAL               :: srho, teta, zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3), xtt(1:3), xtz(1:3), xzz(1:3)
   REAL               :: v1(1:3), v2(1:3), w1(1:3), w2(1:3)
-
+  
   external           :: fxyaxis
   
   told = MPI_WTIME()
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  oaxis%Nfp  = 1
-  oaxis%Ntor = 4
-  
-  oaxis%error       = zero
-  oaxis%residue     = zero
-  oaxis%iota        = zero
-  oaxis%wr(1:2    ) = zero
-  oaxis%wi(1:2    ) = zero
-  oaxis%vr(1:2,1:2) = zero
-  oaxis%vi(1:2,1:2) = zero
-  
   isurf = 1 ; srho = one ; teta = zero ; zeta = zero
-  call knotxx( isurf, srho , teta , zeta, ax(1:3), at(1:3), az(1:3), xx(1:3), xs(1:3), xt(1:3), xz(1:3), xtt(1:3), xtz(1:3), xzz(1:3), &
-v1(1:3), v2(1:3), w1(1:3), w2(1:3) )
   
- !write(ounit,'("pcplot  : " 10x " knot axis = ",es13.5," ;")') ax(1:3)
+  call knotxx( isurf, srho , teta , zeta, ax, at, az, xx, xs, xt, xz, xtt, xtz, xzz, v1, v2, w1, w2 )
   
-  oaxis%R    = 1.029
-  oaxis%Z    = zero
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  oaxis%maxits = 16
-  oaxis%tol    = 1.0E-08
-  oaxis%odetol = 1.0E-08
-  oaxis%Lallocated = 0
+  ga00aainput%R = ax(1) ; ga00aainput%Z = ax(3) ; ifail = 1 ; call ga00aa( ga00aainput, ifail )
+ 
+  write(ounit,1000) ga00aainput%R, ga00aainput%Z, ga00aainput%iota, ga00aainput%error, ifail
   
-  ifail = -3 ; call ga00aa( oaxis, ifail )
+1000 format("pcplot  : " 10x " : oculus ga00aa axis  : (",f8.4,",",f8.4," ) ; iota=",f9.6," ; err=",es10.3," ; ifail=",i3," ;")
   
-! deallocate( oaxis%Ri )
-! deallocate( oaxis%Zi )
+  itrj = 0 
+  iota(itrj,1) = zero
+  iota(itrj,2) = ga00aainput%iota
+
+  ifail =  9 ; call ga00aa( ga00aainput, ifail )
   
-! deallocate( oaxis%Rnc )
-! deallocate( oaxis%Zns )
-! deallocate( oaxis%Rns )
-! deallocate( oaxis%Znc )
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+  
+  if( qq.gt.0 ) then
+  
+   ga01aaX%p = pp ; ga01aaX%q = qq ; ga01aaX%Ntor = 8 ; ga01aaX%R = 1.328 ; ga01aaX%Z = 0.000 ; ifail =  1 ; call ga01aa( ga01aaX, ifail )
+   ga01aaO%p = pp ; ga01aaO%q = qq ; ga01aaO%Ntor = 8 ; ga01aaO%R = 1.293 ; ga01aaO%Z = 0.122 ; ifail =  1 ; call ga01aa( ga01aaO, ifail )
+   
+   write(ounit,1001) ga01aaX%p, ga01aaX%q, ga01aaX%R, ga01aaX%Z, ga01aaX%error, ifail
+   write(ounit,1001) ga01aaO%p, ga01aaO%q, ga01aaO%R, ga01aaO%Z, ga01aaO%error, ifail
+   
+1001 format("pcplot  : ", 10x ," : oculus ga01aa (",i3,",",i3," ) : (",f8.4,",",f8.4," ) ; err=",es10.3," ; ifail=",i3," ;")
+   
+!  ifail =  9 ; call ga01aa( ga01aaX, ifail )
+!  ifail =  9 ; call ga01aa( ga01aaO, ifail )
+   
+  endif ! end of if( qq.gt.0 ) ; 10 Dec 17;
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  transform%Nfp    = 1
-  transform%Ppts   = Npts
-  transform%odetol = 1.0E-08
-  transform%Ra     = oaxis%R
-  transform%Za     = oaxis%Z
+  open( punit, file=trim(outplots), status="unknown", form="formatted" )
   
-  open( punit, file=trim(outplots)//".oculus", status="unknown", form="formatted" )
-  write( punit,'(i9)') transform%Ppts
+  write( punit,'(2i9)') Ntrj + Etrj - 1, Npts
   
-  do itrj = 1, Ntrj
+  tr00aainput%Ppts = Npts
+  
+  do itrj = 1, Ntrj + Etrj
    
-   transform%R      = oaxis%R + itrj * 0.2 / Ntrj
-   transform%Z      = oaxis%Z
+   tr00aainput%Ra     = ga00aainput%R
+   tr00aainput%Za     = ga00aainput%Z
+   tr00aainput%R      = ga00aainput%R + itrj * ( xx(1) - ga00aainput%R ) / ( Ntrj + Etrj )
+   tr00aainput%Z      = ga00aainput%Z + itrj * ( xx(3) - ga00aainput%Z ) / ( Ntrj + Etrj )
+
+   if( qq.gt.0 ) then
+   tr00aainput%R      = ga01aaX%R + (itrj-1) * ( ga01aaO%R - ga01aaX%R ) / ( Ntrj + Etrj - 1 )
+   tr00aainput%Z      = ga01aaX%Z + (itrj-1) * ( ga01aaO%Z - ga01aaX%Z ) / ( Ntrj + Etrj - 1 )
+   endif
+
+   iota(itrj,1) = sqrt((tr00aainput%R-tr00aainput%Ra)**2+(tr00aainput%Z-tr00aainput%Za)**2)
    
-   ifail = 0 ; call tr00aa( transform, ifail )
+   ifail = 1 ; call tr00aa( tr00aainput, ifail )
    
-   write(ounit,'("pcplot : " 10x " : tr00aa : iota =",es13.5," ;")') transform%iota
+   write(ounit,1002) itrj, tr00aainput%iota
    
-   write( punit,'(2es23.15)') transform%RZ
+1002 format("pcplot  : " 10x " : oculus tr00aa ",i4," : iota =",f9.6," ;")
+   
+   iota(itrj,2) = tr00aainput%iota
+
+   write(punit,'(2es23.15)') tr00aainput%RZ(1:2,0:Npts)
    
   enddo
   
-  close( punit )
+  close(punit)
+  
+  ifail = 9 ; call tr00aa( tr00aainput, ifail )
+  
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+  
+  return
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
+  if( Npts.le.0 ) return
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+  
   xyaxis(1:Node) = zero ! this was already initialized in initial;
   NN = Nxyaxis ; tol = odetol * ten ; Lwa = Lrwork ; ic05nbf = 1
   write(ounit,'("pcplot  : ",f10.1," : calling C05NBF ;")') told-tstart 
@@ -113,24 +132,19 @@ v1(1:3), v2(1:3), w1(1:3), w2(1:3) )
   
   tnow = MPI_WTIME()
   
-!select case( ic05nbf ) ! 28 Nov 17;
-!case( 0 )    ; write(ounit,'("pcplot  : ",f10.1," : called  C05NBF ; success ; time ="f10.2"s ;")') tnow-tstart, tnow-told ! 02 Dec 12;
-!case default ; write(ounit,'("pcplot  : ",f10.1," : called  C05NBF ; error   ; time ="f10.2"s ;")') tnow-tstart, tnow-told ; xyaxis(1:Node) = zero
-!end select
-  
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  if( myid.eq.0 ) write(ounit,'("pcplot  : ",f10.1," : Ntrj =",i4," ; Npts =",i6," ; odetol =",es12.5," ;")') tnow-tstart, Ntrj, Npts, odetol
+  if( myid.eq.0 ) write(ounit,'("pcplot  : ",f10.1," : Ntrj =",i4," ; Etrj ="i3" ; Npts =",i6," ; odetol =",es12.5," ;")') tnow-tstart, Ntrj, Etrj, Npts, odetol
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
   open( punit, file=trim(outplots), status="unknown", form="formatted" )
   
-  write( punit,'(2i9)' ) Ntrj, Npts
+  write( punit,'(2i9)' ) Ntrj + Etrj, Npts
   
   told = tnow
   
-  do itrj = 0, Ntrj
+  do itrj = 0, Ntrj + Etrj
    
    iota(itrj,1) = itrj * one / Ntrj
    
@@ -528,23 +542,23 @@ end subroutine bfield
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
-subroutine iccoil( t, x, y, z, ifail )
-
-  use globals, only : myid
-  
-  implicit none
-
-  include "mpif.h"
-  
-  REAL                 :: t, x(0:1), y(0:1), z(0:1)
-  INTEGER              :: ifail, ierr
-
-  REAL                 :: Rmaj, rmin
-
-  FATAL( pcplot, .true., what is iccoil )
-
-  return
-  
-end subroutine iccoil
+!subroutine iccoil( t, x, y, z, ifail )
+!
+!  use globals, only : myid
+!  
+!  implicit none
+!
+!  include "mpif.h"
+!  
+!  REAL                 :: t, x(0:1), y(0:1), z(0:1)
+!  INTEGER              :: ifail, ierr
+!
+!  REAL                 :: Rmaj, rmin
+!
+!  FATAL( pcplot, .true., what is iccoil )
+!
+!  return
+!  
+!end subroutine iccoil
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-

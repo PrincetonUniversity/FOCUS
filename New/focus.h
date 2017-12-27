@@ -33,7 +33,7 @@ program focus
                       Ldescent, Iminimize, &
                       fforig, ffbest, iarchive, &
                       weight_length, weight_tflux, weight_bnorm, wspectral, pspectral, &
-                      Ntrj, Npts
+                      Ntrj, Npts, aveintegratedtorsion
 
   use mpi
   
@@ -42,7 +42,7 @@ program focus
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   INTEGER                :: icoil, mm, maxNF, Ndof, ii, ierr, astat, isurf, idof
-  REAL                   :: tnow, told, ff, ferr, compare, summedintegratedtorsion, integratedtorsion
+  REAL                   :: tnow, told, ff, ferr, compare, integratedtorsion
   REAL     , allocatable :: xdof(:), fdof(:), gdof(:)
   CHARACTER              :: packorunpack
 
@@ -207,7 +207,6 @@ program focus
    ;         ; call varysrf(       Ndof, xdof(1:Ndof),     gdof(1:Ndof) ) ! analytic  derivative; 28 Nov 17;
    isurf = 2 ; call dforce( isurf, Ndof, xdof(1:Ndof), ff, fdof(1:Ndof) ) ! numerical            ;28 Nov 17;
    
-  !do idof = 1 * ( 3 + 6 * NFcoil ) + 1 , 2 * ( 3 + 6 * NFcoil ) + 1
    do idof = 1, Ndof
     if( abs(fdof(idof)).gt.small ) then ; write(ounit,1020) fdof(idof), gdof(idof), gdof(idof)/fdof(idof)
     else                                ; write(ounit,1020) fdof(idof), gdof(idof)
@@ -227,30 +226,27 @@ program focus
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
-  summedintegratedtorsion = zero
+  aveintegratedtorsion = zero
   
   do icoil = 1, Ncoils
    
-   call inttorsion( coil(icoil)%NF, coil(icoil)%xc, coil(icoil)%xs, coil(icoil)%yc, coil(icoil)%ys, coil(icoil)%zc, coil(icoil)%zs, integratedtorsion )
+   call inttorsion( coil(icoil)%NF, coil(icoil)%xc, coil(icoil)%xs, coil(icoil)%yc, coil(icoil)%ys, coil(icoil)%zc, coil(icoil)%zs, &
+    coil(icoil)%inttorsion, coil(icoil)%tc, coil(icoil)%ts )
    
-   summedintegratedtorsion = summedintegratedtorsion + integratedtorsion
+   aveintegratedtorsion = aveintegratedtorsion + abs( coil(icoil)%inttorsion )
    
   enddo
   
-  summedintegratedtorsion = summedintegratedtorsion / Ncoils
+  aveintegratedtorsion = aveintegratedtorsion / Ncoils
   
-  write(ounit,'("focus   : " 10x " : average integrated torsion = ",es13.5," ;")') summedintegratedtorsion
+  write(ounit,'("focus   : " 10x " : ave. |int. tors.| =",f8.4," ; ",99f8.4)') aveintegratedtorsion, ( coil(icoil)%inttorsion, icoil = 1, Ncoils )
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-  if( Npts.ge.1 ) then
-
-   call pcplot
-
-   call archive( Ndof, xdof(1:Ndof), ferr )
-
-  endif
-   
+  call pcplot ! this calls oculus diagnostics;
+  
+  call archive( Ndof, xdof(1:Ndof), ferr )
+  
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   call MPI_BARRIER( MPI_COMM_WORLD, ierr )

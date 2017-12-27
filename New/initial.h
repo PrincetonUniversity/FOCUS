@@ -79,7 +79,7 @@ subroutine initial
   
   FATAL( initial, Ntrj.lt.1, illegal )
 
-  SALLOCATE( iota, (0:Ntrj,1:2), zero )
+  SALLOCATE( iota, (0:Ntrj+Etrj,1:2), zero )
 
   xyaxis(1:2) = zero
 

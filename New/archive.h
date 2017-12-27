@@ -31,7 +31,7 @@ subroutine archive( Ndof, xdof, ferr )
   INTEGER            :: Ndof
   REAL               :: xdof(1:Ndof), ferr
 
-  INTEGER            :: kk, icoil, ierr, mm, isurf
+  INTEGER            :: kk, icoil, ierr, mm, isurf, Ntor
   REAL               :: tnow, spectralwidth, term, integratedtorsion, summedintegratedtorsion
 ! CHARACTER(LEN=10)  :: version='h1.0.0'
 
@@ -99,8 +99,12 @@ subroutine archive( Ndof, xdof, ferr )
   HWRITEIV( 1                ,   Iminimize     ,   Iminimize                  )
 
   HWRITEIV( 1                ,   Ntrj          ,   Ntrj                       )
+  HWRITEIV( 1                ,   Etrj          ,   Etrj                       )
   HWRITEIV( 1                ,   Npts          ,   Npts                       )
   HWRITERV( 1                ,   odetol        ,   odetol                     )
+
+  HWRITEIV( 1                ,   pp            ,   pp                         )
+  HWRITEIV( 1                ,   qq            ,   qq                         )
 
   isurf = 1
 
@@ -127,7 +131,44 @@ subroutine archive( Ndof, xdof, ferr )
   enddo
   HWRITERV(      1           ,   spectralwidth ,   spectralwidth                )
 
-  HWRITERA( Ntrj+1 , 2       ,   iota          ,   iota(0:Ntrj,1:2)             )
+  HWRITERA( Ntrj+Etrj+1 , 2  ,   iota          ,   iota(0:Ntrj+Etrj,1:2)        )
+
+  HWRITERV(      1           ,   axisR         ,   ga00aainput%R                 )
+  HWRITERV(      1           ,   axisZ         ,   ga00aainput%Z                 )
+  HWRITERV(      1           ,   iotabar       ,   ga00aainput%iota              )
+
+  HWRITEIV(      1           ,   XLpqalloc     ,   ga01aaX%Lallocated        )
+! write(ounit,'("archive : " 10x " : XLallocated ="i2" ;")') ga01aaX%Lallocated 
+  if( ga01aaX%Lallocated.eq.1 ) then
+!  write(ounit,'("archive : " 10x " : XR, XZ = "2f15.10)') ga01aaX%R, ga01aaX%Z
+  HWRITERV(      1           ,   XR            ,   ga01aaX%R                 )
+  HWRITERV(      1           ,   XZ            ,   ga01aaX%Z                 )
+!  write(ounit,'("archive : " 10x " : XNtor= "i4", qq="i3)') ga01aaX%Ntor, qq
+  Ntor = ga01aaX%Ntor
+  HWRITEIV(      1           ,   XNtor         ,   ga01aaX%Ntor              )
+  HWRITERA( 1+qq, 1+qq*Ntor  ,   XRnc          ,   ga01aaX%Rnc(0:qq,0:qq*Ntor)    )
+  HWRITERA( 1+qq, 1+qq*Ntor  ,   XRns          ,   ga01aaX%Rns(0:qq,0:qq*Ntor)    )
+  HWRITERA( 1+qq, 1+qq*Ntor  ,   XZnc          ,   ga01aaX%Znc(0:qq,0:qq*Ntor)    )
+  HWRITERA( 1+qq, 1+qq*Ntor  ,   XZns          ,   ga01aaX%Zns(0:qq,0:qq*Ntor)    )
+  endif
+
+  HWRITEIV(      1           ,   OLpqalloc     ,   ga01aaO%Lallocated        )
+! write(ounit,'("archive : " 10x " : OLallocated ="i2" ;")') ga01aaO%Lallocated 
+  if( ga01aaO%Lallocated.eq.1 ) then
+!  write(ounit,'("archive : " 10x " : OR, OZ = "2f15.10)') ga01aaO%R, ga01aaO%Z
+  HWRITERV(      1           ,   OR            ,   ga01aaO%R                 )
+  HWRITERV(      1           ,   OZ            ,   ga01aaO%Z                 )
+!  write(ounit,'("archive : " 10x " : ONtor= "i4", qq="i3)') ga01aaO%Ntor, qq
+  Ntor = ga01aaO%Ntor
+  HWRITEIV(      1           ,   ONtor         ,   ga01aaO%Ntor              )
+  HWRITERA( 1+qq, 1+qq*Ntor  ,   ORnc          ,   ga01aaO%Rnc(0:qq,0:qq*Ntor)    )
+  HWRITERA( 1+qq, 1+qq*Ntor  ,   ORns          ,   ga01aaO%Rns(0:qq,0:qq*Ntor)    )
+  HWRITERA( 1+qq, 1+qq*Ntor  ,   OZnc          ,   ga01aaO%Znc(0:qq,0:qq*Ntor)    )
+  HWRITERA( 1+qq, 1+qq*Ntor  ,   OZns          ,   ga01aaO%Zns(0:qq,0:qq*Ntor)    )
+ endif
+
+  HWRITERV(      1           ,   aveinttorsion ,   aveintegratedtorsion         )
+  HWRITERV(      1           ,   inttorsionaxis,   inttorsionaxis               )
 
   HWRITERV(      2           ,   xyaxis        ,   xyaxis(1:2)                  )
 
@@ -137,7 +178,7 @@ subroutine archive( Ndof, xdof, ferr )
   call h5close_f( hdfier ) ! close Fortran interface;
   FATAL( archive, hdfier.ne.0, error calling h5close_f )
 
- !write(ounit,'("archive : " 10x " : closed  ext.fo.h5 ;")')
+! write(ounit,'("archive : " 10x " : closed  ext.fo.h5 ;")')
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
@@ -208,6 +249,8 @@ subroutine archive( Ndof, xdof, ferr )
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
     
   iarchive = iarchive + 1
+
+! write(ounit,'("archive : " 10x " : finished ;")') 
 
   return
   

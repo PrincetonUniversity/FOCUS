@@ -81,8 +81,8 @@ subroutine readsrf
    SALLOCATE( surf(isurf)%ds , (    0:Nt-1,0:Nz-1 ), zero )
    SALLOCATE( surf(isurf)%guv, (1:6,0:Nt-1,0:Nz-1 ), zero )
    
-! SALLOCATE( surf(isurf)%Bn , (    0:Nt-1,0:Nz-1 ), zero )
-! SALLOCATE( surf(isurf)%Tf , (           0:Nz   ), zero )
+! SALLOCATE( surf(isurf)%Bn , (    0:Nt-1,0:Nz-1 ), zero ) ! to be deleted; 10 Dec 17;
+! SALLOCATE( surf(isurf)%Tf , (           0:Nz   ), zero ) !              ; 10 Dec 17;
    
    SALLOCATE( surf(isurf)%BB , (1:3,0:Nt-1,0:Nz-1 ), zero )
    SALLOCATE( surf(isurf)%Bn , (    0:Nt-1,0:Nz-1 ), zero )
@@ -169,14 +169,6 @@ subroutine readsrf
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
-! do ii = 0, Nt-1
-!  do jj = 0, Nz-1
-!   surf(2)%xx(1:3,ii,jj) = surf(2)%xx(1:3,ii,jj) - surf(1)%xx(1:3,ii,jj) ! difference in position; 22 Nov 17;
-!  enddo
-! enddo
-  
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-  
   select case( Isurface )
   case( 0 ) ; write(ounit,'("readsrf : " 10x " : mean curvature not calculated for Isurface = 0 ; please revise surfxx ;")')
   case( 1 ) ; 
@@ -187,71 +179,12 @@ subroutine readsrf
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
   return
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
   
 end subroutine readsrf
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-
-!title (boundary) ! The plasma boundary is read from file 
-
-!latex \briefly{A Fourier representation for the plasma boundary is read from file }
-
-!latex \calledby{\link{xfocus}}
-!latex \calls{\link{}}
-
-!latex \section{General representation (stellarator)}
-!latex \subsection{overview}
-!latex The general representation for plasma boundary is in \subroutine{generic}. The basic fomulation
-!latex is
-!latex \be
-!latex \ds R &= \sum R_{mn}^c \, \cos(m\t - n\z) + R_{mn}^s \, \sin(m\t - n\z) \nonumber \\
-!latex \ds Z &= \sum Z_{mn}^c \, \cos(m\t - n\z) + Z_{mn}^s \, \sin(m\t - n\z) \nonumber
-!latex \ee
-!latex Usually, if we imply stellarator symmetry, then $R_{mn}^s$ and $Z_{mn}^c$ would be zero.
-!latex 
-!latex The positive driection for poloidal angle $\t$ is \red{counterclockwise} and for toroidal angle is also
-!latex \red{counterclockwise} from the top view. The positive surface normal should be pointed outwards.
-!latex \subsection{Variables}
-!latex The Fourier harmonics of the plasma boundary are  reqired in \verb+plasma.boundary+, 
-!latex and the format of this file is as follows: 
-!latex \begin{raw}
-!latex Nfou       ! integer: number of Fourier harmonics for the plasma boundary;
-!latex Nfp        ! integer: number of field periodicity;
-!latex NBnf       ! integer: number of Fourier harmonics for Bn;
-!latex ---------------------------------------------------------
-!latex bim(1:bmn) ! integer: poloidal mode identification;
-!latex bin(1:bmn) ! integer: toroidal mode identification;
-!latex Bnim(1:bmn)! integer: poloidal mode identification, for Bn;
-!latex Bnin(1:bmn)! integer: toroidal mode identification, for Bn;
-!latex ---------------------------------------------------------
-!latex Rbc(1:bmn) ! real   : cylindrical R cosine harmonics;
-!latex Rbs(1:bmn) ! real   : cylindrical R   sine harmonics;
-!latex Zbc(1:bmn) ! real   : cylindrical Z cosine harmonics;
-!latex Zbs(1:bmn) ! real   : cylindrical Z   sine harmonics;
-!latex Bns(1:nbf) ! real   : B normal sin harmonics;
-!latex Bnc(1:nbf) ! real   : B normal cos harmonics; \end{raw}
-!latex Note that immediately after reading (and broadcasting) 
-!latex \verb+bin+, the field periodicity factor is included, i.e. \verb+bin = bin * Nfp+.
-!latex \subsection{Sample file}
-!latex Example of the plasma.boundary file:
-!latex  { \begin{raw}
-!latex #Nfou Nfp NBnf
-!latex 4 2 1
-!latex #plasma boundary
-!latex # n m Rbc Rbs Zbc Zbs
-!latex 0 0  3.00 0.0 0.0  0.00
-!latex 0 1  0.30 0.0 0.0 -0.30
-!latex 1 0  0.00 0.0 0.0 -0.06
-!latex 1 1 -0.06 0.0 0.0 -0.06
-!latex #Bn harmonics
-!latex # n m bnc bns
-!latex 0 0 0.0 0.0
-!latex \end{raw}
-!latex }
-!latex \section{Knotran}
-!latex The input surface file for knotrans is descriped in \code{knotxx}.
-!latex \section{Tokamak}
-!latex This part is reserved for later development of the interface for tokamaks.
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
@@ -349,111 +282,6 @@ subroutine fousurf
   
   FATAL( surface, iosta.ne.0, error closing plasma.boundary )
   
-  !-------------output for check-------------------------------------------------------------------------
-! if( myid == 0 .and. IsQuiet <= 0) then
-!    write(ounit, *) "-----------Reading surface-----------------------------------"
-!    write(ounit, '("surface : Nfou = " I06 " ; Nfp = " I06 " ; NBnf = " I06 " ;" )') Nfou, Nfp, NBnf
-! endif
-
-! if( myid == 0 .and. IsQuiet <= -2) then !very detailed output;
-!    write(ounit,'("        : " 10x " : bim ="10i13   )') bim(1:Nfou)
-!    write(ounit,'("        : " 10x " : bin ="10i13   )') bin(1:Nfou)
-!    write(ounit,'("        : " 10x " : Rbc ="10es13.5)') Rbc(1:Nfou)
-!    write(ounit,'("        : " 10x " : Rbs ="10es13.5)') Rbs(1:Nfou)
-!    write(ounit,'("        : " 10x " : Zbc ="10es13.5)') Zbc(1:Nfou)
-!    write(ounit,'("        : " 10x " : Zbs ="10es13.5)') Zbs(1:Nfou)
-!    if(Nbnf > 0) then
-!       write(ounit,'("        : " 10x " : Bnim ="10i13  )') Bnim(1:NBnf)
-!       write(ounit,'("        : " 10x " : Bnin ="10i13  )') Bnin(1:NBnf)
-!       write(ounit,'("        : " 10x " : Bnc ="10es13.5)') Bnc (1:NBnf)
-!       write(ounit,'("        : " 10x " : Bns ="10es13.5)') Bns (1:NBnf)
-!    endif
-! endif
-
-! allocate( surf(1:1) ) ! can allow for myltiple plasma boundaries 
-                        ! if multiple currents are allowed; 14 Apr 16;
-  
-! surf%Nteta = Nt ! not used yet; used for multiple surfaces; 20170307;
-! surf%Nzeta = Nz ! not used yet; used for multiple surfaces; 20170307;
-  
-! SALLOCATE( surf%xx, (0:Nt-1,0:Nz-1), zero ) !x coordinates;
-! SALLOCATE( surf%yy, (0:Nt-1,0:Nz-1), zero ) !y coordinates
-! SALLOCATE( surf%zz, (0:Nt-1,0:Nz-1), zero ) !z coordinates
-! SALLOCATE( surf%nx, (0:Nt-1,0:Nz-1), zero ) !unit nx;
-! SALLOCATE( surf%ny, (0:Nt-1,0:Nz-1), zero ) !unit ny;
-! SALLOCATE( surf%nz, (0:Nt-1,0:Nz-1), zero ) !unit nz;
-! SALLOCATE( surf%ds, (0:Nt-1,0:Nz-1), zero ) !jacobian;
-! SALLOCATE( surf%xt, (0:Nt-1,0:Nz-1), zero ) !dx/dtheta;
-! SALLOCATE( surf%yt, (0:Nt-1,0:Nz-1), zero ) !dy/dtheta;
-! SALLOCATE( surf%zt, (0:Nt-1,0:Nz-1), zero ) !dz/dtheta;
-! SALLOCATE( surf%pb, (0:Nt-1,0:Nz-1), zero ) !target Bn;
- 
-! The center point value was used to discretize grid;
-! do ii = 0, Nt-1; teta = ( ii + half ) * pi2 / Nt
-!  do jj = 0, Nz-1; zeta = ( jj + half ) * pi2 / ( Nz*Nfp )
-    
-!   RR(0:2) = zero ; ZZ(0:2) = zero
-    
-!   do imn = 1, Nfou ; arg = bim(imn) * teta - bin(imn) * zeta
-     
-!    RR(0) =  RR(0) +     Rbc(imn) * cos(arg) + Rbs(imn) * sin(arg)
-!    ZZ(0) =  ZZ(0) +     Zbc(imn) * cos(arg) + Zbs(imn) * sin(arg)
-     
-!    RR(1) =  RR(1) + ( - Rbc(imn) * sin(arg) + Rbs(imn) * cos(arg) ) * bim(imn)
-!    ZZ(1) =  ZZ(1) + ( - Zbc(imn) * sin(arg) + Zbs(imn) * cos(arg) ) * bim(imn)
-     
-!    RR(2) =  RR(2) - ( - Rbc(imn) * sin(arg) + Rbs(imn) * cos(arg) ) * bin(imn)
-!    ZZ(2) =  ZZ(2) - ( - Zbc(imn) * sin(arg) + Zbs(imn) * cos(arg) ) * bin(imn)
-     
-!   enddo ! end of do imn; 30 Oct 15;
-    
-!   szeta = sin(zeta)
-!   czeta = cos(zeta)
-    
-!   xx(1:3) = (/   RR(0) * czeta,   RR(0) * szeta, ZZ(0) /)
-!   xt(1:3) = (/   RR(1) * czeta,   RR(1) * szeta, ZZ(1) /)
-!   xz(1:3) = (/   RR(2) * czeta,   RR(2) * szeta, ZZ(2) /) + (/ - RR(0) * szeta,   RR(0) * czeta, zero  /)
-
-!   ds(1:3) = -(/ xt(2) * xz(3) - xt(3) * xz(2), & ! minus sign for theta counterclockwise direction;
-!                 xt(3) * xz(1) - xt(1) * xz(3), &
-!                 xt(1) * xz(2) - xt(2) * xz(1) /)
-
-!   dd = sqrt( sum( ds(1:3)*ds(1:3) ) )
-
-    ! x, y, z coordinates for the surface;
-!   surf%xx(ii,jj) = xx(1)
-!   surf%yy(ii,jj) = xx(2)
-!   surf%zz(ii,jj) = xx(3)
-
-    ! dx/dt, dy/dt, dz/dt (dt for d theta)
-!   surf%xt(ii,jj) = xt(1)
-!   surf%yt(ii,jj) = xt(2)
-!   surf%zt(ii,jj) = xt(3)
-
-    ! surface normal vectors and ds for the jacobian;
-!   surf%nx(ii,jj) = ds(1) / dd
-!   surf%ny(ii,jj) = ds(2) / dd
-!   surf%nz(ii,jj) = ds(3) / dd
-!   surf%ds(ii,jj) =         dd
-
-!  enddo ! end of do jj; 14 Apr 16;
-! enddo ! end of do ii; 14 Apr 16;
-
-  !calculate target Bn with input harmonics; 05 Jan 17;
-! if(NBnf >  0) then
-
-!    do jj = 0, Nz-1 ; zeta = ( jj + half ) * pi2 / (Nz*Nfp)
-!       do ii = 0, Nt-1 ; teta = ( ii + half ) * pi2 / Nt
-!          do imn = 1, NBnf
-!             arg = Bnim(imn) * teta - Bnin(imn) * zeta
-!             surf%pb(ii,jj) = surf%pb(ii,jj) + Bnc(imn)*cos(arg) + Bns(imn)*sin(arg)
-!          enddo
-!       enddo
-!    enddo
-
-! endif
-  
-  
   return
   
 end subroutine fousurf
@@ -512,10 +340,7 @@ subroutine surfxx( teta, zeta, xx, xt, xz, xtt, xtz, xzz, bn )
   xtz(1:3) = zero ! second derivatives;
   xzz(1:3) = zero ! second derivatives;
   
-! if(NBnf >  0) then
-
-
-   
+! if(NBnf >  0) then   
 !    do jj = 0, Nz-1 ; zeta = ( jj + half ) * pi2 / (Nz*Nfp)
 !       do ii = 0, Nt-1 ; teta = ( ii + half ) * pi2 / Nt
 !          do imn = 1, NBnf
@@ -524,7 +349,6 @@ subroutine surfxx( teta, zeta, xx, xt, xz, xtt, xtz, xzz, bn )
 !          enddo
 !       enddo
 !    enddo
-
 ! endif
  
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
@@ -535,22 +359,6 @@ end subroutine surfxx
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
-!title (axis) ! Reads axis parameters from file.
-
-!latex \briefly{The parameters describing a closed curve are read from file.}
-
-!latex \calledby{\link{focus}}
-!latex \calls{\link{knotxx}}
-
-!latex \tableofcontents
-
-!latex \subsection{overview}
-!latex \bi
-!latex \item[1.] A user-prescribed closed curve in three-dimensional space will serve as the proxy magnetic axis.
-!latex \item[2.] The parameters describing the knot, namely \internal{axisxc}, \internal{axisyss} and \internal{axiszs}, are read from \verb+ext.axis+.
-!latex \item[3.] A circular or elliptical cross section surface is constructed.
-!latex \ei
-
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
 subroutine rdaxis
@@ -558,7 +366,7 @@ subroutine rdaxis
   use globals, only : zero, one, half, ten, pi2, myid, ncpu, ounit, runit, &
                       axisfile, &
                       axis, Nfp, &
-                      minorrad, Nt, Nz, surf
+                      minorrad, Nt, Nz, surf, inttorsionaxis
   
   implicit none
   
@@ -612,7 +420,7 @@ subroutine rdaxis
    if( myid.eq.0 ) then
     
     read( runit, * ) 
-    read( runit, * ) axis(iaxis)%xc(0:axis(iaxis)%NF) ! write(ounit,'("readsrf : " 10x " : axisxc = ",99es13.05," ;")') axisxc
+    read( runit, * ) axis(iaxis)%xc(0:axis(iaxis)%NF)
     read( runit, * ) 
     read( runit, * ) axis(iaxis)%xs(0:axis(iaxis)%NF)
     read( runit, * ) 
@@ -649,69 +457,14 @@ subroutine rdaxis
   enddo ! end of do iaxis = 1, 2 ; 16 Nov 17;
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-  call inttorsion( axis(1)%NF, axis(1)%xc, axis(1)%xs, axis(1)%yc, axis(1)%ys, axis(1)%zc, axis(1)%zs, integratedtorsion )
   
-!  SALLOCATE( il, (0:axis(1)%NF), (/ ( mm   , mm = 0, axis(1)%NF ) /) )
-!  SALLOCATE( im, (0:axis(1)%NF), (/ ( mm**2, mm = 0, axis(1)%NF ) /) )
-!  SALLOCATE( in, (0:axis(1)%NF), (/ ( mm**3, mm = 0, axis(1)%NF ) /) )
-!  
-!  NK = 3 * 4 * axis(1)%NF ! discrete resolution for resolving torsion;
-!  
-!  SALLOCATE( dx, (0:NK-1,0:3), zero )
-!  SALLOCATE( dy, (0:NK-1,0:3), zero )
-!  SALLOCATE( dz, (0:NK-1,0:3), zero )
-!  
-!  call fft( NK, dx(0:NK-1,0), axis(1)%NF,                      axis(1)%xc(0:axis(1)%NF),                      axis(1)%xs(0:axis(1)%NF), 1 )
-!  call fft( NK, dy(0:NK-1,0), axis(1)%NF,                      axis(1)%yc(0:axis(1)%NF),                      axis(1)%ys(0:axis(1)%NF), 1 )
-!  call fft( NK, dz(0:NK-1,0), axis(1)%NF,                      axis(1)%zc(0:axis(1)%NF),                      axis(1)%zs(0:axis(1)%NF), 1 )
-!  
-!  call fft( NK, dx(0:NK-1,1), axis(1)%NF, + il(0:axis(1)%NF) * axis(1)%xs(0:axis(1)%NF), - il(0:axis(1)%NF) * axis(1)%xc(0:axis(1)%NF), 1 )
-!  call fft( NK, dy(0:NK-1,1), axis(1)%NF, + il(0:axis(1)%NF) * axis(1)%ys(0:axis(1)%NF), - il(0:axis(1)%NF) * axis(1)%yc(0:axis(1)%NF), 1 )
-!  call fft( NK, dz(0:NK-1,1), axis(1)%NF, + il(0:axis(1)%NF) * axis(1)%zs(0:axis(1)%NF), - il(0:axis(1)%NF) * axis(1)%zc(0:axis(1)%NF), 1 )
-!  
-!  call fft( NK, dx(0:NK-1,2), axis(1)%NF, - im(0:axis(1)%NF) * axis(1)%xc(0:axis(1)%NF), - im(0:axis(1)%NF) * axis(1)%xs(0:axis(1)%NF), 1 )
-!  call fft( NK, dy(0:NK-1,2), axis(1)%NF, - im(0:axis(1)%NF) * axis(1)%yc(0:axis(1)%NF), - im(0:axis(1)%NF) * axis(1)%ys(0:axis(1)%NF), 1 )
-!  call fft( NK, dz(0:NK-1,2), axis(1)%NF, - im(0:axis(1)%NF) * axis(1)%zc(0:axis(1)%NF), - im(0:axis(1)%NF) * axis(1)%zs(0:axis(1)%NF), 1 )
-!  
-!  call fft( NK, dx(0:NK-1,3), axis(1)%NF, - in(0:axis(1)%NF) * axis(1)%xs(0:axis(1)%NF), + in(0:axis(1)%NF) * axis(1)%xc(0:axis(1)%NF), 1 )
-!  call fft( NK, dy(0:NK-1,3), axis(1)%NF, - in(0:axis(1)%NF) * axis(1)%ys(0:axis(1)%NF), + in(0:axis(1)%NF) * axis(1)%yc(0:axis(1)%NF), 1 )
-!  call fft( NK, dz(0:NK-1,3), axis(1)%NF, - in(0:axis(1)%NF) * axis(1)%zs(0:axis(1)%NF), + in(0:axis(1)%NF) * axis(1)%zc(0:axis(1)%NF), 1 )
-!  
-!  SALLOCATE( a, (0:NK-1), zero )
-!  SALLOCATE( b, (0:NK-1), zero )
-!  SALLOCATE( c, (0:NK-1), zero )
-!  SALLOCATE( d, (0:NK-1), zero )
-!  
-!  a(0:NK-1) = dy(0:NK-1,1) * dz(0:NK-1,2) - dy(0:NK-1,2) * dz(0:NK-1,1)
-!  b(0:NK-1) = dz(0:NK-1,1) * dx(0:NK-1,2) - dz(0:NK-1,2) * dx(0:NK-1,1)
-!  c(0:NK-1) = dx(0:NK-1,1) * dy(0:NK-1,2) - dx(0:NK-1,2) * dy(0:NK-1,1)
-!  
-!  d(0:NK-1) = a(0:NK-1)**2 + b(0:NK-1)**2 + c(0:NK-1)**2
-!  
-!  SALLOCATE( tau, (0:NK-1), zero )
-!  
-!  tau(0:NK-1) = ( dx(0:NK-1,3) * a(0:NK-1) + dy(0:NK-1,3) * b(0:NK-1) + dz(0:NK-1,3) * c(0:NK-1) ) / d(0:NK-1)
-!  
-!  call fft( NK, tau(0:NK-1), axis(1)%NF, axis(1)%tc(0:axis(1)%NF), axis(1)%ts(0:axis(1)%NF), 0 )
-!  
-!  write(ounit,'("rdaxis  : " 10x " : integrated torsion =",es13.5," ;")') pi2 * axis(1)%tc(0)
-!  
-!  DALLOCATE( il )
-!  DALLOCATE( im )
-!  DALLOCATE( in )
-!
-!  DALLOCATE( dx )
-!  DALLOCATE( dy )
-!  DALLOCATE( dz )
-!
-!  DALLOCATE( a  )
-!  DALLOCATE( b  )
-!  DALLOCATE( c  )
-!  DALLOCATE( d  )
-!  
-!  DALLOCATE( tau )
+  call inttorsion( axis(1)%NF, axis(1)%xc, axis(1)%xs, axis(1)%yc, axis(1)%ys, axis(1)%zc, axis(1)%zs, inttorsionaxis, axis(1)%tc, axis(1)%ts )
 
+  write(ounit,'("readsrf : " 10x " : axis : NF =",i3," ; integrated torsion =",f14.09," ;")') axis(1)%NF, inttorsionaxis
+
+  write(ounit,'("readsrf : " 10x " : axis : tc =",99es11.3)') axis(1)%tc
+  write(ounit,'("readsrf : " 10x " : axis : ts =",99es11.3)') axis(1)%ts
+  
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
   return
@@ -832,20 +585,11 @@ subroutine knotxx( isurf, srho, teta, zeta, ax, at, az, xx, xs, xt, xz, xtt, xtz
    isum = 1 ; call cross( isum, td(1:3),  nz(1:3), bzz(1:3) ) ! take care that cross accumulates; 12 Nov 17;
    isum = 1 ; call cross( isum, tt(1:3), nzz(1:3), bzz(1:3) ) ! take care that cross accumulates; 12 Nov 17;
   
-!#ifdef DEBUG
-!  
-!  ;                 ;  arg = (nrotate*half) * zeta + zetaoff - axistc(0) * zeta
-!  ;                 ; darg = (nrotate*half)                  - axistc(0)
-!  do mm = 1, axisNF ;  arg =  arg - ( axistc(mm) * sin(mm*zeta) - axists(mm) * cos(mm*zeta) ) / mm ! integrated torsion;
-!   ;                ; darg = darg - ( axistc(mm) * cos(mm*zeta) + axists(mm) * sin(mm*zeta) )      ! 
-!  enddo
-!  
-!#else
-  
-  ;                 ;  arg = (nrotate*half) * zeta + zetaoff
-  ;                 ; darg = (nrotate*half)                 
-  
-!#endif
+   ;                     ;  arg = (nrotate*half) * zeta + zetaoff!- axistc(0) * zeta
+   ;                     ; darg = (nrotate*half)                 !- axistc(0)
+   do mm = 1, axis(1)%NF ;  arg =  arg - ( axis(1)%tc(mm) * sin(mm*zeta) - axis(1)%ts(mm) * cos(mm*zeta) ) / mm ! integrated torsion; ! 10 Dec 17;
+    ;                    ; darg = darg - ( axis(1)%tc(mm) * cos(mm*zeta) + axis(1)%ts(mm) * sin(mm*zeta) )      !                     ! 10 Dec 17;
+   enddo
 
   v1(1:3)  =     cos(arg) *  nn(1:3) + sin(arg) *  bb(1:3)
   
@@ -856,8 +600,6 @@ subroutine knotxx( isurf, srho, teta, zeta, ax, at, az, xx, xs, xt, xz, xtt, xtz
            + ( - sin(arg) *  nz(1:3) + cos(arg) *  bz(1:3) ) * darg    &
            + ( - sin(arg) *  nz(1:3) + cos(arg) *  bz(1:3) ) * darg    &
            + (   cos(arg) * nzz(1:3) + sin(arg) * bzz(1:3) )
-
-! v1 = - v1 ; w1 = - w1 ; z1 = - z1 ! DEBUGGING TEST; 12 Nov 17;
 
   v2(1:3)  =   - sin(arg) *  nn(1:3) + cos(arg) *  bb(1:3)
 
@@ -879,13 +621,6 @@ subroutine knotxx( isurf, srho, teta, zeta, ax, at, az, xx, xs, xt, xz, xtt, xtz
   xtz(1:3) =           srho * minorrad * ( - ellipticity * sint * w1(1:3) + cost * w2(1:3) )
   xzz(1:3) = x2(1:3) + srho * minorrad * (   ellipticity * cost * z1(1:3) + sint * z2(1:3) )
    
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
-
-!#ifdef DEBUG
-!  write(ounit,'("knotxx  : " 10x " : xx(1:3), nn(1:3), bb(1:3) =",9f9.4)') xx(1:3), nn(1:3), bb(1:3)
-!  FATAL(knotxx  , .true., just checking)
-!#endif
-  
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
   return
@@ -972,7 +707,7 @@ end subroutine cross
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-subroutine inttorsion( NF, xc, xs, yc, ys, zc, zs, integratedtorsion )
+subroutine inttorsion( NF, xc, xs, yc, ys, zc, zs, integratedtorsion, tc, ts )
   
   use globals, only : zero, pi2, ounit
   
@@ -981,11 +716,10 @@ subroutine inttorsion( NF, xc, xs, yc, ys, zc, zs, integratedtorsion )
   include "mpif.h"
 
   INTEGER              :: NF
-  REAL                 :: xc(0:NF), xs(0:NF), yc(0:NF), ys(0:NF), zc(0:NF), zs(0:NF), integratedtorsion
+  REAL                 :: xc(0:NF), xs(0:NF), yc(0:NF), ys(0:NF), zc(0:NF), zs(0:NF), integratedtorsion, tc(0:NF), ts(0:NF)
   
   INTEGER              :: mm, NK, astat
   INTEGER, allocatable :: il(:), im(:), in(:)
-  REAL                 :: tc(0:NF), ts(0:NF)
   REAL   , allocatable :: dx(:,:), dy(:,:), dz(:,:), a(:), b(:), c(:), d(:), tau(:)
   
   SALLOCATE( il, (0:NF), (/ ( mm   , mm = 0, NF ) /) )
@@ -1033,8 +767,6 @@ subroutine inttorsion( NF, xc, xs, yc, ys, zc, zs, integratedtorsion )
   
   integratedtorsion = pi2 * tc(0)
 
-  write(ounit,'("rdaxis  : " 10x " : integrated torsion =",es13.5," ;")') integratedtorsion
-  
   DALLOCATE( il )
   DALLOCATE( im )
   DALLOCATE( in )

@@ -12,7 +12,13 @@
 
 module globals
   
+  use oculus, only : oculusga00aa, oculusga01aa, oculustr00aa
+
   implicit none
+
+  type(oculusga00aa) :: ga00aainput
+  type(oculusga01aa) :: ga01aaX, ga01aaO
+  type(oculustr00aa) :: tr00aainput
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
@@ -112,8 +118,12 @@ module globals
   INTEGER            :: Iminimize      =        0
 
   INTEGER            :: Ntrj           =        1
+  INTEGER            :: Etrj           =        0
   INTEGER            :: Npts           =        0
   REAL               :: odetol         =        1.0D-06
+
+  INTEGER            :: pp             =        0
+  INTEGER            :: qq             =        0
 
   namelist / focusin /  Icheck         , &
                         Isurface       , &
@@ -149,8 +159,11 @@ module globals
                         friction       , &
                         Iminimize      , &
                         Ntrj           , &
+                        Etrj           , &
                         Npts           , &
-                        odetol
+                        odetol         , &
+                        pp             , &
+                        qq      
 
   INTEGER                 :: myid, ncpu
   REAL                    :: machprec, vsmall, small, sqrtmachprec
@@ -174,8 +187,8 @@ module globals
 
   type spacecurve
      INTEGER              :: itype, NF, Ifree, Lfree, NS
-     REAL                 ::     I           , Le, maxcurv
-     REAL   , allocatable :: xc(:), xs(:), yc(:), ys(:), zc(:), zs(:)
+     REAL                 ::     I           , Le, maxcurv, inttorsion
+     REAL   , allocatable :: xc(:), xs(:), yc(:), ys(:), zc(:), zs(:), tc(:), ts(:)
      REAL   , allocatable :: xx(:,:), xt(:,:), xa(:), ya(:), za(:)
      REAL   , allocatable :: dL(:), dT(:,:), dB(:,:,:), RR(:,:,:,:), Rn(:,:,:,:)
      INTEGER              :: gdof, idof
@@ -218,6 +231,8 @@ module globals
   REAL, allocatable       :: Mdof(:) ! spectral gradient in independent degree-of-freedom (Fourier) space;
 
   REAL                    :: xyaxis(1:2)
+
+  REAL                    :: aveintegratedtorsion, inttorsionaxis
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
