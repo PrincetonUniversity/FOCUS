@@ -43,7 +43,7 @@ PROGRAM focus
   
   use kmodule, only : ncpu, myid, ounit, Itopology, Loptimize, Lnormalize, Lpoincare, tstart, tfinish
   
-  use oculus, only : pp00aa
+! use oculus, only : pp00aa
   
   implicit none
   
@@ -71,7 +71,7 @@ PROGRAM focus
   
   select case( Itopology )
   case( 0 ) ; call surface
-  case( 1 ) ; call rdknot
+  !case( 1 ) ; call rdknot ! comment out on 20180228 for NAG incompative
   end select
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!

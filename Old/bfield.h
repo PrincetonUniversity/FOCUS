@@ -15,68 +15,68 @@
 
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-subroutine bfield( RpZ, itangent, dBRpZ, ibfield ) 
-
-! DATE : April 2016
-! using bs00aa in oculus ( actually NAG adaptive integration routines ) calculating magnetic field;
-! only be used at the beginning stage; may be deleted later.
-
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  
-  use kmodule, only : zero, one, pi2, vsmall, myid, ounit, Ncoils, coil, icoil, bsfield
-  
-  use oculus , only : bs00aa
-  
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  
-  implicit none
-  
-  include "mpif.h"
-  
-  INTEGER            :: itangent, ibfield
-  REAL               :: RpZ(1:3), dBRpZ(1:3,0:3)
-  
-  INTEGER            :: ierr, ibs00aa
-  REAL               :: zeta, Bx, By, Bz, czeta, szeta
-  
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  
-  dBRpZ(1:3,0:3) = zero ! set default intent(out) ; 11 Oct 15;
-  
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  
-  zeta = modulo( RpZ(2), pi2)
-  
-  czeta = cos(zeta)
-  szeta = sin(zeta)
-  
-  bsfield%x = RpZ(1) * czeta
-  bsfield%y = RpZ(1) * szeta
-  bsfield%z = RpZ(3)
-  
-  Bx = zero
-  By = zero
-  Bz = zero
-  
-  do icoil = 1, Ncoils ! icoil is a global variable which is passed through to auxiliary.h; 11 Oct 15;
-   
-   ibs00aa =  0 ; bsfield%LB = .true. ; bsfield%LA = .false. ; bsfield%LL = .false. ; call bs00aa( bsfield, ibs00aa )
-   
-   Bx = Bx + bsfield%Bx * coil(icoil)%I
-   By = By + bsfield%By * coil(icoil)%I
-   Bz = Bz + bsfield%Bz * coil(icoil)%I
-   
-  enddo ! end of do icoil; 11 Oct 15;
-  
-  dBRpZ(1,0) = (   Bx * czeta + By * szeta )
-  dBRpZ(2,0) = ( - Bx * szeta + By * czeta ) / RpZ(1)
-  dBRpZ(3,0) =     Bz
-  
-  ibfield = 0
-  
-  return
-  
-end subroutine bfield
+!!$subroutine bfield( RpZ, itangent, dBRpZ, ibfield ) 
+!!$
+!!$! DATE : April 2016
+!!$! using bs00aa in oculus ( actually NAG adaptive integration routines ) calculating magnetic field;
+!!$! only be used at the beginning stage; may be deleted later.
+!!$
+!!$!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+!!$  
+!!$  use kmodule, only : zero, one, pi2, vsmall, myid, ounit, Ncoils, coil, icoil, bsfield
+!!$  
+!!$  use oculus , only : bs00aa
+!!$  
+!!$!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+!!$  
+!!$  implicit none
+!!$  
+!!$  include "mpif.h"
+!!$  
+!!$  INTEGER            :: itangent, ibfield
+!!$  REAL               :: RpZ(1:3), dBRpZ(1:3,0:3)
+!!$  
+!!$  INTEGER            :: ierr, ibs00aa
+!!$  REAL               :: zeta, Bx, By, Bz, czeta, szeta
+!!$  
+!!$!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+!!$  
+!!$  dBRpZ(1:3,0:3) = zero ! set default intent(out) ; 11 Oct 15;
+!!$  
+!!$!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+!!$  
+!!$  zeta = modulo( RpZ(2), pi2)
+!!$  
+!!$  czeta = cos(zeta)
+!!$  szeta = sin(zeta)
+!!$  
+!!$  bsfield%x = RpZ(1) * czeta
+!!$  bsfield%y = RpZ(1) * szeta
+!!$  bsfield%z = RpZ(3)
+!!$  
+!!$  Bx = zero
+!!$  By = zero
+!!$  Bz = zero
+!!$  
+!!$  do icoil = 1, Ncoils ! icoil is a global variable which is passed through to auxiliary.h; 11 Oct 15;
+!!$   
+!!$   ibs00aa =  0 ; bsfield%LB = .true. ; bsfield%LA = .false. ; bsfield%LL = .false. ; call bs00aa( bsfield, ibs00aa )
+!!$   
+!!$   Bx = Bx + bsfield%Bx * coil(icoil)%I
+!!$   By = By + bsfield%By * coil(icoil)%I
+!!$   Bz = Bz + bsfield%Bz * coil(icoil)%I
+!!$   
+!!$  enddo ! end of do icoil; 11 Oct 15;
+!!$  
+!!$  dBRpZ(1,0) = (   Bx * czeta + By * szeta )
+!!$  dBRpZ(2,0) = ( - Bx * szeta + By * czeta ) / RpZ(1)
+!!$  dBRpZ(3,0) =     Bz
+!!$  
+!!$  ibfield = 0
+!!$  
+!!$  return
+!!$  
+!!$end subroutine bfield
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 ! DATE:  06/15/2016
