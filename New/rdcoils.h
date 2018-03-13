@@ -384,6 +384,7 @@ subroutine rdcoils
      Gnorm = 0
      Inorm = 0
      do icoil = 1, Ncoils
+        NF = FouCoil(icoil)%NF
         do icoef = 0, NF
            Gnorm = Gnorm + FouCoil(icoil)%xs(icoef)**2 + FouCoil(icoil)%xc(icoef)**2
            Gnorm = Gnorm + FouCoil(icoil)%ys(icoef)**2 + FouCoil(icoil)%yc(icoef)**2
