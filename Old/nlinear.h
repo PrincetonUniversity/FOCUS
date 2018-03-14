@@ -31,9 +31,9 @@ SUBROUTINE Powell
 
 
   INTEGER           :: N, IREVCM, MODE, LDFJAC, LR, IFAIL, idof, astat, ierr, mm, NN, icoil
-  REAL, allocatable :: FVEC(:), DIAG(:), FJAC(:,:), R(:), QTF(:), W(:,:)
+  REAL, allocatable :: FVEC(:), DIAG(:), FJAC(:,:), R(:), QTF(:), W(:,:), rwsav(:)
   REAL              :: FACTOR, X(Ndof)
-  INTEGER           :: ii,jj,c1, n1, c2, n2, irestart
+  INTEGER           :: ii,jj,c1, n1, c2, n2, irestart, iwsav(17)
   
 ! the following are used by the macros HWRITEXX below; do not alter/remove;
   INTEGER            :: hdfier, rank
@@ -55,8 +55,15 @@ SUBROUTINE Powell
   SALLOCATE( QTF ,(N       ), zero)
   SALLOCATE( W   ,(N     ,4), zero)
 
-  call pack(X(1:N))
-  call costfun(2)
+!!$<<<<<<< HEAD
+!!$  call pack(X(1:N))
+!!$  call costfun(2)
+!!$=======
+  allocate(rwsav(4*n+10))
+
+  call ntpack(X(1:N))
+  call costfun(2); call ntchdms(2)
+!!$>>>>>>> hessian
   if (myid .eq. 0) write(ounit, '("nlinear :",12X,"; Initial Value " 11X,"; E = ",es23.15,"; D = ",es23.15,"; B = ",es23.15,"; F = ",es23.15,"; L = ",es23.15,"; A = ",es23.15)') &
                          totalenergy, sqrt(sum(t1E(1:Ncoils,0:Cdof)**2)/N), bnorm, tflux, ttlen, eqarc
   do jj = 1, N
@@ -93,7 +100,8 @@ SUBROUTINE Powell
  ! DIAG(1:N) = 1.0
   IREVCM = 0
 
-  call  C05PDF(IREVCM,N,X,FVEC,FJAC,LDFJAC,XTOL,DIAG,MODE,FACTOR,R,LR,QTF,W,IFAIL)
+ !call  C05PDF(IREVCM,N,X,FVEC,FJAC,LDFJAC,XTOL,DIAG,MODE,FACTOR,R,LR,QTF,W,IFAIL) ! comment out on 20180228 for NAG incompative
+  call  C05RDF(IREVCM, N, X, FVEC, FJAC, XTOL, MODE, DIAG, FACTOR, R, QTF, IWSAV, RWSAV, IFAIL)
 
   do while (IREVCM .ne. 0)
 
@@ -124,8 +132,9 @@ SUBROUTINE Powell
            enddo
         enddo
      endif
-
-     call  C05PDF(IREVCM,N,X,FVEC,FJAC,LDFJAC,XTOL,DIAG,MODE,FACTOR,R,LR,QTF,W,IFAIL)
+     
+    !call  C05PDF(IREVCM,N,X,FVEC,FJAC,LDFJAC,XTOL,DIAG,MODE,FACTOR,R,LR,QTF,W,IFAIL) ! comment out on 20180228 for NAG incompative
+     call  C05RDF(IREVCM, N, X, FVEC, FJAC, XTOL, MODE, DIAG, FACTOR, R, QTF, IWSAV, RWSAV, IFAIL)
 
   enddo
 
