@@ -23,7 +23,7 @@
  MACROS=macros
  CC=intel # if want to use gfortran; make CC=gfortran
  FC=mpif90
- FLAGS=-r8 -mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback #-vec_report0
+ FLAGS=-r8 -mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback -D BNORM #-vec_report0
  DFLAGS=-check all -check noarg_temp_created -debug full -D DEBUG
 
 ############################################################################################################
