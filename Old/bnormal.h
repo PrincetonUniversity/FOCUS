@@ -850,7 +850,7 @@ subroutine bnormal( nderiv )
      bn(iteta, jzeta) = bx * surf(1)%nx(iteta,jzeta) + by * surf(1)%ny(iteta,jzeta) + bz * surf(1)%nz(iteta,jzeta)
      bm(iteta, jzeta) = bx * bx + by * by + bz * bz ! magnitude square of B
      !bm(iteta, jzeta) = one  ! no normalization;
-#ifdef BNORM
+#ifndef PLASBN
      lbnorm = lbnorm +  (bn(iteta, jzeta) - surf(1)%bnt(iteta, jzeta))**2 / bm(iteta, jzeta) * surf(1)%ds(iteta,jzeta)  !change to minus on 2017/02/07
 #else
      lbnorm = lbnorm +  bn(iteta, jzeta)**2 / bm(iteta, jzeta) * surf(1)%ds(iteta,jzeta)
@@ -919,7 +919,7 @@ subroutine bnormal( nderiv )
      enddo
 
      ! derivatives for bnomal cost function
-#ifdef BNORM
+#ifndef PLASBN
      lbnorm = lbnorm +  (bn(iteta, jzeta) - surf(1)%bnt(iteta, jzeta))**2 / bm(iteta, jzeta) * surf(1)%ds(iteta,jzeta)
 #else
      lbnorm = lbnorm +  bn(iteta, jzeta)**2 / bm(iteta, jzeta) * surf(1)%ds(iteta,jzeta)
@@ -927,7 +927,7 @@ subroutine bnormal( nderiv )
 
      do n1 = 0, Cdof
       do c1 = 1, Ncoils
-#ifdef BNORM
+#ifndef PLASBN
         l1B(c1,n1) = l1B(c1,n1) + ( (bn(iteta,jzeta)-surf(1)%bnt(iteta,jzeta))/bm(iteta,jzeta)*b1n(c1,n1) &
                                 - half*(bn(iteta,jzeta)-surf(1)%bnt(iteta,jzeta))**2/bm(iteta,jzeta)**2*b1m(c1,n1) ) * surf(1)%ds(iteta,jzeta)
 #else
@@ -1105,7 +1105,7 @@ subroutine bnormal( nderiv )
 !!$     enddo   !enddo c2
 
      ! derivatives for bnomal cost function
-#ifdef BNORM
+#ifndef PLASBN
      lbnorm = lbnorm +  (bn(iteta, jzeta) - surf(1)%bnt(iteta, jzeta))**2 / bm(iteta, jzeta) * surf(1)%ds(iteta,jzeta)
 #else
      lbnorm = lbnorm +  bn(iteta, jzeta)**2 / bm(iteta, jzeta) * surf(1)%ds(iteta,jzeta)
@@ -1113,7 +1113,7 @@ subroutine bnormal( nderiv )
 
      do n1 = 0, Cdof
         do c1 = 1, Ncoils
-#ifdef BNORM
+#ifndef PLASBN
             l1B(c1,n1) = l1B(c1,n1) + ( (bn(iteta,jzeta)-surf(1)%bnt(iteta,jzeta))/bm(iteta,jzeta)*b1n(c1,n1) &
                                     - half*(bn(iteta,jzeta)-surf(1)%bnt(iteta,jzeta))**2/bm(iteta,jzeta)**2*b1m(c1,n1) ) * surf(1)%ds(iteta,jzeta)
 #else
@@ -1126,7 +1126,7 @@ subroutine bnormal( nderiv )
       do c2 = 1, Ncoils
        do n1 = 0, Cdof
         do c1 = 1, Ncoils
-#ifdef BNORM
+#ifndef PLASBN
          l2B(c1,n1,c2,n2) = l2B(c1,n1,c2,n2) + ( one/bm(iteta,jzeta)* b1n(c1,n1)*b1n(c2,n2) &
                                              - (bn(iteta,jzeta)-surf(1)%bnt(iteta,jzeta))/bm(iteta,jzeta)**2*b1n(c1,n1)*b1m(c2,n2) &
                                              + (bn(iteta,jzeta)-surf(1)%bnt(iteta,jzeta))/bm(iteta,jzeta)*b2n(c1,n1,c2,n2) &
@@ -1453,7 +1453,7 @@ subroutine bnormal2( nderiv )
      !SaveBx(iteta, jzeta) = bx; SaveBy(iteta, jzeta) = by; SaveBz(iteta, jzeta) = bz
      lBx(iteta, jzeta) = bx; lBy(iteta, jzeta) = by; lBz(iteta, jzeta) = bz;
      bn(iteta, jzeta) = bx * surf(1)%nx(iteta,jzeta) + by * surf(1)%ny(iteta,jzeta) + bz * surf(1)%nz(iteta,jzeta)
-#ifdef BNORM
+#ifndef PLASBN
      lbnorm = lbnorm +  (bn(iteta, jzeta) - surf(1)%bnt(iteta, jzeta))**2 * surf(1)%ds(iteta,jzeta)  !change to minus on 2017/02/07
 #else
      lbnorm = lbnorm +  bn(iteta, jzeta)**2 * surf(1)%ds(iteta,jzeta)
@@ -1509,7 +1509,7 @@ subroutine bnormal2( nderiv )
      enddo
 
      ! derivatives for bnomal cost function
-#ifdef BNORM
+#ifndef PLASBN
      lbnorm = lbnorm +  (bn(iteta, jzeta) - surf(1)%bnt(iteta, jzeta))**2 * surf(1)%ds(iteta,jzeta)
 #else
      lbnorm = lbnorm +  bn(iteta, jzeta)**2 * surf(1)%ds(iteta,jzeta)
@@ -1517,7 +1517,7 @@ subroutine bnormal2( nderiv )
 
      do n1 = 0, Cdof
       do c1 = 1, Ncoils
-#ifdef BNORM
+#ifndef PLASBN
         l1B(c1,n1) = l1B(c1,n1) + ( (bn(iteta,jzeta)-surf(1)%bnt(iteta,jzeta))*b1n(c1,n1) ) * surf(1)%ds(iteta,jzeta)                                
 #else
         l1B(c1,n1) = l1B(c1,n1) + ( bn(iteta,jzeta)*b1n(c1,n1) ) * surf(1)%ds(iteta,jzeta)
@@ -1639,7 +1639,7 @@ subroutine bnormal2( nderiv )
      enddo
 
      ! derivatives for bnomal cost function
-#ifdef BNORM
+#ifndef PLASBN
      lbnorm = lbnorm +  (bn(iteta, jzeta) - surf(1)%bnt(iteta, jzeta))**2 * surf(1)%ds(iteta,jzeta)
 #else
      lbnorm = lbnorm +  bn(iteta, jzeta)**2 * surf(1)%ds(iteta,jzeta)
@@ -1647,7 +1647,7 @@ subroutine bnormal2( nderiv )
 
      do n1 = 0, Cdof
         do c1 = 1, Ncoils
-#ifdef BNORM
+#ifndef PLASBN
             l1B(c1,n1) = l1B(c1,n1) + ( (bn(iteta,jzeta)-surf(1)%bnt(iteta,jzeta))*b1n(c1,n1) ) * surf(1)%ds(iteta,jzeta)
 #else
             l1B(c1,n1) = l1B(c1,n1) + ( bn(iteta,jzeta)*b1n(c1,n1) ) * surf(1)%ds(iteta,jzeta)
@@ -1659,7 +1659,7 @@ subroutine bnormal2( nderiv )
       do c2 = 1, Ncoils
        do n1 = 0, Cdof
         do c1 = 1, Ncoils
-#ifdef BNORM
+#ifndef PLASBN
           l2B(c1,n1,c2,n2) = l2B(c1,n1,c2,n2) + ( b1n(c1,n1)*b1n(c2,n2) + (bn(iteta,jzeta)-surf(1)%bnt(iteta,jzeta))*b2n(c1,n1,c2,n2) ) * surf(1)%ds(iteta,jzeta)
 #else
           l2B(c1,n1,c2,n2) = l2B(c1,n1,c2,n2) + ( b1n(c1,n1)*b1n(c2,n2) + bn(iteta,jzeta) *b2n(c1,n1,c2,n2) ) * surf(1)%ds(iteta,jzeta)

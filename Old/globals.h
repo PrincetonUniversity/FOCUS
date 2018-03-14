@@ -17,7 +17,7 @@
 
 module kmodule
   
-  use oculus, only : biotsavart, poincaredata
+  !use oculus, only : biotsavart, poincaredata
   
   implicit none
   
@@ -248,8 +248,8 @@ module kmodule
 
   INTEGER              :: icoil
 
-  type(biotsavart)     :: bsfield
-  type(poincaredata)   :: poincare
+  !type(biotsavart)     :: bsfield
+  !type(poincaredata)   :: poincare
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -283,7 +283,7 @@ module kmodule
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  REAL,allocatable     :: SaveBx(:,:), SaveBy(:,:), SaveBz(:,:)
+  REAL,allocatable     :: SaveBx(:,:), SaveBy(:,:), SaveBz(:,:), Bmod_n(:)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

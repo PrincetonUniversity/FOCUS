@@ -166,6 +166,13 @@ subroutine restart( irestart )
   HWRITERV( 1                           ,   bstol                                   ,   bstol                                                     )
   HWRITEIV( 1                           ,   bsnlimit                                ,   bsnlimit                                                  )
 
+  HWRITERV( 1                           ,   real_wb                                 ,   weight_bnorm                                              )
+  HWRITERV( 1                           ,   real_wf                                 ,   weight_tflux                                              )
+  HWRITERV( 1                           ,   real_tf                                 ,   target_tflux                                              )
+  HWRITERV( 1                           ,   real_wl                                 ,   weight_ttlen                                              )
+  HWRITERV( 1                           ,   real_wa                                 ,   weight_eqarc                                              )
+  HWRITERV( 1                           ,   real_wc                                 ,   weight_ccsep                                              )
+
   HWRITEIV( 1                           ,   bmn                                     ,   bmn                                                       )
   if( bmn.gt.0 ) then 
   HWRITEIV( bmn                         ,   bim                                     ,   bim(1:bmn)                                                )
@@ -203,6 +210,10 @@ subroutine restart( irestart )
   HWRITERA( 1+Nteta,1+Nzeta             ,   Bx                                      ,       SaveBx(0:Nteta,0:Nzeta)                               )
   HWRITERA( 1+Nteta,1+Nzeta             ,   By                                      ,       SaveBy(0:Nteta,0:Nzeta)                               )
   HWRITERA( 1+Nteta,1+Nzeta             ,   Bz                                      ,       SaveBz(0:Nteta,0:Nzeta)                               )
+  endif
+
+  if (allocated(Bmod_n)) then
+  HWRITERV(   Ntor+1                    ,   Bmod                                    ,   Bmod_n(    0:Ntor)                                        )
   endif
 
   call h5fclose_f( file_id, hdfier ) ! terminate access;
@@ -343,14 +354,14 @@ SUBROUTINE write_plasma
   write(lunit,*      ) "#------- plasma boundary------"
   write(lunit,*      ) "#  n   m   Rbc   Rbs    Zbc   Zbs"
   do imn = 1, bmn
-     write(lunit,'(2I, 4ES15.6)') bin(imn), bim(imn), Rbc(imn), Rbs(imn), Zbc(imn), Zbs(imn)
+     write(lunit,'(2I, 4ES15.6)') bin(imn)/bNfp, bim(imn), Rbc(imn), Rbs(imn), Zbc(imn), Zbs(imn)
   enddo
 
   write(lunit,*      ) "#-------Bn harmonics----------"
   write(lunit,*      ) "#  n  m  bnc   bns"
   if (nbf .gt. 0) then
   do imn = 1, nbf
-     write(lunit,'(2I, 2ES15.6)') bnin(imn), bnim(imn), bnc(imn), bns(imn)
+     write(lunit,'(2I, 2ES15.6)') bnin(imn)/bNfp, bnim(imn), bnc(imn), bns(imn)
   enddo
   else
      write(lunit,'(2I, 2ES15.6)') 0, 0, 0.0, 0.0

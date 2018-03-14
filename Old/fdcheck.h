@@ -175,6 +175,7 @@ subroutine testderivs1
   
   if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : coil# : Fourier# :      numerical value"3X" :   fd-method value"6X" :   difference"11X" :   relative diff")')
 
+  call cpu_time(start)
   do idof = 1, Ndof
 
      do ifd = -1, 1, 2
@@ -194,9 +195,10 @@ subroutine testderivs1
          rdiff = diff / tmpE(0)
      endif
      
-     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "I8, 4(" : "ES23.15))') &
-                           icoil, infou, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
+     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "I8, 4(" : "ES23.15))') icoil, infou, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
   enddo
+  call cpu_time(finish)
+  if(myid .eq. 0) write(ounit,'("fdcheck : " 10X " : First order derivatives of energy function takes " ES23.15 " seconds.")') finish - start
 !!$ 
 !!$  !-----------------test Lagrange multipiler-------------------
 !!$  if( weight_eqarc .gt. zero ) then

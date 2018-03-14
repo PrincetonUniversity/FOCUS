@@ -38,8 +38,9 @@ subroutine tfft( Nt, Nz, ijreal, ijimag, isr, trigm, trign, trigwk, mn, im, in, 
 
   Ntz=Nt*Nz
 
-  call C06FUF( Nt , Nz , ijreal(1:Ntz) , ijimag(1:Ntz) , isr , trigm , trign , trigwk , ifail )
-  
+  ! call C06FUF( Nt , Nz , ijreal(1:Ntz) , ijimag(1:Ntz) , isr , trigm , trign , trigwk , ifail )
+  ! comment out on 20180228 for NAG incompative
+
   ijreal(:) = ijreal(:)/sqrt(one*Ntz) ; ijimag(:) = ijimag(:)/sqrt(one*Ntz)
   
   cfmn=zero ; sfmn=zero ; efmn=zero ; ofmn=zero
@@ -177,10 +178,11 @@ subroutine invfft( mn , im , in , efmn , ofmn , cfmn , sfmn , Nt , Nz , ijreal ,
   ijreal(1:Ntz) = ijreal(1:Ntz) * sqrt(one*Ntz)
   ijimag(1:Ntz) = ijimag(1:Ntz) * sqrt(one*Ntz)
   
-  c06gcffail=0 ; call C06GCF( ijimag, Ntz , c06gcffail )
-  c06fuffail=0 ; call C06FUF( Nt , Nz , ijreal , ijimag , isr , trigm , trign , trigwk , c06fuffail )
-  c06gcffail=0 ; call C06GCF( ijimag , Ntz , c06gcffail )
-  
+  ! c06gcffail=0 ; call C06GCF( ijimag, Ntz , c06gcffail )
+  ! c06fuffail=0 ; call C06FUF( Nt , Nz , ijreal , ijimag , isr , trigm , trign , trigwk , c06fuffail )
+  ! c06gcffail=0 ; call C06GCF( ijimag , Ntz , c06gcffail )
+  ! comment out on 20180228 for NAG incompative
+
   return
 
 end subroutine invfft
