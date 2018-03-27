@@ -84,7 +84,7 @@ subroutine rdcoils
   include "mpif.h"
 
   LOGICAL   :: exist
-  INTEGER   :: icoil, maxnseg, ifirst, NF, itmp, ip, icoef
+  INTEGER   :: icoil, maxnseg, ifirst, NF, itmp, ip, icoef, total_coef
   REAL      :: Rmaj, zeta, totalcurrent, z0, r1, r2, z1, z2
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -383,8 +383,10 @@ subroutine rdcoils
   if (IsNormalize > 0) then
      Gnorm = 0
      Inorm = 0
+     total_coef = 0 ! total number of coefficients
      do icoil = 1, Ncoils
         NF = FouCoil(icoil)%NF
+        total_coef = total_coef + NF
         do icoef = 0, NF
            Gnorm = Gnorm + FouCoil(icoil)%xs(icoef)**2 + FouCoil(icoil)%xc(icoef)**2
            Gnorm = Gnorm + FouCoil(icoil)%ys(icoef)**2 + FouCoil(icoil)%yc(icoef)**2
@@ -392,9 +394,9 @@ subroutine rdcoils
         enddo
         Inorm = Inorm + coil(icoil)%I**2
      enddo
-     Gnorm = sqrt(Gnorm) * weight_gnorm
-     Inorm = sqrt(Inorm) * weight_inorm
-     Inorm = Inorm * 6  ! compensate for the fact that there are so many more spatial variables
+     Gnorm = sqrt(Gnorm/total_coef) * weight_gnorm      ! quadratic mean
+     Inorm = sqrt(Inorm/Ncoils) * weight_inorm          ! quadratic mean
+     !Inorm = Inorm * 6  ! compensate for the fact that there are so many more spatial variables
 
      FATAL( rdcoils, abs(Gnorm) < machprec, cannot be zero )
      FATAL( rdcoils, abs(Inorm) < machprec, cannot be zero )

@@ -18,7 +18,7 @@
  NFcoil         =        8              ! number of Fourier harmonics representing the coils; overwritten by ext.focus
  Nseg           =      256              ! number of coil segments for discretizing; overwritten by ext.focus
 
- IsNormalize    =        1              ! 0: do not normalize coil parameters; 1: normalize; I = I/I0, x = x/R0
+ IsNormalize    =        1              ! 0: do not normalize coil parameters; 1: normalize; I = I/I0, x = x/R0; I0 & R0 are quadrtic mean values.
  IsNormWeight   =        1              ! 0: do not normalize the weights; 1: normalize the weights
  case_bnormal   =        0              ! 0: keep raw Bn error; 1: Bn residue normalized to local |B|
  case_length    =        2              ! 1: quadratic format, converging the target length; 2: exponential format, as short as possible
@@ -43,7 +43,7 @@
 
  CG_maxiter     =        0              ! maximum iterations allowed for using Conjugate Gradient (CG)
  CG_xtol        =        1.000D-08      ! the stopping criteria of finding minimum; if |dχ2/dX| < CG xtol, exit the optimization
- CG_wolfe_c1    =        1.000D-04      ! the stopping criteria of finding minimum; if |dχ2/dX| < CG xtol, exit the optimization
+ CG_wolfe_c1    =        1.000D-04      ! c1 value in the strong wolfe condition for line search; 
  CG_wolfe_c2    =        0.1            ! c2 value in the strong wolfe condition for line search; if one CG step takes too long, try to increase c2, but remember 0 < c1 < c2 < 1
 
  HN_maxiter     =        0
