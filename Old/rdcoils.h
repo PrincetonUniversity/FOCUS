@@ -40,103 +40,103 @@ subroutine rdcoils
 
      !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  case(: -2 )
-
-     FATAL( rdcoils, Itopology .ne. 1, this is for knotatron only.)
-
-     Ncoils = abs(Linitialize)
-     if (myid .eq. 0) then
-        write(ounit,'("rdcoils : " 10x " : Initialize" I3" coils for knotatrans.")') Ncoils
-     endif
-
-     if( .not. allocated(coilsX) ) then
-        SALLOCATE( coilsX, (1:NDcoil,1:Ncoils), zero )    !allocate on other nodes
-        SALLOCATE( coilsY, (1:NDcoil,1:Ncoils), zero )
-        SALLOCATE( coilsZ, (1:NDcoil,1:Ncoils), zero )
-     endif
-
-     !preparing for coilsX, coilsY and coilsZ;
-     do ii = 1, Ncoils
-        zeta = (ii-1)*pi2/Ncoils ! toroidal angle;
-        do jj = 1, NDcoil
-           tt = (jj-1)*pi2/NDcoil !poloidal angle;
-
-           FATAL( rdcoils, rmin.lt.one, definition of rmin has changed ask SRH )  ! 11 May 17;
-
-           call knotxx( rmin, tt, zeta, ax, at, az, xx, xt, xz )
-
-           coilsX(jj, ii) = xx(1)
-           coilsY(jj, ii) = xx(2)
-           coilsZ(jj, ii) = xx(3)
-
-        enddo
-     enddo
-
-     allocate( coil(1:Ncoils) )
-
-     icoil = 0
-     do icoil = 1, Ncoils
-
-        coil(icoil)%N  =  NFcoil
-        coil(icoil)%D  =  NDcoil
-        coil(icoil)%I  =  Io 
-        coil(icoil)%Ic =  Ic
-        coil(icoil)%Io =  Io
-        coil(icoil)%Iw =  Iw
-
-        coil(icoil)%L  =  Lo ! irrelevant until re-computed; 14 Apr 16;
-        coil(icoil)%Lc =  Lc
-        coil(icoil)%Lo =  Lo
-        coil(icoil)%Lw =  Lw
-
-        FATAL( rdcoils, coil(icoil)%Ic.lt.0 .or. coil(icoil)%Ic.gt.1, illegal )
-        FATAL( rdcoils, coil(icoil)%Iw.lt.zero                      , illegal )
-        FATAL( rdcoils, coil(icoil)%Lc.lt.0                         , illegal )
-        FATAL( rdcoils, coil(icoil)%Lo.lt.zero                      , illegal )
-        FATAL( rdcoils, coil(icoil)%Lw.lt.zero                      , illegal )
-
-        SALLOCATE( coil(icoil)%xc, (0:NFcoil), zero )
-        SALLOCATE( coil(icoil)%xs, (0:NFcoil), zero )
-        SALLOCATE( coil(icoil)%yc, (0:NFcoil), zero )
-        SALLOCATE( coil(icoil)%ys, (0:NFcoil), zero )
-        SALLOCATE( coil(icoil)%zc, (0:NFcoil), zero )
-        SALLOCATE( coil(icoil)%zs, (0:NFcoil), zero )
-
-        SALLOCATE( coil(icoil)%xx, (0:coil(icoil)%D), zero )
-        SALLOCATE( coil(icoil)%yy, (0:coil(icoil)%D), zero )
-        SALLOCATE( coil(icoil)%zz, (0:coil(icoil)%D), zero )
-        SALLOCATE( coil(icoil)%xt, (0:coil(icoil)%D), zero )
-        SALLOCATE( coil(icoil)%yt, (0:coil(icoil)%D), zero )
-        SALLOCATE( coil(icoil)%zt, (0:coil(icoil)%D), zero )
-        SALLOCATE( coil(icoil)%xa, (0:coil(icoil)%D), zero )
-        SALLOCATE( coil(icoil)%ya, (0:coil(icoil)%D), zero )
-        SALLOCATE( coil(icoil)%za, (0:coil(icoil)%D), zero )
-
-        write(coil(icoil)%name,'(i3.3"th-coil")') icoil
-
-        if(myid .ne. modulo(icoil-1, ncpu)) cycle
-
-        call Fourier( coilsX(1:NDcoil,icoil), coil(icoil)%xc, coil(icoil)%xs, NDcoil, NFcoil )
-        call Fourier( coilsY(1:NDcoil,icoil), coil(icoil)%yc, coil(icoil)%ys, NDcoil, NFcoil )
-        call Fourier( coilsZ(1:NDcoil,icoil), coil(icoil)%zc, coil(icoil)%zs, NDcoil, NFcoil )
-
-        if(coil(icoil)%Ic .eq. 0) Nfixcur = Nfixcur + 1
-        if(coil(icoil)%Lc .eq. 0) Nfixgeo = Nfixgeo + 1
-
-     enddo
-
-     do icoil = 1, NCoils
-        RlBCAST( coil(icoil)%xc(0:NFcoil) , 1+NFcoil ,  modulo(icoil-1, ncpu) )
-        RlBCAST( coil(icoil)%xs(0:NFcoil) , 1+NFcoil ,  modulo(icoil-1, ncpu) )
-        RlBCAST( coil(icoil)%yc(0:NFcoil) , 1+NFcoil ,  modulo(icoil-1, ncpu) )
-        RlBCAST( coil(icoil)%ys(0:NFcoil) , 1+NFcoil ,  modulo(icoil-1, ncpu) )
-        RlBCAST( coil(icoil)%zc(0:NFcoil) , 1+NFcoil ,  modulo(icoil-1, ncpu) )
-        RlBCAST( coil(icoil)%zs(0:NFcoil) , 1+NFcoil ,  modulo(icoil-1, ncpu) )
-     enddo
-
-     FATAL(rdcoils, .not. allocated(coilsX), coils file data not allocated)
-     deallocate(coilsX, coilsY, coilsZ)
-
+!!$  case(: -2 )
+!!$
+!!$     FATAL( rdcoils, Itopology .ne. 1, this is for knotatron only.)
+!!$
+!!$     Ncoils = abs(Linitialize)
+!!$     if (myid .eq. 0) then
+!!$        write(ounit,'("rdcoils : " 10x " : Initialize" I3" coils for knotatrans.")') Ncoils
+!!$     endif
+!!$
+!!$     if( .not. allocated(coilsX) ) then
+!!$        SALLOCATE( coilsX, (1:NDcoil,1:Ncoils), zero )    !allocate on other nodes
+!!$        SALLOCATE( coilsY, (1:NDcoil,1:Ncoils), zero )
+!!$        SALLOCATE( coilsZ, (1:NDcoil,1:Ncoils), zero )
+!!$     endif
+!!$
+!!$     !preparing for coilsX, coilsY and coilsZ;
+!!$     do ii = 1, Ncoils
+!!$        zeta = (ii-1)*pi2/Ncoils ! toroidal angle;
+!!$        do jj = 1, NDcoil
+!!$           tt = (jj-1)*pi2/NDcoil !poloidal angle;
+!!$
+!!$           FATAL( rdcoils, rmin.lt.one, definition of rmin has changed ask SRH )  ! 11 May 17;
+!!$
+!!$           call knotxx( rmin, tt, zeta, ax, at, az, xx, xt, xz )
+!!$
+!!$           coilsX(jj, ii) = xx(1)
+!!$           coilsY(jj, ii) = xx(2)
+!!$           coilsZ(jj, ii) = xx(3)
+!!$
+!!$        enddo
+!!$     enddo
+!!$
+!!$     allocate( coil(1:Ncoils) )
+!!$
+!!$     icoil = 0
+!!$     do icoil = 1, Ncoils
+!!$
+!!$        coil(icoil)%N  =  NFcoil
+!!$        coil(icoil)%D  =  NDcoil
+!!$        coil(icoil)%I  =  Io 
+!!$        coil(icoil)%Ic =  Ic
+!!$        coil(icoil)%Io =  Io
+!!$        coil(icoil)%Iw =  Iw
+!!$
+!!$        coil(icoil)%L  =  Lo ! irrelevant until re-computed; 14 Apr 16;
+!!$        coil(icoil)%Lc =  Lc
+!!$        coil(icoil)%Lo =  Lo
+!!$        coil(icoil)%Lw =  Lw
+!!$
+!!$        FATAL( rdcoils, coil(icoil)%Ic.lt.0 .or. coil(icoil)%Ic.gt.1, illegal )
+!!$        FATAL( rdcoils, coil(icoil)%Iw.lt.zero                      , illegal )
+!!$        FATAL( rdcoils, coil(icoil)%Lc.lt.0                         , illegal )
+!!$        FATAL( rdcoils, coil(icoil)%Lo.lt.zero                      , illegal )
+!!$        FATAL( rdcoils, coil(icoil)%Lw.lt.zero                      , illegal )
+!!$
+!!$        SALLOCATE( coil(icoil)%xc, (0:NFcoil), zero )
+!!$        SALLOCATE( coil(icoil)%xs, (0:NFcoil), zero )
+!!$        SALLOCATE( coil(icoil)%yc, (0:NFcoil), zero )
+!!$        SALLOCATE( coil(icoil)%ys, (0:NFcoil), zero )
+!!$        SALLOCATE( coil(icoil)%zc, (0:NFcoil), zero )
+!!$        SALLOCATE( coil(icoil)%zs, (0:NFcoil), zero )
+!!$
+!!$        SALLOCATE( coil(icoil)%xx, (0:coil(icoil)%D), zero )
+!!$        SALLOCATE( coil(icoil)%yy, (0:coil(icoil)%D), zero )
+!!$        SALLOCATE( coil(icoil)%zz, (0:coil(icoil)%D), zero )
+!!$        SALLOCATE( coil(icoil)%xt, (0:coil(icoil)%D), zero )
+!!$        SALLOCATE( coil(icoil)%yt, (0:coil(icoil)%D), zero )
+!!$        SALLOCATE( coil(icoil)%zt, (0:coil(icoil)%D), zero )
+!!$        SALLOCATE( coil(icoil)%xa, (0:coil(icoil)%D), zero )
+!!$        SALLOCATE( coil(icoil)%ya, (0:coil(icoil)%D), zero )
+!!$        SALLOCATE( coil(icoil)%za, (0:coil(icoil)%D), zero )
+!!$
+!!$        write(coil(icoil)%name,'(i3.3"th-coil")') icoil
+!!$
+!!$        if(myid .ne. modulo(icoil-1, ncpu)) cycle
+!!$
+!!$        call Fourier( coilsX(1:NDcoil,icoil), coil(icoil)%xc, coil(icoil)%xs, NDcoil, NFcoil )
+!!$        call Fourier( coilsY(1:NDcoil,icoil), coil(icoil)%yc, coil(icoil)%ys, NDcoil, NFcoil )
+!!$        call Fourier( coilsZ(1:NDcoil,icoil), coil(icoil)%zc, coil(icoil)%zs, NDcoil, NFcoil )
+!!$
+!!$        if(coil(icoil)%Ic .eq. 0) Nfixcur = Nfixcur + 1
+!!$        if(coil(icoil)%Lc .eq. 0) Nfixgeo = Nfixgeo + 1
+!!$
+!!$     enddo
+!!$
+!!$     do icoil = 1, NCoils
+!!$        RlBCAST( coil(icoil)%xc(0:NFcoil) , 1+NFcoil ,  modulo(icoil-1, ncpu) )
+!!$        RlBCAST( coil(icoil)%xs(0:NFcoil) , 1+NFcoil ,  modulo(icoil-1, ncpu) )
+!!$        RlBCAST( coil(icoil)%yc(0:NFcoil) , 1+NFcoil ,  modulo(icoil-1, ncpu) )
+!!$        RlBCAST( coil(icoil)%ys(0:NFcoil) , 1+NFcoil ,  modulo(icoil-1, ncpu) )
+!!$        RlBCAST( coil(icoil)%zc(0:NFcoil) , 1+NFcoil ,  modulo(icoil-1, ncpu) )
+!!$        RlBCAST( coil(icoil)%zs(0:NFcoil) , 1+NFcoil ,  modulo(icoil-1, ncpu) )
+!!$     enddo
+!!$
+!!$     FATAL(rdcoils, .not. allocated(coilsX), coils file data not allocated)
+!!$     deallocate(coilsX, coilsY, coilsZ)
+! comment out on 20180228 for NAG incompative
      !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   case(-1 )
@@ -479,7 +479,7 @@ subroutine rdcoils
         coil(icoil)%N  =  NFcoil
         coil(icoil)%D  =  NDcoil
 
-        !    Io = 8.1E7/Ncoils
+        !   Io = 8.1E7/Ncoils
         coil(icoil)%I  =  Io
         coil(icoil)%Ic =  Ic
         coil(icoil)%Io =  Io
@@ -497,7 +497,7 @@ subroutine rdcoils
         SALLOCATE( coil(icoil)%zc, (0:NFcoil), zero )
         SALLOCATE( coil(icoil)%zs, (0:NFcoil), zero )
 
-        zeta = (icoil-1) * pi2 / Ncoils ! +half for different initialize option; 2017/04/17 
+        zeta = (icoil-1+half) * pi2 / Ncoils ! +half for different initialize option; 2017/04/17 
 
         call surfcoord( zero, zeta, r1, z1)
         call surfcoord(   pi, zeta, r2, z2)
@@ -522,7 +522,7 @@ subroutine rdcoils
         coil(icoil)%ys(0:1) = (/ 0.0             , 0.0              /)
         coil(icoil)%zc(0:1) = (/ z0              , 0.0              /)
         coil(icoil)%zs(0:1) = (/ 0.0             , rmin             /)
-!!$
+!!$    ! angle difference in coil representation;
 !!$    coil(icoil)%xc(0:1) = (/ Rmaj * cos(zeta), sqrt(2.0)/2 * rmin * cos(zeta) /)
 !!$    coil(icoil)%xs(0:1) = (/ 0.0             ,-sqrt(2.0)/2 * rmin * cos(zeta) /)
 !!$    coil(icoil)%yc(0:1) = (/ Rmaj * sin(zeta), sqrt(2.0)/2 * rmin * sin(zeta) /)
@@ -606,7 +606,7 @@ subroutine rdcoils
 
      r1 = sqrt( surf(1)%xx(      0,0)**2 + surf(1)%yy(      0,0)**2 ) ! R at (0 ,0)
      r2 = sqrt( surf(1)%xx(Nteta/2,0)**2 + surf(1)%yy(Nteta/2,0)**2 ) ! R at (pi,0)
-     Gnorm = half * (r1 + r2) ! something like the major radius;
+     Gnorm = half * (r1 + r2) ! something like the major radius; need to be changded;
 
      idof = 0
      do icoil = 1, Ncoils
@@ -716,58 +716,58 @@ SUBROUTINE readcoils(filename, maxnseg)
 end SUBROUTINE READCOILS
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-SUBROUTINE FFT( X, XFC, XFS, Nsegs, NFcoil)
-  use kmodule, only: ounit
-  implicit none
-  include "mpif.h"
-
-  REAL    :: X(1:Nsegs), XFC(0:NFcoil), XFS(0:NFcoil), Xtmp(0:Nsegs-1)
-  INTEGER :: Nsegs, NFcoil, ifail, ii, m, n
-  REAL, allocatable:: A(:), B(:)
-  LOGICAL :: IsOver
-
-  allocate(A(0:Nsegs-1))
-  allocate(B(0:Nsegs-1))
-  
-
-  if( IsOver(Nsegs) ) then
-#ifdef DEBUG
-   write(ounit,'(A, i3, A)') "The segments number ", nsegs, " has a prime number larger than 19. The last point was removed."
-#endif
-   Nsegs = Nsegs -1
-  endif
- 
-  do n = 0, Nsegs-1
-   Xtmp(n) = X(n+1)
-  enddo
-
-  ifail = 0
-  call C06EAF( Xtmp(0:Nsegs-1), Nsegs, ifail ) 
-
-  ifail = 0
-  call C06GBF( Xtmp(0:Nsegs-1), Nsegs, ifail )
-
-  m = 1
-  ifail = 0
-  call c06gsf(m,Nsegs,Xtmp,A,B,ifail)
-
-  XFC(0) = A(0)
-  XFS(0) = B(0)
-
-  do ii = 1, NFcoil
-   XFC(ii) = 2.0 * A(ii)
-   XFS(ii) = 2.0 * B(ii)
-  enddo
-
-  XFC = XFC / sqrt(real(Nsegs))
-  XFS = XFS / sqrt(real(Nsegs))
-
-  deallocate(A, B)
-
-  return
-
-end SUBROUTINE FFT
+!!$
+!!$SUBROUTINE FFT( X, XFC, XFS, Nsegs, NFcoil)
+!!$  use kmodule, only: ounit
+!!$  implicit none
+!!$  include "mpif.h"
+!!$
+!!$  REAL    :: X(1:Nsegs), XFC(0:NFcoil), XFS(0:NFcoil), Xtmp(0:Nsegs-1)
+!!$  INTEGER :: Nsegs, NFcoil, ifail, ii, m, n
+!!$  REAL, allocatable:: A(:), B(:)
+!!$  LOGICAL :: IsOver
+!!$
+!!$  allocate(A(0:Nsegs-1))
+!!$  allocate(B(0:Nsegs-1))
+!!$  
+!!$
+!!$  if( IsOver(Nsegs) ) then
+!!$#ifdef DEBUG
+!!$   write(ounit,'(A, i3, A)') "The segments number ", nsegs, " has a prime number larger than 19. The last point was removed."
+!!$#endif
+!!$   Nsegs = Nsegs -1
+!!$  endif
+!!$ 
+!!$  do n = 0, Nsegs-1
+!!$   Xtmp(n) = X(n+1)
+!!$  enddo
+!!$
+!!$  ifail = 0
+!!$  call C06EAF( Xtmp(0:Nsegs-1), Nsegs, ifail ) 
+!!$
+!!$  ifail = 0
+!!$  call C06GBF( Xtmp(0:Nsegs-1), Nsegs, ifail )
+!!$
+!!$  m = 1
+!!$  ifail = 0
+!!$  call c06gsf(m,Nsegs,Xtmp,A,B,ifail)
+!!$
+!!$  XFC(0) = A(0)
+!!$  XFS(0) = B(0)
+!!$
+!!$  do ii = 1, NFcoil
+!!$   XFC(ii) = 2.0 * A(ii)
+!!$   XFS(ii) = 2.0 * B(ii)
+!!$  enddo
+!!$
+!!$  XFC = XFC / sqrt(real(Nsegs))
+!!$  XFS = XFS / sqrt(real(Nsegs))
+!!$
+!!$  deallocate(A, B)
+!!$
+!!$  return
+!!$
+!!$end SUBROUTINE FFT
 
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!

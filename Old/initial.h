@@ -103,7 +103,7 @@ subroutine initial
   
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  bsfield%tol = bstol ; bsfield%N = bsnlimit ! bsfield is global; passed through to Oculus:bs00aa; 30 Oct 15;
+  !bsfield%tol = bstol ; bsfield%N = bsnlimit ! bsfield is global; passed through to Oculus:bs00aa; 30 Oct 15;
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -266,6 +266,9 @@ subroutine initial
      FATAL( initial, Ntauout .le.   0, illegal )
      FATAL( initial, Nteta   .le.   0, illegal )
      FATAL( initial, Nzeta   .le.   0, illegal )
+     CG_Niter = Ntauout
+     NT_Niter = Ntauout
+     Ntauout = CG_Niter + NT_Niter
   case default
      FATAL( initial, .true., selected Loptimize is not supported )
   end select
@@ -397,7 +400,8 @@ subroutine initial
 
   isr = 'I' ; ifail = 0
 
-  call C06FUF( Nteta, Nzeta, ijreal(1:Ntz), ijimag(1:Ntz), isr, trigm(1:2*Nteta), trign(1:2*Nzeta), trigwk(1:2*Ntz), ifail )
+  ! call C06FUF( Nteta, Nzeta, ijreal(1:Ntz), ijimag(1:Ntz), isr, trigm(1:2*Nteta), trign(1:2*Nzeta), trigwk(1:2*Ntz), ifail )
+  ! comment out on 20180228 for NAG incompative
 
   isr = 'S'
 

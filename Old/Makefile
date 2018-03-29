@@ -1,10 +1,14 @@
 #!/bin/sh
 
 ############################################################################################################
+# comment out on 20180228 for NAG incompative
+# ALLFILES= globals numrec initial surface rdknot rdcoils knotxx iccoil bfield bnormal torflux tlength equarcl \
+#     specwid coilsep nlinear fdcheck denergy descent congrad truncnt restart diagnos exinput identfy \
+#     bnftran hessian focus
 
- ALLFILES= globals numrec initial surface rdknot rdcoils knotxx iccoil bfield bnormal torflux tlength equarcl \
+ ALLFILES= globals numrec initial surface rdcoils  iccoil bfield bnormal torflux tlength equarcl \
      specwid coilsep nlinear fdcheck denergy descent congrad truncnt restart diagnos exinput identfy \
-     bnftran focus
+     bnftran hessian focus
 
 ############################################################################################################
 
@@ -19,12 +23,17 @@
  MACROS=macros
  CC=intel # if want to use gfortran; make CC=gfortran
  FC=mpif90
- FLAGS=-r8 -mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback -vec_report0
+ FLAGS=-r8 -mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback -D BNORM #-vec_report0
  DFLAGS=-check all -check noarg_temp_created -debug full -D DEBUG
 
 ############################################################################################################
 
- NAG=-L$(NAG_ROOT)/lib -lnag_nag
+ #NAG=-L$(NAG_ROOT)/lib -lnag
+ NAG= -I$(NAG_ROOT)/nag_interface_blocks $(NAG_ROOT)/lib/libnag_mkl.a \
+	-Wl,--start-group $(NAG_ROOT)/mkl_intel64_11.3.3/lib/libmkl_intel_lp64.a \
+                        $(NAG_ROOT)/mkl_intel64_11.3.3/lib/libmkl_intel_thread.a \
+                        $(NAG_ROOT)/mkl_intel64_11.3.3/lib/libmkl_core.a -Wl,--end-group \
+        -liomp5 -lpthread -lm -ldl -lstdc++
 
  HDF5=-I$(HDF5_HOME)/include -L$(HDF5_HOME)/lib -lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran \
 -lhdf5 -lpthread -lz -lm
@@ -39,12 +48,12 @@
 
 ############################################################################################################
 
-xfocus: $(OBJS) tnpack.o hybrj.o
-	$(FC) -o xfocus $(OBJS) tnpack.o  hybrj.o $(OCULUSFLAGS) $(NAG) $(HDF5)
+xfocus: $(OBJS) tnpack.o hybrj.o modchl.o
+	$(FC) -o xfocus $(OBJS) tnpack.o  hybrj.o modchl.o $(OCULUSFLAGS) $(NAG) $(HDF5) $(MKL)
 	@echo "Compiling xfocus finished."
 
-dfocus: $(DOBJS) tnpack.o hybrj.o
-	$(FC) -o dfocus $(DOBJS) tnpack.o hybrj.o $(OCULUSFLAGS) $(NAG) $(HDF5)
+dfocus: $(DOBJS) tnpack.o hybrj.o modchl.o
+	$(FC) -o dfocus $(DOBJS) tnpack.o hybrj.o modchl.o $(OCULUSFLAGS) $(NAG) $(HDF5) $(MKL)
 	@echo "Compiling dfocus finished."
 
 ############################################################################################################
@@ -54,11 +63,14 @@ hybrj.o: hybrj.f
 tnpack.o: tnpack.f
 	$(FC) -c $(FLAGS) $(DFLAGS) -o $@ $<
 
+modchl.o: modchl.f
+	$(FC) -c $(FLAGS) $(DFLAGS) -o $@ $<
+
 $(OBJS): %_r.o: %.F90
-	$(FC) -c $(FLAGS) -o $@ $<  $(OCULUSFLAGS) $(NAG) $(HDF5)
+	$(FC) -c $(FLAGS) -o $@ $<  $(OCULUSFLAGS) $(NAG) $(HDF5) $(MKL)
 
 $(DOBJS): %_d.o: %.F90
-	$(FC) -c $(FLAGS) $(DFLAGS) -o $@ $< $(OCULUSFLAGS) $(NAG) $(HDF5)
+	$(FC) -c $(FLAGS) $(DFLAGS) -o $@ $< $(OCULUSFLAGS) $(NAG) $(HDF5) $(MKL)
 
 $(FFILES): %.F90: %.h
 	m4 -P $(MACROS) $< > $@

@@ -311,13 +311,13 @@ end subroutine costfun
 subroutine normweight
   use globals, only : zero, one, machprec, ounit, myid, xdof, bnorm, bharm, tflux, ttlen, specw, ccsep, &
        weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_specw, weight_ccsep, target_tflux, &
-       psi_avg, coil, Ncoils, case_length
+       psi_avg, coil, Ncoils, case_length, Bmnc, Bmns, tBmnc, tBmns
 
   implicit none  
   include "mpif.h"
 
   INTEGER    :: ierr, icoil
-  REAL       :: tmp, cur_tflux
+  REAL       :: tmp, cur_tflux, modBn, modtBn
 
   !----------------------------------------------------------------------------------------------------
 
@@ -345,6 +345,24 @@ subroutine normweight
 
   endif
 
+  !-!-!-!-!-!-!-!-!-!-bharm-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+  if( weight_bharm >= machprec ) then
+
+     call bmnharm(0)
+     modBn = sqrt(sum(Bmnc**2 + Bmns**2))
+     modtBn = sqrt(sum(tBmnc**2 + tBmns**2))
+     do icoil = 1, Ncoils
+        coil(icoil)%I = coil(icoil)%I * modtBn / modBn
+     enddo
+     if(myid .eq. 0) write(ounit,'("solvers : rescale coil currents with a factor of "ES12.5)') &
+          modtBn / modBn
+     call bmnharm(0)
+     if (abs(bharm) > machprec) weight_bharm = weight_bharm / bharm
+     if( myid == 0 ) write(ounit, 1000) "weight_bharm", weight_bharm
+
+  endif
+
   !-!-!-!-!-!-!-!-!-!-bnorm-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   if( weight_bnorm >= machprec ) then
@@ -352,16 +370,6 @@ subroutine normweight
      call bnormal(0)   
      if (abs(bnorm) > machprec) weight_bnorm = weight_bnorm / bnorm
      if( myid == 0 ) write(ounit, 1000) "weight_bnorm", weight_bnorm
-
-  endif
-
-  !-!-!-!-!-!-!-!-!-!-bnorm-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-  if( weight_bharm >= machprec ) then
-
-     call bmnharm(0)   
-     if (abs(bharm) > machprec) weight_bharm = weight_bharm / bharm
-     if( myid == 0 ) write(ounit, 1000) "weight_bharm", weight_bharm
 
   endif
 
@@ -403,7 +411,7 @@ subroutine normweight
 !!$   
 !!$  endif
 
-1000 format("solvers : "A12" is normalized to" ES23.15)
+1000 format("solvers : "A12" is normalized to " ES23.15)
 
   call packdof(xdof)
 

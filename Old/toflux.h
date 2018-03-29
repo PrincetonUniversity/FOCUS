@@ -66,8 +66,8 @@ REAL function dflux( tt )
   
   use knotopt, only : zero, one, myid, ncpu, &
                       Ncoils, icoil, &
-                      tfzeta, &
-                      bsfield
+                      tfzeta!, &
+!                     bsfield
   
   use oculus, only : bs00aa
   
