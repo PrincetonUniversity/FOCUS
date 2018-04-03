@@ -280,4 +280,30 @@ SUBROUTINE getdf(f ,g)
   return
 END SUBROUTINE getdf
   
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+subroutine curscan
+  use kmodule, only: coil, Inorm, myid, Ntauout, ounit
+  implicit none
+  include "mpif.h"
+
+  INTEGER :: icur
+  REAL    :: cur_lower, cur_upper, cur_int
+  
+  if(myid == 0) write(ounit, '("curscan : "10X" : Begin scanning the current in the first coil.")')
+
+  cur_lower = coil(1)%I ! low current is the initial value;
+  cur_upper = 7.50E5    ! upper current is set to some value larger;
+  cur_int = (cur_upper - cur_lower) / Ntauout ! current interval  
+  Inorm = 1.0 ! no normalizations
+
+  call costfun(0)
+  call output
+  do icur = 1, Ntauout
+     coil(1)%I = cur_lower + icur * cur_int
+     call costfun(0)
+     call output
+  enddo
+
+  return
+end subroutine curscan
   

@@ -196,6 +196,7 @@ subroutine initial
      FATAL( initial, absreq  .le.zero, illegal )
      FATAL( initial, relreq  .le.zero, illegal )
   case( 0 )
+     Ntauout = 1
   case( 1 )
      FATAL( initial, tauend  .le.zero, illegal )
      FATAL( initial, tautol  .le.zero, illegal )

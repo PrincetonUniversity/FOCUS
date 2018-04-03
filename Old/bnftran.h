@@ -114,14 +114,14 @@ SUBROUTINE bnftran
            do jj = 0, Nzeta-1
               zeta = ( jj + half ) * pi2 / Nzeta
               arg = im*teta - in*bNfp*zeta
-              !bnc(imn) = bnc(imn) + (tbn(ii, jj)-surf(1)%bnt(ii,jj))*cos(arg)
-              !bns(imn) = bns(imn) + (tbn(ii, jj)-surf(1)%bnt(ii,jj))*sin(arg)
+               bnc(imn) = bnc(imn) + (tbn(ii, jj)-surf(1)%bnt(ii,jj))*cos(arg)  ! all the total
+               bns(imn) = bns(imn) + (tbn(ii, jj)-surf(1)%bnt(ii,jj))*sin(arg)  
 
-              !bnc(imn) = bnc(imn) + (surf(1)%bnt(ii,jj))*cos(arg)
+              !bnc(imn) = bnc(imn) + (surf(1)%bnt(ii,jj))*cos(arg)              ! only plasma
               !bns(imn) = bns(imn) + (surf(1)%bnt(ii,jj))*sin(arg)
 
-              bnc(imn) = bnc(imn) + (tbn(ii, jj))*cos(arg)
-              bns(imn) = bns(imn) + (tbn(ii, jj))*sin(arg)
+              !bnc(imn) = bnc(imn) + (tbn(ii, jj))*cos(arg)                      ! only vacuum
+              !bns(imn) = bns(imn) + (tbn(ii, jj))*sin(arg)
            enddo ! end jj
         enddo ! end ii
 
