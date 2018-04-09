@@ -1,3 +1,4 @@
 # FOCUS (Flexible Optimized Coils Using Space curves)
 
-[GitHub pages](https://princetonuniversity.github.io/FOCUS/)
+This is an old version of FOCUS. It has NAG dependance.
+For more questions, please contact Caoxiang (czhu@pppl.gov).

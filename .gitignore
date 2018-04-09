@@ -19,6 +19,9 @@
 .idea/
 .project
 bin/
+New/
+pyfocus/
+docs/
 
 Old/xfocus
 Old/dfocus
