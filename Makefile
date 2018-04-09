@@ -51,10 +51,12 @@
 xfocus: $(OBJS) tnpack.o hybrj.o modchl.o
 	$(FC) -o xfocus $(OBJS) tnpack.o  hybrj.o modchl.o $(OCULUSFLAGS) $(NAG) $(HDF5) $(MKL)
 	@echo "Compiling xfocus finished."
+	mkdir -p bin ; mv xfocus ./bin/
 
 dfocus: $(DOBJS) tnpack.o hybrj.o modchl.o
 	$(FC) -o dfocus $(DOBJS) tnpack.o hybrj.o modchl.o $(OCULUSFLAGS) $(NAG) $(HDF5) $(MKL)
 	@echo "Compiling dfocus finished."
+	mkdir -p bin ; mv dfocus ./bin/
 
 ############################################################################################################
 hybrj.o: hybrj.f
