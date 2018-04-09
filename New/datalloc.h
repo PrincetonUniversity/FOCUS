@@ -43,7 +43,7 @@ subroutine AllocData(itype)
         Tdof = Tdof + 1              + 6*(FouCoil(icoil)%NF)+3
         if (DoF(icoil)%ND >= Cdof) Cdof = DoF(icoil)%ND ! find the largest ND for single coil;
 
-     enddo
+      enddo
 
      if(Ndof == 0) then ! no DOF;
         Nouts = 0
@@ -52,7 +52,7 @@ subroutine AllocData(itype)
 
      SALLOCATE(    xdof, (1:Ndof), zero ) ! dof vector;
      SALLOCATE( dofnorm, (1:Ndof), zero ) ! dof normalized value vector;
-     SALLOCATE( evolution, (1:Nouts+1, 0:8), zero ) !evolution array;
+     SALLOCATE( evolution, (1:Nouts+1, 0:7), zero ) !evolution array;
      SALLOCATE( coilspace, (1:Nouts+1, 1:Tdof), zero ) ! all the coil parameters;
      
      idof = 0
@@ -123,6 +123,11 @@ subroutine AllocData(itype)
      ! ttlen needed;
      if (weight_ttlen > sqrtmachprec) then
         SALLOCATE( t1L,  (1:Ndof), zero )
+     endif
+
+     ! cssep needed;
+     if (weight_cssep > sqrtmachprec) then
+        SALLOCATE( t1S,  (1:Ndof), zero )
      endif
 
   endif

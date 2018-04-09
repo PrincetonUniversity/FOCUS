@@ -6,7 +6,8 @@ SUBROUTINE diagnos
 ! diagonose the coil performance
 !------------------------------------------------------------------------------------------------------   
   use globals, only: zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
-       Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length
+       Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
+       cssep
                      
   implicit none
   include "mpif.h"
@@ -23,9 +24,9 @@ SUBROUTINE diagnos
   if (case_optimize == 0) call AllocData(0) ! if not allocate data;
   call costfun(0)
 
-  if (myid == 0) write(ounit, '("diagnos : "6(A12," ; "))') , &
-       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "spectral", "c-c sep." 
-  if (myid == 0) write(ounit, '("        : "6(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, specw, ccsep
+  if (myid == 0) write(ounit, '("diagnos : "5(A12," ; "))') , &
+       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." 
+  if (myid == 0) write(ounit, '("        : "6(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep
 
   !save all the coil parameters;
   if (allocated(coilspace)) then

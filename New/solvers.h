@@ -59,8 +59,8 @@ subroutine solvers
 
   if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "---------------------------------------------------"
   if (myid == 0 .and. IsQuiet < 0) write(ounit, *) " Initial status"
-  if (myid == 0) write(ounit, '("output  : "A6" : "9(A12," ; "))') "iout", "mark", "chi", "dE_norm", &
-       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "spectral", "c-c sep." 
+  if (myid == 0) write(ounit, '("output  : "A6" : "8(A12," ; "))') "iout", "mark", "chi", "dE_norm", &
+       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." 
   call costfun(1)
   call saveBmn    ! in bmnharm.h;
   iout = 0 ! reset output counter;
@@ -132,7 +132,8 @@ subroutine costfun(ideriv)
        bharm      , t1H, t2H, weight_bharm,  &
        tflux      , t1F, t2F, weight_tflux, target_tflux, psi_avg, &
        ttlen      , t1L, t2L, weight_ttlen, case_length, &
-       specw      , t1S, t2S, weight_specw, &
+       cssep      , t1S, t2S, weight_cssep, &
+       specw      , t1P, t2P, weight_specw, &
        ccsep      , t1C, t2C, weight_ccsep
 
   implicit none
@@ -244,6 +245,20 @@ subroutine costfun(ideriv)
      endif
 
   endif
+
+  ! coil surface separation;
+  if (weight_cssep > sqrtmachprec) then
+ 
+     call surfsep(ideriv)
+     chi = chi + weight_cssep * cssep
+     if     ( ideriv == 1 ) then
+        t1E = t1E +  weight_cssep * t1S
+     elseif ( ideriv == 2 ) then
+        t1E = t1E +  weight_cssep * t1S
+        t2E = t2E +  weight_cssep * t2S
+     endif
+  endif
+
 !!$
 !!$  ! if (myid == 0) write(ounit,'("calling tlength used",f10.5,"seconds.")') finish-start
 !!$
@@ -309,9 +324,9 @@ end subroutine costfun
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine normweight
-  use globals, only : zero, one, machprec, ounit, myid, xdof, bnorm, bharm, tflux, ttlen, specw, ccsep, &
-       weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_specw, weight_ccsep, target_tflux, &
-       psi_avg, coil, Ncoils, case_length, Bmnc, Bmns, tBmnc, tBmns
+  use globals, only : zero, one, machprec, ounit, myid, xdof, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
+       weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_specw, weight_ccsep, &
+       target_tflux, psi_avg, coil, Ncoils, case_length, Bmnc, Bmns, tBmnc, tBmns
 
   implicit none  
   include "mpif.h"
@@ -391,6 +406,16 @@ subroutine normweight
 
   endif
 
+  !-!-!-!-!-!-!-!-!-!-cssep-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+  if( weight_cssep >= machprec ) then
+
+     call surfsep(0)   
+     if (abs(cssep) > machprec) weight_cssep = weight_cssep / cssep
+     if( myid == 0 ) write(ounit, 1000) "weight_cssep", weight_cssep
+
+  endif
+
 !!$!-!-!-!-!-!-!-!-!-!-eqarc-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 !!$
 !!$  if( weight_eqarc .ge. machprec ) then
@@ -424,8 +449,8 @@ end subroutine normweight
 subroutine output (mark)
 
   use globals, only : zero, ounit, myid, ierr, astat, iout, Nouts, Ncoils, save_freq, Tdof, &
-       coil, coilspace, FouCoil, chi, t1E, bnorm, bharm, tflux, ttlen, specw, ccsep, evolution, xdof, DoF, &
-       exit_tol, exit_signal
+       coil, coilspace, FouCoil, chi, t1E, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
+       evolution, xdof, DoF, exit_tol, exit_signal
 
   implicit none  
   include "mpif.h"
@@ -442,8 +467,8 @@ subroutine output (mark)
 
   sumdE = sqrt(sum(t1E**2)) ! Eucliean norm 2; 
 
-  if (myid == 0) write(ounit, '("output  : "I6" : "9(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, bharm, &
-       tflux, ttlen, specw, ccsep
+  if (myid == 0) write(ounit, '("output  : "I6" : "8(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, bharm, &
+       tflux, ttlen, cssep
 
   ! save evolution data;
   if (allocated(evolution)) then
@@ -454,8 +479,9 @@ subroutine output (mark)
      evolution(iout,4) = bharm
      evolution(iout,5) = tflux
      evolution(iout,6) = ttlen
-     evolution(iout,7) = specw
-     evolution(iout,8) = ccsep
+     evolution(iout,7) = cssep
+     !evolution(iout,8) = 0.0
+     !evolution(iout,8) = ccsep
   endif
 
   ! exit the optimization if no obvious changes in past 5 outputs; 07/20/2017

@@ -19,6 +19,7 @@ Here are the list and links.
 | bmnharm | evaluate the Bn spectrum difference | [bmnharm.h](https://github.com/PrincetonUniversity/FOCUS/blob/master/New/bmnharm.h) | [bmnharm.pdf](https://princetonuniversity.github.io/FOCUS/bmnharm.pdf) |
 | torflux | evaluate the toroidal flux error | [torflux.h](https://github.com/PrincetonUniversity/FOCUS/blob/master/New/torflux.h) | [torflux.pdf](https://princetonuniversity.github.io/FOCUS/torflux.pdf) |
 | length  | evaluate the coil length constraint | [length.h](https://github.com/PrincetonUniversity/FOCUS/blob/master/New/length.h) | [length.pdf](https://princetonuniversity.github.io/FOCUS/length.pdf) |
+| surfsep | push coils away from any surfaces | [surfsep.h](https://github.com/PrincetonUniversity/FOCUS/blob/master/New/surfsep.h) | [surfsep.pdf](https://princetonuniversity.github.io/FOCUS/surfsep.pdf) |
 | solvers | interface for all the optimizers | [solvers.h](https://github.com/PrincetonUniversity/FOCUS/blob/master/New/solvers.h) | [solvers.pdf](https://princetonuniversity.github.io/FOCUS/solvers.pdf) |
 | descent | differential flow optimization | [descent.h](https://github.com/PrincetonUniversity/FOCUS/blob/master/New/descent.h) | [descent.pdf](https://princetonuniversity.github.io/FOCUS/descent.pdf) |
 | congrad | conjugate gradient optimization | [congrad.h](https://github.com/PrincetonUniversity/FOCUS/blob/master/New/congrad.h) | [congrad.pdf](https://princetonuniversity.github.io/FOCUS/congrad.pdf) |

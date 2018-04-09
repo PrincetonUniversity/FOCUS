@@ -29,7 +29,7 @@ subroutine saving
 
 
   INTEGER            :: ii, jj, icoil, NF
-  CHARACTER(LEN=10)  :: version='v0.1.02'
+  CHARACTER(LEN=10)  :: version='v0.2.01'
 
 
   ! the following are used by the macros HWRITEXX below; do not alter/remove;

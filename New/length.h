@@ -36,11 +36,10 @@
 !latex  From \Eqn{var_L}, we can calculated the functional derivatives of coil length with respect to the 
 !latex  coil geometries,
 !latex  \begin{align}
-!latex  \ds \frac{\delta L}{\delta x} & =  \frac{y'y''x' + z'z''x' - y'y'x'' - z'z'x''}
-!laetx                                          {(x'x' + y'y' + z'z')^{3/2}} \ ; \\
-!latex  \ds \frac{\delta L}{\delta x} & =  \frac{x'x''y' + z'z''y' - x'x'y'' - z'z'y''}
+!latex  \ds \frac{\delta L}{\delta x} & =  \frac{y'y''x' + z'z''x' - y'y'x'' - z'z'x''}{(x'x' + y'y' + z'z')^{3/2}} \ ; \\
+!latex  \ds \frac{\delta L}{\delta y} & =  \frac{x'x''y' + z'z''y' - x'x'y'' - z'z'y''}
 !latex                                          {(x'x' + y'y' + z'z')^{3/2}} \ ; \\
-!latex  \ds \frac{\delta L}{\delta x} & =  \frac{x'x''z' + y'y''z' - x'x'z'' - y'y'z''}
+!latex  \ds \frac{\delta L}{\delta z} & =  \frac{x'x''z' + y'y''z' - x'x'z'' - y'y'z''}
 !latex                                          {(x'x' + y'y' + z'z')^{3/2}} \ .
 !latex  \end{align}
 !latex  Then the derivatives of coil length with respect to coil parameters are
@@ -160,7 +159,7 @@ subroutine LenDeriv0(icoil, length)
   
   length = zero
   
-  do kseg = 0, coil(icoil)%NS-1
+  do kseg = 1, coil(icoil)%NS
 
      dlength = sqrt(coil(icoil)%xt(kseg)**2 + coil(icoil)%yt(kseg)**2 + coil(icoil)%zt(kseg)**2)
      length  = length + dlength * coil(icoil)%dd(kseg)
