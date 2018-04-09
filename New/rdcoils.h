@@ -386,7 +386,7 @@ subroutine rdcoils
      total_coef = 0 ! total number of coefficients
      do icoil = 1, Ncoils
         NF = FouCoil(icoil)%NF
-        total_coef = total_coef + NF
+        total_coef = total_coef + (6*NF + 3)
         do icoef = 0, NF
            Gnorm = Gnorm + FouCoil(icoil)%xs(icoef)**2 + FouCoil(icoil)%xc(icoef)**2
            Gnorm = Gnorm + FouCoil(icoil)%ys(icoef)**2 + FouCoil(icoil)%yc(icoef)**2
