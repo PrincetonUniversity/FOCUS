@@ -40,10 +40,12 @@ endif
 xfocus: $(ROBJS) $(NUMOBJ)
 	$(FC) -o xfocus $(ROBJS) $(NUMOBJ) $(HDF5)
 	@echo "Compiling xfocus finished."
+	mkdir -p ../bin ; mv xfocus ../bin/
 
 dfocus: $(DOBJS) $(NUMOBJ)
 	$(FC) -o dfocus $(DOBJS) $(NUMOBJ) $(HDF5)
 	@echo "Compiling dfocus finished."
+	mkdir -p ../bin ; mv dfocus ../bin/
 
 ############################################################################################################
 ode.o : ode.f90
