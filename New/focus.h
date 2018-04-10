@@ -40,39 +40,39 @@
 !latex 2017/06/23: NAG and OCULUS dependance have been removed in the new code.\par
 !latex 2017/07/18: Enable field periodicity and add coil diagnostic part. \par
  
-!latex \subsection{Structure of the code}
-!latex \begin{tikzpicture}[node distance=2cm, auto]
-!latex \node [block] (start) {Main program in \link{focus}};
-!latex \node [io, below of=start] (input) {read input in \link{initial} \& allocate data in \link{datalloc}};
-!latex \node [io, below of=input] (surface) {read \& discretize surface data in \link{rdsurf}};
-!latex \node [io, below of=surface] (coils) {initialize coils data in \link{rdcoils}};
-!latex \node [cloud, left of=coils, xshift=-4cm, yshift=1.0cm] (diagnos) 
-!latex               {coils evaluation in \link{diagnos}};
-!latex \node [block, below of=coils] (pack) {Packing degrees of freedom in \link{packdof}};
-!latex \node [decision, below of=pack,]  (optimizer) {Optimizing in \link{solvers}};
-!latex \node [block, right of=optimizer, xshift=2.5cm] (unpack) 
-!latex               {unpack DOF to coils in \link{packdof}};
-!latex \node [block, right of=unpack, xshift=2cm] (costfun) 
-!latex               {calculate the cost functions in \link{solvers}};
-!latex \node [block, below of=optimizer, yshift=-1.5cm] (postproc) {post proceedings};
-!latex \node [io, below of=postproc] (output) {saving all the data in \link{saving}};
-!latex \node [block, below of=output] (clean) {clean and finish in \link{cleanup}};
-
-!latex \path [line] (start) -- (input);
-!latex \path [line] (input) -- (surface);
-!latex \path [line] (surface) -- (coils);
-!latex \path [line, dashed] (surface) -| (diagnos);
-!latex \path [line, dashed] (coils) -| (diagnos);
-!latex \path [line] (coils) -- (pack);
-!latex \path [line] (pack) -- (optimizer);
-!latex \path [line] (optimizer) -- node {iterations} (unpack);
-!latex \path [line] (unpack) -- (costfun);
-!latex \path [line] (costfun) |- (pack);
-!latex \path [line] (optimizer) -- node {is over} (postproc);
-!latex \path [line] (postproc) -- (output);
-!latex \path [line, dashed] (postproc) -| (diagnos);
-!latex \path [line] (output) -- (clean);
-!latex \end{tikzpicture}
+!!$!latex \subsection{Structure of the code}
+!!$!latex \begin{tikzpicture}[node distance=2cm, auto]
+!!$!latex \node [block] (start) {Main program in \link{focus}};
+!!$!latex \node [io, below of=start] (input) {read input in \link{initial} \& allocate data in \link{datalloc}};
+!!$!latex \node [io, below of=input] (surface) {read \& discretize surface data in \link{rdsurf}};
+!!$!latex \node [io, below of=surface] (coils) {initialize coils data in \link{rdcoils}};
+!!$!latex \node [cloud, left of=coils, xshift=-4cm, yshift=1.0cm] (diagnos) 
+!!$!latex               {coils evaluation in \link{diagnos}};
+!!$!latex \node [block, below of=coils] (pack) {Packing degrees of freedom in \link{packdof}};
+!!$!latex \node [decision, below of=pack,]  (optimizer) {Optimizing in \link{solvers}};
+!!$!latex \node [block, right of=optimizer, xshift=2.5cm] (unpack) 
+!!$!latex               {unpack DOF to coils in \link{packdof}};
+!!$!latex \node [block, right of=unpack, xshift=2cm] (costfun) 
+!!$!latex               {calculate the cost functions in \link{solvers}};
+!!$!latex \node [block, below of=optimizer, yshift=-1.5cm] (postproc) {post proceedings};
+!!$!latex \node [io, below of=postproc] (output) {saving all the data in \link{saving}};
+!!$!latex \node [block, below of=output] (clean) {clean and finish in \link{cleanup}};
+!!$
+!!$!latex \path [line] (start) -- (input);
+!!$!latex \path [line] (input) -- (surface);
+!!$!latex \path [line] (surface) -- (coils);
+!!$!latex \path [line, dashed] (surface) -| (diagnos);
+!!$!latex \path [line, dashed] (coils) -| (diagnos);
+!!$!latex \path [line] (coils) -- (pack);
+!!$!latex \path [line] (pack) -- (optimizer);
+!!$!latex \path [line] (optimizer) -- node {iterations} (unpack);
+!!$!latex \path [line] (unpack) -- (costfun);
+!!$!latex \path [line] (costfun) |- (pack);
+!!$!latex \path [line] (optimizer) -- node {is over} (postproc);
+!!$!latex \path [line] (postproc) -- (output);
+!!$!latex \path [line, dashed] (postproc) -| (diagnos);
+!!$!latex \path [line] (output) -- (clean);
+!!$!latex \end{tikzpicture}
 
 !latex \subsection{Misc}
 !latex \bi

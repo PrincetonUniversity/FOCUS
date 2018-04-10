@@ -30,8 +30,9 @@ SUBROUTINE fdcheck( ideriv )
   !--------------------------------------------------------------------------------------------
 
   INTEGER              :: astat, ierr, idof
-  REAL                 :: tmp_xdof(1:Ndof), small=1.0E-6, fd, negvalue, posvalue, diff, rdiff
+  REAL                 :: tmp_xdof(1:Ndof), fd, negvalue, posvalue, diff, rdiff
   REAL                 :: start, finish
+  REAL, parameter      :: small=1.0E-4
   !--------------------------------------------------------------------------------------------
 
   if(myid == 0) write(ounit, *) "-----------Checking derivatives------------------------------"

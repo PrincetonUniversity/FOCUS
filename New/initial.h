@@ -448,14 +448,16 @@ subroutine initial
      FATAL( initial, weight_ttlen  < zero, illegal )
      FATAL( initial, weight_specw  < zero, illegal )
      FATAL( initial, weight_ccsep  < zero, illegal )
-     if (IsQuiet < 1) write(ounit, '(8X,": weights are set as: "6A12)') "bnorm", "bharm", "tflux", &
-         "ttlen", "specw", "ccsep"
-     if (IsQuiet < 1) write(ounit, '(8X,": "20X,6ES12.5)') weight_bnorm, weight_bharm, weight_tflux, &
-          weight_ttlen, weight_specw, weight_ccsep
+     FATAL( initial, weight_cssep  < zero, illegal )
+
+     if (IsQuiet < 1) write(ounit, '(8X,": weights are set as: "5A12)') "bnorm", "bharm", "tflux", &
+         "ttlen", "cssep"
+     if (IsQuiet < 1) write(ounit, '(8X,": "20X,5ES12.5)') weight_bnorm, weight_bharm, weight_tflux, &
+          weight_ttlen, weight_cssep
 
      FATAL( initial, target_length  < zero, illegal )
-     if (IsQuiet < 1) write(ounit, '(8X,": target_tflux = "ES12.5" ; target_length = "ES12.5)') &
-          target_tflux, target_length
+     if (IsQuiet < 1) write(ounit, '(8X,": target_tflux = "ES12.5" ; target_length = "ES12.5" ; cssep_factor = "ES12.5)') &
+          target_tflux, target_length, cssep_factor
 
      select case ( case_postproc )
      case ( 0 )
@@ -493,7 +495,7 @@ subroutine initial
   tmpw_tflux = weight_tflux
   tmpt_tflux = target_tflux
   tmpw_ttlen = weight_ttlen
-  tmpw_specw = weight_specw
+ !tmpw_specw = weight_specw
   tmpw_ccsep = weight_ccsep
 
 

@@ -49,8 +49,8 @@ SUBROUTINE congrad
   p(1:Ndof) = -gradk ! initial step direction;
   alpha = 1.0 ! initial step size;
 
-  if (myid == 0) write(ounit, '("output  : "A6" : "9(A12," ; "))') "iout", "time (s)", "chi", "dE_norm", &
-       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "spectral", "c-c sep." 
+  if (myid == 0) write(ounit, '("output  : "A6" : "8(A12," ; "))') "iout", "time (s)", "chi", "dE_norm", &
+       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." 
 
   do
 

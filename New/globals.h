@@ -99,7 +99,9 @@ module globals
   REAL                 :: weight_tflux   =        0.000D+00
   REAL                 :: target_tflux   =        0.000D+00
   REAL                 :: weight_ttlen   =        0.000D+00
-  REAL                 :: target_length  =        0.000D+00 
+  REAL                 :: target_length  =        0.000D+00
+  REAL                 :: weight_cssep   =        0.000D+00
+  REAL                 :: cssep_factor   =        1.000D+00 
   REAL                 :: weight_specw   =        0.000D+00
   REAL                 :: weight_ccsep   =        0.000D+00
   REAL                 :: weight_inorm   =        1.000D+00
@@ -161,6 +163,8 @@ module globals
                         target_tflux   , &
                         weight_ttlen   , &
                         target_length  , &
+                        weight_cssep   , &
+                        cssep_factor   , &
                         weight_specw   , &
                         weight_ccsep   , &
                         weight_inorm   , &
@@ -262,12 +266,16 @@ module globals
   ! Length constraint
   REAL                 :: ttlen
   REAL   , allocatable :: t1L(:), t2L(:,:)
+  ! Coil-surface spearation
+  INTEGER              :: psurf = 1 ! the prevent surface label; default 1 is the plasma boundary
+  REAL                 :: cssep
+  REAL   , allocatable :: t1S(:), t2S(:,:)
   ! Coil-coil spearation
   REAL                 :: ccsep
   REAL   , allocatable :: t1C(:), t2C(:,:)
   ! Spectral condensation;
   REAL                 :: specw
-  REAL   , allocatable :: t1S(:), t2S(:,:)
+  REAL   , allocatable :: t1P(:), t2P(:,:)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
