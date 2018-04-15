@@ -27,9 +27,9 @@ If you are fresh to GitHub, you can visit this [page](https://princetonuniversit
 * Prerequisites
 
   The current version of FOCUS uses the following compilers/libraries:   
-    - **[intel](https://software.intel.com/en-us/fortran-compilers)/[gfotran](https://gcc.gnu.org/wiki/GFortran) compiler** 
-    - **[OpenMPI](https://www.open-mpi.org/)**
-    - **[HDF5](https://support.hdfgroup.org/HDF5/)**
+  - **[Intel](https://software.intel.com/en-us/fortran-compilers)/[gfotran](https://gcc.gnu.org/wiki/GFortran) compiler** 
+  - **[OpenMPI](https://www.open-mpi.org/)**
+  - **[HDF5](https://support.hdfgroup.org/HDF5/)**
     
   If the versions you downloaded are not compatible, please raise an issue.
 
@@ -157,10 +157,10 @@ Intermediate coil data (XYZ points in space) are store in binary file *.example.
 
 # Plotting
 There are several tools for processing the data.
-    - **python:** there is an python package written by Dr. Caoxiang Zhu, using [Matplotlib](https://matplotlib.org/) and [Mayavi](http://docs.enthought.com/mayavi/mayavi/).
-    - **OMFIT:** In the [OMFIT](https://gafusion.github.io/OMFIT-source/) frame, there is a powerful module [*focus*](https://docs.google.com/document/d/1aGpRUMpYxBJmQXfkOK2OFMZ4P0Mn5H1_OSAjJVvxpHU/edit?ts=5ad10d28#) managed by Dr. Nikolas Logan.
-    - **IDL:** There is a GUI interface Echidna in IDL written by Dr. Stuart Hudson.
-    - **Matlab:** There are also some MATLAB scripts by Dr. Lazerson.  
+  - **python:** There is an python package written by Dr. Caoxiang Zhu, using [Matplotlib](https://matplotlib.org/) and [Mayavi](http://docs.enthought.com/mayavi/mayavi/).
+  - **OMFIT:** In the [OMFIT](https://gafusion.github.io/OMFIT-source/) frame, there is a powerful module [*focus*](https://docs.google.com/document/d/1aGpRUMpYxBJmQXfkOK2OFMZ4P0Mn5H1_OSAjJVvxpHU/edit?ts=5ad10d28#) managed by Dr. Nikolas Logan.
+  - **IDL:** There is a GUI interface Echidna in IDL written by Dr. Stuart Hudson.
+  - **Matlab:** There are also some MATLAB scripts by Dr. Lazerson.  
 
 &nbsp;
 
@@ -174,6 +174,6 @@ You can find some of them in [Subroutines](https://princetonuniversity.github.io
 The first paper introducing FOCUS is [C. Zhu, S.R. Hudson, Y. Song, and Y. Wan, Nuclear Fusion 58, 16008 (2018)](http://iopscience.iop.org/article/10.1088/1741-4326/aa8e0a/). For a full list of publications and presentations, please view [FOCUS Publications](https://princetonuniversity.github.io/FOCUS/Get_the_code).
 
 # Contact
-If you have any questions, please contact Caoxiang Zhu (czhu@pppl.gov or zcxiang@mail.ustc.edu.cn).
+If you have any questions, please contact Dr. Caoxiang Zhu (czhu@pppl.gov or caoxiangzhu@gmail.com).
 
 -----------
