@@ -10,13 +10,13 @@ For a given plamsa configuration (with or without target Bn distributions), FOCU
 
 # Table of contents
 
-- [Before running](#before-running)
-- [Input files](#input-files)
-- [Running](#running)
-- [Output files](#output-files)
-- [Plotting](#plotting)
-- [Documentations](#documentations)
-- [Publications](#publications)
+1. [Before running](#before-running)
+2. [Input files](#input-files)
+3. [Running](#running)
+4. [Output files](#output-files)
+5. [Plotting](#plotting)
+6. [Documentations](#documentations)
+7. [Publications](#publications)
 
 # Before running
 
@@ -26,8 +26,9 @@ If you are fresh to GitHub, you can visit this [page](https://princetonuniversit
 ## Compile
 * Prerequisites
 
-  The current version of FOCUS uses the following compilers/libraries:   
-  - **[Intel](https://software.intel.com/en-us/fortran-compilers)/[gfotran](https://gcc.gnu.org/wiki/GFortran) compiler** 
+  The current version of FOCUS uses the following compilers/libraries: 
+  
+  - **[Intel](https://software.intel.com/en-us/fortran-compilers)/[GFotran](https://gcc.gnu.org/wiki/GFortran) compiler** 
   - **[OpenMPI](https://www.open-mpi.org/)**
   - **[HDF5](https://support.hdfgroup.org/HDF5/)**
     
@@ -35,9 +36,9 @@ If you are fresh to GitHub, you can visit this [page](https://princetonuniversit
 
 * Compiling
   
-  All the Fortran90 sources are in \*.h files. When **make**, \*.h file will produce \*.F90 with extracted macros (*seen in [macros](https://github.com/PrincetonUniversity/FOCUS/tree/master/macros)*).
+  All the Fortran90 sources are in \*.h files. When **make**, \*.h file will produce \*.F90 with extracted macros (*seen in [macros](https://github.com/PrincetonUniversity/FOCUS/tree/master/sources/macros)*).
 
-  There are two options vailable in [Makefile](https://github.com/PrincetonUniversity/FOCUS/tree/master/Makefile):
+  There are two options vailable in [Makefile](https://github.com/PrincetonUniversity/FOCUS/tree/master/sources/Makefile):
   
   **Optimized concise version (recommended)**
   ```
@@ -127,7 +128,7 @@ Use the variable *IsQuiet* in the namelist to control the details you want.
 
 # Output files
 
-Once calling [saving](https://github.com/PrincetonUniversity/FOCUS/tree/master/saving.h), present calculating results will be saved to local files.
+Once calling [saving](https://github.com/PrincetonUniversity/FOCUS/tree/master/sources/saving.h), present calculating results will be saved to local files.
 The frequency of writing outputs is controlled by the variable *save_freq*.
 The basic output file is written in hdf5 format.
 
@@ -157,6 +158,7 @@ Intermediate coil data (XYZ points in space) are store in binary file *.example.
 
 # Plotting
 There are several tools for processing the data.
+
   - **python:** There is an python package written by Dr. Caoxiang Zhu, using [Matplotlib](https://matplotlib.org/) and [Mayavi](http://docs.enthought.com/mayavi/mayavi/).
   - **OMFIT:** In the [OMFIT](https://gafusion.github.io/OMFIT-source/) frame, there is a powerful module [*focus*](https://docs.google.com/document/d/1aGpRUMpYxBJmQXfkOK2OFMZ4P0Mn5H1_OSAjJVvxpHU/edit?ts=5ad10d28#) managed by Dr. Nikolas Logan.
   - **IDL:** There is a GUI interface Echidna in IDL written by Dr. Stuart Hudson.
