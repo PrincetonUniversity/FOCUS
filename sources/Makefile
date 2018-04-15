@@ -40,10 +40,12 @@ endif
 xfocus: $(ROBJS) $(NUMOBJ)
 	$(FC) -o xfocus $(ROBJS) $(NUMOBJ) $(HDF5)
 	@echo "Compiling xfocus finished."
+	mkdir -p ../bin ; mv xfocus ../bin/
 
 dfocus: $(DOBJS) $(NUMOBJ)
 	$(FC) -o dfocus $(DOBJS) $(NUMOBJ) $(HDF5)
 	@echo "Compiling dfocus finished."
+	mkdir -p ../bin ; mv dfocus ../bin/
 
 ############################################################################################################
 ode.o : ode.f90
@@ -75,7 +77,7 @@ $(PFILES): %.pdf: %.h head.tex end.tex
 	@pdflatex -shell-escape -interaction=nonstopmode -file-line-error $*.tex | grep ".*:[0-9]*:.*" ||:
 	@pdflatex -shell-escape -interaction=nonstopmode -file-line-error $*.tex | grep ".*:[0-9]*:.*" ||: 
 	@pdflatex -shell-escape -interaction=nonstopmode -file-line-error $*.tex | grep ".*:[0-9]*:.*" ||:
-#	@rm -f $*.tex $*.aux $*.blg $*.log $*.ps .$*.date $*.toc $*.out
+	@rm -f $*.tex $*.aux $*.blg $*.log $*.ps .$*.date $*.toc $*.out
 	
 
 ############################################################################################################

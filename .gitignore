@@ -18,9 +18,7 @@
 .cproject
 .idea/
 .project
-bin/
 
-Old/xfocus
-Old/dfocus
-New/xfocus
-New/dfocus
+bin/
+Old
+New
