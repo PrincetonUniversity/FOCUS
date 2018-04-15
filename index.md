@@ -1,7 +1,10 @@
 # Synopsis
 
-The FOCUS uses 3D curves to represent coils in fusion devices.
+FOCUS uses 3D curves to represent coils in fusion devices.
 For a given plamsa configuration (with or without target Bn distributions), FOCUS could find optimal coils, meeting the user-specified physics and engineering constraints.
+
+<img alt="FOCUS" src="http://joshburns.net/blog/wp-content/uploads/2013/08/focus.jpg" height="180">
+*Photo credit: iStockphoto.com*
 
 &nbsp;
 
@@ -13,6 +16,7 @@ For a given plamsa configuration (with or without target Bn distributions), FOCU
 - [Output files](#output-files)
 - [Plotting](#plotting)
 - [Documentations](#documentations)
+- [Publications](#publications)
 
 # Before running
 
@@ -22,19 +26,18 @@ If you are fresh to GitHub, you can visit this [page](https://princetonuniversit
 ## Compile
 * Prerequisites
 
-  The current version of the FOCUS is using intel/gfotran compiler with libraries OpenMPI, hdf5-serial.
-  If you are at PPPL cluster, you should add these terms in your environment variables file (like *~/.cshrc*):
-  ```
-  module load intel openmpi/1.8.4 hdf5-serial/1.8.5
-  ```
+  The current version of FOCUS uses the following compilers/libraries:   
+    - **[intel](https://software.intel.com/en-us/fortran-compilers)/[gfotran](https://gcc.gnu.org/wiki/GFortran) compiler** 
+    - **[OpenMPI](https://www.open-mpi.org/)**
+    - **[HDF5](https://support.hdfgroup.org/HDF5/)**
+    
+  If the versions you downloaded are not compatible, please raise an issue.
 
-* Makefile
-
-  Go to the *./New/* file.
+* Compiling
   
-  All the Fortran90 sources are in \*.h files. When **make**, \*.h file will produce \*.F90 with extracted macros (*seen in [macros](https://github.com/PrincetonUniversity/FOCUS/tree/master/New/macros)*).
+  All the Fortran90 sources are in \*.h files. When **make**, \*.h file will produce \*.F90 with extracted macros (*seen in [macros](https://github.com/PrincetonUniversity/FOCUS/tree/master/macros)*).
 
-  There are two options vailable in [Makefile](https://github.com/PrincetonUniversity/FOCUS/tree/master/New/Makefile):
+  There are two options vailable in [Makefile](https://github.com/PrincetonUniversity/FOCUS/tree/master/Makefile):
   
   **Optimized concise version (recommended)**
   ```
@@ -46,6 +49,19 @@ If you are fresh to GitHub, you can visit this [page](https://princetonuniversit
   ```
   *If you want to use GCC compiler, try `make CC=gfortran xfocus`.*
   
+* Usage at PPPL
+
+  If you are using PPPL cluster, you should use FOFUCS by typing the following lines:
+  ```
+  module use /p/focus/modules/
+  module load focus
+  ```
+  There are several different versions availble, please view more informations by typing
+  ```
+  module avail focus
+  module whatis focus/old
+  ```
+  
 # Input files
 
 FOCUS needs three input files for running, input namelist, target plasma boundary and initial coils.
@@ -55,7 +71,7 @@ For instance, you want to run the code with a case name of "example".
 * input namelist
   
   The file **example.input** contains all the input variables for FOCUS.
-  Here is an example input file for the rotating ellipse case [ellipse.input](https://github.com/PrincetonUniversity/FOCUS/tree/master/examples/New_rotating_ellipse/ellipse.input)
+  Here is an example input file for the rotating ellipse case [ellipse.input](https://github.com/PrincetonUniversity/FOCUS/tree/master/examples/rotating_ellipse/ellipse.input)
   A detailed description for these variables can be found in [initial.pdf](https://princetonuniversity.github.io/FOCUS/initial.pdf).
   These files should be placed in the same directory as the executable.
   
@@ -68,7 +84,7 @@ For instance, you want to run the code with a case name of "example".
   
     This is for general unknotted cases, like stellarator and tokamaks. It takes VMEC-like format. 
     Detalis about the format can be seen in [rdsurf.pdf](https://princetonuniversity.github.io/FOCUS/rdsurf.pdf)
-	Here is an example for the rotating ellipse case [plasma.boundary](https://github.com/PrincetonUniversity/FOCUS/tree/master/examples/New_rotating_ellipse/plasma.boundary)
+	Here is an example for the rotating ellipse case [plasma.boundary](https://github.com/PrincetonUniversity/FOCUS/tree/master/examples/rotating_ellipse/plasma.boundary)
     
 * initial coils
 
@@ -78,12 +94,12 @@ For instance, you want to run the code with a case name of "example".
   
     Read the coils data from **coils.example** and fit the coils with Fourier coefficients. 
     The format ofcoils.\* file can be seen in [VMECwiki](http://vmecwiki.pppl.wikispaces.net/MAKEGRID).
-	Here is an example for the rotating ellipse case [coils.ellipse](https://github.com/PrincetonUniversity/FOCUS/tree/master/examples/New_rotating_ellipse/coils.ellipse)
+	Here is an example for the rotating ellipse case [coils.ellipse](https://github.com/PrincetonUniversity/FOCUS/tree/master/examples/rotating_ellipse/coils.ellipse)
     
   - *case_init =  0* : **example.focus**
   
     Read the coils data from **example.focus**. This file contains all the Fourier harmonics and control labels for the coils.
-	Here is an example for the rotating ellipse case [ellipse.focus](https://github.com/PrincetonUniversity/FOCUS/tree/master/examples/New_rotating_ellipse/elipse.focus)
+	Here is an example for the rotating ellipse case [ellipse.focus](https://github.com/PrincetonUniversity/FOCUS/tree/master/examples/rotating_ellipse/elipse.focus)
     
   - *case_init =  1*
   
@@ -91,7 +107,7 @@ For instance, you want to run the code with a case name of "example".
 
 If you want to optimize individual Bn spectrum (*weight_bharm>0* in the namelist), you may also need to provide an input file named *target.harmonics*.
 Detalis about the format can be seen in [bmnharm.pdf](https://princetonuniversity.github.io/FOCUS/bmnharm.pdf)
-Here is an example for the DIIID RMP coils case [target.harmonics](https://github.com/PrincetonUniversity/FOCUS/tree/master/examples/New_d3d_RMP/target.harmonics)
+Here is an example for the DIIID RMP coils case [target.harmonics](https://github.com/PrincetonUniversity/FOCUS/tree/master/examples/d3d_RMP/target.harmonics)
 
 &nbsp;
 
@@ -101,7 +117,7 @@ Once you finish preparing the input files and successfully compile the code, mov
 ```
 mpirun -np 32 xfocus example
 ```
-You may need to allocate computating cores first, e.g. try `salloc -p dawson -n 32 -t 24:00:00` at PPPL.
+You may need to allocate computating cores first, e.g. try `salloc -p dawson -n 32 -t 24:00:00` at PPPL, or use a *sbatch* command.
 
 The code shoul print some information on the screen (or in stdout file for *sbatch*).
 
@@ -111,7 +127,7 @@ Use the variable *IsQuiet* in the namelist to control the details you want.
 
 # Output files
 
-When calling [saving](https://github.com/PrincetonUniversity/FOCUS/tree/master/New/saving.h), current calculating results will be saved to local files.
+Once calling [saving](https://github.com/PrincetonUniversity/FOCUS/tree/master/saving.h), present calculating results will be saved to local files.
 The frequency of writing outputs is controlled by the variable *save_freq*.
 The basic output file is written in hdf5 format.
 
@@ -119,9 +135,8 @@ The basic output file is written in hdf5 format.
   
   All the results can be seen in *focus_example.h5*. 
   Any hdf5 file reading functions can be used for reading the results. 
-  Recommending the class *hdf5* defined in [pyfocus](https://github.com/PrincetonUniversity/FOCUS/blob/master/pyfocus/coil.py) (details can seen in [Plotting](#plotting)).
   
-If you want to see other output files, please turn on the flags in the namelist.
+If you want to view other output files, please turn on the flags in the namelist.
 
 * save_coils
 
@@ -141,42 +156,11 @@ Intermediate coil data (XYZ points in space) are store in binary file *.example.
 &nbsp;
 
 # Plotting
-There are several tools for processing the data, like a [python package](https://github.com/PrincetonUniversity/FOCUS/blob/master/pyfocus/coil.py), 
-a powerful GUI interface Echidna in IDL written by Dr. Hudson, and some MATLAB scripts by Dr. Lazerson.
-
-Here are some basic instructions for using the python package (later I will write a detailed one):
-
-* import python package
-  ```
-  from pyfocus import *
-  ```
-
-* plot the plasma boundary
-  ```
-  plot_plasma_boundary('/your_path/plasma.boundary', 'surface3d')
-  ```
-
-* plot coils in coils.xxx file
-  ```
-  coil = read_coils('/your_path/coils.example')
-  plot_coils(coil)
-  ```
-
-* load hdf5 file
-  ```
-  test = hdf5('/your_path/focus_test.h5')
-  ```
-
-* plot chi-square converging curve
-  ```
-  chievolve(test, 'chi')
-  ```
-  
-* plot coil evolution movie
-  ```
-  coilevolve(test, delay=1000)
-  ```
-  
+There are several tools for processing the data.
+    - **python:** there is an python package written by Dr. Caoxiang Zhu, using [Matplotlib](https://matplotlib.org/) and [Mayavi](http://docs.enthought.com/mayavi/mayavi/).
+    - **OMFIT:** In the [OMFIT](https://gafusion.github.io/OMFIT-source/) frame, there is a powerful module [*focus*](https://docs.google.com/document/d/1aGpRUMpYxBJmQXfkOK2OFMZ4P0Mn5H1_OSAjJVvxpHU/edit?ts=5ad10d28#) managed by Dr. Nikolas Logan.
+    - **IDL:** There is a GUI interface Echidna in IDL written by Dr. Stuart Hudson.
+    - **Matlab:** There are also some MATLAB scripts by Dr. Lazerson.  
 
 &nbsp;
 
@@ -186,9 +170,10 @@ You can find some of them in [Subroutines](https://princetonuniversity.github.io
 
 &nbsp;
 
+# Publications
+The first paper introducing FOCUS is [C. Zhu, S.R. Hudson, Y. Song, and Y. Wan, Nuclear Fusion 58, 16008 (2018)](http://iopscience.iop.org/article/10.1088/1741-4326/aa8e0a/). For a full list of publications and presentations, please view [FOCUS Publications](https://princetonuniversity.github.io/FOCUS/Get_the_code).
+
 # Contact
 If you have any questions, please contact Caoxiang Zhu (czhu@pppl.gov or zcxiang@mail.ustc.edu.cn).
-
-Please note that there are no warranties! :octocat:
 
 -----------
