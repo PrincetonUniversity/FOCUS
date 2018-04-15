@@ -1,6 +1,7 @@
-# <img alt="FOCUS" src="http://joshburns.net/blog/wp-content/uploads/2013/08/focus.jpg" height="80">
+# <img alt="FOCUS" src="http://joshburns.net/blog/wp-content/uploads/2013/08/focus.jpg" height="80"> Flexible Optimized Coils Using Space curves
 
-**FOCUS** (Flexible Optimized Coils Using Space curves) is a nonlinear optimization code for designing 3D coils. 
+**FOCUS** is a nonlinear optimization code for designing 3D coils. 
+>>>>>>> origin/master
 
 - **Website (including documentation):** https://princetonuniversity.github.io/FOCUS/
 - **Source:** https://github.com/PrincetonUniversity/FOCUS
@@ -15,4 +16,6 @@ There are several branches available. Please use the correct one.
 - **gh-pages:** the branch hosting GitHub pages for the offcicial website.
 - **others:** task-oriented branches.
 
-* Photo credit: iStockphoto.com
+
+*Photo credit: iStockphoto.com*
+

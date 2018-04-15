@@ -15,6 +15,10 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
+  CHARACTER(LEN=10), parameter :: version='v0.2.02' ! version number
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
 !latex \subsection{Useful parameters}
   REAL, parameter      :: zero       =         0.0
   REAL, parameter      :: one        =         1.0
@@ -57,7 +61,7 @@ module globals
   INTEGER              :: bunit      = 10 ! backup unit for I/O
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  
+
   CHARACTER(LEN=100)   :: ext       ! extention
   CHARACTER(LEN=100)   :: inputfile ! input namelist
   CHARACTER(LEN=100)   :: surffile  ! surface file

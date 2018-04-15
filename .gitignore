@@ -20,5 +20,6 @@
 .project
 
 bin/
-Old
-New
+Old/
+docs/
+pyfocus/

@@ -88,7 +88,8 @@
 PROGRAM focus
   
   use globals, only: ncpu, myid, ounit, ierr, astat, eunit, case_surface, case_coils, case_optimize, &
-       case_postproc, xdof, tstart, tfinish, time_initialize, time_optimize, time_postproc
+       case_postproc, xdof, tstart, tfinish, time_initialize, time_optimize, time_postproc, &
+       version
 
   use mpi  !to enable gfortran mpi_wtime bugs; 07/20/2017
   
@@ -110,7 +111,7 @@ PROGRAM focus
   call MPI_COMM_SIZE( MPI_COMM_WORLD, ncpu, ierr )
 
   tstart =  MPI_WTIME()
-  if(myid == 0) write(ounit, *) "-------------------------------------------------------------"
+  if(myid == 0) write(ounit, *) "---------------------", version, "------------------------------"
   if(myid == 0) write(ounit,'("focus   : Begin execution with ncpu =",i5)') ncpu
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
