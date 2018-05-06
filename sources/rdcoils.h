@@ -98,9 +98,11 @@ subroutine rdcoils
      !-------------read coils file--------------------------------------------------------------------------
   case(-1 )
      if (myid == 0) then
-        write(ounit,'("rdcoils : reading coils data from "A)') inpcoils  ! different from coilsfile
+        write(ounit,'("rdcoils : Reading coils data (MAKEGRID format) from "A)') trim(inpcoils)
         call readcoils(inpcoils, maxnseg)
-        write(ounit,'("rdcoils : Read ",i6," coils in "A" ;")') Ncoils, trim(inpcoils)
+        write(ounit,'("        : Read ",i6," coils.")') Ncoils
+        if (IsQuiet < 0) write(ounit, '(8X,": NFcoil = "I3" ; IsVaryCurrent = "I1 &
+             " ; IsVaryGeometry = "I1)') NFcoil, IsVaryCurrent, IsVaryGeometry
      endif
 
      IlBCAST( Ncoils   ,      1, 0 )
@@ -177,11 +179,6 @@ subroutine rdcoils
   case( 0 )
 
      if( myid==0 ) then  !get file number;
-        inquire( file=trim(coilfile), exist=exist )
-        if ( .not. exist ) then
-           STOP "ext.focus NOT existed"
-           call MPI_ABORT(MPI_COMM_WORLD, 1, ierr)
-        endif
         open( runit, file=trim(coilfile), status="old", action='read')
         read( runit,*)
         read( runit,*) Ncoils
@@ -272,7 +269,13 @@ subroutine rdcoils
      allocate(    coil(1:Ncoils*Npc) )
      allocate(     DoF(1:Ncoils*Npc) )
 
-     if (myid == 0)  write(ounit,'("rdcoils : initializing "i3" unique circular coils;")') Ncoils
+     if (myid == 0)  then
+        write(ounit,'("rdcoils : initializing "i3" unique circular coils;")') Ncoils
+        if (IsQuiet < 1) write(ounit, '(8X,": Initialize "I4" circular coils with r="ES12.5"m ; I="&
+             ES12.5" A")') Ncoils, init_radius, init_current
+        if (IsQuiet < 0) write(ounit, '(8X,": NFcoil = "I3" ; IsVaryCurrent = "I1 &
+             " ; IsVaryGeometry = "I1)') NFcoil, IsVaryCurrent, IsVaryGeometry
+     endif
 
      do icoil = 1, Ncoils
 
@@ -374,9 +377,9 @@ subroutine rdcoils
   enddo
 
   if(myid == 0 .and. IsQuiet <= 0) then
-     write(ounit,'("rdcoils : "i3" fixed currents ; "i3" fixed geometries.")') &
+     write(ounit,'("        : "i3" fixed currents ; "i3" fixed geometries.")') &
           & Nfixcur, Nfixgeo
-     !write( ounit,'("rdcoils : total current G ="es23.15" ; 2 . pi2 . G = "es23.15" ;")') &
+     !write( ounit,'("        : total current G ="es23.15" ; 2 . pi2 . G = "es23.15" ;")') &
      !     & totalcurrent, totalcurrent * pi2 * two
   endif
 
@@ -401,8 +404,10 @@ subroutine rdcoils
      FATAL( rdcoils, abs(Gnorm) < machprec, cannot be zero )
      FATAL( rdcoils, abs(Inorm) < machprec, cannot be zero )
      
-     if (myid == 0) write(ounit, '("rdcoils : Currents are normalized by " ES23.15 &
-          " ; Geometries are normalized by " ES23.15 " ;")') Inorm, Gnorm
+     if (myid == 0) then
+        write(ounit, '("        : Currents   are normalized by " ES23.15)') Inorm
+        write(ounit, '("        : Geometries are normalized by " ES23.15)') Gnorm
+     endif
 
   else
      Inorm = one
@@ -415,6 +420,10 @@ subroutine rdcoils
   call AllocData(itmp)
 
   !-----------------------discretize coil data--------------------------------------------------
+
+  if (myid == 0) then
+     if (IsQuiet < 0) write(ounit, '(8X,": coils will be discretized in "I6" segments")') Nseg
+  endif
 
   ifirst = 1
   call discoil(ifirst)

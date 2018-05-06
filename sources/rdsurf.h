@@ -158,7 +158,8 @@ subroutine fousurf
   !-------------output for check-------------------------------------------------------------------------
   if( myid == 0 .and. IsQuiet <= 0) then
      write(ounit, *) "-----------Reading surface-----------------------------------"
-     write(ounit, '("surface : Nfou = " I06 " ; Nfp = " I06 " ; NBnf = " I06 " ;" )') Nfou, Nfp, NBnf
+     write(ounit, '("surface : Plasma boundary will be discretized in "I6" X "I6" elements.")') Nteta, Nzeta
+     write(ounit, '(8X": Nfou = " I06 " ; Nfp = " I06 " ; NBnf = " I06 " ;" )') Nfou, Nfp, NBnf
   endif
 
   if( myid == 0 .and. IsQuiet <= -2) then !very detailed output;
