@@ -52,6 +52,7 @@ m4_define(FATAL,
 !macro expansion of fatal
 
    if( $2 ) then
+     write(0, '("-------------- ERROR ------------------------")')
      write(0,'("$1 :      fatal : myid=",i3," ; $2 ; $3 ;")') myid
      call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
      stop      "$1 : $2 : $3 ;"

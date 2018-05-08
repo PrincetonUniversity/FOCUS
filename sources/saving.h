@@ -30,7 +30,6 @@ subroutine saving
 
   INTEGER            :: ii, jj, icoil, NF
 
-
   ! the following are used by the macros HWRITEXX below; do not alter/remove;
   INTEGER            :: hdfier, rank
   integer(hid_t)     :: file_id, space_id, dset_id                 ! warning: the string "INTEGER" is a macro;
@@ -139,7 +138,7 @@ subroutine saving
   HWRITEIV( 1                ,   iout          ,   iout                          )
   HWRITERV( 1                ,   Inorm         ,   Inorm                         )
   HWRITERV( 1                ,   Gnorm         ,   Gnorm                         )
-  HWRITERA( iout, 8          ,   evolution     ,   evolution(1:iout, 0:8)        )
+  HWRITERA( iout, 8          ,   evolution     ,   evolution(1:iout, 0:7)        )
   HWRITERA( iout, Tdof       ,   coilspace     ,   coilspace(1:iout, 1:Tdof)     )
 
   if (allocated(deriv)) then

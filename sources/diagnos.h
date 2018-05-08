@@ -6,7 +6,8 @@ SUBROUTINE diagnos
 ! diagonose the coil performance
 !------------------------------------------------------------------------------------------------------   
   use globals, only: zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
-       Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length
+       Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
+       cssep
                      
   implicit none
   include "mpif.h"
@@ -23,9 +24,9 @@ SUBROUTINE diagnos
   if (case_optimize == 0) call AllocData(0) ! if not allocate data;
   call costfun(0)
 
-  if (myid == 0) write(ounit, '("diagnos : "6(A12," ; "))') , &
-       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "spectral", "c-c sep." 
-  if (myid == 0) write(ounit, '("        : "6(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, specw, ccsep
+  if (myid == 0) write(ounit, '("diagnos : "5(A12," ; "))') , &
+       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." 
+  if (myid == 0) write(ounit, '("        : "6(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep
 
   !save all the coil parameters;
   if (allocated(coilspace)) then
@@ -84,16 +85,16 @@ SUBROUTINE diagnos
      itmp = icoil + 1
      if(icoil .eq. Ncoils) itmp = 1
 
-     SALLOCATE(Atmp, (1:3,1:coil(icoil)%NS), zero)
-     SALLOCATE(Btmp, (1:3,1:coil(itmp )%NS), zero)
+     SALLOCATE(Atmp, (1:3,0:coil(icoil)%NS-1), zero)
+     SALLOCATE(Btmp, (1:3,0:coil(itmp )%NS-1), zero)
 
-     Atmp(1, 1:coil(icoil)%NS) = coil(icoil)%xx(1:coil(icoil)%NS)
-     Atmp(2, 1:coil(icoil)%NS) = coil(icoil)%yy(1:coil(icoil)%NS)
-     Atmp(3, 1:coil(icoil)%NS) = coil(icoil)%zz(1:coil(icoil)%NS)
+     Atmp(1, 0:coil(icoil)%NS-1) = coil(icoil)%xx(0:coil(icoil)%NS-1)
+     Atmp(2, 0:coil(icoil)%NS-1) = coil(icoil)%yy(0:coil(icoil)%NS-1)
+     Atmp(3, 0:coil(icoil)%NS-1) = coil(icoil)%zz(0:coil(icoil)%NS-1)
 
-     Btmp(1, 1:coil(itmp)%NS) = coil(itmp)%xx(1:coil(itmp)%NS)
-     Btmp(2, 1:coil(itmp)%NS) = coil(itmp)%yy(1:coil(itmp)%NS)
-     Btmp(3, 1:coil(itmp)%NS) = coil(itmp)%zz(1:coil(itmp)%NS)
+     Btmp(1, 0:coil(itmp )%NS-1) = coil(itmp)%xx(0:coil(itmp )%NS-1)
+     Btmp(2, 0:coil(itmp )%NS-1) = coil(itmp)%yy(0:coil(itmp )%NS-1)
+     Btmp(3, 0:coil(itmp )%NS-1) = coil(itmp)%zz(0:coil(itmp )%NS-1)
      
      call mindist(Atmp, coil(icoil)%NS, Btmp, coil(itmp)%NS, tmp_dist)
 
@@ -110,12 +111,12 @@ SUBROUTINE diagnos
   minCPdist = infmax
   do icoil = 1, Ncoils
 
-     SALLOCATE(Atmp, (1:3,1:coil(icoil)%NS), zero)
+     SALLOCATE(Atmp, (1:3,0:coil(icoil)%NS-1), zero)
      SALLOCATE(Btmp, (1:3,1:(Nteta*Nzeta)), zero)
 
-     Atmp(1, 1:coil(icoil)%NS) = coil(icoil)%xx(1:coil(icoil)%NS)
-     Atmp(2, 1:coil(icoil)%NS) = coil(icoil)%yy(1:coil(icoil)%NS)
-     Atmp(3, 1:coil(icoil)%NS) = coil(icoil)%zz(1:coil(icoil)%NS)
+     Atmp(1, 0:coil(icoil)%NS-1) = coil(icoil)%xx(0:coil(icoil)%NS-1)
+     Atmp(2, 0:coil(icoil)%NS-1) = coil(icoil)%yy(0:coil(icoil)%NS-1)
+     Atmp(3, 0:coil(icoil)%NS-1) = coil(icoil)%zz(0:coil(icoil)%NS-1)
 
      Btmp(1, 1:(Nteta*Nzeta)) = reshape(surf(1)%xx(0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))
      Btmp(2, 1:(Nteta*Nzeta)) = reshape(surf(1)%yy(0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))

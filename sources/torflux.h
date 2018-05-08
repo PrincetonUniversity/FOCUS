@@ -257,7 +257,7 @@ subroutine bpotential0(icoil, iteta, jzeta, Ax, Ay, Az)
   dly = zero; lty = zero; Ay = zero
   dlz = zero; ltz = zero; Az = zero
 
-  do kseg = 1, coil(icoil)%NS
+  do kseg = 0, coil(icoil)%NS-1
         
    dlx = surf(1)%xx(iteta,jzeta) - coil(icoil)%xx(kseg)
    dly = surf(1)%yy(iteta,jzeta) - coil(icoil)%yy(kseg)
@@ -299,7 +299,7 @@ subroutine bpotential1(icoil, iteta, jzeta, Ax, Ay, Az, ND)
 
   INTEGER              :: ierr, astat, kseg, NS
   REAL                 :: dlx, dly, dlz, r, rm3, ltx, lty, ltz
-  REAL, dimension(1:1, 1:coil(icoil)%NS)   :: dAxx, dAxy, dAxz, dAyx, dAyy, dAyz, dAzx, dAzy, dAzz
+  REAL, dimension(1:1, 0:coil(icoil)%NS-1)   :: dAxx, dAxy, dAxz, dAyx, dAyy, dAyz, dAzx, dAzy, dAzz
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
@@ -317,7 +317,7 @@ subroutine bpotential1(icoil, iteta, jzeta, Ax, Ay, Az, ND)
   dly = zero; lty = zero; Ay = zero
   dlz = zero; ltz = zero; Az = zero
 
-  do kseg = 1, NS
+  do kseg = 0, NS-1
      
      dlx = surf(1)%xx(iteta,jzeta) - coil(icoil)%xx(kseg)
      dly = surf(1)%yy(iteta,jzeta) - coil(icoil)%yy(kseg)

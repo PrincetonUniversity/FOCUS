@@ -36,7 +36,9 @@
 
 subroutine solvers
   use globals, only : ierr, iout, myid, ounit, IsQuiet, IsNormWeight, Ndof, Nouts, xdof, &
-       & case_optimize, DF_maxiter, CG_maxiter, HN_maxiter, TN_maxiter, coil, DoF
+       case_optimize, DF_maxiter, CG_maxiter, HN_maxiter, TN_maxiter, coil, DoF, &
+       weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, &
+       target_tflux, target_length, cssep_factor
   implicit none
   include "mpif.h"
 
@@ -44,8 +46,15 @@ subroutine solvers
 
 
   if (myid == 0) write(ounit, *) "-----------OPTIMIZATIONS-------------------------------------"
-
-  if (myid == 0 .and. IsQuiet < 1) write(ounit, '("solvers : total number of DOF is " I6)') Ndof
+  if (myid == 0) write(ounit, '("solvers : Total number of DOF is " I6)') Ndof
+  if (myid == 0 .and. IsQuiet < 1) then
+     write(ounit, '(8X,": Initial weights are: "5(A12, ","))') "bnorm", "bharm", "tflux", &
+         "ttlen", "cssep"
+     write(ounit, '(8X,": "21X,5(ES12.5, ","))') weight_bnorm, weight_bharm, weight_tflux, &
+          weight_ttlen, weight_cssep
+     write(ounit, '(8X,": target_tflux = "ES12.5" ; target_length = "ES12.5" ; cssep_factor = "ES12.5)') &
+          target_tflux, target_length, cssep_factor
+  endif
 
   if (abs(case_optimize) >= 1) call AllocData(1)
   if (abs(case_optimize) >= 2) call AllocData(2)
@@ -57,10 +66,9 @@ subroutine solvers
 
   if (IsNormWeight /= 0) call normweight
 
-  if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "---------------------------------------------------"
-  if (myid == 0 .and. IsQuiet < 0) write(ounit, *) " Initial status"
-  if (myid == 0) write(ounit, '("output  : "A6" : "9(A12," ; "))') "iout", "mark", "chi", "dE_norm", &
-       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "spectral", "c-c sep." 
+  if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "------------- Initial status ------------------------"
+  if (myid == 0) write(ounit, '("output  : "A6" : "8(A12," ; "))') "iout", "mark", "chi", "dE_norm", &
+       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." 
   call costfun(1)
   call saveBmn    ! in bmnharm.h;
   iout = 0 ! reset output counter;
@@ -68,28 +76,26 @@ subroutine solvers
   
   !--------------------------------DF--------------------------------------------------------------------
   if (DF_maxiter > 0)  then
-     if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "---------------------------------------------------"
-     if (myid == 0 .and. IsQuiet < 0) write(ounit, *) " Optimizing with Differential Flow (DF)"
+     if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "------------- Differential Flow (DF) ----------------"
      call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
      start = MPI_Wtime()
      call unpacking(xdof)
      call descent
      call packdof(xdof)
      finish = MPI_Wtime()
-     if (myid  ==  0) write(ounit,'("solvers : DF takes ", es23.15," seconds;")') finish - start
+     if (myid  ==  0) write(ounit,'(8X,": DF takes ", es23.15," seconds;")') finish - start
   endif
 
   !--------------------------------CG--------------------------------------------------------------------
   if (CG_maxiter > 0)  then
-     if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "---------------------------------------------------"
-     if (myid == 0 .and. IsQuiet < 0) write(ounit, *) " Optimizing with Nonlinear Conjugate Gradient (CG)"
+     if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "------------- Nonlinear Conjugate Gradient (CG) -----"
      call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
      start = MPI_Wtime()
      call unpacking(xdof)
      call congrad
      call packdof(xdof)
      finish = MPI_Wtime()
-     if (myid  ==  0) write(ounit,'("solvers : CG takes ", es23.15," seconds;")') finish - start
+     if (myid  ==  0) write(ounit,'(8X,": CG takes ", es23.15," seconds;")') finish - start
   endif
   
   !--------------------------------HN--------------------------------------------------------------------
@@ -101,7 +107,7 @@ subroutine solvers
      call unpacking(xdof)
      !call hybridnt
      finish = MPI_Wtime()
-     if (myid  ==  0) write(ounit,'("solvers : HN takes ", es23.15," seconds;")') finish - start
+     if (myid  ==  0) write(ounit,'(8X,": HN takes ", es23.15," seconds;")') finish - start
   endif
   
   !--------------------------------TN--------------------------------------------------------------------
@@ -114,7 +120,7 @@ subroutine solvers
      !call truncnt
      call packdof(xdof)
      finish = MPI_Wtime()
-     if (myid  ==  0) write(ounit,'("solvers : TN takes ", es23.15," seconds;")') finish - start
+     if (myid  ==  0) write(ounit,'(8X,": TN takes ", es23.15," seconds;")') finish - start
   endif
   
   !------------------------------------------------------------------------------------------------------
@@ -132,7 +138,8 @@ subroutine costfun(ideriv)
        bharm      , t1H, t2H, weight_bharm,  &
        tflux      , t1F, t2F, weight_tflux, target_tflux, psi_avg, &
        ttlen      , t1L, t2L, weight_ttlen, case_length, &
-       specw      , t1S, t2S, weight_specw, &
+       cssep      , t1S, t2S, weight_cssep, &
+       specw      , t1P, t2P, weight_specw, &
        ccsep      , t1C, t2C, weight_ccsep
 
   implicit none
@@ -162,7 +169,7 @@ subroutine costfun(ideriv)
         coil(1:Ncoils)%Lo = one
         call length(0)
         coil(1:Ncoils)%Lo = coil(1:Ncoils)%L
-        if(myid .eq. 0) write(ounit,'("solvers : reset target coil length to the current actual length. ")')
+        if(myid .eq. 0) write(ounit,'(8X,": reset target coil length to the current actual length. ")')
      endif
 
      call length(0)
@@ -210,7 +217,7 @@ subroutine costfun(ideriv)
      if ( abs(target_tflux) < sqrtmachprec ) then
         call torflux(0)
         target_tflux = psi_avg        
-        if (myid==0) write(ounit,'("solvers : Reset target toroidal flux to "ES23.15)') target_tflux
+        if (myid==0) write(ounit,'(8X,": Reset target toroidal flux to "ES23.15)') target_tflux
      endif
 
      call torflux(ideriv)
@@ -230,7 +237,7 @@ subroutine costfun(ideriv)
         coil(1:Ncoils)%Lo = one
         call length(0)
         coil(1:Ncoils)%Lo = coil(1:Ncoils)%L
-        if(myid .eq. 0) write(ounit,'("solvers : reset target coil length to the current actual length. ")')
+        if(myid .eq. 0) write(ounit,'(8X,": reset target coil length to the current actual length. ")')
      endif
 
      call length(ideriv)
@@ -244,6 +251,20 @@ subroutine costfun(ideriv)
      endif
 
   endif
+
+  ! coil surface separation;
+  if (weight_cssep > sqrtmachprec) then
+ 
+     call surfsep(ideriv)
+     chi = chi + weight_cssep * cssep
+     if     ( ideriv == 1 ) then
+        t1E = t1E +  weight_cssep * t1S
+     elseif ( ideriv == 2 ) then
+        t1E = t1E +  weight_cssep * t1S
+        t2E = t2E +  weight_cssep * t2S
+     endif
+  endif
+
 !!$
 !!$  ! if (myid == 0) write(ounit,'("calling tlength used",f10.5,"seconds.")') finish-start
 !!$
@@ -309,9 +330,9 @@ end subroutine costfun
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine normweight
-  use globals, only : zero, one, machprec, ounit, myid, xdof, bnorm, bharm, tflux, ttlen, specw, ccsep, &
-       weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_specw, weight_ccsep, target_tflux, &
-       psi_avg, coil, Ncoils, case_length, Bmnc, Bmns, tBmnc, tBmns
+  use globals, only : zero, one, machprec, ounit, myid, xdof, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
+       weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_specw, weight_ccsep, &
+       target_tflux, psi_avg, coil, Ncoils, case_length, Bmnc, Bmns, tBmnc, tBmns
 
   implicit none  
   include "mpif.h"
@@ -330,12 +351,12 @@ subroutine normweight
      call torflux(0)
      if ( abs(target_tflux) < machprec ) then
         target_tflux = psi_avg
-        if(myid .eq. 0) write(ounit,'("solvers : Reset target toroidal flux to "ES12.5)') target_tflux
+        if(myid .eq. 0) write(ounit,'(8X,": Reset target toroidal flux to "ES12.5)') target_tflux
      else if (sum(abs(coil(1:Ncoils)%Ic)) == Ncoils) then !only valid when all currents are free;
            do icoil = 1, Ncoils
               coil(icoil)%I = coil(icoil)%I * target_tflux / psi_avg
            enddo
-           if(myid .eq. 0) write(ounit,'("solvers : rescale coil currents with a factor of "ES12.5)') &
+           if(myid .eq. 0) write(ounit,'(8X,": rescale coil currents with a factor of "ES12.5)') &
                 target_tflux / psi_avg
      endif
 
@@ -355,7 +376,7 @@ subroutine normweight
      do icoil = 1, Ncoils
         coil(icoil)%I = coil(icoil)%I * modtBn / modBn
      enddo
-     if(myid .eq. 0) write(ounit,'("solvers : rescale coil currents with a factor of "ES12.5)') &
+     if(myid .eq. 0) write(ounit,'(8X,": rescale coil currents with a factor of "ES12.5)') &
           modtBn / modBn
      call bmnharm(0)
      if (abs(bharm) > machprec) weight_bharm = weight_bharm / bharm
@@ -381,13 +402,23 @@ subroutine normweight
         coil(1:Ncoils)%Lo = one
         call length(0)
         coil(1:Ncoils)%Lo = coil(1:Ncoils)%L
-        if(myid .eq. 0) write(ounit,'("solvers : reset target coil length to the current actual length. ")')
+        if(myid .eq. 0) write(ounit,'(8X,": reset target coil length to the current actual length. ")')
      endif
 
      call length(0)
 
      if (abs(ttlen) .gt. machprec) weight_ttlen = weight_ttlen / ttlen
      if( myid .eq. 0 ) write(ounit, 1000) "weight_ttlen", weight_ttlen
+
+  endif
+
+  !-!-!-!-!-!-!-!-!-!-cssep-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+  if( weight_cssep >= machprec ) then
+
+     call surfsep(0)   
+     if (abs(cssep) > machprec) weight_cssep = weight_cssep / cssep
+     if( myid == 0 ) write(ounit, 1000) "weight_cssep", weight_cssep
 
   endif
 
@@ -411,7 +442,7 @@ subroutine normweight
 !!$   
 !!$  endif
 
-1000 format("solvers : "A12" is normalized to " ES23.15)
+1000 format(8X,": "A12" is normalized to " ES12.5)
 
   call packdof(xdof)
 
@@ -424,8 +455,8 @@ end subroutine normweight
 subroutine output (mark)
 
   use globals, only : zero, ounit, myid, ierr, astat, iout, Nouts, Ncoils, save_freq, Tdof, &
-       coil, coilspace, FouCoil, chi, t1E, bnorm, bharm, tflux, ttlen, specw, ccsep, evolution, xdof, DoF, &
-       exit_tol, exit_signal
+       coil, coilspace, FouCoil, chi, t1E, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
+       evolution, xdof, DoF, exit_tol, exit_signal
 
   implicit none  
   include "mpif.h"
@@ -442,8 +473,8 @@ subroutine output (mark)
 
   sumdE = sqrt(sum(t1E**2)) ! Eucliean norm 2; 
 
-  if (myid == 0) write(ounit, '("output  : "I6" : "9(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, bharm, &
-       tflux, ttlen, specw, ccsep
+  if (myid == 0) write(ounit, '("output  : "I6" : "8(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, bharm, &
+       tflux, ttlen, cssep
 
   ! save evolution data;
   if (allocated(evolution)) then
@@ -454,8 +485,9 @@ subroutine output (mark)
      evolution(iout,4) = bharm
      evolution(iout,5) = tflux
      evolution(iout,6) = ttlen
-     evolution(iout,7) = specw
-     evolution(iout,8) = ccsep
+     evolution(iout,7) = cssep
+     !evolution(iout,8) = 0.0
+     !evolution(iout,8) = ccsep
   endif
 
   ! exit the optimization if no obvious changes in past 5 outputs; 07/20/2017

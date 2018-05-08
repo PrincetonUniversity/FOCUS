@@ -12,7 +12,7 @@
  case_coils     =        1              ! 0: using piecewise linear representation; (not ready); 1: using Fourier series representation
  Ncoils         =        16             ! number of coils; only valid when case_init = 1
  init_current   =        1.000D+06      ! initial coil currents (Amper); only valid when case_init = 1
- init_radius    =        0.500D+00      ! initial coil radius (meter); only valid when case_init = 1
+ init_radius    =        0.500D+00      ! initial coil radius   (meter); only valid when case_init = 1
  IsVaryCurrent  =        1              ! 0: all the currents   fixed; 1: currents   can be changed; overwritten by ext.focus
  IsVaryGeometry =        1              ! 0: all the geometries fixed; 1: geometries can be changed; overwritten by ext.focus
  NFcoil         =        4              ! number of Fourier harmonics representing the coils; overwritten by ext.focus
@@ -20,7 +20,7 @@
 
  IsNormalize    =        1              ! 0: do not normalize coil parameters; 1: normalize; I = I/I0, x = x/R0; I0 & R0 are quadrtic mean values.
  IsNormWeight   =        1              ! 0: do not normalize the weights; 1: normalize the weights
- case_bnormal   =        1              ! 0: keep raw Bn error; 1: Bn residue normalized to local |B|
+ case_bnormal   =        0              ! 0: keep raw Bn error; 1: Bn residue normalized to local |B|
  case_length    =        1              ! 1: quadratic format, converging the target length; 2: exponential format, as short as possible
  weight_bnorm   =        1.000D+00      ! weight for real space Bn errors
  weight_bharm   =        0.000D+00      ! weight for Bnm harmonic errors
@@ -29,11 +29,11 @@
  weight_ttlen   =        0.100D+00      ! weight for coil length error
  target_length  =        0.000D+00      ! target value (or for normalization) of the coils length, if zero, automatically set to initial actual length
  weight_specw   =        0.000D+00      ! weight for spectral condensation error
- weight_ccsep   =        0.000D+00      ! weight for coil-coil separation constraint
+ weight_cssep   =        0.010D+00      ! weight for coil-surface separation constraint
  weight_inorm   =        1.000D+00	! weight for normalization of current. Larger weight makes the derivatives more important.
  weight_gnorm   =        1.000D+00	! weight for normalization of geometric coefficients. Larger weight makes the derivatives more important.
 
- case_optimize  =        1              ! -2: check the 2nd derivatives (not ready); -1: check the 1st derivatives; 0: no optimizations performed; 1: optimizing with algorithms using the gradient (DF and/or CG); 2: optimizing with algorithms using the Hessian (HT and/or NT)
+ case_optimize  =        1            ! -2: check the 2nd derivatives (not ready); -1: check the 1st derivatives; 0: no optimizations performed; 1: optimizing with algorithms using the gradient (DF and/or CG); 2: optimizing with algorithms using the Hessian (HT and/or NT)
  exit_tol       =        1.000D-04      ! Exit the optimizer if the percent change in the cost function over the last 5 steps is below this threshold
 
  DF_maxiter     =        0              ! maximum iterations allowed for using Differential Flow (DF)
@@ -41,7 +41,7 @@
  DF_tausta      =        0.000D+00      ! starting value of τ. Usually 0.0 is a good idea
  DF_tauend      =        1.000D-00      ! ending value of τ. The larger value of τend − τsta, the more optimized
 
- CG_maxiter     =        100            ! maximum iterations allowed for using Conjugate Gradient (CG)
+ CG_maxiter     =        50             ! maximum iterations allowed for using Conjugate Gradient (CG)
  CG_xtol        =        1.000D-08      ! the stopping criteria of finding minimum; if |dχ2/dX| < CG xtol, exit the optimization
  CG_wolfe_c1    =        1.000D-04      ! c1 value in the strong wolfe condition for line search; 
  CG_wolfe_c2    =        0.9            ! c2 value in the strong wolfe condition for line search; if one CG step takes too long, try to increase c2, but remember 0 < c1 < c2 < 1
