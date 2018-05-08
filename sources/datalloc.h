@@ -28,9 +28,9 @@ subroutine AllocData(itype)
            ND = (6*NF + 3) ! total variables for geometry
            DoF(icoil)%ND = coil(icoil)%Lc * ND !# of DoF for icoil;
            SALLOCATE(DoF(icoil)%xdof, (1:DoF(icoil)%ND), zero)
-           SALLOCATE(DoF(icoil)%xof , (1:coil(icoil)%NS, 1:ND), zero)
-           SALLOCATE(DoF(icoil)%yof , (1:coil(icoil)%NS, 1:ND), zero)
-           SALLOCATE(DoF(icoil)%zof , (1:coil(icoil)%NS, 1:ND), zero)
+           SALLOCATE(DoF(icoil)%xof , (0:coil(icoil)%NS-1, 1:ND), zero)
+           SALLOCATE(DoF(icoil)%yof , (0:coil(icoil)%NS-1, 1:ND), zero)
+           SALLOCATE(DoF(icoil)%zof , (0:coil(icoil)%NS-1, 1:ND), zero)
         case default
            FATAL(AllocData, .true., not supported coil types)
         end select

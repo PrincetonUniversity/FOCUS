@@ -159,7 +159,7 @@ subroutine LenDeriv0(icoil, length)
   
   length = zero
   
-  do kseg = 1, coil(icoil)%NS
+  do kseg = 0, coil(icoil)%NS-1
 
      dlength = sqrt(coil(icoil)%xt(kseg)**2 + coil(icoil)%yt(kseg)**2 + coil(icoil)%zt(kseg)**2)
      length  = length + dlength * coil(icoil)%dd(kseg)
@@ -185,13 +185,13 @@ subroutine LenDeriv1(icoil, derivs, ND)
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   INTEGER              :: kseg, astat, ierr
   REAL                 :: dl3, xt, yt, zt, xa, ya, za
-  REAL, dimension(1:1, 1:coil(icoil)%NS) :: dLx, dLy, dLz
+  REAL, dimension(1:1, 0:coil(icoil)%NS-1) :: dLx, dLy, dLz
 
   FATAL( LenDeriv1, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
   
   derivs = zero
   
-  do kseg = 1, coil(icoil)%NS
+  do kseg = 0, coil(icoil)%NS-1
      
      xt = coil(icoil)%xt(kseg) ; yt = coil(icoil)%yt(kseg) ; zt = coil(icoil)%zt(kseg)
      xa = coil(icoil)%xa(kseg) ; ya = coil(icoil)%ya(kseg) ; za = coil(icoil)%za(kseg)

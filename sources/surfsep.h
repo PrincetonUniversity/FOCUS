@@ -181,7 +181,7 @@ SUBROUTINE CSPotential0(icoil, iteta, jzeta, dcssep)
 
   xs = surf(psurf)%xx(iteta, jzeta) ; ys = surf(psurf)%yy(iteta, jzeta) ; zs = surf(psurf)%zz(iteta, jzeta)
   
-  do kseg = 1, coil(icoil)%NS
+  do kseg = 0, coil(icoil)%NS-1
 
      ! easy convention
      xc = coil(icoil)%xx(kseg) ; yc = coil(icoil)%yy(kseg) ; zc = coil(icoil)%zz(kseg)
@@ -216,7 +216,7 @@ SUBROUTINE CSPotential1(icoil, iteta, jzeta, d1S, ND)
   INTEGER              :: kseg, astat, ierr
   REAL                 :: q, xt, yt, zt, xa, ya, za, xc, yc, zc, xs, ys, zs
   REAL                 :: dl, dx, dy, dz, lr, pm
-  REAL, dimension(1:1, 1:coil(icoil)%NS) :: dSx, dSy, dSz
+  REAL, dimension(1:1, 0:coil(icoil)%NS-1) :: dSx, dSy, dSz
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   FATAL( CSPotential0, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
@@ -224,7 +224,7 @@ SUBROUTINE CSPotential1(icoil, iteta, jzeta, d1S, ND)
   q = cssep_factor ! easy convention
   xs = surf(psurf)%xx(iteta, jzeta) ; ys = surf(psurf)%yy(iteta, jzeta) ; zs = surf(psurf)%zz(iteta, jzeta)
 
-  do kseg = 1, coil(icoil)%NS
+  do kseg = 0, coil(icoil)%NS-1
 
      ! easy convention
      xc = coil(icoil)%xx(kseg) ; yc = coil(icoil)%yy(kseg) ; zc = coil(icoil)%zz(kseg)

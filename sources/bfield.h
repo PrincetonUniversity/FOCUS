@@ -1,5 +1,5 @@
 
-!title (field) ! Computes magnetic field.
+!title (bfield) ! Computes magnetic field.
 
 !latex \briefly{Computes magnetic field given coil geometry.}
 
@@ -50,7 +50,7 @@ subroutine bfield0(icoil, iteta, jzeta, Bx, By, Bz)
   dly = zero; lty = zero; By = zero
   dlz = zero; ltz = zero; Bz = zero
 
-  do kseg = 1, coil(icoil)%NS
+  do kseg = 0, coil(icoil)%NS-1
         
    dlx = surf(1)%xx(iteta,jzeta) - coil(icoil)%xx(kseg)
    dly = surf(1)%yy(iteta,jzeta) - coil(icoil)%yy(kseg)
@@ -92,7 +92,7 @@ subroutine bfield1(icoil, iteta, jzeta, Bx, By, Bz, ND)
 
   INTEGER              :: ierr, astat, kseg, NS
   REAL                 :: dlx, dly, dlz, r, rm3, rm5, ltx, lty, ltz, rxp
-  REAL, dimension(1:1, 1:coil(icoil)%NS)   :: dBxx, dBxy, dBxz, dByx, dByy, dByz, dBzx, dBzy, dBzz
+  REAL, dimension(1:1, 0:coil(icoil)%NS-1)   :: dBxx, dBxy, dBxz, dByx, dByy, dByz, dBzx, dBzy, dBzz
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
@@ -107,7 +107,7 @@ subroutine bfield1(icoil, iteta, jzeta, Bx, By, Bz, ND)
   dly = zero; lty = zero; By = zero
   dlz = zero; ltz = zero; Bz = zero
 
-  do kseg = 1, NS
+  do kseg = 0, NS-1
      
      dlx = surf(1)%xx(iteta,jzeta) - coil(icoil)%xx(kseg)
      dly = surf(1)%yy(iteta,jzeta) - coil(icoil)%yy(kseg)

@@ -339,6 +339,7 @@ subroutine rdcoils
         SALLOCATE( coil(icoil+(ip-1)*Ncoils)%xa, (0:coil(icoil)%NS), zero )
         SALLOCATE( coil(icoil+(ip-1)*Ncoils)%ya, (0:coil(icoil)%NS), zero )
         SALLOCATE( coil(icoil+(ip-1)*Ncoils)%za, (0:coil(icoil)%NS), zero )
+        SALLOCATE( coil(icoil+(ip-1)*Ncoils)%dl, (0:coil(icoil)%NS), zero )
         SALLOCATE( coil(icoil+(ip-1)*Ncoils)%dd, (0:coil(icoil)%NS), zero )
      enddo
   enddo
@@ -562,16 +563,16 @@ subroutine discoil(ifirst)
 
            if(ifirst /= 0) then
               ip = (icoil-1)/Ncoils  ! the integer is the period number;
-              DoF(icoil)%xof(1:NS,      1:  NF+1) =  cosip(ip) * cmt(1:NS, 0:NF)  !x/xc
-              DoF(icoil)%xof(1:NS,   NF+2:2*NF+1) =  cosip(ip) * smt(1:NS, 1:NF)  !x/xs
-              DoF(icoil)%xof(1:NS, 2*NF+2:3*NF+2) = -sinip(ip) * cmt(1:NS, 0:NF)  !x/yc ; valid for ip>0 ;
-              DoF(icoil)%xof(1:NS, 3*NF+3:4*NF+2) = -sinip(ip) * smt(1:NS, 1:NF)  !x/ys ; valid for ip>0 ;
-              DoF(icoil)%yof(1:NS,      1:  NF+1) =  sinip(ip) * cmt(1:NS, 0:NF)  !y/xc ; valid for ip>0 ;
-              DoF(icoil)%yof(1:NS,   NF+2:2*NF+1) =  sinip(ip) * smt(1:NS, 1:NF)  !y/xs ; valid for ip>0 ;
-              DoF(icoil)%yof(1:NS, 2*NF+2:3*NF+2) =  cosip(ip) * cmt(1:NS, 0:NF)  !y/yc
-              DoF(icoil)%yof(1:NS, 3*NF+3:4*NF+2) =  cosip(ip) * smt(1:NS, 1:NF)  !y/ys
-              DoF(icoil)%zof(1:NS, 4*NF+3:5*NF+3) =              cmt(1:NS, 0:NF)  !z/zc
-              DoF(icoil)%zof(1:NS, 5*NF+4:6*NF+3) =              smt(1:NS, 1:NF)  !z/zs
+              DoF(icoil)%xof(0:NS-1,      1:  NF+1) =  cosip(ip) * cmt(0:NS-1, 0:NF)  !x/xc
+              DoF(icoil)%xof(0:NS-1,   NF+2:2*NF+1) =  cosip(ip) * smt(0:NS-1, 1:NF)  !x/xs
+              DoF(icoil)%xof(0:NS-1, 2*NF+2:3*NF+2) = -sinip(ip) * cmt(0:NS-1, 0:NF)  !x/yc ; valid for ip>0 ;
+              DoF(icoil)%xof(0:NS-1, 3*NF+3:4*NF+2) = -sinip(ip) * smt(0:NS-1, 1:NF)  !x/ys ; valid for ip>0 ;
+              DoF(icoil)%yof(0:NS-1,      1:  NF+1) =  sinip(ip) * cmt(0:NS-1, 0:NF)  !y/xc ; valid for ip>0 ;
+              DoF(icoil)%yof(0:NS-1,   NF+2:2*NF+1) =  sinip(ip) * smt(0:NS-1, 1:NF)  !y/xs ; valid for ip>0 ;
+              DoF(icoil)%yof(0:NS-1, 2*NF+2:3*NF+2) =  cosip(ip) * cmt(0:NS-1, 0:NF)  !y/yc
+              DoF(icoil)%yof(0:NS-1, 3*NF+3:4*NF+2) =  cosip(ip) * smt(0:NS-1, 1:NF)  !y/ys
+              DoF(icoil)%zof(0:NS-1, 4*NF+3:5*NF+3) =              cmt(0:NS-1, 0:NF)  !z/zc
+              DoF(icoil)%zof(0:NS-1, 5*NF+4:6*NF+3) =              smt(0:NS-1, 1:NF)  !z/zs
            endif
 
            coil(icoil)%dd = pi2 / NS  ! discretizing factor;

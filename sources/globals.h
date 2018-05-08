@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='v0.2.03' ! version number
+  CHARACTER(LEN=10), parameter :: version='v0.2.04' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -216,7 +216,8 @@ module globals
   type arbitrarycoil
      INTEGER              :: NS, Ic, Lc, itype
      REAL                 :: I,  L, Lo, maxcurv
-     REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), dd(:), &
+     REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), &
+                             dl(:), dd(:), &
                              Ax(:,:), Ay(:,:), Az(:,:)
      character(LEN=10)    :: name
   end type arbitrarycoil
