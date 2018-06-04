@@ -72,7 +72,7 @@ subroutine bnormal( ideriv )
 
      bn =  surf(1)%Bx * surf(1)%nx + surf(1)%By * surf(1)%ny + surf(1)%Bz * surf(1)%nz
 
-     surf(1)%bn = bn + surf(1)%pb       ! total Bn;
+     surf(1)%bn = bn - surf(1)%pb       ! total Bn; change to minus on 05/28/2018
 
      bnorm = sum( surf(1)%bn * surf(1)%bn * surf(1)%ds ) * half * discretefactor
 

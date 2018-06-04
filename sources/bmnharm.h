@@ -52,7 +52,7 @@ SUBROUTINE bmnharm( ideriv )
   ! calculate the bharm cost function
   !----------------------------------------------------------------------------------------
   use globals, only: zero, half, myid, Ndof, Nteta, Nzeta, surf, &
-                     dB, bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn
+                     bn, dB, bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn
   implicit none
   include "mpif.h"
 
@@ -72,7 +72,8 @@ SUBROUTINE bmnharm( ideriv )
   !-------------------------------calculate H--------------------------------------------- 
   if( ideriv >= 0 ) then
 
-     call twodft( surf(1)%bn, Bmns, Bmnc, Bmnim, Bmnin, NBmn )
+    !call twodft( surf(1)%bn, Bmns, Bmnc, Bmnim, Bmnin, NBmn ) ! total Bn
+     call twodft(         bn, Bmns, Bmnc, Bmnim, Bmnin, NBmn ) ! Bn from coils
 !!$     if (myid == 0) then
 !!$        do imn = 1, NBmn
 !!$           write(*, '("n="I3,"m="I3, "Bmnc="ES12.5, "Bmns="ES12.5)') &
