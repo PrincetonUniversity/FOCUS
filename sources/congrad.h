@@ -37,7 +37,6 @@ SUBROUTINE congrad
        exit_signal, tstart, tfinish
   use mpi
   implicit none
-  !include "mpif.h"
 
   INTEGER                 :: idof, icoil, c1, n1, ierr, astat, iter, iflag
   REAL                    :: alpha, beta, f
@@ -248,7 +247,7 @@ END FUNCTION zoom
 
 
 SUBROUTINE getdf(lxdof, f, g)
-  use globals, only: myid, ounit, ierr,  Ndof, chi, t1E
+  use globals, only: myid, ounit, ierr, Ndof, chi, t1E
   implicit none
   include "mpif.h"
 

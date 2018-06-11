@@ -60,7 +60,7 @@ subroutine solvers
   if (abs(case_optimize) >= 2) call AllocData(2)
 
   if (case_optimize < 0) then          ! finite difference checking derivatives;
-     call fdcheck(case_optimize)
+     call fdcheck2(case_optimize)
      return
   endif
 
@@ -96,6 +96,18 @@ subroutine solvers
      call packdof(xdof)
      finish = MPI_Wtime()
      if (myid  ==  0) write(ounit,'(8X,": CG takes ", es23.15," seconds;")') finish - start
+  endif
+
+  !--------------------------------CG--------------------------------------------------------------------
+  if (.true.)  then
+     if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "----------- Levenberg-Marquardt algorithm (L-M) -----"
+     call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
+     start = MPI_Wtime()
+     call unpacking(xdof)
+     call lmalg
+     call packdof(xdof)
+     finish = MPI_Wtime()
+     if (myid  ==  0) write(ounit,'(8X,": LM takes ", es23.15," seconds;")') finish - start
   endif
   
   !--------------------------------HN--------------------------------------------------------------------
