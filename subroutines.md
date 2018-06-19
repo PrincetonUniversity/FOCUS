@@ -4,7 +4,7 @@ There are produced pdf documentations for each individual file.
 They contain some brief introductions.
 Here are the list and links.
 
-*Some of them might need to be updated. This is for the new version FOCUS. If you have questions, please contact Caoxiang.*
+*Some of these might need to be updated. This is for the new version FOCUS. If you have questions, please contact Caoxiang.*
 
 | names   | description    | source | documentation |
 | -----   | -------------- | ------ | ------------- |
@@ -23,5 +23,6 @@ Here are the list and links.
 | solvers | interface for all the optimizers | [solvers.h](https://github.com/PrincetonUniversity/FOCUS/blob/master/New/solvers.h) | [solvers.pdf](https://princetonuniversity.github.io/FOCUS/solvers.pdf) |
 | descent | differential flow optimization | [descent.h](https://github.com/PrincetonUniversity/FOCUS/blob/master/New/descent.h) | [descent.pdf](https://princetonuniversity.github.io/FOCUS/descent.pdf) |
 | congrad | conjugate gradient optimization | [congrad.h](https://github.com/PrincetonUniversity/FOCUS/blob/master/New/congrad.h) | [congrad.pdf](https://princetonuniversity.github.io/FOCUS/congrad.pdf) |
+| lmalg   | levenberg-marquardt optimization | [lmalg.h](https://github.com/PrincetonUniversity/FOCUS/blob/master/New/lmalg.h) | [lmalg.pdf](https://princetonuniversity.github.io/FOCUS/lmalg.pdf) |
 | saving  | save the results | [saving.h](https://github.com/PrincetonUniversity/FOCUS/blob/master/New/saving.h) | [saving.pdf](https://princetonuniversity.github.io/FOCUS/saving.pdf) |
 | focus   | main flow of the code | [focus.h](https://github.com/PrincetonUniversity/FOCUS/blob/master/New/focus.h) | [focus.pdf](https://princetonuniversity.github.io/FOCUS/focus.pdf) |

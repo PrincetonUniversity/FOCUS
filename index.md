@@ -173,7 +173,7 @@ You can find some of them in [Subroutines](https://princetonuniversity.github.io
 &nbsp;
 
 # Publications
-The first paper introducing FOCUS is [C. Zhu, S.R. Hudson, Y. Song, and Y. Wan, Nuclear Fusion 58, 16008 (2018)](http://iopscience.iop.org/article/10.1088/1741-4326/aa8e0a/). For a full list of publications and presentations, please view [FOCUS Publications](https://princetonuniversity.github.io/FOCUS/Get_the_code).
+The first paper introducing FOCUS is [C. Zhu, S.R. Hudson, Y. Song, and Y. Wan, Nuclear Fusion 58, 16008 (2018)](http://iopscience.iop.org/article/10.1088/1741-4326/aa8e0a/). For a full list of publications and presentations, please view [FOCUS Publications](https://princetonuniversity.github.io/FOCUS/publications).
 
 # Contact
 If you have any questions, please contact Dr. Caoxiang Zhu (czhu@pppl.gov or caoxiangzhu@gmail.com).
