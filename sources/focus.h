@@ -39,6 +39,7 @@
 !latex 2017/06/07: Hybrid Newton method was implemented. \par
 !latex 2017/06/23: NAG and OCULUS dependance have been removed in the new code.\par
 !latex 2017/07/18: Enable field periodicity and add coil diagnostic part. \par
+!latex 2018/06/19: Update diary in this doc will not be 'updated' any more. Please view the website. \par
  
 !!$!latex \subsection{Structure of the code}
 !!$!latex \begin{tikzpicture}[node distance=2cm, auto]

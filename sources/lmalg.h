@@ -29,7 +29,7 @@
 !latex \link{bmnharm} & $wBmn_i (Bmn_i - Bmn^o_i)$ for each reasonant harmonics & weight\_bharm $> 0$ & 2*NBmn in {\em target.harmonics} \\
 !latex \link{torflux} & $\Psi_i - \Psi_o$ at each toroidal cross-sections & weight\_tflux $> 0$ & \inputvar{Nzeta}  \\
 !latex \link{length} & length penalty of each coil, $L_i - L_o$ or $\exp(L_i)/\exp{L_o}$ & weight\_ttlen $> 0$ & Ncoils - Nfixgeo \\
-!latex \link{surfsep} & potential energy between each coil and a control surface & weight\_cssep $> 0$ & Ncoils - Nfixgeo 
+!latex \link{surfsep} & potential energy between each coil and a control surface & weight\_cssep $> 0$ & Ncoils - Nfixgeo \\
 !latex \hline
 !latex \end{tabular}
 !latex \end{table}

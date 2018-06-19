@@ -40,12 +40,12 @@
 !latex \section{First derivatives}
 !latex The first order functional derivatives are 
 !latex \begin{align}
-!latex \ds \frac{\delta {E}}{\delta x_c} & = & \frac{1}{P} \left( & - & \frac{q (x_c-{x_s}) \left({x'_c}^2+{y'_c}^2+{z'_c}^2\right)^2}{({x_s}-x_c)^2+({y_s}-y_c)^2+({z_s}-z_c)^2} + \frac{q x'_c \left({x'_c}^2+{y'_c}^2+{z'_c}^2\right) \left((x_c-{x_s}) x'_c+(y_c-{y_s}) y'_c+(z_c-{z_s}) z'_c\right)}{({x_s}-x_c)^2+({y_s}-y_c)^2+({z_s}-z_c)^2} \right. \nonumber \\
-!latex & & \left. & - &  x''_c \left({x'_c}^2+{y'_c}^2+{z'_c}^2\right) + x'_c \left(x'_c x''_c+y'_c y''_c+z'_c z''_c\right)\right) \ , \\
-!latex \ds \frac{\delta {E}}{\delta y_c} & = & \frac{1}{P} \left( & - & \frac{q (y_c-{y_s}) \left({x'_c}^2+{y'_c}^2+{z'_c}^2\right)^2}{({x_s}-x_c)^2+({y_s}-y_c)^2+({z_s}-z_c)^2} +\frac{q y'_c \left({x'_c}^2+{y'_c}^2+{z'_c}^2\right) \left((x_c-{x_s}) x'_c+(y_c-{y_s}) y'_c+(z_c-{z_s}) z'_c\right)}{({x_s}-x_c)^2+({y_s}-y_c)^2+({z_s}-z_c)^2} \right. \nonumber \\
-!latex & & \left. & - & y''_c \left({x'_c}^2+{y'_c}^2+{z'_c}^2\right) + y'_c \left(x'_c x''_c+y'_c y''_c+z'_c z''_c\right)\right)  \ , \\
-!latex \frac{\delta {E}}{\delta z_c} & = & \ds \frac{1}{P} \left( & - & \frac{q (z_c-{z_s}) \left({x'_c}^2+{y'_c}^2+{z'_c}^2\right)^2}{({x_s}-x_c)^2+({y_s}-y_c)^2+({z_s}-z_c)^2} + \frac{q z'_c \left({x'_c}^2+{y'_c}^2+{z'_c}^2\right) \left((x_c-{x_s}) x'_c+(y_c-{y_s}) y'_c+(z_c-{z_s}) z'_c\right)}{({x_s}-x_c)^2+({y_s}-y_c)^2+({z_s}-z_c)^2} \right. \nonumber \\
-!latex & & \left. & - & z''_c \left({x'_c}^2+{y'_c}^2+{z'_c}^2\right) + z'_c \left(x'_c x''_c+y'_c y''_c+z'_c z''_c\right)\right) \ ,
+!latex \ds \frac{\delta {E}}{\delta x_c} & = & \frac{1}{P} \left( -  \frac{q (x_c-{x_s}) \left({x'_c}^2+{y'_c}^2+{z'_c}^2\right)^2}{({x_s}-x_c)^2+({y_s}-y_c)^2+({z_s}-z_c)^2} + \frac{q x'_c \left({x'_c}^2+{y'_c}^2+{z'_c}^2\right) \left((x_c-{x_s}) x'_c+(y_c-{y_s}) y'_c+(z_c-{z_s}) z'_c\right)}{({x_s}-x_c)^2+({y_s}-y_c)^2+({z_s}-z_c)^2} \right. \nonumber \\
+!latex & & \left. -   x''_c \left({x'_c}^2+{y'_c}^2+{z'_c}^2\right) + x'_c \left(x'_c x''_c+y'_c y''_c+z'_c z''_c\right)\right) \ , \\
+!latex \ds \frac{\delta {E}}{\delta y_c} & = & \frac{1}{P} \left( -  \frac{q (y_c-{y_s}) \left({x'_c}^2+{y'_c}^2+{z'_c}^2\right)^2}{({x_s}-x_c)^2+({y_s}-y_c)^2+({z_s}-z_c)^2} +\frac{q y'_c \left({x'_c}^2+{y'_c}^2+{z'_c}^2\right) \left((x_c-{x_s}) x'_c+(y_c-{y_s}) y'_c+(z_c-{z_s}) z'_c\right)}{({x_s}-x_c)^2+({y_s}-y_c)^2+({z_s}-z_c)^2} \right. \nonumber \\
+!latex & & \left. -  y''_c \left({x'_c}^2+{y'_c}^2+{z'_c}^2\right) + y'_c \left(x'_c x''_c+y'_c y''_c+z'_c z''_c\right)\right)  \ , \\
+!latex \frac{\delta {E}}{\delta z_c} & = & \ds \frac{1}{P} \left( -  \frac{q (z_c-{z_s}) \left({x'_c}^2+{y'_c}^2+{z'_c}^2\right)^2}{({x_s}-x_c)^2+({y_s}-y_c)^2+({z_s}-z_c)^2} + \frac{q z'_c \left({x'_c}^2+{y'_c}^2+{z'_c}^2\right) \left((x_c-{x_s}) x'_c+(y_c-{y_s}) y'_c+(z_c-{z_s}) z'_c\right)}{({x_s}-x_c)^2+({y_s}-y_c)^2+({z_s}-z_c)^2} \right. \nonumber \\
+!latex & & \left. -  z''_c \left({x'_c}^2+{y'_c}^2+{z'_c}^2\right) + z'_c \left(x'_c x''_c+y'_c y''_c+z'_c z''_c\right)\right) \ ,
 !latex \end{align}
 !latex where $P = [({x_s}-x_c)^2 + ({y_s}-y_c)^2 + ({z_s}-z_c)^2]^{q/2} [{x'_c}^2+{y'_c}^2+{z'_c}^2]^{3/2}$.
 !latex In above equations, only the integrads are written out.
