@@ -138,6 +138,7 @@ subroutine saving
   HWRITEIV( 1                ,   iout          ,   iout                          )
   HWRITERV( 1                ,   Inorm         ,   Inorm                         )
   HWRITERV( 1                ,   Gnorm         ,   Gnorm                         )
+  HWRITERV( 1                ,   overlap       ,   overlap                       )
   HWRITERA( iout, 8          ,   evolution     ,   evolution(1:iout, 0:7)        )
   HWRITERA( iout, Tdof       ,   coilspace     ,   coilspace(1:iout, 1:Tdof)     )
 
@@ -155,6 +156,26 @@ subroutine saving
      HWRITERV( NBmn          ,          Bmnc   ,    Bmnc                         )
      HWRITERV( NBmn          ,          Bmns   ,    Bmns                         )
   endif
+
+  if (allocated(coil_importance)) then
+     HWRITERV( Ncoils*Npc    , coil_importance ,  coil_importance                )
+  endif
+  
+  if (allocated(LM_fvec)) then
+     HWRITEIV( 1                ,   ibnorm        ,   ibnorm                     )
+     HWRITEIV( 1                ,   mbnorm        ,   mbnorm                     )     
+     HWRITEIV( 1                ,   ibharm        ,   ibharm                     )
+     HWRITEIV( 1                ,   mbharm        ,   mbharm                     )     
+     HWRITEIV( 1                ,   itflux        ,   itflux                     )
+     HWRITEIV( 1                ,   mtflux        ,   mtflux                     )     
+     HWRITEIV( 1                ,   ittlen        ,   ittlen                     )
+     HWRITEIV( 1                ,   mttlen        ,   mttlen                     )     
+     HWRITEIV( 1                ,   icssep        ,   icssep                     )
+     HWRITEIV( 1                ,   mcssep        ,   mcssep                     )
+     HWRITERV( LM_mfvec         ,   LM_fvec       ,   LM_fvec                    )
+     HWRITERA( LM_mfvec, Ndof   ,   LM_fjac       ,   LM_fjac                    )     
+  endif
+
 
   HWRITERV( 1                ,  time_initialize,   time_initialize               )
   HWRITERV( 1                ,  time_optimize  ,   time_optimize                 )

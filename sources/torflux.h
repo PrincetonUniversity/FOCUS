@@ -97,7 +97,8 @@ subroutine torflux( ideriv )
 !------------------------------------------------------------------------------------------------------   
   use globals, only: zero, half, one, pi2, sqrtmachprec, bsconstant, ncpu, myid, ounit, &
        coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, Cdof, Npc, &
-       tflux, t1F, t2F, Ndof, psi_avg, target_tflux
+       tflux, t1F, t2F, Ndof, psi_avg, target_tflux, &
+       itflux, mtflux, LM_fvec, LM_fjac, weight_tflux
 
   implicit none
   include "mpif.h"
@@ -155,6 +156,11 @@ subroutine torflux( ideriv )
      
      psi_avg = psi_avg / Nzeta
      tflux = half * tflux / Nzeta 
+
+     ! Another type of target functions
+     if (mtflux > 0) then
+        LM_fvec(itflux+1:itflux+mtflux) = weight_tflux * psi_diff(0:Nzeta-1)
+     endif
   
   endif
 
@@ -211,6 +217,13 @@ subroutine torflux( ideriv )
      do idof = 1, Ndof
         t1F(idof) = sum( psi_diff(0:Nzeta-1) * dF(idof, 0:Nzeta-1) ) / Nzeta
      enddo
+
+     ! Another type of target functions
+     if (mtflux > 0) then
+        do idof = 1, Ndof
+           LM_fjac(itflux+1:itflux+mtflux, idof) = dF(idof, 0:Nzeta-1)
+        enddo
+     endif
      
   endif
 

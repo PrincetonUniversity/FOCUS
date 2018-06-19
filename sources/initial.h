@@ -496,7 +496,7 @@ subroutine initial
 
   ! initialize iteration and total iterations;
   iout = 1 ; Nouts = 1
-  if (case_optimize >0) Nouts = DF_maxiter + CG_maxiter + HN_maxiter + TN_maxiter
+  if (case_optimize >0) Nouts = DF_maxiter + CG_maxiter + LM_maxiter + HN_maxiter + TN_maxiter
 
   discretefactor = (pi2/Nteta) * (pi2/Nzeta)
 

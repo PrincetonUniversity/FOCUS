@@ -42,7 +42,7 @@ subroutine solvers
   implicit none
   include "mpif.h"
 
-  REAL :: start, finish, ii, lxdof(1:Ndof), f, g(1:Ndof)
+  REAL :: start, finish
 
 
   if (myid == 0) write(ounit, *) "-----------OPTIMIZATIONS-------------------------------------"
@@ -60,7 +60,7 @@ subroutine solvers
   if (abs(case_optimize) >= 2) call AllocData(2)
 
   if (case_optimize < 0) then          ! finite difference checking derivatives;
-     call fdcheck2(case_optimize)
+     call fdcheck(case_optimize)
      return
   endif
 
@@ -145,7 +145,7 @@ end subroutine solvers
 subroutine costfun(ideriv)
   use globals, only: zero, one, sqrtmachprec, myid, ounit, astat, ierr, IsQuiet, &
        Ncoils, deriv, Ndof, xdof, dofnorm, coil, &
-       chi, t1E, t2E, &
+       chi, t1E, t2E, LM_maxiter, LM_fjac, LM_mfvec, &
        bnorm      , t1B, t2B, weight_bnorm,  &
        bharm      , t1H, t2H, weight_bharm,  &
        tflux      , t1F, t2F, weight_tflux, target_tflux, psi_avg, &
@@ -158,7 +158,8 @@ subroutine costfun(ideriv)
   include "mpif.h"
 
   INTEGER, INTENT(in) :: ideriv
-
+  
+  INTEGER             :: ivec
   REAL                :: start, finish
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -167,7 +168,6 @@ subroutine costfun(ideriv)
   if (IsQuiet <= -2) then
 
      call bnormal(0)
-     if (weight_bharm > sqrtmachprec) call bmnharm(0)
 
      if ( abs(target_tflux) < sqrtmachprec ) then
         call torflux(0)
@@ -197,30 +197,31 @@ subroutine costfun(ideriv)
      t1E = zero; t2E = zero
   endif
 
-  !call unpacking(xdof)
-  ! Bnormal surface intergration;
-  if (weight_bnorm > sqrtmachprec) then
+  ! Bn cost functions
+  if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec) then
  
      call bnormal(ideriv)
-     chi = chi + weight_bnorm * bnorm
-     if     ( ideriv == 1 ) then
-        t1E = t1E +  weight_bnorm * t1B
-     elseif ( ideriv == 2 ) then
-        t1E = t1E +  weight_bnorm * t1B
-        t2E = t2E +  weight_bnorm * t2B
+     ! Bnormal surface intergration;
+     if (weight_bnorm > sqrtmachprec) then
+        chi = chi + weight_bnorm * bnorm
+        if     ( ideriv == 1 ) then
+           t1E = t1E +  weight_bnorm * t1B
+        elseif ( ideriv == 2 ) then
+           t1E = t1E +  weight_bnorm * t1B
+           t2E = t2E +  weight_bnorm * t2B
+        endif
      endif
-  endif
 
-  ! individual Bn harmonics;
-  if (weight_bharm > sqrtmachprec) then
+     ! individual Bn harmonics;
+     if (weight_bharm > sqrtmachprec) then
 
-     call bmnharm(ideriv)
-     chi = chi + weight_bharm * bharm
-     if     ( ideriv == 1 ) then
-        t1E = t1E +  weight_bharm * t1H
-     elseif ( ideriv == 2 ) then
-        t1E = t1E +  weight_bharm * t1H
-        t2E = t2E +  weight_bharm * t2H
+        chi = chi + weight_bharm * bharm
+        if     ( ideriv == 1 ) then
+           t1E = t1E +  weight_bharm * t1H
+        elseif ( ideriv == 2 ) then
+           t1E = t1E +  weight_bharm * t1H
+           t2E = t2E +  weight_bharm * t2H
+        endif
      endif
   endif
 
@@ -329,6 +330,13 @@ subroutine costfun(ideriv)
 
   if ( ideriv == 1 ) then                ! multiply t1E & t2E with normalized terms; 06/09/2017
      t1E = t1E * dofnorm
+
+     ! L-M format
+     if (LM_mfvec > 0) then
+        do ivec = 1, LM_mfvec
+           LM_fjac(ivec, 1:Ndof) = LM_fjac(ivec, 1:Ndof) * dofnorm(1:Ndof)
+        enddo
+     endif
 !!$   elseif ( ideriv == 2 ) then
 !!$      t1E = t1E * dofnorm
 !!$      t2E = t2E * hesnorm
@@ -378,33 +386,32 @@ subroutine normweight
 
   endif
 
-  !-!-!-!-!-!-!-!-!-!-bharm-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+  !-!-!-!-!-!-!-!-!-!-bharm or bnorm!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  if( weight_bharm >= machprec ) then
+  if( weight_bharm >= machprec .or. weight_bnorm >= machprec ) then
 
-     call bmnharm(0)
-     modBn = sqrt(sum(Bmnc**2 + Bmns**2))
-     modtBn = sqrt(sum(tBmnc**2 + tBmns**2))
-     do icoil = 1, Ncoils
-        coil(icoil)%I = coil(icoil)%I * modtBn / modBn
-     enddo
-     if(myid .eq. 0) write(ounit,'(8X,": rescale coil currents with a factor of "ES12.5)') &
-          modtBn / modBn
-     call bmnharm(0)
-     if (abs(bharm) > machprec) weight_bharm = weight_bharm / bharm
-     if( myid == 0 ) write(ounit, 1000) "weight_bharm", weight_bharm
+     call bnormal(0)
 
-  endif
+     if ( weight_bharm >= machprec ) then 
+        modBn = sqrt(sum(Bmnc**2 + Bmns**2))
+        modtBn = sqrt(sum(tBmnc**2 + tBmns**2))
+        do icoil = 1, Ncoils
+           coil(icoil)%I = coil(icoil)%I * modtBn / modBn
+        enddo
+        if(myid .eq. 0) write(ounit,'(8X,": rescale coil currents with a factor of "ES12.5)') &
+             modtBn / modBn
+        call bnormal(0)
+        if (abs(bharm) > machprec) weight_bharm = weight_bharm / bharm
+        if( myid == 0 ) write(ounit, 1000) "weight_bharm", weight_bharm
+     endif
 
-  !-!-!-!-!-!-!-!-!-!-bnorm-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-  if( weight_bnorm >= machprec ) then
-
-     call bnormal(0)   
-     if (abs(bnorm) > machprec) weight_bnorm = weight_bnorm / bnorm
-     if( myid == 0 ) write(ounit, 1000) "weight_bnorm", weight_bnorm
+     if ( weight_bnorm >= machprec ) then
+        if (abs(bnorm) > machprec) weight_bnorm = weight_bnorm / bnorm
+        if( myid == 0 ) write(ounit, 1000) "weight_bnorm", weight_bnorm
+     endif
 
   endif
+
 
   !-!-!-!-!-!-!-!-!-!-ttlen-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='v0.2.05' ! version number
+  CHARACTER(LEN=10), parameter :: version='v0.3.01' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -123,6 +123,11 @@ module globals
   REAL                 :: CG_wolfe_c1    =        1.000D-04
   REAL                 :: CG_wolfe_c2    =        0.1
 
+  INTEGER              :: LM_maxiter     =        0
+  REAL                 :: LM_xtol        =        1.000D-08
+  REAL                 :: LM_ftol        =        1.000D-08
+  REAL                 :: LM_factor      =        1.000D+02
+
   INTEGER              :: HN_maxiter     =        0
   REAL                 :: HN_xtol        =        1.000D-08
   REAL                 :: HN_factor      =      100.0
@@ -183,6 +188,10 @@ module globals
                         CG_xtol        , & 
                         CG_wolfe_c1    , &
                         CG_wolfe_c2    , &
+                        LM_maxiter     , &  
+                        LM_xtol        , & 
+                        LM_ftol        , & 
+                        LM_factor      , & 
                         HN_maxiter     , &  
                         HN_xtol        , & 
                         HN_factor      , & 
@@ -252,13 +261,16 @@ module globals
 
 !latex \subsection{Optimization}
   ! General target functions;
-  INTEGER              :: iout, Nouts
+  INTEGER              :: iout, Nouts, LM_iter, LM_mfvec
+  INTEGER              :: ibnorm = 0, ibharm = 0, itflux = 0, ittlen = 0, icssep = 0 ! starting number
+  INTEGER              :: mbnorm = 0, mbharm = 0, mtflux = 0, mttlen = 0, mcssep = 0 ! numbers of targets
   REAL                 :: chi, discretefactor
   REAL   , allocatable :: t1E(:), t2E(:,:), evolution(:,:), coilspace(:,:), deriv(:,:)
+  REAL   , allocatable :: LM_fvec(:), LM_fjac(:,:)
   LOGICAL              :: exit_signal = .False.
   ! Bn surface integration;
   REAL                 :: bnorm
-  REAL   , allocatable :: t1B(:), t2B(:,:), bn(:,:), dB(:,:,:)
+  REAL   , allocatable :: t1B(:), t2B(:,:), bn(:,:)
   ! Bn reasonant harmoics;
   INTEGER              :: NBmn
   INTEGER, allocatable :: Bmnin(:), Bmnim(:)
@@ -305,8 +317,9 @@ module globals
 
 !latex \subsection{Miscellaneous}
   REAL                 :: tmpw_bnorm, tmpw_tflux ,tmpt_tflux, tmpw_ttlen, tmpw_specw, tmpw_ccsep, tmpw_bharm
+  REAL                 :: overlap = 0.0
                           !tmp weight for saving to restart file
-  REAL, allocatable    :: mincc(:,:)!
+  REAL, allocatable    :: mincc(:,:), coil_importance(:)
   INTEGER              :: ierr, astat
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!

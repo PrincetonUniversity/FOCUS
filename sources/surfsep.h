@@ -72,14 +72,16 @@ SUBROUTINE surfsep(ideriv)
 ! calculate the potential energy (and derivatives) between coils and the "prevent" surface
 !------------------------------------------------------------------------------------------------------  
   use globals, only : zero, half, pi2, machprec, ncpu, myid, ounit, &
-       coil, DoF, Ncoils, Nfixgeo, Ndof, cssep, t1S, t2S, psurf, surf
+       coil, DoF, Ncoils, Nfixgeo, Ndof, cssep, t1S, t2S, psurf, surf, &
+       icssep, mcssep, LM_fvec, LM_fjac, weight_cssep
 
   implicit none
   include "mpif.h"
   INTEGER, INTENT(in) :: ideriv
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  INTEGER             :: astat, ierr, icoil, iteta, jzeta, NumGrid, Nteta, Nzeta, idof, ND
-  REAL                :: lcssep, dcssep, discretefactor, d1S(1:Ndof), L1S(1:Ndof), coilsum
+  INTEGER             :: astat, ierr, icoil, iteta, jzeta, NumGrid, Nteta, Nzeta, idof, ND, ivec
+  REAL                :: dcssep, discretefactor, d1S(1:Ndof), L1S(1:Ndof), coilsum
+  REAL                :: lcssep(Ncoils), jac(Ncoils, Ndof)
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -88,28 +90,36 @@ SUBROUTINE surfsep(ideriv)
   Nzeta = surf(psurf)%Nzeta ! Nteta & Nzeta are local variables here,
   NumGrid = Nteta*Nzeta     ! specifying the resolution of the prevent surface.
   discretefactor = (pi2/Nteta) * (pi2/Nzeta)
-
+  !num_free = Ncoils - Nfixgeo ! number of free coils
+  lcssep = zero
+  
   if( ideriv >= 0 ) then
+     ivec = 1
+     do icoil = 1, Ncoils
+        coilsum = zero
+        if ( coil(icoil)%Lc /= 0 ) then 
+           do jzeta = 0, Nzeta - 1
+              do iteta = 0, Nteta - 1           
+                 if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;                     
+                 call CSPotential0(icoil, iteta, jzeta, dcssep)
+                 coilsum = coilsum + dcssep*surf(psurf)%ds(iteta, jzeta)  ! local cssep
+              enddo ! end do iteta
+           enddo ! end do jzeta
+           call MPI_BARRIER( MPI_COMM_WORLD, ierr )
+           call MPI_REDUCE( coilsum, lcssep(icoil), 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
+           RlBCAST(lcssep(icoil), 1, 0 )
+           ! L-M format of targets
+           if (mcssep > 0) LM_fvec(ivec) = weight_cssep * lcssep(icoil)
+           ivec = ivec + 1
+        endif       
+     enddo ! end do icoil
 
-     do jzeta = 0, Nzeta - 1
-        do iteta = 0, Nteta - 1
-           
-           coilsum = zero
-           if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;
-           do icoil = 1, Ncoils              
-              if ( coil(icoil)%Lc /= 0 ) call CSPotential0(icoil, iteta, jzeta, dcssep)
-              coilsum = coilsum + dcssep ! local cssep
-           enddo ! end do icoil
-           lcssep = lcssep + coilsum * surf(psurf)%ds(iteta, jzeta)
+     cssep = sum(lcssep(1:Ncoils)) * discretefactor /  (Ncoils - Nfixgeo + machprec) ! average value
 
-        enddo ! end do iteta
-     enddo ! end do jzeta
-
-     call MPI_BARRIER( MPI_COMM_WORLD, ierr )
-     call MPI_REDUCE( lcssep, cssep, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
-
-     RlBCAST(cssep, 1, 0 )
-     cssep = cssep * discretefactor /  (Ncoils - Nfixgeo + machprec) ! average value
+     ! L-M format of targets
+     if (mcssep > 0) then
+        FATAL( surfsep, ivec == (Ncoils-Nfixgeo), Errors in counting ivec )
+     endif
 
   endif
 
@@ -117,40 +127,48 @@ SUBROUTINE surfsep(ideriv)
 
   if ( ideriv >= 1 ) then
 
-     t1S = zero ; d1S = zero ; l1S = zero
+     t1S = zero ; jac = zero
+     idof = 0 ; ivec = 1
 
-     do jzeta = 0, Nzeta - 1
-        do iteta = 0, Nteta - 1
-          
-           idof = 0 
-           if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;
+     do icoil = 1, Ncoils
+        ND = DoF(icoil)%ND
+        d1S = zero
+        l1S = zero
+        if ( coil(icoil)%Ic /= 0 ) then ! if current is free;
+           idof = idof +1
+        endif
 
-           do icoil = 1, Ncoils
-              ND = DoF(icoil)%ND
-              if ( coil(icoil)%Ic /= 0 ) then ! if current is free;
-                 idof = idof +1
-              endif
-              if ( coil(icoil)%Lc /= 0 ) then ! if geometry is free;
+        if ( coil(icoil)%Lc /= 0 ) then ! if geometry is free;
+           do jzeta = 0, Nzeta - 1
+              do iteta = 0, Nteta - 1
+                 if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;
                  call CSPotential1(icoil, iteta, jzeta, d1S(idof+1:idof+ND), ND)
-                 idof = idof + ND
-              endif
-             !coilsum(1:Ndof) = coilsum(1:Ndof) + d1S(1:Ndof)  ! local derivatives             
-           enddo ! end do icoil
+                 l1S(idof+1:idof+ND) = l1S(idof+1:idof+ND) + d1S(idof+1:idof+ND) * surf(psurf)%ds(iteta, jzeta)
+              enddo ! end do iteta
+           enddo ! end do jzeta
+           call MPI_BARRIER( MPI_COMM_WORLD, ierr )
+           call MPI_REDUCE( l1S, jac(icoil, 1:Ndof), Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
+           RlBCAST( jac(icoil, 1:Ndof), Ndof, 0 )
+           ! L-M format of targets
+           if (mcssep > 0)  LM_fjac(ivec, 1:Ndof) = weight_cssep * jac(icoil, 1:Ndof)
+           idof = idof + ND
+           ivec = ivec + 1        
+        endif
+                   
+     enddo ! end do icoil
+     FATAL( surfsep , idof .ne. Ndof, counting error in packing )
 
-           FATAL( torflux , idof .ne. Ndof, counting error in packing )
-           l1S = l1S + d1S(1:Ndof) * surf(psurf)%ds(iteta, jzeta)
-           
-        enddo ! end do iteta
-     enddo ! end do jzeta
-
-     call MPI_BARRIER( MPI_COMM_WORLD, ierr )
-     call MPI_REDUCE( l1S, t1S, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
-
-     RlBCAST( t1S, Ndof, 0 )
-     t1S = t1S * discretefactor /  (Ncoils - Nfixgeo + machprec) 
-
+     ! L-M format of targets
+     if (mcssep > 0) then
+        FATAL( surfsep, ivec == (Ncoils-Nfixgeo), Errors in counting ivec )
+     endif
+     
+     do idof = 1, Ndof       
+        t1S(idof) = sum(jac(1:Ncoils, idof)) * discretefactor /  (Ncoils - Nfixgeo + machprec) 
+     enddo
+     
   endif
-  
+
   return
 
 END SUBROUTINE surfsep

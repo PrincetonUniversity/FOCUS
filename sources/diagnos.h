@@ -7,14 +7,14 @@ SUBROUTINE diagnos
 !------------------------------------------------------------------------------------------------------   
   use globals, only: zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
        Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
-       cssep
+       cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, Npc, weight_bnorm, overlap
                      
   implicit none
   include "mpif.h"
 
-  INTEGER           :: icoil, itmp, astat, ierr, NF, idof
+  INTEGER           :: icoil, itmp, astat, ierr, NF, idof, i, j
   LOGICAL           :: lwbnorm = .True. , l_raw = .False.!if use raw coils data
-  REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist
+  REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist, ReDot, ImDot
   REAL, parameter   :: infmax = 1.0E6
   REAL, allocatable :: Atmp(:,:), Btmp(:,:)
 
@@ -79,7 +79,7 @@ SUBROUTINE diagnos
   !-----------------------------minimum coil coil separation------------------------------------  
   ! coils are supposed to be placed in order
   minCCdist = infmax
-  do icoil = 1, Ncoils
+  do icoil = 1, Ncoils*Npc
 
      if(Ncoils .eq. 1) exit !if only one coil
      itmp = icoil + 1
@@ -136,7 +136,39 @@ SUBROUTINE diagnos
   if(myid .eq. 0) write(ounit, '("diagnos : The minimum coil-plasma distance is    :" ES23.15 &
        " ; at coil " I3)') minCPdist, itmp
 
-  !---------------------------------------------------------------------------------------------  
+  !--------------------------------overlap of Bn_mn harmonics-----------------------------------  
+  ReDot = zero ; ImDot = zero
+  if (weight_bharm > sqrtmachprec) then  ! do not care n,m; use cos - i sin
+     ReDot = sum(Bmnc*tBmnc) + sum(Bmns*tBmns)
+     ImDot = sum(Bmnc*tBmns) - sum(Bmns*tBmnc)
+     overlap = sqrt( (ReDot*ReDot + ImDot*ImDot) &
+                 / ( (sum(Bmnc*Bmnc)+sum(Bmns*Bmns)) * (sum(tBmnc*tBmnc)+sum(tBmns*tBmns)) ) )
+     if(myid .eq. 0) write(ounit, '("diagnos : Overlap of the realized Bn harmonics is:" F8.3 " %")') 100*overlap
+  endif
+
+  !--------------------------------calculate the average Bn error-------------------------------
+  if (allocated(surf(1)%bn)) then
+     ! \sum{ |Bn| / |B| }/ (Nt*Nz)
+     if(myid .eq. 0) write(ounit, '("diagnos : Average relative absolute Bn error is  :" ES23.15)') &
+          sum(abs(surf(1)%bn/sqrt(surf(1)%Bx**2 + surf(1)%By**2 + surf(1)%Bz**2))) / (Nzeta*Nzeta)
+  endif
+
+  !--------------------------------calculate coil importance------------------------------------  
+  SALLOCATE( coil_importance, (1:Ncoils*Npc), zero )
+  if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec) then  ! make sure data_allocated
+     do icoil = 1, Ncoils*Npc
+        call importance(icoil)
+     enddo
+  
+     if(myid .eq. 0) write(ounit, '("diagnos : The most and least important coils are :  " & 
+          F6.3"% at coil" I4 " ; " F6.3"% at coil "I4)')      &
+      100*maxval(coil_importance), maxloc(coil_importance), &
+      100*minval(coil_importance), minloc(coil_importance)
+
+  endif
+  !--------------------------------------------------------------------------------------------- 
+
+ 
   return
 
 END SUBROUTINE diagnos
@@ -195,3 +227,53 @@ subroutine mindist(array_A, dim_A, array_B, dim_B, minimum)
   return
 
 end subroutine mindist
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+subroutine importance(icoil)
+  use globals, only : zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils, &
+                      surf, Nteta, Nzeta, bsconstant, coil_importance
+  implicit none
+  include "mpif.h"
+
+  INTEGER, INTENT(in) :: icoil  
+
+  INTEGER                               :: iteta, jzeta, NumGrid
+  REAL                                  :: dBx, dBy, dBz
+  REAL, dimension(0:Nteta-1, 0:Nzeta-1) :: lbx, lby, lbz        ! local  Bx, By and Bz
+  REAL, dimension(0:Nteta-1, 0:Nzeta-1) :: tbx, tby, tbz        ! summed Bx, By and Bz
+
+  !--------------------------initialize and allocate arrays------------------------------------- 
+
+  NumGrid = Nteta*Nzeta
+  lbx = zero; lby = zero; lbz = zero        !already allocted; reset to zero;
+  tbx = zero; tby = zero; tbz = zero        !already allocted; reset to zero;
+
+  do jzeta = 0, Nzeta - 1
+     do iteta = 0, Nteta - 1
+
+        if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;
+        call bfield0(icoil, iteta, jzeta, lbx(iteta, jzeta), lby(iteta, jzeta), lbz(iteta, jzeta))
+
+     enddo ! end do iteta
+  enddo ! end do jzeta
+
+  call MPI_BARRIER( MPI_COMM_WORLD, ierr )     
+  call MPI_REDUCE( lbx, tbx, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
+  call MPI_REDUCE( lby, tby, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
+  call MPI_REDUCE( lbz, tbz, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
+
+  RlBCAST( tbx, NumGrid, 0 )  ! total Bx from icoil;
+  RlBCAST( tby, NumGrid, 0 )  ! total By from icoil;
+  RlBCAST( tbz, NumGrid, 0 )  ! total Bz from icoil;
+
+  tbx = tbx * coil(icoil)%I * bsconstant
+  tby = tby * coil(icoil)%I * bsconstant
+  tbz = tbz * coil(icoil)%I * bsconstant
+
+  coil_importance(icoil) = sum( (tbx*surf(1)%Bx + tby*surf(1)%By + tbz*surf(1)%Bz) / &
+                                (surf(1)%Bx**2 + surf(1)%By**2 + surf(1)%Bz**2) ) / NumGrid
+
+  return
+
+end subroutine importance
