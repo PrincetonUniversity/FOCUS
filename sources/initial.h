@@ -202,13 +202,25 @@
 !latex  \item \inputvar{CG\_wolfe\_c2 = 0.1} \\
 !latex    \textit{c2 value in the strong wolfe condition for line search; if one CG step takes too long, try to increase c2, but remember $0<c1<c2<1$; seen in \link{congrad}};
 !latex 
+!latex  \item \inputvar{LM\_maxiter = 0} \\
+!latex    \textit{maximum iterations allowed for using Levenberg-Marquard (LM); if zero, turned of; seen in \link{lmalg}}
+!latex 
+!latex  \item \inputvar{LM\_xtol = 1.000D-08} \\
+!latex    \textit{the stopping criteria of finding minimum; if the relative error between two consecutivec iterates is at most xtol, the optimization terminates; seen in  \link{lmalg}};
+!latex 
+!latex  \item \inputvar{LM\_ftol = 1.000D-08} \\
+!latex    \textit{the stopping criteria of finding minimum; if both the actual and predicted relative reductions in the sum of squares are at most ftol, the optimization terminates; seen in  \link{lmalg}};
+!latex 
+!latex  \item \inputvar{LM\_factor = 1.000D+02} \\
+!latex    \textit{factor is a positive input variable used in determining the initial step bound. this bound is set to the product of factor and the euclidean norm of diag*x if nonzero, or else to factor itself. in most cases factor should lie in the interval (.1,100.).100. is a generally recommended value. seen in  \link{lmalg}};
+!latex 
 !latex  \par \begin{tikzpicture} \draw[dashed] (0,1) -- (10,1); \end{tikzpicture}
 !latex 
 !latex  \item \inputvar{case\_postproc = 1} \\
 !latex    \textit{specify post-processing options.} \\
 !latex    \bi \vspace{-5mm}
 !latex    \item[ 0:] no extra post-processing;
-!latex    \item[ 1:] evaluate the present coils for each cost functions, coil curvature, coil-coil separation, and coil-plasma separation;
+!latex    \item[ 1:] evaluate the present coils for each cost functions, coil curvature, coil-coil separation, and coil-plasma separation, Bn harmonics overlap, coil importance;
 !latex    \item[ 2:] write mgrid file; (not ready)
 !latex    \ei
 !latex 

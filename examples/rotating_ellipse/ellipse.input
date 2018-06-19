@@ -46,6 +46,11 @@
  CG_wolfe_c1    =        1.000D-04      ! c1 value in the strong wolfe condition for line search; 
  CG_wolfe_c2    =        0.9            ! c2 value in the strong wolfe condition for line search; if one CG step takes too long, try to increase c2, but remember 0 < c1 < c2 < 1
 
+ LM_maxiter     =        20             ! maximum iterations allowed for using Levenberg-Marquard (LM)
+ LM_xtol        =        1.000D-08      ! if the relative error between two consecutivec iterates is at most xtol, the optimization terminates
+ LM_ftol        =        1.000D-08      ! if both the actual and predicted relative reductions in the sum of squares are at most ftol, the optimization terminates;
+ LM_factor      =      100.0            ! the initial step bound, which is set to the product of factor and the euclidean norm of diag*x if nonzero
+
  HN_maxiter     =        0
  HN_xtol        =        1.000D-08
  HN_factor      =      100.0
