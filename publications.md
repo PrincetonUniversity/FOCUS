@@ -10,7 +10,7 @@ If there are FOCUS related papers/presentations that haven't not been shown here
 
   Stuart R. Hudson, Caoxiang Zhu, David Pfefferle & Lee Gunderson
 
-  *Physics Letter A. (submitted)*
+  *Physics Letter A.* (submitted)
 -----------------
 
 - **Designing stellarator coils by a modified Newton method using FOCUS.**
