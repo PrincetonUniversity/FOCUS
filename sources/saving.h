@@ -119,7 +119,7 @@ subroutine saving
   HWRITEIV( 1                ,   save_harmonics,   save_harmonics                )
   HWRITEIV( 1                ,   save_filaments,   save_filaments                )
 
-  HWRITEIV( 1                ,   Nfp           ,   Nfp                         )
+  HWRITEIV( 1                ,   Nfp           ,   Nfp_raw                         )
   HWRITERA( Nteta,Nzeta      ,   xsurf         ,   surf(1)%xx(0:Nteta-1,0:Nzeta-1) )
   HWRITERA( Nteta,Nzeta      ,   ysurf         ,   surf(1)%yy(0:Nteta-1,0:Nzeta-1) )
   HWRITERA( Nteta,Nzeta      ,   zsurf         ,   surf(1)%zz(0:Nteta-1,0:Nzeta-1) )
@@ -273,7 +273,7 @@ subroutine saving
      write(wunit,'(I6)') NBmn                     !write dimensions
      write(wunit,'("# n  m   Bmnc  Bmns  wBmn")') ! comment line;
      do imn = 1, NBmn
-        write(wunit,'(2(I3, 4X), 3(ES23.15,4X))') Bmnin(imn), Bmnim(imn), Bmnc(imn), Bmns(imn), wBmn(imn)
+        write(wunit,'(2(I3, 4X), 3(ES23.15,4X))') Bmnin(imn)/Nfp_raw, Bmnim(imn), Bmnc(imn), Bmns(imn), wBmn(imn)
      enddo
      close(wunit)
 

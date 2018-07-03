@@ -246,7 +246,7 @@ module globals
   type(FourierCoil)    , allocatable :: FouCoil(:)
   type(DegreeOfFreedom), allocatable :: DoF(:)
 
-  INTEGER              :: Nfou=0, Nfp=0, NBnf=0, Npc = 1
+  INTEGER              :: Nfou=0, Nfp=0, NBnf=0, Npc = 1, Nfp_raw = 1
   INTEGER, allocatable :: bim(:), bin(:), Bnim(:), Bnin(:)
   REAL   , allocatable :: Rbc(:), Zbs(:), Rbs(:), Zbc(:), Bnc(:), Bns(:), cosip(:), sinip(:)
     

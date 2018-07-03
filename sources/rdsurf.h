@@ -66,7 +66,7 @@ subroutine fousurf
   
   use globals, only : zero, half, pi2, myid, ounit, runit, surffile, IsQuiet, IsSymmetric, &
                       Nfou, Nfp, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
-                      Nteta, Nzeta, surf, Npc, discretefactor
+                      Nteta, Nzeta, surf, Npc, discretefactor, Nfp_raw
   
   implicit none
   
@@ -178,7 +178,8 @@ subroutine fousurf
   endif
 
   !-------------discretize surface data------------------------------------------------------------------  
-
+  
+  Nfp_raw = Nfp ! save the raw value of Nfp
   select case (IsSymmetric)
   case ( 0 )
      Nfp = 1                          !reset Nfp to 1;

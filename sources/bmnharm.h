@@ -112,7 +112,7 @@ SUBROUTINE readBmn
   ! allocate trig functions;
   !----------------------------------------------------------------------------------------
   use globals, only: zero, half, pi2, myid, ounit, runit, ext, IsQuiet, Nteta, Nzeta, Nfp, &
-                     NBmn, Bmnin, Bmnim, wBmn, tBmnc, tBmns, carg, sarg
+                     NBmn, Bmnin, Bmnim, wBmn, tBmnc, tBmns, carg, sarg, Nfp_raw
   implicit none
   include "mpif.h"
 
@@ -167,10 +167,10 @@ SUBROUTINE readBmn
   SALLOCATE( carg,  (1:Nteta*Nzeta, 1:NBmn), zero )
   SALLOCATE( sarg,  (1:Nteta*Nzeta, 1:NBmn), zero )
 
-  Bmnin(1:NBmn) = Bmnin(1:NBmn) * Nfp
+  Bmnin(1:NBmn) = Bmnin(1:NBmn) * Nfp_raw
 
   ij = 0
-  do jj = 0, Nzeta-1 ; zeta = ( jj + half ) * pi2 / (Nzeta*Nfp)
+  do jj = 0, Nzeta-1 ; zeta = ( jj + half ) * pi2 / (Nzeta*Nfp) ! the same as in rdsurf.h
      do ii = 0, Nteta-1 ; teta = ( ii + half ) * pi2 / Nteta
         ij = ij + 1
         do imn = 1, NBmn
