@@ -210,7 +210,7 @@
 subroutine lmalg
 use globals, only: sqrtmachprec, zero, myid, ounit, Ncoils, Ndof, t1E, iout, xdof, &
      tstart, tfinish, NBmn, Nzeta, Nteta, tstart, tfinish, &
-     LM_maxiter, LM_xtol, LM_ftol, LM_iter, LM_factor, LM_mfvec
+     LM_maxiter, LM_xtol, LM_ftol, LM_iter, LM_factor, LM_mfvec, LM_output
   use mpi
   implicit none
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -243,6 +243,7 @@ use globals, only: sqrtmachprec, zero, myid, ounit, Ncoils, Ndof, t1E, iout, xdo
   nprint = 1
 
   LM_iter = 0 
+  LM_output = .True.
 
   SALLOCATE(fvec, (1:m), zero)
   SALLOCATE(fjac, (1:ldfjac, 1:Ndof), zero)

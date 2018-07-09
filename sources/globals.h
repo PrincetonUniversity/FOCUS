@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='v0.3.01' ! version number
+  CHARACTER(LEN=10), parameter :: version='v0.3.04' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -264,10 +264,10 @@ module globals
   INTEGER              :: iout, Nouts, LM_iter, LM_mfvec
   INTEGER              :: ibnorm = 0, ibharm = 0, itflux = 0, ittlen = 0, icssep = 0 ! starting number
   INTEGER              :: mbnorm = 0, mbharm = 0, mtflux = 0, mttlen = 0, mcssep = 0 ! numbers of targets
-  REAL                 :: chi, discretefactor
+  REAL                 :: chi, discretefactor, sumDE
   REAL   , allocatable :: t1E(:), t2E(:,:), evolution(:,:), coilspace(:,:), deriv(:,:)
   REAL   , allocatable :: LM_fvec(:), LM_fjac(:,:)
-  LOGICAL              :: exit_signal = .False.
+  LOGICAL              :: exit_signal = .False., LM_output = .False.
   ! Bn surface integration;
   REAL                 :: bnorm
   REAL   , allocatable :: t1B(:), t2B(:,:), bn(:,:)

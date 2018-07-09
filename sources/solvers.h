@@ -36,7 +36,7 @@
 
 subroutine solvers
   use globals, only : ierr, iout, myid, ounit, IsQuiet, IsNormWeight, Ndof, Nouts, xdof, &
-       case_optimize, DF_maxiter, CG_maxiter, HN_maxiter, TN_maxiter, coil, DoF, &
+       case_optimize, DF_maxiter, LM_maxiter, CG_maxiter, HN_maxiter, TN_maxiter, coil, DoF, &
        weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, &
        target_tflux, target_length, cssep_factor
   implicit none
@@ -98,8 +98,8 @@ subroutine solvers
      if (myid  ==  0) write(ounit,'(8X,": CG takes ", es23.15," seconds;")') finish - start
   endif
 
-  !--------------------------------CG--------------------------------------------------------------------
-  if (.true.)  then
+  !--------------------------------LM--------------------------------------------------------------------
+  if (LM_maxiter > 0)  then
      if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "----------- Levenberg-Marquardt algorithm (L-M) -----"
      call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
      start = MPI_Wtime()
@@ -145,7 +145,7 @@ end subroutine solvers
 subroutine costfun(ideriv)
   use globals, only: zero, one, machprec, myid, ounit, astat, ierr, IsQuiet, &
        Ncoils, deriv, Ndof, xdof, dofnorm, coil, &
-       chi, t1E, t2E, LM_maxiter, LM_fjac, LM_mfvec, &
+       chi, t1E, t2E, LM_maxiter, LM_fjac, LM_mfvec, sumdE, LM_output, LM_fvec, &
        bnorm      , t1B, t2B, weight_bnorm,  &
        bharm      , t1H, t2H, weight_bharm,  &
        tflux      , t1F, t2F, weight_tflux, target_tflux, psi_avg, &
@@ -185,17 +185,18 @@ subroutine costfun(ideriv)
      endif
 
      call length(0)
+     call surfsep(0)
 
   endif
 
   chi = zero
-
-
   if ( ideriv == 1 ) then
      t1E = zero
   elseif ( ideriv == 2 ) then
      t1E = zero; t2E = zero
   endif
+
+!if(myid==0) write(ounit, '("-------i=1, chi = "ES23.15)') chi
 
   ! Bn cost functions
   if (weight_bnorm > machprec .or. weight_bharm > machprec) then
@@ -225,6 +226,8 @@ subroutine costfun(ideriv)
      endif
   endif
 
+!if(myid==0) write(ounit, '("-------i=2, chi = "ES23.15)') chi
+
   ! toroidal flux;
   if (weight_tflux > machprec) then
      if ( abs(target_tflux) < machprec ) then
@@ -242,6 +245,8 @@ subroutine costfun(ideriv)
         t2E = t2E +  weight_tflux * t2F / target_tflux**2
      endif
   endif
+
+!if(myid==0) write(ounit, '("-------i=3, chi = "ES23.15)') chi
 
   ! coil length;
   if (weight_ttlen > machprec) then
@@ -341,7 +346,14 @@ subroutine costfun(ideriv)
 !!$      t1E = t1E * dofnorm
 !!$      t2E = t2E * hesnorm
   endif
-
+  
+  if (.not. LM_output) then ! regular output
+     if ( ideriv == 1 )  sumdE = sqrt(sum(t1E**2)) ! Eucliean norm 2;
+  else                      ! L-M output
+     chi = sum(LM_fvec**2)
+     if ( ideriv == 1 ) sumDE = sqrt(sum(LM_fjac**2))
+  endif  
+  
   call mpi_barrier(MPI_COMM_WORLD, ierr)
 
   return
@@ -480,7 +492,7 @@ subroutine output (mark)
 
   use globals, only : zero, ounit, myid, ierr, astat, iout, Nouts, Ncoils, save_freq, Tdof, &
        coil, coilspace, FouCoil, chi, t1E, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
-       evolution, xdof, DoF, exit_tol, exit_signal
+       evolution, xdof, DoF, exit_tol, exit_signal, sumDE
 
   implicit none  
   include "mpif.h"
@@ -488,14 +500,11 @@ subroutine output (mark)
   REAL, INTENT( IN ) :: mark
 
   INTEGER            :: idof, NF, icoil
-  REAL               :: sumdE
 
 
   iout = iout + 1
   
   FATAL( output , iout > Nouts+2, maximum iteration reached )
-
-  sumdE = sqrt(sum(t1E**2)) ! Eucliean norm 2; 
 
   if (myid == 0) write(ounit, '("output  : "I6" : "8(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, bharm, &
        tflux, ttlen, cssep
