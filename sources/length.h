@@ -60,13 +60,14 @@
 ! not parallelized; communications may take more time;
 subroutine length(ideriv)
   use globals, only : zero, half, pi2, machprec, ncpu, myid, ounit, &
-       coil, DoF, Ncoils, Nfixgeo, Ndof, ttlen, t1L, t2L, case_length
+       coil, DoF, Ncoils, Nfixgeo, Ndof, ttlen, t1L, t2L, case_length, &
+       ittlen, mttlen, LM_fvec, LM_fjac, weight_ttlen
 
   implicit none
   include "mpif.h"
   INTEGER, INTENT(in) :: ideriv
 
-  INTEGER             :: astat, ierr, icoil, idof, ND
+  INTEGER             :: astat, ierr, icoil, idof, ND, ivec
   REAL                :: d1L(1:Ndof), norm(1:Ncoils)
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -83,18 +84,35 @@ subroutine length(ideriv)
 
      enddo
 
+     ivec = 1
+
      if (case_length == 1) then ! quadratic;
         do icoil = 1, Ncoils
-           if ( coil(icoil)%Lc /= 0 ) ttlen = ttlen + &
-                & half * (coil(icoil)%L - coil(icoil)%Lo)**2 / coil(icoil)%Lo**2
+           if ( coil(icoil)%Lc /= 0 ) then
+              ttlen = ttlen +  half * (coil(icoil)%L - coil(icoil)%Lo)**2 / coil(icoil)%Lo**2
+              if (mttlen > 0) then ! L-M format of targets
+                 LM_fvec(ittlen+ivec) = weight_ttlen * (coil(icoil)%L - coil(icoil)%Lo)
+                 ivec = ivec + 1
+              endif
+           endif           
         enddo
      elseif (case_length == 2) then ! exponential;
         do icoil = 1, Ncoils
-           if ( coil(icoil)%Lc /= 0 ) ttlen = ttlen + exp(coil(icoil)%L) / exp(coil(icoil)%Lo)
+           if ( coil(icoil)%Lc /= 0 ) then
+              ttlen = ttlen + exp(coil(icoil)%L) / exp(coil(icoil)%Lo)
+              if (mttlen > 0) then ! L-M format of targets
+                 LM_fvec(ittlen+ivec) = weight_ttlen * exp(coil(icoil)%L) / exp(coil(icoil)%Lo)
+                 ivec = ivec + 1
+              endif
+           endif 
         enddo
      else
         FATAL( length, .true. , invalid case_length option )
      end if
+
+     if (mttlen > 0) then ! L-M format of targets
+        FATAL( length, ivec == mttlen, Errors in counting ivec for L-M )
+     endif
 
      ttlen = ttlen / (Ncoils - Nfixgeo + machprec)
 
@@ -106,7 +124,7 @@ subroutine length(ideriv)
 
      t1L = zero ; d1L = zero ; norm = zero
 
-     idof = 0
+     idof = 0 ; ivec = 1
      do icoil = 1, Ncoils
 
         ND = DoF(icoil)%ND
@@ -126,11 +144,20 @@ subroutine length(ideriv)
         if ( coil(icoil)%Lc /= 0 ) then !if geometry is free;
            call lenDeriv1( icoil, d1L(idof+1:idof+ND), ND )
            t1L(idof+1:idof+ND) = d1L(idof+1:idof+ND) * norm(icoil)
+           if (mttlen > 0) then ! L-M format of targets
+              LM_fjac(ivec, idof+1:idof+ND) = weight_ttlen * d1L(idof+1:idof+ND)
+              if (case_length == 2) LM_fjac(ivec, idof+1:idof+ND) = LM_fjac(ivec, idof+1:idof+ND) * exp(coil(icoil)%L) / exp(coil(icoil)%Lo)
+              ivec = ivec + 1
+           endif
            idof = idof + ND
         endif
 
      enddo !end icoil;
-     FATAL( torflux , idof .ne. Ndof, counting error in packing )
+     FATAL( length , idof .ne. Ndof, counting error in packing )
+
+     if (mttlen > 0) then ! L-M format of targets
+        FATAL( length, ivec == mttlen, Errors in counting ivec for L-M )
+     endif
 
      t1L = t1L / (Ncoils - Nfixgeo + machprec)
 

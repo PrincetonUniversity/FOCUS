@@ -19,7 +19,9 @@ subroutine bnormal( ideriv )
 !------------------------------------------------------------------------------------------------------   
   use globals, only: zero, half, one, pi2, sqrtmachprec, bsconstant, ncpu, myid, ounit, &
        coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, &
-       bnorm, t1B, t2B, bn, Ndof, Npc, dB, Cdof, weight_bharm
+       bnorm, t1B, t2B, bn, Ndof, Npc, Cdof, weight_bharm, &
+       weight_bnorm, ibnorm, mbnorm, ibharm, mbharm, LM_fvec, LM_fjac, &
+       bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn
 
   implicit none
   include "mpif.h"
@@ -31,7 +33,8 @@ subroutine bnormal( ideriv )
   REAL, dimension(0:Nteta-1, 0:Nzeta-1) :: lbx, lby, lbz        ! local Bx, By and Bz
   REAL, dimension(0:Cdof, 0:Cdof)       :: dBx, dBy, dBz        ! dB of each coil;
   REAL, dimension(1:Ndof)               :: l1B
-  REAL, allocatable                     :: ldB(:,:,:)
+  REAL, allocatable                     :: ldB(:,:,:), dB(:,:,:)
+  REAL, allocatable                     :: dBc(:), dBs(:)
 
   !--------------------------initialize and allocate arrays------------------------------------- 
 
@@ -72,20 +75,36 @@ subroutine bnormal( ideriv )
 
      bn =  surf(1)%Bx * surf(1)%nx + surf(1)%By * surf(1)%ny + surf(1)%Bz * surf(1)%nz
 
-     surf(1)%bn = bn + surf(1)%pb       ! total Bn;
+     surf(1)%bn = bn - surf(1)%pb       ! total Bn; change to minus on 05/28/2018
 
      bnorm = sum( surf(1)%bn * surf(1)%bn * surf(1)%ds ) * half * discretefactor
 
+     ! Another type of target functions
+     if (mbnorm > 0) then
+        LM_fvec(ibnorm+1:ibnorm+mbnorm) =  weight_bnorm * reshape(surf(1)%bn(0:Nteta-1, 0:Nzeta-1), (/1/))
+     endif
+
+     ! Bn harmonics related
+     if (weight_bharm > sqrtmachprec) then
+        call twodft(         bn, Bmns, Bmnc, Bmnim, Bmnin, NBmn ) ! Bn from coils
+        bharm = half * sum( wBmn * ((Bmnc - tBmnc)**2 + (Bmns - tBmns)**2) )
+
+        if (mbharm > 0) then
+           LM_fvec(ibharm+1:ibharm+mbharm/2) = weight_bharm * wBmn * (Bmnc - tBmnc)
+           LM_fvec(ibharm+mbharm/2+1:ibharm+mbharm) = weight_bharm * wBmn * (Bmns - tBmns)
+        endif
+
+     endif
   endif
 
   !-------------------------------calculate Bn/x------------------------------------------------
   if ( ideriv >= 1 ) then
 
      t1B = zero ; l1B = zero
-     if (weight_bharm > sqrtmachprec) then
+     !if (weight_bharm > sqrtmachprec) then
         SALLOCATE( ldB, (1:Ndof, 0:Nteta-1, 0:Nzeta-1), zero)
-        dB = zero
-     endif
+        SALLOCATE(  dB, (1:Ndof, 0:Nteta-1, 0:Nzeta-1), zero)
+     !endif
 
      do jzeta = 0, Nzeta - 1
         do iteta = 0, Nteta - 1
@@ -104,12 +123,10 @@ subroutine bnormal( ideriv )
                          &                + dBy(0,0)*surf(1)%ny(iteta,jzeta)   &
                          &                + dBz(0,0)*surf(1)%nz(iteta,jzeta) )
 
-                    if (weight_bharm > sqrtmachprec) then
                     ldB(idof+1, iteta, jzeta) = ldB(idof+1, iteta, jzeta)                      & 
                          &                    + bsconstant * (dBx(0,0)*surf(1)%nx(iteta,jzeta) &
                          &                                   +dBy(0,0)*surf(1)%ny(iteta,jzeta) &
                          &                                   +dBz(0,0)*surf(1)%nz(iteta,jzeta) )
-                    endif
 
                     idof = idof +1
                  endif
@@ -122,13 +139,11 @@ subroutine bnormal( ideriv )
                          &                              + dBy(1:ND,0)*surf(1)%ny(iteta,jzeta)    &
                          &                              + dBz(1:ND,0)*surf(1)%nz(iteta,jzeta) )
 
-                    if (weight_bharm > sqrtmachprec) then
                     ldB(idof+1:idof+ND, iteta, jzeta) = ldB(idof+1:idof+ND, iteta, jzeta)      &
                          &                            + bsconstant * coil(icoil)%I             &
                          &                            * (dBx(1:ND,0)*surf(1)%nx(iteta,jzeta)   &
                          &                              +dBy(1:ND,0)*surf(1)%ny(iteta,jzeta)   &
                          &                              +dBz(1:ND,0)*surf(1)%nz(iteta,jzeta) )
-                    endif
 
                     idof = idof + ND
 
@@ -144,15 +159,36 @@ subroutine bnormal( ideriv )
 
      call MPI_BARRIER( MPI_COMM_WORLD, ierr )
      call MPI_REDUCE(l1B, t1B, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
+     call MPI_REDUCE(ldB, dB, Ndof*NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
+     RlBCAST( t1B, Ndof, 0 )
+     RlBCAST( dB, Ndof*NumGrid, 0 )
+     t1B = t1B * discretefactor
 
-     if (weight_bharm > sqrtmachprec) then
-        call MPI_REDUCE(ldB, dB, Ndof*NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
-        RlBCAST( dB, Ndof*NumGrid, 0 )
-        DALLOCATE( ldB )
+     ! Another type of target functions
+     if (mbnorm > 0) then
+        do idof = 1, Ndof
+           LM_fjac(ibnorm+1:ibnorm+mbnorm, idof) = weight_bnorm * reshape(dB(idof, 0:Nteta-1, 0:Nzeta-1), (/1/))
+        enddo
      endif
 
-     RlBCAST( t1B, Ndof, 0 )
-     t1B = t1B * discretefactor
+     if (weight_bharm > sqrtmachprec) then        
+        SALLOCATE( dBc, (1:NBmn), zero )  ! temporary dB_mn_cos
+        SALLOCATE( dBs, (1:NBmn), zero )  ! temporary dB_mn_sin
+        do idof = 1, Ndof
+           call twodft( dB(idof,  0:Nteta-1, 0:Nzeta-1), dBs, dBc, Bmnim, Bmnin, NBmn )
+           t1H(idof) = sum( wBmn * ( (Bmnc - tBmnc)*dBc + (Bmns - tBmns)*dBs ) )
+           if (mbharm > 0) then
+              LM_fjac(ibharm+1         :ibharm+mbharm/2, idof) = weight_bharm * wBmn * dBc
+              LM_fjac(ibharm+mbharm/2+1:ibharm+mbharm  , idof) = weight_bharm * wBmn * dBs
+           endif
+
+        enddo    
+        DALLOCATE( dBc )
+        DALLOCATE( dBs )
+     endif
+
+     DALLOCATE( ldB )
+     DALLOCATE(  dB )  
 
   endif
 

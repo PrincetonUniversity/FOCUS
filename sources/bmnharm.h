@@ -46,62 +46,63 @@
 !latex \ee
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-SUBROUTINE bmnharm( ideriv )
-  !----------------------------------------------------------------------------------------
-  ! calculate the bharm cost function
-  !----------------------------------------------------------------------------------------
-  use globals, only: zero, half, myid, Ndof, Nteta, Nzeta, surf, &
-                     dB, bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn
-  implicit none
-  include "mpif.h"
-
-  INTEGER, INTENT(in) :: ideriv
-  !----------------------------------------------------------------------------------------
-  
-  INTEGER             :: idof, ierr, astat, imn
-  REAL, allocatable   :: dBc(:), dBs(:) 
-
-  !--------------------------initialize and allocate arrays-------------------------------- 
-
-  SALLOCATE( dBc, (1:NBmn), zero )  ! temporary dB_mn_cos
-  SALLOCATE( dBs, (1:NBmn), zero )  ! temporary dB_mn_sin
-
-  call bnormal(ideriv) ! calculate Bn info;
-
-  !-------------------------------calculate H--------------------------------------------- 
-  if( ideriv >= 0 ) then
-
-     call twodft( surf(1)%bn, Bmns, Bmnc, Bmnim, Bmnin, NBmn )
-!!$     if (myid == 0) then
-!!$        do imn = 1, NBmn
-!!$           write(*, '("n="I3,"m="I3, "Bmnc="ES12.5, "Bmns="ES12.5)') &
-!!$                         Bmnin(imn), Bmnim(imn), Bmnc(imn), Bmns(imn)
-!!$        enddo
-!!$     endif
-                 
-     bharm = half * sum( wBmn * ((Bmnc - tBmnc)**2 + (Bmns - tBmns)**2) )
-        
-  endif
-
-  !-------------------------------calculate H/x------------------------------------------------
-  if ( ideriv >= 1 ) then
-     ! can parallelize in Ndof direction;
-     do idof = 1, Ndof
-        call twodft( dB(idof,  0:Nteta-1, 0:Nzeta-1), dBs, dBc, Bmnim, Bmnin, NBmn )
-        t1H(idof) = sum( wBmn * ( (Bmnc - tBmnc)*dBc + (Bmns - tBmns)*dBs ) )
-     enddo
-     
-  endif
-
-  !--------------------------------------------------------------------------------------------
-
-  DALLOCATE( dBc )
-  DALLOCATE( dBs )
-  
-  return
-
-END SUBROUTINE bmnharm
+!!$
+!!$SUBROUTINE bmnharm( ideriv )
+!!$  !----------------------------------------------------------------------------------------
+!!$  ! calculate the bharm cost function
+!!$  !----------------------------------------------------------------------------------------
+!!$  use globals, only: zero, half, myid, Ndof, Nteta, Nzeta, surf, &
+!!$                     bn, dB, bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn
+!!$  implicit none
+!!$  include "mpif.h"
+!!$
+!!$  INTEGER, INTENT(in) :: ideriv
+!!$  !----------------------------------------------------------------------------------------
+!!$  
+!!$  INTEGER             :: idof, ierr, astat, imn
+!!$  REAL, allocatable   :: dBc(:), dBs(:) 
+!!$
+!!$  !--------------------------initialize and allocate arrays-------------------------------- 
+!!$
+!!$  SALLOCATE( dBc, (1:NBmn), zero )  ! temporary dB_mn_cos
+!!$  SALLOCATE( dBs, (1:NBmn), zero )  ! temporary dB_mn_sin
+!!$
+!!$  call bnormal(ideriv) ! calculate Bn info;
+!!$
+!!$  !-------------------------------calculate H--------------------------------------------- 
+!!$  if( ideriv >= 0 ) then
+!!$
+!!$    !call twodft( surf(1)%bn, Bmns, Bmnc, Bmnim, Bmnin, NBmn ) ! total Bn
+!!$     call twodft(         bn, Bmns, Bmnc, Bmnim, Bmnin, NBmn ) ! Bn from coils
+!!$!!!$     if (myid == 0) then
+!!$!!!$        do imn = 1, NBmn
+!!$!!!$           write(*, '("n="I3,"m="I3, "Bmnc="ES12.5, "Bmns="ES12.5)') &
+!!$!!!$                         Bmnin(imn), Bmnim(imn), Bmnc(imn), Bmns(imn)
+!!$!!!$        enddo
+!!$!!!$     endif
+!!$                 
+!!$     bharm = half * sum( wBmn * ((Bmnc - tBmnc)**2 + (Bmns - tBmns)**2) )
+!!$        
+!!$  endif
+!!$
+!!$  !-------------------------------calculate H/x------------------------------------------------
+!!$  if ( ideriv >= 1 ) then
+!!$     ! can parallelize in Ndof direction;
+!!$     do idof = 1, Ndof
+!!$        call twodft( dB(idof,  0:Nteta-1, 0:Nzeta-1), dBs, dBc, Bmnim, Bmnin, NBmn )
+!!$        t1H(idof) = sum( wBmn * ( (Bmnc - tBmnc)*dBc + (Bmns - tBmns)*dBs ) )
+!!$     enddo
+!!$     
+!!$  endif
+!!$
+!!$  !--------------------------------------------------------------------------------------------
+!!$
+!!$  DALLOCATE( dBc )
+!!$  DALLOCATE( dBs )
+!!$  
+!!$  return
+!!$
+!!$END SUBROUTINE bmnharm
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -111,7 +112,7 @@ SUBROUTINE readBmn
   ! allocate trig functions;
   !----------------------------------------------------------------------------------------
   use globals, only: zero, half, pi2, myid, ounit, runit, ext, IsQuiet, Nteta, Nzeta, Nfp, &
-                     NBmn, Bmnin, Bmnim, wBmn, tBmnc, tBmns, carg, sarg
+                     NBmn, Bmnin, Bmnim, wBmn, tBmnc, tBmns, carg, sarg, Nfp_raw
   implicit none
   include "mpif.h"
 
@@ -166,10 +167,10 @@ SUBROUTINE readBmn
   SALLOCATE( carg,  (1:Nteta*Nzeta, 1:NBmn), zero )
   SALLOCATE( sarg,  (1:Nteta*Nzeta, 1:NBmn), zero )
 
-  Bmnin(1:NBmn) = Bmnin(1:NBmn) * Nfp
+  Bmnin(1:NBmn) = Bmnin(1:NBmn) * Nfp_raw
 
   ij = 0
-  do jj = 0, Nzeta-1 ; zeta = ( jj + half ) * pi2 / (Nzeta*Nfp)
+  do jj = 0, Nzeta-1 ; zeta = ( jj + half ) * pi2 / (Nzeta*Nfp) ! the same as in rdsurf.h
      do ii = 0, Nteta-1 ; teta = ( ii + half ) * pi2 / Nteta
         ij = ij + 1
         do imn = 1, NBmn

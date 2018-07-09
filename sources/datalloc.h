@@ -111,8 +111,8 @@ subroutine AllocData(itype)
 
      ! Bharm related;
      if (weight_bharm > sqrtmachprec) then
-        SALLOCATE( t1H,  (1:Ndof), zero )
-        SALLOCATE( dB , (1:Ndof, 0:Nteta-1, 0:Nzeta-1), zero ) !distribution of dB/dx;
+        SALLOCATE( t1H, (1:Ndof), zero )
+!       SALLOCATE( dB , (1:Ndof, 0:Nteta-1, 0:Nzeta-1), zero ) !distribution of dB/dx;
      endif
 
      ! tflux needed;
@@ -128,6 +128,48 @@ subroutine AllocData(itype)
      ! cssep needed;
      if (weight_cssep > sqrtmachprec) then
         SALLOCATE( t1S,  (1:Ndof), zero )
+     endif
+
+     ! L-M algorithn enabled
+     if (LM_maxiter > 0) then
+        LM_mfvec = 0 ! number of total cost functions
+
+        if (weight_bnorm > sqrtmachprec) then
+           ibnorm = LM_mfvec
+           mbnorm = Nteta*Nzeta
+           LM_mfvec = LM_mfvec + mbnorm
+        endif
+
+        if (weight_bharm > sqrtmachprec) then 
+           ibharm = LM_mfvec
+           mbharm = 2*NBmn
+           LM_mfvec = LM_mfvec + mbharm
+        endif
+        
+        if (weight_tflux > sqrtmachprec) then
+           itflux = LM_mfvec
+           mtflux = Nzeta
+           LM_mfvec = LM_mfvec + mtflux
+        endif
+        
+        if (weight_ttlen > sqrtmachprec) then
+           ittlen = LM_mfvec
+           mttlen = Ncoils - Nfixgeo
+           LM_mfvec = LM_mfvec + mttlen
+        endif
+        
+        if (weight_cssep > sqrtmachprec) then
+           icssep = LM_mfvec
+           mcssep = Ncoils - Nfixgeo
+           LM_mfvec = LM_mfvec + mcssep
+        endif
+        
+        FATAL( AllocData, LM_mfvec <= 0, INVALID number of cost functions )
+        SALLOCATE( LM_fvec, (1:LM_mfvec), zero )
+        SALLOCATE( LM_fjac , (1:LM_mfvec, 1:Ndof), zero )
+
+        if (myid == 0) write(ounit, '("datalloc: total number of cost functions for L-M is "I)') LM_mfvec
+        
      endif
 
   endif

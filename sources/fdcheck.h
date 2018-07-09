@@ -21,7 +21,7 @@ SUBROUTINE fdcheck( ideriv )
 !------------------------------------------------------------------------------------------------------
 
   use globals, only: zero, half, machprec, sqrtmachprec, ncpu, myid, ounit, &
-                     coil, xdof, Ndof, t1E, t2E, chi
+                     coil, xdof, Ndof, t1E, t2E, chi, LM_maxiter, LM_fvec, LM_fjac
                      
   implicit none
   include "mpif.h"
@@ -29,7 +29,7 @@ SUBROUTINE fdcheck( ideriv )
   INTEGER, INTENT(in)  :: ideriv
   !--------------------------------------------------------------------------------------------
 
-  INTEGER              :: astat, ierr, idof
+  INTEGER              :: astat, ierr, idof, ivec
   REAL                 :: tmp_xdof(1:Ndof), fd, negvalue, posvalue, diff, rdiff
   REAL                 :: start, finish
   REAL, parameter      :: small=1.0E-4
@@ -84,6 +84,48 @@ SUBROUTINE fdcheck( ideriv )
       endif
       
   enddo
+
+  ! L-M format
+  if (LM_maxiter > 0) then
+     ivec = 1 ! the evaluation term
+     if(myid .eq. 0) write(ounit,'("fdcheck : check the derivatives of the ", I, "-th term in L-M format.")') ivec
+     if( myid.eq.0 ) write(ounit,'("fdcheck : idof  /  Ndof ;   analytical value"5X" ;   fd-method value"6X &
+          " ;   difference"11X" ;   relative diff")')  
+  
+     do idof = 1, Ndof
+        !backward pertubation;
+        tmp_xdof = xdof
+        tmp_xdof(idof) = tmp_xdof(idof) - half * small
+        call unpacking(tmp_xdof)
+        call costfun(0)
+        negvalue = LM_fvec(ivec)
+
+        !forward pertubation;
+        tmp_xdof = xdof
+        tmp_xdof(idof) = tmp_xdof(idof) + half * small
+        call unpacking(tmp_xdof)
+        call costfun(0)
+        posvalue = LM_fvec(ivec)
+
+        !finite difference;
+        fd = (posvalue - negvalue) / small
+        diff = abs(LM_fjac(ivec, idof) - fd)
+        !output;
+        if( abs(fd) < machprec ) then
+           rdiff = 0
+        else
+           rdiff = diff / fd
+        endif
+
+        if( myid.eq.0 ) then 
+           write(ounit,'("fdcheck : ", I6, "/", I6, 4(" ; "ES23.15))') idof, Ndof, LM_fjac(ivec, idof), fd, diff, rdiff
+           if (diff >= sqrtmachprec) write(ounit, *) "----------suspicious unmatching-----------------------"
+        endif
+
+     enddo
+
+  endif
+  
   !--------------------------------------------------------------------------------------------
 
   !case( -2 )
@@ -95,3 +137,5 @@ SUBROUTINE fdcheck( ideriv )
   !--------------------------------------------------------------------------------------------
   return
 END SUBROUTINE fdcheck
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!

@@ -36,13 +36,13 @@
 
 subroutine solvers
   use globals, only : ierr, iout, myid, ounit, IsQuiet, IsNormWeight, Ndof, Nouts, xdof, &
-       case_optimize, DF_maxiter, CG_maxiter, HN_maxiter, TN_maxiter, coil, DoF, &
+       case_optimize, DF_maxiter, LM_maxiter, CG_maxiter, HN_maxiter, TN_maxiter, coil, DoF, &
        weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, &
        target_tflux, target_length, cssep_factor
   implicit none
   include "mpif.h"
 
-  REAL :: start, finish, ii, lxdof(1:Ndof), f, g(1:Ndof)
+  REAL :: start, finish
 
 
   if (myid == 0) write(ounit, *) "-----------OPTIMIZATIONS-------------------------------------"
@@ -97,6 +97,18 @@ subroutine solvers
      finish = MPI_Wtime()
      if (myid  ==  0) write(ounit,'(8X,": CG takes ", es23.15," seconds;")') finish - start
   endif
+
+  !--------------------------------LM--------------------------------------------------------------------
+  if (LM_maxiter > 0)  then
+     if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "----------- Levenberg-Marquardt algorithm (L-M) -----"
+     call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
+     start = MPI_Wtime()
+     call unpacking(xdof)
+     call lmalg
+     call packdof(xdof)
+     finish = MPI_Wtime()
+     if (myid  ==  0) write(ounit,'(8X,": LM takes ", es23.15," seconds;")') finish - start
+  endif
   
   !--------------------------------HN--------------------------------------------------------------------
   if (HN_maxiter > 0)  then
@@ -131,9 +143,9 @@ end subroutine solvers
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine costfun(ideriv)
-  use globals, only: zero, one, sqrtmachprec, myid, ounit, astat, ierr, IsQuiet, &
+  use globals, only: zero, one, machprec, myid, ounit, astat, ierr, IsQuiet, &
        Ncoils, deriv, Ndof, xdof, dofnorm, coil, &
-       chi, t1E, t2E, &
+       chi, t1E, t2E, LM_maxiter, LM_fjac, LM_mfvec, sumdE, LM_output, LM_fvec, &
        bnorm      , t1B, t2B, weight_bnorm,  &
        bharm      , t1H, t2H, weight_bharm,  &
        tflux      , t1F, t2F, weight_tflux, target_tflux, psi_avg, &
@@ -146,7 +158,8 @@ subroutine costfun(ideriv)
   include "mpif.h"
 
   INTEGER, INTENT(in) :: ideriv
-
+  
+  INTEGER             :: ivec
   REAL                :: start, finish
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -155,9 +168,8 @@ subroutine costfun(ideriv)
   if (IsQuiet <= -2) then
 
      call bnormal(0)
-     if (weight_bharm > sqrtmachprec) call bmnharm(0)
 
-     if ( abs(target_tflux) < sqrtmachprec ) then
+     if ( abs(target_tflux) < machprec ) then
         call torflux(0)
         target_tflux = psi_avg
         if (myid == 0) write(ounit,'("costfun : Reset target toroidal flux to "ES23.15)') target_tflux
@@ -165,7 +177,7 @@ subroutine costfun(ideriv)
 
      call torflux(0)
 
-     if ( (case_length == 1) .and. (sum(coil(1:Ncoils)%Lo) < sqrtmachprec) ) then
+     if ( (case_length == 1) .and. (sum(coil(1:Ncoils)%Lo) < machprec) ) then
         coil(1:Ncoils)%Lo = one
         call length(0)
         coil(1:Ncoils)%Lo = coil(1:Ncoils)%L
@@ -173,48 +185,52 @@ subroutine costfun(ideriv)
      endif
 
      call length(0)
+     call surfsep(0)
 
   endif
 
   chi = zero
-
-
   if ( ideriv == 1 ) then
      t1E = zero
   elseif ( ideriv == 2 ) then
      t1E = zero; t2E = zero
   endif
 
-  !call unpacking(xdof)
-  ! Bnormal surface intergration;
-  if (weight_bnorm > sqrtmachprec) then
+!if(myid==0) write(ounit, '("-------i=1, chi = "ES23.15)') chi
+
+  ! Bn cost functions
+  if (weight_bnorm > machprec .or. weight_bharm > machprec) then
  
      call bnormal(ideriv)
-     chi = chi + weight_bnorm * bnorm
-     if     ( ideriv == 1 ) then
-        t1E = t1E +  weight_bnorm * t1B
-     elseif ( ideriv == 2 ) then
-        t1E = t1E +  weight_bnorm * t1B
-        t2E = t2E +  weight_bnorm * t2B
+     ! Bnormal surface intergration;
+     if (weight_bnorm > machprec) then
+        chi = chi + weight_bnorm * bnorm
+        if     ( ideriv == 1 ) then
+           t1E = t1E +  weight_bnorm * t1B
+        elseif ( ideriv == 2 ) then
+           t1E = t1E +  weight_bnorm * t1B
+           t2E = t2E +  weight_bnorm * t2B
+        endif
+     endif
+
+     ! individual Bn harmonics;
+     if (weight_bharm > machprec) then
+
+        chi = chi + weight_bharm * bharm
+        if     ( ideriv == 1 ) then
+           t1E = t1E +  weight_bharm * t1H
+        elseif ( ideriv == 2 ) then
+           t1E = t1E +  weight_bharm * t1H
+           t2E = t2E +  weight_bharm * t2H
+        endif
      endif
   endif
 
-  ! individual Bn harmonics;
-  if (weight_bharm > sqrtmachprec) then
-
-     call bmnharm(ideriv)
-     chi = chi + weight_bharm * bharm
-     if     ( ideriv == 1 ) then
-        t1E = t1E +  weight_bharm * t1H
-     elseif ( ideriv == 2 ) then
-        t1E = t1E +  weight_bharm * t1H
-        t2E = t2E +  weight_bharm * t2H
-     endif
-  endif
+!if(myid==0) write(ounit, '("-------i=2, chi = "ES23.15)') chi
 
   ! toroidal flux;
-  if (weight_tflux > sqrtmachprec) then
-     if ( abs(target_tflux) < sqrtmachprec ) then
+  if (weight_tflux > machprec) then
+     if ( abs(target_tflux) < machprec ) then
         call torflux(0)
         target_tflux = psi_avg        
         if (myid==0) write(ounit,'(8X,": Reset target toroidal flux to "ES23.15)') target_tflux
@@ -230,10 +246,12 @@ subroutine costfun(ideriv)
      endif
   endif
 
-  ! coil length;
-  if (weight_ttlen > sqrtmachprec) then
+!if(myid==0) write(ounit, '("-------i=3, chi = "ES23.15)') chi
 
-     if ( (case_length == 1) .and. (sum(coil(1:Ncoils)%Lo) < sqrtmachprec) ) then
+  ! coil length;
+  if (weight_ttlen > machprec) then
+
+     if ( (case_length == 1) .and. (sum(coil(1:Ncoils)%Lo) < machprec) ) then
         coil(1:Ncoils)%Lo = one
         call length(0)
         coil(1:Ncoils)%Lo = coil(1:Ncoils)%L
@@ -253,7 +271,7 @@ subroutine costfun(ideriv)
   endif
 
   ! coil surface separation;
-  if (weight_cssep > sqrtmachprec) then
+  if (weight_cssep > machprec) then
  
      call surfsep(ideriv)
      chi = chi + weight_cssep * cssep
@@ -268,7 +286,7 @@ subroutine costfun(ideriv)
 !!$
 !!$  ! if (myid == 0) write(ounit,'("calling tlength used",f10.5,"seconds.")') finish-start
 !!$
-!!$  if (weight_eqarc .ge. sqrtmachprec) then
+!!$  if (weight_eqarc .ge. machprec) then
 !!$
 !!$  ! call equarcl(ideriv)
 !!$  ! call specwid_df(ideriv)
@@ -289,7 +307,7 @@ subroutine costfun(ideriv)
 !!$
 !!$  endif
 !!$
-!!$  if (weight_ccsep .ge. sqrtmachprec) then
+!!$  if (weight_ccsep .ge. machprec) then
 !!$
 !!$   call coilsep(ideriv)
 !!$   chi = chi + weight_ccsep * ccsep
@@ -317,11 +335,25 @@ subroutine costfun(ideriv)
 
   if ( ideriv == 1 ) then                ! multiply t1E & t2E with normalized terms; 06/09/2017
      t1E = t1E * dofnorm
+
+     ! L-M format
+     if (LM_mfvec > 0) then
+        do ivec = 1, LM_mfvec
+           LM_fjac(ivec, 1:Ndof) = LM_fjac(ivec, 1:Ndof) * dofnorm(1:Ndof)
+        enddo
+     endif
 !!$   elseif ( ideriv == 2 ) then
 !!$      t1E = t1E * dofnorm
 !!$      t2E = t2E * hesnorm
   endif
-
+  
+  if (.not. LM_output) then ! regular output
+     if ( ideriv == 1 )  sumdE = sqrt(sum(t1E**2)) ! Eucliean norm 2;
+  else                      ! L-M output
+     chi = sum(LM_fvec**2)
+     if ( ideriv == 1 ) sumDE = sqrt(sum(LM_fjac**2))
+  endif  
+  
   call mpi_barrier(MPI_COMM_WORLD, ierr)
 
   return
@@ -363,36 +395,38 @@ subroutine normweight
      call torflux(0)
      if (abs(tflux) > machprec) weight_tflux = weight_tflux / tflux * target_tflux**2
      if( myid .eq. 0 ) write(ounit, 1000) "weight_tflux", weight_tflux
+     if( myid .eq. 0 .and. weight_tflux < machprec) write(ounit, '("warning : weight_tflux < machine_precision, tflux will not be used.")')
 
   endif
 
-  !-!-!-!-!-!-!-!-!-!-bharm-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+  !-!-!-!-!-!-!-!-!-!-bharm or bnorm!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  if( weight_bharm >= machprec ) then
+  if( weight_bharm >= machprec .or. weight_bnorm >= machprec ) then
 
-     call bmnharm(0)
-     modBn = sqrt(sum(Bmnc**2 + Bmns**2))
-     modtBn = sqrt(sum(tBmnc**2 + tBmns**2))
-     do icoil = 1, Ncoils
-        coil(icoil)%I = coil(icoil)%I * modtBn / modBn
-     enddo
-     if(myid .eq. 0) write(ounit,'(8X,": rescale coil currents with a factor of "ES12.5)') &
-          modtBn / modBn
-     call bmnharm(0)
-     if (abs(bharm) > machprec) weight_bharm = weight_bharm / bharm
-     if( myid == 0 ) write(ounit, 1000) "weight_bharm", weight_bharm
+     call bnormal(0)
+
+     if ( weight_bharm >= machprec ) then 
+        modBn = sqrt(sum(Bmnc**2 + Bmns**2))
+        modtBn = sqrt(sum(tBmnc**2 + tBmns**2))
+        do icoil = 1, Ncoils
+           coil(icoil)%I = coil(icoil)%I * modtBn / modBn
+        enddo
+        if(myid .eq. 0) write(ounit,'(8X,": rescale coil currents with a factor of "ES12.5)') &
+             modtBn / modBn
+        call bnormal(0)
+        if (abs(bharm) > machprec) weight_bharm = weight_bharm / bharm
+        if( myid == 0 ) write(ounit, 1000) "weight_bharm", weight_bharm
+        if( myid .eq. 0 .and. weight_bharm < machprec) write(ounit, '("warning : weight_bharm < machine_precision, bharm will not be used.")')
+     endif
+
+     if ( weight_bnorm >= machprec ) then
+        if (abs(bnorm) > machprec) weight_bnorm = weight_bnorm / bnorm
+        if( myid == 0 ) write(ounit, 1000) "weight_bnorm", weight_bnorm
+        if( myid .eq. 0 .and. weight_bnorm < machprec) write(ounit, '("warning : weight_bnorm < machine_precision, bnorm will not be used.")')
+     endif
 
   endif
 
-  !-!-!-!-!-!-!-!-!-!-bnorm-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-  if( weight_bnorm >= machprec ) then
-
-     call bnormal(0)   
-     if (abs(bnorm) > machprec) weight_bnorm = weight_bnorm / bnorm
-     if( myid == 0 ) write(ounit, 1000) "weight_bnorm", weight_bnorm
-
-  endif
 
   !-!-!-!-!-!-!-!-!-!-ttlen-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -409,6 +443,7 @@ subroutine normweight
 
      if (abs(ttlen) .gt. machprec) weight_ttlen = weight_ttlen / ttlen
      if( myid .eq. 0 ) write(ounit, 1000) "weight_ttlen", weight_ttlen
+     if( myid .eq. 0 .and. weight_ttlen < machprec) write(ounit, '("warning : weight_ttlen < machine_precision, ttlen will not be used.")')
 
   endif
 
@@ -419,6 +454,7 @@ subroutine normweight
      call surfsep(0)   
      if (abs(cssep) > machprec) weight_cssep = weight_cssep / cssep
      if( myid == 0 ) write(ounit, 1000) "weight_cssep", weight_cssep
+     if( myid .eq. 0 .and. weight_cssep < machprec) write(ounit, '("warning : weight_cssep < machine_precision, cssep will not be used.")')
 
   endif
 
@@ -456,7 +492,7 @@ subroutine output (mark)
 
   use globals, only : zero, ounit, myid, ierr, astat, iout, Nouts, Ncoils, save_freq, Tdof, &
        coil, coilspace, FouCoil, chi, t1E, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
-       evolution, xdof, DoF, exit_tol, exit_signal
+       evolution, xdof, DoF, exit_tol, exit_signal, sumDE
 
   implicit none  
   include "mpif.h"
@@ -464,14 +500,11 @@ subroutine output (mark)
   REAL, INTENT( IN ) :: mark
 
   INTEGER            :: idof, NF, icoil
-  REAL               :: sumdE
 
 
   iout = iout + 1
   
   FATAL( output , iout > Nouts+2, maximum iteration reached )
-
-  sumdE = sqrt(sum(t1E**2)) ! Eucliean norm 2; 
 
   if (myid == 0) write(ounit, '("output  : "I6" : "8(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, bharm, &
        tflux, ttlen, cssep

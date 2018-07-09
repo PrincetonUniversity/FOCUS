@@ -3,13 +3,13 @@
 ############################################################################################################
 
  ALLFILES= globals initial datalloc rdsurf rdknot rdcoils packdof bfield bnormal bmnharm fdcheck \
-           torflux length surfsep solvers descent congrad saving diagnos focus
+           torflux length surfsep solvers descent congrad lmalg saving diagnos focus
  HFILES= $(ALLFILES:=.h)
  FFILES= $(ALLFILES:=.F90)
  PFILES= $(ALLFILES:=.pdf)
  ROBJS=$(ALLFILES:=_r.o)
  DOBJS=$(ALLFILES:=_d.o)
- NUMOBJ= ode.o
+ NUMOBJ= ode.o lmder1.o
 
 ############################################################################################################
 
@@ -49,6 +49,9 @@ dfocus: $(DOBJS) $(NUMOBJ)
 
 ############################################################################################################
 ode.o : ode.f90
+	$(FC) -c $(RFLAGS) -o $@ $<
+
+lmder1.o : lmder1.f
 	$(FC) -c $(RFLAGS) -o $@ $<
 
 $(ROBJS): %_r.o: %.F90

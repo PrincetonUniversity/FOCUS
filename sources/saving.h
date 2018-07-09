@@ -119,7 +119,7 @@ subroutine saving
   HWRITEIV( 1                ,   save_harmonics,   save_harmonics                )
   HWRITEIV( 1                ,   save_filaments,   save_filaments                )
 
-  HWRITEIV( 1                ,   Nfp           ,   Nfp                         )
+  HWRITEIV( 1                ,   Nfp           ,   Nfp_raw                         )
   HWRITERA( Nteta,Nzeta      ,   xsurf         ,   surf(1)%xx(0:Nteta-1,0:Nzeta-1) )
   HWRITERA( Nteta,Nzeta      ,   ysurf         ,   surf(1)%yy(0:Nteta-1,0:Nzeta-1) )
   HWRITERA( Nteta,Nzeta      ,   zsurf         ,   surf(1)%zz(0:Nteta-1,0:Nzeta-1) )
@@ -138,6 +138,7 @@ subroutine saving
   HWRITEIV( 1                ,   iout          ,   iout                          )
   HWRITERV( 1                ,   Inorm         ,   Inorm                         )
   HWRITERV( 1                ,   Gnorm         ,   Gnorm                         )
+  HWRITERV( 1                ,   overlap       ,   overlap                       )
   HWRITERA( iout, 8          ,   evolution     ,   evolution(1:iout, 0:7)        )
   HWRITERA( iout, Tdof       ,   coilspace     ,   coilspace(1:iout, 1:Tdof)     )
 
@@ -155,6 +156,26 @@ subroutine saving
      HWRITERV( NBmn          ,          Bmnc   ,    Bmnc                         )
      HWRITERV( NBmn          ,          Bmns   ,    Bmns                         )
   endif
+
+  if (allocated(coil_importance)) then
+     HWRITERV( Ncoils*Npc    , coil_importance ,  coil_importance                )
+  endif
+  
+  if (allocated(LM_fvec)) then
+     HWRITEIV( 1                ,   ibnorm        ,   ibnorm                     )
+     HWRITEIV( 1                ,   mbnorm        ,   mbnorm                     )     
+     HWRITEIV( 1                ,   ibharm        ,   ibharm                     )
+     HWRITEIV( 1                ,   mbharm        ,   mbharm                     )     
+     HWRITEIV( 1                ,   itflux        ,   itflux                     )
+     HWRITEIV( 1                ,   mtflux        ,   mtflux                     )     
+     HWRITEIV( 1                ,   ittlen        ,   ittlen                     )
+     HWRITEIV( 1                ,   mttlen        ,   mttlen                     )     
+     HWRITEIV( 1                ,   icssep        ,   icssep                     )
+     HWRITEIV( 1                ,   mcssep        ,   mcssep                     )
+     HWRITERV( LM_mfvec         ,   LM_fvec       ,   LM_fvec                    )
+     HWRITERA( LM_mfvec, Ndof   ,   LM_fjac       ,   LM_fjac                    )     
+  endif
+
 
   HWRITERV( 1                ,  time_initialize,   time_initialize               )
   HWRITERV( 1                ,  time_optimize  ,   time_optimize                 )
@@ -252,7 +273,7 @@ subroutine saving
      write(wunit,'(I6)') NBmn                     !write dimensions
      write(wunit,'("# n  m   Bmnc  Bmns  wBmn")') ! comment line;
      do imn = 1, NBmn
-        write(wunit,'(2(I3, 4X), 3(ES23.15,4X))') Bmnin(imn), Bmnim(imn), Bmnc(imn), Bmns(imn), wBmn(imn)
+        write(wunit,'(2(I3, 4X), 3(ES23.15,4X))') Bmnin(imn)/Nfp_raw, Bmnim(imn), Bmnc(imn), Bmns(imn), wBmn(imn)
      enddo
      close(wunit)
 
