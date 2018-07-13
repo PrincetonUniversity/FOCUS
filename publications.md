@@ -9,8 +9,9 @@ If there are FOCUS related papers/presentations that haven't not been shown here
 - **Differentiating the optimal coil geometry with respect to the target surface.**
 
   Stuart R. Hudson, Caoxiang Zhu, David Pfefferle & Lee Gunderson
-
+  
   *Physics Letter A. (submitted)*
+  
 -----------------
 
 - **Designing stellarator coils by a modified Newton method using FOCUS.**
