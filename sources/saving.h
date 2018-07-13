@@ -228,7 +228,7 @@ subroutine saving
   if( save_coils == 1 ) then
 
      open(funit,file=trim(outcoils), status="unknown", form="formatted" )
-     write(funit,'("periods "I3)') Nfp
+     write(funit,'("periods "I3)') Nfp_raw
      write(funit,'("begin filament")')
      write(funit,'("mirror NIL")')
      do icoil = 1, Ncoils*Npc
@@ -270,7 +270,7 @@ subroutine saving
 
      open(wunit, file=trim(harmfile), status='unknown', action='write')
      write(wunit,'("#NBmn")')                     ! comment line;
-     write(wunit,'(I6)') NBmn                     !write dimensions
+     write(wunit,'(I6)') NBmn                     ! write dimensions
      write(wunit,'("# n  m   Bmnc  Bmns  wBmn")') ! comment line;
      do imn = 1, NBmn
         write(wunit,'(2(I3, 4X), 3(ES23.15,4X))') Bmnin(imn)/Nfp_raw, Bmnim(imn), Bmnc(imn), Bmns(imn), wBmn(imn)
