@@ -226,8 +226,7 @@ module globals
      INTEGER              :: NS, Ic, Lc, itype
      REAL                 :: I,  L, Lo, maxcurv
      REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), &
-                             dl(:), dd(:), &
-                             Ax(:,:), Ay(:,:), Az(:,:)
+                             dl(:), dd(:)
      character(LEN=10)    :: name
   end type arbitrarycoil
 
