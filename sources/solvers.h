@@ -59,6 +59,9 @@ subroutine solvers
   if (abs(case_optimize) >= 1) call AllocData(1)
   if (abs(case_optimize) >= 2) call AllocData(2)
 
+  ! evaluate the initial coils, in case coils intersect with plasma
+  call diagnos
+
   if (case_optimize < 0) then          ! finite difference checking derivatives;
      call fdcheck(case_optimize)
      return
