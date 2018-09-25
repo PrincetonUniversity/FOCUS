@@ -221,7 +221,7 @@
 !latex    \bi \vspace{-5mm}
 !latex    \item[ 0:] no extra post-processing;
 !latex    \item[ 1:] evaluate the present coils for each cost functions, coil curvature, coil-coil separation, and coil-plasma separation, Bn harmonics overlap, coil importance;
-!latex    \item[ 2:] write mgrid file; (not ready)
+!latex    \item[ 2:] diagnos; write SPEC input file; (not ready)
 !latex    \ei
 !latex 
 !latex  \item \inputvar{save\_freq = 1} \\
@@ -486,7 +486,10 @@ subroutine initial
      case ( 0 )
         if (IsQuiet < 1) write(ounit, 1000) 'case_postproc', case_postproc, 'No extra post-processings.'
      case ( 1 )
-        if (IsQuiet < 1) write(ounit, 1000) 'case_postproc', case_postproc, 'Coil evaluations would be performed.'
+        if (IsQuiet < 1) write(ounit, 1000) 'case_postproc', case_postproc, 'Coil evaluations will be performed.'
+     case ( 2 )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_postproc', case_postproc, & 
+             'Coil evaluations and writing SPEC input will be performed.'
      case default
         FATAL( initial, .true., selected case_postproc is not supported )
      end select

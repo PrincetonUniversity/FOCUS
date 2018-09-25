@@ -208,6 +208,9 @@ subroutine fousurf
   SALLOCATE( surf(1)%yt, (0:Nteta-1,0:Nzeta-1), zero ) !dy/dtheta;
   SALLOCATE( surf(1)%zt, (0:Nteta-1,0:Nzeta-1), zero ) !dz/dtheta;
   SALLOCATE( surf(1)%pb, (0:Nteta-1,0:Nzeta-1), zero ) !target Bn;
+  SALLOCATE( surf(1)%xp, (0:Nteta-1,0:Nzeta-1), zero ) !dx/dzeta;
+  SALLOCATE( surf(1)%yp, (0:Nteta-1,0:Nzeta-1), zero ) !dy/dzeta;
+  SALLOCATE( surf(1)%zp, (0:Nteta-1,0:Nzeta-1), zero ) !dz/dzeta;
  
 ! The center point value was used to discretize grid;
   do ii = 0, Nteta-1; teta = ( ii + half ) * pi2 / Nteta
@@ -250,6 +253,11 @@ subroutine fousurf
     surf(1)%xt(ii,jj) = xt(1)
     surf(1)%yt(ii,jj) = xt(2)
     surf(1)%zt(ii,jj) = xt(3)
+
+    ! dx/dp, dy/dp, dz/dp (dp for d zeta(phi))
+    surf(1)%xp(ii,jj) = xz(1)
+    surf(1)%yp(ii,jj) = xz(2)
+    surf(1)%zp(ii,jj) = xz(3)
 
     ! surface normal vectors and ds for the jacobian;
     surf(1)%nx(ii,jj) = ds(1) / dd

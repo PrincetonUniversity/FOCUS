@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='v0.3.06' ! version number
+  CHARACTER(LEN=10), parameter :: version='v0.4.00' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -218,7 +218,8 @@ module globals
   type toroidalsurface
      INTEGER              :: Nteta, Nzeta
      REAL   , allocatable :: xx(:,:), yy(:,:), zz(:,:), nx(:,:), ny(:,:), nz(:,:), &
-                             ds(:,:), xt(:,:), yt(:,:), zt(:,:), bn(:,:), pb(:,:), &
+                             xt(:,:), yt(:,:), zt(:,:), xp(:,:), yp(:,:), zp(:,:), &
+                             ds(:,:), bn(:,:), pb(:,:), &
                              Bx(:,:), By(:,:), Bz(:,:)
   end type toroidalsurface
 

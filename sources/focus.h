@@ -175,6 +175,7 @@ PROGRAM focus
 
   case( 0 ) ; call saving
   case( 1 ) ; call diagnos ; call saving 
+  case( 2 ) ; call diagnos ; call specinp ; call saving 
  !case( 2 ) ; call saving  ; call diagnos ; call wtmgrid  ! write mgrid file;
  !case( 3 ) ; call saving  ; call diagnos ; call poinplot ! Poincare plots; for future; 
  !case( 4 ) ; call saving  ; call diagnos ; call resonant ! resonant harmonics analysis; for future; 
