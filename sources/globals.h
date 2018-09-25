@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='v0.3.04' ! version number
+  CHARACTER(LEN=10), parameter :: version='v0.4.00' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -218,7 +218,8 @@ module globals
   type toroidalsurface
      INTEGER              :: Nteta, Nzeta
      REAL   , allocatable :: xx(:,:), yy(:,:), zz(:,:), nx(:,:), ny(:,:), nz(:,:), &
-                             ds(:,:), xt(:,:), yt(:,:), zt(:,:), bn(:,:), pb(:,:), &
+                             xt(:,:), yt(:,:), zt(:,:), xp(:,:), yp(:,:), zp(:,:), &
+                             ds(:,:), bn(:,:), pb(:,:), &
                              Bx(:,:), By(:,:), Bz(:,:)
   end type toroidalsurface
 
@@ -226,8 +227,7 @@ module globals
      INTEGER              :: NS, Ic, Lc, itype
      REAL                 :: I,  L, Lo, maxcurv
      REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), &
-                             dl(:), dd(:), &
-                             Ax(:,:), Ay(:,:), Az(:,:)
+                             dl(:), dd(:)
      character(LEN=10)    :: name
   end type arbitrarycoil
 

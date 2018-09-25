@@ -18,7 +18,7 @@ SUBROUTINE diagnos
   REAL, parameter   :: infmax = 1.0E6
   REAL, allocatable :: Atmp(:,:), Btmp(:,:)
 
-  if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "----Coil diagnostic--------------------------------"
+  if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "-----------COIL DIAGNOSTICS----------------------------------"
 
   !--------------------------------cost functions-------------------------------------------------------  
   if (case_optimize == 0) call AllocData(0) ! if not allocate data;
@@ -59,11 +59,11 @@ SUBROUTINE diagnos
         itmp = icoil !record the number
      endif
 #ifdef DEBUG
-     if(myid .eq. 0) write(ounit, '("diagnos : Maximum curvature of "I3 "-th coil is : " ES23.15)') &
+     if(myid .eq. 0) write(ounit, '(8X": Maximum curvature of "I3 "-th coil is : " ES23.15)') &
           icoil, coil(icoil)%maxcurv
 #endif
   enddo
-  if(myid .eq. 0) write(ounit, '("diagnos : Maximum curvature of all the coils is  :" ES23.15 &
+  if(myid .eq. 0) write(ounit, '(8X": Maximum curvature of all the coils is  :" ES23.15 &
        " ; at coil " I3)') MaxCurv, itmp
 
   !-------------------------------average coil length-------------------------------------------------------  
@@ -74,7 +74,7 @@ SUBROUTINE diagnos
      AvgLength = AvgLength + coil(icoil)%L
   enddo
   AvgLength = AvgLength / Ncoils
-  if(myid .eq. 0) write(ounit, '("diagnos : Average length of the coils is"8X" :" ES23.15)') AvgLength
+  if(myid .eq. 0) write(ounit, '(8X": Average length of the coils is"8X" :" ES23.15)') AvgLength
 
   !-----------------------------minimum coil coil separation------------------------------------  
   ! coils are supposed to be placed in order
@@ -105,7 +105,7 @@ SUBROUTINE diagnos
 
   enddo
 
-  if(myid .eq. 0) write(ounit, '("diagnos : The minimum coil-coil distance is "4X" :" ES23.15)') minCCdist
+  if(myid .eq. 0) write(ounit, '(8X": The minimum coil-coil distance is "4X" :" ES23.15)') minCCdist
 
   !--------------------------------minimum coil plasma separation-------------------------------  
   minCPdist = infmax
@@ -133,9 +133,16 @@ SUBROUTINE diagnos
      DALLOCATE(Btmp)
 
   enddo
-  if(myid .eq. 0) write(ounit, '("diagnos : The minimum coil-plasma distance is    :" ES23.15 &
-       " ; at coil " I3)') minCPdist, itmp
-
+  if(myid .eq. 0) then
+     write(ounit, '(8X": The minimum coil-plasma distance is    :" ES23.15 &
+          " ; at coil " I3)') minCPdist, itmp
+     if (minCPdist < 0.1) then
+        write(ounit, '(8X":-----------WARNING!!!-------------------------")')
+        write(ounit, '(8X": Initial coils might intersect with the plasma")')
+        write(ounit, '(8X":----------------------------------------------")') 
+     endif
+  endif
+  
   !--------------------------------overlap of Bn_mn harmonics-----------------------------------  
   ReDot = zero ; ImDot = zero
   if (weight_bharm > sqrtmachprec) then  ! do not care n,m; use cos - i sin
@@ -143,13 +150,13 @@ SUBROUTINE diagnos
      ImDot = sum(Bmnc*tBmns) - sum(Bmns*tBmnc)
      overlap = sqrt( (ReDot*ReDot + ImDot*ImDot) &
                  / ( (sum(Bmnc*Bmnc)+sum(Bmns*Bmns)) * (sum(tBmnc*tBmnc)+sum(tBmns*tBmns)) ) )
-     if(myid .eq. 0) write(ounit, '("diagnos : Overlap of the realized Bn harmonics is:" F8.3 " %")') 100*overlap
+     if(myid .eq. 0) write(ounit, '(8X": Overlap of the realized Bn harmonics is:" F8.3 " %")') 100*overlap
   endif
 
   !--------------------------------calculate the average Bn error-------------------------------
   if (allocated(surf(1)%bn)) then
      ! \sum{ |Bn| / |B| }/ (Nt*Nz)
-     if(myid .eq. 0) write(ounit, '("diagnos : Average relative absolute Bn error is  :" ES23.15)') &
+     if(myid .eq. 0) write(ounit, '(8X": Average relative absolute Bn error is  :" ES23.15)') &
           sum(abs(surf(1)%bn/sqrt(surf(1)%Bx**2 + surf(1)%By**2 + surf(1)%Bz**2))) / (Nzeta*Nzeta)
   endif
 
@@ -160,14 +167,15 @@ SUBROUTINE diagnos
         call importance(icoil)
      enddo
   
-     if(myid .eq. 0) write(ounit, '("diagnos : The most and least important coils are :  " & 
-          F6.3"% at coil" I4 " ; " F6.3"% at coil "I4)')      &
+     if(myid .eq. 0) write(ounit, '(8X": The most and least important coils are :  " & 
+          F8.3"% at coil" I4 " ; " F8.3"% at coil "I4)')      &
       100*maxval(coil_importance), maxloc(coil_importance), &
       100*minval(coil_importance), minloc(coil_importance)
 
   endif
   !--------------------------------------------------------------------------------------------- 
 
+  if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "-------------------------------------- ------"
  
   return
 

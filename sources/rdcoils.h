@@ -19,26 +19,33 @@
 !latex  \subsection{Initilization}
 !latex  There are several ways to initialize the coils data.
 !latex  \bi
-!latex  \item[1.] \inputvar{case\_init = 0} : Toroidally placing \inputvar{Ncoils} circular coils with a 
+!latex  \item[1.] \inputvar{case\_init = 1} : Toroidally placing \inputvar{Ncoils} circular coils with a 
 !latex             radius of \inputvar{init\_radius} and current of \inputvar{init\_current}. The $i$th coil 
 !latex             is placed at $\z = \frac{i-1}{Ncoils} \frac{2\pi}{Nfp}$.
-!latex  \item[2.] \inputvar{case\_init = 1} : Read coils data from {\bf .ext.coil.xxx} files. xxx can vary 
-!latex             from $001$ to $999$. Each file has such a format. \red{This is the most flexible way, and
+!latex  \item[2.] \inputvar{case\_init = 0} : Read coils data from {\bf ext.focus} file. The format is as following. \red{This is the most flexible way, and
 !latex             each coil can be different.}            
 !latex  \begin{raw}
-!latex  #type of coils;   name
-!latex      1      "Module 1"
-!latex  #  Nseg       I   Ic  L   Lc  Lo
-!latex     128  1.0E+07  0 6.28  1 3.14
-!latex  # NFcoil
-!latex  1
-!latex  # Fourier harmonics for coils ( xc; xs; yc; ys; zc; zs)
-!latex  3.00 0.30
-!latex  0.00 0.00
-!latex  0.00 0.00
-!latex  0.00 0.00
-!latex  0.00 0.00
-!latex  0.00 0.30
+!latex   # Total number of coils
+!latex              16
+!latex   #------------1--------------------------------
+!latex   #coil_type     coil_name
+!latex       1    Mod_001   
+!latex   #Nseg        current         Ifree         Length         Lfree  target_length
+!latex     128  9.844910899889484E+05     1  5.889288927667147E+00     1  1.000000000000000E+00
+!latex   #NFcoil
+!latex    4
+!latex   #Fourier harmonics for coils ( xc; xs; yc; ys; zc; zs) 
+!latex    3.044612087666170E+00  8.531153655332238E-01  4.194525679767678E-02  2.139790853335835E-02  3.243811555342430E-03
+!latex    0.000000000000000E+00  3.542408058492299E-16 -9.108712738922674E-16  1.841880477639364E-16 -1.172175996642087E-16
+!latex   -4.456021385977147E-15  8.545613874434043E-16 -3.133154295448265E-16  1.764367073160815E-16 -1.187904023667544E-16
+!latex    0.000000000000000E+00 -5.425716121023922E-02 -8.986316303345250E-02 -2.946386365076052E-03 -4.487052148209031E-03
+!latex   -4.293247278325474E-17 -1.303273952226587E-15  7.710821807870230E-16 -3.156539892466338E-16  9.395672288215928E-17
+!latex    0.000000000000000E+00  9.997301975562740E-01  2.929938238054118E-02  2.436889176706748E-02  1.013941937492003E-03
+!latex   #-----------2---------------------------------
+!latex      .
+!latex      .
+!latex      .
+!latex  
 !latex  \end{raw}
 !latex  \ei
 !latex  \bi
