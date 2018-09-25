@@ -23,7 +23,7 @@
 
 subroutine rdknot
   
-  use globals, only : zero, one, half, ten, pi2, sqrtmachprec, myid, ncpu, ounit, runit, &
+  use globals, only : dp, zero, one, half, ten, pi2, sqrtmachprec, myid, ncpu, ounit, runit, &
                       ext, &
                       NFcoil, knotsurf, knotphase, &
                       xkc, xks, ykc, yks, zkc, zks!, kspring, tauend, itau
@@ -198,7 +198,7 @@ end subroutine rdknot
 
 subroutine knotxx( aa, teta, zeta, ax, at, az, xx, xt, xz )
   
-  use globals, only : zero, one, pi2, small, myid, ounit, &
+  use globals, only : dp, zero, one, pi2, small, myid, ounit, &
                       case_surface, NFcoil, knotphase, &
                       xkc, xks, ykc, yks, zkc, zks
   

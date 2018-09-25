@@ -17,7 +17,7 @@ subroutine bnormal( ideriv )
 ! ideriv = 1 -> calculate the Bn surface integral and its first derivatives;
 ! ideriv = 2 -> calculate the Bn surface integral and its first & second derivatives;
 !------------------------------------------------------------------------------------------------------   
-  use globals, only: zero, half, one, pi2, sqrtmachprec, bsconstant, ncpu, myid, ounit, &
+  use globals, only: dp, zero, half, one, pi2, sqrtmachprec, bsconstant, ncpu, myid, ounit, &
        coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, &
        bnorm, t1B, t2B, bn, Ndof, Npc, Cdof, weight_bharm, &
        weight_bnorm, ibnorm, mbnorm, ibharm, mbharm, LM_fvec, LM_fjac, &
@@ -81,7 +81,7 @@ subroutine bnormal( ideriv )
 
      ! Another type of target functions
      if (mbnorm > 0) then
-        LM_fvec(ibnorm+1:ibnorm+mbnorm) =  weight_bnorm * reshape(surf(1)%bn(0:Nteta-1, 0:Nzeta-1), (/1/))
+        LM_fvec(ibnorm+1:ibnorm+mbnorm) =  weight_bnorm * reshape(surf(1)%bn(0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))
      endif
 
      ! Bn harmonics related
@@ -167,7 +167,7 @@ subroutine bnormal( ideriv )
      ! Another type of target functions
      if (mbnorm > 0) then
         do idof = 1, Ndof
-           LM_fjac(ibnorm+1:ibnorm+mbnorm, idof) = weight_bnorm * reshape(dB(idof, 0:Nteta-1, 0:Nzeta-1), (/1/))
+           LM_fjac(ibnorm+1:ibnorm+mbnorm, idof) = weight_bnorm * reshape(dB(idof, 0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))
         enddo
      endif
 
