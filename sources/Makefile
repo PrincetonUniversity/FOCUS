@@ -17,10 +17,12 @@
  CC=intel # if want to use gfortran; make CC=gfortran xfocus; otherwise using Intel
  FC=mpif90
 ifeq ($(CC),gfortran)
- RFLAGS=-O3 -Wall -fdefault-real-8 -ffixed-line-length-none -march=native -ffast-math
+# RFLAGS=-O3 -w -fdefault-real-8 -ffree-line-length-none -march=native -ffast-math
+ RFLAGS=-O3 -w -ffree-line-length-none -march=native -ffast-math
  DFLAGS=-g3 -Wextra -Wtarget-lifetime -fbacktrace -fbounds-check -ffpe-trap=zero -fcheck=all -DDEBUG
 else
- RFLAGS=-r8 -mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback #-vec_report0 #-ipo -xhost
+# RFLAGS=-r8 -mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback #-vec_report0 #-ipo -xhost
+ RFLAGS=-mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback #-vec_report0 #-ipo -xhost
  DFLAGS=-check all -check noarg_temp_created -debug full -D DEBUG
 endif
 

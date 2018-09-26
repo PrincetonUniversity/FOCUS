@@ -20,7 +20,7 @@ SUBROUTINE fdcheck( ideriv )
 ! ideriv = 2 -> check the second derivatives with finite difference;
 !------------------------------------------------------------------------------------------------------
 
-  use globals, only: zero, half, machprec, sqrtmachprec, ncpu, myid, ounit, &
+  use globals, only: dp, zero, half, machprec, sqrtmachprec, ncpu, myid, ounit, &
                      coil, xdof, Ndof, t1E, t2E, chi, LM_maxiter, LM_fvec, LM_fjac
                      
   implicit none
@@ -88,7 +88,7 @@ SUBROUTINE fdcheck( ideriv )
   ! L-M format
   if (LM_maxiter > 0) then
      ivec = 1 ! the evaluation term
-     if(myid .eq. 0) write(ounit,'("fdcheck : check the derivatives of the ", I, "-th term in L-M format.")') ivec
+     if(myid .eq. 0) write(ounit,'("fdcheck : check the derivatives of the ", I0, "-th term in L-M format.")') ivec
      if( myid.eq.0 ) write(ounit,'("fdcheck : idof  /  Ndof ;   analytical value"5X" ;   fd-method value"6X &
           " ;   difference"11X" ;   relative diff")')  
   

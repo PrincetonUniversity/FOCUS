@@ -111,7 +111,7 @@ SUBROUTINE readBmn
   ! read Bmn harmonics related arrays;
   ! allocate trig functions;
   !----------------------------------------------------------------------------------------
-  use globals, only: zero, half, pi2, myid, ounit, runit, ext, IsQuiet, Nteta, Nzeta, Nfp, &
+  use globals, only: dp, zero, half, pi2, myid, ounit, runit, ext, IsQuiet, Nteta, Nzeta, Nfp, &
                      NBmn, Bmnin, Bmnim, wBmn, tBmnc, tBmns, carg, sarg, Nfp_raw
   implicit none
   include "mpif.h"
@@ -195,7 +195,7 @@ SUBROUTINE twodft(func, hs, hc, im, in, mn)
   ! carg and sarg stored the trig functions.
   ! Right now, it's using normal Fourier transforming, later FFT will be enabled.
   !-------------------------------------------------------------------------------!
-  use globals, only: zero, half, two, pi2, myid, ounit, Nteta, Nzeta, carg, sarg
+  use globals, only: dp, zero, half, two, pi2, myid, ounit, Nteta, Nzeta, carg, sarg
   implicit none
   include "mpif.h"
   !-------------------------------------------------------------------------------
@@ -242,7 +242,7 @@ SUBROUTINE twoift(func, hs, hc, im, in, mn)
   ! carg and sarg stored the trig functions.
   ! Right now, it's using normal Fourier transforming, later FFT will be enabled.
   !-------------------------------------------------------------------------------!
-  use globals, only: zero, half, two, pi2, myid, ounit, Nteta, Nzeta, carg, sarg
+  use globals, only: dp, zero, half, two, pi2, myid, ounit, Nteta, Nzeta, carg, sarg
   implicit none
   include "mpif.h"
   !-------------------------------------------------------------------------------
@@ -268,7 +268,7 @@ SUBROUTINE saveBmn
   !----------------------------------------------------------------------------------------
   ! save the present Bmn harmonics in iBmnc and iBmns;
   !----------------------------------------------------------------------------------------
-  use globals, only: zero, ierr, astat, myid, machprec, weight_Bharm, NBmn, Bmnc, Bmns, iBmnc, iBmns
+  use globals, only: dp, zero, ierr, astat, myid, machprec, weight_Bharm, NBmn, Bmnc, Bmns, iBmnc, iBmns
   implicit none
   include "mpif.h"
 
