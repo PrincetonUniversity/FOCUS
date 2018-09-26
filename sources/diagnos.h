@@ -161,7 +161,10 @@ SUBROUTINE diagnos
   endif
 
   !--------------------------------calculate coil importance------------------------------------  
-  SALLOCATE( coil_importance, (1:Ncoils*Npc), zero )
+  if (.not. allocated(coil_importance)) then
+     SALLOCATE( coil_importance, (1:Ncoils*Npc), zero )
+  endif
+
   if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec) then  ! make sure data_allocated
      do icoil = 1, Ncoils*Npc
         call importance(icoil)
@@ -175,7 +178,7 @@ SUBROUTINE diagnos
   endif
   !--------------------------------------------------------------------------------------------- 
 
-  if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "-------------------------------------- ------"
+  if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "--------------------------------------------"
  
   return
 
