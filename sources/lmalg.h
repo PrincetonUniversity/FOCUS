@@ -218,12 +218,8 @@ use globals, only: dp, sqrtmachprec, zero, myid, ounit, Ncoils, Ndof, t1E, iout,
   INTEGER                 :: maxfev, mode, nprint, nfev, njev
   REAL                    :: ftol, xtol, gtol, factor, x(1:Ndof)
   REAL   , allocatable    :: wa(:), fvec(:), fjac(:,:)
-  DOUBLE PRECISION        :: tmp
   EXTERNAL                :: focus_fcn
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  
-  TMPOUT(kind(tmp))
-  TMPOUT(kind(ftol))
   
   tstart = MPI_Wtime()
 
