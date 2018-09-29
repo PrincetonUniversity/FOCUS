@@ -259,12 +259,9 @@ subroutine bpotential0(icoil, iteta, jzeta, Ax, Ay, Az)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  FATAL( bpotential0, icoil .lt. 1 .or. icoil .gt. Ncoils*Npc, &
-    icoil not in right range )
-  FATAL( bpotential0, iteta .lt. 0 .or. iteta .gt. Nteta     , &
-    iteta not in right range )
-  FATAL( bpotential0, jzeta .lt. 0 .or. jzeta .gt. Nzeta     , &
-    jzeta not in right range )
+  FATAL( bpotential0, icoil .lt. 1 .or. icoil .gt. Ncoils*Npc, icoil not in right range )
+  FATAL( bpotential0, iteta .lt. 0 .or. iteta .gt. Nteta     , iteta not in right range )
+  FATAL( bpotential0, jzeta .lt. 0 .or. jzeta .gt. Nzeta     , jzeta not in right range )
   
   dlx = zero; ltx = zero; Ax = zero
   dly = zero; lty = zero; Ay = zero

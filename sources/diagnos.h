@@ -79,7 +79,7 @@ SUBROUTINE diagnos
   !-----------------------------minimum coil coil separation------------------------------------  
   ! coils are supposed to be placed in order
   minCCdist = infmax
-  do icoil = 1, Ncoils*Npc
+  do icoil = 1, Ncoils
 
      if(Ncoils .eq. 1) exit !if only one coil
      itmp = icoil + 1
