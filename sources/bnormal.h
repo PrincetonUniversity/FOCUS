@@ -64,7 +64,9 @@ subroutine bnormal( ideriv )
 
            lbn(iteta, jzeta) = lbx(iteta, jzeta)*surf(1)%nx(iteta, jzeta) &
                 &            + lby(iteta, jzeta)*surf(1)%ny(iteta, jzeta) &
-                &            + lbz(iteta, jzeta)*surf(1)%nz(iteta, jzeta) - surf(1)%pb(iteta, jzeta)
+                &            + lbz(iteta, jzeta)*surf(1)%nz(iteta, jzeta) &
+                &            - surf(1)%pb(iteta, jzeta)/bsconstant
+
            select case (case_bnormal)
            case (0)     ! no normalization over |B|;
               lbnorm = lbnorm + lbn(iteta, jzeta) * lbn(iteta, jzeta) * surf(1)%ds(iteta, jzeta)
@@ -94,6 +96,7 @@ subroutine bnormal( ideriv )
 
      bnorm      = bnorm * half * discretefactor
      bn = surf(1)%Bn +  surf(1)%pb  ! bn is B.n from coils
+     ! bn = surf(1)%Bx * surf(1)%nx + surf(1)%By * surf(1)%ny + surf(1)%Bz * surf(1)%nz
      if (case_bnormal == 0) bnorm = bnorm * bsconstant * bsconstant ! take bsconst back
 
      if (case_bnormal == 1) then    ! collect |B|
@@ -207,30 +210,10 @@ subroutine bnormal( ideriv )
      call MPI_ALLREDUCE(l1B, t1B, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
      call MPI_ALLREDUCE(ldB, dB, Ndof*NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
 
-!!$     RlBCAST( t1B, Ndof, 0 )
-!!$     RlBCAST( dB, Ndof*NumGrid, 0 )
-
      t1B = t1B * discretefactor
 
      ! Another type of target functions
      if (mbnorm > 0) then
-!!$        select case (case_bnormal)
-!!$        case (0)     ! no normalization over |B|;        
-!!$           do idof = 1, Ndof
-!!$              LM_fjac(ibnorm+1:ibnorm+mbnorm, idof) = weight_bnorm &
-!!$                   &  * reshape(dB(idof, 0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))
-!!$           enddo
-!!$        case (1)    ! normalized over |B|;
-!!$           do idof = 1, Ndof
-!!$              LM_fjac(ibnorm+1:ibnorm+mbnorm, idof) = weight_bnorm * reshape( &
-!!$                   &  dB(idof, 0:Nteta-1, 0:Nzeta-1)/sqrt(bm(0:Nteta-1, 0:Nzeta-1) &
-!!$                   & -
-!!$
-!!$), (/Nteta*Nzeta/))
-!!$           enddo
-!!$        case default
-!!$           FATAL( bnorm, .true., case_bnormal can only be 0/1 )
-!!$        end select
         do idof = 1, Ndof
            LM_fjac(ibnorm+1:ibnorm+mbnorm, idof) = weight_bnorm &
                 &  * reshape(dB(idof, 0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))

@@ -112,7 +112,7 @@ SUBROUTINE readBmn
   ! allocate trig functions;
   !----------------------------------------------------------------------------------------
   use globals, only: dp, zero, half, pi2, myid, ounit, runit, ext, IsQuiet, Nteta, Nzeta, Nfp, &
-                     NBmn, Bmnin, Bmnim, wBmn, tBmnc, tBmns, carg, sarg, Nfp_raw
+                     NBmn, Bmnin, Bmnim, wBmn, tBmnc, tBmns, carg, sarg, Nfp_raw, case_bnormal
   implicit none
   include "mpif.h"
 
@@ -161,7 +161,9 @@ SUBROUTINE readBmn
          enddo
       endif
       close(runit)
+      write(ounit, '("******* : case_bnormal has been reset to 0.")')
    endif
+   case_bnormal = 0
 
   !-------------------------store trig functions-------------------------------------------
   SALLOCATE( carg,  (1:Nteta*Nzeta, 1:NBmn), zero )

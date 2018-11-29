@@ -167,6 +167,14 @@ subroutine costfun(ideriv)
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   call mpi_barrier(MPI_COMM_WORLD, ierr)
+  
+  bnorm = zero 
+  bharm = zero
+  tflux = zero
+  ttlen = zero
+  cssep = zero
+  specw = zero
+  ccsep = zero
 
   if (IsQuiet <= -2) then
 
