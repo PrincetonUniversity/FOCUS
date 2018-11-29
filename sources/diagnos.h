@@ -5,7 +5,7 @@ SUBROUTINE diagnos
 ! DATE: 07/13/2017
 ! diagonose the coil performance
 !------------------------------------------------------------------------------------------------------   
-  use globals, only: zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
+  use globals, only: dp, zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
        Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
        cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, Npc, weight_bnorm, overlap
                      
@@ -79,7 +79,7 @@ SUBROUTINE diagnos
   !-----------------------------minimum coil coil separation------------------------------------  
   ! coils are supposed to be placed in order
   minCCdist = infmax
-  do icoil = 1, Ncoils*Npc
+  do icoil = 1, Ncoils
 
      if(Ncoils .eq. 1) exit !if only one coil
      itmp = icoil + 1
@@ -161,7 +161,10 @@ SUBROUTINE diagnos
   endif
 
   !--------------------------------calculate coil importance------------------------------------  
-  SALLOCATE( coil_importance, (1:Ncoils*Npc), zero )
+  if (.not. allocated(coil_importance)) then
+     SALLOCATE( coil_importance, (1:Ncoils*Npc), zero )
+  endif
+
   if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec) then  ! make sure data_allocated
      do icoil = 1, Ncoils*Npc
         call importance(icoil)
@@ -175,7 +178,7 @@ SUBROUTINE diagnos
   endif
   !--------------------------------------------------------------------------------------------- 
 
-  if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "-------------------------------------- ------"
+  if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "--------------------------------------------"
  
   return
 
@@ -185,7 +188,7 @@ END SUBROUTINE diagnos
 
 subroutine curvature(icoil)
 
-  use globals, only : zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils
+  use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils
   implicit none
   include "mpif.h"
 
@@ -207,7 +210,8 @@ end subroutine curvature
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine mindist(array_A, dim_A, array_B, dim_B, minimum)
-
+ 
+  use globals, only: dp
   implicit none
 
   INTEGER, INTENT(IN ) :: dim_A, dim_B
@@ -239,8 +243,8 @@ end subroutine mindist
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine importance(icoil)
-  use globals, only : zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils, &
-                      surf, Nteta, Nzeta, bsconstant, coil_importance
+  use globals, only: dp,  zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils, &
+                     surf, Nteta, Nzeta, bsconstant, coil_importance
   implicit none
   include "mpif.h"
 

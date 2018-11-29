@@ -95,7 +95,7 @@ subroutine torflux( ideriv )
 ! ideriv = 1 -> calculate the toroidal flux constraint and its first derivatives;
 ! ideriv = 2 -> calculate the toroidal flux constraint and its first & second derivatives;
 !------------------------------------------------------------------------------------------------------   
-  use globals, only: zero, half, one, pi2, sqrtmachprec, bsconstant, ncpu, myid, ounit, &
+  use globals, only: dp, zero, half, one, pi2, sqrtmachprec, bsconstant, ncpu, myid, ounit, &
        coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, Cdof, Npc, &
        tflux, t1F, t2F, Ndof, psi_avg, target_tflux, &
        itflux, mtflux, LM_fvec, LM_fjac, weight_tflux
@@ -244,7 +244,7 @@ subroutine bpotential0(icoil, iteta, jzeta, Ax, Ay, Az)
 ! Biot-Savart constant and currents are not included for later simplication.
 ! Discretizing factor is includeed; coil(icoil)%dd(kseg) 
 !------------------------------------------------------------------------------------------------------   
-  use globals, only: coil, surf, Ncoils, Nteta, Nzeta, Npc, &
+  use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, Npc, &
                      zero, myid, ounit
   implicit none
   include "mpif.h"
@@ -259,12 +259,9 @@ subroutine bpotential0(icoil, iteta, jzeta, Ax, Ay, Az)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  FATAL( bpotential0, icoil .lt. 1 .or. icoil .gt. Ncoils*Npc, &
-    icoil not in right range )
-  FATAL( bpotential0, iteta .lt. 0 .or. iteta .gt. Nteta     , &
-    iteta not in right range )
-  FATAL( bpotential0, jzeta .lt. 0 .or. jzeta .gt. Nzeta     , &
-    jzeta not in right range )
+  FATAL( bpotential0, icoil .lt. 1 .or. icoil .gt. Ncoils*Npc, icoil not in right range )
+  FATAL( bpotential0, iteta .lt. 0 .or. iteta .gt. Nteta     , iteta not in right range )
+  FATAL( bpotential0, jzeta .lt. 0 .or. jzeta .gt. Nzeta     , jzeta not in right range )
   
   dlx = zero; ltx = zero; Ax = zero
   dly = zero; lty = zero; Ay = zero
@@ -300,7 +297,7 @@ subroutine bpotential1(icoil, iteta, jzeta, Ax, Ay, Az, ND)
 ! Biot-Savart constant and currents are not included for later simplication.
 ! Discretizing factor is includeed; coil(icoil)%dd(kseg) 
 !------------------------------------------------------------------------------------------------------    
-  use globals, only: coil, DoF, surf, NFcoil, Ncoils, Nteta, Nzeta, Npc, &
+  use globals, only: dp, coil, DoF, surf, NFcoil, Ncoils, Nteta, Nzeta, Npc, &
                      zero, myid, ounit
   implicit none
   include "mpif.h"

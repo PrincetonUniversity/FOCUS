@@ -29,7 +29,7 @@ subroutine descent
   ! Using the differential flow to optimize the coils;
   ! DATE: 2017/04/05
   !---------------------------------------------------------------------------------------------    
-  use globals, only : zero, half, myid, ncpu, ounit, IsQuiet, astat, ierr, sqrtmachprec, &
+  use globals, only: dp, zero, half, myid, ncpu, ounit, IsQuiet, astat, ierr, sqrtmachprec, &
         Ndof, iout, DF_tausta, DF_tauend, DF_xtol, DF_maxiter, exit_signal
 
   implicit none  
@@ -99,7 +99,7 @@ end subroutine descent
 
 subroutine denergy( tau, lxdof, dE )
   
-  use globals, only :  Ndof, myid, ounit, t1E
+  use globals, only: dp,  Ndof, myid, ounit, t1E
   implicit none
   include "mpif.h"
   !---------------------------------------------------------------------------------------------      

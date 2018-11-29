@@ -15,9 +15,13 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='v0.4.00' ! version number
+  CHARACTER(LEN=10), parameter :: version='v0.5.03' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+  integer, parameter :: sp = selected_real_kind(6 , 37  )
+  integer, parameter :: dp = selected_real_kind(15, 307 ) ! double precision
+  integer, parameter :: qp = selected_real_kind(33, 4931)
 
 !latex \subsection{Useful parameters}
   REAL, parameter      :: zero       =         0.0

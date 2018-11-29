@@ -168,7 +168,7 @@ subroutine AllocData(itype)
         SALLOCATE( LM_fvec, (1:LM_mfvec), zero )
         SALLOCATE( LM_fjac , (1:LM_mfvec, 1:Ndof), zero )
 
-        if (myid == 0) write(ounit, '("datalloc: total number of cost functions for L-M is "I)') LM_mfvec
+        if (myid == 0) write(ounit, '("datalloc: total number of cost functions for L-M is "I0)') LM_mfvec
         
      endif
 

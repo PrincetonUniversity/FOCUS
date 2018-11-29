@@ -259,7 +259,7 @@ subroutine initial
   if( myid == 0 ) then ! only the master node reads the input; 25 Mar 15;
      call getarg(1,ext) ! get argument from command line
      write(ounit, '("initial : machine_prec   = ", ES12.5, " ; sqrtmachprec   = ", ES12.5   &
-         )') machprec, sqrtmachprec
+          & )') machprec, sqrtmachprec
   endif
   ClBCAST( ext           ,  100,  0 )
 
@@ -312,15 +312,15 @@ subroutine initial
 
      select case (IsSymmetric)
      case (0)
-        if (IsQuiet < 0) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
-             'No stellarator symmetry or periodicity enforced.'
+        if (IsQuiet < 0) write(ounit, 1000) 'IsSymmetric', IsSymmetric, & 
+             &  'No stellarator symmetry or periodicity enforced.'
      case (1)
         if (IsQuiet < 0) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
-             'Plasma boundary periodicity is enforced.'
+             &  'Plasma boundary periodicity is enforced.'
         FATAL( initial, .true., This would cause unbalanced coils please use IsSymmetric=0 instead)
      case (2)
         if (IsQuiet < 0) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
-             'Plasma boundary and coil periodicity are both enforced.'
+             &  'Plasma boundary and coil periodicity are both enforced.'
      case default
         FATAL( initial, .true., IsSymmetric /= 0 or 2 unspported option)
      end select
@@ -336,7 +336,7 @@ subroutine initial
         FATAL( initial, knotsurf < zero, illegal minor radius)
         write(ounit, 1000) 'case_surface', case_surface, 'Read axis information for expanding plasma boundary.'
         if (IsQuiet < 0)  write(ounit, '(8X,": knotsurf = " ES12.5 &
-             " ; ellipticity = " ES12.5)') knotsurf, ellipticity
+             &  " ; ellipticity = " ES12.5)') knotsurf, ellipticity
      case default
         FATAL( initial, .true., selected surface type is not supported )
      end select
@@ -385,17 +385,17 @@ subroutine initial
         if (DF_maxiter > 0) then
            if (IsQuiet < 1) write(ounit, '(26X,": Differential flow will be used, maxiter=", I6)') DF_maxiter
            if (IsQuiet < 0) write(ounit, '(26X,": DF_tausta = "ES12.5" ; DF_tauend = "ES12.5 &
-                " ; DF_xtol = "ES12.5)') DF_tausta, DF_tauend, DF_xtol
+                &  " ; DF_xtol = "ES12.5)') DF_tausta, DF_tauend, DF_xtol
         endif
 
         if (CG_maxiter > 0) then        
            FATAL( Initial, CG_wolfe_c1 <= zero .or. CG_wolfe_c1 >= one, should be 0<c1<1 )
            FATAL( Initial, CG_wolfe_c2 <= zero .or. CG_wolfe_c2 >= one, should be 0<c2<1 )
            FATAL( Initial, CG_wolfe_c1 >= CG_wolfe_c2, should be c1<c2)
-           if (IsQuiet < 1) write(ounit, '(26X,": Nonlinear Conjugate Gradient method will be used, maxiter=", I6)') &
-                CG_maxiter
-           if (IsQuiet < 0) write(ounit, '(26X,": CG_wolfe_c1 = "ES12.5" ; CG_wolfe_c2 = "ES12.5" ; CG_xtol = "&
-                ES12.5)') CG_wolfe_c1, CG_wolfe_c2, CG_xtol
+           if (IsQuiet < 1) write(ounit, '(26X,": Nonlinear Conjugate Gradient method will be used, maxiter="&
+                &  , I6)') CG_maxiter
+           if (IsQuiet < 0) write(ounit, '(26X,": CG_wolfe_c1 = "ES12.5" ; CG_wolfe_c2 = "ES12.5 &
+                &  " ; CG_xtol = " ES12.5)') CG_wolfe_c1, CG_wolfe_c2, CG_xtol
         endif
 
      case (  2 )
@@ -405,30 +405,30 @@ subroutine initial
         if (DF_maxiter > 0) then
            if (IsQuiet < 1) write(ounit, '(26X,": Differential flow will be used, maxiter=", I6)') DF_maxiter
            if (IsQuiet < 0) write(ounit,'(26X,": DF_tausta = "ES12.5" ; DF_tauend = "ES12.5 &
-                " ; DF_xtol = "ES12.5)') DF_tausta, DF_tauend, DF_xtol
+                &  " ; DF_xtol = "ES12.5)') DF_tausta, DF_tauend, DF_xtol
         endif
 
         if (CG_maxiter > 0) then        
            FATAL( Initial, CG_wolfe_c1 <= zero .or. CG_wolfe_c1 >= one, should be 0<c1<1 )
            FATAL( Initial, CG_wolfe_c2 <= zero .or. CG_wolfe_c2 >= one, should be 0<c2<1 )
            FATAL( Initial, CG_wolfe_c1 >= CG_wolfe_c2, should be c1<c2)
-           if (IsQuiet < 1) write(ounit, '(26X,": Nonlinear Conjugate Gradient method will be used, maxiter=", I6)') &
-                CG_maxiter
-           if (IsQuiet < 0) write(ounit,'(26X,": CG_wolfe_c1 = "ES12.5" ; CG_wolfe_c2 = "ES12.5" ; CG_xtol = "&
-                ES12.5)') CG_wolfe_c1, CG_wolfe_c2, CG_xtol
+           if (IsQuiet < 1) write(ounit, '(26X,": Nonlinear Conjugate Gradient method will be used, maxiter="&
+                &  , I6)') CG_maxiter
+           if (IsQuiet < 0) write(ounit,'(26X,": CG_wolfe_c1 = "ES12.5" ; CG_wolfe_c2 = "ES12.5 &
+                &  " ; CG_xtol = "ES12.5)') CG_wolfe_c1, CG_wolfe_c2, CG_xtol
         endif
 
         if (HN_maxiter > 0) then
            if (IsQuiet < 1) write(ounit, '(26X,": Hybrid Newton method will be used, maxiter=", I6)') HN_maxiter
            if (IsQuiet < 0) write(ounit,'(26X,": HN_factor = "ES12.5" ; HN_xtol = " &
-                ES12.5)') HN_factor, HN_xtol
+                &  ES12.5)') HN_factor, HN_xtol
         endif
 
         if (TN_maxiter > 0) then        
            FATAL( Initial, TN_cr <= zero .or. TN_cr > one, should be 0<cr<=1 )
            if (IsQuiet < 1) write(ounit, '(26X,": Truncated Newton method will be used, maxiter=", I6)') TN_maxiter
            if (IsQuiet < 0) write(ounit,'(26X,": TN_cr = "ES12.5" ; TN_reorder = "I1" ; TN_xtol = " &
-                ES12.5)') TN_cr, TN_reorder, TN_xtol
+                &  ES12.5)') TN_cr, TN_reorder, TN_xtol
         endif
 
      case default
@@ -489,19 +489,19 @@ subroutine initial
         if (IsQuiet < 1) write(ounit, 1000) 'case_postproc', case_postproc, 'Coil evaluations will be performed.'
      case ( 2 )
         if (IsQuiet < 1) write(ounit, 1000) 'case_postproc', case_postproc, & 
-             'Coil evaluations and writing SPEC input will be performed.'
+             &  'Coil evaluations and writing SPEC input will be performed.'
      case default
         FATAL( initial, .true., selected case_postproc is not supported )
      end select
 
      FATAL( initial, save_freq <= 0, should not be negative )
      if (IsQuiet < 0) write(ounit, '(8X,": Files saving setteings: freq = "I4" ; coils = "I1" ; harmonics = "&
-          I1" ; filaments = " I1)') save_freq, save_coils, save_harmonics, save_filaments
+          &  I1" ; filaments = " I1)') save_freq, save_coils, save_harmonics, save_filaments
      if (IsQuiet < 0) then
         write(ounit,'(8X,5A)') ": '", trim(coilfile), "' and '", trim(hdf5file), "' will be stored."
         if (save_coils /= 0) write(ounit,'(8X, 3A)') ": new coils file '", trim(outcoils), "' will be updated."
         if (save_harmonics /= 0) write(ounit,'(8X,3A)')": Bmn harmonics file '",  trim(harmfile), &
-             "' will be updated."
+             &  "' will be updated."
      endif
 
   endif

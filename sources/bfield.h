@@ -27,7 +27,7 @@ subroutine bfield0(icoil, iteta, jzeta, Bx, By, Bz)
 ! Biot-Savart constant and currents are not included for later simplication. 
 ! Be careful if coils have different resolutions.
 !------------------------------------------------------------------------------------------------------   
-  use globals, only: coil, surf, Ncoils, Nteta, Nzeta, &
+  use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, &
                      zero, myid, ounit, Npc
   implicit none
   include "mpif.h"
@@ -80,7 +80,7 @@ subroutine bfield1(icoil, iteta, jzeta, Bx, By, Bz, ND)
 ! Biot-Savart constant and currents are not included for later simplication;
 ! Discretizing factor is includeed; coil(icoil)%dd(kseg)
 !------------------------------------------------------------------------------------------------------   
-  use globals, only: coil, DoF, surf, NFcoil, Ncoils, Nteta, Nzeta, &
+  use globals, only: dp, coil, DoF, surf, NFcoil, Ncoils, Nteta, Nzeta, &
                      zero, myid, ounit, Npc
   implicit none
   include "mpif.h"

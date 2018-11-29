@@ -319,11 +319,11 @@ subroutine rdcoils
         z0   = half * (z1 + z2)        
         
         FouCoil(icoil)%xc(0:1) = (/ Rmaj * cos(zeta), init_radius * cos(zeta) /)
-        FouCoil(icoil)%xs(0:1) = (/ 0.0             , 0.0                     /)
+        FouCoil(icoil)%xs(0:1) = (/ zero            , zero                    /)
         FouCoil(icoil)%yc(0:1) = (/ Rmaj * sin(zeta), init_radius * sin(zeta) /)
-        FouCoil(icoil)%ys(0:1) = (/ 0.0             , 0.0                     /)
-        FouCoil(icoil)%zc(0:1) = (/ z0              , 0.0                     /)
-        Foucoil(icoil)%zs(0:1) = (/ 0.0             , init_radius             /)
+        FouCoil(icoil)%ys(0:1) = (/ zero            , zero                    /)
+        FouCoil(icoil)%zc(0:1) = (/ z0              , zero                    /)
+        Foucoil(icoil)%zs(0:1) = (/ zero            , init_radius             /)
 
      enddo ! end of do icoil;
 
@@ -447,7 +447,7 @@ subroutine mapcoil
 !---------------------------------------------------------------------------------------------
 ! mapping periodic coils;
 !---------------------------------------------------------------------------------------------
-  use globals, only: zero, pi2, myid, ounit, ierr, coil, FouCoil, Ncoils, DoF, Npc, cosip, sinip
+  use globals, only: dp, zero, pi2, myid, ounit, ierr, coil, FouCoil, Ncoils, DoF, Npc, cosip, sinip
   implicit none
   include "mpif.h"
 
@@ -496,7 +496,7 @@ subroutine discoil(ifirst)
 ! if ifirst = 1, it will update all the coils; otherwise, only update free coils;
 ! date: 20170314
 !---------------------------------------------------------------------------------------------
-  use globals, only: zero, pi2, myid, ounit, coil, FouCoil, Ncoils, DoF, Npc, cosip, sinip
+  use globals, only: dp, zero, pi2, myid, ounit, coil, FouCoil, Ncoils, DoF, Npc, cosip, sinip
   implicit none
   include "mpif.h"
 
@@ -606,7 +606,7 @@ SUBROUTINE discfou2
   ! calling fouriermatrix for single set
   ! DATE: 2017/03/18
   !---------------------------------------------------------------------------------------------  
-  use globals, only: zero, pi2, myid, ncpu, ounit, coil, FouCoil, Ncoils
+  use globals, only: dp, zero, pi2, myid, ncpu, ounit, coil, FouCoil, Ncoils
   implicit none
   include "mpif.h"
 
@@ -670,7 +670,7 @@ subroutine fouriermatrix( xc, xs, xx, NF, ND, order )
   ! It's supposed to be the fastest method.
   ! DATE: 2017/03/18
   !---------------------------------------------------------------------------------------------
-  use globals, only : zero, pi2
+  use globals, only: dp, zero, pi2
   implicit none
   
   INTEGER, intent(in ) :: NF, ND, order
@@ -723,7 +723,7 @@ END subroutine fouriermatrix
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE readcoils(filename, maxnseg)
-  use globals, only : zero, coilsX, coilsY, coilsZ, coilsI, coilseg, coilname, Ncoils, ounit, myid
+  use globals, only: dp, zero, coilsX, coilsY, coilsZ, coilsI, coilseg, coilname, Ncoils, ounit, myid
   implicit none
   include "mpif.h"
 
@@ -755,7 +755,7 @@ SUBROUTINE readcoils(filename, maxnseg)
      seg(Ncoils) = seg(Ncoils) + 1
      read(line,*, IOSTAT = lstat) x(seg(Ncoils), Ncoils), y(seg(Ncoils), Ncoils), z(seg(Ncoils), Ncoils), &
           I(seg(Ncoils), Ncoils)
-     if ( I(seg(Ncoils), Ncoils) == 0.0 ) then
+     if ( I(seg(Ncoils), Ncoils) == zero) then
         seg(Ncoils) = seg(Ncoils) - 1  !remove the duplicated last point
         read(line, *, IOSTAT = lstat) tmp, tmp, tmp, tmp, tmp, name(Ncoils)
         Ncoils = Ncoils + 1
@@ -798,7 +798,7 @@ end SUBROUTINE READCOILS
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE Fourier( X, XFC, XFS, Nsegs, NFcoil)
-  use globals, only: ounit, zero, pi2, half, myid
+  use globals, only: dp, ounit, zero, pi2, half, myid
   implicit none
   include "mpif.h"
 

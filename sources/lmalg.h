@@ -208,7 +208,7 @@
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine lmalg
-use globals, only: sqrtmachprec, zero, myid, ounit, Ncoils, Ndof, t1E, iout, xdof, &
+use globals, only: dp, sqrtmachprec, zero, myid, ounit, Ncoils, Ndof, t1E, iout, xdof, &
      tstart, tfinish, NBmn, Nzeta, Nteta, tstart, tfinish, &
      LM_maxiter, LM_xtol, LM_ftol, LM_iter, LM_factor, LM_mfvec, LM_output
   use mpi
@@ -282,20 +282,20 @@ use globals, only: sqrtmachprec, zero, myid, ounit, Ncoils, Ndof, t1E, iout, xdo
      end select
   endif
          
-1000 format(8X, ": ", "info = ", I, ", ", A)
+1000 format(8X, ": ", "info = ", I0, ", ", A)
 
   DALLOCATE( fvec )
   DALLOCATE( fjac )
   DALLOCATE( wa   )
   
- 
   return
 end subroutine lmalg
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine focus_fcn(m,n,x,fvec,fjac,ldfjac,iflag)
-  use globals, only: zero, myid, ounit, tstart, tfinish, LM_iter, LM_maxiter, exit_signal, LM_fvec, LM_fjac
+  use globals, only: dp, zero, myid, ounit, tstart, tfinish, LM_iter, LM_maxiter, &
+       &             exit_signal, LM_fvec, LM_fjac
   use mpi
   implicit none
   
@@ -305,8 +305,8 @@ subroutine focus_fcn(m,n,x,fvec,fjac,ldfjac,iflag)
   DOUBLE PRECISION, INTENT(out)   :: fvec(m),fjac(ldfjac,n)
   INTEGER                         :: idof, ierr, astat
 
-
   call unpacking(x(1:n))
+
   select case (iflag)
   case ( 0 )
      LM_iter = LM_iter + 1
@@ -335,7 +335,7 @@ subroutine focus_fcn(m,n,x,fvec,fjac,ldfjac,iflag)
   case default
      FATAL( lmalg, .true. , unsupported iflag value )
   end select
-  
+ 
   return
 end subroutine focus_fcn
      
