@@ -120,6 +120,7 @@ subroutine saving
   HWRITEIV( 1                ,   save_filaments,   save_filaments                )
 
   HWRITEIV( 1                ,   Nfp           ,   Nfp_raw                         )
+  HWRITERV( 1                ,   surf_vol      ,   surf(1)%vol                     )
   HWRITERA( Nteta,Nzeta      ,   xsurf         ,   surf(1)%xx(0:Nteta-1,0:Nzeta-1) )
   HWRITERA( Nteta,Nzeta      ,   ysurf         ,   surf(1)%yy(0:Nteta-1,0:Nzeta-1) )
   HWRITERA( Nteta,Nzeta      ,   zsurf         ,   surf(1)%zz(0:Nteta-1,0:Nzeta-1) )

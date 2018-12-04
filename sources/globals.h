@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='v0.5.03' ! version number
+  CHARACTER(LEN=10), parameter :: version='v0.5.04' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -225,6 +225,7 @@ module globals
                              xt(:,:), yt(:,:), zt(:,:), xp(:,:), yp(:,:), zp(:,:), &
                              ds(:,:), bn(:,:), pb(:,:), &
                              Bx(:,:), By(:,:), Bz(:,:)
+     REAL                 :: vol
   end type toroidalsurface
 
   type arbitrarycoil
