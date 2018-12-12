@@ -3,7 +3,7 @@
 ############################################################################################################
 
  ALLFILES= globals initial datalloc rdsurf rdknot rdcoils packdof bfield bnormal bmnharm fdcheck \
-           torflux length surfsep solvers descent congrad lmalg saving diagnos specinp focus
+           torflux length surfsep solvers descent congrad lmalg saving diagnos specinp poinplot focus
  HFILES= $(ALLFILES:=.h)
  FFILES= $(ALLFILES:=.F90)
  PFILES= $(ALLFILES:=.pdf)

@@ -177,6 +177,9 @@ subroutine saving
      HWRITERA( LM_mfvec, Ndof   ,   LM_fjac       ,   LM_fjac                    )     
   endif
 
+  if (allocated(XYZB)) then
+     HWRITERA( total_num,4      ,   XYZB          ,   XYZB(1:, 1:4)              )
+  endif
 
   HWRITERV( 1                ,  time_initialize,   time_initialize               )
   HWRITERV( 1                ,  time_optimize  ,   time_optimize                 )
