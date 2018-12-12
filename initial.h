@@ -121,6 +121,9 @@ subroutine initial
          write(ounit,0106) Nzeta, xtol, eta, stepmx
          write(ounit,0111) Lnormalize
          write(ounit,0107) weight_bnorm, weight_tflux, target_tflux
+#ifdef NORM
+         write(ounit, '(36X " ; Bn normalized to Bmod.")')
+#endif
          write(ounit,0108) weight_ttlen, weight_eqarc, weight_ccsep
       endif
       
@@ -269,6 +272,17 @@ subroutine initial
      CG_Niter = Ntauout
      NT_Niter = Ntauout
      Ntauout = CG_Niter + NT_Niter
+
+  case ( 10 )
+     FATAL( initial, weight_bnorm  .lt.zero, illegal )
+     FATAL( initial, weight_tflux  .lt.zero, illegal )
+     FATAL( initial, weight_ttlen  .lt.zero, illegal )
+     FATAL( initial, weight_eqarc  .lt.zero, illegal )
+     FATAL( initial, weight_ccsep  .lt.zero, illegal )
+     FATAL( initial, Ntauout .le.   0, illegal )
+     FATAL( initial, Nteta   .le.   0, illegal )
+     FATAL( initial, Nzeta   .le.   0, illegal )
+
   case default
      FATAL( initial, .true., selected Loptimize is not supported )
   end select
