@@ -267,3 +267,98 @@ SUBROUTINE Bmodule
 
 END SUBROUTINE Bmodule
   
+
+SUBROUTINE Bmodule2
+  !-------------------------------------------------------------------------------!
+  ! Calculate Fourier harmonics Bmc, Bms for bm(0:Nteta, 0:Nzeta);                !
+  !-------------------------------------------------------------------------------!
+  use kmodule, only: zero, half, two, pi2, myid, ounit, ext, lunit, &
+       Nteta, Nzeta, surf, SaveBx, SaveBy, SaveBz, Mpol, Ntor, Bmod_n, &
+       bmn, bNfp, bin, bim, rbc, rbs, zbc, zbs
+  implicit none
+  include "mpif.h"
+  !-------------------------------------------------------------------------------
+  INTEGER             :: mf, nf  ! Fourier modes size
+  INTEGER             :: imn=0, ii, jj, im, in, mn, astat, ierr
+  REAL                :: teta, zeta, arg
+  INTEGER, allocatable:: bmin(:), bmim(:)
+  REAL, allocatable   :: bm(:,:), bmc(:), bms(:)
+  !------------------------------------------------------------------------------- 
+
+  if (myid .ne. 0) return
+
+  nf = Ntor ; mf = Mpol
+
+  mn = (mf+1)*(2*nf+1) ! (0:mf)*(-nf:nf)
+
+  FATAL(Bmodule, mf .le. 0 .and. nf .le. 0, INVALID size for Fourier harmonics)
+
+  SALLOCATE( bm, (0:Nteta, 0:Nzeta), zero )
+
+  bm = sqrt(SaveBx**2 + SaveBy**2 + SaveBz**2)
+
+  SALLOCATE( bmim, (1:mn), 0    )
+  SALLOCATE( bmin, (1:mn), 0    )
+  SALLOCATE( bmc , (1:mn), zero ) 
+  SALLOCATE( bms , (1:mn), zero ) 
+
+
+  do im = 0, mf
+     do in = -nf, nf
+        
+        if (im==0 .and. in<0) cycle  ! skip m=0, n<0 terms
+        
+        imn = imn + 1
+        bmin(imn) = in ; bmim(imn) = im
+
+        do ii = 0, Nteta-1 
+           teta = ( ii + half ) * pi2 / Nteta
+           do jj = 0, Nzeta-1
+              zeta = ( jj + half ) * pi2 / Nzeta
+              arg = im*teta - in*zeta
+
+              bmc(imn) = bmc(imn) + (bm(ii, jj))*cos(arg)
+              bms(imn) = bms(imn) + (bm(ii, jj))*sin(arg)
+           enddo ! end jj
+        enddo ! end ii
+
+        if (im .eq. 0 .and. in .eq. 0 ) then
+           bmc(imn) = bmc(imn)*half
+           bms(imn) = bms(imn)*half
+        endif
+
+     enddo ! end in
+  enddo ! end im
+
+  bmc = bmc * two / (Nteta*Nzeta)
+  bms = bms * two / (Nteta*Nzeta)
+
+  !------------------------------------
+  open(lunit, file=trim(ext)//".Bmod", status='unknown', action='write')
+
+  write(lunit,*      ) "#bmn bNfp  mn"
+  write(lunit,'(3I)' ) bmn, bNfp,  mn
+
+  write(lunit,*      ) "#------- plasma boundary------"
+  write(lunit,*      ) "#  n   m   Rbc   Rbs    Zbc   Zbs"
+  do imn = 1, bmn
+     write(lunit,'(2I, 4ES15.6)') bin(imn)/bNfp, bim(imn), Rbc(imn), Rbs(imn), Zbc(imn), Zbs(imn)
+  enddo
+
+  write(lunit,*      ) "#-------|B| harmonics----------"
+  write(lunit,*      ) "#   n       m        bmc        bms   "
+  if (mn .gt. 0) then
+     do imn = 1, mn
+        write(lunit,'(2I, 2ES15.6)') bmin(imn), bmim(imn), bmc(imn), bms(imn)
+     enddo
+  else
+     write(lunit,'(2I, 2ES15.6)') 0, 0, 0.0, 0.0
+  endif
+
+  close(lunit)
+
+  deallocate(bm, bmin, bmim,  bmc, bms)
+
+  return
+
+END SUBROUTINE Bmodule2

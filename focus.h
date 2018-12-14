@@ -141,7 +141,7 @@ PROGRAM focus
              ; call wtmgrid
              ; call diagnos
   case( 8  ) ; call wtmgrid ! 8 only write mgrid; > 8 write both
-  case( 9  ) ; call Bmodule
+  case( 9  ) ; call Bmodule2
   end select
 
  !call identfy
