@@ -6,7 +6,7 @@
 #     specwid coilsep nlinear fdcheck denergy descent congrad truncnt restart diagnos exinput identfy \
 #     bnftran hessian focus
 
- ALLFILES= globals numrec initial surface rdcoils  iccoil bfield bnormal torflux tlength equarcl \
+ ALLFILES= globals numrec initial surface boozsurf rdcoils  iccoil bfield bnormal torflux tlength equarcl \
      specwid coilsep nlinear fdcheck denergy descent congrad truncnt restart diagnos exinput identfy \
      bnftran hessian focus
 
@@ -38,8 +38,9 @@
  HDF5=-I$(HDF5_HOME)/include -L$(HDF5_HOME)/lib -lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran \
 -lhdf5 -lpthread -lz -lm
 
- OCULUSVERSION=17
- OCULUSFLAGS=-L$(OCULUS) -loculus.$(OCULUSVERSION) -I$(OCULUS)
+# OCULUSVERSION=17
+# OCULUSFLAGS=-L$(OCULUS) -loculus.$(OCULUSVERSION) -I$(OCULUS)
+ OCULUSFLAGS=
 
  WEBDIR=$(HOME)/w3_html
 
@@ -95,8 +96,8 @@ ifeq ($(USER),czhu)
 	@pdflatex -shell-escape -interaction=nonstopmode -file-line-error $*.tex | grep ".*:[0-9]*:.*" ||:
 	@pdflatex -shell-escape -interaction=nonstopmode -file-line-error $*.tex | grep ".*:[0-9]*:.*" ||: 
 	@pdflatex -shell-escape -interaction=nonstopmode -file-line-error $*.tex | grep ".*:[0-9]*:.*" ||: 
-	@rm -f $*.tex $*.aux $*.blg $*.log $*.ps .$*.date $*.toc $*.out
-	@mv $*.pdf ../docs
+	#@rm -f $*.tex $*.aux $*.blg $*.log $*.ps .$*.date $*.toc $*.out
+	#@mv $*.pdf ../docs
 endif
 
 ############################################################################################################

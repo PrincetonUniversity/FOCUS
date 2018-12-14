@@ -72,6 +72,7 @@ PROGRAM focus
   select case( Itopology )
   case( 0 ) ; call surface
   !case( 1 ) ; call rdknot ! comment out on 20180228 for NAG incompative
+  case( 2 ) ; call boozsurf ! surface decomposed in Boozer coordinates
   end select
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!

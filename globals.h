@@ -72,7 +72,7 @@ module kmodule
 
   INTEGER              :: Idisplay    =       -1         !latex \item \inputvar{Idisplay      =        0        } : 0: silent output; -1 = more details ;
   INTEGER              :: Isymmetric  =        1         !latex \item \inputvar{Isymmetric    =        0        } : 0: no symmetry (recommended); 1: enforce stellarator symmetry;
-  INTEGER              :: Itopology   =        0         !latex \item \inputvar{Itopology     =        0        } : 0: VMEC-style surface; 1: knots;
+  INTEGER              :: Itopology   =        0         !latex \item \inputvar{Itopology     =        0        } : 0: VMEC-style surface; 1: knots; 2: BOOZER coordinates
   REAL                 :: knotsurf    =        0.200D-00 !latex \item \inputvar{knotsurf      =        0.200D-00} : radius of knotted plasma boundary;
   REAL                 :: ellipticity =        0.000D-00 !latex \item \inputvar{ellipticity   =        0.000D-00} : ellipticity of knotted plasma boundary;
   INTEGER              :: nrotate     =        1         !latex \item \inputvar{nrotate       =        1        } : rotation of ellipse;
@@ -190,7 +190,7 @@ module kmodule
   
   INTEGER              :: bmn, bNfp, nbf
   INTEGER, allocatable :: bim(:), bin(:), bnim(:), bnin(:)
-  REAL   , allocatable :: Rbc(:), Zbs(:), Rbs(:), Zbc(:), bnc(:), bns(:)
+  REAL   , allocatable :: Rbc(:), Zbs(:), Rbs(:), Zbc(:), Pmnc(:), Pmns(:), bnc(:), bns(:)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

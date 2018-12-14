@@ -111,6 +111,7 @@ subroutine initial
 
      if( Itopology   .eq. 0 ) write(ounit,0100) Idisplay, Isymmetric, Itopology, NFcoil, NDcoil
      if( Itopology   .eq. 1 ) write(ounit,0101) Idisplay, Isymmetric, Itopology, knotsurf, ellipticity, NFcoil, NDcoil
+     if( Itopology   .eq. 2 ) write(ounit,0100) Idisplay, Isymmetric, Itopology, NFcoil, NDcoil
 
      if( Linitialize .le. 0 ) write(ounit,0102) Linitialize
      if( Linitialize .gt. 0 ) write(ounit,0103) Linitialize, Rmaj, rmin, Ic, Io, Iw, Lc, Lo, Lw
@@ -154,6 +155,7 @@ subroutine initial
   case( 0 )
   case( 1 )
      FATAL( initial, knotsurf.lt.  zero, illegal)
+  case( 2 )
   case default
      FATAL( initial, .true., selected Itopology is not supported )
   end select
