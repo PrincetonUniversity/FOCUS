@@ -289,7 +289,7 @@ SUBROUTINE Bmodule2
 
   nf = Ntor ; mf = Mpol
 
-  mn = (mf+1)*(2*nf+1) ! (0:mf)*(-nf:nf)
+  mn = (mf+1)*(2*nf+1)-nf ! (0:mf)*(-nf:nf) and m=0, n>= 0
 
   FATAL(Bmodule, mf .le. 0 .and. nf .le. 0, INVALID size for Fourier harmonics)
 
@@ -307,6 +307,7 @@ SUBROUTINE Bmodule2
      do in = -nf, nf
         
         if (im==0 .and. in<0) cycle  ! skip m=0, n<0 terms
+        if ( mod(in, bNfp) /= 0) cycle ! skip non-periodic terms
         
         imn = imn + 1
         bmin(imn) = in ; bmim(imn) = im

@@ -662,7 +662,8 @@ subroutine costfun(nderiv)
        tflux      , t1F, t2F, weight_tflux, target_tflux, isign, &
        ttlen      , t1L, t2L, weight_ttlen, &
        eqarc      , t1A, t2A, weight_eqarc, &
-       ccsep      , t1C, t2C, weight_ccsep
+       ccsep      , t1C, t2C, weight_ccsep, &
+       qasym      , t1S, t2S, weight_qasym
 
   implicit none
   include "mpif.h"
@@ -717,14 +718,17 @@ subroutine costfun(nderiv)
   call discretecoil
 
 
-  if (weight_bnorm .gt. sqrtmachprec) then
+  if (weight_bnorm .gt. sqrtmachprec .or. weight_qasym .gt. sqrtmachprec) then
 
 #ifdef NORM
     call bnormal(nderiv)
 #else
     call bnormal2(nderiv)
 #endif
+    
+  endif
 
+  if (weight_bnorm .gt. sqrtmachprec) then
    totalenergy = totalenergy + weight_bnorm * bnorm
    if     ( nderiv .eq. 1 ) then
     t1E = t1E +  weight_bnorm * t1B
@@ -732,7 +736,16 @@ subroutine costfun(nderiv)
     t1E = t1E +  weight_bnorm * t1B
     t2E = t2E +  weight_bnorm * t2B
    endif
+  endif
 
+  if (weight_qasym .gt. sqrtmachprec) then
+   totalenergy = totalenergy + weight_qasym * qasym
+   if     ( nderiv .eq. 1 ) then
+    t1E = t1E +  weight_qasym * t1S
+   elseif ( nderiv .eq. 2 ) then
+    t1E = t1E +  weight_qasym * t1S
+    t2E = t2E +  weight_qasym * t2S
+   endif
   endif
 
   ! if(myid .eq. 0) write(ounit,'("calling bnormal used",f10.5,"seconds.")') finish-start
@@ -857,12 +870,14 @@ subroutine costfun(nderiv)
   if( allocated(t1L) ) deallocate(t1L)
   if( allocated(t1A) ) deallocate(t1A)
   if( allocated(t1C) ) deallocate(t1C)
+  if( allocated(t1S) ) deallocate(t1S)
 
   if( allocated(t2B) ) deallocate(t2B)
   if( allocated(t2F) ) deallocate(t2F)
   if( allocated(t2L) ) deallocate(t2L)
   if( allocated(t2A) ) deallocate(t2A)
   if( allocated(t2C) ) deallocate(t2C)
+  if( allocated(t2S) ) deallocate(t2S)
 
   FATAL( denergy, iter.gt.100000, too many iterations )
   !if(iter .ge. 1E5) call MPI_ABORT( MPI_COMM_WORLD, 10, ierr )

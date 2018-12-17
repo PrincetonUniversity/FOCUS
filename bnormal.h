@@ -772,10 +772,11 @@
 
 subroutine bnormal( nderiv )
 
-  use kmodule, only: zero, half, one, pi2, sqrtmachprec, bsconstant, &
+  use kmodule, only: zero, half, one, two, pi2, sqrtmachprec, bsconstant, &
        coil, surf, NFcoil, cmt, smt, NDcoil, Ncoils, Nteta, Cdof, Nzeta, discretefactor, &
        bnorm, t1B, t2B, bn, bm, tbn, SaveBx, SaveBy, SaveBz, &
-       ncpu, myid, ounit
+       ncpu, myid, ounit, &
+       weight_qasym, qasym, t1S, t2S, Mpol, Ntor, cosarg, sinarg
 
   implicit none
   include "mpif.h"
@@ -789,6 +790,9 @@ subroutine bnormal( nderiv )
   REAL, allocatable :: l1B( :, :), l2B( :, :, :, :), b1n( :, :), b2n( :, :, :, :), b1m( :, :), b2m( :, :, :, :)
   INTEGER           :: array2size, array4size
   REAL              :: lBx(0:Nteta, 0:Nzeta), lBy(0:Nteta, 0:Nzeta), lBz(0:Nteta, 0:Nzeta)
+  REAL, allocatable :: lmc(:,:), bmc(:,:), l1f(:,:,:,:), b1f(:,:,:,:), l2f(:,:,:,:,:,:), b2f(:,:,:,:,:,:)
+  INTEGER           :: mn, im, in
+  REAL              :: arg, carg, sarg, teta, zeta
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -825,6 +829,17 @@ subroutine bnormal( nderiv )
    endif
   enddo
 
+  if (weight_qasym .gt. sqrtmachprec) then
+     FATAL( bnormal, Mpol .le. 0, wrong poloidal mode number)
+     FATAL( bnormal, Ntor .le. 0, wrong toroidal mode number)
+     SALLOCATE( bmc , (0:Mpol, -Ntor:Ntor), zero ) 
+     ! SALLOCATE( bms , (0:Mpol, -Ntor:Ntor), zero ) ! only cosin term
+     SALLOCATE( lmc , (0:Mpol, -Ntor:Ntor), zero ) 
+     ! SALLOCATE( lms , (0:Mpol, -Ntor:Ntor), zero ) ! only cosin term
+     qasym = zero
+     mn = (Mpol+1)*(2*Ntor+1)
+  endif
+
   select case ( nderiv )
 
    !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -849,12 +864,24 @@ subroutine bnormal( nderiv )
      lBx(iteta, jzeta) = bx; lBy(iteta, jzeta) = by; lBz(iteta, jzeta) = bz;
      bn(iteta, jzeta) = bx * surf(1)%nx(iteta,jzeta) + by * surf(1)%ny(iteta,jzeta) + bz * surf(1)%nz(iteta,jzeta)
      bm(iteta, jzeta) = bx * bx + by * by + bz * bz ! magnitude square of B
-     !bm(iteta, jzeta) = one  ! no normalization;
 #ifndef PLASBN
      lbnorm = lbnorm +  (bn(iteta, jzeta) - surf(1)%bnt(iteta, jzeta))**2 / bm(iteta, jzeta) * surf(1)%ds(iteta,jzeta)  !change to minus on 2017/02/07
 #else
      lbnorm = lbnorm +  bn(iteta, jzeta)**2 / bm(iteta, jzeta) * surf(1)%ds(iteta,jzeta)
 #endif
+
+     if (weight_qasym .gt. sqrtmachprec) then  ! quasi-axisymmetry
+        teta = ( iteta + half ) * pi2 / Nteta
+        zeta = ( jzeta + half ) * pi2 / Nzeta
+        do im = 0, Mpol
+           do in = -Ntor, Ntor
+              ! if (im==0 .and. in<0) cycle  ! skip m=0, n<0 terms        
+              arg = im*teta - in*zeta
+              lmc(im, in) = lmc(im, in) + sqrt(bm(iteta, jzeta))*cos(arg)
+              !lms(im, in) = lms(im, in) + (bm(iteta, jzeta))*sin(arg)  ! only cosin term
+           enddo ! end do im
+        enddo ! end in
+     endif
 
     enddo ! end do iteta
    enddo ! end do jzeta
@@ -866,6 +893,26 @@ subroutine bnormal( nderiv )
    call MPI_REDUCE( bn, tbn, (1+Nteta)*(1+Nzeta), MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
    RlBCAST( tbn,(1+Nteta)*(1+Nzeta), 0)
 
+   if (weight_qasym .gt. sqrtmachprec) then
+      call MPI_ALLREDUCE( lmc, bmc, mn, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+      ! call MPI_ALLREDUCE( lms, bms, mn, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr ) ! only cosin term
+      ! bmc = bmc * two / (Nteta*Nzeta)  ! might not be necessary
+      ! bms = bms * two / (Nteta*Nzeta)  ! only cosin term
+      bmc(0,0) = bmc(0,0) * half
+      ! bms(0,0) = bms(0,0) * half       ! only cosin term
+
+      do im = 0, Mpol
+         do in = -Ntor, Ntor
+            if (in .ne. 0) qasym = qasym + ( bmc(im, in)*bmc(im, in) )/( bmc(0,0)*bmc(0,0) ) ! n/= 0 terms
+            ! if (myid==0) write(ounit, '("im = "I4, " ; in = "I4, " ; bmc = " ES12.5)') im, in, bmc(im,in)*two/(Nteta*Nzeta)
+         enddo
+      enddo
+
+      DALLOCATE(lmc)
+      DALLOCATE(bmc)
+    endif  
+
+
    !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   case(1)
 
@@ -873,6 +920,11 @@ subroutine bnormal( nderiv )
    SALLOCATE( b1n, (1:Ncoils, 0:Cdof), zero )
    SALLOCATE( b1m, (1:Ncoils, 0:Cdof), zero )
 
+   if (weight_qasym .gt. sqrtmachprec) then
+      SALLOCATE( l1f, (0:Mpol, -Ntor:Ntor, 1:Ncoils, 0:Cdof), zero ) ! local d Bmn / dx
+      SALLOCATE( b1f, (0:Mpol, -Ntor:Ntor, 1:Ncoils, 0:Cdof), zero ) ! total d Bmn / dx
+   endif
+   
    do jzeta = 0, Nzeta - 1
     do iteta = 0, Nteta - 1
 
@@ -951,6 +1003,24 @@ subroutine bnormal( nderiv )
 !!$      enddo ! end do n1
 !!$     enddo ! end do c1
 
+     if (weight_qasym .gt. sqrtmachprec) then  ! quasi-axisymmetry
+        teta = ( iteta + half ) * pi2 / Nteta
+        zeta = ( jzeta + half ) * pi2 / Nzeta
+        do im = 0, Mpol
+           do in = -Ntor, Ntor
+              ! if (im==0 .and. in<0) cycle  ! skip m=0, n<0 terms  
+              arg = im*teta - in*zeta ; carg = cos(arg)
+              lmc(im, in) = lmc(im, in) + sqrt(bm(iteta, jzeta))*carg
+              do n1 = 0, Cdof
+                 do c1 = 1, Ncoils
+                    l1f(im, in, c1, n1) =  l1f(im, in, c1, n1) + half/sqrt(bm(iteta, jzeta))*b1m(c1, n1)*carg
+                 enddo
+              enddo      
+           enddo ! end do im
+        enddo ! end in
+     endif
+        
+
 
     enddo ! end do iteta
    enddo ! end do jzeta
@@ -971,9 +1041,38 @@ subroutine bnormal( nderiv )
 
    t1B = t1B * discretefactor
 
+   if (weight_qasym .gt. sqrtmachprec) then
+
+      if ( .not. allocated(t1S) ) allocate(t1S(1:Ncoils, 0:Cdof), stat=astat)
+      t1S = zero
+      call MPI_ALLREDUCE( l1f, b1f, mn*array2size, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+      call MPI_ALLREDUCE( lmc, bmc, mn, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+
+      bmc(0,0) = bmc(0,0) * half
+      b1f(0,0, 1:Ncoils, 0:Cdof) = b1f(0,0, 1:Ncoils, 0:Cdof) * half
+
+      do im = 0, Mpol
+         do in = -Ntor, Ntor
+            if (in .ne. 0) then
+               qasym = qasym + ( bmc(im, in)*bmc(im, in) )/( bmc(0,0)*bmc(0,0) ) ! n/= 0 terms
+               t1S(1:Ncoils, 0:Cdof) = t1S(1:Ncoils, 0:Cdof) + &
+                    two * (bmc(im, in) / bmc(0,0)**2)*( b1f(im,in, 1:Ncoils, 0:Cdof) - b1f(0,0, 1:Ncoils, 0:Cdof)*bmc(im, in)/bmc(0,0))
+            endif           
+         enddo
+      enddo
+      
+      DALLOCATE(lmc)
+      DALLOCATE(bmc)
+      DALLOCATE(l1f)
+      DALLOCATE(b1f)
+
+    endif 
+
    DALLOCATE(l1B)
    DALLOCATE(b1n)
    DALLOCATE(b1m)
+   
+   
 
    !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -985,6 +1084,13 @@ subroutine bnormal( nderiv )
    SALLOCATE( l2B, (1:Ncoils, 0:Cdof, 1:Ncoils, 0:Cdof), zero )
    SALLOCATE( b2n, (1:Ncoils, 0:Cdof, 1:Ncoils, 0:Cdof), zero )
    SALLOCATE( b2m, (1:Ncoils, 0:Cdof, 1:Ncoils, 0:Cdof), zero )
+
+   if (weight_qasym .gt. sqrtmachprec) then
+      SALLOCATE( l1f, (0:Mpol, -Ntor:Ntor, 1:Ncoils, 0:Cdof), zero ) ! local d Bmn / dx
+      SALLOCATE( b1f, (0:Mpol, -Ntor:Ntor, 1:Ncoils, 0:Cdof), zero ) ! total d Bmn / dx
+      SALLOCATE( l2f, (0:Mpol, -Ntor:Ntor, 1:Ncoils, 0:Cdof, 1:Ncoils, 0:Cdof), zero ) ! local d2 Bmn / dx1 dx2
+      SALLOCATE( b2f, (0:Mpol, -Ntor:Ntor, 1:Ncoils, 0:Cdof, 1:Ncoils, 0:Cdof), zero ) ! total d2 Bmn / dx1 dx2     
+   endif
 
    do jzeta = 0, Nzeta - 1
     do iteta = 0, Nteta - 1
@@ -1279,6 +1385,30 @@ subroutine bnormal( nderiv )
 !!$     enddo ! end do n2
 
 
+     if (weight_qasym .gt. sqrtmachprec) then  ! quasi-axisymmetry
+        teta = ( iteta + half ) * pi2 / Nteta
+        zeta = ( jzeta + half ) * pi2 / Nzeta
+        do im = 0, Mpol
+           do in = -Ntor, Ntor
+              ! if (im==0 .and. in<0) cycle  ! skip m=0, n<0 terms  
+              arg = im*teta - in*zeta ; carg = cos(arg)
+              lmc(im, in) = lmc(im, in) + sqrt(bm(iteta, jzeta))*carg
+              do n1 = 0, Cdof
+                 do c1 = 1, Ncoils
+                    l1f(im, in, c1, n1) =  l1f(im, in, c1, n1) + half/sqrt(bm(iteta, jzeta))*b1m(c1, n1)*carg
+                    do n2 = 0, Cdof
+                       do c2 = 1, Ncoils
+                          l2f(im, in, c1, n1, c2, n2) = l2f(im, in, c1, n1, c2, n2) + &
+                               ( half/sqrt(bm(iteta, jzeta))*b2m(c1, n1, c2, n2) - one/4.0*bm(iteta, jzeta)**(-1.5)*b1m(c1, n1)*b1m(c2, n2) )*carg
+                       enddo
+                    enddo                    
+                 enddo
+              enddo      
+           enddo ! end do im
+        enddo ! end in
+     endif
+
+
     enddo ! end do iteta
    enddo ! end do jzeta
 
@@ -1331,12 +1461,68 @@ subroutine bnormal( nderiv )
    t1B = t1B * discretefactor
    t2B = t2B * discretefactor
 
+
+   if (weight_qasym .gt. sqrtmachprec) then
+
+      if ( .not. allocated(t1S) ) allocate(t1S(1:Ncoils, 0:Cdof), stat=astat)
+      if ( .not. allocated(t2S) ) allocate(t2S(1:Ncoils, 0:Cdof, 1:Ncoils, 0:Cdof), stat=astat)
+      t1S = zero ; t2S = zero
+
+      call MPI_ALLREDUCE( lmc, bmc, mn, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+      call MPI_ALLREDUCE( l1f, b1f, mn*array2size, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+      call MPI_ALLREDUCE( l2f, b2f, mn*array4size, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+
+      bmc(0,0) = bmc(0,0) * half
+      b1f(0,0, 1:Ncoils, 0:Cdof) = b1f(0,0, 1:Ncoils, 0:Cdof) * half
+      b2f(0,0, 1:Ncoils, 0:Cdof, 1:Ncoils, 0:Cdof) = b2f(0,0, 1:Ncoils, 0:Cdof, 1:Ncoils, 0:Cdof) * half
+
+      do im = 0, Mpol
+         do in = -Ntor, Ntor
+            if (in .ne. 0) then
+               qasym = qasym + ( bmc(im, in)*bmc(im, in) )/( bmc(0,0)*bmc(0,0) ) ! n/= 0 terms
+               t1S(1:Ncoils, 0:Cdof) = t1S(1:Ncoils, 0:Cdof) + &
+                    two * (bmc(im, in) / bmc(0,0)**2) * ( b1f(im,in, 1:Ncoils, 0:Cdof) - b1f(0,0, 1:Ncoils, 0:Cdof)*bmc(im, in)/bmc(0,0))
+               do n1 = 0, Cdof
+                  do c1 = 1, Ncoils                    
+                     do n2 = 0, Cdof
+                        do c2 = 1, Ncoils
+!!$                           t2S(c1,n1,c2,n2) = t2S(c1,n1,c2,n2) + two * (b1f(im,in,c1,n1)/bmc(0,0) - b1f(0,0,c1,n1)*bmc(im,in)/bmc(0,0)**2) &
+!!$                                                                     * (b1f(im,in,c2,n2)/bmc(0,0) - b1f(0,0,c2,n2)*bmc(im,in)/bmc(0,0)**2) &
+!!$                                                               + two * (bmc(im, in) / bmc(0,0)**2) * ( b2f(im,in,c1,n1,c2,n2)              & 
+!!$                                                                       - b1f(im,in,c1,n1)*b1f(0,0,c2,n2)/bmc(0,0) - b1f(im,in,c2,n2)*b1f(0,0,c1,n1)/bmc(0,0) &
+!!$                                                                       - b2f(0,0,c1,n1,c2,n2)*bmc(im,in)/bmc(0,0) &
+!!$                                                                       + two*bmc(im,in)/bmc(0,0)**2*b1f(0,0,c1,n1)*b1f(0,0,c2,n2) )
+
+                           t2S(c1,n1,c2,n2) = t2S(c1,n1,c2,n2) + two / (bmc(0,0)**3) * ( bmc(0,0)*b1f(im,in,c1,n1)*b1f(im,in,c2,n2) &
+                                                                     + 3.0*bmc(im,in)**2/bmc(0,0)*b1f( 0, 0,c1,n1)*b1f( 0, 0,c2,n2) &
+                                           + bmc(im,in)*( bmc( 0, 0)*b2f(im,in,c1,n1,c2,n2) - two*b1f(im,in,c1,n1)*b1f( 0, 0,c2,n2) &
+                                                        - bmc(im,in)*b2f( 0, 0,c1,n1,c2,n2) - two*b1f(im,in,c2,n2)*b1f( 0, 0,c1,n1) ) )
+                        enddo
+                     enddo
+                  enddo
+               enddo
+            endif           
+         enddo
+      enddo
+      
+      DALLOCATE(lmc)
+      DALLOCATE(bmc)
+      DALLOCATE(l1f)
+      DALLOCATE(b1f)
+      DALLOCATE(l2f)
+      DALLOCATE(b2f)
+
+    endif 
+
+
    DALLOCATE(l1B)
    DALLOCATE(b1n)
    DALLOCATE(b1m)
    DALLOCATE(l2B)
    DALLOCATE(b2n)
    DALLOCATE(b2m)
+
+
 
   end select
 

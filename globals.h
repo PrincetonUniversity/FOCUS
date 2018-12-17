@@ -99,7 +99,8 @@ module kmodule
   REAL                 :: target_tflux=        0.000D+00 !latex \item \inputvar{target\_tflux =        1.000D+00} : target toroidal flux; \link{torflux}
   REAL                 :: weight_ttlen=        0.000D+00 !latex \item \inputvar{weight\_ttlen =        0.000D+00} : weight for coil length; \link{tlength}
   REAL                 :: weight_eqarc=        0.000D+00 !latex \item \inputvar{weight\_eqarc =        1.000D+00} : weight for equal arc length constraint; \link{equarcl}
-  REAL                 :: weight_ccsep=        0.000D+00 !latex \item \inputvar{weight\_ccsep =        0.000D+00} : weight for coil-coil separation       ; \link{coilsep}
+  REAL                 :: weight_ccsep=        0.000D+00 !latex \item \inputvar{weight\_ccsep =        0.000D+00} : weight for coil-coil separation; \link{coilsep}
+  REAL                 :: weight_qasym=        0.000D+00 !latex \item \inputvar{weight\_qasym =        0.000D+00} : weight for quasi-axisymmetry; \link{bnormal}
   REAL                 :: tauend      =        1.000D-00 !latex \item \inputvar{tauend        =        1.000D+00} : stopping ``time`` in DF;  \link{descent};
   REAL                 :: tautol      =        1.000D-04 !latex \item \inputvar{tautol        =        1.000D-04} : DF o.d.e. integration tolerance;
   INTEGER              :: Ntauout     =      100         !latex \item \inputvar{Ntauout       =      100        } : intermediate time steps; \link{descent};
@@ -157,6 +158,7 @@ module kmodule
                          weight_ttlen                  , &
                          weight_eqarc                  , &
                          weight_ccsep                  , &
+                         weight_qasym                  , &
                          tauend                        , &
                          tautol                        , &
                          Ntauout                       , &
@@ -239,6 +241,8 @@ module kmodule
      REAL   , allocatable :: rr(:), rz(:)
   end type toroidalsurface
 
+  REAL   , allocatable    :: cosarg(:,:), sinarg(:,:)
+
   type(arbitrarycoil)  , allocatable :: coil(:)  
   type(toroidalsurface), allocatable :: surf(:)
   
@@ -255,8 +259,9 @@ module kmodule
 
   INTEGER              :: isign = 1  ! sign symbol for flux
   REAL, allocatable    :: t1E(:,:), t2E(:,:,:,:), t1B(:,:), t2B(:,:,:,:), bn(:,:), bm(:,:), t1F(:,:), t2F(:,:,:,:), t1L(:,:), t2L(:,:,:,:), &
-                          t1A(:,:), t2A(:,:,:,:), t1C(:,:), t2C(:,:,:,:), dlc(:,:,:), dls(:,:,:), n1E(:,:), n2E(:,:,:,:), tbn(:,:)
-  REAL                 :: bnorm, tflux, ttlen, eqarc, ccsep
+                          t1A(:,:), t2A(:,:,:,:), t1C(:,:), t2C(:,:,:,:), dlc(:,:,:), dls(:,:,:), n1E(:,:), n2E(:,:,:,:), tbn(:,:),&
+                          t1S(:,:), t2S(:,:,:,:)
+  REAL                 :: bnorm, tflux, ttlen, eqarc, ccsep, qasym
   !REAL, allocatable    :: HESD(:), HESU(:)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -279,7 +284,7 @@ module kmodule
 
 
 !tmp weight for saving to restart file
-  REAL                 :: tmpw_bnorm, tmpw_tflux ,tmpt_tflux, tmpw_ttlen, tmpw_eqarc, tmpw_ccsep
+  REAL                 :: tmpw_bnorm, tmpw_tflux ,tmpt_tflux, tmpw_ttlen, tmpw_eqarc, tmpw_ccsep, tmpw_qasym
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

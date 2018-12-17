@@ -79,6 +79,7 @@ subroutine initial
   RlBCAST( weight_ttlen  ,    1,  0 )
   RlBCAST( weight_eqarc  ,    1,  0 )
   RlBCAST( weight_ccsep  ,    1,  0 )
+  RlBCAST( weight_qasym  ,    1,  0 )
   RlBCAST( tauend        ,    1,  0 )
   RlBCAST( tautol        ,    1,  0 )
   IlBCAST( Ntauout       ,    1,  0 )
@@ -374,6 +375,7 @@ subroutine initial
   tmpw_ttlen = weight_ttlen
   tmpw_eqarc = weight_eqarc
   tmpw_ccsep = weight_ccsep
+  tmpw_qasym = weight_qasym
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
