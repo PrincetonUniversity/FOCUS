@@ -241,7 +241,7 @@ module kmodule
      REAL   , allocatable :: rr(:), rz(:)
   end type toroidalsurface
 
-  REAL   , allocatable    :: cosarg(:,:), sinarg(:,:)
+  REAL   , allocatable    :: cosarg(:,:,:), sinarg(:,:)
 
   type(arbitrarycoil)  , allocatable :: coil(:)  
   type(toroidalsurface), allocatable :: surf(:)
