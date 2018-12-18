@@ -36,19 +36,27 @@ SUBROUTINE bnftran
   ! Calculate Fourier harmonics bnc,bns for bn(0:Nteta, 0:Nzeta);                 !
   ! CZHU; first version: 2017/01/11; last revised: 2017/01/11                     !
   !-------------------------------------------------------------------------------!
-  use kmodule, only: zero, half, two, pi2, myid, ounit, &
-       Nteta, Nzeta, surf, tbn, Nbf, bnim, bnin, bnc, bns, bNfp, Mpol, Ntor
+  use kmodule, only: zero, half, two, pi2, myid, ounit, sqrtmachprec, &
+       Nteta, Nzeta, surf, tbn, Nbf, bnim, bnin, bnc, bns, bNfp, Mpol, Ntor, bnorm
   implicit none
   include "mpif.h"
   !-------------------------------------------------------------------------------
   INTEGER             :: mf, nf  ! predefined Fourier modes size
   INTEGER             :: imn=0, ii, jj, im, in, astat, ierr, maxN, maxM
-  REAL                :: teta, zeta, arg
+  REAL                :: teta, zeta, arg, tol, tmpc, tmps
   !------------------------------------------------------------------------------- 
 
   mf = Mpol ;  nf = Ntor
   FATAL(bnftran, mf .le. 0 .and. nf .le. 0, INVALID size for Fourier harmonics)
+  
+  tmpc = zero ; tmps = zero
 
+  if (bnorm .gt. sqrtmachprec ) then
+     tol = 1.0E-8 * bnorm
+  else
+     tol = 1.0E-8
+  endif
+     
 #ifdef RMP
   !----------------------------------------------
   FATAL(bnftran, nbf .le. 0, RMP option requires nonzero input Bn)
@@ -106,32 +114,39 @@ SUBROUTINE bnftran
   do in = -nf, nf
      do im = 0, mf
 
-        imn = imn + 1
-        bnin(imn) = in * bNfp ; bnim(imn) = im
-
+        tmpc = zero ; tmps = zero
         do ii = 0, Nteta-1 
            teta = ( ii + half ) * pi2 / Nteta
            do jj = 0, Nzeta-1
               zeta = ( jj + half ) * pi2 / Nzeta
               arg = im*teta - in*bNfp*zeta
-              !bnc(imn) = bnc(imn) + (tbn(ii, jj)-surf(1)%bnt(ii,jj))*cos(arg)
-              !bns(imn) = bns(imn) + (tbn(ii, jj)-surf(1)%bnt(ii,jj))*sin(arg)
+              tmpc = tmpc + (tbn(ii, jj)-surf(1)%bnt(ii,jj))*cos(arg)
+              tmps = tmps + (tbn(ii, jj)-surf(1)%bnt(ii,jj))*sin(arg)
 
-              !bnc(imn) = bnc(imn) + (surf(1)%bnt(ii,jj))*cos(arg)
-              !bns(imn) = bns(imn) + (surf(1)%bnt(ii,jj))*sin(arg)
+              !tmpc = tmpc + (surf(1)%bnt(ii,jj))*cos(arg)
+              !tmps = tmps + (surf(1)%bnt(ii,jj))*sin(arg)
 
-              bnc(imn) = bnc(imn) + (tbn(ii, jj))*cos(arg)
-              bns(imn) = bns(imn) + (tbn(ii, jj))*sin(arg)
+              !tmpc = tmpc + (tbn(ii, jj))*cos(arg)
+              !tmps = tmps + (tbn(ii, jj))*sin(arg)
            enddo ! end jj
         enddo ! end ii
 
-        if (im .eq. 0 ) then
-           bnc(imn) = bnc(imn)*half
-           bns(imn) = bns(imn)*half
+        if ( (abs(tmpc) + abs(tmps)) .lt. tol ) cycle
+
+        imn = imn + 1
+        bnin(imn) = in * bNfp ; bnim(imn) = im
+
+        if (im .eq. 0  ) then
+           tmpc = tmpc*half
+           tmps = tmps*half
         endif
+        bnc(imn) = tmpc
+        bns(imn) = tmps
 
      enddo ! end im
   enddo ! end in
+
+  Nbf = imn
 
   bnc = bnc * two / (Nteta*Nzeta)
   bns = bns * two / (Nteta*Nzeta)

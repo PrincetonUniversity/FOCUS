@@ -23,7 +23,7 @@
  MACROS=macros
  CC=intel # if want to use gfortran; make CC=gfortran
  FC=mpif90
- FLAGS=-r8 -mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback -D NORM #-vec_report0
+ FLAGS=-r8 -mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback -D NORM #-vec_report0  # normalized to |B|
  DFLAGS=-check all -check noarg_temp_created -debug full -D DEBUG
 
 ############################################################################################################
@@ -50,12 +50,12 @@
 ############################################################################################################
 
 xfocus: $(OBJS) tnpack.o hybrj.o modchl.o
-	$(FC) -o xfocus $(OBJS) tnpack.o  hybrj.o modchl.o $(OCULUSFLAGS) $(NAG) $(HDF5) $(MKL)
+	$(FC) -o xfocus $(OBJS) tnpack.o  hybrj.o modchl.o $(NAG) $(HDF5) $(MKL)
 	@echo "Compiling xfocus finished."
 	mkdir -p bin ; mv xfocus ./bin/
 
 dfocus: $(DOBJS) tnpack.o hybrj.o modchl.o
-	$(FC) -o dfocus $(DOBJS) tnpack.o hybrj.o modchl.o $(OCULUSFLAGS) $(NAG) $(HDF5) $(MKL)
+	$(FC) -o dfocus $(DOBJS) tnpack.o hybrj.o modchl.o $(NAG) $(HDF5) $(MKL)
 	@echo "Compiling dfocus finished."
 	mkdir -p bin ; mv dfocus ./bin/
 
@@ -70,10 +70,10 @@ modchl.o: modchl.f
 	$(FC) -c $(FLAGS) $(DFLAGS) -o $@ $<
 
 $(OBJS): %_r.o: %.F90
-	$(FC) -c $(FLAGS) -o $@ $<  $(OCULUSFLAGS) $(NAG) $(HDF5) $(MKL)
+	$(FC) -c $(FLAGS) -o $@ $<  $(NAG) $(HDF5) $(MKL)
 
 $(DOBJS): %_d.o: %.F90
-	$(FC) -c $(FLAGS) $(DFLAGS) -o $@ $< $(OCULUSFLAGS) $(NAG) $(HDF5) $(MKL)
+	$(FC) -c $(FLAGS) $(DFLAGS) -o $@ $< $(NAG) $(HDF5) $(MKL)
 
 $(FFILES): %.F90: %.h
 	m4 -P $(MACROS) $< > $@
@@ -96,8 +96,8 @@ ifeq ($(USER),czhu)
 	@pdflatex -shell-escape -interaction=nonstopmode -file-line-error $*.tex | grep ".*:[0-9]*:.*" ||:
 	@pdflatex -shell-escape -interaction=nonstopmode -file-line-error $*.tex | grep ".*:[0-9]*:.*" ||: 
 	@pdflatex -shell-escape -interaction=nonstopmode -file-line-error $*.tex | grep ".*:[0-9]*:.*" ||: 
-	#@rm -f $*.tex $*.aux $*.blg $*.log $*.ps .$*.date $*.toc $*.out
-	#@mv $*.pdf ../docs
+	@rm -f $*.tex $*.aux $*.blg $*.log $*.ps .$*.date $*.toc $*.out
+	@mv $*.pdf ../docs
 endif
 
 ############################################################################################################
