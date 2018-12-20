@@ -1,215 +1,246 @@
 SUBROUTINE poinplot
   !------------------------------------------------------------------------------------------------------ 
   ! DATE:  12/12/2018
-  ! Poincare plots of the vacuum flux surfaces
-  ! use Guodong Wei's snippet of Adams-Moulton method
+  ! Poincare plots of the vacuum flux surfaces and calculate the rotational transform
   !------------------------------------------------------------------------------------------------------ 
-  USE globals, only : dp, zero, ounit, XYZB, pp_maxiter, total_num
+  USE globals, only : dp, myid, ncpu, zero, half, pi2, ounit, pi, sqrtmachprec, pp_maxiter, &
+                      pp_phi, pp_raxis, pp_zaxis, pp_xtol, pp_rmax, pp_zmax, ppr, ppz, pp_ns, iota, nfp_raw
   USE mpi
   IMPLICIT NONE
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  INTEGER              :: ierr, astat
-  INTEGER              :: tor_num
-  REAL                 :: theta, zeta, r, x, y, z
-!  REAL, ALLOCATABLE    :: XYZB(:,:)
+  INTEGER              :: ierr, astat, iflag
+  INTEGER              ::  ip, is, niter
+  REAL                 :: theta, zeta, r, x, y, z, RZ(2), r1, z1, rzrzt(5)
+  REAL, ALLOCATABLE    :: lppr(:,:), lppz(:,:), liota(:)  ! local ppr ppz
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+  
+  FATAL( poinplot, pp_ns < 1    , not enough starting points )
+  FATAL( poinplot, pp_maxiter<1 , not enough max. iterations )
 
-  pp_maxiter = 500 ! maximum iteration number
-  tor_num = 360    ! toroidal planes number
-  total_num = pp_maxiter * tor_num
+  ! if raxis, zaxis not provided
+  if ( (abs(pp_raxis) + abs(pp_zaxis)) < sqrtmachprec) then
+     zeta = pp_phi
+     theta = zero ; call surfcoord( theta, zeta, r , z )
+     theta = pi   ; call surfcoord( theta, zeta, r1, z1)
+     
+     pp_raxis = (r+r1)*half
+     pp_zaxis = (z+z1)*half
+  endif
+ 
+  ! calculate axis
+  RZ(1) = pp_raxis ; RZ(2) = pp_zaxis
+  call find_axis(RZ, pp_maxiter, pp_xtol)
+  pp_raxis = RZ(1) ; pp_zaxis = RZ(2)
 
-  SALLOCATE( XYZB, (1:total_num, 1:4), zero)
+  ! poincare plot and calculate iota
+  SALLOCATE( ppr , (1:pp_ns, 0:pp_maxiter), zero )
+  SALLOCATE( ppz , (1:pp_ns, 0:pp_maxiter), zero )
+  SALLOCATE( lppr, (1:pp_ns, 0:pp_maxiter), zero )
+  SALLOCATE( lppz, (1:pp_ns, 0:pp_maxiter), zero )
+  SALLOCATE( iota, (1:pp_ns)              , zero )
+  SALLOCATE(liota, (1:pp_ns)              , zero )
 
-  ! starting point
-  theta = zero ; zeta = zero
-  call surfcoord( theta, zeta, r, z)
-  x = r*cos(zeta)
-  y = r*sin(zeta)
+  ! if pp_rmax and pp_zmax not provied 
+  if ( (abs(pp_rmax) + abs(pp_zmax)) < sqrtmachprec) then
+     pp_rmax = r*1.0
+     pp_zmax = z*1.0
+  endif
 
-  write(ounit, '("poincare: starting filed line tracing at x="F5.2, ", y="F5.2, ", z="F5.2)') x, y, z
+  if(myid==0) write(ounit, '("poinplot: following fieldlines between ("ES12.5 &
+                             ","ES12.5" ) and ("ES12.5","ES12.5" )")') pp_raxis, pp_zaxis, pp_rmax, pp_zmax
+  do is = 1, pp_ns     ! pp_ns is the number of eavaluation surfaces
+     niter = 0    ! number of successful iterations
+     if ( myid .ne. modulo(is, ncpu) )  cycle  ! MPI
 
-  ! filedline tracing
-  call fieldline_tracing(x,y,z,total_num,pp_maxiter,XYZB)
+     rzrzt(1:5) = (/ pp_raxis + is*(pp_rmax-pp_raxis)/pp_ns, &
+                     pp_zaxis + is*(pp_zmax-pp_zaxis)/pp_ns, &
+                     pp_raxis, pp_zaxis, zero                   /)
+     lppr(is, 0) = rzrzt(1) ; lppz(is, 0) = rzrzt(2)
+     
+     do ip = 1, pp_maxiter
+        iflag = 1
+        call ppiota(rzrzt, iflag)
+        if (iflag >= 0) niter = niter + 1   ! counting
+        lppr(is, ip) = rzrzt(1)
+        lppz(is, ip) = rzrzt(2)
+        ! FATAL( poinplot, abs((rzrzt(3)-pp_raxis)/pp_raxis)>pp_xtol, magnetic axis is not coming back )
+     enddo
+     
+     liota(is) = rzrzt(5) / (niter*pi2/Nfp_raw)
 
-  write(ounit, '("poincare: Fieldline tracing finished")')
+     write(ounit, '(8X": order="I6" ; myid="I6" ; (R,Z)=("ES12.5","ES12.5 & 
+          " ) ; iota="ES12.5" ; niter="I6" .")') is, myid, lppr(is,0), lppz(is,0), liota(is), niter
+  enddo
+  
+  call MPI_ALLREDUCE(  lppr,  ppr, pp_ns*(pp_maxiter+1), MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+  call MPI_ALLREDUCE(  lppz,  ppz, pp_ns*(pp_maxiter+1), MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+  call MPI_ALLREDUCE( liota, iota, pp_ns               , MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+
+  DALLOCATE( lppz  )
+  DALLOCATE( lppr  )
+  DALLOCATE( liota )
   
   return
 
 END SUBROUTINE poinplot
 
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-subroutine fieldline_tracing(x,y,z,imax,n2,H)
-  implicit none
-  integer*4 ::n2,imax,j,i
-  real*8 :: x,y,z,dphi,pi,dt,B,Bx,By,Bz,x0,y0,z0,g,iota
-  real*8 :: s(4), k1x,k2x,k3x,k4x,k5x,k6x,k7x,k8x,k9x,k10x
-  real*8 :: k1y,k2y,k3y,k4y,k5y,k6y,k7y,k8y,k9y,k10y,xr
-  real*8 :: k1z,k2z,k3z,k4z,k5z,k6z,k7z,k8z,k9z,k10z
-  real*8,dimension(imax,4):: H
+SUBROUTINE find_axis(RZ, MAXFEV, XTOL)
+  USE globals, only : dp, myid, ounit, zero, pp_phi, Nfp_raw
+  USE mpi
+  IMPLICIT NONE
 
-  real*8,dimension(imax+1,4):: f
-  real*8,dimension(2*n2,3):: f2
+  REAL, INTENT(INOUT)  :: RZ(2)
+  REAL, INTENT(IN   )  :: XTOL
+  INTEGER, INTENT(IN)  :: MAXFEV
 
-  pi=3.141592653589793239
-  dphi=2*pi/(float(imax)/n2)
+  INTEGER, parameter   :: n=2
+  INTEGER              :: ml,mu,mode,nprint,info,nfev,ldfjac,lr
+  REAL     :: epsfcn,factor
+  REAL     :: fvec(n),diag(n),qtf(n),wa1(n),wa2(n),wa3(n),wa4(n)
+  REAL, allocatable :: fjac(:,:),r(:)
+  external :: axis_fcn
+ 
+  LR = N*(N+1)/2
+  LDFJAC = N
+  ml = n-1
+  mu = n-1
+  epsfcn = 1.0E-4
+  mode = 1
+  factor = 100.0
+  nprint = -1
+  
+  allocate(fjac(ldfjac,n))
+  allocate(r(lr))
 
-  do j=1,imax
-     H(j,1)=x
-     H(j,2)=y
-     H(j,3)=z
-     call coils_B(s,x,y,z)
-     Bx=s(1)
-     By=s(2)
-     Bz=s(3)
-     B=s(4)
-     H(j,4)=B
-     dt=(y-x*tan(j*dphi))/(tan(j*dphi)*Bx/sqrt(Bx**2+By**2)-By/sqrt(Bx**2+By**2))*sqrt(B**2/(Bx**2+By**2))
-     !         write(*,*)x,y,z,s,dt
+  call hybrd(axis_fcn,n, RZ,fvec,xtol,maxfev,ml,mu,epsfcn,diag, &
+       mode,factor,nprint,info,nfev,fjac,ldfjac,r,lr,qtf,wa1,wa2,wa3,wa4)
 
-     f(j,1)=Bx/B
-     f(j,2)=By/B
-     f(j,3)=Bz/B
-     x0=x
-     y0=y
-     z0=z
+  if (myid==0) then 
+     write(ounit,'("findaxis: updates axis at phi = "F6.2"pi is R = "ES12.5," , Z = "ES12.5)') &
+          pp_phi, RZ(1), RZ(2)
+     select case (info)
+     case (0)
+        write(ounit,'("findaxis: info=0, improper input parameters.")')
+     case (1)
+        write(ounit,'("findaxis: info=1, relative error between two consecutive iterates is at most xtol.")')
+     case (2)
+        write(ounit,'("findaxis: info=2, number of calls to fcn has reached or exceeded maxfev.")')
+     case (3)
+        write(ounit,'("findaxis: info=3, xtol is too small.")')    
+     case (4)
+        write(ounit,'("findaxis: info=4, iteration is not making good progress, jacobian.")')    
+     case (5)
+        write(ounit,'("findaxis: info=5, iteration is not making good progress, function.")')
+     end select
+  endif
 
-     if(j<8)then
-        k1x=Bx/B
-        k1y=By/B
-        k1z=Bz/B
-        call coils_B(s,x+dt*4/27*k1x,y+dt*4/27*k1y,z+dt*4/27*k1z)
-
-        Bx=s(1)
-        By=s(2)
-        Bz=s(3)
-        B=s(4)
-        k2x=Bx/B
-        k2y=By/B
-        k2z=Bz/B
-        call coils_B(s,x+dt/18*(k1x+3*k2x),y+dt/18*(k1y+3*k2y),z+dt/18*(k1z+3*k2z))
-        Bx=s(1)
-        By=s(2)
-        Bz=s(3)
-        B=s(4)
-        k3x=Bx/B
-        k3y=By/B
-        k3z=Bz/B
-        call coils_B(s,x+dt/12*(k1x+3*k3x),y+dt/12*(k1y+3*k3y),z+dt/12*(k1z+3*k3z))
-        Bx=s(1)
-        By=s(2)
-        Bz=s(3)
-        B=s(4)
-        k4x=Bx/B
-        k4y=By/B
-        k4z=Bz/B
-
-        call coils_B(s,x+dt/8*(k1x+3*k4x),y+dt/8*(k1y+3*k4y),z+dt/8*(k1z+3*k4z))
-        Bx=s(1)
-        By=s(2)
-        Bz=s(3)
-        B=s(4)
-        k5x=Bx/B
-        k5y=By/B
-        k5z=Bz/B
-        call coils_B(s,x+dt/54*(13*k1x-27*k3x+42*k4x+8*k5x),y+dt/54*(13*k1y-27*k3y+&
-             42*k4y+8*k5y),z+dt/54*(13*k1z-27*k3z+42*k4z+8*k5z))
-        Bx=s(1)
-        By=s(2)
-        Bz=s(3)
-        B=s(4)
-        k6x=Bx/B
-        k6y=By/B
-        k6z=Bz/B
-        call coils_B(s,x+dt/4320*(389*k1x-54*k3x+966*k4x-824*k5x+243*k6x),y+dt/4320*(389*k1y-&
-             54*k3y+966*k4y-824*k5y+243*k6y),z+dt/4320*(389*k1z-54*k3z+966*k4z-824*k5z+243*k6z))
-        Bx=s(1)
-        By=s(2)
-        Bz=s(3)
-        B=s(4)
-        k7x=Bx/B
-        k7y=By/B
-        k7z=Bz/B
-        call coils_B(s,x+dt/20*(-234*k1x+81*k3x-1164*k4x+656*k5x-122*k6x+800*k7x),y+dt/20*(-234*k1y+81*k3y-&
-             1164*k4y+656*k5y-122*k6y+800*k7y),z+dt/20*(-234*k1z+81*k3z-1164*k4z+656*k5z-122*k6z+800*k7z))
-        Bx=s(1)
-        By=s(2)
-        Bz=s(3)
-        B=s(4)
-        k8x=Bx/B
-        k8y=By/B
-        k8z=Bz/B
-        call coils_B(s,x+dt/288*(-127*k1x+18*k3x-678*k4x+456*k5x-9*k6x+576*k7x+4*k8x),y+&
-             dt/288*(-127*k1y+18*k3y-678*k4y+456*k5y-9*k6y+576*k7y+4*k8y),z+dt/288*(-127*k1z+&
-             18*k3z-678*k4z+456*k5z-9*k6z+576*k7z+4*k8z))
-        Bx=s(1)
-        By=s(2)
-        Bz=s(3)
-        B=s(4)
-        k9x=Bx/B
-        k9y=By/B
-        k9z=Bz/B
-        call coils_B(s,x+dt/820*(1481*k1x-81*k3x+7104*k4x-3376*k5x+&
-             72*k6x-5040*k7x-60*k8x+720*k9x),y+dt/820*(1481*k1y-81*k3y+&
-             7104*k4y-3376*k5y+72*k6y-5040*k7y-60*k8y+720*k9y),z+dt/820*(1481*k1z-&
-             81*k3z+7104*k4z-3376*k5z+72*k6z-5040*k7z-60*k8z+720*k9z))
-        Bx=s(1)
-        By=s(2)
-        Bz=s(3)
-        B=s(4)
-        k10x=Bx/B
-        k10y=By/B
-        k10z=Bz/B
-
-        x=x+dt/840*(41*k1x+27*k4x+272*k5x+27*k6x+216*k7x+216*k9x+41*k10x)
-        y=y+dt/840*(41*k1y+27*k4y+272*k5y+27*k6y+216*k7y+216*k9y+41*k10y)
-        z=z+dt/840*(41*k1z+27*k4z+272*k5z+27*k6z+216*k7z+216*k9z+41*k10z)
-
-     else
-        x=x+dt/120960*(-36799.0*f(j-7,1)+295767.0*f(j-6,1)-1041723.0*f(j-5,1)&
-             +2102243.0*f(j-4,1)-2664477.0*f(j-3,1)+2183877.0*f(j-2,1)-1152169.0*f(j-1,1)+434241.0*f(j,1))
-        y=y+dt/120960*(-36799.0*f(j-7,2)+295767.0*f(j-6,2)-1041723.0*f(j-5,2)&
-             +2102243.0*f(j-4,2)-2664477.0*f(j-3,2)+2183877.0*f(j-2,2)-1152169.0*f(j-1,2)+434241.0*f(j,2))
-        z=z+dt/120960*(-36799.0*f(j-7,3)+295767.0*f(j-6,3)-1041723.0*f(j-5,3)&
-             +2102243.0*f(j-4,3)-2664477.0*f(j-3,3)+2183877.0*f(j-2,3)-1152169.0*f(j-1,3)+434241.0*f(j,3))
-     end if
-
-     call coils_B(s,x,y,z)
-     Bx=s(1)
-     By=s(2)
-     Bz=s(3)
-     B=s(4)
-     f(j+1,1)=Bx/B
-     f(j+1,2)=By/B
-     f(j+1,3)=Bz/B
-     if (j>7) then
-
-        x=x0+dt/120960*(1375.0*f(j-6,1)-11351.0*f(j-5,1)+41499.0*f(j-4,1)-88547.0*f(j-3,1)&
-             +123133.0*f(j-2,1)-121797.0*f(j-1,1)+139849.0*f(j,1)+36799.0*f(j+1,1))
-        y=y0+dt/120960*(1375.0*f(j-6,2)-11351.0*f(j-5,2)+41499.0*f(j-4,2)-88547.0*f(j-3,2)&
-             +123133.0*f(j-2,2)-121797.0*f(j-1,2)+139849.0*f(j,2)+36799.0*f(j+1,2))
-        z=z0+dt/120960*(1375.0*f(j-6,3)-11351.0*f(j-5,3)+41499.0*f(j-4,3)-88547.0*f(j-3,3)&
-             +123133.0*f(j-2,3)-121797.0*f(j-1,3)+139849.0*f(j,3)+36799.0*f(j+1,3))
-     end if
-
-  end do
   return
 
-end subroutine fieldline_tracing
+END SUBROUTINE find_axis
 
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   
+SUBROUTINE axis_fcn(n,x,fvec,iflag)
+  USE globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, Nfp_raw, pp_xtol
+  USE mpi
+  IMPLICIT NONE
 
-subroutine coils_B(s, x,y,z)
+  INTEGER  :: n, iflag
+  REAL :: x(n), fvec(n)
+
+  INTEGER  :: iwork(5), ierr, ifail
+  REAL     :: rz_end(n), phi_init, phi_stop, relerr, abserr, work(100+21*N)
+  EXTERNAL :: BRpZ
+  
+  ifail = 1
+  relerr = pp_xtol
+  abserr = sqrtmachprec
+  phi_init = pp_phi
+  phi_stop = pp_phi + pi2/Nfp_raw
+  rz_end = x
+
+  call ode( BRpZ, n, rz_end, phi_init, phi_stop, relerr, abserr, ifail, work, iwork )
+  if ( ifail /= 2 .and. myid == 0) then     
+     if ( IsQuiet < 0 ) then
+        write ( ounit, '(A,I3)' ) 'axis_fcn: ODE solver ERROR; returned IFAIL = ', ifail
+        select case ( ifail )
+        case ( 3 )
+           write(ounit, '("axis_fcn: DF_xtol or abserr too small.")')
+        case ( 4 )
+           write(ounit, '("axis_fcn: tau not reached after 500 steps.")')
+        case ( 5 )
+           write(ounit, '("axis_fcn: tau not reached because equation to be stiff.")')
+        case ( 6 )
+           write(ounit, '("axis_fcn: INVALID input parameters.")')
+        end select
+     end if
+     iflag = -1
+     ! call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+  end if
+
+  fvec = rz_end - x
+
+  return
+END SUBROUTINE axis_fcn
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+SUBROUTINE ppiota(rzrzt,iflag)
+  USE globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, Nfp_raw, pp_xtol
+  USE mpi
+  IMPLICIT NONE
+
+  INTEGER, parameter  :: n = 5
+  INTEGER  :: iflag
+  REAL     :: rzrzt(n)
+
+  INTEGER  :: iwork(5), ierr, ifail
+  REAL     :: phi_init, phi_stop, relerr, abserr, work(100+21*N)
+  EXTERNAL :: BRpZ_iota
+  
+  ifail = 1
+  relerr = pp_xtol
+  abserr = sqrtmachprec
+  phi_init = pp_phi
+  phi_stop = pp_phi + pi2/Nfp_raw
+
+  call ode( BRpZ_iota, n, rzrzt, phi_init, phi_stop, relerr, abserr, ifail, work, iwork )
+  if ( ifail /= 2 .and. myid == 0) then     
+     if ( IsQuiet < -1 ) then
+        write ( ounit, '(A,I3)' ) 'ppiota  : ODE solver ERROR; returned IFAIL = ', ifail
+        select case ( ifail )
+        case ( 3 )
+           write(ounit, '("ppiota  : DF_xtol or abserr too small.")')
+        case ( 4 )
+           write(ounit, '("ppiota  : tau not reached after 500 steps.")')
+        case ( 5 )
+           write(ounit, '("ppiota  : tau not reached because equation to be stiff.")')
+        case ( 6 )
+           write(ounit, '("ppiota  : INVALID input parameters.")')
+        end select
+     end if
+     iflag = -1
+     ! call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+  end if
+
+  return
+END SUBROUTINE ppiota
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+subroutine coils_bfield(s, x,y,z)
   use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, &
        zero, myid, ounit, Npc, bsconstant
   use mpi
   implicit none
 
-  REAL   , intent(in)  :: x, y, z
-  real*8, dimension(4) :: s
+  REAL  , intent( in)   :: x, y, z
+  REAL  , intent(out)   :: s(4)
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -244,7 +275,7 @@ subroutine coils_B(s, x,y,z)
         Bz = Bz + ( dly*ltx - dlx*lty ) * rm3 * coil(icoil)%dd(kseg) * coil(icoil)%I
 
      enddo    ! enddo kseg
-  enddo
+  enddo ! enddo icoil
 
   Bx = Bx * bsconstant
   By = By * bsconstant
@@ -257,4 +288,94 @@ subroutine coils_B(s, x,y,z)
 
   return
 
-end subroutine coils_B
+end subroutine coils_bfield
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+SUBROUTINE BRpZ( t, x, dx )
+  !----------------------
+  ! dR/dphi = BR / Bphi
+  ! dZ/dphi = BZ / Bphi
+  !----------------------
+  use globals, only : dp, zero, ounit, myid, ierr
+  implicit none
+  include "mpif.h"
+  !---------------------------------------------------------------------------------------------   
+  INTEGER, parameter   :: n=2
+  REAL, INTENT( IN)    :: t, x(n)
+  REAL, INTENT(OUT)    :: dx(n)
+
+  REAL                 :: RR, ZZ, XX, YY, BR, BP, BZ, B(4)
+  external             :: coils_bfield
+  !---------------------------------------------------------------------------------------------
+  
+  RR = x(1); ZZ = x(2)           ! cylindrical coordinate
+  XX = RR*cos(t); YY = RR*sin(t) ! cartesian   coordinate
+  B = zero
+
+  call coils_bfield(B, XX, YY, ZZ)
+  
+  BR =     B(1)*cos(t) + B(2)*sin(t)
+  BP = ( - B(1)*sin(t) + B(2)*cos(t) ) / RR
+  BZ =     B(3)
+
+  dx(1) = BR/BP
+  dx(2) = BZ/BP
+
+  return
+END SUBROUTINE BRpZ
+  
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+SUBROUTINE BRpZ_iota( t, x, dx )
+  !----------------------
+  ! dR/dphi = BR / Bphi
+  ! dZ/dphi = BZ / Bphi
+  !----------------------
+  use globals, only : dp, zero, ounit, myid, ierr
+  implicit none
+  include "mpif.h"
+  !---------------------------------------------------------------------------------------------   
+  INTEGER, parameter   :: n=5
+  REAL, INTENT( IN)    :: t, x(n)
+  REAL, INTENT(OUT)    :: dx(n)
+
+  REAL                 :: RR, ZZ, XX, YY, BR, BP, BZ, B(4), length
+  external             :: coils_bfield
+  !---------------------------------------------------------------------------------------------
+
+  ! field line
+  RR = x(1); ZZ = x(2)           ! cylindrical coordinate
+  XX = RR*cos(t); YY = RR*sin(t) ! cartesian   coordinate
+  B = zero
+
+  call coils_bfield(B, XX, YY, ZZ)
+  
+  BR =     B(1)*cos(t) + B(2)*sin(t)
+  BP = ( - B(1)*sin(t) + B(2)*cos(t) ) / RR
+  BZ =     B(3)
+
+  dx(1) = BR/BP
+  dx(2) = BZ/BP
+
+  ! magnetic axis
+  RR = x(3); ZZ = x(4)           ! cylindrical coordinate
+  XX = RR*cos(t); YY = RR*sin(t) ! cartesian   coordinate
+  B = zero
+
+  call coils_bfield(B, XX, YY, ZZ)
+  
+  BR =     B(1)*cos(t) + B(2)*sin(t)
+  BP = ( - B(1)*sin(t) + B(2)*cos(t) ) / RR
+  BZ =     B(3)
+
+  dx(3) = BR/BP
+  dx(4) = BZ/BP
+
+  ! integrate theta
+  length = (x(1) - x(3))**2 + (x(2)-x(4))**2  ! delta R^2 + delta Z^2
+  dx(5) = ( (x(1) - x(3))*(dx(2)-dx(4)) - (x(2)-x(4))*(dx(1)-dx(3)) ) / length
+
+  return
+END SUBROUTINE BRpZ_iota
+    

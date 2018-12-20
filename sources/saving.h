@@ -177,8 +177,15 @@ subroutine saving
      HWRITERA( LM_mfvec, Ndof   ,   LM_fjac       ,   LM_fjac                    )     
   endif
 
+  if (allocated(ppr)) then
+     HWRITERA( pp_ns, pp_maxiter+1,   ppr         ,  ppr(1:pp_ns, 0:pp_maxiter) )
+     HWRITERA( pp_ns, pp_maxiter+1,   ppz         ,  ppz(1:pp_ns, 0:pp_maxiter) )
+     HWRITEIV( 1                  ,   pp_ns       ,  pp_ns                      )
+     HWRITERV( pp_ns              ,   iota        ,  iota(1:pp_ns)              )
+  endif
+
   if (allocated(XYZB)) then
-     HWRITERA( total_num,4      ,   XYZB          ,   XYZB(1:, 1:4)              )
+     HWRITERA( total_num,4      ,   XYZB          ,   XYZB(1:total_num, 1:4)     )
   endif
 
   HWRITERV( 1                ,  time_initialize,   time_initialize               )
