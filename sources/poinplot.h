@@ -3,7 +3,7 @@ SUBROUTINE poinplot
   ! DATE:  12/12/2018
   ! Poincare plots of the vacuum flux surfaces and calculate the rotational transform
   !------------------------------------------------------------------------------------------------------ 
-  USE globals, only : dp, myid, ncpu, zero, half, pi2, ounit, pi, sqrtmachprec, pp_maxiter, &
+  USE globals, only : dp, myid, ncpu, zero, half, pi, pi2, ounit, pi, sqrtmachprec, pp_maxiter, &
                       pp_phi, pp_raxis, pp_zaxis, pp_xtol, pp_rmax, pp_zmax, ppr, ppz, pp_ns, iota, nfp_raw
   USE mpi
   IMPLICIT NONE
@@ -19,6 +19,8 @@ SUBROUTINE poinplot
   
   FATAL( poinplot, pp_ns < 1    , not enough starting points )
   FATAL( poinplot, pp_maxiter<1 , not enough max. iterations )
+
+  pp_phi = pp_phi * pi  ! pp_phi=0.5 -> pi/2
 
   ! if raxis, zaxis not provided
   if ( (abs(pp_raxis) + abs(pp_zaxis)) < sqrtmachprec) then
@@ -121,7 +123,7 @@ SUBROUTINE find_axis(RZ, MAXFEV, XTOL)
        mode,factor,nprint,info,nfev,fjac,ldfjac,r,lr,qtf,wa1,wa2,wa3,wa4)
 
   if (myid==0) then 
-     write(ounit,'("findaxis: updates axis at phi = "F6.2"pi is R = "ES12.5," , Z = "ES12.5)') &
+     write(ounit,'("findaxis: Finding axis at phi = "ES12.5" with (R,Z) = ( "ES12.5,","ES12.5" ).")') &
           pp_phi, RZ(1), RZ(2)
      select case (info)
      case (0)

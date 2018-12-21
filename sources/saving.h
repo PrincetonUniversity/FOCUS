@@ -118,6 +118,14 @@ subroutine saving
   HWRITEIV( 1                ,   save_coils    ,   save_coils                    )
   HWRITEIV( 1                ,   save_harmonics,   save_harmonics                )
   HWRITEIV( 1                ,   save_filaments,   save_filaments                )
+  HWRITERV( 1                ,   pp_phi        ,   pp_phi                        )
+  HWRITERV( 1                ,   pp_raxis      ,   pp_raxis                      )
+  HWRITERV( 1                ,   pp_zaxis      ,   pp_zaxis                      )
+  HWRITERV( 1                ,   pp_rmax       ,   pp_rmax                       )
+  HWRITERV( 1                ,   pp_zmax       ,   pp_zmax                       )
+  HWRITEIV( 1                ,   pp_ns         ,   pp_ns                         )
+  HWRITEIV( 1                ,   pp_maxiter    ,   pp_maxiter                    )
+  HWRITERV( 1                ,   pp_xtol       ,   pp_xtol                       )
 
   HWRITEIV( 1                ,   Nfp           ,   Nfp_raw                         )
   HWRITERV( 1                ,   surf_vol      ,   surf(1)%vol                     )
@@ -180,7 +188,6 @@ subroutine saving
   if (allocated(ppr)) then
      HWRITERA( pp_ns, pp_maxiter+1,   ppr         ,  ppr(1:pp_ns, 0:pp_maxiter) )
      HWRITERA( pp_ns, pp_maxiter+1,   ppz         ,  ppz(1:pp_ns, 0:pp_maxiter) )
-     HWRITEIV( 1                  ,   pp_ns       ,  pp_ns                      )
      HWRITERV( pp_ns              ,   iota        ,  iota(1:pp_ns)              )
   endif
 

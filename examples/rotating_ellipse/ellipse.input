@@ -60,9 +60,19 @@
  TN_reorder     =        0
  TN_cr          =        0.1
 
- case_postproc  =        1              ! 0: no extra post-processing; 1: evaluate the current coils; 2: write mgrid file (not ready)
+ case_postproc  =        3              ! 0: no extra post-processing; 1: evaluate the current coils; 2: write SPEC file; 3: perform Poincare plots
  save_freq      =        1              ! frequency for writing output files; should be positive
  save_coils     =        1              ! flag for indicating whether write example.focus and example.coils
  save_harmonics =        0              ! flag for indicating whether write example.harmonics
  save_filaments =        0              ! flag for indicating whether write .example.filaments.xxxxxx
+
+ pp_phi         =  0.000D+00		! toroidal plane for poincare plots, cylindrical angle phi = pp_phi*Pi
+ pp_raxis       =  0.000D+00       	! pp_raxis, pp_zaxis are initial guesses for magnetic axis at the specified toroidal angle
+ pp_zaxis       =  0.000D+00            ! If both zero, FOCUS will take the geometric center as initial guess
+ pp_rmax        =  0.000D+00		! pp_rmax, pp_zmax are the upper bounds for performing fieldline tracing
+ pp_zmax        =  0.000D+00		! FOCUS will start follow fieldlines at interpolation between (pp_raxis, pp_zaxis) and (pp_rmax, pp_zmax)
+ pp_ns          =  10			! number of following fieldlines
+ pp_maxiter     =  1000			! number of periods for each fieldline following
+ pp_xtol        =  1.000D-06		! tolarence of ODE solver during fieldline fowllowing
+
 /
