@@ -118,8 +118,17 @@ subroutine saving
   HWRITEIV( 1                ,   save_coils    ,   save_coils                    )
   HWRITEIV( 1                ,   save_harmonics,   save_harmonics                )
   HWRITEIV( 1                ,   save_filaments,   save_filaments                )
+  HWRITERV( 1                ,   pp_phi        ,   pp_phi                        )
+  HWRITERV( 1                ,   pp_raxis      ,   pp_raxis                      )
+  HWRITERV( 1                ,   pp_zaxis      ,   pp_zaxis                      )
+  HWRITERV( 1                ,   pp_rmax       ,   pp_rmax                       )
+  HWRITERV( 1                ,   pp_zmax       ,   pp_zmax                       )
+  HWRITEIV( 1                ,   pp_ns         ,   pp_ns                         )
+  HWRITEIV( 1                ,   pp_maxiter    ,   pp_maxiter                    )
+  HWRITERV( 1                ,   pp_xtol       ,   pp_xtol                       )
 
   HWRITEIV( 1                ,   Nfp           ,   Nfp_raw                         )
+  HWRITERV( 1                ,   surf_vol      ,   surf(1)%vol                     )
   HWRITERA( Nteta,Nzeta      ,   xsurf         ,   surf(1)%xx(0:Nteta-1,0:Nzeta-1) )
   HWRITERA( Nteta,Nzeta      ,   ysurf         ,   surf(1)%yy(0:Nteta-1,0:Nzeta-1) )
   HWRITERA( Nteta,Nzeta      ,   zsurf         ,   surf(1)%zz(0:Nteta-1,0:Nzeta-1) )
@@ -176,6 +185,15 @@ subroutine saving
      HWRITERA( LM_mfvec, Ndof   ,   LM_fjac       ,   LM_fjac                    )     
   endif
 
+  if (allocated(ppr)) then
+     HWRITERA( pp_ns, pp_maxiter+1,   ppr         ,  ppr(1:pp_ns, 0:pp_maxiter) )
+     HWRITERA( pp_ns, pp_maxiter+1,   ppz         ,  ppz(1:pp_ns, 0:pp_maxiter) )
+     HWRITERV( pp_ns              ,   iota        ,  iota(1:pp_ns)              )
+  endif
+
+  if (allocated(XYZB)) then
+     HWRITERA( total_num,4      ,   XYZB          ,   XYZB(1:total_num, 1:4)     )
+  endif
 
   HWRITERV( 1                ,  time_initialize,   time_initialize               )
   HWRITERV( 1                ,  time_optimize  ,   time_optimize                 )

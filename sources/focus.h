@@ -173,14 +173,16 @@ PROGRAM focus
 
   select case( case_postproc )
 
-  case( 0 ) ; call saving
-  case( 1 ) ; call diagnos ; call saving 
-  case( 2 ) ; call diagnos ; call specinp ; call saving 
+  case( 0 ) 
+  case( 1 ) ; call diagnos ; 
+  case( 2 ) ; call diagnos ; call specinp !; call saving 
  !case( 2 ) ; call saving  ; call diagnos ; call wtmgrid  ! write mgrid file;
- !case( 3 ) ; call saving  ; call diagnos ; call poinplot ! Poincare plots; for future; 
+  case( 3 ) ; call diagnos ; call poinplot ! Poincare plots; for future; 
  !case( 4 ) ; call saving  ; call diagnos ; call resonant ! resonant harmonics analysis; for future; 
 
   end select
+
+  call saving ! save all the outputs
 
   call MPI_BARRIER( MPI_COMM_WORLD, ierr )
 

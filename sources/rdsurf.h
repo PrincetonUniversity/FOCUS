@@ -211,6 +211,8 @@ subroutine fousurf
   SALLOCATE( surf(1)%xp, (0:Nteta-1,0:Nzeta-1), zero ) !dx/dzeta;
   SALLOCATE( surf(1)%yp, (0:Nteta-1,0:Nzeta-1), zero ) !dy/dzeta;
   SALLOCATE( surf(1)%zp, (0:Nteta-1,0:Nzeta-1), zero ) !dz/dzeta;
+  
+  surf(1)%vol = zero  ! volume enclosed by plasma boundary
  
 ! The center point value was used to discretize grid;
   do ii = 0, Nteta-1; teta = ( ii + half ) * pi2 / Nteta
@@ -264,9 +266,15 @@ subroutine fousurf
     surf(1)%ny(ii,jj) = ds(2) / dd
     surf(1)%nz(ii,jj) = ds(3) / dd
     surf(1)%ds(ii,jj) =         dd
+    
+    ! using Gauss theorom; V = \int_S x \cdot n dt dz
+    surf(1)%vol = surf(1)%vol + surf(1)%xx(ii,jj) * ds(1)
 
    enddo ! end of do jj; 14 Apr 16;
   enddo ! end of do ii; 14 Apr 16;
+
+  surf(1)%vol = surf(1)%vol * discretefactor
+  if( myid == 0 .and. IsQuiet <= 0) write(ounit, '(8X": Enclosed volume ="ES12.5" m^3 ;" )') surf(1)%vol
 
   !calculate target Bn with input harmonics; 05 Jan 17;
   if(NBnf >  0) then

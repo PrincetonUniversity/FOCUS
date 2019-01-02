@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='v0.5.03' ! version number
+  CHARACTER(LEN=10), parameter :: version='v0.6.02' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -79,76 +79,83 @@ module globals
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
 !latex \subsection{Input namelist: \type{focusin}}
-  INTEGER              :: IsQuiet        =       -1        
-  INTEGER              :: IsSymmetric    =        0 
+  INTEGER              :: IsQuiet        =  -1        
+  INTEGER              :: IsSymmetric    =   0 
         
-  INTEGER              :: case_surface   =        0         
-  REAL                 :: knotsurf       =        0.200D-00
-  REAL                 :: ellipticity    =        0.000D+00
-  INTEGER              :: Nteta          =       64           
-  INTEGER              :: Nzeta          =       64  
+  INTEGER              :: case_surface   =   0         
+  REAL                 :: knotsurf       =   0.200D-00
+  REAL                 :: ellipticity    =   0.000D+00
+  INTEGER              :: Nteta          =   64           
+  INTEGER              :: Nzeta          =   64  
 
-  INTEGER              :: case_init      =        0
-  INTEGER              :: case_coils     =        1
-  INTEGER              :: Ncoils         =        0
-  REAL                 :: init_current   =        1.000D+06        
-  REAL                 :: init_radius    =        1.000D+00
-  INTEGER              :: IsVaryCurrent  =        1         
-  INTEGER              :: IsVaryGeometry =        1         
-  INTEGER              :: NFcoil         =        4         
-  INTEGER              :: Nseg           =      128 
+  INTEGER              :: case_init      =   0
+  INTEGER              :: case_coils     =   1
+  INTEGER              :: Ncoils         =   0
+  REAL                 :: init_current   =   1.000D+06        
+  REAL                 :: init_radius    =   1.000D+00
+  INTEGER              :: IsVaryCurrent  =   1         
+  INTEGER              :: IsVaryGeometry =   1         
+  INTEGER              :: NFcoil         =   4         
+  INTEGER              :: Nseg           =   128 
               
-  INTEGER              :: IsNormalize    =        1
-  INTEGER              :: IsNormWeight   =        1
-  INTEGER              :: case_bnormal   =        0
-  INTEGER              :: case_length    =        1         
-  REAL                 :: weight_bnorm   =        1.000D+00
-  REAL                 :: weight_bharm   =        0.000D+00
-  REAL                 :: weight_tflux   =        0.000D+00
-  REAL                 :: target_tflux   =        0.000D+00
-  REAL                 :: weight_ttlen   =        0.000D+00
-  REAL                 :: target_length  =        0.000D+00
-  REAL                 :: weight_cssep   =        0.000D+00
-  REAL                 :: cssep_factor   =        1.000D+00 
-  REAL                 :: weight_specw   =        0.000D+00
-  REAL                 :: weight_ccsep   =        0.000D+00
-  REAL                 :: weight_inorm   =        1.000D+00
-  REAL                 :: weight_gnorm   =        1.000D+00
+  INTEGER              :: IsNormalize    =   1
+  INTEGER              :: IsNormWeight   =   1
+  INTEGER              :: case_bnormal   =   0
+  INTEGER              :: case_length    =   1         
+  REAL                 :: weight_bnorm   =   1.000D+00
+  REAL                 :: weight_bharm   =   0.000D+00
+  REAL                 :: weight_tflux   =   0.000D+00
+  REAL                 :: target_tflux   =   0.000D+00
+  REAL                 :: weight_ttlen   =   0.000D+00
+  REAL                 :: target_length  =   0.000D+00
+  REAL                 :: weight_cssep   =   0.000D+00
+  REAL                 :: cssep_factor   =   1.000D+00 
+  REAL                 :: weight_specw   =   0.000D+00
+  REAL                 :: weight_ccsep   =   0.000D+00
+  REAL                 :: weight_inorm   =   1.000D+00
+  REAL                 :: weight_gnorm   =   1.000D+00
 
-  INTEGER              :: case_optimize  =        1
-  REAL                 :: exit_tol       =        1.000D-04
-  INTEGER              :: DF_maxiter     =        0
-  REAL                 :: DF_xtol        =        1.000D-08     
-  REAL                 :: DF_tausta      =        0.000D+00
-  REAL                 :: DF_tauend      =        1.000D+00               
+  INTEGER              :: case_optimize  =   1
+  REAL                 :: exit_tol       =   1.000D-04
+  INTEGER              :: DF_maxiter     =   0
+  REAL                 :: DF_xtol        =   1.000D-08     
+  REAL                 :: DF_tausta      =   0.000D+00
+  REAL                 :: DF_tauend      =   1.000D+00               
  
-  INTEGER              :: CG_maxiter     =        0
-  REAL                 :: CG_xtol        =        1.000D-08
-  REAL                 :: CG_wolfe_c1    =        1.000D-04
-  REAL                 :: CG_wolfe_c2    =        0.1
+  INTEGER              :: CG_maxiter     =   0
+  REAL                 :: CG_xtol        =   1.000D-08
+  REAL                 :: CG_wolfe_c1    =   1.000D-04
+  REAL                 :: CG_wolfe_c2    =   0.1
 
-  INTEGER              :: LM_maxiter     =        0
-  REAL                 :: LM_xtol        =        1.000D-08
-  REAL                 :: LM_ftol        =        1.000D-08
-  REAL                 :: LM_factor      =        1.000D+02
+  INTEGER              :: LM_maxiter     =   0
+  REAL                 :: LM_xtol        =   1.000D-08
+  REAL                 :: LM_ftol        =   1.000D-08
+  REAL                 :: LM_factor      =   1.000D+02
 
-  INTEGER              :: HN_maxiter     =        0
-  REAL                 :: HN_xtol        =        1.000D-08
-  REAL                 :: HN_factor      =      100.0
+  INTEGER              :: HN_maxiter     =   0
+  REAL                 :: HN_xtol        =   1.000D-08
+  REAL                 :: HN_factor      =   100.0
 
-  INTEGER              :: TN_maxiter     =        0
-  REAL                 :: TN_xtol        =        1.000D-08
-  INTEGER              :: TN_reorder     =        0
-  REAL                 :: TN_cr          =        0.1
+  INTEGER              :: TN_maxiter     =   0
+  REAL                 :: TN_xtol        =   1.000D-08
+  INTEGER              :: TN_reorder     =   0
+  REAL                 :: TN_cr          =   0.1
 
-  INTEGER              :: case_postproc  =        1
-  INTEGER              :: save_freq      =        1
-  INTEGER              :: save_coils     =        0 
-  INTEGER              :: save_harmonics =        0
-  INTEGER              :: save_filaments =        0              
+  INTEGER              :: case_postproc  =   1
+  INTEGER              :: save_freq      =   1
+  INTEGER              :: save_coils     =   0 
+  INTEGER              :: save_harmonics =   0
+  INTEGER              :: save_filaments =   0   
+
+  REAL                 :: pp_phi         =  0.000D+00
+  REAL                 :: pp_raxis       =  0.000D+00       
+  REAL                 :: pp_zaxis       =  0.000D+00
+  REAL                 :: pp_rmax        =  0.000D+00
+  REAL                 :: pp_zmax        =  0.000D+00
+  INTEGER              :: pp_ns          =  10
+  INTEGER              :: pp_maxiter     =  1000
+  REAL                 :: pp_xtol        =  1.000D-06
                                                          
-
-  
 
   namelist / focusin /  IsQuiet        , &
                         IsSymmetric    , & 
@@ -207,7 +214,17 @@ module globals
                         save_freq      , & 
                         save_coils     , &
                         save_harmonics , &
-                        save_filaments
+                        save_filaments , &
+                        pp_phi         , &
+                        pp_raxis       , &
+                        pp_zaxis       , &
+                        pp_rmax        , &
+                        pp_zmax        , &
+                        pp_ns          , &
+                        pp_maxiter     , &
+                        pp_xtol         
+
+                        
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
@@ -225,6 +242,7 @@ module globals
                              xt(:,:), yt(:,:), zt(:,:), xp(:,:), yp(:,:), zp(:,:), &
                              ds(:,:), bn(:,:), pb(:,:), &
                              Bx(:,:), By(:,:), Bz(:,:)
+     REAL                 :: vol
   end type toroidalsurface
 
   type arbitrarycoil
@@ -325,6 +343,12 @@ module globals
                           !tmp weight for saving to restart file
   REAL, allocatable    :: mincc(:,:), coil_importance(:)
   INTEGER              :: ierr, astat
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+  
+  ! fieldline tracing
+  REAL, ALLOCATABLE    :: XYZB(:,:), ppr(:,:), ppz(:,:), iota(:)
+  INTEGER              :: tor_num, total_num
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
