@@ -43,16 +43,17 @@ SUBROUTINE diagnos
            coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%ys(1:NF) ; idof = idof + NF
            coilspace(iout, idof+1:idof+NF+1) = FouCoil(icoil)%zc(0:NF) ; idof = idof + NF +1
            coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%zs(1:NF) ; idof = idof + NF
-        case default
-           FATAL(descent, .true., not supported coil types)
+!!$        case default
+!!$           FATAL(descent, .true., not supported coil types)
         end select
      enddo
-     FATAL( output , idof .ne. Tdof, counting error in restart )
+!!$     FATAL( output , idof .ne. Tdof, counting error in restart )
   endif
 
   !-------------------------------coil maximum curvature----------------------------------------------------  
   MaxCurv = zero
   do icoil = 1, Ncoils
+     if(coil(icoil)%itype .ne. 1) exit ! only for Fourier
      call curvature(icoil)
      if (coil(icoil)%maxcurv .ge. MaxCurv) then
         MaxCurv = coil(icoil)%maxcurv
@@ -71,6 +72,7 @@ SUBROUTINE diagnos
   if ( (case_length == 1) .and. (sum(coil(1:Ncoils)%Lo) < sqrtmachprec) ) coil(1:Ncoils)%Lo = one
   call length(0)
   do icoil = 1, Ncoils
+     if(coil(icoil)%itype .ne. 1) exit ! only for Fourier
      AvgLength = AvgLength + coil(icoil)%L
   enddo
   AvgLength = AvgLength / Ncoils
@@ -80,6 +82,8 @@ SUBROUTINE diagnos
   ! coils are supposed to be placed in order
   minCCdist = infmax
   do icoil = 1, Ncoils
+
+     if(coil(icoil)%itype .ne. 1) exit ! only for Fourier
 
      if(Ncoils .eq. 1) exit !if only one coil
      itmp = icoil + 1
@@ -110,6 +114,8 @@ SUBROUTINE diagnos
   !--------------------------------minimum coil plasma separation-------------------------------  
   minCPdist = infmax
   do icoil = 1, Ncoils
+
+     if(coil(icoil)%itype .ne. 1) exit ! only for Fourier
 
      SALLOCATE(Atmp, (1:3,0:coil(icoil)%NS-1), zero)
      SALLOCATE(Btmp, (1:3,1:(Nteta*Nzeta)), zero)

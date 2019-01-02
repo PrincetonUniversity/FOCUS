@@ -554,11 +554,11 @@ subroutine output (mark)
            coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%ys(1:NF) ; idof = idof + NF
            coilspace(iout, idof+1:idof+NF+1) = FouCoil(icoil)%zc(0:NF) ; idof = idof + NF +1
            coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%zs(1:NF) ; idof = idof + NF
-        case default
-           FATAL(descent, .true., not supported coil types)
+!!$        case default
+!!$           FATAL(output, .true., not supported coil types)
         end select
      enddo
-     FATAL( output , idof .ne. Tdof, counting error in restart )
+!!$     FATAL( output , idof .ne. Tdof, counting error in restart )
   endif
 
   if(mod(iout,save_freq) .eq. 0) call saving

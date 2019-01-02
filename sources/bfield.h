@@ -28,7 +28,7 @@ subroutine bfield0(icoil, iteta, jzeta, Bx, By, Bz)
 ! Be careful if coils have different resolutions.
 !------------------------------------------------------------------------------------------------------   
   use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, &
-                     zero, myid, ounit, Npc
+                     zero, myid, ounit, Npc, Nfp, pi2, half, two, one, bsconstant
   implicit none
   include "mpif.h"
 
@@ -38,7 +38,7 @@ subroutine bfield0(icoil, iteta, jzeta, Bx, By, Bz)
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   INTEGER              :: ierr, astat, kseg
-  REAL                 :: dlx, dly, dlz, rm3, ltx, lty, ltz
+  REAL                 :: dlx, dly, dlz, rm3, ltx, lty, ltz, rr, r2, m_dot_r, phi
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -46,26 +46,59 @@ subroutine bfield0(icoil, iteta, jzeta, Bx, By, Bz)
   FATAL( bfield0, iteta .lt. 0 .or. iteta .gt. Nteta     , iteta not in right range )
   FATAL( bfield0, jzeta .lt. 0 .or. jzeta .gt. Nzeta     , jzeta not in right range )
   
-  dlx = zero; ltx = zero; Bx = zero
-  dly = zero; lty = zero; By = zero
-  dlz = zero; ltz = zero; Bz = zero
+  select case (coil(icoil)%itype)
+  !--------------------------------------------------------------------------------------------- 
+  case(1)
 
-  do kseg = 0, coil(icoil)%NS-1
-        
-   dlx = surf(1)%xx(iteta,jzeta) - coil(icoil)%xx(kseg)
-   dly = surf(1)%yy(iteta,jzeta) - coil(icoil)%yy(kseg)
-   dlz = surf(1)%zz(iteta,jzeta) - coil(icoil)%zz(kseg)
-   rm3 = (sqrt(dlx**2 + dly**2 + dlz**2))**(-3)
+     dlx = zero; ltx = zero; Bx = zero
+     dly = zero; lty = zero; By = zero
+     dlz = zero; ltz = zero; Bz = zero
 
-   ltx = coil(icoil)%xt(kseg)
-   lty = coil(icoil)%yt(kseg)
-   ltz = coil(icoil)%zt(kseg)
-   
-   Bx = Bx + ( dlz*lty - dly*ltz ) * rm3 * coil(icoil)%dd(kseg)
-   By = By + ( dlx*ltz - dlz*ltx ) * rm3 * coil(icoil)%dd(kseg)
-   Bz = Bz + ( dly*ltx - dlx*lty ) * rm3 * coil(icoil)%dd(kseg)
+     do kseg = 0, coil(icoil)%NS-1
 
-  enddo    ! enddo kseg
+        dlx = surf(1)%xx(iteta,jzeta) - coil(icoil)%xx(kseg)
+        dly = surf(1)%yy(iteta,jzeta) - coil(icoil)%yy(kseg)
+        dlz = surf(1)%zz(iteta,jzeta) - coil(icoil)%zz(kseg)
+        rm3 = (sqrt(dlx**2 + dly**2 + dlz**2))**(-3)
+
+        ltx = coil(icoil)%xt(kseg)
+        lty = coil(icoil)%yt(kseg)
+        ltz = coil(icoil)%zt(kseg)
+
+        Bx = Bx + ( dlz*lty - dly*ltz ) * rm3 * coil(icoil)%dd(kseg)
+        By = By + ( dlx*ltz - dlz*ltx ) * rm3 * coil(icoil)%dd(kseg)
+        Bz = Bz + ( dly*ltx - dlx*lty ) * rm3 * coil(icoil)%dd(kseg)
+
+     enddo    ! enddo kseg
+
+  !--------------------------------------------------------------------------------------------- 
+  case(2)
+
+     dlx = surf(1)%xx(iteta,jzeta) - coil(icoil)%ox
+     dly = surf(1)%yy(iteta,jzeta) - coil(icoil)%oy
+     dlz = surf(1)%zz(iteta,jzeta) - coil(icoil)%oz
+     r2  = dlx**2 + dly**2 + dlz**2
+     rm3 = one/(sqrt(r2)*r2)
+     m_dot_r = coil(icoil)%mx * dlx + coil(icoil)%my * dly + coil(icoil)%mz * dlz
+
+     Bx = 3.0_dp * m_dot_r * rm3 / r2 * dlx - coil(icoil)%mx * rm3
+     By = 3.0_dp * m_dot_r * rm3 / r2 * dly - coil(icoil)%my * rm3
+     Bz = 3.0_dp * m_dot_r * rm3 / r2 * dlz - coil(icoil)%mz * rm3
+
+  !--------------------------------------------------------------------------------------------- 
+  case(3)
+     ! might be only valid for cylindrical coordinates
+     ! Bt = u0*I/(2 pi R)
+     phi = ( jzeta + half ) * pi2 / ( Nzeta*Nfp )
+     rr = sqrt( surf(1)%xx(iteta,jzeta)**2 + surf(1)%yy(iteta,jzeta)**2 )
+     coil(icoil)%Bt = two/rr * coil(icoil)%I
+     Bx = - coil(icoil)%Bt * sin(phi)
+     By =   coil(icoil)%Bt * cos(phi)
+     Bz = coil(icoil)%Bz / bsconstant
+     !---------------------------------------------------------------------------------------------
+  case default
+     FATAL(packcoil, .true., not supported coil types)
+  end select
 
   return
 

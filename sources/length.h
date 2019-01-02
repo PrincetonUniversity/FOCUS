@@ -78,6 +78,7 @@ subroutine length(ideriv)
 
      do icoil = 1, Ncoils     !only care about unique coils;
 
+        if(coil(icoil)%itype .ne. 1) exit ! only for Fourier
         !if( myid.ne.modulo(icoil-1,ncpu) ) cycle ! parallelization loop;
         call LenDeriv0(icoil, coil(icoil)%L)
         !RlBCAST( coil(icoil)%L, 1, modulo(icoil-1,ncpu) ) !broadcast each coil's length        
@@ -88,6 +89,7 @@ subroutine length(ideriv)
 
      if (case_length == 1) then ! quadratic;
         do icoil = 1, Ncoils
+           if(coil(icoil)%itype .ne. 1) exit ! only for Fourier
            if ( coil(icoil)%Lc /= 0 ) then
               ttlen = ttlen +  half * (coil(icoil)%L - coil(icoil)%Lo)**2 / coil(icoil)%Lo**2
               if (mttlen > 0) then ! L-M format of targets
@@ -98,6 +100,7 @@ subroutine length(ideriv)
         enddo
      elseif (case_length == 2) then ! exponential;
         do icoil = 1, Ncoils
+           if(coil(icoil)%itype .ne. 1) exit ! only for Fourier
            if ( coil(icoil)%Lc /= 0 ) then
               ttlen = ttlen + exp(coil(icoil)%L) / exp(coil(icoil)%Lo)
               if (mttlen > 0) then ! L-M format of targets
@@ -126,6 +129,8 @@ subroutine length(ideriv)
 
      idof = 0 ; ivec = 1
      do icoil = 1, Ncoils
+
+        if(coil(icoil)%itype .ne. 1) exit ! only for Fourier
 
         ND = DoF(icoil)%ND
 

@@ -218,11 +218,12 @@ subroutine saving
         write(wunit, *) "#-----------------", icoil, "---------------------------" 
         write(wunit, *) "#coil_type     coil_name"
         write(wunit,'(3X,I3,4X, A10)') coil(icoil)%itype, coil(icoil)%name
-        write(wunit, '(3(A6, A15, 8X))') " #Nseg", "current",  "Ifree", "Length", "Lfree", "target_length"
-        write(wunit,'(2X, I4, ES23.15, 3X, I3, ES23.15, 3X, I3, ES23.15)') &
-             coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo
+
         select case (coil(icoil)%itype)
         case (1)
+           write(wunit, '(3(A6, A15, 8X))') " #Nseg", "current",  "Ifree", "Length", "Lfree", "target_length"
+           write(wunit,'(2X, I4, ES23.15, 3X, I3, ES23.15, 3X, I3, ES23.15)') &
+                coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo
            NF = FouCoil(icoil)%NF ! shorthand;
            write(wunit, *) "#NFcoil"
            write(wunit, '(I3)') NF
@@ -233,6 +234,14 @@ subroutine saving
            write(wunit, 1000) FouCoil(icoil)%ys(0:NF)
            write(wunit, 1000) FouCoil(icoil)%zc(0:NF)
            write(wunit, 1000) FouCoil(icoil)%zs(0:NF)
+        case (2) 
+           write(wunit, *) "#  Lc  ox   oy   oz   mx   my   mz"
+           write(wunit,'(I3, 6ES23.15)') coil(icoil)%Lc, coil(icoil)%ox, coil(icoil)%oy, coil(icoil)%oz, &
+                                                         coil(icoil)%mx, coil(icoil)%my, coil(icoil)%mz
+        case (3)
+           write(wunit, *) "# Ic     I    Lc  Bz  (Ic control I; Lc control Bz)"
+           write(wunit,'(I3, ES23.15, I3, ES23.15)') coil(icoil)%Ic, coil(icoil)%I, &
+                                                     coil(icoil)%Lc, coil(icoil)%Bz
         case default
            FATAL(restart, .true., not supported coil types)
         end select

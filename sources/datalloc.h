@@ -13,6 +13,7 @@ subroutine AllocData(itype)
   INTEGER, intent(in) :: itype
 
   INTEGER             :: icoil, idof, ND, NF
+  REAL                :: xtmp, mtmp
 
   !-------------------------------------------------------------------------------------------
   if (itype == -1) then ! dof related data;
@@ -31,6 +32,13 @@ subroutine AllocData(itype)
            SALLOCATE(DoF(icoil)%xof , (0:coil(icoil)%NS-1, 1:ND), zero)
            SALLOCATE(DoF(icoil)%yof , (0:coil(icoil)%NS-1, 1:ND), zero)
            SALLOCATE(DoF(icoil)%zof , (0:coil(icoil)%NS-1, 1:ND), zero)
+        case(2)
+           coil(icoil)%Ic = 0 ! make sure Ic=0
+           DoF(icoil)%ND = coil(icoil)%Lc * 6 ! number of DoF for permanent magnet
+           SALLOCATE(DoF(icoil)%xdof, (1:DoF(icoil)%ND), zero)
+        case(3) 
+           DoF(icoil)%ND = coil(icoil)%Lc * 1 ! number of DoF for background Bt, Bz
+           SALLOCATE(DoF(icoil)%xdof, (1:DoF(icoil)%ND), zero)
         case default
            FATAL(AllocData, .true., not supported coil types)
         end select
@@ -57,16 +65,47 @@ subroutine AllocData(itype)
      
      idof = 0
      do icoil = 1, Ncoils
+        
+        if(coil(icoil)%itype == 1) then  ! Fourier representation
+           if(coil(icoil)%Ic /= 0) then
+              dofnorm(idof+1) = Inorm
+              idof = idof + 1
+           endif
 
-        if(coil(icoil)%Ic /= 0) then
-           dofnorm(idof+1) = Inorm
-           idof = idof + 1
-        endif
+           ND = DoF(icoil)%ND
+           if(coil(icoil)%Lc /= 0) then
+              dofnorm(idof+1:idof+ND) = Gnorm
+              idof = idof + ND
+           endif
+        else if (coil(icoil)%itype == 2) then  ! permanent magnets
+           if(coil(icoil)%Lc /= 0) then
+              xtmp = sqrt( coil(icoil)%ox**2 + coil(icoil)%oy**2 + coil(icoil)%oz**2 ) ! origin position
+              mtmp = sqrt( coil(icoil)%mx**2 + coil(icoil)%my**2 + coil(icoil)%mz**2 ) ! moment strenth
+              dofnorm(idof+1:idof+3) = xtmp
+              dofnorm(idof+4:idof+6) = mtmp
+              idof = idof + 6
+           endif
+        else if (coil(icoil)%itype == 3) then  ! backgroud toroidal/vertical field
+           if(coil(icoil)%Ic /= 0) then
+              if(abs(coil(icoil)%I) > sqrtmachprec) then
+                 dofnorm(idof+1) = coil(icoil)%I
+              else
+                 dofnorm(idof+1) = one
+              endif
+              idof = idof + 1
+           endif
 
-        ND = DoF(icoil)%ND
-        if(coil(icoil)%Lc /= 0) then
-           dofnorm(idof+1:idof+ND) = Gnorm
-           idof = idof + ND
+           if(coil(icoil)%Lc /= 0) then
+              if(abs(coil(icoil)%Bz) > sqrtmachprec) then
+                 dofnorm(idof+1) = coil(icoil)%Bz
+              else
+                 dofnorm(idof+1) = one
+              endif
+              idof = idof + 1
+           endif
+        else
+           STOP " wrong coil type in rdcoils"
+           call MPI_ABORT(MPI_COMM_WORLD, 1, ierr)
         endif
 
      enddo !end do icoil;
