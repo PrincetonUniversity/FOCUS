@@ -57,6 +57,10 @@ SUBROUTINE packdof(lxdof)
         endif
      !--------------------------------------------------------------------------------------------- 
      case(2) 
+        if(coil(icoil)%Ic /= 0) then 
+           lxdof(idof+1) = coil(icoil)%I
+           idof = idof + 1
+        endif
         ND = DoF(icoil)%ND
         if(coil(icoil)%Lc /= 0) then
            lxdof(idof+1:idof+ND) = DoF(icoil)%xdof(1:ND)
@@ -70,7 +74,7 @@ SUBROUTINE packdof(lxdof)
         endif
 
         if(coil(icoil)%Lc /= 0) then
-           lxdof(idof+1) = DoF(icoil)%xdof(idof+1)
+           lxdof(idof+1) = DoF(icoil)%xdof(1)
            idof = idof + 1
         endif
      !---------------------------------------------------------------------------------------------
@@ -127,6 +131,10 @@ SUBROUTINE unpacking(lxdof)
 
      !--------------------------------------------------------------------------------------------- 
      case(2) 
+        if(coil(icoil)%Ic /= 0) then 
+           coil(icoil)%I = lxdof(idof+1) * dofnorm(idof+1)
+           idof = idof + 1
+        endif
         ND = DoF(icoil)%ND
         if(coil(icoil)%Lc /= 0) then
            DoF(icoil)%xdof(1:ND) = lxdof(idof+1:idof+ND) * dofnorm(idof+1:idof+ND)
@@ -140,7 +148,7 @@ SUBROUTINE unpacking(lxdof)
         endif
 
         if(coil(icoil)%Lc /= 0) then
-           DoF(icoil)%xdof(idof+1) = lxdof(idof+1) * dofnorm(idof+1)
+           DoF(icoil)%xdof(1) = lxdof(idof+1) * dofnorm(idof+1)
            idof = idof + 1
         endif
      !---------------------------------------------------------------------------------------------
@@ -175,7 +183,7 @@ SUBROUTINE packcoil
   INTEGER  :: icoil, idof, NF, ierr, astat
 
   FATAL( packcoil, .not. allocated(coil)   , illegal )
-  FATAL( packcoil, .not. allocated(FouCoil), illegal )
+  ! FATAL( packcoil, .not. allocated(FouCoil), illegal )
   FATAL( packcoil, .not. allocated(DoF)    , illegal )
 
   do icoil = 1, Ncoils
@@ -203,9 +211,9 @@ SUBROUTINE packcoil
      case(2)
         idof = 0
         if(coil(icoil)%Lc /= 0) then
-           DoF(icoil)%xdof(idof+1:idof+6) = (/ coil(icoil)%ox, coil(icoil)%oy, coil(icoil)%oz, &
-                                               coil(icoil)%mx, coil(icoil)%my, coil(icoil)%mz /)
-           idof = idof + 6                       
+           DoF(icoil)%xdof(idof+1:idof+5) = (/ coil(icoil)%ox, coil(icoil)%oy, coil(icoil)%oz, &
+                                               coil(icoil)%mt, coil(icoil)%mp /)
+           idof = idof + 5                       
         endif
         FATAL( packcoil , idof .ne. DoF(icoil)%ND, counting error in packing )
      !---------------------------------------------------------------------------------------------
@@ -241,7 +249,7 @@ SUBROUTINE unpackcoil
   INTEGER  :: icoil, idof, NF, ierr, astat
 
   FATAL( unpackcoil, .not. allocated(coil)   , illegal )
-  FATAL( unpackcoil, .not. allocated(FouCoil), illegal )
+  ! FATAL( unpackcoil, .not. allocated(FouCoil), illegal )
   FATAL( unpackcoil, .not. allocated(DoF)    , illegal )
 
   do icoil = 1, Ncoils
@@ -270,9 +278,8 @@ SUBROUTINE unpackcoil
            coil(icoil)%ox = DoF(icoil)%xdof(idof+1) ; idof = idof + 1
            coil(icoil)%oy = DoF(icoil)%xdof(idof+1) ; idof = idof + 1
            coil(icoil)%oz = DoF(icoil)%xdof(idof+1) ; idof = idof + 1
-           coil(icoil)%mx = DoF(icoil)%xdof(idof+1) ; idof = idof + 1
-           coil(icoil)%my = DoF(icoil)%xdof(idof+1) ; idof = idof + 1
-           coil(icoil)%mz = DoF(icoil)%xdof(idof+1) ; idof = idof + 1
+           coil(icoil)%mt = DoF(icoil)%xdof(idof+1) ; idof = idof + 1
+           coil(icoil)%mp = DoF(icoil)%xdof(idof+1) ; idof = idof + 1
         endif
         FATAL( packcoil , idof .ne. DoF(icoil)%ND, counting error in packing )
 

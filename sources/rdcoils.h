@@ -100,8 +100,9 @@ subroutine rdcoils
   include "mpif.h"
 
   LOGICAL   :: exist
-  INTEGER   :: icoil, maxnseg, ifirst, NF, itmp, ip, icoef, total_coef, num_pm, num_bg
-  REAL      :: Rmaj, zeta, totalcurrent, z0, r1, r2, z1, z2
+  INTEGER   :: icoil, maxnseg, ifirst, NF, itmp, ip, icoef, total_coef, num_pm, num_bg, & 
+               num_per_array, num_tor, ipol, itor
+  REAL      :: Rmaj, zeta, totalcurrent, z0, r1, r2, z1, z2, rtmp, teta
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   Nfixcur = 0 ! fixed coil current number
@@ -242,8 +243,7 @@ subroutine rdcoils
            else if (coil(icoil)%itype == 2) then  ! permanent magnets
               read( runit,*)
               read( runit,*) coil(icoil)%Lc, coil(icoil)%ox, coil(icoil)%oy, coil(icoil)%oz, &
-                                             coil(icoil)%mx, coil(icoil)%my, coil(icoil)%mz
-              write(*,*) coil(icoil)%ox, coil(icoil)%oy, coil(icoil)%oz
+                             coil(icoil)%Ic, coil(icoil)%I , coil(icoil)%mt, coil(icoil)%mp      
            else if (coil(icoil)%itype == 3) then  ! backgroud toroidal/vertical field
               read( runit,*)
               read( runit,*) coil(icoil)%Ic, coil(icoil)%I, coil(icoil)%Lc, coil(icoil)%Bz
@@ -292,22 +292,21 @@ subroutine rdcoils
 
         else if (coil(icoil)%itype == 2) then  ! permanent magnets
 
-           coil(icoil)%I = one
+           IlBCAST( coil(icoil)%Ic, 1 , 0 )
+           RlBCAST( coil(icoil)%I , 1 , 0 )
            IlBCAST( coil(icoil)%Lc, 1 , 0 )
            RlBCAST( coil(icoil)%ox, 1 , 0 )
            RlBCAST( coil(icoil)%oy, 1 , 0 )
            RlBCAST( coil(icoil)%oz, 1 , 0 )
-           RlBCAST( coil(icoil)%mx, 1 , 0 )
-           RlBCAST( coil(icoil)%my, 1 , 0 )
-           RlBCAST( coil(icoil)%mz, 1 , 0 )
+           RlBCAST( coil(icoil)%mt, 1 , 0 )
+           RlBCAST( coil(icoil)%mp, 1 , 0 )
 
         else if (coil(icoil)%itype == 3) then  ! backgroud toroidal/vertical field
-
-           coil(icoil)%I = one
+           
            IlBCAST( coil(icoil)%Ic, 1 , 0 )
-           RlBCAST( coil(icoil)%I, 1 , 0 )
+           RlBCAST( coil(icoil)%I , 1 , 0 )
            IlBCAST( coil(icoil)%Lc, 1 , 0 )
-           RlBCAST( coil(icoil)%Bz, 1 , 0 )      
+           RlBCAST( coil(icoil)%Bz, 1 , 0 )             
 
         else
            STOP " wrong coil type in rdcoils"
@@ -374,7 +373,90 @@ subroutine rdcoils
 
      enddo ! end of do icoil;
 
-     coil(1:Ncoils)%itype = case_coils
+     coil(1:Ncoils)%itype = 1
+
+     !------------- permanent dipoles and background magnetic field ----------------------------------------
+  case( 2 ) ! averagely positioned permanent dipoles ; 2019/01/03
+
+     allocate(    coil(1:Ncoils*Npc) )
+     allocate(     DoF(1:Ncoils*Npc) )
+
+     num_per_array = 5  ! number of dipoles at each toroidal cross-section
+     num_tor = (Ncoils-1)/num_per_array ! number of toroidal arrangements
+
+     if (myid == 0)  then
+        write(ounit,'("rdcoils : initializing "i3" uniformly positioned magnetic dipoles with toroidal magnetif filed")') Ncoils-1
+        if (IsQuiet < 1) write(ounit, '(8X,": Initialize "I4" X "I4" dipoles on r="ES12.5"m  with m="&
+             ES12.5" A")') num_tor, num_per_array, init_radius, init_current
+        if (IsQuiet < 0) write(ounit, '(8X,": IsVaryCurrent = "I1 " ; IsVaryGeometry = "I1)') &
+             IsVaryCurrent, IsVaryGeometry
+        FATAL( rdcoils, modulo(Ncoils-1, num_per_array) /= 0, Please provide a valid number )
+
+     endif
+
+     ! background magnetic field Bt Bz
+     icoil = 1
+     coil(icoil)%I  =  init_current
+     coil(icoil)%Ic =  IsVaryCurrent
+     coil(icoil)%L  =  pi2*init_radius
+     coil(icoil)%Lc =  0               ! IsVaryGeometry ! ignore Bz first; 20190102
+     coil(icoil)%Lo =  target_length
+     coil(icoil)%Bz =  zero
+     coil(icoil)%name = 'bg_BtBz_01'
+     coil(icoil)%itype = 3
+
+     do itor = 1, num_tor
+
+        !initilize with circular coils;
+        zeta = (itor-1) * pi2 / num_tor  ! put a half for a shift;
+        call surfcoord( zero, zeta, r1, z1)
+        call surfcoord(   pi, zeta, r2, z2)
+        Rmaj = half * (r1 + r2)
+        z0   = half * (z1 + z2)     
+
+        do ipol = 1, num_per_array
+
+           icoil = icoil + 1
+
+           !general coil parameters;
+           coil(icoil)%itype = 2
+           coil(icoil)%Ic =  IsVaryCurrent
+           coil(icoil)%I  =  init_current
+           coil(icoil)%L  =  pi2*init_radius
+           coil(icoil)%Lc =  IsVaryGeometry
+           coil(icoil)%Lo =  target_length
+           write(coil(icoil)%name,'("pm_"I6)') icoil
+           FATAL( rdcoils, coil(icoil)%Ic < 0 .or. coil(icoil)%Ic > 1, illegal )
+           FATAL( rdcoils, coil(icoil)%Lc < 0 .or. coil(icoil)%Lc > 1, illegal )
+           FATAL( rdcoils, coil(icoil)%Lo < zero                     , illegal )
+           if(coil(icoil)%Ic == 0) Nfixcur = Nfixcur + 1
+           if(coil(icoil)%Lc == 0) Nfixgeo = Nfixgeo + 1
+
+
+           teta = (ipol-1) * pi2 / num_per_array
+           rtmp = Rmaj + init_radius * cos(teta)
+           coil(icoil)%ox = rtmp * cos(zeta)
+           coil(icoil)%oy = rtmp * sin(zeta)
+           coil(icoil)%oz = z0 + init_radius * sin(teta)
+
+!!$           ! toroidal direction
+!!$           coil(icoil)%mx = - init_current * sin(zeta)
+!!$           coil(icoil)%my =   init_current * cos(zeta)
+!!$           coil(icoil)%mz = zero
+!!$
+!!$           ! poloidal direction
+!!$           coil(icoil)%mx = - init_current * sin(teta) * cos(zeta)
+!!$           coil(icoil)%my = - init_current * sin(teta) * sin(zeta)
+!!$           coil(icoil)%mz =   init_current * cos(teta)
+
+           ! poloidal and toroidal angle; in toroidal direction
+           coil(icoil)%mt = -teta
+           coil(icoil)%mp =  zeta
+
+        enddo ! enddo ipol
+     enddo ! enddo itor
+
+     FATAL( rdcoils, icoil .ne. Ncoils, counting coils wrong when initializing )
 
   end select
 
@@ -459,6 +541,12 @@ subroutine rdcoils
      Gnorm = sqrt(Gnorm/total_coef) * weight_gnorm      ! quadratic mean
      Inorm = sqrt(Inorm/Ncoils) * weight_inorm          ! quadratic mean
      !Inorm = Inorm * 6  ! compensate for the fact that there are so many more spatial variables
+     
+     if (abs(Gnorm) < machprec) Gnorm = one
+     if (abs(Inorm) < machprec) Inorm = one
+
+     Inorm = one
+     Gnorm = one
 
      FATAL( rdcoils, abs(Gnorm) < machprec, cannot be zero )
      FATAL( rdcoils, abs(Inorm) < machprec, cannot be zero )

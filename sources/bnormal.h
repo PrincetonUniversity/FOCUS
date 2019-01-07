@@ -57,15 +57,15 @@ subroutine bnormal( ideriv )
 
            do icoil = 1, Ncoils*Npc
               call bfield0(icoil, iteta, jzeta, dBx(0,0), dBy(0,0), dBz(0,0))
-              lbx(iteta, jzeta) = lbx(iteta, jzeta) + dBx( 0, 0) * coil(icoil)%I!* bsconstant
-              lby(iteta, jzeta) = lby(iteta, jzeta) + dBy( 0, 0) * coil(icoil)%I!* bsconstant
-              lbz(iteta, jzeta) = lbz(iteta, jzeta) + dBz( 0, 0) * coil(icoil)%I!* bsconstant
+              lbx(iteta, jzeta) = lbx(iteta, jzeta) + dBx( 0, 0) 
+              lby(iteta, jzeta) = lby(iteta, jzeta) + dBy( 0, 0) 
+              lbz(iteta, jzeta) = lbz(iteta, jzeta) + dBz( 0, 0) 
            enddo ! end do icoil
 
            lbn(iteta, jzeta) = lbx(iteta, jzeta)*surf(1)%nx(iteta, jzeta) &
                 &            + lby(iteta, jzeta)*surf(1)%ny(iteta, jzeta) &
                 &            + lbz(iteta, jzeta)*surf(1)%nz(iteta, jzeta) &
-                &            - surf(1)%pb(iteta, jzeta)/bsconstant
+                &            - surf(1)%pb(iteta, jzeta)
 
            select case (case_bnormal)
            case (0)     ! no normalization over |B|;
@@ -89,19 +89,14 @@ subroutine bnormal( ideriv )
      call MPI_ALLREDUCE( lbn, surf(1)%Bn, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
      call MPI_ALLREDUCE( lbnorm, bnorm  , 1      , MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
 
-     surf(1)%Bx = surf(1)%Bx * bsconstant
-     surf(1)%By = surf(1)%By * bsconstant
-     surf(1)%Bz = surf(1)%Bz * bsconstant
-     surf(1)%Bn = surf(1)%Bn * bsconstant
-
      bnorm      = bnorm * half * discretefactor
      bn = surf(1)%Bn +  surf(1)%pb  ! bn is B.n from coils
      ! bn = surf(1)%Bx * surf(1)%nx + surf(1)%By * surf(1)%ny + surf(1)%Bz * surf(1)%nz
-     if (case_bnormal == 0) bnorm = bnorm * bsconstant * bsconstant ! take bsconst back
+     !! if (case_bnormal == 0) bnorm = bnorm * bsconstant * bsconstant ! take bsconst back
 
      if (case_bnormal == 1) then    ! collect |B|
         call MPI_ALLREDUCE( lbm, bm, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
-        bm = bm * bsconstant * bsconstant 
+        !! bm = bm * bsconstant * bsconstant 
      endif
      
      ! Another type of target functions
@@ -151,13 +146,14 @@ subroutine bnormal( ideriv )
                  ND = DoF(icoil)%ND
                  if ( coil(icoil)%Ic /= 0 ) then !if current is free;
                     call bfield0(icoil+(ip-1)*Ncoils, iteta, jzeta, dBx(0,0), dBy(0,0), dBz(0,0))
-                    dBn(idof+1) = bsconstant * ( dBx(0,0)*surf(1)%nx(iteta,jzeta) &
-                         &                     + dBy(0,0)*surf(1)%ny(iteta,jzeta) &
-                         &                     + dBz(0,0)*surf(1)%nz(iteta,jzeta) )
+                    if (coil(icoil+(ip-1)*Ncoils)%itype == 3) dBz(0,0) = zero  ! Bz doesn't change in itype=3
+                    dBn(idof+1) = ( dBx(0,0)*surf(1)%nx(iteta,jzeta) &
+                         &        + dBy(0,0)*surf(1)%ny(iteta,jzeta) &
+                         &        + dBz(0,0)*surf(1)%nz(iteta,jzeta) ) / coil(icoil+(ip-1)*Ncoils)%I
                     if (case_bnormal == 1) then  ! normalized over |B|;
-                    dBm(idof+1) = bsconstant * ( dBx(0,0)*surf(1)%Bx(iteta,jzeta) &
-                         &                     + dBy(0,0)*surf(1)%By(iteta,jzeta) &
-                         &                     + dBz(0,0)*surf(1)%Bz(iteta,jzeta) )
+                    dBm(idof+1) = ( dBx(0,0)*surf(1)%Bx(iteta,jzeta) &
+                         &        + dBy(0,0)*surf(1)%By(iteta,jzeta) &
+                         &        + dBz(0,0)*surf(1)%Bz(iteta,jzeta) ) / coil(icoil+(ip-1)*Ncoils)%I 
                     endif
 
                     idof = idof +1
@@ -165,13 +161,11 @@ subroutine bnormal( ideriv )
 
                  if ( coil(icoil)%Lc /= 0 ) then !if geometry is free;
                     call bfield1(icoil+(ip-1)*Ncoils, iteta, jzeta, dBx(1:ND,0), dBy(1:ND,0), dBz(1:ND,0), ND)
-                    dBn(idof+1:idof+ND) = bsconstant * coil(icoil)%I            &
-                         &              * ( dBx(1:ND,0)*surf(1)%nx(iteta,jzeta) &
+                    dBn(idof+1:idof+ND) = ( dBx(1:ND,0)*surf(1)%nx(iteta,jzeta) &
                          &                + dBy(1:ND,0)*surf(1)%ny(iteta,jzeta) &
                          &                + dBz(1:ND,0)*surf(1)%nz(iteta,jzeta) )
                     if (case_bnormal == 1) then  ! normalized over |B|;
-                    dBm(idof+1:idof+ND) = bsconstant * coil(icoil)%I            &
-                         &              * ( dBx(1:ND,0)*surf(1)%Bx(iteta,jzeta) &
+                    dBm(idof+1:idof+ND) = ( dBx(1:ND,0)*surf(1)%Bx(iteta,jzeta) &
                          &                + dBy(1:ND,0)*surf(1)%By(iteta,jzeta) &
                          &                + dBz(1:ND,0)*surf(1)%Bz(iteta,jzeta) )
                     endif

@@ -33,8 +33,7 @@ subroutine AllocData(itype)
            SALLOCATE(DoF(icoil)%yof , (0:coil(icoil)%NS-1, 1:ND), zero)
            SALLOCATE(DoF(icoil)%zof , (0:coil(icoil)%NS-1, 1:ND), zero)
         case(2)
-           coil(icoil)%Ic = 0 ! make sure Ic=0
-           DoF(icoil)%ND = coil(icoil)%Lc * 6 ! number of DoF for permanent magnet
+           DoF(icoil)%ND = coil(icoil)%Lc * 5 ! number of DoF for permanent magnet
            SALLOCATE(DoF(icoil)%xdof, (1:DoF(icoil)%ND), zero)
         case(3) 
            DoF(icoil)%ND = coil(icoil)%Lc * 1 ! number of DoF for background Bt, Bz
@@ -48,7 +47,8 @@ subroutine AllocData(itype)
      do icoil = 1, Ncoils
 
         Ndof = Ndof + coil(icoil)%Ic + DoF(icoil)%ND
-        Tdof = Tdof + 1              + 6*(FouCoil(icoil)%NF)+3
+        ! Tdof = Tdof + 1              + 6*(FouCoil(icoil)%NF)+3
+        Tdof = Tdof + coil(icoil)%Ic + DoF(icoil)%ND
         if (DoF(icoil)%ND >= Cdof) Cdof = DoF(icoil)%ND ! find the largest ND for single coil;
 
       enddo
@@ -78,12 +78,20 @@ subroutine AllocData(itype)
               idof = idof + ND
            endif
         else if (coil(icoil)%itype == 2) then  ! permanent magnets
+           if(coil(icoil)%Ic /= 0) then
+              if(abs(coil(icoil)%I) > sqrtmachprec) then
+                 dofnorm(idof+1) = coil(icoil)%I
+              else
+                 dofnorm(idof+1) = one
+              endif
+              idof = idof + 1
+           endif
            if(coil(icoil)%Lc /= 0) then
-              xtmp = sqrt( coil(icoil)%ox**2 + coil(icoil)%oy**2 + coil(icoil)%oz**2 ) ! origin position
-              mtmp = sqrt( coil(icoil)%mx**2 + coil(icoil)%my**2 + coil(icoil)%mz**2 ) ! moment strenth
+              xtmp = max(one, sqrt( coil(icoil)%ox**2 + coil(icoil)%oy**2 + coil(icoil)%oz**2 ) ) ! origin position
+              mtmp = max(one, sqrt( coil(icoil)%mp**2 + coil(icoil)%mt**2 ) ) ! moment orentation
               dofnorm(idof+1:idof+3) = xtmp
-              dofnorm(idof+4:idof+6) = mtmp
-              idof = idof + 6
+              dofnorm(idof+4:idof+5) = mtmp
+              idof = idof + 5
            endif
         else if (coil(icoil)%itype == 3) then  ! backgroud toroidal/vertical field
            if(coil(icoil)%Ic /= 0) then

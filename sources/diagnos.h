@@ -12,7 +12,7 @@ SUBROUTINE diagnos
   implicit none
   include "mpif.h"
 
-  INTEGER           :: icoil, itmp, astat, ierr, NF, idof, i, j
+  INTEGER           :: icoil, itmp=0, astat, ierr, NF, idof, i, j
   LOGICAL           :: lwbnorm = .True. , l_raw = .False.!if use raw coils data
   REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist, ReDot, ImDot
   REAL, parameter   :: infmax = 1.0E6
@@ -177,9 +177,9 @@ SUBROUTINE diagnos
      enddo
   
      if(myid .eq. 0) write(ounit, '(8X": The most and least important coils are :  " & 
-          F8.3"% at coil" I4 " ; " F8.3"% at coil "I4)')      &
-      100*maxval(coil_importance), maxloc(coil_importance), &
-      100*minval(coil_importance), minloc(coil_importance)
+          ES12.5" at coil" I4 " ; " ES12.5" at coil "I4)')      &
+      maxval(coil_importance), maxloc(coil_importance), &
+      minval(coil_importance), minloc(coil_importance)
 
   endif
   !--------------------------------------------------------------------------------------------- 

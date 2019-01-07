@@ -364,6 +364,12 @@ subroutine initial
         FATAL( initial, Nseg   <= 0    , no enough segments  )
         FATAL( initial, target_length  < zero, illegal )
         if (IsQuiet < 1) write(ounit, 1000) 'case_init', case_init, 'Initialize circular coils.'
+     case( 2 )
+        FATAL( initial, Ncoils < 1, should provide the No. of coils)
+        FATAL( initial, init_current == zero, invalid coil current)
+        FATAL( initial, init_radius < zero, invalid coil radius)
+        FATAL( initial, target_length  < zero, illegal )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_init', case_init, 'Initialize magnetic dipoles.'
      case default
         FATAL( initial, .true., selected case_init is not supported )
      end select

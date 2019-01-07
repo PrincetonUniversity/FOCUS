@@ -235,9 +235,9 @@ subroutine saving
            write(wunit, 1000) FouCoil(icoil)%zc(0:NF)
            write(wunit, 1000) FouCoil(icoil)%zs(0:NF)
         case (2) 
-           write(wunit, *) "#  Lc  ox   oy   oz   mx   my   mz"
-           write(wunit,'(I3, 6ES23.15)') coil(icoil)%Lc, coil(icoil)%ox, coil(icoil)%oy, coil(icoil)%oz, &
-                                                         coil(icoil)%mx, coil(icoil)%my, coil(icoil)%mz
+           write(wunit, *) "#  Lc  ox   oy   oz  Ic  I  mt  mp"
+           write(wunit,'(2(I3, 3ES23.15))') coil(icoil)%Lc, coil(icoil)%ox, coil(icoil)%oy, coil(icoil)%oz, &
+                                         coil(icoil)%Ic, coil(icoil)%I , coil(icoil)%mt, coil(icoil)%mp  
         case (3)
            write(wunit, *) "# Ic     I    Lc  Bz  (Ic control I; Lc control Bz)"
            write(wunit,'(I3, ES23.15, I3, ES23.15)') coil(icoil)%Ic, coil(icoil)%I, &
