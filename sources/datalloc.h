@@ -47,8 +47,11 @@ subroutine AllocData(itype)
      do icoil = 1, Ncoils
 
         Ndof = Ndof + coil(icoil)%Ic + DoF(icoil)%ND
-        ! Tdof = Tdof + 1              + 6*(FouCoil(icoil)%NF)+3
-        Tdof = Tdof + coil(icoil)%Ic + DoF(icoil)%ND
+        if (allocated(FouCoil)) then
+           Tdof = Tdof + 1              + 6*(FouCoil(icoil)%NF)+3
+        else 
+           Tdof = Tdof + coil(icoil)%Ic + DoF(icoil)%ND
+        end if
         if (DoF(icoil)%ND >= Cdof) Cdof = DoF(icoil)%ND ! find the largest ND for single coil;
 
       enddo
