@@ -499,6 +499,9 @@ subroutine initial
      case ( 3 )
         if (IsQuiet < 1) write(ounit, 1000) 'case_postproc', case_postproc, & 
              &  'Coil evaluations and field-line tracing will be performed.'
+     case ( 4 )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_postproc', case_postproc, & 
+             &  'Coil evaluations and writing last surface will be performed.'
      case default
         FATAL( initial, .true., selected case_postproc is not supported )
      end select

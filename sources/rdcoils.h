@@ -44,8 +44,8 @@
 !latex   #-----------2--permanent magnet---------------
 !latex   #coil_type     coil_name
 !latex       2    dipole_01  
-!latex   #  Lc  ox   oy   oz   mx   my   mz
-!latex      1   1.0  0.0  0.0  0.0  1.0  0.0
+!latex   #  Lc  ox   oy   oz  Ic  I  mt  mp
+!latex      1   0.0  0.0  0.0  1 1.0E6  0.0  0.0
 !latex   #-----------3--backgound Bt Bz----------------
 !latex   #coil_type     coil_name
 !latex       3    bg_BtBz_01
@@ -381,7 +381,7 @@ subroutine rdcoils
      allocate(    coil(1:Ncoils*Npc) )
      allocate(     DoF(1:Ncoils*Npc) )
 
-     num_per_array = 5  ! number of dipoles at each toroidal cross-section
+     num_per_array = 16  ! number of dipoles at each toroidal cross-section
      num_tor = (Ncoils-1)/num_per_array ! number of toroidal arrangements
 
      if (myid == 0)  then
@@ -449,9 +449,17 @@ subroutine rdcoils
 !!$           coil(icoil)%my = - init_current * sin(teta) * sin(zeta)
 !!$           coil(icoil)%mz =   init_current * cos(teta)
 
-           ! poloidal and toroidal angle; in toroidal direction
+           ! poloidal and toroidal angle; in poloidal direction
            coil(icoil)%mt = -teta
            coil(icoil)%mp =  zeta
+!!$
+!!$           ! inward direction
+!!$           coil(icoil)%mt =  teta + half * pi
+!!$           coil(icoil)%mp =  zeta + pi
+!!$
+!!$           ! toroidal direction
+!!$           coil(icoil)%mt = half * pi
+!!$           coil(icoil)%mp = zeta + half * pi
 
         enddo ! enddo ipol
      enddo ! enddo itor
