@@ -498,6 +498,8 @@ subroutine rdcoils
               SALLOCATE( FouCoil(icoil+ip*Ncoils)%ys, (0:NF), zero )
               SALLOCATE( FouCoil(icoil+ip*Ncoils)%zc, (0:NF), zero )
               SALLOCATE( FouCoil(icoil+ip*Ncoils)%zs, (0:NF), zero )
+           case( 2 )
+           case( 3 )
            case default
               FATAL(discoil, .true., not supported coil types)
            end select
