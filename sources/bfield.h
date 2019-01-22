@@ -213,42 +213,33 @@ subroutine bfield1(icoil, iteta, jzeta, Bx, By, Bz, ND)
      mx = sint*cosp ; my = sint*sinp ; mz = cost
      m_dot_r = mx*dlx + my*dly + mz*dlz
 
-     Bx(1, 1) = 15.0_dp*m_dot_r*dlx*dlx*rm7 - 3.0_dp*mx*dlx*rm5 - 3.0_dp*mx*dlx*rm5 - 3.0_dp*m_dot_r*rm5
-     By(1, 1) = 15.0_dp*m_dot_r*dlx*dly*rm7 - 3.0_dp*mx*dly*rm5 - 3.0_dp*my*dlx*rm5
-     Bz(1, 1) = 15.0_dp*m_dot_r*dlx*dlz*rm7 - 3.0_dp*mx*dlz*rm5 - 3.0_dp*mz*dlx*rm5
-
-     Bx(1, 2) = 15.0_dp*m_dot_r*dly*dlx*rm7 - 3.0_dp*my*dlx*rm5 - 3.0_dp*mx*dly*rm5
-     By(1, 2) = 15.0_dp*m_dot_r*dly*dly*rm7 - 3.0_dp*my*dly*rm5 - 3.0_dp*my*dly*rm5 - 3.0_dp*m_dot_r*rm5
-     Bz(1, 2) = 15.0_dp*m_dot_r*dly*dlz*rm7 - 3.0_dp*my*dlz*rm5 - 3.0_dp*mz*dly*rm5
-
-     Bx(1, 3) = 15.0_dp*m_dot_r*dlz*dlx*rm7 - 3.0_dp*mz*dlx*rm5 - 3.0_dp*mx*dlz*rm5
-     By(1, 3) = 15.0_dp*m_dot_r*dlz*dly*rm7 - 3.0_dp*mz*dly*rm5 - 3.0_dp*my*dlz*rm5
-     Bz(1, 3) = 15.0_dp*m_dot_r*dlz*dlz*rm7 - 3.0_dp*mz*dlz*rm5 - 3.0_dp*mz*dlz*rm5 - 3.0_dp*m_dot_r*rm5 
-
-
-!!$     Bx(1, 4) = 3.0_dp*dlx*dlx*rm5 - rm3
-!!$     By(1, 4) = 3.0_dp*dlx*dly*rm5
-!!$     Bz(1, 4) = 3.0_dp*dlx*dlz*rm5
+!!$     Bx(1, 1) = 15.0_dp*m_dot_r*dlx*dlx*rm7 - 3.0_dp*mx*dlx*rm5 - 3.0_dp*mx*dlx*rm5 - 3.0_dp*m_dot_r*rm5
+!!$     By(1, 1) = 15.0_dp*m_dot_r*dlx*dly*rm7 - 3.0_dp*mx*dly*rm5 - 3.0_dp*my*dlx*rm5
+!!$     Bz(1, 1) = 15.0_dp*m_dot_r*dlx*dlz*rm7 - 3.0_dp*mx*dlz*rm5 - 3.0_dp*mz*dlx*rm5
 !!$
-!!$     Bx(1, 5) = 3.0_dp*dly*dlx*rm5
-!!$     By(1, 5) = 3.0_dp*dly*dly*rm5 - rm3
-!!$     Bz(1, 5) = 3.0_dp*dly*dlz*rm5
+!!$     Bx(1, 2) = 15.0_dp*m_dot_r*dly*dlx*rm7 - 3.0_dp*my*dlx*rm5 - 3.0_dp*mx*dly*rm5
+!!$     By(1, 2) = 15.0_dp*m_dot_r*dly*dly*rm7 - 3.0_dp*my*dly*rm5 - 3.0_dp*my*dly*rm5 - 3.0_dp*m_dot_r*rm5
+!!$     Bz(1, 2) = 15.0_dp*m_dot_r*dly*dlz*rm7 - 3.0_dp*my*dlz*rm5 - 3.0_dp*mz*dly*rm5
 !!$
-!!$     Bx(1, 6) = 3.0_dp*dlz*dlx*rm5
-!!$     By(1, 6) = 3.0_dp*dlz*dly*rm5
-!!$     Bz(1, 6) = 3.0_dp*dlz*dlz*rm5 - rm3
+!!$     Bx(1, 3) = 15.0_dp*m_dot_r*dlz*dlx*rm7 - 3.0_dp*mz*dlx*rm5 - 3.0_dp*mx*dlz*rm5
+!!$     By(1, 3) = 15.0_dp*m_dot_r*dlz*dly*rm7 - 3.0_dp*mz*dly*rm5 - 3.0_dp*my*dlz*rm5
+!!$     Bz(1, 3) = 15.0_dp*m_dot_r*dlz*dlz*rm7 - 3.0_dp*mz*dlz*rm5 - 3.0_dp*mz*dlz*rm5 - 3.0_dp*m_dot_r*rm5 
 !!$
-!!$     Bx = Bx * bsconstant
-!!$     By = By * bsconstant
-!!$     Bz = Bz * bsconstant
+!!$     Bx(1, 4) = 3.0_dp*dlx*( cost*cosp*dlx + cost*sinp*dly - sint*dlz)*rm5 - cost*cosp*rm3
+!!$     By(1, 4) = 3.0_dp*dly*( cost*cosp*dlx + cost*sinp*dly - sint*dlz)*rm5 - cost*sinp*rm3 
+!!$     Bz(1, 4) = 3.0_dp*dlz*( cost*cosp*dlx + cost*sinp*dly - sint*dlz)*rm5 + sint     *rm3 
+!!$
+!!$     Bx(1, 5) = 3.0_dp*dlx*(-sint*sinp*dlx + sint*cosp*dly           )*rm5 + sint*sinp*rm3
+!!$     By(1, 5) = 3.0_dp*dly*(-sint*sinp*dlx + sint*cosp*dly           )*rm5 - sint*cosp*rm3
+!!$     Bz(1, 5) = 3.0_dp*dlz*(-sint*sinp*dlx + sint*cosp*dly           )*rm5 
 
-     Bx(1, 4) = 3.0_dp*dlx*( cost*cosp*dlx + cost*sinp*dly - sint*dlz)*rm5 - cost*cosp*rm3
-     By(1, 4) = 3.0_dp*dly*( cost*cosp*dlx + cost*sinp*dly - sint*dlz)*rm5 - cost*sinp*rm3 
-     Bz(1, 4) = 3.0_dp*dlz*( cost*cosp*dlx + cost*sinp*dly - sint*dlz)*rm5 + sint     *rm3 
+     Bx(1, 1) = 3.0_dp*dlx*( cost*cosp*dlx + cost*sinp*dly - sint*dlz)*rm5 - cost*cosp*rm3
+     By(1, 1) = 3.0_dp*dly*( cost*cosp*dlx + cost*sinp*dly - sint*dlz)*rm5 - cost*sinp*rm3 
+     Bz(1, 1) = 3.0_dp*dlz*( cost*cosp*dlx + cost*sinp*dly - sint*dlz)*rm5 + sint     *rm3 
 
-     Bx(1, 5) = 3.0_dp*dlx*(-sint*sinp*dlx + sint*cosp*dly           )*rm5 + sint*sinp*rm3
-     By(1, 5) = 3.0_dp*dly*(-sint*sinp*dlx + sint*cosp*dly           )*rm5 - sint*cosp*rm3
-     Bz(1, 5) = 3.0_dp*dlz*(-sint*sinp*dlx + sint*cosp*dly           )*rm5 
+     Bx(1, 2) = 3.0_dp*dlx*(-sint*sinp*dlx + sint*cosp*dly           )*rm5 + sint*sinp*rm3
+     By(1, 2) = 3.0_dp*dly*(-sint*sinp*dlx + sint*cosp*dly           )*rm5 - sint*cosp*rm3
+     Bz(1, 2) = 3.0_dp*dlz*(-sint*sinp*dlx + sint*cosp*dly           )*rm5 
 
      Bx = Bx * coil(icoil)%I * bsconstant
      By = By * coil(icoil)%I * bsconstant

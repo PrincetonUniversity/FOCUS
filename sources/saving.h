@@ -135,6 +135,7 @@ subroutine saving
   HWRITERA( Nteta,Nzeta      ,   nx            ,   surf(1)%nx(0:Nteta-1,0:Nzeta-1) )
   HWRITERA( Nteta,Nzeta      ,   ny            ,   surf(1)%ny(0:Nteta-1,0:Nzeta-1) )
   HWRITERA( Nteta,Nzeta      ,   nz            ,   surf(1)%nz(0:Nteta-1,0:Nzeta-1) )
+  HWRITERA( Nteta,Nzeta      ,   nn            ,   surf(1)%ds(0:Nteta-1,0:Nzeta-1) )
 
   if (allocated(bn)) then
      HWRITERA( Nteta,Nzeta      ,   plas_Bn       ,   surf(1)%pb(0:Nteta-1,0:Nzeta-1) )
@@ -308,7 +309,121 @@ subroutine saving
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
+  if (Update_plasma == 1 ) call write_plasma
+
   return
 
 end subroutine saving
 
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+SUBROUTINE write_plasma
+!-------------------------------------------------------------------------------!
+! write down the unpdated plasma boundary information;                          !
+! CZHU; first version: 2017/01/11; last revised: 2017/01/11                     !
+!-------------------------------------------------------------------------------!
+  use globals, only : dp, zero, half, two, pi2, myid, ncpu, ounit, wunit, ext, &
+                      Nfou, Nfp, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
+                      Nteta, Nzeta, surf, Nfp_raw, bnorm, sqrtmachprec
+  
+  implicit none  
+  include "mpif.h"
+
+  !-------------------------------------------------------------------------------
+  INTEGER             :: mf, nf  ! predefined Fourier modes size
+  INTEGER             :: imn=0, ii, jj, im, in, astat, ierr, maxN, maxM
+  REAL                :: teta, zeta, arg, tol, tmpc, tmps
+  !------------------------------------------------------------------------------- 
+
+  mf = 24 ;  nf = 24
+  FATAL(bnftran, mf .le. 0 .and. nf .le. 0, INVALID size for Fourier harmonics)
+
+  tmpc = zero ; tmps = zero
+
+  if (bnorm .gt. sqrtmachprec ) then
+     tol = 1.0E-8 * bnorm
+  else
+     tol = 1.0E-8
+  endif
+
+  if(myid .ne. 0) return
+
+  if(Nbnf .gt. 0) then  ! if there is input Bn target
+     DALLOCATE(bnim)
+     DALLOCATE(bnin)
+     DALLOCATE(bnc )
+     DALLOCATE(bns )
+  endif
+
+  Nbnf = (mf+1)*(2*nf+1) ! (0:mf)*(-nf:nf)
+
+  SALLOCATE( bnim, (1:Nbnf), 0    )
+  SALLOCATE( bnin, (1:Nbnf), 0    )
+  SALLOCATE( bnc , (1:Nbnf), zero )
+  SALLOCATE( bns , (1:Nbnf), zero )  
+  
+  imn = 0
+  do in = -nf, nf
+     do im = 0, mf
+
+        tmpc = zero ; tmps = zero
+        do ii = 0, Nteta-1 
+           teta = ( ii + half ) * pi2 / Nteta
+           do jj = 0, Nzeta-1
+              zeta = ( jj + half ) * pi2 / Nzeta
+
+              arg = im*teta - in*Nfp_raw*zeta
+              tmpc = tmpc + surf(1)%bn(ii,jj)*cos(arg)
+              tmps = tmps + surf(1)%bn(ii,jj)*sin(arg)
+
+           enddo ! end jj
+        enddo ! end ii
+
+        if ( (abs(tmpc) + abs(tmps)) .lt. tol ) cycle
+
+        imn = imn + 1
+        bnin(imn) = in * Nfp_raw ; bnim(imn) = im
+
+        if (im .eq. 0  ) then
+           tmpc = tmpc*half
+           tmps = tmps*half
+        endif
+        bnc(imn) = tmpc
+        bns(imn) = tmps
+
+     enddo ! end im
+  enddo ! end in
+
+  Nbnf = imn
+
+  bnc = bnc * two / (Nteta*Nzeta)
+  bns = bns * two / (Nteta*Nzeta)
+  !----------------------------------------------
+
+
+  open(wunit, file=trim(ext)//".plasma", status='unknown', action='write')
+
+  write(wunit,*      ) "#Nfou Nfp  Nbnf"
+  write(wunit,'(3I)' ) Nfou, Nfp_raw, Nbnf
+
+  write(wunit,*      ) "#------- plasma boundary------"
+  write(wunit,*      ) "#  n   m   Rbc   Rbs    Zbc   Zbs"
+  do imn = 1, Nfou
+     write(wunit,'(2I, 4ES15.6)') bin(imn)/Nfp_raw, bim(imn), Rbc(imn), Rbs(imn), Zbc(imn), Zbs(imn)
+  enddo
+
+  write(wunit,*      ) "#-------Bn harmonics----------"
+  write(wunit,*      ) "#  n  m  bnc   bns"
+  if (Nbnf .gt. 0) then
+     do imn = 1, Nbnf
+        write(wunit,'(2I, 2ES15.6)') bnin(imn)/Nfp_raw, bnim(imn), bnc(imn), bns(imn)
+     enddo
+  else
+     write(wunit,'(2I, 2ES15.6)') 0, 0, 0.0, 0.0
+  endif
+
+  close(wunit)
+END SUBROUTINE write_plasma
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-

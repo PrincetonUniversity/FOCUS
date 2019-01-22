@@ -163,8 +163,10 @@ SUBROUTINE diagnos
   if (allocated(surf(1)%bn)) then
      ! \sum{ |Bn| / |B| }/ (Nt*Nz)
      if(myid .eq. 0) write(ounit, '(8X": Average relative absolute Bn error is  :" ES23.15)') &
-          sum(abs(surf(1)%bn/sqrt(surf(1)%Bx**2 + surf(1)%By**2 + surf(1)%Bz**2))) / (Nzeta*Nzeta)
+          sum(abs(surf(1)%bn/sqrt(surf(1)%Bx**2 + surf(1)%By**2 + surf(1)%Bz**2))) / (Nteta*Nzeta)
   endif
+
+  return
 
   !--------------------------------calculate coil importance------------------------------------  
   if (.not. allocated(coil_importance)) then

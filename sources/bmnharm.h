@@ -165,23 +165,23 @@ SUBROUTINE readBmn
    endif
    case_bnormal = 0
 
-  !-------------------------store trig functions-------------------------------------------
-  SALLOCATE( carg,  (1:Nteta*Nzeta, 1:NBmn), zero )
-  SALLOCATE( sarg,  (1:Nteta*Nzeta, 1:NBmn), zero )
+   !-------------------------store trig functions-------------------------------------------
+   SALLOCATE( carg,  (1:Nteta*Nzeta, 1:NBmn), zero )
+   SALLOCATE( sarg,  (1:Nteta*Nzeta, 1:NBmn), zero )
 
-  Bmnin(1:NBmn) = Bmnin(1:NBmn) * Nfp_raw
+   Bmnin(1:NBmn) = Bmnin(1:NBmn) * Nfp_raw
 
-  ij = 0
-  do jj = 0, Nzeta-1 ; zeta = ( jj + half ) * pi2 / (Nzeta*Nfp) ! the same as in rdsurf.h
-     do ii = 0, Nteta-1 ; teta = ( ii + half ) * pi2 / Nteta
-        ij = ij + 1
-        do imn = 1, NBmn
-           arg = Bmnim(imn) * teta - Bmnin(imn) * zeta
-           carg(ij, imn) = cos(arg)
-           sarg(ij, imn) = sin(arg)
-        enddo
-     enddo
-  enddo
+   ij = 0
+   do jj = 0, Nzeta-1 ; zeta = ( jj + half ) * pi2 / (Nzeta*Nfp) ! the same as in rdsurf.h
+      do ii = 0, Nteta-1 ; teta = ( ii + half ) * pi2 / Nteta
+         ij = ij + 1
+         do imn = 1, NBmn
+            arg = Bmnim(imn) * teta - Bmnin(imn) * zeta
+            carg(ij, imn) = cos(arg)
+            sarg(ij, imn) = sin(arg)
+         enddo
+      enddo
+   enddo
 
   return
 END SUBROUTINE readBmn

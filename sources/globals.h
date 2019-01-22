@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='v0.6.02' ! version number
+  CHARACTER(LEN=10), parameter :: version='v0.7.01' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -145,7 +145,8 @@ module globals
   INTEGER              :: save_freq      =   1
   INTEGER              :: save_coils     =   0 
   INTEGER              :: save_harmonics =   0
-  INTEGER              :: save_filaments =   0   
+  INTEGER              :: save_filaments =   0
+  INTEGER              :: update_plasma  =   0    
 
   REAL                 :: pp_phi         =  0.000D+00
   REAL                 :: pp_raxis       =  0.000D+00       
@@ -215,6 +216,7 @@ module globals
                         save_coils     , &
                         save_harmonics , &
                         save_filaments , &
+                        update_plasma  , &
                         pp_phi         , &
                         pp_raxis       , &
                         pp_zaxis       , &

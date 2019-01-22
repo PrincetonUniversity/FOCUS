@@ -211,9 +211,12 @@ SUBROUTINE packcoil
      case(2)
         idof = 0
         if(coil(icoil)%Lc /= 0) then
-           DoF(icoil)%xdof(idof+1:idof+5) = (/ coil(icoil)%ox, coil(icoil)%oy, coil(icoil)%oz, &
-                                               coil(icoil)%mt, coil(icoil)%mp /)
-           idof = idof + 5                       
+!!$           DoF(icoil)%xdof(idof+1:idof+5) = (/ coil(icoil)%ox, coil(icoil)%oy, coil(icoil)%oz, &
+!!$                                               coil(icoil)%mt, coil(icoil)%mp /)
+!!$           idof = idof + 5      
+  
+           DoF(icoil)%xdof(idof+1:idof+2) = (/ coil(icoil)%mt, coil(icoil)%mp /)
+           idof = idof + 2                   
         endif
         FATAL( packcoil , idof .ne. DoF(icoil)%ND, counting error in packing )
      !---------------------------------------------------------------------------------------------
@@ -275,9 +278,9 @@ SUBROUTINE unpackcoil
      case(2)
         idof = 0
         if(coil(icoil)%Lc /= 0) then
-           coil(icoil)%ox = DoF(icoil)%xdof(idof+1) ; idof = idof + 1
-           coil(icoil)%oy = DoF(icoil)%xdof(idof+1) ; idof = idof + 1
-           coil(icoil)%oz = DoF(icoil)%xdof(idof+1) ; idof = idof + 1
+           !coil(icoil)%ox = DoF(icoil)%xdof(idof+1) ; idof = idof + 1
+           !coil(icoil)%oy = DoF(icoil)%xdof(idof+1) ; idof = idof + 1
+           !coil(icoil)%oz = DoF(icoil)%xdof(idof+1) ; idof = idof + 1
            coil(icoil)%mt = DoF(icoil)%xdof(idof+1) ; idof = idof + 1
            coil(icoil)%mp = DoF(icoil)%xdof(idof+1) ; idof = idof + 1
         endif

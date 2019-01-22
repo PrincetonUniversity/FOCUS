@@ -12,7 +12,7 @@ SUBROUTINE poinplot
 
   INTEGER              :: ierr, astat, iflag
   INTEGER              ::  ip, is, niter
-  REAL                 :: theta, zeta, r, x, y, z, RZ(2), r1, z1, rzrzt(5)
+  REAL                 :: theta, zeta, r, RZ(2), r1, z1, rzrzt(5),  x, y, z, tmpB(4)
   REAL, ALLOCATABLE    :: lppr(:,:), lppz(:,:), liota(:)  ! local ppr ppz
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -30,12 +30,17 @@ SUBROUTINE poinplot
      
      pp_raxis = (r+r1)*half
      pp_zaxis = (z+z1)*half
+
+     if (myid == 0) then
+        RZ(1) = pp_raxis ; RZ(2) = pp_zaxis
+        call find_axis(RZ, pp_maxiter, pp_xtol)
+        pp_raxis = RZ(1) ; pp_zaxis = RZ(2)
+
+        RlBCAST( pp_raxis, 1, 0 )
+        RlBCAST( pp_zaxis, 1, 0 )
+     endif
   endif
- 
-  ! calculate axis
-  RZ(1) = pp_raxis ; RZ(2) = pp_zaxis
-  call find_axis(RZ, pp_maxiter, pp_xtol)
-  pp_raxis = RZ(1) ; pp_zaxis = RZ(2)
+  call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
 
   ! poincare plot and calculate iota
   SALLOCATE( ppr , (1:pp_ns, 0:pp_maxiter), zero )
@@ -47,8 +52,9 @@ SUBROUTINE poinplot
 
   ! if pp_rmax and pp_zmax not provied 
   if ( (abs(pp_rmax) + abs(pp_zmax)) < sqrtmachprec) then
-     pp_rmax = r*1.0
-     pp_zmax = z*1.0
+     zeta = pp_phi
+     theta = zero ; call surfcoord( theta, zeta, r , z )
+     pp_rmax = r*1.0 ; pp_zmax = z*1.0
   endif
 
   if(myid==0) write(ounit, '("poinplot: following fieldlines between ("ES12.5 &
@@ -119,27 +125,27 @@ SUBROUTINE find_axis(RZ, MAXFEV, XTOL)
   allocate(fjac(ldfjac,n))
   allocate(r(lr))
 
-  call hybrd(axis_fcn,n, RZ,fvec,xtol,maxfev,ml,mu,epsfcn,diag, &
+  call hybrd(axis_fcn,n,RZ,fvec,xtol,maxfev,ml,mu,epsfcn,diag, &
        mode,factor,nprint,info,nfev,fjac,ldfjac,r,lr,qtf,wa1,wa2,wa3,wa4)
 
-  if (myid==0) then 
-     write(ounit,'("findaxis: Finding axis at phi = "ES12.5" with (R,Z) = ( "ES12.5,","ES12.5" ).")') &
-          pp_phi, RZ(1), RZ(2)
-     select case (info)
-     case (0)
-        write(ounit,'("findaxis: info=0, improper input parameters.")')
-     case (1)
-        write(ounit,'("findaxis: info=1, relative error between two consecutive iterates is at most xtol.")')
-     case (2)
-        write(ounit,'("findaxis: info=2, number of calls to fcn has reached or exceeded maxfev.")')
-     case (3)
-        write(ounit,'("findaxis: info=3, xtol is too small.")')    
-     case (4)
-        write(ounit,'("findaxis: info=4, iteration is not making good progress, jacobian.")')    
-     case (5)
-        write(ounit,'("findaxis: info=5, iteration is not making good progress, function.")')
-     end select
-  endif
+  write(ounit,'("findaxis: Finding axis at phi = "ES12.5" with (R,Z) = ( "ES12.5,","ES12.5" ).")') &
+       pp_phi, RZ(1), RZ(2)
+  select case (info)
+  case (0)
+     write(ounit,'("findaxis: info=0, improper input parameters.")')
+  case (1)
+     write(ounit,'("findaxis: info=1, relative error between two consecutive iterates is at most xtol.")')
+  case (2)
+     write(ounit,'("findaxis: info=2, number of calls to fcn has reached or exceeded maxfev.")')
+  case (3)
+     write(ounit,'("findaxis: info=3, xtol is too small.")')    
+  case (4)
+     write(ounit,'("findaxis: info=4, iteration is not making good progress, jacobian.")')    
+  case (5)
+     write(ounit,'("findaxis: info=5, iteration is not making good progress, function.")')
+  case default
+     write(ounit,'("findaxis: info="I2", something wrong with the axis finding subroutine.")') info
+  end select
 
   return
 
@@ -167,7 +173,7 @@ SUBROUTINE axis_fcn(n,x,fvec,iflag)
   rz_end = x
 
   call ode( BRpZ, n, rz_end, phi_init, phi_stop, relerr, abserr, ifail, work, iwork )
-  if ( ifail /= 2 .and. myid == 0) then     
+  if ( ifail /= 2 ) then     
      if ( IsQuiet < 0 ) then
         write ( ounit, '(A,I3)' ) 'axis_fcn: ODE solver ERROR; returned IFAIL = ', ifail
         select case ( ifail )
@@ -212,7 +218,7 @@ SUBROUTINE ppiota(rzrzt,iflag)
   phi_stop = pp_phi + pi2/Nfp_raw
 
   call ode( BRpZ_iota, n, rzrzt, phi_init, phi_stop, relerr, abserr, ifail, work, iwork )
-  if ( ifail /= 2 .and. myid == 0) then     
+  if ( ifail /= 2 ) then     
      if ( IsQuiet < -1 ) then
         write ( ounit, '(A,I3)' ) 'ppiota  : ODE solver ERROR; returned IFAIL = ', ifail
         select case ( ifail )
@@ -324,7 +330,7 @@ subroutine coils_bfield(s, x,y,z)
 
         !---------------------------------------------------------------------------------------------
      case default
-        FATAL(bfield0, .true., not supported coil types)
+        FATAL(coils_bfield, .true., not supported coil types)
      end select
 
      s(1) = s(1) + Bx

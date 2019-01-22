@@ -11,7 +11,7 @@ subroutine last_surface
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  call wtmgrid
+  ! call wtmgrid
   call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
 
   tor_num = 360    ! toroidal planes number
