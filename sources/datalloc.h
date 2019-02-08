@@ -33,7 +33,7 @@ subroutine AllocData(itype)
            SALLOCATE(DoF(icoil)%yof , (0:coil(icoil)%NS-1, 1:ND), zero)
            SALLOCATE(DoF(icoil)%zof , (0:coil(icoil)%NS-1, 1:ND), zero)
         case(2)
-           DoF(icoil)%ND = coil(icoil)%Lc * 2 ! 5 ! number of DoF for permanent magnet
+           DoF(icoil)%ND = coil(icoil)%Lc * 5 ! number of DoF for permanent magnet
            SALLOCATE(DoF(icoil)%xdof, (1:DoF(icoil)%ND), zero)
         case(3) 
            DoF(icoil)%ND = coil(icoil)%Lc * 1 ! number of DoF for background Bt, Bz
@@ -92,12 +92,12 @@ subroutine AllocData(itype)
            if(coil(icoil)%Lc /= 0) then
               xtmp = max(one, sqrt( coil(icoil)%ox**2 + coil(icoil)%oy**2 + coil(icoil)%oz**2 ) ) ! origin position
               mtmp = max(one, sqrt( coil(icoil)%mp**2 + coil(icoil)%mt**2 ) ) ! moment orentation
-!!$              dofnorm(idof+1:idof+3) = xtmp
-!!$              dofnorm(idof+4:idof+5) = mtmp
-!!$              idof = idof + 5
-
-              dofnorm(idof+1:idof+2) = mtmp
-              idof = idof + 2
+              dofnorm(idof+1:idof+3) = xtmp
+              dofnorm(idof+4:idof+5) = mtmp
+              idof = idof + 5
+!!$
+!!$              dofnorm(idof+1:idof+2) = mtmp
+!!$              idof = idof + 2
            endif
         else if (coil(icoil)%itype == 3) then  ! backgroud toroidal/vertical field
            if(coil(icoil)%Ic /= 0) then
