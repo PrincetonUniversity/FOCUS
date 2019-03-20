@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='v0.7.01' ! version number
+  CHARACTER(LEN=10), parameter :: version='v0.7.03' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -349,8 +349,11 @@ module globals
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   ! fieldline tracing
-  REAL, ALLOCATABLE    :: XYZB(:,:), ppr(:,:), ppz(:,:), iota(:)
-  INTEGER              :: tor_num, total_num
+  REAL, ALLOCATABLE    :: XYZB(:,:,:), ppr(:,:), ppz(:,:), iota(:)
+  INTEGER              :: tor_num, total_num, booz_mpol, booz_ntor, booz_mn
+  LOGICAL              :: lboozmn = .false.
+  INTEGER, ALLOCATABLE :: bmim(:), bmin(:)
+  REAL, ALLOCATABLE    :: booz_mnc(:,:), booz_mns(:,:)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

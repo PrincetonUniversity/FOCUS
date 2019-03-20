@@ -193,13 +193,16 @@ subroutine saving
   endif
 
   if (allocated(XYZB)) then
-     HWRITERA( total_num,4      ,   XYZB          ,   XYZB(1:total_num, 1:4)     )
+     HWRITERC( total_num,4, pp_ns ,   XYZB        ,   XYZB(1:total_num, 1:4, 1:pp_ns) )
+     HWRITERA( booz_mn,      pp_ns,  booz_mnc     ,   booz_mnc(1:booz_mn, 1:pp_ns)    )    
+     HWRITERA( booz_mn,      pp_ns,  booz_mns     ,   booz_mns(1:booz_mn, 1:pp_ns)    )    
+     HWRITEIV( booz_mn,              bmim         ,   bmim(1:booz_mn)                 )  
+     HWRITEIV( booz_mn,              bmin         ,   bmin(1:booz_mn)                 )  
   endif
 
   HWRITERV( 1                ,  time_initialize,   time_initialize               )
   HWRITERV( 1                ,  time_optimize  ,   time_optimize                 )
   HWRITERV( 1                ,  time_postproc  ,   time_postproc                 )
-
 
   call h5fclose_f( file_id, hdfier ) ! terminate access;
   FATAL( restart, hdfier.ne.0, error calling h5fclose_f )

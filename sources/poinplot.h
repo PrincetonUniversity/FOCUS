@@ -4,14 +4,15 @@ SUBROUTINE poinplot
   ! Poincare plots of the vacuum flux surfaces and calculate the rotational transform
   !------------------------------------------------------------------------------------------------------ 
   USE globals, only : dp, myid, ncpu, zero, half, pi, pi2, ounit, pi, sqrtmachprec, pp_maxiter, &
-                      pp_phi, pp_raxis, pp_zaxis, pp_xtol, pp_rmax, pp_zmax, ppr, ppz, pp_ns, iota, nfp_raw
+                      pp_phi, pp_raxis, pp_zaxis, pp_xtol, pp_rmax, pp_zmax, ppr, ppz, pp_ns, iota, nfp_raw, &
+                      XYZB, lboozmn, booz_mnc, booz_mns, booz_mn, total_num
   USE mpi
   IMPLICIT NONE
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   INTEGER              :: ierr, astat, iflag
-  INTEGER              ::  ip, is, niter
+  INTEGER              :: ip, is, niter
   REAL                 :: theta, zeta, r, RZ(2), r1, z1, rzrzt(5),  x, y, z, tmpB(4)
   REAL, ALLOCATABLE    :: lppr(:,:), lppz(:,:), liota(:)  ! local ppr ppz
 
@@ -30,17 +31,17 @@ SUBROUTINE poinplot
      
      pp_raxis = (r+r1)*half
      pp_zaxis = (z+z1)*half
+  endif
 
      if (myid == 0) then
         RZ(1) = pp_raxis ; RZ(2) = pp_zaxis
         call find_axis(RZ, pp_maxiter, pp_xtol)
         pp_raxis = RZ(1) ; pp_zaxis = RZ(2)
-
-        RlBCAST( pp_raxis, 1, 0 )
-        RlBCAST( pp_zaxis, 1, 0 )
      endif
-  endif
+  !endif
   call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
+  RlBCAST( pp_raxis, 1, 0 )
+  RlBCAST( pp_zaxis, 1, 0 )
 
   ! poincare plot and calculate iota
   SALLOCATE( ppr , (1:pp_ns, 0:pp_maxiter), zero )
@@ -77,15 +78,30 @@ SUBROUTINE poinplot
         ! FATAL( poinplot, abs((rzrzt(3)-pp_raxis)/pp_raxis)>pp_xtol, magnetic axis is not coming back )
      enddo
      
-     liota(is) = rzrzt(5) / (niter*pi2/Nfp_raw)
+     if (niter==0) then
+        liota(is) = zero
+     else 
+        liota(is) = rzrzt(5) / (niter*pi2/Nfp_raw)
+     endif
 
      write(ounit, '(8X": order="I6" ; myid="I6" ; (R,Z)=("ES12.5","ES12.5 & 
           " ) ; iota="ES12.5" ; niter="I6" .")') is, myid, lppr(is,0), lppz(is,0), liota(is), niter
+
+     if(lboozmn .and. abs(liota(is))>sqrtmachprec) then
+        x = lppr(is, 0) * cos(pp_phi) ; y = lppr(is, 0) * sin(pp_phi) ; z = lppz(is, 0)
+        call boozsurf( XYZB(1:total_num, 1:4, is), x, y, z, liota(is), is)
+     endif
   enddo
   
   call MPI_ALLREDUCE(  lppr,  ppr, pp_ns*(pp_maxiter+1), MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
   call MPI_ALLREDUCE(  lppz,  ppz, pp_ns*(pp_maxiter+1), MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
   call MPI_ALLREDUCE( liota, iota, pp_ns               , MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+
+  if(lboozmn) then
+     call MPI_ALLREDUCE(MPI_IN_PLACE, XYZB, 4*pp_ns*total_num, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+     call MPI_ALLREDUCE(MPI_IN_PLACE, booz_mnc, pp_ns*booz_mn, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+     call MPI_ALLREDUCE(MPI_IN_PLACE, booz_mns, pp_ns*booz_mn, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+  endif
 
   DALLOCATE( lppz  )
   DALLOCATE( lppr  )

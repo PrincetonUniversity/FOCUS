@@ -1,43 +1,280 @@
-subroutine last_surface
-  USE globals, only : dp, myid, ncpu, zero, half, pi, pi2, ounit, pi, total_num, pp_maxiter, XYZB
+subroutine boozmn
+  USE globals, only : dp, myid, ncpu, zero, ounit, total_num, pp_maxiter, pp_ns, &
+       XYZB, lboozmn, bmin, bmim, booz_mnc, booz_mns, booz_mpol, booz_ntor, booz_mn, nfp_raw
+  USE mpi
+  IMPLICIT NONE
+
+  ! allocate data for following calculations
+
+  !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+  INTEGER              :: ierr, astat, iflag
+  INTEGER              :: tor_num, in, im, imn
+  !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+  call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
+
+  FATAL( boozmn_01, booz_mpol < 0, invalid poloidal mode resolution )
+  FATAL( boozmn_02, booz_ntor < 0, invalid toroidal mode resolution )
+
+  lboozmn = .true. ! turn on boozmn
+  tor_num = 360    ! toroidal planes number
+  total_num = pp_maxiter * tor_num ! total data points per line
+
+  booz_mpol = 16 ; booz_ntor = 32
+  booz_mn = booz_mpol*(2*booz_ntor+1) + (booz_ntor+1) ! (1:M, -N:N) + (0, 0:N)
+  SALLOCATE( bmin, (1:booz_mn), 0)
+  SALLOCATE( bmim, (1:booz_mn), 0)
+  SALLOCATE( booz_mnc, (1:booz_mn, 1:pp_ns), zero)
+  SALLOCATE( booz_mns, (1:booz_mn, 1:pp_ns), zero)
+  SALLOCATE( XYZB, (1:total_num, 1:4, 1:pp_ns), zero)
+
+  ! prepare bmin & bmim
+  imn = 0
+  do im = 0, booz_mpol
+     do in = -booz_ntor, booz_ntor
+        if ( im==0 .and. in<0 ) cycle
+        imn = imn + 1
+        bmim(imn) = im
+        bmin(imn) = in  !*Nfp_raw
+     enddo
+  enddo
+  
+  FATAL( boozmn_03, imn .ne. booz_mn, packing error )
+
+end subroutine boozmn
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+subroutine boozsurf(XYZB, x, y, z, iota, isurf)
+  USE globals, only : dp, myid, ncpu, zero, half, two, pi, pi2, ounit, total_num, pp_maxiter, &
+                      bmin, bmim, booz_mnc, booz_mns, booz_mn, machprec
   USE mpi
   IMPLICIT NONE
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
+  REAL, dimension(total_num, 4) :: XYZB ! XYZB on one surface
+  REAL   , intent( in) :: x, y, z ! starting point
+  REAL   , intent( in) :: iota ! calculated iota
+  INTEGER, intent( in) :: isurf ! fieldline ordering
+
   INTEGER              :: ierr, astat, iflag
-  INTEGER              :: tor_num
-  REAL                 :: theta, zeta, r, x, y, z
+  INTEGER              :: i, imn, tor_num, pol_num, iteta, jzeta
+  REAL,dimension(total_num) :: chi, zeta, teta
+  REAL                 :: Gpol, ang, dteta, dzeta
+  INTEGER, allocatable :: weight(:,:)
+  REAL, allocatable    :: Btz(:,:)
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  ! call wtmgrid
-  call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
-
-  tor_num = 360    ! toroidal planes number
-  total_num = pp_maxiter * tor_num
-
-  SALLOCATE( XYZB, (1:total_num, 1:4), zero)
-
-  ! starting point
-  theta = zero ; zeta = zero
-  call surfcoord( theta, zeta, r, z)
-  x = r*cos(zeta)
-  y = r*sin(zeta)
-  
-  if ( myid /= 0 ) return
-
-  write(ounit, '("poincare: starting filed line tracing at x="F5.2, ", y="F5.2, ", z="F5.2)') x, y, z
+  ! write(ounit, '("poincare: starting filed line tracing at x="F5.2, ", y="F5.2, ", z="F5.2)') x, y, z
 
   ! filedline tracing
-  call fieldline_tracing(x,y,z,total_num,pp_maxiter,XYZB)
+  call fieldline_tracing(x, y, z, total_num, pp_maxiter, XYZB(1:total_num, 1:4))
+ 
+  ! calculate chi = \int B dl
+  chi = zero
+  do i = 2, total_num 
+     chi(i) = chi(i-1) + (XYZB(i, 4) + XYZB(i-1, 4))*half &
+                 * sqrt( (XYZB(i, 1) - XYZB(i-1, 1))**2   &
+                       + (XYZB(i, 2) - XYZB(i-1, 2))**2   & 
+                       + (XYZB(i, 3) - XYZB(i-1, 3))**2   )
+  enddo
 
-  write(ounit, '("poincare: Fieldline tracing finished")')
+  ! calculate poloidal current Gpol = \int \vetc{B} \cdot d \zeta
+  ! Gpol = 2.0E-7 * total_current
+  Gpol = chi(total_num) / (pi2*pp_maxiter)
+  FATAL(booz_04 , abs(Gpol) < machprec, zero external poloidal currents)
+
+!!$  ! Fourier decomposition
+!!$  do imn = 1, booz_mn     
+!!$     
+!!$     do i = 1, total_num 
+!!$        ang = (bmin(imn) - bmim(imn)*abs(iota))/Gpol * chi(i)
+!!$        booz_mnc(imn, isurf) = booz_mnc(imn, isurf) + XYZB(i, 4) * cos(ang)
+!!$        booz_mns(imn, isurf) = booz_mns(imn, isurf) + XYZB(i, 4) * sin(ang)
+!!$     enddo
+!!$
+!!$     if ( bmim(imn) == 0 .and. bmin(imn) == 0 ) then
+!!$        booz_mnc(imn, isurf) = booz_mnc(imn, isurf) * half
+!!$        booz_mns(imn, isurf) = booz_mns(imn, isurf) * half
+!!$     endif
+!!$  enddo
+!!$
+!!$  booz_mnc(1:booz_mn, isurf) = booz_mnc(1:booz_mn, isurf) * two / total_num
+!!$  booz_mns(1:booz_mn, isurf) = booz_mns(1:booz_mn, isurf) * two / total_num
+
+
+  ! Boozer angles
+  zeta = mod(chi/Gpol          , pi2)
+  teta = mod(chi/Gpol*abs(iota), pi2)
+
+  ! map back to two dimensional grid
+  ! tor_num = total_num/pp_maxiter
+  ! pol_num = pp_maxiter
+  tor_num = 256
+  pol_num = 128
+  SALLOCATE( Btz   , (0:pol_num, 0:tor_num), zero )
+  SALLOCATE( weight, (0:pol_num, 0:tor_num), 0    )
+  dzeta = pi2/tor_num
+  dteta = pi2/pol_num
+  do i = 1, total_num
+     iteta = int(teta(i)/dteta)
+     jzeta = int(zeta(i)/dzeta)
+     Btz(iteta, jzeta) =  Btz(iteta, jzeta) + XYZB(i, 4)
+     weight(iteta, jzeta) = weight(iteta, jzeta) + 1
+  enddo
+ 
+  ! Fourier decomposition
+  do jzeta = 0, tor_num-1
+     do iteta = 0, pol_num-1
+        ! weight(iteta, jzeta) = max(weight(iteta, jzeta), 1) ! avoida dividing zero
+        if ( weight(iteta,jzeta) /= 0)  Btz(iteta,jzeta) = Btz(iteta,jzeta) / weight(iteta,jzeta)
+        do imn = 1, booz_mn
+           ang = bmim(imn) * iteta*dteta - bmin(imn) * jzeta*dzeta
+           booz_mnc(imn, isurf) = booz_mnc(imn, isurf) + Btz(iteta,jzeta) * cos(ang)
+           booz_mns(imn, isurf) = booz_mns(imn, isurf) + Btz(iteta,jzeta) * sin(ang)
+        enddo
+     enddo
+  enddo
+
+  booz_mnc(1:booz_mn, isurf) = booz_mnc(1:booz_mn, isurf) * two / (tor_num*pol_num)
+  booz_mns(1:booz_mn, isurf) = booz_mns(1:booz_mn, isurf) * two / (tor_num*pol_num)
+
+  imn = 1
+  FATAL( boozer_05, bmim(imn) /= 0 .or. bmin(imn) /= 0, wrong mn initialization )
+  booz_mnc(imn, isurf) = booz_mnc(imn, isurf) * half
+  booz_mns(imn, isurf) = booz_mns(imn, isurf) * half
+     
+  DALLOCATE( Btz )
+  DALLOCATE( weight )
+!!$
+!!$  ! Fourier decomposition
+!!$  do imn = 1, booz_mn
+!!$
+!!$     booz_mnc(imn, isurf) = zero ; booz_mns(imn, isurf) = zero
+!!$
+!!$     do i = 1, total_num
+!!$        ang = bmim(imn) * teta(i) - bmin(imn) * zeta(i)
+!!$        booz_mnc(imn, isurf) = booz_mnc(imn, isurf) + XYZB(i, 4) * cos(ang)
+!!$        booz_mns(imn, isurf) = booz_mns(imn, isurf) + XYZB(i, 4) * sin(ang)
+!!$     enddo
+!!$
+!!$     if ( bmim(imn) == 0 .and. bmin(imn) == 0 ) then
+!!$        booz_mnc(imn, isurf) = booz_mnc(imn, isurf) * half
+!!$        booz_mns(imn, isurf) = booz_mns(imn, isurf) * half
+!!$     endif
+!!$  enddo
+!!$
+!!$  booz_mnc(1:booz_mn, isurf) = booz_mnc(1:booz_mn, isurf) * two / total_num
+!!$  booz_mns(1:booz_mn, isurf) = booz_mns(1:booz_mn, isurf) * two / total_num
+
+  ! finish decomposition
+
+  write(ounit, '("boozmn  : myid="I6" ; Gpol="ES12.5" ; iota="ES12.5" ; Booz_mnc(1)="ES12.5 &
+       " ; Booz_mns(1)="ES12.5)') myid, Gpol, iota, booz_mnc(1, isurf), booz_mns(1, isurf)
   
   return
-end subroutine last_surface
+end subroutine boozsurf
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+SUBROUTINE Bmn_clt(phi_B,theta_B,B0,Bf)
+implicit none
+
+real*8,dimension(300000,1):: B0,phi_B,theta_B
+real*8,dimension(30,30)::Bf
+real*8,dimension(60,60)::Bmn
+real*8,dimension(30,60)::theta,phi,ang,Bf1
+real*8,dimension(61,61)::B1,n_B,B2
+real*8,dimension(30,1)::phi1
+real*8,dimension(1,60)::theta1
+integer*4 m,n,i,j,k,l
+real*8 pi,s1,s2,s3,s4,B_mn,B_c,B_s, dteta, dzeta
+
+pi=3.141592653589793239
+m=60
+n=60
+dzeta = 2*pi/n
+dteta = 2*pi/m
+
+do k=2,300000
+    j=floor(theta_B(k,1)/(dzeta))
+    i=floor(phi_B(k,1)/(dteta))
+
+    
+    s1=sqrt((theta_B(k,1)-dzeta* j   )**2+(phi_B(k,1)-dteta* i   )**2)
+    s2=sqrt((theta_B(k,1)-dzeta* j   )**2+(phi_B(k,1)-dteta*(i+1))**2)
+    s3=sqrt((theta_B(k,1)-dzeta*(j+1))**2+(phi_B(k,1)-dteta*(i+1))**2)
+    s4=sqrt((theta_B(k,1)-dzeta*(j+1))**2+(phi_B(k,1)-dteta* i   )**2)
+    i=i+1
+    j=j+1
+
+    B1(i,j)=B1(i,j)+B0(k,1)/s1
+    n_B(i,j)=n_B(i,j)+1/s1
+    B1(i+1,j)=B1(i+1,j)+B0(k,1)/s2
+    n_B(i+1,j)=n_B(i+1,j)+1/s2
+    B1(i+1,j+1)=B1(i+1,j+1)+B0(k,1)/s3
+    n_B(i+1,j+1)=n_B(i+1,j+1)+1/s3
+    B1(i,j+1)=B1(i,j+1)+B0(k,1)/s4
+    n_B(i,j+1)=n_B(i,j+1)+1/s4
+enddo
+B1(1:m,1)=B1(1:m,1)+B1(1:m,n+1)
+n_B(1:m,1)=n_B(1:m,1)+n_B(1:m,n+1)
+B1(1,1:n)=B1(1,1:n)+B1(m+1,1:n)
+n_B(1,1:n)=n_B(1,1:n)+n_B(m+1,1:n)
+do i=1,m+1
+do j=1,n+1
+ B2(i,j)=B1(i,j)/n_B(i,j)
+enddo
+enddo
+
+Bmn=B2(1:m,1:n)
+
+
+do i=1,m/2
+phi1(i,1)=dteta*2*(i-1)
+enddo
+
+do i=1,n
+theta1(1,i)=dzeta*(i-1)
+enddo
+
+do i=1,n
+phi(:,i)=phi1(:,1)
+enddo
+
+do i=1,m/2
+theta(i,:)=theta1(1,:)
+enddo
+
+
+do i=0,m/2-1
+    do j=0,n-1
+        ang=-i*Phi+j*Theta
+        B_mn=0
+        B_c=0
+        B_s=0
+        do k=1,m/2
+        do  l=1,n 
+            B_c=B_c+Bmn(k,l)*cos(ang(k,l))
+            B_s=B_s+Bmn(k,l)*sin(ang(k,l))
+            B_mn=sqrt(B_c**2+B_s**2)/float(n*m/2)
+        enddo
+        enddo
+        Bf1(i+1,j+1)=B_mn
+ !       write(*,*)B_mn
+    enddo
+enddo
+
+Bf=Bf1(:,1:n/2)*2.0
+Bf(1,1)=Bf1(1,1)
+return
+end SUBROUTINE Bmn_clt
 
 subroutine fieldline_tracing(x,y,z,imax,n2,H)
   implicit none
