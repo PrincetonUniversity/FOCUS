@@ -532,45 +532,6 @@ subroutine rdcoils
      !     & totalcurrent, totalcurrent * pi2 * two
   endif
 
-  if (IsNormalize > 0) then
-     Gnorm = 0
-     Inorm = 0
-     total_coef = 0 ! total number of coefficients
-     do icoil = 1, Ncoils
-        if(coil(icoil)%itype == 1) then  ! Fourier representation
-           NF = FouCoil(icoil)%NF
-           total_coef = total_coef + (6*NF + 3)
-           do icoef = 0, NF
-              Gnorm = Gnorm + FouCoil(icoil)%xs(icoef)**2 + FouCoil(icoil)%xc(icoef)**2
-              Gnorm = Gnorm + FouCoil(icoil)%ys(icoef)**2 + FouCoil(icoil)%yc(icoef)**2
-              Gnorm = Gnorm + FouCoil(icoil)%zs(icoef)**2 + FouCoil(icoil)%zc(icoef)**2
-           enddo
-           Inorm = Inorm + coil(icoil)%I**2
-        endif
-     enddo
-     Gnorm = sqrt(Gnorm/total_coef) * weight_gnorm      ! quadratic mean
-     Inorm = sqrt(Inorm/Ncoils) * weight_inorm          ! quadratic mean
-     !Inorm = Inorm * 6  ! compensate for the fact that there are so many more spatial variables
-     
-     if (abs(Gnorm) < machprec) Gnorm = one
-     if (abs(Inorm) < machprec) Inorm = one
-
-     Inorm = one
-     Gnorm = one
-
-     FATAL( rdcoils, abs(Gnorm) < machprec, cannot be zero )
-     FATAL( rdcoils, abs(Inorm) < machprec, cannot be zero )
-     
-     if (myid == 0) then
-        write(ounit, '("        : Currents   are normalized by " ES23.15)') Inorm
-        write(ounit, '("        : Geometries are normalized by " ES23.15)') Gnorm
-     endif
-
-  else
-     Inorm = one
-     Gnorm = one
-  endif
-
   !-----------------------allocate DoF arrays --------------------------------------------------  
 
   itmp = -1

@@ -213,6 +213,8 @@ subroutine bfield1(icoil, iteta, jzeta, Bx, By, Bz, ND)
      mx = sint*cosp ; my = sint*sinp ; mz = cost
      m_dot_r = mx*dlx + my*dly + mz*dlz
 
+#ifdef dposition
+     ! dipole position is variable
      Bx(1, 1) = 15.0_dp*m_dot_r*dlx*dlx*rm7 - 3.0_dp*mx*dlx*rm5 - 3.0_dp*mx*dlx*rm5 - 3.0_dp*m_dot_r*rm5
      By(1, 1) = 15.0_dp*m_dot_r*dlx*dly*rm7 - 3.0_dp*mx*dly*rm5 - 3.0_dp*my*dlx*rm5
      Bz(1, 1) = 15.0_dp*m_dot_r*dlx*dlz*rm7 - 3.0_dp*mx*dlz*rm5 - 3.0_dp*mz*dlx*rm5
@@ -232,14 +234,16 @@ subroutine bfield1(icoil, iteta, jzeta, Bx, By, Bz, ND)
      Bx(1, 5) = 3.0_dp*dlx*(-sint*sinp*dlx + sint*cosp*dly           )*rm5 + sint*sinp*rm3
      By(1, 5) = 3.0_dp*dly*(-sint*sinp*dlx + sint*cosp*dly           )*rm5 - sint*cosp*rm3
      Bz(1, 5) = 3.0_dp*dlz*(-sint*sinp*dlx + sint*cosp*dly           )*rm5 
-!!$
-!!$     Bx(1, 1) = 3.0_dp*dlx*( cost*cosp*dlx + cost*sinp*dly - sint*dlz)*rm5 - cost*cosp*rm3
-!!$     By(1, 1) = 3.0_dp*dly*( cost*cosp*dlx + cost*sinp*dly - sint*dlz)*rm5 - cost*sinp*rm3 
-!!$     Bz(1, 1) = 3.0_dp*dlz*( cost*cosp*dlx + cost*sinp*dly - sint*dlz)*rm5 + sint     *rm3 
-!!$
-!!$     Bx(1, 2) = 3.0_dp*dlx*(-sint*sinp*dlx + sint*cosp*dly           )*rm5 + sint*sinp*rm3
-!!$     By(1, 2) = 3.0_dp*dly*(-sint*sinp*dlx + sint*cosp*dly           )*rm5 - sint*cosp*rm3
-!!$     Bz(1, 2) = 3.0_dp*dlz*(-sint*sinp*dlx + sint*cosp*dly           )*rm5 
+#else
+     ! dipole origins are fixed
+     Bx(1, 1) = 3.0_dp*dlx*( cost*cosp*dlx + cost*sinp*dly - sint*dlz)*rm5 - cost*cosp*rm3
+     By(1, 1) = 3.0_dp*dly*( cost*cosp*dlx + cost*sinp*dly - sint*dlz)*rm5 - cost*sinp*rm3 
+     Bz(1, 1) = 3.0_dp*dlz*( cost*cosp*dlx + cost*sinp*dly - sint*dlz)*rm5 + sint     *rm3 
+
+     Bx(1, 2) = 3.0_dp*dlx*(-sint*sinp*dlx + sint*cosp*dly           )*rm5 + sint*sinp*rm3
+     By(1, 2) = 3.0_dp*dly*(-sint*sinp*dlx + sint*cosp*dly           )*rm5 - sint*cosp*rm3
+     Bz(1, 2) = 3.0_dp*dlz*(-sint*sinp*dlx + sint*cosp*dly           )*rm5 
+#endif
 
      Bx = Bx * coil(icoil)%I * bsconstant
      By = By * coil(icoil)%I * bsconstant

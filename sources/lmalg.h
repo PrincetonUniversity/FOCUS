@@ -295,7 +295,7 @@ end subroutine lmalg
 
 subroutine focus_fcn(m,n,x,fvec,fjac,ldfjac,iflag)
   use globals, only: dp, zero, myid, ounit, LM_iter, LM_maxiter, &
-       &             exit_signal, LM_fvec, LM_fjac
+       &             exit_signal, LM_fvec, LM_fjac, tstart, tfinish
   use mpi
   implicit none
   
@@ -303,7 +303,6 @@ subroutine focus_fcn(m,n,x,fvec,fjac,ldfjac,iflag)
   INTEGER, INTENT(inout)          :: iflag
   DOUBLE PRECISION, INTENT(in)    :: x(n)
   DOUBLE PRECISION, INTENT(out)   :: fvec(m),fjac(ldfjac,n)
-  REAL                            :: tstart, tfinish ! local variables
   INTEGER                         :: idof, ierr, astat
 
   call unpacking(x(1:n))

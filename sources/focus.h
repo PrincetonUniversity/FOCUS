@@ -89,7 +89,7 @@
 PROGRAM focus
   
   use globals, only: dp, ncpu, myid, ounit, ierr, astat, eunit, case_surface, case_coils, case_optimize, &
-       case_postproc, xdof, tstart, tfinish, time_initialize, time_optimize, time_postproc, &
+       case_postproc, xdof, time_initialize, time_optimize, time_postproc, &
        version
 
   use mpi  !to enable gfortran mpi_wtime bugs; 07/20/2017
@@ -101,6 +101,7 @@ PROGRAM focus
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   INTEGER :: secs, mins, hrs
+  REAL    :: tstart, tfinish ! local variables
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   

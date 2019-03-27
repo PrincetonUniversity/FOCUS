@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='v0.7.03' ! version number
+  CHARACTER(LEN=10), parameter :: version='v0.7.04' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -114,6 +114,7 @@ module globals
   REAL                 :: weight_ccsep   =   0.000D+00
   REAL                 :: weight_inorm   =   1.000D+00
   REAL                 :: weight_gnorm   =   1.000D+00
+  REAL                 :: weight_mnorm   =   1.000D+00
 
   INTEGER              :: case_optimize  =   1
   REAL                 :: exit_tol       =   1.000D-04
@@ -190,6 +191,7 @@ module globals
                         weight_ccsep   , &
                         weight_inorm   , &
                         weight_gnorm   , &
+                        weight_mnorm   , &
                         case_optimize  , &
                         exit_tol       , &
                         DF_maxiter     , & 
@@ -278,7 +280,7 @@ module globals
 
 !latex \subsection{Packing and unpacking}
   INTEGER              :: Cdof, Ndof, nfixcur, nfixgeo, Tdof
-  REAL                 :: Inorm = one, Gnorm = one                !current and geometry normalizations;
+  REAL                 :: Inorm = one, Gnorm = one, Mnorm = one   !current, geometry, and moment normalizations;
   REAL   , allocatable :: xdof(:), dofnorm(:)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!

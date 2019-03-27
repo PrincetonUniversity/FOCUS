@@ -79,13 +79,13 @@ SUBROUTINE packdof(lxdof)
         endif
      !---------------------------------------------------------------------------------------------
      case default
-        FATAL(packcoil, .true., not supported coil types)
+        FATAL(packdof01, .true., not supported coil types)
      end select
 
   enddo !end do icoil;
 
   !--------------------------------------------------------------------------------------------- 
-  FATAL( packdof , idof .ne. Ndof, counting error in packing )
+  FATAL( packdof02 , idof .ne. Ndof, counting error in packing )
 
   !write(ounit, *) "pack ", lxdof(1)
   lxdof = lxdof / DoFnorm
@@ -153,13 +153,13 @@ SUBROUTINE unpacking(lxdof)
         endif
      !---------------------------------------------------------------------------------------------
      case default
-        FATAL(packcoil, .true., not supported coil types)
+        FATAL(unpacking01, .true., not supported coil types)
      end select
 
   enddo !end do icoil;
 
   !--------------------------------------------------------------------------------------------- 
-  FATAL( unpacking , idof .ne. Ndof, counting error in unpacking )
+  FATAL( unpacking02 , idof .ne. Ndof, counting error in unpacking )
 
   call unpackcoil !unpack DoF to coil parameters;
   call discoil(ifirst)
@@ -182,9 +182,9 @@ SUBROUTINE packcoil
 
   INTEGER  :: icoil, idof, NF, ierr, astat
 
-  FATAL( packcoil, .not. allocated(coil)   , illegal )
+  FATAL( packcoil01, .not. allocated(coil)   , illegal )
   ! FATAL( packcoil, .not. allocated(FouCoil), illegal )
-  FATAL( packcoil, .not. allocated(DoF)    , illegal )
+  FATAL( packcoil02, .not. allocated(DoF)    , illegal )
 
   do icoil = 1, Ncoils
 
@@ -205,33 +205,33 @@ SUBROUTINE packcoil
            DoF(icoil)%xdof(idof+1 : idof+NF+1) = FouCoil(icoil)%zc(0:NF); idof = idof + NF + 1
            DoF(icoil)%xdof(idof+1 : idof+NF  ) = FouCoil(icoil)%zs(1:NF); idof = idof + NF    
         endif
-        FATAL( packcoil , idof .ne. DoF(icoil)%ND, counting error in packing )
+        FATAL( packcoil03 , idof .ne. DoF(icoil)%ND, counting error in packing )
         
      !---------------------------------------------------------------------------------------------
      case(2)
         idof = 0
         if(coil(icoil)%Lc /= 0) then
+#ifdef dposition
+           ! dipole position is variable
            DoF(icoil)%xdof(idof+1:idof+5) = (/ coil(icoil)%ox, coil(icoil)%oy, coil(icoil)%oz, &
                                                coil(icoil)%mt, coil(icoil)%mp /)
            idof = idof + 5      
-!!$  
-!!$           DoF(icoil)%xdof(idof+1:idof+2) = (/ coil(icoil)%mt, coil(icoil)%mp /)
-!!$           idof = idof + 2                   
+#else
+           DoF(icoil)%xdof(idof+1:idof+2) = (/ coil(icoil)%mt, coil(icoil)%mp /)
+           idof = idof + 2     
+#endif              
         endif
-        FATAL( packcoil , idof .ne. DoF(icoil)%ND, counting error in packing )
+        FATAL( packcoil04 , idof .ne. DoF(icoil)%ND, counting error in packing )
      !---------------------------------------------------------------------------------------------
      case(3)
         idof = 0
-!!$        if(coil(icoil)%Ic /= 0) then
-!!$           DoF(icoil)%xdof(idof+1) = coil(icoil)%I; idof = idof + 1
-!!$        endif
         if(coil(icoil)%Lc /= 0) then
            DoF(icoil)%xdof(idof+1) = coil(icoil)%Bz; idof = idof + 1
         endif
-        FATAL( packcoil , idof .ne. DoF(icoil)%ND, counting error in packing )
+        FATAL( packcoil05 , idof .ne. DoF(icoil)%ND, counting error in packing )
      !---------------------------------------------------------------------------------------------
      case default
-        FATAL(packcoil, .true., not supported coil types)
+        FATAL(packcoil06, .true., not supported coil types)
      end select     
 
   enddo ! end do icoil;
@@ -251,9 +251,9 @@ SUBROUTINE unpackcoil
 
   INTEGER  :: icoil, idof, NF, ierr, astat
 
-  FATAL( unpackcoil, .not. allocated(coil)   , illegal )
+  FATAL( unpackcoil01, .not. allocated(coil)   , illegal )
   ! FATAL( unpackcoil, .not. allocated(FouCoil), illegal )
-  FATAL( unpackcoil, .not. allocated(DoF)    , illegal )
+  FATAL( unpackcoil02, .not. allocated(DoF)    , illegal )
 
   do icoil = 1, Ncoils
 
@@ -272,35 +272,35 @@ SUBROUTINE unpackcoil
            FouCoil(icoil)%zc(0:NF) = DoF(icoil)%xdof(idof+1 : idof+NF+1) ; idof = idof + NF + 1
            FouCoil(icoil)%zs(1:NF) = DoF(icoil)%xdof(idof+1 : idof+NF  ) ; idof = idof + NF   
         endif
-        FATAL( packcoil , idof .ne. DoF(icoil)%ND, counting error in packing )
+        FATAL( unpackcoil03 , idof .ne. DoF(icoil)%ND, counting error in packing )
 
      !---------------------------------------------------------------------------------------------
      case(2)
         idof = 0
         if(coil(icoil)%Lc /= 0) then
+#ifdef dposition
+           ! dipole position is variable
            coil(icoil)%ox = DoF(icoil)%xdof(idof+1) ; idof = idof + 1
            coil(icoil)%oy = DoF(icoil)%xdof(idof+1) ; idof = idof + 1
            coil(icoil)%oz = DoF(icoil)%xdof(idof+1) ; idof = idof + 1
+#endif
            coil(icoil)%mt = DoF(icoil)%xdof(idof+1) ; idof = idof + 1
            coil(icoil)%mp = DoF(icoil)%xdof(idof+1) ; idof = idof + 1
         endif
-        FATAL( packcoil , idof .ne. DoF(icoil)%ND, counting error in packing )
+        FATAL( unpackcoil04 , idof .ne. DoF(icoil)%ND, counting error in packing )
 
      !---------------------------------------------------------------------------------------------
      case(3)
         idof = 0        
-!!$        if(coil(icoil)%Ic /= 0) then
-!!$           coil(icoil)%I =  DoF(icoil)%xdof(idof+1) ; idof = idof + 1
-!!$        endif
         
         if(coil(icoil)%Lc /= 0) then
            coil(icoil)%Bz =  DoF(icoil)%xdof(idof+1) ; idof = idof + 1        
         endif      
-        FATAL( packcoil , idof .ne. DoF(icoil)%ND, counting error in packing )
+        FATAL( unpackcoil05 , idof .ne. DoF(icoil)%ND, counting error in packing )
 
      !---------------------------------------------------------------------------------------------
      case default
-        FATAL(packcoil, .true., not supported coil types)
+        FATAL( unpackcoil06 , .true., not supported coil types)
      end select
 
   enddo ! end do icoil;
