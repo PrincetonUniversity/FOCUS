@@ -294,8 +294,8 @@ end subroutine lmalg
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine focus_fcn(m,n,x,fvec,fjac,ldfjac,iflag)
-  use globals, only: dp, zero, myid, ounit, tstart, tfinish, LM_iter, LM_maxiter, &
-       &             exit_signal, LM_fvec, LM_fjac
+  use globals, only: dp, zero, myid, ounit, LM_iter, LM_maxiter, &
+       &             exit_signal, LM_fvec, LM_fjac, tstart, tfinish
   use mpi
   implicit none
   

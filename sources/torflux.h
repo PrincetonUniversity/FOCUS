@@ -227,7 +227,6 @@ subroutine torflux( ideriv )
      
   endif
 
-
   !--------------------------------------------------------------------------------------------
 
   call MPI_barrier( MPI_COMM_WORLD, ierr )

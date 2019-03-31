@@ -2,8 +2,9 @@
 
 ############################################################################################################
 
- ALLFILES= globals initial datalloc rdsurf rdknot rdcoils packdof bfield bnormal bmnharm fdcheck \
-           torflux length surfsep solvers descent congrad lmalg saving diagnos specinp poinplot focus
+ ALLFILES= globals initial rdsurf rdknot rdcoils packdof bfield bmnharm bnormal fdcheck \
+           torflux length surfsep datalloc solvers descent congrad lmalg saving diagnos \
+           specinp poinplot boozer focus
  HFILES= $(ALLFILES:=.h)
  FFILES= $(ALLFILES:=.F90)
  PFILES= $(ALLFILES:=.pdf)
@@ -16,18 +17,18 @@
  MACROS=macros
  CC=intel # if want to use gfortran; make CC=gfortran xfocus; otherwise using Intel
  FC=mpif90
+ PFLAGS= # for pre-processing compiler flags, like -D dposition
 ifeq ($(CC),gfortran)
 # RFLAGS=-O3 -w -fdefault-real-8 -ffree-line-length-none -march=native -ffast-math
- RFLAGS=-O3 -w -ffree-line-length-none -march=native -ffast-math
+ RFLAGS=-O3 -w -ffree-line-length-none -march=native -ffast-math $(PFLAGS)
  DFLAGS=-g3 -Wextra -Wtarget-lifetime -fbacktrace -fbounds-check -ffpe-trap=zero -fcheck=all -DDEBUG
 else
 # RFLAGS=-r8 -mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback #-vec_report0 #-ipo -xhost
- RFLAGS=-mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback #-vec_report0 #-ipo -xhost
+ RFLAGS=-mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback  $(PFLAGS) #-vec_report0 #-ipo -xhost
  DFLAGS=-check all -check noarg_temp_created -debug full -D DEBUG
 endif
 
 ############################################################################################################
-
 
  HDF5=-I$(HDF5_HOME)/include -L$(HDF5_HOME)/lib -lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran \
 -lhdf5 -lpthread -lz -lm
@@ -85,12 +86,11 @@ $(PFILES): %.pdf: %.h head.tex end.tex
 	@pdflatex -shell-escape -interaction=nonstopmode -file-line-error $*.tex | grep ".*:[0-9]*:.*" ||:
 	@pdflatex -shell-escape -interaction=nonstopmode -file-line-error $*.tex | grep ".*:[0-9]*:.*" ||: 
 	@pdflatex -shell-escape -interaction=nonstopmode -file-line-error $*.tex | grep ".*:[0-9]*:.*" ||:
+	@rm -f $*.tex $*.aux $*.blg $*.log $*.ps .$*.date $*.toc $*.out
 	
-
 ############################################################################################################
 
 pdfs: $(PFILES)
 	@echo "Please read pdfs in this directory!"
-	@rm -f $*.tex $*.aux $*.blg $*.log $*.ps .$*.date $*.toc $*.out
 
 ############################################################################################################

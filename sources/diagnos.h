@@ -12,7 +12,7 @@ SUBROUTINE diagnos
   implicit none
   include "mpif.h"
 
-  INTEGER           :: icoil, itmp, astat, ierr, NF, idof, i, j
+  INTEGER           :: icoil, itmp=0, astat, ierr, NF, idof, i, j
   LOGICAL           :: lwbnorm = .True. , l_raw = .False.!if use raw coils data
   REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist, ReDot, ImDot
   REAL, parameter   :: infmax = 1.0E6
@@ -43,16 +43,17 @@ SUBROUTINE diagnos
            coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%ys(1:NF) ; idof = idof + NF
            coilspace(iout, idof+1:idof+NF+1) = FouCoil(icoil)%zc(0:NF) ; idof = idof + NF +1
            coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%zs(1:NF) ; idof = idof + NF
-        case default
-           FATAL(descent, .true., not supported coil types)
+!!$        case default
+!!$           FATAL(descent, .true., not supported coil types)
         end select
      enddo
-     FATAL( output , idof .ne. Tdof, counting error in restart )
+!!$     FATAL( output , idof .ne. Tdof, counting error in restart )
   endif
 
   !-------------------------------coil maximum curvature----------------------------------------------------  
   MaxCurv = zero
   do icoil = 1, Ncoils
+     if(coil(icoil)%itype .ne. 1) exit ! only for Fourier
      call curvature(icoil)
      if (coil(icoil)%maxcurv .ge. MaxCurv) then
         MaxCurv = coil(icoil)%maxcurv
@@ -71,6 +72,7 @@ SUBROUTINE diagnos
   if ( (case_length == 1) .and. (sum(coil(1:Ncoils)%Lo) < sqrtmachprec) ) coil(1:Ncoils)%Lo = one
   call length(0)
   do icoil = 1, Ncoils
+     if(coil(icoil)%itype .ne. 1) exit ! only for Fourier
      AvgLength = AvgLength + coil(icoil)%L
   enddo
   AvgLength = AvgLength / Ncoils
@@ -80,6 +82,8 @@ SUBROUTINE diagnos
   ! coils are supposed to be placed in order
   minCCdist = infmax
   do icoil = 1, Ncoils
+
+     if(coil(icoil)%itype .ne. 1) exit ! only for Fourier
 
      if(Ncoils .eq. 1) exit !if only one coil
      itmp = icoil + 1
@@ -110,6 +114,8 @@ SUBROUTINE diagnos
   !--------------------------------minimum coil plasma separation-------------------------------  
   minCPdist = infmax
   do icoil = 1, Ncoils
+
+     if(coil(icoil)%itype .ne. 1) exit ! only for Fourier
 
      SALLOCATE(Atmp, (1:3,0:coil(icoil)%NS-1), zero)
      SALLOCATE(Btmp, (1:3,1:(Nteta*Nzeta)), zero)
@@ -157,8 +163,10 @@ SUBROUTINE diagnos
   if (allocated(surf(1)%bn)) then
      ! \sum{ |Bn| / |B| }/ (Nt*Nz)
      if(myid .eq. 0) write(ounit, '(8X": Average relative absolute Bn error is  :" ES23.15)') &
-          sum(abs(surf(1)%bn/sqrt(surf(1)%Bx**2 + surf(1)%By**2 + surf(1)%Bz**2))) / (Nzeta*Nzeta)
+          sum(abs(surf(1)%bn/sqrt(surf(1)%Bx**2 + surf(1)%By**2 + surf(1)%Bz**2))) / (Nteta*Nzeta)
   endif
+
+  return
 
   !--------------------------------calculate coil importance------------------------------------  
   if (.not. allocated(coil_importance)) then
@@ -171,9 +179,9 @@ SUBROUTINE diagnos
      enddo
   
      if(myid .eq. 0) write(ounit, '(8X": The most and least important coils are :  " & 
-          F8.3"% at coil" I4 " ; " F8.3"% at coil "I4)')      &
-      100*maxval(coil_importance), maxloc(coil_importance), &
-      100*minval(coil_importance), minloc(coil_importance)
+          ES12.5" at coil" I4 " ; " ES12.5" at coil "I4)')      &
+      maxval(coil_importance), maxloc(coil_importance), &
+      minval(coil_importance), minloc(coil_importance)
 
   endif
   !--------------------------------------------------------------------------------------------- 
@@ -252,36 +260,27 @@ subroutine importance(icoil)
 
   INTEGER                               :: iteta, jzeta, NumGrid
   REAL                                  :: dBx, dBy, dBz
-  REAL, dimension(0:Nteta-1, 0:Nzeta-1) :: lbx, lby, lbz        ! local  Bx, By and Bz
   REAL, dimension(0:Nteta-1, 0:Nzeta-1) :: tbx, tby, tbz        ! summed Bx, By and Bz
 
   !--------------------------initialize and allocate arrays------------------------------------- 
 
   NumGrid = Nteta*Nzeta
-  lbx = zero; lby = zero; lbz = zero        !already allocted; reset to zero;
   tbx = zero; tby = zero; tbz = zero        !already allocted; reset to zero;
 
   do jzeta = 0, Nzeta - 1
      do iteta = 0, Nteta - 1
 
         if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;
-        call bfield0(icoil, iteta, jzeta, lbx(iteta, jzeta), lby(iteta, jzeta), lbz(iteta, jzeta))
+        call bfield0(icoil, surf(1)%xx(iteta, jzeta), surf(1)%yy(iteta, jzeta), &
+                   & surf(1)%zz(iteta, jzeta), tbx(iteta, jzeta), tby(iteta, jzeta), tbz(iteta, jzeta))
 
      enddo ! end do iteta
   enddo ! end do jzeta
 
   call MPI_BARRIER( MPI_COMM_WORLD, ierr )     
-  call MPI_REDUCE( lbx, tbx, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
-  call MPI_REDUCE( lby, tby, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
-  call MPI_REDUCE( lbz, tbz, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
-
-  RlBCAST( tbx, NumGrid, 0 )  ! total Bx from icoil;
-  RlBCAST( tby, NumGrid, 0 )  ! total By from icoil;
-  RlBCAST( tbz, NumGrid, 0 )  ! total Bz from icoil;
-
-  tbx = tbx * coil(icoil)%I * bsconstant
-  tby = tby * coil(icoil)%I * bsconstant
-  tbz = tbz * coil(icoil)%I * bsconstant
+  call MPI_ALLREDUCE( MPI_IN_PLACE, tbx, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
+  call MPI_ALLREDUCE( MPI_IN_PLACE, tby, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
+  call MPI_ALLREDUCE( MPI_IN_PLACE, tbz, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
 
   coil_importance(icoil) = sum( (tbx*surf(1)%Bx + tby*surf(1)%By + tbz*surf(1)%Bz) / &
                                 (surf(1)%Bx**2 + surf(1)%By**2 + surf(1)%Bz**2) ) / NumGrid

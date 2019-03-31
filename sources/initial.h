@@ -57,6 +57,9 @@
 !latex    \item[-1:] read the standard \emph{coils.example} file;
 !latex    \item[0:] read FOCUS format data in \emph{example.focus};
 !latex    \item[1:] toroidally spaced \inputvar{Ncoils} circular coils with radius of \inputvar{init\_radius};
+!latex    \item[2:] toroidally spaced \inputvar{Ncoils}-1 magnetic dipoles pointing poloidallly on the toroidal surface 
+!latex               with radius of \inputvar{init\_radius} and a central infinitely long current. 
+!latex               Dipole magnetizations anc the central current are all set to  \inputvar{init\_current}.
 !latex    \ei
 !latex 
 !latex  \item \inputvar{case\_coils = 1} \\
@@ -212,7 +215,7 @@
 !latex    \textit{the stopping criteria of finding minimum; if both the actual and predicted relative reductions in the sum of squares are at most ftol, the optimization terminates; seen in  \link{lmalg}};
 !latex 
 !latex  \item \inputvar{LM\_factor = 1.000D+02} \\
-!latex    \textit{factor is a positive input variable used in determining the initial step bound. this bound is set to the product of factor and the euclidean norm of diag*x if nonzero, or else to factor itself. in most cases factor should lie in the interval (.1,100.).100. is a generally recommended value. seen in  \link{lmalg}};
+!latex    \textit{factor is a positive input variable used in determining the initial step bound. this bound is set to the product of factor and the euclidean norm of diag*x if nonzero, or else to factor itself. in most cases factor should lie in the interval (0.1,100.0). 100 is a generally recommended value. seen in  \link{lmalg}};
 !latex 
 !latex  \par \begin{tikzpicture} \draw[dashed] (0,1) -- (10,1); \end{tikzpicture}
 !latex 
@@ -221,8 +224,38 @@
 !latex    \bi \vspace{-5mm}
 !latex    \item[ 0:] no extra post-processing;
 !latex    \item[ 1:] evaluate the present coils for each cost functions, coil curvature, coil-coil separation, and coil-plasma separation, Bn harmonics overlap, coil importance;
-!latex    \item[ 2:] diagnos; write SPEC input file; (not ready)
+!latex    \item[ 2:] diagnos; write SPEC input file;
+!latex    \item[ 3:] diagnos; Field-line tracing, axis locating and iota calculating;
+!latex    \item[ 4:] diagnos; Field-line tracing; Calculates Bmn coefficients in Boozer coordinates;
 !latex    \ei
+!latex 
+!latex  \item \inputvar{update\_plasma = 0} \\
+!latex    \textit{if euqals 1, write example.plasma file with updated Bn coefficients};
+!latex 
+!latex  \item \inputvar{pp\_phi = 0.0} \\
+!latex    \textit{Toroidal angle $\phi = pp\_phi * \pi$ for filed-line tracing, axis locating, etc.}
+!latex 
+!latex  \item \inputvar{pp\_raxis = 0.0} \\
+!latex        \inputvar{pp\_zaxis = 0.0} \\
+!latex    \textit{Initial guess for axis positions (raxis, zaxis). 
+!latex            If both zero, will be overide to ($\frac{r_1+r_2}{2}, \frac{z_1+z_2}{2}$), 
+!latex            where $r_1 = R(0, \phi)$ , $r_2=R(\pi, \phi)$ (likewise for $z_1, z_2$.)}
+!latex 
+!latex  \item \inputvar{pp\_rmax = 0.0} \\
+!latex         \inputvar{pp\_zmax = 0.0} \\
+!latex    \textit{Upper bounds for field-line tracing. 
+!latex            If both zero, will be overide to ($r_1, z_1$).}
+!latex 
+!latex  \item \inputvar{pp\_ns = 10} \\
+!latex    \textit{Number of surfaces for filed-line tracing, axis locating, etc.
+!latex            Starting points on $\phi$ will be interpolated between 
+!latex            ($r_{axis}, z_{axis}$) and ($r_{max}, z_{max}$).}
+!latex 
+!latex  \item \inputvar{pp\_maxiter = 1000} \\
+!latex    \textit{Cycles for tracing the field-line, representing the dots for each field-line in Poincare plots.}
+!latex 
+!latex  \item \inputvar{pp\_tol = 1.0E-6} \\
+!latex    \textit{Tolerance of ODE solver used for tracing field-lines.}
 !latex 
 !latex  \item \inputvar{save\_freq = 1} \\
 !latex    \textit{frequency for writing output files; should be positive; seen in  \link{solvers}};
@@ -364,6 +397,12 @@ subroutine initial
         FATAL( initial, Nseg   <= 0    , no enough segments  )
         FATAL( initial, target_length  < zero, illegal )
         if (IsQuiet < 1) write(ounit, 1000) 'case_init', case_init, 'Initialize circular coils.'
+     case( 2 )
+        FATAL( initial, Ncoils < 1, should provide the No. of coils)
+        FATAL( initial, init_current == zero, invalid coil current)
+        FATAL( initial, init_radius < zero, invalid coil radius)
+        FATAL( initial, target_length  < zero, illegal )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_init', case_init, 'Initialize magnetic dipoles.'
      case default
         FATAL( initial, .true., selected case_init is not supported )
      end select
@@ -493,6 +532,9 @@ subroutine initial
      case ( 3 )
         if (IsQuiet < 1) write(ounit, 1000) 'case_postproc', case_postproc, & 
              &  'Coil evaluations and field-line tracing will be performed.'
+     case ( 4 )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_postproc', case_postproc, & 
+             &  'Coil evaluations and writing last surface will be performed.'
      case default
         FATAL( initial, .true., selected case_postproc is not supported )
      end select

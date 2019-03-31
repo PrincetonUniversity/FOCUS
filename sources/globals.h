@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='v0.6.02' ! version number
+  CHARACTER(LEN=10), parameter :: version='v0.7.05' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -114,6 +114,7 @@ module globals
   REAL                 :: weight_ccsep   =   0.000D+00
   REAL                 :: weight_inorm   =   1.000D+00
   REAL                 :: weight_gnorm   =   1.000D+00
+  REAL                 :: weight_mnorm   =   1.000D+00
 
   INTEGER              :: case_optimize  =   1
   REAL                 :: exit_tol       =   1.000D-04
@@ -145,7 +146,8 @@ module globals
   INTEGER              :: save_freq      =   1
   INTEGER              :: save_coils     =   0 
   INTEGER              :: save_harmonics =   0
-  INTEGER              :: save_filaments =   0   
+  INTEGER              :: save_filaments =   0
+  INTEGER              :: update_plasma  =   0    
 
   REAL                 :: pp_phi         =  0.000D+00
   REAL                 :: pp_raxis       =  0.000D+00       
@@ -189,6 +191,7 @@ module globals
                         weight_ccsep   , &
                         weight_inorm   , &
                         weight_gnorm   , &
+                        weight_mnorm   , &
                         case_optimize  , &
                         exit_tol       , &
                         DF_maxiter     , & 
@@ -215,6 +218,7 @@ module globals
                         save_coils     , &
                         save_harmonics , &
                         save_filaments , &
+                        update_plasma  , &
                         pp_phi         , &
                         pp_raxis       , &
                         pp_zaxis       , &
@@ -246,8 +250,8 @@ module globals
   end type toroidalsurface
 
   type arbitrarycoil
-     INTEGER              :: NS, Ic, Lc, itype
-     REAL                 :: I,  L, Lo, maxcurv
+     INTEGER              :: NS, Ic=0, Lc=0, itype
+     REAL                 :: I=zero,  L=zero, Lo, maxcurv, ox, oy, oz, mt, mp, Bt, Bz
      REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), &
                              dl(:), dd(:)
      character(LEN=10)    :: name
@@ -276,7 +280,7 @@ module globals
 
 !latex \subsection{Packing and unpacking}
   INTEGER              :: Cdof, Ndof, nfixcur, nfixgeo, Tdof
-  REAL                 :: Inorm = one, Gnorm = one                !current and geometry normalizations;
+  REAL                 :: Inorm = one, Gnorm = one, Mnorm = one   !current, geometry, and moment normalizations;
   REAL   , allocatable :: xdof(:), dofnorm(:)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -347,8 +351,11 @@ module globals
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   ! fieldline tracing
-  REAL, ALLOCATABLE    :: XYZB(:,:), ppr(:,:), ppz(:,:), iota(:)
-  INTEGER              :: tor_num, total_num
+  REAL, ALLOCATABLE    :: XYZB(:,:,:), ppr(:,:), ppz(:,:), iota(:)
+  INTEGER              :: tor_num, total_num, booz_mpol, booz_ntor, booz_mn
+  LOGICAL              :: lboozmn = .false.
+  INTEGER, ALLOCATABLE :: bmim(:), bmin(:)
+  REAL, ALLOCATABLE    :: booz_mnc(:,:), booz_mns(:,:)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

@@ -89,7 +89,7 @@
 PROGRAM focus
   
   use globals, only: dp, ncpu, myid, ounit, ierr, astat, eunit, case_surface, case_coils, case_optimize, &
-       case_postproc, xdof, tstart, tfinish, time_initialize, time_optimize, time_postproc, &
+       case_postproc, xdof, time_initialize, time_optimize, time_postproc, &
        version
 
   use mpi  !to enable gfortran mpi_wtime bugs; 07/20/2017
@@ -101,6 +101,7 @@ PROGRAM focus
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   INTEGER :: secs, mins, hrs
+  REAL    :: tstart, tfinish ! local variables
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
@@ -178,6 +179,7 @@ PROGRAM focus
   case( 2 ) ; call diagnos ; call specinp !; call saving 
  !case( 2 ) ; call saving  ; call diagnos ; call wtmgrid  ! write mgrid file;
   case( 3 ) ; call diagnos ; call poinplot ! Poincare plots; for future; 
+  case( 4 ) ; call diagnos ; call boozmn ; call poinplot ! Last closed surface
  !case( 4 ) ; call saving  ; call diagnos ; call resonant ! resonant harmonics analysis; for future; 
 
   end select

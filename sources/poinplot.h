@@ -4,15 +4,16 @@ SUBROUTINE poinplot
   ! Poincare plots of the vacuum flux surfaces and calculate the rotational transform
   !------------------------------------------------------------------------------------------------------ 
   USE globals, only : dp, myid, ncpu, zero, half, pi, pi2, ounit, pi, sqrtmachprec, pp_maxiter, &
-                      pp_phi, pp_raxis, pp_zaxis, pp_xtol, pp_rmax, pp_zmax, ppr, ppz, pp_ns, iota, nfp_raw
+                      pp_phi, pp_raxis, pp_zaxis, pp_xtol, pp_rmax, pp_zmax, ppr, ppz, pp_ns, iota, nfp_raw, &
+                      XYZB, lboozmn, booz_mnc, booz_mns, booz_mn, total_num
   USE mpi
   IMPLICIT NONE
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   INTEGER              :: ierr, astat, iflag
-  INTEGER              ::  ip, is, niter
-  REAL                 :: theta, zeta, r, x, y, z, RZ(2), r1, z1, rzrzt(5)
+  INTEGER              :: ip, is, niter
+  REAL                 :: theta, zeta, r, RZ(2), r1, z1, rzrzt(5),  x, y, z, tmpB(4)
   REAL, ALLOCATABLE    :: lppr(:,:), lppz(:,:), liota(:)  ! local ppr ppz
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -31,11 +32,16 @@ SUBROUTINE poinplot
      pp_raxis = (r+r1)*half
      pp_zaxis = (z+z1)*half
   endif
- 
-  ! calculate axis
-  RZ(1) = pp_raxis ; RZ(2) = pp_zaxis
-  call find_axis(RZ, pp_maxiter, pp_xtol)
-  pp_raxis = RZ(1) ; pp_zaxis = RZ(2)
+
+     if (myid == 0) then
+        RZ(1) = pp_raxis ; RZ(2) = pp_zaxis
+        call find_axis(RZ, pp_maxiter, pp_xtol)
+        pp_raxis = RZ(1) ; pp_zaxis = RZ(2)
+     endif
+  !endif
+  call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
+  RlBCAST( pp_raxis, 1, 0 )
+  RlBCAST( pp_zaxis, 1, 0 )
 
   ! poincare plot and calculate iota
   SALLOCATE( ppr , (1:pp_ns, 0:pp_maxiter), zero )
@@ -47,8 +53,9 @@ SUBROUTINE poinplot
 
   ! if pp_rmax and pp_zmax not provied 
   if ( (abs(pp_rmax) + abs(pp_zmax)) < sqrtmachprec) then
-     pp_rmax = r*1.0
-     pp_zmax = z*1.0
+     zeta = pp_phi
+     theta = zero ; call surfcoord( theta, zeta, r , z )
+     pp_rmax = r*1.0 ; pp_zmax = z*1.0
   endif
 
   if(myid==0) write(ounit, '("poinplot: following fieldlines between ("ES12.5 &
@@ -71,15 +78,30 @@ SUBROUTINE poinplot
         ! FATAL( poinplot, abs((rzrzt(3)-pp_raxis)/pp_raxis)>pp_xtol, magnetic axis is not coming back )
      enddo
      
-     liota(is) = rzrzt(5) / (niter*pi2/Nfp_raw)
+     if (niter==0) then
+        liota(is) = zero
+     else 
+        liota(is) = rzrzt(5) / (niter*pi2/Nfp_raw)
+     endif
 
      write(ounit, '(8X": order="I6" ; myid="I6" ; (R,Z)=("ES12.5","ES12.5 & 
           " ) ; iota="ES12.5" ; niter="I6" .")') is, myid, lppr(is,0), lppz(is,0), liota(is), niter
+
+     if(lboozmn .and. abs(liota(is))>sqrtmachprec) then
+        x = lppr(is, 0) * cos(pp_phi) ; y = lppr(is, 0) * sin(pp_phi) ; z = lppz(is, 0)
+        call boozsurf( XYZB(1:total_num, 1:4, is), x, y, z, liota(is), is)
+     endif
   enddo
   
   call MPI_ALLREDUCE(  lppr,  ppr, pp_ns*(pp_maxiter+1), MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
   call MPI_ALLREDUCE(  lppz,  ppz, pp_ns*(pp_maxiter+1), MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
   call MPI_ALLREDUCE( liota, iota, pp_ns               , MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+
+  if(lboozmn) then
+     call MPI_ALLREDUCE(MPI_IN_PLACE, XYZB, 4*pp_ns*total_num, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+     call MPI_ALLREDUCE(MPI_IN_PLACE, booz_mnc, pp_ns*booz_mn, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+     call MPI_ALLREDUCE(MPI_IN_PLACE, booz_mns, pp_ns*booz_mn, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+  endif
 
   DALLOCATE( lppz  )
   DALLOCATE( lppr  )
@@ -119,27 +141,27 @@ SUBROUTINE find_axis(RZ, MAXFEV, XTOL)
   allocate(fjac(ldfjac,n))
   allocate(r(lr))
 
-  call hybrd(axis_fcn,n, RZ,fvec,xtol,maxfev,ml,mu,epsfcn,diag, &
+  call hybrd(axis_fcn,n,RZ,fvec,xtol,maxfev,ml,mu,epsfcn,diag, &
        mode,factor,nprint,info,nfev,fjac,ldfjac,r,lr,qtf,wa1,wa2,wa3,wa4)
 
-  if (myid==0) then 
-     write(ounit,'("findaxis: Finding axis at phi = "ES12.5" with (R,Z) = ( "ES12.5,","ES12.5" ).")') &
-          pp_phi, RZ(1), RZ(2)
-     select case (info)
-     case (0)
-        write(ounit,'("findaxis: info=0, improper input parameters.")')
-     case (1)
-        write(ounit,'("findaxis: info=1, relative error between two consecutive iterates is at most xtol.")')
-     case (2)
-        write(ounit,'("findaxis: info=2, number of calls to fcn has reached or exceeded maxfev.")')
-     case (3)
-        write(ounit,'("findaxis: info=3, xtol is too small.")')    
-     case (4)
-        write(ounit,'("findaxis: info=4, iteration is not making good progress, jacobian.")')    
-     case (5)
-        write(ounit,'("findaxis: info=5, iteration is not making good progress, function.")')
-     end select
-  endif
+  write(ounit,'("findaxis: Finding axis at phi = "ES12.5" with (R,Z) = ( "ES12.5,","ES12.5" ).")') &
+       pp_phi, RZ(1), RZ(2)
+  select case (info)
+  case (0)
+     write(ounit,'("findaxis: info=0, improper input parameters.")')
+  case (1)
+     write(ounit,'("findaxis: info=1, relative error between two consecutive iterates is at most xtol.")')
+  case (2)
+     write(ounit,'("findaxis: info=2, number of calls to fcn has reached or exceeded maxfev.")')
+  case (3)
+     write(ounit,'("findaxis: info=3, xtol is too small.")')    
+  case (4)
+     write(ounit,'("findaxis: info=4, iteration is not making good progress, jacobian.")')    
+  case (5)
+     write(ounit,'("findaxis: info=5, iteration is not making good progress, function.")')
+  case default
+     write(ounit,'("findaxis: info="I2", something wrong with the axis finding subroutine.")') info
+  end select
 
   return
 
@@ -167,7 +189,7 @@ SUBROUTINE axis_fcn(n,x,fvec,iflag)
   rz_end = x
 
   call ode( BRpZ, n, rz_end, phi_init, phi_stop, relerr, abserr, ifail, work, iwork )
-  if ( ifail /= 2 .and. myid == 0) then     
+  if ( ifail /= 2 ) then     
      if ( IsQuiet < 0 ) then
         write ( ounit, '(A,I3)' ) 'axis_fcn: ODE solver ERROR; returned IFAIL = ', ifail
         select case ( ifail )
@@ -212,7 +234,7 @@ SUBROUTINE ppiota(rzrzt,iflag)
   phi_stop = pp_phi + pi2/Nfp_raw
 
   call ode( BRpZ_iota, n, rzrzt, phi_init, phi_stop, relerr, abserr, ifail, work, iwork )
-  if ( ifail /= 2 .and. myid == 0) then     
+  if ( ifail /= 2 ) then     
      if ( IsQuiet < -1 ) then
         write ( ounit, '(A,I3)' ) 'ppiota  : ODE solver ERROR; returned IFAIL = ', ifail
         select case ( ifail )
@@ -237,7 +259,7 @@ END SUBROUTINE ppiota
 
 subroutine coils_bfield(s, x,y,z)
   use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, &
-       zero, myid, ounit, Npc, bsconstant
+       zero, myid, ounit, Npc, bsconstant, one, two
   use mpi
   implicit none
 
@@ -248,45 +270,20 @@ subroutine coils_bfield(s, x,y,z)
 
   INTEGER              :: ierr, astat
   REAL                 :: Bx, By, Bz
-
   INTEGER              :: icoil, kseg
-  REAL                 :: dlx, dly, dlz, rm3, ltx, lty, ltz
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   s(1:4) = zero
-  
-  dlx = zero; ltx = zero; Bx = zero
-  dly = zero; lty = zero; By = zero
-  dlz = zero; ltz = zero; Bz = zero
 
   do icoil = 1, Ncoils*Npc
-     do kseg = 0, coil(icoil)%NS-1
-
-        dlx = x - coil(icoil)%xx(kseg)
-        dly = y - coil(icoil)%yy(kseg)
-        dlz = z - coil(icoil)%zz(kseg)
-        rm3 = (sqrt(dlx**2 + dly**2 + dlz**2))**(-3)
-
-        ltx = coil(icoil)%xt(kseg)
-        lty = coil(icoil)%yt(kseg)
-        ltz = coil(icoil)%zt(kseg)
-
-        Bx = Bx + ( dlz*lty - dly*ltz ) * rm3 * coil(icoil)%dd(kseg) * coil(icoil)%I
-        By = By + ( dlx*ltz - dlz*ltx ) * rm3 * coil(icoil)%dd(kseg) * coil(icoil)%I
-        Bz = Bz + ( dly*ltx - dlx*lty ) * rm3 * coil(icoil)%dd(kseg) * coil(icoil)%I
-
-     enddo    ! enddo kseg
-  enddo ! enddo icoil
-
-  Bx = Bx * bsconstant
-  By = By * bsconstant
-  Bz = Bz * bsconstant
-
-  s(1) = Bx
-  s(2) = By
-  s(3) = Bz
-  s(4) = sqrt(Bx*Bx+By*By+Bz*Bz)
+     Bx = zero; By = zero; Bz = zero
+     call bfield0( icoil, x, y, z, Bx, By, Bz )
+     s(1) = s(1) + Bx
+     s(2) = s(2) + By
+     s(3) = s(3) + Bz
+  enddo
+  s(4) = sqrt( s(1)*s(1) + s(2)*s(2) + s(3)*s(3) )
 
   return
 

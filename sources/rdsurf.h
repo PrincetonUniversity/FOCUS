@@ -273,7 +273,7 @@ subroutine fousurf
    enddo ! end of do jj; 14 Apr 16;
   enddo ! end of do ii; 14 Apr 16;
 
-  surf(1)%vol = surf(1)%vol * discretefactor
+  surf(1)%vol = abs(surf(1)%vol) * discretefactor
   if( myid == 0 .and. IsQuiet <= 0) write(ounit, '(8X": Enclosed volume ="ES12.5" m^3 ;" )') surf(1)%vol
 
   !calculate target Bn with input harmonics; 05 Jan 17;

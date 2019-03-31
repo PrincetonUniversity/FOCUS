@@ -42,6 +42,7 @@ SUBROUTINE congrad
   REAL                    :: alpha, beta, f
   REAL, dimension(1:Ndof) :: lxdof, p, gradk, gradf
 
+  tfinish = MPI_Wtime()
   iter = 0
   call packdof(lxdof(1:Ndof)) ! initial xdof;
   call getdf(lxdof, f, gradk)

@@ -35,7 +35,7 @@
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine solvers
-  use globals, only: dp, ierr, iout, myid, ounit, IsQuiet, IsNormWeight, Ndof, Nouts, xdof, &
+  use globals, only: dp, ierr, iout, myid, ounit, zero, IsQuiet, IsNormWeight, Ndof, Nouts, xdof, &
        case_optimize, DF_maxiter, LM_maxiter, CG_maxiter, HN_maxiter, TN_maxiter, coil, DoF, &
        weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, &
        target_tflux, target_length, cssep_factor
@@ -75,7 +75,7 @@ subroutine solvers
   call costfun(1)
   call saveBmn    ! in bmnharm.h;
   iout = 0 ! reset output counter;
-  call output(0.0)
+  call output(zero)
   
   !--------------------------------DF--------------------------------------------------------------------
   if (DF_maxiter > 0)  then
@@ -554,11 +554,11 @@ subroutine output (mark)
            coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%ys(1:NF) ; idof = idof + NF
            coilspace(iout, idof+1:idof+NF+1) = FouCoil(icoil)%zc(0:NF) ; idof = idof + NF +1
            coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%zs(1:NF) ; idof = idof + NF
-        case default
-           FATAL(descent, .true., not supported coil types)
+!!$        case default
+!!$           FATAL(output, .true., not supported coil types)
         end select
      enddo
-     FATAL( output , idof .ne. Tdof, counting error in restart )
+!!$     FATAL( output , idof .ne. Tdof, counting error in restart )
   endif
 
   if(mod(iout,save_freq) .eq. 0) call saving
