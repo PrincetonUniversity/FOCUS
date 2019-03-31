@@ -93,17 +93,21 @@ For instance, you want to run the code with a case name of "example".
   - *case_init = -1* : **coils.example**
   
     Read the coils data from **coils.example** and fit the coils with Fourier coefficients. 
-    The format ofcoils.\* file can be seen in [VMECwiki](http://vmecwiki.pppl.wikispaces.net/MAKEGRID).
+    The format ofcoils.\* file can be seen in [VMECwiki](https://bitbucket.org/lazerson_princeton/stellopt/wiki/MAKEGRID).
 	Here is an example for the rotating ellipse case [coils.ellipse](https://github.com/PrincetonUniversity/FOCUS/tree/master/examples/rotating_ellipse/coils.ellipse)
     
   - *case_init =  0* : **example.focus**
   
     Read the coils data from **example.focus**. This file contains all the Fourier harmonics and control labels for the coils.
-	Here is an example for the rotating ellipse case [ellipse.focus](https://github.com/PrincetonUniversity/FOCUS/tree/master/examples/rotating_ellipse/elipse.focus)
+	Here is an example for the rotating ellipse case [ellipse.focus](https://github.com/PrincetonUniversity/FOCUS/tree/master/examples/rotating_ellipse/ellipse.focus)
     
   - *case_init =  1*
   
     Initialize *Ncoils* circular coils (r=*init_radius*, I=*init_current*) surrounding the plasma boundary.
+
+  - *case_init =  2*
+  
+    Initialize *Ncoils-1* magnetic dipoles (r=*init_radius*, I=*init_current*) surrounding the plasma boundary plus one central current.
 
 If you want to optimize individual Bn spectrum (*weight_bharm>0* in the namelist), you may also need to provide an input file named *target.harmonics*.
 Detalis about the format can be seen in [bmnharm.pdf](https://princetonuniversity.github.io/FOCUS/bmnharm.pdf)
@@ -156,7 +160,7 @@ Intermediate coil data (XYZ points in space) are store in binary file *.example.
 &nbsp;
 
 # Plotting
-There are several tools for processing the data.
+There are several tools for processing the data. If you need to use one of them, please contact the author(s).
 
   - **python:** There is an python package written by Dr. Caoxiang Zhu, using [Matplotlib](https://matplotlib.org/) and [Mayavi](http://docs.enthought.com/mayavi/mayavi/).
   - **OMFIT:** In the [OMFIT](https://gafusion.github.io/OMFIT-source/) frame, there is a powerful module [*focus*](https://docs.google.com/document/d/1aGpRUMpYxBJmQXfkOK2OFMZ4P0Mn5H1_OSAjJVvxpHU/edit?ts=5ad10d28#) managed by Dr. Nikolas Logan.
