@@ -20,7 +20,7 @@
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-subroutine bfield0(icoil, iteta, jzeta, Bx, By, Bz)
+subroutine bfield0(icoil, xx, yy, zz, Bx, By, Bz)
 !------------------------------------------------------------------------------------------------------ 
 ! DATE:  06/15/2016; 03/26/2017
 ! calculate the magnetic field of icoil using manually discretized coils. 
@@ -32,19 +32,18 @@ subroutine bfield0(icoil, iteta, jzeta, Bx, By, Bz)
   implicit none
   include "mpif.h"
 
-  INTEGER, intent(in ) :: icoil, iteta, jzeta
+  INTEGER, intent(in ) :: icoil
+  REAL,    intent(in ) :: xx, yy, zz
   REAL   , intent(out) :: Bx, By, Bz
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   INTEGER              :: ierr, astat, kseg
-  REAL                 :: dlx, dly, dlz, rm3, ltx, lty, ltz, rr, r2, m_dot_r, phi, mx, my, mz
+  REAL                 :: dlx, dly, dlz, rm3, ltx, lty, ltz, rr, r2, m_dot_r, mx, my, mz
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   FATAL( bfield0, icoil .lt. 1 .or. icoil .gt. Ncoils*Npc, icoil not in right range )
-  FATAL( bfield0, iteta .lt. 0 .or. iteta .gt. Nteta     , iteta not in right range )
-  FATAL( bfield0, jzeta .lt. 0 .or. jzeta .gt. Nzeta     , jzeta not in right range )
 
   Bx = zero; By = zero; Bz = zero
   
@@ -58,9 +57,9 @@ subroutine bfield0(icoil, iteta, jzeta, Bx, By, Bz)
 
      do kseg = 0, coil(icoil)%NS-1
 
-        dlx = surf(1)%xx(iteta,jzeta) - coil(icoil)%xx(kseg)
-        dly = surf(1)%yy(iteta,jzeta) - coil(icoil)%yy(kseg)
-        dlz = surf(1)%zz(iteta,jzeta) - coil(icoil)%zz(kseg)
+        dlx = xx - coil(icoil)%xx(kseg)
+        dly = yy - coil(icoil)%yy(kseg)
+        dlz = zz - coil(icoil)%zz(kseg)
         rm3 = (sqrt(dlx**2 + dly**2 + dlz**2))**(-3)
 
         ltx = coil(icoil)%xt(kseg)
@@ -80,9 +79,9 @@ subroutine bfield0(icoil, iteta, jzeta, Bx, By, Bz)
   !--------------------------------------------------------------------------------------------- 
   case(2)
 
-     dlx = surf(1)%xx(iteta,jzeta) - coil(icoil)%ox
-     dly = surf(1)%yy(iteta,jzeta) - coil(icoil)%oy
-     dlz = surf(1)%zz(iteta,jzeta) - coil(icoil)%oz
+     dlx = xx - coil(icoil)%ox
+     dly = yy - coil(icoil)%oy
+     dlz = zz - coil(icoil)%oz
      r2  = dlx**2 + dly**2 + dlz**2
      rm3 = one/(sqrt(r2)*r2)
      mx = sin(coil(icoil)%mt) * cos(coil(icoil)%mp)
@@ -102,12 +101,11 @@ subroutine bfield0(icoil, iteta, jzeta, Bx, By, Bz)
   case(3)
      ! might be only valid for cylindrical coordinates
      ! Bt = u0*I/(2 pi R)
-     phi = ( jzeta + half ) * pi2 / ( Nzeta*Nfp )
-     rr = sqrt( surf(1)%xx(iteta,jzeta)**2 + surf(1)%yy(iteta,jzeta)**2 )
+     rr = sqrt( xx**2 + yy**2 )
      coil(icoil)%Bt = two/rr * coil(icoil)%I * bsconstant
 
-     Bx = - coil(icoil)%Bt * sin(phi)
-     By =   coil(icoil)%Bt * cos(phi)
+     Bx = - coil(icoil)%Bt * yy/rr
+     By =   coil(icoil)%Bt * xx/rr
      Bz =   coil(icoil)%Bz 
 
   !---------------------------------------------------------------------------------------------
@@ -121,7 +119,7 @@ end subroutine bfield0
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-subroutine bfield1(icoil, iteta, jzeta, Bx, By, Bz, ND)
+subroutine bfield1(icoil, xx, yy, zz, Bx, By, Bz, ND)
 !------------------------------------------------------------------------------------------------------ 
 ! DATE:  06/15/2016; 03/26/2017
 ! calculate the magnetic field and the first dirivatives of icoil using manually discretized coils;
@@ -133,7 +131,8 @@ subroutine bfield1(icoil, iteta, jzeta, Bx, By, Bz, ND)
   implicit none
   include "mpif.h"
 
-  INTEGER, intent(in ) :: icoil, iteta, jzeta, ND
+  INTEGER, intent(in ) :: icoil, ND
+  REAL,    intent(in ) :: xx, yy, zz
   REAL, dimension(1:1, 1:ND), intent(inout) :: Bx, By, Bz
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -146,8 +145,6 @@ subroutine bfield1(icoil, iteta, jzeta, Bx, By, Bz, ND)
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   FATAL( bfield1, icoil .lt. 1 .or. icoil .gt. Ncoils*Npc, icoil not in right range )
-  FATAL( bfield1, iteta .lt. 0 .or. iteta .gt. Nteta     , iteta not in right range )
-  FATAL( bfield1, jzeta .lt. 0 .or. jzeta .gt. Nzeta     , jzeta not in right range )
   FATAL( bfield1, ND <= 0, wrong inout dimension of ND )
 
   Bx = zero; By = zero; Bz = zero
@@ -164,9 +161,9 @@ subroutine bfield1(icoil, iteta, jzeta, Bx, By, Bz, ND)
 
      do kseg = 0, NS-1
 
-        dlx = surf(1)%xx(iteta,jzeta) - coil(icoil)%xx(kseg)
-        dly = surf(1)%yy(iteta,jzeta) - coil(icoil)%yy(kseg)
-        dlz = surf(1)%zz(iteta,jzeta) - coil(icoil)%zz(kseg)
+        dlx = xx - coil(icoil)%xx(kseg)
+        dly = yy - coil(icoil)%yy(kseg)
+        dlz = zz - coil(icoil)%zz(kseg)
 
         r2 = dlx**2 + dly**2 + dlz**2; rm3 = one/(sqrt(r2)*r2); rm5 = rm3/r2;
 
@@ -200,9 +197,9 @@ subroutine bfield1(icoil, iteta, jzeta, Bx, By, Bz, ND)
   !--------------------------------------------------------------------------------------------- 
   case(2)  ! permanent dipoles
 
-     dlx = surf(1)%xx(iteta,jzeta) - coil(icoil)%ox
-     dly = surf(1)%yy(iteta,jzeta) - coil(icoil)%oy
-     dlz = surf(1)%zz(iteta,jzeta) - coil(icoil)%oz
+     dlx = xx - coil(icoil)%ox
+     dly = yy - coil(icoil)%oy
+     dlz = zz - coil(icoil)%oz
      r2  = dlx**2 + dly**2 + dlz**2
      rm3 = one/(sqrt(r2)*r2)
      rm5 = rm3/r2

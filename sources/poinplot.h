@@ -270,91 +270,19 @@ subroutine coils_bfield(s, x,y,z)
 
   INTEGER              :: ierr, astat
   REAL                 :: Bx, By, Bz
-
   INTEGER              :: icoil, kseg
-  REAL                 :: dlx, dly, dlz, rm3, ltx, lty, ltz, rr, r2, &
-                          m_dot_r, mx, my, mz
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   s(1:4) = zero
 
   do icoil = 1, Ncoils*Npc
-
      Bx = zero; By = zero; Bz = zero
-
-     select case (coil(icoil)%itype)
-        !--------------------------------------------------------------------------------------------- 
-     case(1)
-
-        dlx = zero; ltx = zero
-        dly = zero; lty = zero
-        dlz = zero; ltz = zero
-
-        do kseg = 0, coil(icoil)%NS-1
-
-           dlx = x - coil(icoil)%xx(kseg)
-           dly = y - coil(icoil)%yy(kseg)
-           dlz = z - coil(icoil)%zz(kseg)
-           rm3 = (sqrt(dlx**2 + dly**2 + dlz**2))**(-3)
-
-           ltx = coil(icoil)%xt(kseg)
-           lty = coil(icoil)%yt(kseg)
-           ltz = coil(icoil)%zt(kseg)
-
-           Bx = Bx + ( dlz*lty - dly*ltz ) * rm3 * coil(icoil)%dd(kseg)
-           By = By + ( dlx*ltz - dlz*ltx ) * rm3 * coil(icoil)%dd(kseg)
-           Bz = Bz + ( dly*ltx - dlx*lty ) * rm3 * coil(icoil)%dd(kseg)
-
-        enddo    ! enddo kseg
-
-        Bx = Bx * coil(icoil)%I * bsconstant
-        By = By * coil(icoil)%I * bsconstant
-        Bz = Bz * coil(icoil)%I * bsconstant
-
-        !--------------------------------------------------------------------------------------------- 
-     case(2)
-
-        dlx = x - coil(icoil)%ox
-        dly = y - coil(icoil)%oy
-        dlz = z - coil(icoil)%oz
-        r2  = dlx**2 + dly**2 + dlz**2
-        rm3 = one/(sqrt(r2)*r2)
-        mx = sin(coil(icoil)%mt) * cos(coil(icoil)%mp)
-        my = sin(coil(icoil)%mt) * sin(coil(icoil)%mp)
-        mz = cos(coil(icoil)%mt)
-        m_dot_r = mx * dlx + my * dly + mz * dlz
-
-        Bx = 3.0_dp * m_dot_r * rm3 / r2 * dlx - mx * rm3
-        By = 3.0_dp * m_dot_r * rm3 / r2 * dly - my * rm3
-        Bz = 3.0_dp * m_dot_r * rm3 / r2 * dlz - mz * rm3
-
-        Bx = Bx * coil(icoil)%I * bsconstant
-        By = By * coil(icoil)%I * bsconstant
-        Bz = Bz * coil(icoil)%I * bsconstant
-
-        !--------------------------------------------------------------------------------------------- 
-     case(3)
-        ! might be only valid for cylindrical coordinates
-        ! Bt = u0*I/(2 pi R)
-        rr = sqrt( x**2 + y**2 )
-        coil(icoil)%Bt = two/rr * coil(icoil)%I * bsconstant
-
-        Bx = - coil(icoil)%Bt * ( y/rr ) ! sin(phi)
-        By =   coil(icoil)%Bt * ( x/rr ) ! cos(phi)
-        Bz =   coil(icoil)%Bz 
-
-        !---------------------------------------------------------------------------------------------
-     case default
-        FATAL(coils_bfield, .true., not supported coil types)
-     end select
-
+     call bfield0( icoil, x, y, z, Bx, By, Bz )
      s(1) = s(1) + Bx
      s(2) = s(2) + By
      s(3) = s(3) + Bz
-
   enddo
-
   s(4) = sqrt( s(1)*s(1) + s(2)*s(2) + s(3)*s(3) )
 
   return

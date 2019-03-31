@@ -260,36 +260,27 @@ subroutine importance(icoil)
 
   INTEGER                               :: iteta, jzeta, NumGrid
   REAL                                  :: dBx, dBy, dBz
-  REAL, dimension(0:Nteta-1, 0:Nzeta-1) :: lbx, lby, lbz        ! local  Bx, By and Bz
   REAL, dimension(0:Nteta-1, 0:Nzeta-1) :: tbx, tby, tbz        ! summed Bx, By and Bz
 
   !--------------------------initialize and allocate arrays------------------------------------- 
 
   NumGrid = Nteta*Nzeta
-  lbx = zero; lby = zero; lbz = zero        !already allocted; reset to zero;
   tbx = zero; tby = zero; tbz = zero        !already allocted; reset to zero;
 
   do jzeta = 0, Nzeta - 1
      do iteta = 0, Nteta - 1
 
         if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;
-        call bfield0(icoil, iteta, jzeta, lbx(iteta, jzeta), lby(iteta, jzeta), lbz(iteta, jzeta))
+        call bfield0(icoil, surf(1)%xx(iteta, jzeta), surf(1)%yy(iteta, jzeta), &
+                   & surf(1)%zz(iteta, jzeta), tbx(iteta, jzeta), tby(iteta, jzeta), tbz(iteta, jzeta))
 
      enddo ! end do iteta
   enddo ! end do jzeta
 
   call MPI_BARRIER( MPI_COMM_WORLD, ierr )     
-  call MPI_REDUCE( lbx, tbx, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
-  call MPI_REDUCE( lby, tby, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
-  call MPI_REDUCE( lbz, tbz, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
-
-  RlBCAST( tbx, NumGrid, 0 )  ! total Bx from icoil;
-  RlBCAST( tby, NumGrid, 0 )  ! total By from icoil;
-  RlBCAST( tbz, NumGrid, 0 )  ! total Bz from icoil;
-
-  tbx = tbx * coil(icoil)%I * bsconstant
-  tby = tby * coil(icoil)%I * bsconstant
-  tbz = tbz * coil(icoil)%I * bsconstant
+  call MPI_ALLREDUCE( MPI_IN_PLACE, tbx, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
+  call MPI_ALLREDUCE( MPI_IN_PLACE, tby, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
+  call MPI_ALLREDUCE( MPI_IN_PLACE, tbz, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
 
   coil_importance(icoil) = sum( (tbx*surf(1)%Bx + tby*surf(1)%By + tbz*surf(1)%Bz) / &
                                 (surf(1)%Bx**2 + surf(1)%By**2 + surf(1)%Bz**2) ) / NumGrid

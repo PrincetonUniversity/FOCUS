@@ -7,6 +7,7 @@ subroutine AllocData(itype)
 ! part can be : -1('dof'), 0('costfun0'), 1('costfun1')
 !------------------------------------------------------------------------------------------------------
   use globals
+  use bnorm_mod
   implicit none
   include "mpif.h"
 
@@ -169,11 +170,15 @@ subroutine AllocData(itype)
 
      ! Bnorm and Bharm needed;
      if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec .or. IsQuiet <= -2) then
-        SALLOCATE(         bn, (0:Nteta-1,0:Nzeta-1), zero ) !Bn from coils;        
-        SALLOCATE( surf(1)%bn, (0:Nteta-1,0:Nzeta-1), zero ) !total Bn;
-        SALLOCATE( surf(1)%Bx, (0:Nteta-1,0:Nzeta-1), zero ) !Bx on the surface;
-        SALLOCATE( surf(1)%By, (0:Nteta-1,0:Nzeta-1), zero ) !By on the surface;
-        SALLOCATE( surf(1)%Bz, (0:Nteta-1,0:Nzeta-1), zero ) !Bz on the surface;
+        SALLOCATE(         bn, (0:Nteta-1,0:Nzeta-1), zero ) ! Bn from coils;        
+        SALLOCATE( surf(1)%bn, (0:Nteta-1,0:Nzeta-1), zero ) ! total Bn;
+        SALLOCATE( surf(1)%Bx, (0:Nteta-1,0:Nzeta-1), zero ) ! Bx on the surface;
+        SALLOCATE( surf(1)%By, (0:Nteta-1,0:Nzeta-1), zero ) ! By on the surface;
+        SALLOCATE( surf(1)%Bz, (0:Nteta-1,0:Nzeta-1), zero ) ! Bz on the surface;
+        SALLOCATE(         Bm, (0:Nteta-1,0:Nzeta-1), zero ) ! |B| on the surface;       
+        SALLOCATE( dBx, (0:Cdof,0:Cdof), zero ) ! d^2Bx/(dx1,dx2) on each coil; Cdof is the max coil dof
+        SALLOCATE( dBy, (0:Cdof,0:Cdof), zero ) ! d^2By/(dx1,dx2) on each coil;
+        SALLOCATE( dBz, (0:Cdof,0:Cdof), zero ) ! d^2Bz/(dx1,dx2) on each coil;        
      endif
 
      ! Bharm needed;
@@ -196,7 +201,10 @@ subroutine AllocData(itype)
 
      ! Bnorm related;
      if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec) then
-        SALLOCATE( t1B, (1:Ndof), zero )                       !total dB/dx;
+        SALLOCATE( t1B, (1:Ndof), zero )  !total d bnorm / d x;
+        SALLOCATE( dBn, (1:Ndof), zero )  !total d Bn / d x;
+        SALLOCATE( dBm, (1:Ndof), zero )  !total d Bm / d x;
+        SALLOCATE( d1B, (1:Ndof,0:Nteta-1,0:Nzeta-1), zero ) ! discretized dBn
      endif
 
      ! Bharm related;

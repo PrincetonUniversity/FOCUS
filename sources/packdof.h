@@ -6,10 +6,10 @@
 !latex  \bi
 !latex  \item The \inputvar{case\_coils} determines the packing and unpacking patern. 
 !latex  \item \inputvar{case\_coils} = 1: Coils are represented with Fourier series.
-!latex  \item For each coil, the number of DOF is $6N_F+3$ ($\sin 0$ terms are omitted.)
+!latex  \item For each coil, the number of DOF is $6N_F+4$ ($\sin 0$ terms are omitted.)
 !latex  \be
-!latex  \vect{X_i} = \left[ \overbrace{I, \underbrace{X_{c,0}, \cdots, X_{c,N}}_\text{N+1}, 
-!latex  \underbrace{X_{s,1}, \cdots, X_{s,N}}_\text{N}, Y_{c,0}, \cdots, Z_{s,N}}^\text{6N+4} \right ]
+!latex  \vect{X_i} = \left [ \overbrace{I, \underbrace{X_{c,0}, \cdots, X_{c,N}}_{\text{N+1}}, 
+!latex  \underbrace{X_{s,1}, \cdots, X_{s,N}}_{\mathrm{N}}, Y_{c,0}, \cdots, Z_{s,N}}^{\mathrm{6N+4}} \right ]
 !latex  \ee
 !latex  \item Coil currents/geometry can also be fixed, and they are determined by coil\%Ic and coil\%Lc.
 !latex  \item The total number of DOF $Ndof$ should be

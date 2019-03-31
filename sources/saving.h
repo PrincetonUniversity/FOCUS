@@ -314,7 +314,7 @@ subroutine saving
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  if (Update_plasma == 1 ) call write_plasma
+  if (update_plasma == 1 ) call write_plasma
 
   return
 

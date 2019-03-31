@@ -378,8 +378,8 @@ subroutine rdcoils
      !------------- permanent dipoles and background magnetic field ----------------------------------------
   case( 2 ) ! averagely positioned permanent dipoles ; 2019/01/03
 
-     allocate(    coil(1:Ncoils*Npc) )
-     allocate(     DoF(1:Ncoils*Npc) )
+     allocate( coil(1:Ncoils*Npc) )
+     allocate(  DoF(1:Ncoils*Npc) )
 
      num_per_array = 16  ! number of dipoles at each toroidal cross-section
      num_tor = (Ncoils-1)/num_per_array ! number of toroidal arrangements

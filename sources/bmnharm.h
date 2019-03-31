@@ -105,6 +105,19 @@
 !!$END SUBROUTINE bmnharm
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+module bharm_mod
+  ! contains some common variables used in subroutine bnormal
+  ! allocating once and re-using them will save allocation time
+  use globals, only : dp
+  implicit none
+
+  ! 0-order
+  ! none for now; in future, others should be moved to here. 03/30/2019
+  ! 1st-order
+  REAL, allocatable :: dBc(:), dBs(:)
+
+end module bharm_mod
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE readBmn
   !----------------------------------------------------------------------------------------
@@ -113,6 +126,7 @@ SUBROUTINE readBmn
   !----------------------------------------------------------------------------------------
   use globals, only: dp, zero, half, pi2, myid, ounit, runit, ext, IsQuiet, Nteta, Nzeta, Nfp, &
                      NBmn, Bmnin, Bmnim, wBmn, tBmnc, tBmns, carg, sarg, Nfp_raw, case_bnormal
+  use bharm_mod
   implicit none
   include "mpif.h"
 
@@ -182,6 +196,9 @@ SUBROUTINE readBmn
          enddo
       enddo
    enddo
+
+   SALLOCATE( dBc, (1:NBmn), zero )  ! dB_mn_cos
+   SALLOCATE( dBs, (1:NBmn), zero )  ! dB_mn_sin
 
   return
 END SUBROUTINE readBmn

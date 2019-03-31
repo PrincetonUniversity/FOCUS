@@ -2,8 +2,9 @@
 
 ############################################################################################################
 
- ALLFILES= globals initial datalloc rdsurf rdknot rdcoils packdof bfield bnormal bmnharm fdcheck \
-           torflux length surfsep solvers descent congrad lmalg saving diagnos specinp poinplot boozer focus
+ ALLFILES= globals initial rdsurf rdknot rdcoils packdof bfield bmnharm bnormal fdcheck \
+           torflux length surfsep datalloc solvers descent congrad lmalg saving diagnos \
+           specinp poinplot boozer focus
  HFILES= $(ALLFILES:=.h)
  FFILES= $(ALLFILES:=.F90)
  PFILES= $(ALLFILES:=.pdf)
@@ -85,12 +86,11 @@ $(PFILES): %.pdf: %.h head.tex end.tex
 	@pdflatex -shell-escape -interaction=nonstopmode -file-line-error $*.tex | grep ".*:[0-9]*:.*" ||:
 	@pdflatex -shell-escape -interaction=nonstopmode -file-line-error $*.tex | grep ".*:[0-9]*:.*" ||: 
 	@pdflatex -shell-escape -interaction=nonstopmode -file-line-error $*.tex | grep ".*:[0-9]*:.*" ||:
+	@rm -f $*.tex $*.aux $*.blg $*.log $*.ps .$*.date $*.toc $*.out
 	
-
 ############################################################################################################
 
 pdfs: $(PFILES)
 	@echo "Please read pdfs in this directory!"
-	@rm -f $*.tex $*.aux $*.blg $*.log $*.ps .$*.date $*.toc $*.out
 
 ############################################################################################################
