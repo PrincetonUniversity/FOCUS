@@ -268,7 +268,7 @@ subroutine saving
         do ii = 0, coil(icoil)%NS-1
            write(funit,1010) coil(icoil)%xx(ii), coil(icoil)%yy(ii), coil(icoil)%zz(ii), coil(icoil)%I
         enddo
-        ii =  coil(icoil)%NS
+        ii =  0
         write(funit,1010) coil(icoil)%xx(ii), coil(icoil)%yy(ii), coil(icoil)%zz(ii), &
              zero, icoil, coil(icoil)%name
      enddo

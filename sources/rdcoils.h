@@ -201,7 +201,7 @@ subroutine rdcoils
         open( runit, file=trim(coilfile), status="old", action='read')
         read( runit,*)
         read( runit,*) Ncoils
-        write(ounit,'("rdcoils : identified "i3" unique coils in "A" ;")') Ncoils, trim(coilfile)
+        write(ounit,'("rdcoils : identified "i6" unique coils in "A" ;")') Ncoils, trim(coilfile)
      endif
                                
      IlBCAST( Ncoils        ,    1,  0 )
