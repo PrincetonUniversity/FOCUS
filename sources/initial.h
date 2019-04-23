@@ -318,7 +318,7 @@ subroutine initial
      case ( '-i', '--init' )
         call write_focus_namelist ! in initial.h
      case default
-        index_dot = INDEX(ext,'.')
+        index_dot = INDEX(ext,'.input')
         IF (index_dot .gt. 0)  ext = ext(1:index_dot-1)
         write(ounit, '("initial : machine_prec   = ", ES12.5, " ; sqrtmachprec   = ", ES12.5   &
              & )') machprec, sqrtmachprec
