@@ -24,7 +24,7 @@
 subroutine rdknot
   
   use globals, only : dp, zero, one, half, ten, pi2, sqrtmachprec, myid, ncpu, ounit, runit, &
-                      ext, &
+                      ext, input_surf, &
                       NFcoil, knotsurf, knotphase, &
                       xkc, xks, ykc, yks, zkc, zks!, kspring, tauend, itau
   

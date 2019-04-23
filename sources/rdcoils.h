@@ -198,10 +198,10 @@ subroutine rdcoils
   case( 0 )
 
      if( myid==0 ) then  !get file number;
-        open( runit, file=trim(input_focus), status="old", action='read')
+        open( runit, file=trim(input_coils), status="old", action='read')
         read( runit,*)
         read( runit,*) Ncoils
-        write(ounit,'("rdcoils : identified "i6" unique coils in "A" ;")') Ncoils, trim(input_focus)
+        write(ounit,'("rdcoils : identified "i6" unique coils in "A" ;")') Ncoils, trim(input_coils)
      endif
                                
      IlBCAST( Ncoils        ,    1,  0 )

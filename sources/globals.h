@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='v0.7.05' ! version number
+  CHARACTER(LEN=10), parameter :: version='v0.7.06' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -68,11 +68,11 @@ module globals
 
   CHARACTER(LEN=100)   :: ext       ! extention
   CHARACTER(LEN=100)   :: inputfile ! input namelist
-  CHARACTER(LEN=100)   :: knotfile  ! input knot file
   CHARACTER(LEN=100)   :: hdf5file  ! hdf5 file
   CHARACTER(LEN=100)   :: out_coils ! output ext.coils file
   CHARACTER(LEN=100)   :: out_focus ! output ext.focus file
   CHARACTER(LEN=100)   :: out_harm  ! output harmonics file
+  CHARACTER(LEN=100)   :: out_plasma  ! updated plasma boundary
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
@@ -157,12 +157,14 @@ module globals
   REAL                 :: pp_xtol        =  1.000D-06
 
   CHARACTER(LEN=100)   :: input_surf     = 'plasma.boundary'  ! surface file
-  CHARACTER(LEN=100)   :: input_focus    = 'none'             ! FOCUS coil file
+  CHARACTER(LEN=100)   :: input_coils    = 'none'             ! input file for coils
   CHARACTER(LEN=100)   :: input_harm     = 'target.harmonics' ! input target harmonics file
-  CHARACTER(LEN=100)   :: input_coils    = 'none'             ! input coils.ext file
                                                          
   namelist / focusin /  IsQuiet        , &
-                        IsSymmetric    , & 
+                        IsSymmetric    , &
+                        input_surf     , & 
+                        input_harm     , &
+                        input_coils    , & 
                         case_surface   , &
                         knotsurf       , &
                         ellipticity    , & 
@@ -228,11 +230,8 @@ module globals
                         pp_zmax        , &
                         pp_ns          , &
                         pp_maxiter     , &
-                        pp_xtol        , &
-                        input_surf     , & 
-                        input_focus    , &
-                        input_harm     , &
-                        input_coils    
+                        pp_xtol        
+
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   

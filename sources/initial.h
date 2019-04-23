@@ -8,7 +8,8 @@
 
 !latex \section{Input namelist}
 !latex  The \emph{focusin} namelist is the only input namelist needed for FOCUS running. It should be
-!latex  written from the file \emph{example.input}. Here are the details for the variables. \\
+!latex  written to the file \emph{example.input}, where `example' is the argument passed by command line. 
+!latex  Here are the details for the variables. \\
 !latex  \bi
 !latex  \item \inputvar{IsQuiet = -1} \\
 !latex    \textit{Information displayed to the user} \\
@@ -26,6 +27,19 @@
 !latex    \item[1:] plasma periodicty enforced;
 !latex    \item[2:] coil and plasma periodicity enforced. 
 !latex    \ei
+!latex 
+!latex  \par \begin{tikzpicture} \draw[dashed] (0,1) -- (10,1); \end{tikzpicture}
+!latex 
+!latex  \item \inputvar{input\_surf = 'plasma.boundary'} \\
+!latex    \textit{Input file containing plasma boundary information.} 
+!latex 
+!latex  \item \inputvar{input\_coils = 'none'} \\
+!latex    \textit{Input file containing initial guess for coils (in either format).}
+!latex    If it is 'none' by default, it will be updated to 'coils.example' (case\_init=-1) 
+!latex       or 'example.focus' (case\_init=0).
+!latex 
+!latex  \item \inputvar{input\_harm = 'target.harmonics'} \\
+!latex    \textit{Input file containing the target harmonics for Bmn optimization.} 
 !latex 
 !latex  \par \begin{tikzpicture} \draw[dashed] (0,1) -- (10,1); \end{tikzpicture}
 !latex 
@@ -291,28 +305,31 @@ subroutine initial
   !-------------read input namelist----------------------------------------------------------------------
   if( myid == 0 ) then ! only the master node reads the input; 25 Mar 15;
      call getarg(1,ext) ! get argument from command line
-     ! check if .input appened
-     index_dot = INDEX(ext,'.')
-     IF (index_dot .gt. 0)  ext = ext(1:index_dot-1)
-     write(ounit, '("initial : machine_prec   = ", ES12.5, " ; sqrtmachprec   = ", ES12.5   &
-          & )') machprec, sqrtmachprec
-#ifdef DEBUG
-     write(ounit, '("DEBUG info: extension from command line is "A)') trim(ext)
-#endif
-  endif
-  ClBCAST( ext           ,  100,  0 )
 
-  !-------------IO files name ---------------------------------------------------------------------------
+     select case(trim(ext))
+     case ( '-h', '--help' )
+        write(ounit,*)'-------HELP INFORMATION--------------------------'
+        write(ounit,*)' Usage: xfocus <options> input_file'
+        write(ounit,*)'    <options>'
+        write(ounit,*)'     --init / -i  :  Write an example input file'
+        write(ounit,*)'     --help / -h  :  Output help message'
+        write(ounit,*)'-------------------------------------------------'
+        call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+     case ( '-i', '--init' )
+        call write_focus_namelist ! in initial.h
+     case default
+        index_dot = INDEX(ext,'.')
+        IF (index_dot .gt. 0)  ext = ext(1:index_dot-1)
+        write(ounit, '("initial : machine_prec   = ", ES12.5, " ; sqrtmachprec   = ", ES12.5   &
+             & )') machprec, sqrtmachprec
+#ifdef DEBUG
+        write(ounit, '("DEBUG info: extension from command line is "A)') trim(ext)
+#endif
+     end select
+  endif
+
+  ClBCAST( ext,  100,  0 )
   inputfile = trim(ext)//".input"
-  ! input_surf  = "plasma.boundary"
-  ! input_harm  = "target.harmonics"
-  knotfile  = trim(ext)//".knot"
-  if (trim(input_focus) == 'none') input_focus = trim(ext)//".focus" ! if not specified
-  if (trim(input_focus) == 'none') input_coils = "coils."//trim(ext)
-  hdf5file  = "focus_"//trim(ext)//".h5"
-  out_focus = trim(ext)//".focus"
-  out_coils = trim(ext)//".coils"
-  out_harm  = trim(ext)//".harmonics"
 
   !-------------read the namelist-----------------------------------------------------------------------
   if( myid == 0 ) then
@@ -329,12 +346,56 @@ subroutine initial
      endif ! end of if( myid == 0 )
   enddo
 
+  !-------------output files name ---------------------------------------------------------------------------
+
+  hdf5file   = "focus_"//trim(ext)//".h5"
+  out_focus  = trim(ext)//".focus"
+  out_coils  = trim(ext)//".coils"
+  out_harm   = trim(ext)//".harmonics"
+  out_plasma = trim(ext)//".plasma"
+
   !-------------show the namelist for checking----------------------------------------------------------
 
   if (myid == 0) then ! Not quiet to output more informations;
 
      write(ounit, *) "-----------INPUT NAMELIST------------------------------------"
-     write(ounit, '("initial : Read namelist focusin from ", A)') trim(inputfile)
+     write(ounit, '("initial : Read namelist focusin from : ", A)') trim(inputfile)
+     write(ounit, '("        : Read plasma boundary  from : ", A)') trim(input_surf)
+     if (weight_bharm > machprec) then
+        write(ounit, '("        : Read Bmn harmonics    from : ", A)') trim(input_harm)
+     endif
+
+     select case( case_init )
+     case(-1 )
+        if (trim(input_coils) == 'none') input_coils = "coils."//trim(ext)
+        inquire( file=trim(input_coils), exist=exist )
+        FATAL( initial, .not.exist, coils file coils.ext not provided )
+        FATAL( initial, NFcoil <= 0    , no enough harmonics )
+        FATAL( initial, Nseg   <= 0    , no enough segments  )
+        FATAL( initial, target_length  < zero, illegal )        
+        write(ounit, '("        : Read initial coils    from : ", A, A)') trim(input_coils), '(MAKEGRID format)'
+     case( 0 )
+        if (trim(input_coils) == 'none') input_coils = trim(ext)//".focus"
+        inquire( file=trim(input_coils), exist=exist )
+        FATAL( initial, .not.exist, FOCUS coil file ext.focus not provided )
+        write(ounit, '("        : Read initial coils    from : ", A, A)') trim(input_coils), '(MAKEGRID format)'
+     case( 1 )
+        FATAL( initial, Ncoils < 1, should provide the No. of coils)
+        FATAL( initial, init_current == zero, invalid coil current)
+        FATAL( initial, init_radius < zero, invalid coil radius)
+        FATAL( initial, NFcoil <= 0    , no enough harmonics )
+        FATAL( initial, Nseg   <= 0    , no enough segments  )
+        FATAL( initial, target_length  < zero, illegal )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_init', case_init, 'Initialize circular coils.'
+     case( 2 )
+        FATAL( initial, Ncoils < 1, should provide the No. of coils)
+        FATAL( initial, init_current == zero, invalid coil current)
+        FATAL( initial, init_radius < zero, invalid coil radius)
+        FATAL( initial, target_length  < zero, illegal )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_init', case_init, 'Initialize magnetic dipoles.'
+     case default
+        FATAL( initial, .true., selected case_init is not supported )
+     end select
 
      select case (IsQuiet)
      case (:-2)
@@ -372,7 +433,7 @@ subroutine initial
         FATAL( initial, .not.exist, plasma boundary file not provided )
         write(ounit, 1000) 'case_surface', case_surface, 'Read VMEC-like Fourier harmonics for plasma boundary.'
      case (1)
-        inquire( file=trim(knotfile), exist=exist )
+        inquire( file=trim(input_surf), exist=exist )
         FATAL( initial, .not.exist, axis file not provided )
         FATAL( initial, knotsurf < zero, illegal minor radius)
         write(ounit, 1000) 'case_surface', case_surface, 'Read axis information for expanding plasma boundary.'
@@ -384,36 +445,6 @@ subroutine initial
 
      FATAL( initial, Nteta   <=   0, illegal surface resolution )
      FATAL( initial, Nzeta   <=   0, illegal surface resolution )     
-
-     select case( case_init )
-     case(-1 )
-        inquire( file=trim(input_coils), exist=exist )
-        FATAL( initial, .not.exist, coils file coils.ext not provided )
-        FATAL( initial, NFcoil <= 0    , no enough harmonics )
-        FATAL( initial, Nseg   <= 0    , no enough segments  )
-        FATAL( initial, target_length  < zero, illegal )
-        if (IsQuiet < 1) write(ounit, 1000) 'case_init', case_init, 'Read coils in MAKEGRID format.'
-     case( 0 )
-        inquire( file=trim(input_focus), exist=exist )
-        FATAL( initial, .not.exist, FOCUS coil file ext.focus not provided )
-        if (IsQuiet < 1) write(ounit, 1000) 'case_init', case_init, 'Read coils in FOCUS format.'
-     case( 1 )
-        FATAL( initial, Ncoils < 1, should provide the No. of coils)
-        FATAL( initial, init_current == zero, invalid coil current)
-        FATAL( initial, init_radius < zero, invalid coil radius)
-        FATAL( initial, NFcoil <= 0    , no enough harmonics )
-        FATAL( initial, Nseg   <= 0    , no enough segments  )
-        FATAL( initial, target_length  < zero, illegal )
-        if (IsQuiet < 1) write(ounit, 1000) 'case_init', case_init, 'Initialize circular coils.'
-     case( 2 )
-        FATAL( initial, Ncoils < 1, should provide the No. of coils)
-        FATAL( initial, init_current == zero, invalid coil current)
-        FATAL( initial, init_radius < zero, invalid coil radius)
-        FATAL( initial, target_length  < zero, illegal )
-        if (IsQuiet < 1) write(ounit, 1000) 'case_init', case_init, 'Initialize magnetic dipoles.'
-     case default
-        FATAL( initial, .true., selected case_init is not supported )
-     end select
 
      FATAL( initial, case_coils /= 1, only fourier representation is valid )
      if (IsQuiet < 0) write(ounit, 1000) 'case_coils', case_coils, 'Using Fourier series as the basic representation.'
@@ -542,19 +573,22 @@ subroutine initial
              &  'Coil evaluations and field-line tracing will be performed.'
      case ( 4 )
         if (IsQuiet < 1) write(ounit, 1000) 'case_postproc', case_postproc, & 
-             &  'Coil evaluations and writing last surface will be performed.'
+             &  'Vacuum Boozer coordinates decompostion will be performed.'
      case default
         FATAL( initial, .true., selected case_postproc is not supported )
      end select
 
      FATAL( initial, save_freq <= 0, should not be negative )
-     if (IsQuiet < 0) write(ounit, '(8X,": Files saving setteings: freq = "I4" ; coils = "I1" ; harmonics = "&
-          &  I1" ; filaments = " I1)') save_freq, save_coils, save_harmonics, save_filaments
-     if (IsQuiet < 0) then
-        write(ounit,'(8X,5A)') ": '", trim(out_focus), "' and '", trim(hdf5file), "' will be stored."
-        if (save_coils /= 0) write(ounit,'(8X, 3A)') ": new coils file '", trim(out_coils), "' will be saved."
-        if (save_harmonics /= 0) write(ounit,'(8X,3A)')": Bmn harmonics file '",  trim(out_harm), &
-             &  "' will be saved."
+     write(ounit, '("outputs : HDF5 outputs           are saved in : ", A)') trim(hdf5file)
+     if (save_coils /= 0) then
+        write(ounit, '("outputs : Optimizated coils      are saved in : ", A, " ; ", A)') &
+             trim(out_focus), trim(out_coils)
+     endif
+     if (weight_bharm > machprec) then
+        write(ounit, '("outputs : Realized Bn harmonics  are saved in : ", A)') trim(out_harm)
+     endif
+     if (update_plasma/=0) then
+        write(ounit, '("outputs : Updated plasma boundary is saved in : ", A)') trim(out_plasma)
      endif
 
   endif
@@ -579,9 +613,32 @@ subroutine initial
 
   call MPI_BARRIER( MPI_COMM_WORLD, ierr )
 
-  
   return
 
-  !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
 end subroutine initial
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+SUBROUTINE write_focus_namelist
+  use globals
+  implicit none
+  include "mpif.h"
+
+  LOGICAL :: exist
+  CHARACTER(LEN=100) :: example = 'example.input'
+
+  if( myid == 0 ) then
+     inquire(file=trim(example), EXIST=exist) ! inquire if inputfile existed;
+     FATAL( initial, exist, example input file example.input already existed )
+     write(ounit, *) 'Writing an template input file in ', trim(example)
+     open(wunit, file=trim(example), status='unknown', action='write')
+     write(wunit, focusin)
+     close(wunit)
+  endif
+
+  call MPI_BARRIER( MPI_COMM_WORLD, ierr )
+  call MPI_FINALIZE( ierr )
+  stop
+
+  return
+END SUBROUTINE write_focus_namelist
