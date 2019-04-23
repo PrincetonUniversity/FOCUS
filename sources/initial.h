@@ -279,7 +279,7 @@ subroutine initial
   include "mpif.h"
 
   LOGICAL :: exist
-  INTEGER :: icpu
+  INTEGER :: icpu, index_dot
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -291,20 +291,28 @@ subroutine initial
   !-------------read input namelist----------------------------------------------------------------------
   if( myid == 0 ) then ! only the master node reads the input; 25 Mar 15;
      call getarg(1,ext) ! get argument from command line
+     ! check if .input appened
+     index_dot = INDEX(ext,'.')
+     IF (index_dot .gt. 0)  ext = ext(1:index_dot-1)
      write(ounit, '("initial : machine_prec   = ", ES12.5, " ; sqrtmachprec   = ", ES12.5   &
           & )') machprec, sqrtmachprec
+#ifdef DEBUG
+     write(ounit, '("DEBUG info: extension from command line is "A)') trim(ext)
+#endif
   endif
   ClBCAST( ext           ,  100,  0 )
 
   !-------------IO files name ---------------------------------------------------------------------------
   inputfile = trim(ext)//".input"
-  surffile  = "plasma.boundary"
+  ! input_surf  = "plasma.boundary"
+  ! input_harm  = "target.harmonics"
   knotfile  = trim(ext)//".knot"
-  coilfile  = trim(ext)//".focus"
-  harmfile  = trim(ext)//".harmonics"
+  if (trim(input_focus) == 'none') input_focus = trim(ext)//".focus" ! if not specified
+  if (trim(input_focus) == 'none') input_coils = "coils."//trim(ext)
   hdf5file  = "focus_"//trim(ext)//".h5"
-  inpcoils  = "coils."//trim(ext)
-  outcoils  = trim(ext)//".coils"
+  out_focus = trim(ext)//".focus"
+  out_coils = trim(ext)//".coils"
+  out_harm  = trim(ext)//".harmonics"
 
   !-------------read the namelist-----------------------------------------------------------------------
   if( myid == 0 ) then
@@ -360,7 +368,7 @@ subroutine initial
 
      select case (case_surface)
      case (0)
-        inquire( file=trim(surffile), exist=exist )
+        inquire( file=trim(input_surf), exist=exist )
         FATAL( initial, .not.exist, plasma boundary file not provided )
         write(ounit, 1000) 'case_surface', case_surface, 'Read VMEC-like Fourier harmonics for plasma boundary.'
      case (1)
@@ -379,14 +387,14 @@ subroutine initial
 
      select case( case_init )
      case(-1 )
-        inquire( file=trim(inpcoils), exist=exist )
+        inquire( file=trim(input_coils), exist=exist )
         FATAL( initial, .not.exist, coils file coils.ext not provided )
         FATAL( initial, NFcoil <= 0    , no enough harmonics )
         FATAL( initial, Nseg   <= 0    , no enough segments  )
         FATAL( initial, target_length  < zero, illegal )
         if (IsQuiet < 1) write(ounit, 1000) 'case_init', case_init, 'Read coils in MAKEGRID format.'
      case( 0 )
-        inquire( file=trim(coilfile), exist=exist )
+        inquire( file=trim(input_focus), exist=exist )
         FATAL( initial, .not.exist, FOCUS coil file ext.focus not provided )
         if (IsQuiet < 1) write(ounit, 1000) 'case_init', case_init, 'Read coils in FOCUS format.'
      case( 1 )
@@ -543,10 +551,10 @@ subroutine initial
      if (IsQuiet < 0) write(ounit, '(8X,": Files saving setteings: freq = "I4" ; coils = "I1" ; harmonics = "&
           &  I1" ; filaments = " I1)') save_freq, save_coils, save_harmonics, save_filaments
      if (IsQuiet < 0) then
-        write(ounit,'(8X,5A)') ": '", trim(coilfile), "' and '", trim(hdf5file), "' will be stored."
-        if (save_coils /= 0) write(ounit,'(8X, 3A)') ": new coils file '", trim(outcoils), "' will be updated."
-        if (save_harmonics /= 0) write(ounit,'(8X,3A)')": Bmn harmonics file '",  trim(harmfile), &
-             &  "' will be updated."
+        write(ounit,'(8X,5A)') ": '", trim(out_focus), "' and '", trim(hdf5file), "' will be stored."
+        if (save_coils /= 0) write(ounit,'(8X, 3A)') ": new coils file '", trim(out_coils), "' will be saved."
+        if (save_harmonics /= 0) write(ounit,'(8X,3A)')": Bmn harmonics file '",  trim(out_harm), &
+             &  "' will be saved."
      endif
 
   endif

@@ -125,7 +125,8 @@ SUBROUTINE readBmn
   ! allocate trig functions;
   !----------------------------------------------------------------------------------------
   use globals, only: dp, zero, half, pi2, myid, ounit, runit, ext, IsQuiet, Nteta, Nzeta, Nfp, &
-                     NBmn, Bmnin, Bmnim, wBmn, tBmnc, tBmns, carg, sarg, Nfp_raw, case_bnormal
+                     NBmn, Bmnin, Bmnim, wBmn, tBmnc, tBmns, carg, sarg, Nfp_raw, case_bnormal, &
+                     input_harm
   use bharm_mod
   implicit none
   include "mpif.h"
@@ -135,11 +136,11 @@ SUBROUTINE readBmn
   LOGICAL  :: exist
 
   !----------------------------------------------------------------------------------------
-  inquire( file="target.harmonics", exist=exist)  
+  inquire( file=trim(input_harm), exist=exist)  
   FATAL( readBmn, .not.exist, ext.harmonics does not exist ) 
 
   if (myid == 0) then
-     open(runit, file="target.harmonics", status='old', action='read')
+     open(runit, file=trim(input_harm), status='old', action='read')
      read(runit,*) ! comment line;
      read(runit,*) NBmn !read dimensions
   endif
@@ -175,7 +176,7 @@ SUBROUTINE readBmn
          enddo
       endif
       close(runit)
-      write(ounit, '("******* : case_bnormal has been reset to 0.")')
+      write(ounit, '("******* : case_bnormal has been reset to 0, since Bn harmonics is turned on.")')
    endif
    case_bnormal = 0
 

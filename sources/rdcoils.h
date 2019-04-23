@@ -117,8 +117,8 @@ subroutine rdcoils
      !-------------read coils file--------------------------------------------------------------------------
   case(-1 )
      if (myid == 0) then
-        write(ounit,'("rdcoils : Reading coils data (MAKEGRID format) from "A)') trim(inpcoils)
-        call readcoils(inpcoils, maxnseg)
+        write(ounit,'("rdcoils : Reading coils data (MAKEGRID format) from "A)') trim(input_coils)
+        call readcoils(input_coils, maxnseg)
         write(ounit,'("        : Read ",i6," coils.")') Ncoils
         if (IsQuiet < 0) write(ounit, '(8X,": NFcoil = "I3" ; IsVaryCurrent = "I1 &
              " ; IsVaryGeometry = "I1)') NFcoil, IsVaryCurrent, IsVaryGeometry
@@ -198,10 +198,10 @@ subroutine rdcoils
   case( 0 )
 
      if( myid==0 ) then  !get file number;
-        open( runit, file=trim(coilfile), status="old", action='read')
+        open( runit, file=trim(input_focus), status="old", action='read')
         read( runit,*)
         read( runit,*) Ncoils
-        write(ounit,'("rdcoils : identified "i6" unique coils in "A" ;")') Ncoils, trim(coilfile)
+        write(ounit,'("rdcoils : identified "i6" unique coils in "A" ;")') Ncoils, trim(input_focus)
      endif
                                
      IlBCAST( Ncoils        ,    1,  0 )

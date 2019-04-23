@@ -64,7 +64,7 @@
 
 subroutine fousurf
   
-  use globals, only : dp, zero, half, pi2, myid, ounit, runit, surffile, IsQuiet, IsSymmetric, &
+  use globals, only : dp, zero, half, pi2, myid, ounit, runit, input_surf, IsQuiet, IsSymmetric, &
                       Nfou, Nfp, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
                       Nteta, Nzeta, surf, Npc, discretefactor, Nfp_raw
   
@@ -80,10 +80,10 @@ subroutine fousurf
              teta, zeta, arg, dd
   
   !-------------read plasma.boundary---------------------------------------------------------------------  
-  inquire( file=trim(surffile), exist=exist)  
+  inquire( file=trim(input_surf), exist=exist)  
   FATAL( surface, .not.exist, plasma.boundary does not exist ) 
   if( myid == 0 ) then
-     open(runit, file=trim(surffile), status='old', action='read')
+     open(runit, file=trim(input_surf), status='old', action='read')
      read(runit,*) !empty line
      read(runit,*) Nfou, Nfp, NBnf !read dimensions
   endif

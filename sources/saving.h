@@ -215,7 +215,7 @@ subroutine saving
 
   !--------------------------write focus coil file-----------------------------------------
   if( save_coils == 1 ) then
-     open( wunit, file=trim(coilfile), status="unknown", form="formatted")
+     open( wunit, file=trim(out_focus), status="unknown", form="formatted")
      write(wunit, *) "# Total number of coils"
      write(wunit, '(8X,I6)') Ncoils
 
@@ -260,7 +260,7 @@ subroutine saving
 
   if( save_coils == 1 ) then
 
-     open(funit,file=trim(outcoils), status="unknown", form="formatted" )
+     open(funit,file=trim(out_coils), status="unknown", form="formatted" )
      write(funit,'("periods "I3)') Nfp_raw
      write(funit,'("begin filament")')
      write(funit,'("mirror NIL")')
@@ -301,7 +301,7 @@ subroutine saving
 
   if (save_harmonics == 1 .and. allocated(Bmnc)) then
 
-     open(wunit, file=trim(harmfile), status='unknown', action='write')
+     open(wunit, file=trim(out_harm), status='unknown', action='write')
      write(wunit,'("#NBmn")')                     ! comment line;
      write(wunit,'(I6)') NBmn                     ! write dimensions
      write(wunit,'("# n  m   Bmnc  Bmns  wBmn")') ! comment line;
