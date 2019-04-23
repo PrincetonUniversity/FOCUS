@@ -49,9 +49,9 @@ If you are fresh to GitHub, you can visit this [page](https://princetonuniversit
   ```
   *If you want to use GCC compiler, try `make CC=gfortran xfocus`.*
   
-* Usage at PPPL
+* Use at PPPL
 
-  If you are using PPPL cluster, you should use FOFUCS by typing the following lines:
+  If you are using FOCUS on the PPPL cluster, you can directly use FOCUS by typing the following lines:
   ```
   module use /p/focus/modules/
   module load focus
@@ -59,7 +59,7 @@ If you are fresh to GitHub, you can visit this [page](https://princetonuniversit
   There are several different versions availble, please view more informations by typing
   ```
   module avail focus
-  module whatis focus/old
+  module whatis focus/develop
   ```
   
 # Input files
@@ -80,7 +80,7 @@ For instance, you want to run the code with a case name of "example".
   There are different options for reading the target plasma boundary.
   It's controled by *case_surface* in the input namelist. 
   
-  - *case_surface = 0* : **plasma.boundary**
+  - *case_surface = 0* : **input_surf** (default: 'plasma.boundary')
   
     This is for general unknotted cases, like stellarator and tokamaks. It takes VMEC-like format. 
     Detalis about the format can be seen in [rdsurf.pdf](https://princetonuniversity.github.io/FOCUS/rdsurf.pdf)
@@ -90,13 +90,13 @@ For instance, you want to run the code with a case name of "example".
 
   FOCUS also requires the user to provide an initial guess for the coils. This is controled by *case_init*.
   
-  - *case_init = -1* : **coils.example**
+  - *case_init = -1* :  **input_coils** (default: 'coils.example') 
   
     Read the coils data from **coils.example** and fit the coils with Fourier coefficients. 
     The format ofcoils.\* file can be seen in [VMECwiki](https://bitbucket.org/lazerson_princeton/stellopt/wiki/MAKEGRID).
 	Here is an example for the rotating ellipse case [coils.ellipse](https://github.com/PrincetonUniversity/FOCUS/tree/master/examples/rotating_ellipse/coils.ellipse)
     
-  - *case_init =  0* : **example.focus**
+  - *case_init =  0* : **input_coils** (default: 'example.focus')
   
     Read the coils data from **example.focus**. This file contains all the Fourier harmonics and control labels for the coils.
 	Here is an example for the rotating ellipse case [ellipse.focus](https://github.com/PrincetonUniversity/FOCUS/tree/master/examples/rotating_ellipse/ellipse.focus)
@@ -109,7 +109,7 @@ For instance, you want to run the code with a case name of "example".
   
     Initialize *Ncoils-1* magnetic dipoles (r=*init_radius*, I=*init_current*) surrounding the plasma boundary plus one central current.
 
-If you want to optimize individual Bn spectrum (*weight_bharm>0* in the namelist), you may also need to provide an input file named *target.harmonics*.
+If you want to optimize individual Bn spectrum (*weight_bharm>0* in the namelist), you may also need to provide an input file named by **input_harm** (default: 'target.harmonics').
 Detalis about the format can be seen in [bmnharm.pdf](https://princetonuniversity.github.io/FOCUS/bmnharm.pdf)
 Here is an example for the DIIID RMP coils case [target.harmonics](https://github.com/PrincetonUniversity/FOCUS/tree/master/examples/d3d_RMP/target.harmonics)
 
@@ -123,9 +123,14 @@ mpirun -np 32 xfocus example
 ```
 You may need to allocate computating cores first, e.g. try `salloc -p dawson -n 32 -t 24:00:00` at PPPL, or use a *sbatch* command.
 
-The code shoul print some information on the screen (or in stdout file for *sbatch*).
+The code should print some information on the screen (or in stdout file for *sbatch*).
 
 Use the variable *IsQuiet* in the namelist to control the details you want.
+
+To get a brief help message, please type
+```
+xfocus --help  (or xfocus -h)
+```
 
 &nbsp;
 
@@ -176,7 +181,8 @@ You can find some of them in [Subroutines](https://princetonuniversity.github.io
 &nbsp;
 
 # Publications
-The first paper introducing FOCUS is [C. Zhu, S.R. Hudson, Y. Song, and Y. Wan, Nuclear Fusion 58, 16008 (2018)](http://iopscience.iop.org/article/10.1088/1741-4326/aa8e0a/). For a full list of publications and presentations, please view [FOCUS Publications](https://princetonuniversity.github.io/FOCUS/publications).
+The first paper introducing FOCUS is [C. Zhu, S.R. Hudson, Y. Song, and Y. Wan, Nuclear Fusion 58, 16008 (2018)](http://iopscience.iop.org/article/10.1088/1741-4326/aa8e0a/). 
+For a full list of publications and presentations, please view [FOCUS Publications](https://princetonuniversity.github.io/FOCUS/publications).
 
 # Contact
 If you have any questions, please contact Dr. Caoxiang Zhu (czhu@pppl.gov or caoxiangzhu@gmail.com).
