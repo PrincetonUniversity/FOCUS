@@ -10,7 +10,7 @@ If there are FOCUS related papers/presentations that haven't not been shown here
 
   Caoxiang Zhu, David A. Gates, Stuart R. Hudson, Haifeng Liu, Yuhong Xu, Akihiro Shimizu, Shoichi Okamura
   
-  [arXiv:1904.04147](https://arxiv.org/abs/1904.04147))
+  [arXiv:1904.04147](https://arxiv.org/abs/1904.04147)
   
 -----------------
 
@@ -20,7 +20,7 @@ If there are FOCUS related papers/presentations that haven't not been shown here
 
   Stuart R. Hudson, Caoxiang Zhu, David Pfefferle & Lee Gunderson
   
-  *Physics Letter A.*, **282**(28), 2732-2737](https://www.sciencedirect.com/science/article/pii/S037596011830759X?via%3Dihub)
+  [*Physics Letter A.*, **282**(28), 2732-2737](https://www.sciencedirect.com/science/article/pii/S037596011830759X?via%3Dihub)
   
 -----------------
 
