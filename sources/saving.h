@@ -69,6 +69,9 @@ subroutine saving
   !INPUT namelist;
   HWRITEIV( 1                ,   IsQuiet       ,   IsQuiet                       )
   HWRITEIV( 1                ,   IsSymmetric   ,   IsSymmetric                   )
+  HWRITECH( 100              ,   input_surf    ,   input_surf                    )
+  HWRITECH( 100              ,   input_coils   ,   input_coils                   )
+  HWRITECH( 100              ,   input_harm    ,   input_harm                    )
   HWRITEIV( 1                ,   case_surface  ,   case_surface                  )
   HWRITERV( 1                ,   knotsurf      ,   knotsurf                      )
   HWRITEIV( 1                ,   Nteta         ,   Nteta                         )
@@ -119,6 +122,7 @@ subroutine saving
   HWRITEIV( 1                ,   save_coils    ,   save_coils                    )
   HWRITEIV( 1                ,   save_harmonics,   save_harmonics                )
   HWRITEIV( 1                ,   save_filaments,   save_filaments                )
+  HWRITEIV( 1                ,   update_plasma ,   update_plasma                 )
   HWRITERV( 1                ,   pp_phi        ,   pp_phi                        )
   HWRITERV( 1                ,   pp_raxis      ,   pp_raxis                      )
   HWRITERV( 1                ,   pp_zaxis      ,   pp_zaxis                      )
@@ -215,7 +219,7 @@ subroutine saving
 
   !--------------------------write focus coil file-----------------------------------------
   if( save_coils == 1 ) then
-     open( wunit, file=trim(coilfile), status="unknown", form="formatted")
+     open( wunit, file=trim(out_focus), status="unknown", form="formatted")
      write(wunit, *) "# Total number of coils"
      write(wunit, '(8X,I6)') Ncoils
 
@@ -260,7 +264,7 @@ subroutine saving
 
   if( save_coils == 1 ) then
 
-     open(funit,file=trim(outcoils), status="unknown", form="formatted" )
+     open(funit,file=trim(out_coils), status="unknown", form="formatted" )
      write(funit,'("periods "I3)') Nfp_raw
      write(funit,'("begin filament")')
      write(funit,'("mirror NIL")')
@@ -268,7 +272,7 @@ subroutine saving
         do ii = 0, coil(icoil)%NS-1
            write(funit,1010) coil(icoil)%xx(ii), coil(icoil)%yy(ii), coil(icoil)%zz(ii), coil(icoil)%I
         enddo
-        ii =  coil(icoil)%NS
+        ii =  0
         write(funit,1010) coil(icoil)%xx(ii), coil(icoil)%yy(ii), coil(icoil)%zz(ii), &
              zero, icoil, coil(icoil)%name
      enddo
@@ -301,7 +305,7 @@ subroutine saving
 
   if (save_harmonics == 1 .and. allocated(Bmnc)) then
 
-     open(wunit, file=trim(harmfile), status='unknown', action='write')
+     open(wunit, file=trim(out_harm), status='unknown', action='write')
      write(wunit,'("#NBmn")')                     ! comment line;
      write(wunit,'(I6)') NBmn                     ! write dimensions
      write(wunit,'("# n  m   Bmnc  Bmns  wBmn")') ! comment line;
@@ -330,7 +334,7 @@ SUBROUTINE write_plasma
 !-------------------------------------------------------------------------------!
   use globals, only : dp, zero, half, two, pi2, myid, ncpu, ounit, wunit, ext, &
                       Nfou, Nfp, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
-                      Nteta, Nzeta, surf, Nfp_raw, bnorm, sqrtmachprec
+                      Nteta, Nzeta, surf, Nfp_raw, bnorm, sqrtmachprec, out_plasma
   
   implicit none  
   include "mpif.h"
@@ -407,7 +411,7 @@ SUBROUTINE write_plasma
   !----------------------------------------------
 
 
-  open(wunit, file=trim(ext)//".plasma", status='unknown', action='write')
+  open(wunit, file=trim(out_plasma), status='unknown', action='write')
 
   write(wunit,*      ) "#Nfou Nfp  Nbnf"
   write(wunit,'(3I)' ) Nfou, Nfp_raw, Nbnf

@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='v0.7.05' ! version number
+  CHARACTER(LEN=10), parameter :: version='v0.7.08' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -68,13 +68,11 @@ module globals
 
   CHARACTER(LEN=100)   :: ext       ! extention
   CHARACTER(LEN=100)   :: inputfile ! input namelist
-  CHARACTER(LEN=100)   :: surffile  ! surface file
-  CHARACTER(LEN=100)   :: knotfile  ! knototran file
-  CHARACTER(LEN=100)   :: coilfile  ! FOCUS coil file
-  CHARACTER(LEN=100)   :: harmfile  ! harmonics file
   CHARACTER(LEN=100)   :: hdf5file  ! hdf5 file
-  CHARACTER(LEN=100)   :: inpcoils  ! input coils.ext file
-  CHARACTER(LEN=100)   :: outcoils  ! output ext.coils file
+  CHARACTER(LEN=100)   :: out_coils ! output ext.coils file
+  CHARACTER(LEN=100)   :: out_focus ! output ext.focus file
+  CHARACTER(LEN=100)   :: out_harm  ! output harmonics file
+  CHARACTER(LEN=100)   :: out_plasma  ! updated plasma boundary
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
@@ -157,10 +155,16 @@ module globals
   INTEGER              :: pp_ns          =  10
   INTEGER              :: pp_maxiter     =  1000
   REAL                 :: pp_xtol        =  1.000D-06
-                                                         
 
+  CHARACTER(LEN=100)   :: input_surf     = 'plasma.boundary'  ! surface file
+  CHARACTER(LEN=100)   :: input_coils    = 'none'             ! input file for coils
+  CHARACTER(LEN=100)   :: input_harm     = 'target.harmonics' ! input target harmonics file
+                                                         
   namelist / focusin /  IsQuiet        , &
-                        IsSymmetric    , & 
+                        IsSymmetric    , &
+                        input_surf     , & 
+                        input_harm     , &
+                        input_coils    , & 
                         case_surface   , &
                         knotsurf       , &
                         ellipticity    , & 
@@ -226,10 +230,9 @@ module globals
                         pp_zmax        , &
                         pp_ns          , &
                         pp_maxiter     , &
-                        pp_xtol         
+                        pp_xtol        
 
-                        
-  
+
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
 !latex  \subsection{MPI stuffs}
