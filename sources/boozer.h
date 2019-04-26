@@ -47,7 +47,8 @@ end subroutine boozmn
 
 subroutine boozsurf(XYZB, x, y, z, iota, isurf)
   USE globals, only : dp, myid, ncpu, zero, half, two, pi, pi2, ounit, total_num, pp_maxiter, &
-                      bmin, bmim, booz_mnc, booz_mns, booz_mn, machprec
+                      bmin, bmim, booz_mnc, booz_mns, booz_mn, machprec, &
+                      masterid
   USE mpi
   IMPLICIT NONE
 
@@ -172,7 +173,7 @@ subroutine boozsurf(XYZB, x, y, z, iota, isurf)
   ! finish decomposition
 
   write(ounit, '("boozmn  : myid="I6" ; Gpol="ES12.5" ; iota="ES12.5" ; Booz_mnc(1)="ES12.5 &
-       " ; Booz_mns(1)="ES12.5)') myid, Gpol, iota, booz_mnc(1, isurf), booz_mns(1, isurf)
+       " ; Booz_mns(1)="ES12.5)') masterid, Gpol, iota, booz_mnc(1, isurf), booz_mns(1, isurf)
   
   return
 end subroutine boozsurf
@@ -385,128 +386,3 @@ end subroutine fieldline_tracing
 
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-subroutine wtmgrid
-  use globals, only : dp, zero, half, pi2, ext, ncpu, myid, ounit, wunit
-  implicit none
-
-  include "mpif.h"
-
-
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-  LOGICAL              :: exist
-  INTEGER              :: ierr, astat, iostat, imn, ibn00aa, ip, iz, ir, np, nz, nr, itangent, ibfield, Mfp, nextcur
-  REAL                 :: RpZ(1:3), R, P, Z, Pmin, Pmax, Zmin, Zmax, Rmin, Rmax, B(1:4), pressure, gap, &
-                          czeta, szeta, xx, yy, zz, dx, dy, dz, dBx, dBy, dBz
-  REAL, allocatable    :: BRZp(:,:,:,:), dBRZp(:,:,:,:), BRpZ(:,:,:,:), dBRpZ(:,:,:,:)
-  CHARACTER*13         :: suffix
-  CHARACTER*30         :: curlabel(1:1)
-
-  np =  72  ; nz = 121  ; nr = 121 ; Mfp = 2 ! SHOULD BE USER INPUT; 04 Aug 16;  
-  !np =  12  ; nz = 11  ; nr = 11 ; Mfp = 2 ! SHOULD BE USER INPUT; 04 Aug 16;
-  B = zero  ; dx = 1E-4 ; dy = 1E-4 ; dz = 1E-4
-  
-  SALLOCATE( BRZp, (1:3,1:Nr,1:Nz,1:Np), zero )
-  SALLOCATE(dBRZp, (1:3,1:Nr,1:Nz,1:Np), zero )
-  SALLOCATE( BRpZ, (1:2,1:Nr,1:Nz,1:Np), zero )
-  SALLOCATE(dBRpZ, (1:2,1:Nr,1:Nz,1:Np), zero )
-
-  Pmin = zero ; Pmax = pi2 ! DO NOT CHANGE; 04 Aug 16;
-
- !call plasdim(Rmin, Rmax, Zmin, Zmax)  !calculate plasma surface boundary  ;09/11/2016
- !call coildim(Rmin, Rmax, Zmin, Zmax)
-
- !gap = 0.3
- !Rmin = Rmin -gap; Rmax = Rmax + gap
- !Zmin = Zmin -gap; Zmax = Zmax + gap
-
-  Rmin =  2.8 ; Rmax =  3.2
-  Zmin = -0.2 ; Zmax =  0.2
-
-  if( myid.eq.0 ) write( ounit,'("wtmgrid : writing mgrid file at grid of [ "4(ES12.5,2X)" ]",3i6)') Rmin, Rmax, Zmin, Zmax, np, nr, nz
-
-  do ip = 1, np ; RpZ(2) = Pmin + ( Pmax - Pmin ) * ( ip - 1 ) / ( np - 0 ) / Mfp
-
-     if ( myid.ne.modulo(ip,ncpu) ) cycle
-
-     do iz = 1, nz ; RpZ(3) = Zmin + ( Zmax - Zmin ) * ( iz - 1 ) / ( nz - 1 )
-
-        do ir = 1, nr ; RpZ(1) = Rmin + ( Rmax - Rmin ) * ( ir - 1 ) / ( nr - 1 )
-                      
-           czeta = cos(RpZ(2))
-           szeta = sin(RpZ(2))
-
-           xx = RpZ(1) * czeta
-           yy = RpZ(1) * szeta
-           zz = RpZ(3)
-
-           call coils_bfield(B,xx,yy,zz) 
-
-           dBRZp(1,ir,iz,ip) = (   B(1) * czeta + B(2) * szeta )
-           dBRZp(3,ir,iz,ip) = ( - B(1) * szeta + B(2) * czeta ) 
-           dBRZp(2,ir,iz,ip) =     B(3)
-
-           dBx = B(1) ; dBy = B(2) ; dBz = B(3) 
-           dBRpZ(2,ir,iz,ip) = B(4)
-
-           xx = xx + dx
-           call coils_bfield(B,xx,yy,zz) 
-           dBx = ( B(1) - dBx ) / dx
-           xx = xx - dx
-
-           yy = yy + dy
-           call coils_bfield(B,xx,yy,zz) 
-           dBy = ( B(2) - dBy ) / dy
-           yy = yy - dy
-
-           zz = zz + dz
-           call coils_bfield(B,xx,yy,zz) 
-           dBz = ( B(3) - dBz ) / dz 
-           zz = zz - dz
-           
-           ! write(ounit, '("(x, y, z) = "3ES12.5" ; div B = " ES12.5)') xx, yy, zz, dBx + dBy + dBz
-           dBRpZ(1,ir,iz,ip) = dBx + dBy + dBz
-           dBRpZ(2,ir,iz,ip) = dBRpZ(1,ir,iz,ip) / dBRpZ(2,ir,iz,ip)
-
-        enddo
-
-     enddo
-
-  enddo
-
-  call MPI_Reduce(dBRZp, BRZp, 3*nr*nz*np, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-  call MPI_Reduce(dBRpZ, BRpZ, 2*nr*nz*np, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-
-  if( myid.eq.0 ) then
-
-     write(ounit, '("wtmgrid : max. div B = "ES23.15 " ; max. div B / |B| = "ES23.15 )') maxval(BRpZ(1,1:Nr,1:Nz,1:Np)),  maxval(BRpZ(2,1:Nr,1:Nz,1:Np))
-
-     nextcur = 1 ; curlabel(1) = "focus-space-curves"
-
-     write(suffix,'(i3.3,".",i4.4,".",i4.4)') Np, Nr, Nz
-
-     write( ounit,'("wtmgrid : writing mgrid.ext.f."i3.3"."i4.4"."i4.4" ; Mfp="i3" ;")') np, nr, nz, Mfp
-
-    !open( wunit, file=trim(ext)//".fo.mgrid", status="unknown", form="unformatted", iostat=iostat )
-     open( wunit, file="mgrid."//trim(ext)//".f."//suffix, status="unknown", form="unformatted", iostat=iostat )
-     FATAL( wtmgrid, iostat.ne.0, error opening ext.fo.mgrid )
-     write(wunit) Nr, Nz, Np, Mfp, nextcur
-     write(wunit) Rmin, Zmin, Rmax, Zmax
-     write(wunit) curlabel(1:nextcur)
-     write(wunit) BRZp(1:3,1:Nr,1:Nz,1:Np)
-     close(wunit)
-
-  endif
-
-  DEALLOCATE(dBRZp)
-  DEALLOCATE( BRZp)
-  DEALLOCATE(dBRpZ)
-  DEALLOCATE( BRpZ)
-
-
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  
-  return
-
-end subroutine wtmgrid

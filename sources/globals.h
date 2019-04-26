@@ -236,7 +236,9 @@ module globals
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
 !latex  \subsection{MPI stuffs}
-  INTEGER              :: myid, ncpu
+  INTEGER, PARAMETER   :: master=0
+  INTEGER              :: myid, ncpu, myworkid, color, masterid, nmaster, nworker
+  INTEGER              :: MPI_COMM_MASTERS = 101, MPI_COMM_MYWORLD = 102, MPI_COMM_WORKERS = 103
   REAL                 :: machprec, vsmall, small, sqrtmachprec
   CHARACTER            :: nodelabel*3
 
