@@ -4,7 +4,7 @@
 
  ALLFILES= globals initial rdsurf rdknot rdcoils packdof bfield bmnharm bnormal fdcheck \
            torflux length surfsep datalloc solvers descent congrad lmalg saving diagnos \
-           specinp poinplot boozer focus
+           specinp poinplot boozer wtmgrid focus
  HFILES= $(ALLFILES:=.h)
  FFILES= $(ALLFILES:=.F90)
  PFILES= $(ALLFILES:=.pdf)

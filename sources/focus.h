@@ -127,6 +127,7 @@ PROGRAM focus
  !case( 2 ) ; call saving  ; call diagnos ; call wtmgrid  ! write mgrid file;
   case( 3 ) ; call diagnos ; call poinplot ! Poincare plots; for future; 
   case( 4 ) ; call diagnos ; call boozmn ; call poinplot ! Last closed surface
+  case( 5 ) ; call diagnos ; call wtmgrid  ! write mgrid file
  !case( 4 ) ; call saving  ; call diagnos ; call resonant ! resonant harmonics analysis; for future; 
 
   end select

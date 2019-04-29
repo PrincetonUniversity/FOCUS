@@ -13,9 +13,8 @@ SUBROUTINE poinplot
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   INTEGER              :: ierr, astat, iflag
-  INTEGER              :: ip, is, niter
-  REAL                 :: theta, zeta, r, RZ(2), r1, z1, rzrzt(5),  x, y, z, tmpB(4)
-  ! REAL, ALLOCATABLE    :: lppr(:,:), lppz(:,:), liota(:)  ! local ppr ppz
+  INTEGER              :: ip, is, niter, icommand
+  REAL                 :: theta, zeta, r, RZ(2), r1, z1, rzrzt(5), x, y, z
   REAL                 :: B(4), start, finish
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -42,8 +41,10 @@ SUBROUTINE poinplot
   CALL MPI_COMM_RANK(MPI_COMM_MYWORLD, myworkid, ierr)
   CALL MPI_COMM_SIZE(MPI_COMM_MYWORLD, nworker, ierr)
 
+  !print *, myid, color, myworkid, nworker
+
   if (myworkid /= 0) then  ! slave cores waiting in coils_bfield
-     call coils_bfield(B, x, y, z, 'work')
+     icommand = 0 ; call coils_bfield(B, x, y, z, icommand) ; icommand = 0
   else
      RZ(1) = pp_raxis ; RZ(2) = pp_zaxis
      start = MPI_Wtime()
@@ -51,15 +52,16 @@ SUBROUTINE poinplot
      finish = MPI_Wtime()
      !print *, 'finding axis takes ', finish-start
      pp_raxis = RZ(1) ; pp_zaxis = RZ(2)
-     call coils_bfield(B, x, y, z, 'exit') ! finish
+     icommand = 1 ; call coils_bfield(B, x, y, z, icommand) ; icommand = 0 ! finish
   endif
 
+  call MPI_BARRIER( MPI_COMM_MYWORLD, ierr )
   call MPI_BCAST( pp_raxis, 1, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr )
   call MPI_BCAST( pp_zaxis, 1, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr )
+  CALL MPI_COMM_FREE(MPI_COMM_MYWORLD, ierr)
 
   ! split cores
   color = modulo(myid, pp_ns)
-  CALL MPI_COMM_FREE(MPI_COMM_MYWORLD, ierr)
   CALL MPI_COMM_SPLIT(MPI_COMM_WORLD, color, myid, MPI_COMM_MYWORLD, ierr)
   CALL MPI_COMM_RANK(MPI_COMM_MYWORLD, myworkid, ierr)
   CALL MPI_COMM_SIZE(MPI_COMM_MYWORLD, nworker, ierr)
@@ -74,7 +76,7 @@ SUBROUTINE poinplot
   CALL MPI_COMM_SPLIT(MPI_COMM_WORLD, color, myid, MPI_COMM_MASTERS, ierr)
 
   if (masterid == -1) then  ! slave cores waiting in coils_bfield
-     call coils_bfield(B, x, y, z, 'work')
+     icommand = 0 ; call coils_bfield(B, x, y, z, icommand) ; icommand = 0 
   else 
      CALL MPI_COMM_RANK(MPI_COMM_MASTERS, masterid, ierr)
      CALL MPI_COMM_SIZE(MPI_COMM_MASTERS, nmaster, ierr)
@@ -135,8 +137,7 @@ SUBROUTINE poinplot
         call MPI_ALLREDUCE (MPI_IN_PLACE, booz_mnc, pp_ns*booz_mn, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MASTERS, ierr )
         call MPI_ALLREDUCE (MPI_IN_PLACE, booz_mns, pp_ns*booz_mn, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MASTERS, ierr )
      endif
-     CALL MPI_COMM_FREE(MPI_COMM_MASTERS, ierr)
-     call coils_bfield(B, x, y, z, 'exit') ! finish
+     icommand = 1 ; call coils_bfield(B, x, y, z, icommand) ; icommand = 0 ! finish
   endif
 
   CALL MPI_COMM_FREE(MPI_COMM_MYWORLD, ierr)
@@ -291,81 +292,22 @@ END SUBROUTINE ppiota
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-subroutine coils_bfield(s,x,y,z,command)
-  use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, &
-       zero, myid, ounit, Npc, bsconstant, one, two, ncpu, &
-       master, nworker, myworkid, MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS
-  use mpi
-  implicit none
-
-  REAL  , intent( in)   :: x, y, z
-  REAL  , intent(out)   :: s(4)
-  CHARACTER(LEN=4), optional :: command
-
-  !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-  INTEGER              :: ierr, astat
-  REAL                 :: Bx, By, Bz
-  INTEGER              :: icoil, kseg
-  CHARACTER(LEN=4)     :: command_local
-
-  !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  
-  !MPIOUT( len(command) )
-
-  if (present(command)) then
-     command_local = command
-  else 
-     command_local = 'work'  ! default value
-  endif
-  
-  do 
-     ! broadcast master parameter
-     call MPI_BCAST( command_local, 4, MPI_CHARACTER, master, MPI_COMM_MYWORLD, ierr )
-     call MPI_BCAST( x, 1, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr )
-     call MPI_BCAST( y, 1, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr )
-     call MPI_BCAST( z, 1, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr )
- 
-     select case (command_local)
-     case ('work')
-        call MPI_BARRIER( MPI_COMM_MYWORLD, ierr ) ! wait all cpus;
-       ! MPIOUT( x )
-        s(1:4) = zero
-        do icoil = 1, Ncoils*Npc
-           if ( myworkid /= modulo(icoil-1, nworker) ) cycle ! MPI
-           Bx = zero; By = zero; Bz = zero
-           call bfield0( icoil, x, y, z, Bx, By, Bz )
-           s(1) = s(1) + Bx
-           s(2) = s(2) + By
-           s(3) = s(3) + Bz
-        enddo
-        call MPI_ALLREDUCE(MPI_IN_PLACE, s, 4, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MYWORLD, ierr )
-        s(4) = sqrt( s(1)*s(1) + s(2)*s(2) + s(3)*s(3) )
-        if (myworkid==0) return
-     case ('exit')
-        return
-     end select
-  end do
-  return
-
-end subroutine coils_bfield
-
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
 SUBROUTINE BRpZ( t, x, dx )
   !----------------------
   ! dR/dphi = BR / Bphi
   ! dZ/dphi = BZ / Bphi
   !----------------------
   use globals, only : dp, zero, ounit, myid, ierr
+  USE MPI
   implicit none
-  include "mpif.h"
+
   !---------------------------------------------------------------------------------------------   
   INTEGER, parameter   :: n=2
   REAL, INTENT( IN)    :: t, x(n)
   REAL, INTENT(OUT)    :: dx(n)
 
-  REAL                 :: RR, ZZ, XX, YY, BR, BP, BZ, B(4)
+  INTEGER              :: icommand = 0
+  REAL                 :: RR, ZZ, XX, YY, BR, BP, BZ, B(3)
   external             :: coils_bfield
   !---------------------------------------------------------------------------------------------
   
@@ -373,7 +315,7 @@ SUBROUTINE BRpZ( t, x, dx )
   XX = RR*cos(t); YY = RR*sin(t) ! cartesian   coordinate
   B = zero
 
-  call coils_bfield(B, XX, YY, ZZ)
+  icommand = 0 ; call coils_bfield(B, XX, YY, ZZ, icommand)
   
   BR =     B(1)*cos(t) + B(2)*sin(t)
   BP = ( - B(1)*sin(t) + B(2)*cos(t) ) / RR
@@ -393,14 +335,16 @@ SUBROUTINE BRpZ_iota( t, x, dx )
   ! dZ/dphi = BZ / Bphi
   !----------------------
   use globals, only : dp, zero, ounit, myid, ierr
+  USE MPI
   implicit none
-  include "mpif.h"
+
   !---------------------------------------------------------------------------------------------   
   INTEGER, parameter   :: n=5
   REAL, INTENT( IN)    :: t, x(n)
   REAL, INTENT(OUT)    :: dx(n)
 
-  REAL                 :: RR, ZZ, XX, YY, BR, BP, BZ, B(4), length
+  INTEGER              :: icommand = 0
+  REAL                 :: RR, ZZ, XX, YY, BR, BP, BZ, B(3), length
   external             :: coils_bfield
   !---------------------------------------------------------------------------------------------
 
@@ -409,7 +353,7 @@ SUBROUTINE BRpZ_iota( t, x, dx )
   XX = RR*cos(t); YY = RR*sin(t) ! cartesian   coordinate
   B = zero
 
-  call coils_bfield(B, XX, YY, ZZ)
+  icommand = 0 ; call coils_bfield(B, XX, YY, ZZ, icommand)
   
   BR =     B(1)*cos(t) + B(2)*sin(t)
   BP = ( - B(1)*sin(t) + B(2)*cos(t) ) / RR
@@ -423,7 +367,7 @@ SUBROUTINE BRpZ_iota( t, x, dx )
   XX = RR*cos(t); YY = RR*sin(t) ! cartesian   coordinate
   B = zero
 
-  call coils_bfield(B, XX, YY, ZZ)
+  icommand = 0 ; call coils_bfield(B, XX, YY, ZZ, icommand)
   
   BR =     B(1)*cos(t) + B(2)*sin(t)
   BP = ( - B(1)*sin(t) + B(2)*cos(t) ) / RR

@@ -574,6 +574,9 @@ subroutine initial
      case ( 4 )
         if (IsQuiet < 1) write(ounit, 1000) 'case_postproc', case_postproc, & 
              &  'Vacuum Boozer coordinates decompostion will be performed.'
+     case ( 5 )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_postproc', case_postproc, & 
+             &  'A binary mgrid file will be saved.'
      case default
         FATAL( initial, .true., selected case_postproc is not supported )
      end select
