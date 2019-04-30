@@ -46,14 +46,12 @@ subroutine bfield0(icoil, xx, yy, zz, Bx, By, Bz)
   FATAL( bfield0, icoil .lt. 1 .or. icoil .gt. Ncoils*Npc, icoil not in right range )
 
   Bx = zero; By = zero; Bz = zero
+  dlx = zero ; dly = zero ; dlz = zero
+  ltx = zero ; lty = zero ; ltz = zero
   
   select case (coil(icoil)%itype)
   !--------------------------------------------------------------------------------------------- 
   case(1)
-
-     dlx = zero; ltx = zero
-     dly = zero; lty = zero
-     dlz = zero; ltz = zero
 
      do kseg = 0, coil(icoil)%NS-1
 
@@ -148,16 +146,14 @@ subroutine bfield1(icoil, xx, yy, zz, Bx, By, Bz, ND)
   FATAL( bfield1, ND <= 0, wrong inout dimension of ND )
 
   Bx = zero; By = zero; Bz = zero
+  dlx = zero ; dly = zero ; dlz = zero
+  ltx = zero ; lty = zero ; ltz = zero
 
   select case (coil(icoil)%itype)
   !--------------------------------------------------------------------------------------------- 
   case(1)
      
      NS = coil(icoil)%NS
-
-     dlx = zero; ltx = zero
-     dly = zero; lty = zero
-     dlz = zero; ltz = zero
 
      do kseg = 0, NS-1
 
@@ -268,9 +264,9 @@ subroutine coils_bfield(B,x,y,z,icommand)
   use mpi
   implicit none
 
-  REAL  , intent( in)   :: x, y, z
-  REAL  , intent(out)   :: B(3)
-  INTEGER, INTENT(inout) :: icommand ! icommand==1, leave
+  REAL  , intent( in)     :: x, y, z
+  REAL  , intent(inout)   :: B(3)
+  INTEGER, INTENT(inout)  :: icommand ! icommand==1, leave
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -280,9 +276,9 @@ subroutine coils_bfield(B,x,y,z,icommand)
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-!!$  if (icommand == 1) then
-!!$     print *, 'enter bfield', myid, myworkid, nworker
-!!$  endif
+  if (icommand == 1) then
+     print *, 'stupid bug'
+  endif
  
   do 
      ! broadcast master parameter
@@ -292,23 +288,27 @@ subroutine coils_bfield(B,x,y,z,icommand)
      call MPI_BCAST( icommand, 1, MPI_INTEGER, master, MPI_COMM_MYWORLD, ierr )
      call MPI_BARRIER( MPI_COMM_MYWORLD, ierr ) ! wait all cpus;
 
-!!$     if (icommand == 1) then
-!!$        print *, 'after bcast', myid, myworkid, nworker
-!!$     endif
-
      B = zero
      do icoil = 1, Ncoils*Npc
         if ( myworkid /= modulo(icoil-1, nworker) ) cycle ! MPI
-        Bx = zero; By = zero; Bz = zero
+        ! Bx = zero; By = zero; Bz = zero
         call bfield0( icoil, x, y, z, Bx, By, Bz )
         B(1) = B(1) + Bx
         B(2) = B(2) + By
         B(3) = B(3) + Bz
      enddo
-     call MPI_ALLREDUCE(MPI_IN_PLACE, B, 3, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MYWORLD, ierr )
+
+     if (myworkid == master) then
+        call MPI_REDUCE(MPI_IN_PLACE, B, 3, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr )
+     else 
+        call MPI_REDUCE(           B, B, 3, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr )
+     endif
+
      if (myworkid==0) exit
      if (icommand == 1) exit
   end do
   return
 
 end subroutine coils_bfield
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
