@@ -257,7 +257,7 @@ end subroutine bfield1
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-subroutine coils_bfield(B,x,y,z,icommand)
+subroutine coils_bfield(B,x,y,z)
   use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, &
        zero, myid, ounit, Npc, bsconstant, one, two, ncpu, &
        master, nworker, myworkid, MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS
@@ -266,7 +266,7 @@ subroutine coils_bfield(B,x,y,z,icommand)
 
   REAL  , intent( in)     :: x, y, z
   REAL  , intent(inout)   :: B(3)
-  INTEGER, INTENT(inout)  :: icommand ! icommand==1, leave
+  !INTEGER, INTENT(in)     :: comm ! MPI communicator
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -276,37 +276,20 @@ subroutine coils_bfield(B,x,y,z,icommand)
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  if (icommand == 1) then
-     print *, 'stupid bug'
-  endif
- 
-  do 
-     ! broadcast master parameter
-     call MPI_BCAST( x, 1, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr )
-     call MPI_BCAST( y, 1, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr )
-     call MPI_BCAST( z, 1, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr )
-     call MPI_BCAST( icommand, 1, MPI_INTEGER, master, MPI_COMM_MYWORLD, ierr )
-     call MPI_BARRIER( MPI_COMM_MYWORLD, ierr ) ! wait all cpus;
+  call MPI_BARRIER(MPI_COMM_MYWORLD, ierr ) ! wait all cpus;
 
-     B = zero
-     do icoil = 1, Ncoils*Npc
-        if ( myworkid /= modulo(icoil-1, nworker) ) cycle ! MPI
-        ! Bx = zero; By = zero; Bz = zero
-        call bfield0( icoil, x, y, z, Bx, By, Bz )
-        B(1) = B(1) + Bx
-        B(2) = B(2) + By
-        B(3) = B(3) + Bz
-     enddo
+  B = zero
+  do icoil = 1, Ncoils*Npc
+     if ( myworkid /= modulo(icoil-1, nworker) ) cycle ! MPI
+     ! Bx = zero; By = zero; Bz = zero
+     call bfield0( icoil, x, y, z, Bx, By, Bz )
+     B(1) = B(1) + Bx
+     B(2) = B(2) + By
+     B(3) = B(3) + Bz
+  enddo
 
-     if (myworkid == master) then
-        call MPI_REDUCE(MPI_IN_PLACE, B, 3, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr )
-     else 
-        call MPI_REDUCE(           B, B, 3, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_MYWORLD, ierr )
-     endif
+  call MPI_ALLREDUCE(MPI_IN_PLACE, B, 3, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MYWORLD, ierr )
 
-     if (myworkid==0) exit
-     if (icommand == 1) exit
-  end do
   return
 
 end subroutine coils_bfield

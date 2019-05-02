@@ -393,9 +393,8 @@ SUBROUTINE get_bfield(B,x,y,z)
 
   REAL  , intent( in)   :: x, y, z
   REAL  , intent(out)   :: B(4)
-  INTEGER               :: icommand = 0
 
-  call coils_bfield(B(1:3), x, y, z, icommand)
+  call coils_bfield(B(1:3), x, y, z)
   B(4) = sqrt( B(1)*B(1) + B(2)*B(2) + B(3)*B(3) )
 
   return

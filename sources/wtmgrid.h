@@ -51,62 +51,62 @@ subroutine wtmgrid
      color = 0
   endif
   CALL MPI_COMM_SPLIT(MPI_COMM_WORLD, color, myid, MPI_COMM_MASTERS, ierr)
-
-  if (masterid == -1) then  ! slave cores waiting in coils_bfield
-     call coils_bfield(B, xx, yy, zz, icommand)
-  else 
+  if ( myworkid == 0 ) then
      CALL MPI_COMM_RANK(MPI_COMM_MASTERS, masterid, ierr)
      CALL MPI_COMM_SIZE(MPI_COMM_MASTERS, nmaster, ierr)
+  endif
+  IlBCAST( nmaster, 1, master )
 
-     do ip = 1, np 
-        RpZ(2) = Pmin + ( Pmax - Pmin ) * ( ip - 1 ) / ( np - 0 ) / Mfp
-        if ( masterid .ne. modulo(ip-1,nmaster) ) cycle
-        do iz = 1, nz ; RpZ(3) = Zmin + ( Zmax - Zmin ) * ( iz - 1 ) / ( nz - 1 )
-           do ir = 1, nr ; RpZ(1) = Rmin + ( Rmax - Rmin ) * ( ir - 1 ) / ( nr - 1 )
+  do ip = 1, np 
+     RpZ(2) = Pmin + ( Pmax - Pmin ) * ( ip - 1 ) / ( np - 0 ) / Mfp
+     if ( modulo(myid, np) .ne. modulo(ip-1,nmaster) ) cycle
+     do iz = 1, nz ; RpZ(3) = Zmin + ( Zmax - Zmin ) * ( iz - 1 ) / ( nz - 1 )
+        do ir = 1, nr ; RpZ(1) = Rmin + ( Rmax - Rmin ) * ( ir - 1 ) / ( nr - 1 )
 
-              czeta = cos(RpZ(2))
-              szeta = sin(RpZ(2))
+           czeta = cos(RpZ(2))
+           szeta = sin(RpZ(2))
 
-              xx = RpZ(1) * czeta
-              yy = RpZ(1) * szeta
-              zz = RpZ(3)
+           xx = RpZ(1) * czeta
+           yy = RpZ(1) * szeta
+           zz = RpZ(3)
 
-              call coils_bfield(B,xx,yy,zz,icommand) 
+           call coils_bfield(B,xx,yy,zz)
 
-              BRZp(1,ir,iz,ip) = (   B(1) * czeta + B(2) * szeta )
-              BRZp(3,ir,iz,ip) = ( - B(1) * szeta + B(2) * czeta ) 
-              BRZp(2,ir,iz,ip) =     B(3)
+           BRZp(1,ir,iz,ip) = (   B(1) * czeta + B(2) * szeta )
+           BRZp(3,ir,iz,ip) = ( - B(1) * szeta + B(2) * czeta ) 
+           BRZp(2,ir,iz,ip) =     B(3)
 #ifdef DIV_CHECK
-              dBx = B(1) ; dBy = B(2) ; dBz = B(3) 
-              BRpZ(2,ir,iz,ip) = sqrt( B(1)*B(1) + B(2)*B(2) + B(3)*B(3) )
+           dBx = B(1) ; dBy = B(2) ; dBz = B(3) 
+           BRpZ(2,ir,iz,ip) = sqrt( B(1)*B(1) + B(2)*B(2) + B(3)*B(3) )
 
-              xx = xx + dx
-              call coils_bfield(B,xx,yy,zz,icommand) 
-              dBx = ( B(1) - dBx ) / dx
-              xx = xx - dx
+           xx = xx + dx
+           call coils_bfield(B,xx,yy,zz)
+           dBx = ( B(1) - dBx ) / dx
+           xx = xx - dx
 
-              yy = yy + dy
-              call coils_bfield(B,xx,yy,zz,icommand) 
-              dBy = ( B(2) - dBy ) / dy
-              yy = yy - dy
+           yy = yy + dy
+           call coils_bfield(B,xx,yy,zz)
+           dBy = ( B(2) - dBy ) / dy
+           yy = yy - dy
 
-              zz = zz + dz
-              call coils_bfield(B,xx,yy,zz,icommand) 
-              dBz = ( B(3) - dBz ) / dz 
-              zz = zz - dz
+           zz = zz + dz
+           call coils_bfield(B,xx,yy,zz)
+           dBz = ( B(3) - dBz ) / dz 
+           zz = zz - dz
 
-              BRpZ(1,ir,iz,ip) = dBx + dBy + dBz
-              BRpZ(2,ir,iz,ip) = BRpZ(1,ir,iz,ip) / BRpZ(2,ir,iz,ip)
+           BRpZ(1,ir,iz,ip) = dBx + dBy + dBz
+           BRpZ(2,ir,iz,ip) = BRpZ(1,ir,iz,ip) / BRpZ(2,ir,iz,ip)
 #endif
-           enddo
         enddo
      enddo
+  enddo
+
+  if (masterid >=0) then
      call MPI_ALLREDUCE( MPI_IN_PLACE, BRZp, 3*nr*nz*np, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MASTERS, ierr)
 #ifdef DIV_CHECK
      call MPI_ALLREDUCE( MPI_IN_PLACE, BRpZ, 2*nr*nz*np, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MASTERS, ierr)
 #endif
      CALL MPI_COMM_FREE(MPI_COMM_MASTERS, ierr)
-     icommand = 1 ; call coils_bfield(B, xx, yy, zz, icommand) ! finish
   endif
 
   CALL MPI_COMM_FREE(MPI_COMM_MYWORLD, ierr)
@@ -116,8 +116,6 @@ subroutine wtmgrid
      write(ounit, '("wtmgrid : max. div B = "ES23.15 " ; max. div B / |B| = "ES23.15 )') maxval(BRpZ(1,1:Nr,1:Nz,1:Np)),  maxval(BRpZ(2,1:Nr,1:Nz,1:Np))
 #endif
      nextcur = 1 ; curlabel(1) = "focus-coils"
-
-     !write(suffix,'(i3.3,".",i4.4,".",i4.4)') Np, Nr, Nz
 
      write( ounit,'("wtmgrid : writing ",A," ; Mfp="i3" ;")')  trim(mgrid_name), Mfp
 
@@ -137,8 +135,9 @@ subroutine wtmgrid
   DEALLOCATE(BRpZ)
 #endif
 
-  !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   return
 
 end subroutine wtmgrid
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
