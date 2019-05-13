@@ -46,14 +46,12 @@ subroutine bfield0(icoil, xx, yy, zz, Bx, By, Bz)
   FATAL( bfield0, icoil .lt. 1 .or. icoil .gt. Ncoils*Npc, icoil not in right range )
 
   Bx = zero; By = zero; Bz = zero
+  dlx = zero ; dly = zero ; dlz = zero
+  ltx = zero ; lty = zero ; ltz = zero
   
   select case (coil(icoil)%itype)
   !--------------------------------------------------------------------------------------------- 
   case(1)
-
-     dlx = zero; ltx = zero
-     dly = zero; lty = zero
-     dlz = zero; ltz = zero
 
      do kseg = 0, coil(icoil)%NS-1
 
@@ -148,16 +146,14 @@ subroutine bfield1(icoil, xx, yy, zz, Bx, By, Bz, ND)
   FATAL( bfield1, ND <= 0, wrong inout dimension of ND )
 
   Bx = zero; By = zero; Bz = zero
+  dlx = zero ; dly = zero ; dlz = zero
+  ltx = zero ; lty = zero ; ltz = zero
 
   select case (coil(icoil)%itype)
   !--------------------------------------------------------------------------------------------- 
   case(1)
      
      NS = coil(icoil)%NS
-
-     dlx = zero; ltx = zero
-     dly = zero; lty = zero
-     dlz = zero; ltz = zero
 
      do kseg = 0, NS-1
 
@@ -258,5 +254,44 @@ subroutine bfield1(icoil, xx, yy, zz, Bx, By, Bz, ND)
   return
 
 end subroutine bfield1
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+subroutine coils_bfield(B,x,y,z)
+  use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, &
+       zero, myid, ounit, Npc, bsconstant, one, two, ncpu, &
+       master, nworker, myworkid, MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS
+  use mpi
+  implicit none
+
+  REAL  , intent( in)     :: x, y, z
+  REAL  , intent(inout)   :: B(3)
+  !INTEGER, INTENT(in)     :: comm ! MPI communicator
+
+  !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+  INTEGER              :: ierr, astat
+  REAL                 :: Bx, By, Bz
+  INTEGER              :: icoil
+
+  !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+  call MPI_BARRIER(MPI_COMM_MYWORLD, ierr ) ! wait all cpus;
+
+  B = zero
+  do icoil = 1, Ncoils*Npc
+     if ( myworkid /= modulo(icoil-1, nworker) ) cycle ! MPI
+     ! Bx = zero; By = zero; Bz = zero
+     call bfield0( icoil, x, y, z, Bx, By, Bz )
+     B(1) = B(1) + Bx
+     B(2) = B(2) + By
+     B(3) = B(3) + Bz
+  enddo
+
+  call MPI_ALLREDUCE(MPI_IN_PLACE, B, 3, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MYWORLD, ierr )
+
+  return
+
+end subroutine coils_bfield
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!

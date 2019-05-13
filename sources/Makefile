@@ -4,7 +4,7 @@
 
  ALLFILES= globals initial rdsurf rdknot rdcoils packdof bfield bmnharm bnormal fdcheck \
            torflux length surfsep datalloc solvers descent congrad lmalg saving diagnos \
-           specinp poinplot boozer focus
+           specinp poinplot boozer wtmgrid focus
  HFILES= $(ALLFILES:=.h)
  FFILES= $(ALLFILES:=.F90)
  PFILES= $(ALLFILES:=.pdf)
@@ -21,11 +21,13 @@
 ifeq ($(CC),gfortran)
 # RFLAGS=-O3 -w -fdefault-real-8 -ffree-line-length-none -march=native -ffast-math
  RFLAGS=-O3 -w -ffree-line-length-none -march=native -ffast-math $(PFLAGS)
- DFLAGS=-g3 -Wextra -Wtarget-lifetime -fbacktrace -fbounds-check -ffpe-trap=zero -fcheck=all -DDEBUG
+ DFLAGS=-Og $(PFLAGS) -w -ffree-line-length-none -Wextra -Wtarget-lifetime -fbacktrace -fbounds-check  \
+     -ffpe-trap=zero -fcheck=all -DDEBUG
 else
 # RFLAGS=-r8 -mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback #-vec_report0 #-ipo -xhost
  RFLAGS=-mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback  $(PFLAGS) #-vec_report0 #-ipo -xhost
- DFLAGS=-check all -check noarg_temp_created -debug full -D DEBUG
+ DFLAGS=-O0 -g -traceback $(PFLAGS) -check all -check bounds -check noarg_temp_created -check uninit \
+     -ftrapuv -init=snan,arrays -debug all -D DEBUG
 endif
 
 ############################################################################################################
@@ -58,13 +60,13 @@ lmder1.o : lmder1.f
 	$(FC) -c $(RFLAGS) -o $@ $<
 
 hybrj.o: hybrj.f
-	$(FC) -c $(FLAGS) $(DFLAGS) -o $@ $<
+	$(FC) -c $(FLAGS) -o $@ $<
 
 $(ROBJS): %_r.o: %.F90
 	$(FC) -c $(RFLAGS) -o $@ $<  $(HDF5)
 
 $(DOBJS): %_d.o: %.F90
-	$(FC) -c $(RFLAGS) $(DFLAGS) -o $@ $<  $(HDF5)
+	$(FC) -c $(DFLAGS) -o $@ $<  $(HDF5)
 
 $(FFILES): %.F90: %.h
 	m4 -P $(MACROS) $< > $@
