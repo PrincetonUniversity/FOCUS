@@ -15,17 +15,27 @@
 ############################################################################################################
 
  MACROS=macros
- CC=intel # if want to use gfortran; make CC=gfortran xfocus; otherwise using Intel
+
+#### Default Intel+OpenMPI+HDF5###############
+# available env: /p/focus/modules/focus/basis
+ CC=intel # if want to use gfortran; make CC=gfortran or other options
  FC=mpif90
  PFLAGS= # for pre-processing compiler flags, like -D dposition
+ RFLAGS=-mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback  $(PFLAGS) #-vec_report0 #-ipo -xhost
+ DFLAGS=-check all -check noarg_temp_created -debug full -D DEBUG
+
+#### GFORTRAN+OpenMPI+HDF5###############
+# available env: /p/focus/modules/focus/gfortran
 ifeq ($(CC),gfortran)
 # RFLAGS=-O3 -w -fdefault-real-8 -ffree-line-length-none -march=native -ffast-math
  RFLAGS=-O3 -w -ffree-line-length-none -march=native -ffast-math $(PFLAGS)
  DFLAGS=-g3 -Wextra -Wtarget-lifetime -fbacktrace -fbounds-check -ffpe-trap=zero -fcheck=all -DDEBUG
-else
-# RFLAGS=-r8 -mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback #-vec_report0 #-ipo -xhost
- RFLAGS=-mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback  $(PFLAGS) #-vec_report0 #-ipo -xhost
- DFLAGS=-check all -check noarg_temp_created -debug full -D DEBUG
+endif
+
+#### EDDY Intel+IntelMPI+HDF5###############
+# available env: /home/caoxiang/Modules/focus/develop
+ifeq ($(CC),eddyintel)
+ FC=mpiifort
 endif
 
 ############################################################################################################
