@@ -18,12 +18,10 @@
 subroutine saving
 
   use globals
-
+  use mpi
   use hdf5
 
   implicit none
-
-  include "mpif.h"
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -414,22 +412,22 @@ SUBROUTINE write_plasma
   open(wunit, file=trim(out_plasma), status='unknown', action='write')
 
   write(wunit,*      ) "#Nfou Nfp  Nbnf"
-  write(wunit,'(3I)' ) Nfou, Nfp_raw, Nbnf
+  write(wunit,'(3I6)' ) Nfou, Nfp_raw, Nbnf
 
   write(wunit,*      ) "#------- plasma boundary------"
   write(wunit,*      ) "#  n   m   Rbc   Rbs    Zbc   Zbs"
   do imn = 1, Nfou
-     write(wunit,'(2I, 4ES15.6)') bin(imn)/Nfp_raw, bim(imn), Rbc(imn), Rbs(imn), Zbc(imn), Zbs(imn)
+     write(wunit,'(2I6, 4ES15.6)') bin(imn)/Nfp_raw, bim(imn), Rbc(imn), Rbs(imn), Zbc(imn), Zbs(imn)
   enddo
 
   write(wunit,*      ) "#-------Bn harmonics----------"
   write(wunit,*      ) "#  n  m  bnc   bns"
   if (Nbnf .gt. 0) then
      do imn = 1, Nbnf
-        write(wunit,'(2I, 2ES15.6)') bnin(imn)/Nfp_raw, bnim(imn), bnc(imn), bns(imn)
+        write(wunit,'(2I6, 2ES15.6)') bnin(imn)/Nfp_raw, bnim(imn), bnc(imn), bns(imn)
      enddo
   else
-     write(wunit,'(2I, 2ES15.6)') 0, 0, 0.0, 0.0
+     write(wunit,'(2I6, 2ES15.6)') 0, 0, 0.0, 0.0
   endif
 
   close(wunit)

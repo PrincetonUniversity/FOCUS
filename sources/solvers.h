@@ -419,10 +419,10 @@ subroutine normweight
      if ( weight_bharm >= machprec ) then 
         modBn = sqrt(sum(Bmnc**2 + Bmns**2))
         modtBn = sqrt(sum(tBmnc**2 + tBmns**2))
-        do icoil = 1, Ncoils
-           coil(icoil)%I = coil(icoil)%I * modtBn / modBn
-        enddo
-        if(myid .eq. 0) write(ounit,'(8X,": rescale coil currents with a factor of "ES12.5)') &
+!!$        do icoil = 1, Ncoils
+!!$           coil(icoil)%I = coil(icoil)%I * modtBn / modBn
+!!$        enddo
+        if(myid .eq. 0) write(ounit,'(8X,": Please rescale coil currents with a factor of "ES12.5)') &
              modtBn / modBn
         call bnormal(0)
         if (abs(bharm) > machprec) weight_bharm = weight_bharm / bharm
