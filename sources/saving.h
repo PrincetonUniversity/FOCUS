@@ -131,64 +131,6 @@ subroutine saving
   HWRITERV( 1                ,   pp_xtol       ,   pp_xtol                       )
 
   HWRITEIV( 1                ,   Nfp           ,   Nfp_raw                         )
-  HWRITERV( 1                ,   surf_vol      ,   surf(1)%vol                     )
-  HWRITERA( Nteta,Nzeta      ,   xsurf         ,   surf(1)%xx(0:Nteta-1,0:Nzeta-1) )
-  HWRITERA( Nteta,Nzeta      ,   ysurf         ,   surf(1)%yy(0:Nteta-1,0:Nzeta-1) )
-  HWRITERA( Nteta,Nzeta      ,   zsurf         ,   surf(1)%zz(0:Nteta-1,0:Nzeta-1) )
-  HWRITERA( Nteta,Nzeta      ,   nx            ,   surf(1)%nx(0:Nteta-1,0:Nzeta-1) )
-  HWRITERA( Nteta,Nzeta      ,   ny            ,   surf(1)%ny(0:Nteta-1,0:Nzeta-1) )
-  HWRITERA( Nteta,Nzeta      ,   nz            ,   surf(1)%nz(0:Nteta-1,0:Nzeta-1) )
-  HWRITERA( Nteta,Nzeta      ,   nn            ,   surf(1)%ds(0:Nteta-1,0:Nzeta-1) )
-
-  if (allocated(bn)) then
-     HWRITERA( Nteta,Nzeta      ,   plas_Bn       ,   surf(1)%pb(0:Nteta-1,0:Nzeta-1) )
-     HWRITERA( Nteta,Nzeta      ,        Bn       ,   surf(1)%bn(0:Nteta-1,0:Nzeta-1) )
-     HWRITERA( Nteta,Nzeta      ,   Bx            ,   surf(1)%Bx(0:Nteta-1,0:Nzeta-1) )
-     HWRITERA( Nteta,Nzeta      ,   By            ,   surf(1)%By(0:Nteta-1,0:Nzeta-1) )
-     HWRITERA( Nteta,Nzeta      ,   Bz            ,   surf(1)%Bz(0:Nteta-1,0:Nzeta-1) )
-  endif
-
-  HWRITEIV( 1                ,   iout          ,   iout                          )
-  HWRITERV( 1                ,   Inorm         ,   Inorm                         )
-  HWRITERV( 1                ,   Gnorm         ,   Gnorm                         )
-  HWRITERV( 1                ,   Mnorm         ,   Mnorm                         )
-  HWRITERV( 1                ,   overlap       ,   overlap                       )
-  HWRITERA( iout, 8          ,   evolution     ,   evolution(1:iout, 0:7)        )
-  HWRITERA( iout, Tdof       ,   coilspace     ,   coilspace(1:iout, 1:Tdof)     )
-
-  if (allocated(deriv)) then
-     HWRITERA( Ndof, 6       ,   deriv         ,   deriv(1:Ndof, 0:6)            )
-  endif
-
-  if (allocated(Bmnc)) then
-     HWRITEIV( NBmn          ,   Bmnin         ,   Bmnin                         )
-     HWRITEIV( NBmn          ,   Bmnim         ,   Bmnim                         )
-     HWRITERV( NBmn          ,   initial_Bmnc  ,   iBmnc                         )
-     HWRITERV( NBmn          ,   initial_Bmns  ,   iBmns                         )
-     HWRITERV( NBmn          ,   target_Bmnc   ,   tBmnc                         )
-     HWRITERV( NBmn          ,   target_Bmns   ,   tBmns                         )
-     HWRITERV( NBmn          ,          Bmnc   ,    Bmnc                         )
-     HWRITERV( NBmn          ,          Bmns   ,    Bmns                         )
-  endif
-
-  if (allocated(coil_importance)) then
-     HWRITERV( Ncoils*Npc    , coil_importance ,  coil_importance                )
-  endif
-  
-  if (allocated(LM_fvec)) then
-     HWRITEIV( 1                ,   ibnorm        ,   ibnorm                     )
-     HWRITEIV( 1                ,   mbnorm        ,   mbnorm                     )     
-     HWRITEIV( 1                ,   ibharm        ,   ibharm                     )
-     HWRITEIV( 1                ,   mbharm        ,   mbharm                     )     
-     HWRITEIV( 1                ,   itflux        ,   itflux                     )
-     HWRITEIV( 1                ,   mtflux        ,   mtflux                     )     
-     HWRITEIV( 1                ,   ittlen        ,   ittlen                     )
-     HWRITEIV( 1                ,   mttlen        ,   mttlen                     )     
-     HWRITEIV( 1                ,   icssep        ,   icssep                     )
-     HWRITEIV( 1                ,   mcssep        ,   mcssep                     )
-     HWRITERV( LM_mfvec         ,   LM_fvec       ,   LM_fvec                    )
-     HWRITERA( LM_mfvec, Ndof   ,   LM_fjac       ,   LM_fjac                    )     
-  endif
 
   if (allocated(ppr)) then
      HWRITERA( pp_ns, pp_maxiter+1,   ppr         ,  ppr(1:pp_ns, 0:pp_maxiter) )

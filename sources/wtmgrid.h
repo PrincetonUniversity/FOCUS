@@ -2,7 +2,7 @@
 
 subroutine wtmgrid
   use globals, only : dp, zero, half, pi2, ext, ncpu, myid, ounit, wunit, nfp_raw,  &
-       pp_raxis, pp_zaxis, pp_rmax, pp_zmax, &
+       pp_raxis, pp_zaxis, pp_rmax, pp_zmax, mgrid_rmin, mgrid_rmax, mgrid_zmin, mgrid_zmax, &
        master, nmaster, nworker, masterid, color, myworkid, MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS
   implicit none
   include "mpif.h"
@@ -33,33 +33,14 @@ subroutine wtmgrid
  ! Rmin =  4.8 ; Rmax =  6.8
  ! Zmin = -1.5 ; Zmax =  1.5
   
-  Rmin = pp_raxis ; Zmin = pp_zaxis
-  Rmax = pp_rmax  ; Zmax = pp_zmax
+  Rmin = mgrid_rmin ; Zmin = mgrid_zmin
+  Rmax = mgrid_rmax ; Zmax = mgrid_zmax
 
   if( myid.eq.0 ) write( ounit,'("wtmgrid : writing mgrid file at grid of [ "4(ES12.5,2X)" ]",3i6)') Rmin, Rmax, Zmin, Zmax, np, nr, nz
 
-  ! split cores
-  color = modulo(myid, np)
-  CALL MPI_COMM_SPLIT(MPI_COMM_WORLD, color, myid, MPI_COMM_MYWORLD, ierr)
-  CALL MPI_COMM_RANK(MPI_COMM_MYWORLD, myworkid, ierr)
-  CALL MPI_COMM_SIZE(MPI_COMM_MYWORLD, nworker, ierr)
-
-  if (myworkid /= 0) then
-     color = MPI_UNDEFINED
-     masterid = -1
-  else 
-     color = 0
-  endif
-  CALL MPI_COMM_SPLIT(MPI_COMM_WORLD, color, myid, MPI_COMM_MASTERS, ierr)
-  if ( myworkid == 0 ) then
-     CALL MPI_COMM_RANK(MPI_COMM_MASTERS, masterid, ierr)
-     CALL MPI_COMM_SIZE(MPI_COMM_MASTERS, nmaster, ierr)
-  endif
-  IlBCAST( nmaster, 1, master )
-
   do ip = 1, np 
      RpZ(2) = Pmin + ( Pmax - Pmin ) * ( ip - 1 ) / ( np - 0 ) / Mfp
-     if ( modulo(myid, np) .ne. modulo(ip-1,nmaster) ) cycle
+     ! if ( modulo(myid, np) .ne. modulo(ip-1,nmaster) ) cycle
      do iz = 1, nz ; RpZ(3) = Zmin + ( Zmax - Zmin ) * ( iz - 1 ) / ( nz - 1 )
         do ir = 1, nr ; RpZ(1) = Rmin + ( Rmax - Rmin ) * ( ir - 1 ) / ( nr - 1 )
 
@@ -101,15 +82,7 @@ subroutine wtmgrid
      enddo
   enddo
 
-  if (masterid >=0) then
-     call MPI_ALLREDUCE( MPI_IN_PLACE, BRZp, 3*nr*nz*np, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MASTERS, ierr)
-#ifdef DIV_CHECK
-     call MPI_ALLREDUCE( MPI_IN_PLACE, BRpZ, 2*nr*nz*np, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MASTERS, ierr)
-#endif
-     CALL MPI_COMM_FREE(MPI_COMM_MASTERS, ierr)
-  endif
 
-  CALL MPI_COMM_FREE(MPI_COMM_MYWORLD, ierr)
 
   if( myid.eq.0 ) then
 #ifdef DIV_CHECK

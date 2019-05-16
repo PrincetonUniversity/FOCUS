@@ -378,6 +378,8 @@ subroutine initial
         if (trim(input_coils) == 'none') input_coils = trim(ext)//".focus"
         inquire( file=trim(input_coils), exist=exist )
         FATAL( initial, .not.exist, FOCUS coil file ext.focus not provided )
+        inquire( file=trim(fixed_coils), exist=exist )
+        FATAL( initial, .not.exist, fixed coil file ext.focus not provided )
         write(ounit, '("        : Read initial coils    from : ", A, A)') trim(input_coils), '(MAKEGRID format)'
      case( 1 )
         FATAL( initial, Ncoils < 1, should provide the No. of coils)
@@ -425,22 +427,6 @@ subroutine initial
              &  'Plasma boundary and coil periodicity are both enforced.'
      case default
         FATAL( initial, .true., IsSymmetric /= 0 or 2 unspported option)
-     end select
-
-     select case (case_surface)
-     case (0)
-        inquire( file=trim(input_surf), exist=exist )
-        FATAL( initial, .not.exist, plasma boundary file not provided )
-        write(ounit, 1000) 'case_surface', case_surface, 'Read VMEC-like Fourier harmonics for plasma boundary.'
-     case (1)
-        inquire( file=trim(input_surf), exist=exist )
-        FATAL( initial, .not.exist, axis file not provided )
-        FATAL( initial, knotsurf < zero, illegal minor radius)
-        write(ounit, 1000) 'case_surface', case_surface, 'Read axis information for expanding plasma boundary.'
-        if (IsQuiet < 0)  write(ounit, '(8X,": knotsurf = " ES12.5 &
-             &  " ; ellipticity = " ES12.5)') knotsurf, ellipticity
-     case default
-        FATAL( initial, .true., selected surface type is not supported )
      end select
 
      FATAL( initial, Nteta   <=   0, illegal surface resolution )

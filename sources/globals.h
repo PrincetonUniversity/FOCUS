@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='v0.7.10' ! version number
+  CHARACTER(LEN=10), parameter :: version='v0.0.10' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -156,8 +156,14 @@ module globals
   INTEGER              :: pp_maxiter     =  1000
   REAL                 :: pp_xtol        =  1.000D-06
 
+  REAL                 :: mgrid_rmax        =  0.000D+00
+  REAL                 :: mgrid_zmax        =  0.000D+00
+  REAL                 :: mgrid_rmin        =  0.000D+00
+  REAL                 :: mgrid_zmin        =  0.000D+00
+
   CHARACTER(LEN=100)   :: input_surf     = 'plasma.boundary'  ! surface file
   CHARACTER(LEN=100)   :: input_coils    = 'none'             ! input file for coils
+  CHARACTER(LEN=100)   :: fixed_coils    = 'none'             ! fixed coils
   CHARACTER(LEN=100)   :: input_harm     = 'target.harmonics' ! input target harmonics file
                                                          
   namelist / focusin /  IsQuiet        , &
@@ -165,6 +171,7 @@ module globals
                         input_surf     , & 
                         input_harm     , &
                         input_coils    , & 
+                        fixed_coils    , &
                         case_surface   , &
                         knotsurf       , &
                         ellipticity    , & 
@@ -230,7 +237,12 @@ module globals
                         pp_zmax        , &
                         pp_ns          , &
                         pp_maxiter     , &
-                        pp_xtol        
+                        pp_xtol        , &
+                        mgrid_rmax     , &
+                        mgrid_zmax      , &
+                        mgrid_rmin      , &
+                        mgrid_zmin
+
 
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -284,7 +296,7 @@ module globals
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 !latex \subsection{Packing and unpacking}
-  INTEGER              :: Cdof, Ndof, nfixcur, nfixgeo, Tdof
+  INTEGER              :: Cdof, Ndof, nfixcur, nfixgeo, Tdof, Ncoils_total
   REAL                 :: Inorm = one, Gnorm = one, Mnorm = one   !current, geometry, and moment normalizations;
   REAL   , allocatable :: xdof(:), dofnorm(:)
 

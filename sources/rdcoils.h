@@ -101,7 +101,7 @@ subroutine rdcoils
 
   LOGICAL   :: exist
   INTEGER   :: icoil, maxnseg, ifirst, NF, itmp, ip, icoef, total_coef, num_pm, num_bg, & 
-               num_per_array, num_tor, ipol, itor
+               num_per_array, num_tor, ipol, itor, offset, icpu, iskip
   REAL      :: Rmaj, zeta, totalcurrent, z0, r1, r2, z1, z2, rtmp, teta
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -112,104 +112,21 @@ subroutine rdcoils
 
   if(myid == 0) write(ounit, *) "-----------INITIALIZE COILS----------------------------------"
 
+  Npc = 1
+
   select case( case_init )
-
-     !-------------read coils file--------------------------------------------------------------------------
-  case(-1 )
-     if (myid == 0) then
-        write(ounit,'("rdcoils : Reading coils data (MAKEGRID format) from "A)') trim(input_coils)
-        call readcoils(input_coils, maxnseg)
-        write(ounit,'("        : Read ",i6," coils.")') Ncoils
-        if (IsQuiet < 0) write(ounit, '(8X,": NFcoil = "I3" ; IsVaryCurrent = "I1 &
-             " ; IsVaryGeometry = "I1)') NFcoil, IsVaryCurrent, IsVaryGeometry
-     endif
-
-     IlBCAST( Ncoils   ,      1, 0 )
-     IlBCAST( maxnseg  ,      1, 0 )
-
-     if( .not. allocated(coilsX) ) then !allocate arrays on other nodes;
-        SALLOCATE( coilsX, (1:maxnseg,1:Ncoils), zero )    
-        SALLOCATE( coilsY, (1:maxnseg,1:Ncoils), zero )
-        SALLOCATE( coilsZ, (1:maxnseg,1:Ncoils), zero )
-        SALLOCATE( coilsI, (          1:Ncoils), zero )
-        SALLOCATE( coilseg,(          1:Ncoils),    0 )
-        SALLOCATE( coilname,(         1:Ncoils),   '' )
-     endif
-
-     ! broadcast coils data;
-     RlBCAST( coilsX, maxnseg*Ncoils, 0 )
-     RlBCAST( coilsY, maxnseg*Ncoils, 0 )
-     RlBCAST( coilsZ, maxnseg*Ncoils, 0 )
-     RlBCAST( coilsI,         Ncoils, 0 )   
-     IlBCAST( coilseg,        Ncoils, 0 )
-     ClBCAST( coilname,       Ncoils, 0 )
-
-     allocate(    coil(1:Ncoils) )
-     allocate( FouCoil(1:Ncoils) )
-     allocate(     DoF(1:Ncoils) )
-
-     Ncoils = Ncoils / Npc ! Ncoils changed to unique number of coils;
-     icoil = 0
-     do icoil = 1, Ncoils
-
-        !general coil parameters;
-        coil(icoil)%NS =  Nseg  
-        coil(icoil)%I  =  coilsI(icoil)
-        coil(icoil)%Ic =  IsVaryCurrent
-        coil(icoil)%L  =  target_length ! irrelevant until re-computed;
-        coil(icoil)%Lc =  IsVaryGeometry
-        coil(icoil)%Lo =  target_length
-        coil(icoil)%name = trim(coilname(icoil))
-
-        FATAL( rdcoils, coil(icoil)%Ic < 0 .or. coil(icoil)%Ic > 1, illegal )
-        FATAL( rdcoils, coil(icoil)%Lc < 0 .or. coil(icoil)%Lc > 1, illegal )
-        FATAL( rdcoils, coil(icoil)%Lo < zero                     , illegal )
-        if(coil(icoil)%Ic == 0) Nfixcur = Nfixcur + 1
-        if(coil(icoil)%Lc == 0) Nfixgeo = Nfixgeo + 1
-
-        !Fourier representation related;
-        FouCoil(icoil)%NF = NFcoil
-        NF = NFcoil  ! alias
-        SALLOCATE( FouCoil(icoil)%xc, (0:NF), zero )
-        SALLOCATE( FouCoil(icoil)%xs, (0:NF), zero )
-        SALLOCATE( FouCoil(icoil)%yc, (0:NF), zero )
-        SALLOCATE( FouCoil(icoil)%ys, (0:NF), zero )
-        SALLOCATE( FouCoil(icoil)%zc, (0:NF), zero )
-        SALLOCATE( FouCoil(icoil)%zs, (0:NF), zero )        
-
-        !if(myid .ne. modulo(icoil-1, ncpu)) cycle
-
-       call Fourier( coilsX(1:coilseg(icoil),icoil), Foucoil(icoil)%xc, Foucoil(icoil)%xs, coilseg(icoil), NF)
-       call Fourier( coilsY(1:coilseg(icoil),icoil), Foucoil(icoil)%yc, Foucoil(icoil)%ys, coilseg(icoil), NF)
-       call Fourier( coilsZ(1:coilseg(icoil),icoil), Foucoil(icoil)%zc, Foucoil(icoil)%zs, coilseg(icoil), NF)
-
-     enddo
-
-     DALLOCATE( coilsX )
-     DALLOCATE( coilsY )
-     DALLOCATE( coilsZ )
-     DALLOCATE( coilsI )
-     DALLOCATE( coilseg)
-     DALLOCATE(coilname)
-
-     coil(1:Ncoils)%itype = case_coils
 
      !-------------individual coil file---------------------------------------------------------------------
   case( 0 )
 
+     ! myid = 0 read all the fixed coils
      if( myid==0 ) then  !get file number;
-        open( runit, file=trim(input_coils), status="old", action='read')
+        open( runit, file=trim(fixed_coils), status="old", action='read')
         read( runit,*)
         read( runit,*) Ncoils
-        write(ounit,'("rdcoils : identified "i6" unique coils in "A" ;")') Ncoils, trim(input_coils)
-     endif
-                               
-     IlBCAST( Ncoils        ,    1,  0 )
-     allocate( FouCoil(1:Ncoils*Npc) )
-     allocate(    coil(1:Ncoils*Npc) )
-     allocate(     DoF(1:Ncoils*Npc) )
-
-     if( myid==0 ) then
+        write(ounit,'("rdcoils : identified "I10" fixed coils in "A" ;")') Ncoils, trim(fixed_coils)
+        allocate( FouCoil(1:Ncoils) )
+        allocate(    coil(1:Ncoils) )
         do icoil = 1, Ncoils
            read( runit,*)
            read( runit,*)
@@ -255,287 +172,65 @@ subroutine rdcoils
         enddo !end do icoil;
 
         close( runit )
-     endif ! end of if( myid==0 );
+     endif
 
-     do icoil = 1, Ncoils
+     if( myid==0 ) then  !get file number;
+        open( runit, file=trim(input_coils), status="old", action='read')
+        read( runit,*)
+        read( runit,*) Ncoils_total
+        write(ounit,'("rdcoils : identified "I10" unique coils in "A" ;")') Ncoils_total, trim(input_coils)
+        close( runit )
+     endif
 
-        IlBCAST( coil(icoil)%itype        , 1        ,  0 )
-        ClBCAST( coil(icoil)%name         , 10       ,  0 )
+     IlBCAST( Ncoils_total, 1,  0 )
+     if (Ncpu == 1) STOP ' At least use two cpus'
+     if (myid/=0) Ncoils = Ncoils_total / (Ncpu-1)
+     if (myid==Ncpu-1) Ncoils = Ncoils + mod(Ncoils_total, Ncpu-1) ! The last one read more
+     !MPIOUT( Ncoils )
+     offset = 2+(myid-1)*(Ncoils_total/(Ncpu-1))*5 ! only for dipoles
+     !MPIOUT( offset )
+                               
+     if (myid /= 0) allocate( coil(1:Ncoils) )
 
-        if(coil(icoil)%itype == 1) then  ! Fourier representation
+     do icpu = 1, ncpu-1
+        if (myid == icpu) then                              ! each cpu read the coils in turn;
+           open( runit, file=trim(input_coils), status="old", action='read')
+           do iskip = 1, offset
+              read( runit,*)
+           enddo
 
-           IlBCAST( coil(icoil)%NS           , 1        ,  0 )
-           RlBCAST( coil(icoil)%I            , 1        ,  0 )
-           IlBCAST( coil(icoil)%Ic           , 1        ,  0 )
-           RlBCAST( coil(icoil)%L            , 1        ,  0 )
-           IlBCAST( coil(icoil)%Lc           , 1        ,  0 )
-           RlBCAST( coil(icoil)%Lo           , 1        ,  0 )
-           IlBCAST( FouCoil(icoil)%NF        , 1        ,  0 )
+           do icoil = 1, Ncoils
+              read( runit,*)
+              read( runit,*)
+              read( runit,*) coil(icoil)%itype, coil(icoil)%name
+              read( runit,*)
+              read( runit,*) coil(icoil)%Lc, coil(icoil)%ox, coil(icoil)%oy, coil(icoil)%oz, &
+                   coil(icoil)%Ic, coil(icoil)%I , coil(icoil)%mt, coil(icoil)%mp      
 
-           if (.not. allocated(FouCoil(icoil)%xc) ) then
-              SALLOCATE( FouCoil(icoil)%xc, (0:FouCoil(icoil)%NF), zero )
-              SALLOCATE( FouCoil(icoil)%xs, (0:FouCoil(icoil)%NF), zero )
-              SALLOCATE( FouCoil(icoil)%yc, (0:FouCoil(icoil)%NF), zero )
-              SALLOCATE( FouCoil(icoil)%ys, (0:FouCoil(icoil)%NF), zero )
-              SALLOCATE( FouCoil(icoil)%zc, (0:FouCoil(icoil)%NF), zero )
-              SALLOCATE( FouCoil(icoil)%zs, (0:FouCoil(icoil)%NF), zero ) 
-           endif
-           RlBCAST( FouCoil(icoil)%xc(0:FouCoil(icoil)%NF) , 1+FouCoil(icoil)%NF ,  0 )
-           RlBCAST( FouCoil(icoil)%xs(0:FouCoil(icoil)%NF) , 1+FouCoil(icoil)%NF ,  0 )
-           RlBCAST( FouCoil(icoil)%yc(0:FouCoil(icoil)%NF) , 1+FouCoil(icoil)%NF ,  0 )
-           RlBCAST( FouCoil(icoil)%ys(0:FouCoil(icoil)%NF) , 1+FouCoil(icoil)%NF ,  0 )
-           RlBCAST( FouCoil(icoil)%zc(0:FouCoil(icoil)%NF) , 1+FouCoil(icoil)%NF ,  0 )
-           RlBCAST( FouCoil(icoil)%zs(0:FouCoil(icoil)%NF) , 1+FouCoil(icoil)%NF ,  0 )
+           enddo !end do icoil;
 
-           if(coil(icoil)%Ic == 0) Nfixcur = Nfixcur + 1
-           if(coil(icoil)%Lc == 0) Nfixgeo = Nfixgeo + 1
-
-        else if (coil(icoil)%itype == 2) then  ! permanent magnets
-
-           IlBCAST( coil(icoil)%Ic, 1 , 0 )
-           RlBCAST( coil(icoil)%I , 1 , 0 )
-           IlBCAST( coil(icoil)%Lc, 1 , 0 )
-           RlBCAST( coil(icoil)%ox, 1 , 0 )
-           RlBCAST( coil(icoil)%oy, 1 , 0 )
-           RlBCAST( coil(icoil)%oz, 1 , 0 )
-           RlBCAST( coil(icoil)%mt, 1 , 0 )
-           RlBCAST( coil(icoil)%mp, 1 , 0 )
-
-        else if (coil(icoil)%itype == 3) then  ! backgroud toroidal/vertical field
-           
-           IlBCAST( coil(icoil)%Ic, 1 , 0 )
-           RlBCAST( coil(icoil)%I , 1 , 0 )
-           IlBCAST( coil(icoil)%Lc, 1 , 0 )
-           RlBCAST( coil(icoil)%Bz, 1 , 0 )             
-
-        else
-           STOP " wrong coil type in rdcoils"
-           call MPI_ABORT(MPI_COMM_WORLD, 1, ierr)
-        endif
-
+           close(runit)
+        endif ! end of if( myid == 0 )
      enddo
-
-     !-------------toroidally placed circular coils---------------------------------------------------------
-  case( 1 ) ! toroidally placed coils; 2017/03/13
-
-     allocate( FouCoil(1:Ncoils*Npc) )
-     allocate(    coil(1:Ncoils*Npc) )
-     allocate(     DoF(1:Ncoils*Npc) )
-
-     if (myid == 0)  then
-        write(ounit,'("rdcoils : initializing "i3" unique circular coils;")') Ncoils
-        if (IsQuiet < 1) write(ounit, '(8X,": Initialize "I4" circular coils with r="ES12.5"m ; I="&
-             ES12.5" A")') Ncoils, init_radius, init_current
-        if (IsQuiet < 0) write(ounit, '(8X,": NFcoil = "I3" ; IsVaryCurrent = "I1 &
-             " ; IsVaryGeometry = "I1)') NFcoil, IsVaryCurrent, IsVaryGeometry
-     endif
-
-     do icoil = 1, Ncoils
-
-        !general coil parameters;
-        coil(icoil)%NS =  Nseg  
-        coil(icoil)%I  =  init_current
-        coil(icoil)%Ic =  IsVaryCurrent
-        coil(icoil)%L  =  pi2*init_radius
-        coil(icoil)%Lc =  IsVaryGeometry
-        coil(icoil)%Lo =  target_length
-        write(coil(icoil)%name,'("Mod_"I3.3)') icoil
-        FATAL( rdcoils, coil(icoil)%Ic < 0 .or. coil(icoil)%Ic > 1, illegal )
-        FATAL( rdcoils, coil(icoil)%Lc < 0 .or. coil(icoil)%Lc > 1, illegal )
-        FATAL( rdcoils, coil(icoil)%Lo < zero                     , illegal )
-        if(coil(icoil)%Ic == 0) Nfixcur = Nfixcur + 1
-        if(coil(icoil)%Lc == 0) Nfixgeo = Nfixgeo + 1
-
-        !Fourier representation related;
-        FouCoil(icoil)%NF = NFcoil
-        SALLOCATE( FouCoil(icoil)%xc, (0:NFcoil), zero )
-        SALLOCATE( FouCoil(icoil)%xs, (0:NFcoil), zero )
-        SALLOCATE( FouCoil(icoil)%yc, (0:NFcoil), zero )
-        SALLOCATE( FouCoil(icoil)%ys, (0:NFcoil), zero )
-        SALLOCATE( FouCoil(icoil)%zc, (0:NFcoil), zero )
-        SALLOCATE( FouCoil(icoil)%zs, (0:NFcoil), zero )
-
-        !initilize with circular coils;
-        zeta = (icoil-1+half) * pi2 / (Ncoils*Npc)  ! put a half for a shift;
-
-        call surfcoord( zero, zeta, r1, z1)
-        call surfcoord(   pi, zeta, r2, z2)
-
-        Rmaj = half * (r1 + r2)
-        z0   = half * (z1 + z2)        
-        
-        FouCoil(icoil)%xc(0:1) = (/ Rmaj * cos(zeta), init_radius * cos(zeta) /)
-        FouCoil(icoil)%xs(0:1) = (/ zero            , zero                    /)
-        FouCoil(icoil)%yc(0:1) = (/ Rmaj * sin(zeta), init_radius * sin(zeta) /)
-        FouCoil(icoil)%ys(0:1) = (/ zero            , zero                    /)
-        FouCoil(icoil)%zc(0:1) = (/ z0              , zero                    /)
-        Foucoil(icoil)%zs(0:1) = (/ zero            , init_radius             /)
-
-     enddo ! end of do icoil;
-
-     coil(1:Ncoils)%itype = 1
-
-     !------------- permanent dipoles and background magnetic field ----------------------------------------
-  case( 2 ) ! averagely positioned permanent dipoles ; 2019/01/03
-
-     allocate( coil(1:Ncoils*Npc) )
-     allocate(  DoF(1:Ncoils*Npc) )
-
-     num_per_array = 16  ! number of dipoles at each toroidal cross-section
-     num_tor = (Ncoils-1)/num_per_array ! number of toroidal arrangements
-
-     if (myid == 0)  then
-        write(ounit,'("rdcoils : initializing "i3" uniformly positioned magnetic dipoles with toroidal magnetif filed")') Ncoils-1
-        if (IsQuiet < 1) write(ounit, '(8X,": Initialize "I4" X "I4" dipoles on r="ES12.5"m  with m="&
-             ES12.5" A")') num_tor, num_per_array, init_radius, init_current
-        if (IsQuiet < 0) write(ounit, '(8X,": IsVaryCurrent = "I1 " ; IsVaryGeometry = "I1)') &
-             IsVaryCurrent, IsVaryGeometry
-        FATAL( rdcoils, modulo(Ncoils-1, num_per_array) /= 0, Please provide a valid number )
-
-     endif
-
-     ! background magnetic field Bt Bz
-     icoil = 1
-     coil(icoil)%I  =  init_current
-     coil(icoil)%Ic =  IsVaryCurrent
-     coil(icoil)%L  =  pi2*init_radius
-     coil(icoil)%Lc =  0               ! IsVaryGeometry ! ignore Bz first; 20190102
-     coil(icoil)%Lo =  target_length
-     coil(icoil)%Bz =  zero
-     coil(icoil)%name = 'bg_BtBz_01'
-     coil(icoil)%itype = 3
-
-     do itor = 1, num_tor
-
-        !initilize with circular coils;
-        zeta = (itor-1) * pi2 / num_tor  ! put a half for a shift;
-        call surfcoord( zero, zeta, r1, z1)
-        call surfcoord(   pi, zeta, r2, z2)
-        Rmaj = half * (r1 + r2)
-        z0   = half * (z1 + z2)     
-
-        do ipol = 1, num_per_array
-
-           icoil = icoil + 1
-
-           !general coil parameters;
-           coil(icoil)%itype = 2
-           coil(icoil)%Ic =  IsVaryCurrent
-           coil(icoil)%I  =  init_current
-           coil(icoil)%L  =  pi2*init_radius
-           coil(icoil)%Lc =  IsVaryGeometry
-           coil(icoil)%Lo =  target_length
-           write(coil(icoil)%name,'("pm_"I6)') icoil
-           FATAL( rdcoils, coil(icoil)%Ic < 0 .or. coil(icoil)%Ic > 1, illegal )
-           FATAL( rdcoils, coil(icoil)%Lc < 0 .or. coil(icoil)%Lc > 1, illegal )
-           FATAL( rdcoils, coil(icoil)%Lo < zero                     , illegal )
-           if(coil(icoil)%Ic == 0) Nfixcur = Nfixcur + 1
-           if(coil(icoil)%Lc == 0) Nfixgeo = Nfixgeo + 1
-
-
-           teta = (ipol-1) * pi2 / num_per_array
-           rtmp = Rmaj + init_radius * cos(teta)
-           coil(icoil)%ox = rtmp * cos(zeta)
-           coil(icoil)%oy = rtmp * sin(zeta)
-           coil(icoil)%oz = z0 + init_radius * sin(teta)
-
-!!$           ! toroidal direction
-!!$           coil(icoil)%mx = - init_current * sin(zeta)
-!!$           coil(icoil)%my =   init_current * cos(zeta)
-!!$           coil(icoil)%mz = zero
-!!$
-!!$           ! poloidal direction
-!!$           coil(icoil)%mx = - init_current * sin(teta) * cos(zeta)
-!!$           coil(icoil)%my = - init_current * sin(teta) * sin(zeta)
-!!$           coil(icoil)%mz =   init_current * cos(teta)
-
-           ! poloidal and toroidal angle; in poloidal direction
-           coil(icoil)%mt = -teta
-           coil(icoil)%mp =  zeta
-!!$
-!!$           ! inward direction
-!!$           coil(icoil)%mt =  teta + half * pi
-!!$           coil(icoil)%mp =  zeta + pi
-!!$
-!!$           ! toroidal direction
-!!$           coil(icoil)%mt = half * pi
-!!$           coil(icoil)%mp = zeta + half * pi
-
-        enddo ! enddo ipol
-     enddo ! enddo itor
-
-     FATAL( rdcoils, icoil .ne. Ncoils, counting coils wrong when initializing )
 
   end select
 
-  FATAL( rdcoils, Nfixcur > Ncoils, error with fixed currents )
-  FATAL( rdcoils, Nfixgeo > Ncoils, error with fixed geometry )
-
   !-----------------------allocate   coil data--------------------------------------------------
-  do ip = 1, Npc
+  if (myid == 0) then
      do icoil = 1, Ncoils
-        SALLOCATE( coil(icoil+(ip-1)*Ncoils)%xx, (0:coil(icoil)%NS), zero )
-        SALLOCATE( coil(icoil+(ip-1)*Ncoils)%yy, (0:coil(icoil)%NS), zero )
-        SALLOCATE( coil(icoil+(ip-1)*Ncoils)%zz, (0:coil(icoil)%NS), zero )
-        SALLOCATE( coil(icoil+(ip-1)*Ncoils)%xt, (0:coil(icoil)%NS), zero )
-        SALLOCATE( coil(icoil+(ip-1)*Ncoils)%yt, (0:coil(icoil)%NS), zero )
-        SALLOCATE( coil(icoil+(ip-1)*Ncoils)%zt, (0:coil(icoil)%NS), zero )
-        SALLOCATE( coil(icoil+(ip-1)*Ncoils)%xa, (0:coil(icoil)%NS), zero )
-        SALLOCATE( coil(icoil+(ip-1)*Ncoils)%ya, (0:coil(icoil)%NS), zero )
-        SALLOCATE( coil(icoil+(ip-1)*Ncoils)%za, (0:coil(icoil)%NS), zero )
-        SALLOCATE( coil(icoil+(ip-1)*Ncoils)%dl, (0:coil(icoil)%NS), zero )
-        SALLOCATE( coil(icoil+(ip-1)*Ncoils)%dd, (0:coil(icoil)%NS), zero )
+        SALLOCATE( coil(icoil)%xx, (0:coil(icoil)%NS), zero )
+        SALLOCATE( coil(icoil)%yy, (0:coil(icoil)%NS), zero )
+        SALLOCATE( coil(icoil)%zz, (0:coil(icoil)%NS), zero )
+        SALLOCATE( coil(icoil)%xt, (0:coil(icoil)%NS), zero )
+        SALLOCATE( coil(icoil)%yt, (0:coil(icoil)%NS), zero )
+        SALLOCATE( coil(icoil)%zt, (0:coil(icoil)%NS), zero )
+        SALLOCATE( coil(icoil)%xa, (0:coil(icoil)%NS), zero )
+        SALLOCATE( coil(icoil)%ya, (0:coil(icoil)%NS), zero )
+        SALLOCATE( coil(icoil)%za, (0:coil(icoil)%NS), zero )
+        SALLOCATE( coil(icoil)%dl, (0:coil(icoil)%NS), zero )
+        SALLOCATE( coil(icoil)%dd, (0:coil(icoil)%NS), zero )
      enddo
-  enddo
-
-  ! when there are permanent magnets or background fields, these should be muted.
-
-  SALLOCATE( cosip, (0:Npc), one  )  ! cos(ip*pi/Np) ; default one ;
-  SALLOCATE( sinip, (0:Npc), zero )  ! sin(ip*pi/Np) ; default zero;
-
-  if (Npc >= 2) then
-     do ip = 1, Npc-1
-        cosip(ip) = cos(ip*pi2/Npc) ; sinip(ip) = sin(ip*pi2/Npc)
-        do icoil = 1, Ncoils
-           select case (coil(icoil)%itype)
-           case( 1 )
-              NF = FouCoil(icoil)%NF
-              SALLOCATE( FouCoil(icoil+ip*Ncoils)%xc, (0:NF), zero )
-              SALLOCATE( FouCoil(icoil+ip*Ncoils)%xs, (0:NF), zero )
-              SALLOCATE( FouCoil(icoil+ip*Ncoils)%yc, (0:NF), zero )
-              SALLOCATE( FouCoil(icoil+ip*Ncoils)%ys, (0:NF), zero )
-              SALLOCATE( FouCoil(icoil+ip*Ncoils)%zc, (0:NF), zero )
-              SALLOCATE( FouCoil(icoil+ip*Ncoils)%zs, (0:NF), zero )
-           case( 2 )
-           case( 3 )
-           case default
-              FATAL(discoil, .true., not supported coil types)
-           end select
-        enddo
-     enddo
-     
-     call mapcoil ! map perodic coils;
-
-  endif 
-
-  !-----------------------normalize currents and geometries-------------------------------------
-  !sum the total currents;
-  totalcurrent = zero
-  do icoil = 1, Ncoils*Npc
-     totalcurrent = totalcurrent + coil(icoil)%I
-  enddo
-
-  if(myid == 0 .and. IsQuiet <= 0) then
-     write(ounit,'("        : "i3" fixed currents ; "i3" fixed geometries.")') &
-          & Nfixcur, Nfixgeo
-     !write( ounit,'("        : total current G ="es23.15" ; 2 . pi2 . G = "es23.15" ;")') &
-     !     & totalcurrent, totalcurrent * pi2 * two
-  endif
-
-  !-----------------------allocate DoF arrays --------------------------------------------------  
-
-  itmp = -1
-  call AllocData(itmp)
+  end if
 
   !-----------------------discretize coil data--------------------------------------------------
 
@@ -544,61 +239,16 @@ subroutine rdcoils
   endif
 
   ifirst = 1
-  call discoil(ifirst)
+  if(myid==0) call discoil(ifirst)
   ifirst = 0
+
+  call MPI_BARRIER( MPI_COMM_WORLD, ierr )
 
   return
 
 end subroutine rdcoils
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-subroutine mapcoil
-!---------------------------------------------------------------------------------------------
-! mapping periodic coils;
-!---------------------------------------------------------------------------------------------
-  use globals, only: dp, zero, pi2, myid, ounit, ierr, coil, FouCoil, Ncoils, DoF, Npc, cosip, sinip
-  implicit none
-  include "mpif.h"
-
-  INTEGER  :: ip, icoil, NF
-
-  do ip = 1, Npc-1
-     
-     do icoil = 1, Ncoils
-
-        coil(icoil+ip*Ncoils)%itype   = coil(icoil)%itype
-        coil(icoil+ip*Ncoils)%NS      = coil(icoil)%NS
-        coil(icoil+ip*Ncoils)%Ic      = coil(icoil)%Ic
-        coil(icoil+ip*Ncoils)%Lc      = coil(icoil)%Lc
-        coil(icoil+ip*Ncoils)%I       = coil(icoil)%I 
-        coil(icoil+ip*Ncoils)%L       = coil(icoil)%L 
-        coil(icoil+ip*Ncoils)%Lo      = coil(icoil)%Lo
-        coil(icoil+ip*Ncoils)%maxcurv = coil(icoil)%maxcurv
-        coil(icoil+ip*Ncoils)%name    = coil(icoil)%name
-
-        select case (coil(icoil)%itype)
-        case( 1 )
-           Foucoil(icoil+ip*Ncoils)%NF = Foucoil(icoil)%NF
-           Foucoil(icoil+ip*Ncoils)%xc = Foucoil(icoil)%xc * cosip(ip) - Foucoil(icoil)%yc * sinip(ip)
-           Foucoil(icoil+ip*Ncoils)%xs = Foucoil(icoil)%xs * cosip(ip) - Foucoil(icoil)%ys * sinip(ip)
-           Foucoil(icoil+ip*Ncoils)%yc = Foucoil(icoil)%yc * cosip(ip) + Foucoil(icoil)%xc * sinip(ip)
-           Foucoil(icoil+ip*Ncoils)%ys = Foucoil(icoil)%ys * cosip(ip) + Foucoil(icoil)%xs * sinip(ip)
-           Foucoil(icoil+ip*Ncoils)%zc = Foucoil(icoil)%zc
-           Foucoil(icoil+ip*Ncoils)%zs = Foucoil(icoil)%zs
-        case( 2 )
-        case( 3 )
-        case default
-           FATAL(mapcoil, .true., not supported coil types)
-        end select
-
-     enddo
-  enddo
-
-  return
-
-END subroutine mapcoil
-           
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -608,7 +258,7 @@ subroutine discoil(ifirst)
 ! if ifirst = 1, it will update all the coils; otherwise, only update free coils;
 ! date: 20170314
 !---------------------------------------------------------------------------------------------
-  use globals, only: dp, zero, pi2, myid, ounit, coil, FouCoil, Ncoils, DoF, Npc, cosip, sinip
+  use globals, only: dp, zero, pi2, myid, ounit, coil, FouCoil, Ncoils
   implicit none
   include "mpif.h"
 
@@ -618,10 +268,8 @@ subroutine discoil(ifirst)
   REAL             :: tt
   REAL,allocatable :: cmt(:,:), smt(:,:)
   !-------------------------------------------------------------------------------------------
-  !xx, xt, xa are 0, 1st and 2nd derivatives;
-  if (Npc >= 2) call mapcoil ! map periodic coils;
 
-  do icoil = 1, Ncoils*Npc
+  do icoil = 1, Ncoils
 
      if( (coil(icoil)%Lc + ifirst) /= 0) then  !first time or if Lc/=0, then need discretize;
 
@@ -679,20 +327,6 @@ subroutine discoil(ifirst)
               coil(icoil)%za(0:NS) = coil(icoil)%za(0:NS) + ( - cmt(0:NS,mm) * Foucoil(icoil)%zc(mm) &
                                                               - smt(0:NS,mm) * Foucoil(icoil)%zs(mm) ) * mm*mm
            enddo ! end of do mm; 
-
-           if(ifirst /= 0) then
-              ip = (icoil-1)/Ncoils  ! the integer is the period number;
-              DoF(icoil)%xof(0:NS-1,      1:  NF+1) =  cosip(ip) * cmt(0:NS-1, 0:NF)  !x/xc
-              DoF(icoil)%xof(0:NS-1,   NF+2:2*NF+1) =  cosip(ip) * smt(0:NS-1, 1:NF)  !x/xs
-              DoF(icoil)%xof(0:NS-1, 2*NF+2:3*NF+2) = -sinip(ip) * cmt(0:NS-1, 0:NF)  !x/yc ; valid for ip>0 ;
-              DoF(icoil)%xof(0:NS-1, 3*NF+3:4*NF+2) = -sinip(ip) * smt(0:NS-1, 1:NF)  !x/ys ; valid for ip>0 ;
-              DoF(icoil)%yof(0:NS-1,      1:  NF+1) =  sinip(ip) * cmt(0:NS-1, 0:NF)  !y/xc ; valid for ip>0 ;
-              DoF(icoil)%yof(0:NS-1,   NF+2:2*NF+1) =  sinip(ip) * smt(0:NS-1, 1:NF)  !y/xs ; valid for ip>0 ;
-              DoF(icoil)%yof(0:NS-1, 2*NF+2:3*NF+2) =  cosip(ip) * cmt(0:NS-1, 0:NF)  !y/yc
-              DoF(icoil)%yof(0:NS-1, 3*NF+3:4*NF+2) =  cosip(ip) * smt(0:NS-1, 1:NF)  !y/ys
-              DoF(icoil)%zof(0:NS-1, 4*NF+3:5*NF+3) =              cmt(0:NS-1, 0:NF)  !z/zc
-              DoF(icoil)%zof(0:NS-1, 5*NF+4:6*NF+3) =              smt(0:NS-1, 1:NF)  !z/zs
-           endif
 
            coil(icoil)%dd = pi2 / NS  ! discretizing factor;
 
