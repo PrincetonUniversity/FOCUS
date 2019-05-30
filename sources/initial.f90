@@ -378,7 +378,7 @@ subroutine initial
         if (trim(input_coils) == 'none') input_coils = trim(ext)//".focus"
         inquire( file=trim(input_coils), exist=exist )
         FATAL( initial, .not.exist, FOCUS coil file ext.focus not provided )
-        write(ounit, '("        : Read initial coils    from : ", A, A)') trim(input_coils), '(MAKEGRID format)'
+        write(ounit, '("        : Read initial coils    from : ", A, A)') trim(input_coils), '(Parameters only)'
      case( 1 )
         FATAL( initial, Ncoils < 1, should provide the No. of coils)
         FATAL( initial, init_current == zero, invalid coil current)

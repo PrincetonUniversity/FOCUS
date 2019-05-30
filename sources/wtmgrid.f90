@@ -1,40 +1,50 @@
 ! write binary mgrid file
+module mgrid_mod
+  use globals, only : dp, zero, pi2
+  INTEGER :: NR = 101, NZ=101, NP=72, MFP=0
+  REAL    :: Rmin=zero, Rmax=zero, Zmin=zero, Zmax=zero, Pmin=zero, Pmax=pi2
+  namelist / mgrid / Rmin, Rmax, Zmin, Zmax, Pmin, Pmax, NR, NZ, NP
+end module mgrid_mod
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine wtmgrid
-  use globals, only : dp, zero, half, pi2, ext, ncpu, myid, ounit, wunit, nfp_raw,  &
-       pp_raxis, pp_zaxis, pp_rmax, pp_zmax, &
-       master, nmaster, nworker, masterid, color, myworkid, MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS
+  use globals, only : dp, zero, half, pi2, ext, ncpu, myid, ounit, wunit, runit, nfp_raw,  &
+       sqrtmachprec, master, nmaster, nworker, masterid, color, myworkid, &
+       MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS
+  use mgrid_mod
   implicit none
   include "mpif.h"
 
-  !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+  !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   LOGICAL              :: exist
-  INTEGER              :: ierr, astat, iostat, ip, iz, ir, np, nz, nr, Mfp, nextcur, icommand
-  REAL                 :: RpZ(1:3), R, P, Z, Pmin, Pmax, Zmin, Zmax, Rmin, Rmax, B(1:3), pressure, gap, &
+  INTEGER              :: ierr, astat, iostat, ip, iz, ir, nextcur, icpu
+  REAL                 :: RpZ(1:3), R, P, Z, B(1:3), pressure, gap, &
        czeta, szeta, xx, yy, zz, dx, dy, dz, dBx, dBy, dBz
   REAL, allocatable    :: BRZp(:,:,:,:), BRpZ(:,:,:,:)
   CHARACTER(LEN=100)   :: mgrid_name
   CHARACTER(LEN=30)    :: curlabel(1:1)
 
-  icommand = 0
+  do icpu = 1, ncpu
+     call MPI_BARRIER( MPI_COMM_WORLD, ierr )
+     if (myid == icpu-1) then                              ! each cpu read the namelist in turn;
+        open(runit, file=trim(trim(ext)//".input"), status="old", action='read')
+        read(runit, mgrid)
+        close(runit)
+     endif ! end of if( myid == 0 )
+  enddo
+  
   mgrid_name = "mgrid.focus_"//trim(ext) ! filename, could be user input
-  np =  72  ; nz = 121  ; nr = 121 ; Mfp = nfp_raw ! SHOULD BE USER INPUT; 04 Aug 16;  
-  !np =  12  ; nz = 11  ; nr = 11 ; Mfp = 2 ! SHOULD BE USER INPUT; 04 Aug 16;
+  if (Mfp <= 0) Mfp = nfp_raw ! overrid to nfp_raw if not specified
   B = zero  ; dx = 1E-4 ; dy = 1E-4 ; dz = 1E-4
+
+  FATAL( wrmgrid, abs(Rmin)+abs(Rmax)<sqrtmachprec, please provide effective dimensions in mgrid nml )
 
   SALLOCATE( BRZp, (1:3,1:Nr,1:Nz,1:Np), zero )
 #ifdef DIV_CHECK
   SALLOCATE( BRpZ, (1:2,1:Nr,1:Nz,1:Np), zero )
 #endif
-
-  Pmin = zero ; Pmax = pi2 ! DO NOT CHANGE; 04 Aug 16;
-
- ! Rmin =  4.8 ; Rmax =  6.8
- ! Zmin = -1.5 ; Zmax =  1.5
-  
-  Rmin = pp_raxis ; Zmin = pp_zaxis
-  Rmax = pp_rmax  ; Zmax = pp_zmax
 
   if( myid.eq.0 ) write( ounit,'("wtmgrid : writing mgrid file at grid of [ "4(ES12.5,2X)" ]",3i6)') Rmin, Rmax, Zmin, Zmax, np, nr, nz
 
@@ -62,16 +72,12 @@ subroutine wtmgrid
      if ( modulo(myid, np) .ne. modulo(ip-1,nmaster) ) cycle
      do iz = 1, nz ; RpZ(3) = Zmin + ( Zmax - Zmin ) * ( iz - 1 ) / ( nz - 1 )
         do ir = 1, nr ; RpZ(1) = Rmin + ( Rmax - Rmin ) * ( ir - 1 ) / ( nr - 1 )
-
            czeta = cos(RpZ(2))
            szeta = sin(RpZ(2))
-
            xx = RpZ(1) * czeta
            yy = RpZ(1) * szeta
            zz = RpZ(3)
-
            call coils_bfield(B,xx,yy,zz)
-
            BRZp(1,ir,iz,ip) = (   B(1) * czeta + B(2) * szeta )
            BRZp(3,ir,iz,ip) = ( - B(1) * szeta + B(2) * czeta ) 
            BRZp(2,ir,iz,ip) =     B(3)
@@ -135,9 +141,8 @@ subroutine wtmgrid
   DEALLOCATE(BRpZ)
 #endif
 
-
   return
 
 end subroutine wtmgrid
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!

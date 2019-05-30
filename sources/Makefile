@@ -5,29 +5,39 @@
  ALLFILES= globals initial rdsurf rdknot rdcoils packdof bfield bmnharm bnormal fdcheck \
            torflux length surfsep datalloc solvers descent congrad lmalg saving diagnos \
            specinp poinplot boozer wtmgrid focus
- HFILES= $(ALLFILES:=.h)
- FFILES= $(ALLFILES:=.F90)
- PFILES= $(ALLFILES:=.pdf)
- ROBJS=$(ALLFILES:=_r.o)
- DOBJS=$(ALLFILES:=_d.o)
- NUMOBJ= ode.o lmder1.o hybrj.o
+ HFILES= $(ALLFILES:=.f90)   # raw source files
+ FFILES= $(ALLFILES:=_m.F90) # Fortran 90 files 
+ PFILES= $(ALLFILES:=.pdf)   # documentations
+ ROBJS=$(ALLFILES:=_r.o)     # release version objectives
+ DOBJS=$(ALLFILES:=_d.o)     # debug version objectives
+ NUMOBJ= ode.o lmder1.o hybrj.o # numerical libraries
 
 ############################################################################################################
 
  MACROS=macros
- CC=intel # if want to use gfortran; make CC=gfortran xfocus; otherwise using Intel
+
+#### Default Intel+OpenMPI+HDF5###############
+# available env: /p/focus/modules/focus/basis
+ CC=intel # if want to use gfortran; make CC=gfortran or other options
  FC=mpif90
  PFLAGS= # for pre-processing compiler flags, like -D dposition
+ RFLAGS=-mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback  $(PFLAGS) #-vec_report0 #-ipo -xhost
+ DFLAGS=-O0 -g -traceback $(PFLAGS) -check all -check bounds -check noarg_temp_created -check uninit \
+     -ftrapuv -init=snan,arrays -debug all -D DEBUG
+
+#### GFORTRAN+OpenMPI+HDF5###############
+# available env: /p/focus/modules/focus/gfortran
 ifeq ($(CC),gfortran)
 # RFLAGS=-O3 -w -fdefault-real-8 -ffree-line-length-none -march=native -ffast-math
  RFLAGS=-O3 -w -ffree-line-length-none -march=native -ffast-math $(PFLAGS)
  DFLAGS=-Og $(PFLAGS) -w -ffree-line-length-none -Wextra -Wtarget-lifetime -fbacktrace -fbounds-check  \
      -ffpe-trap=zero -fcheck=all -DDEBUG
-else
-# RFLAGS=-r8 -mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback #-vec_report0 #-ipo -xhost
- RFLAGS=-mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback  $(PFLAGS) #-vec_report0 #-ipo -xhost
- DFLAGS=-O0 -g -traceback $(PFLAGS) -check all -check bounds -check noarg_temp_created -check uninit \
-     -ftrapuv -init=snan,arrays -debug all -D DEBUG
+endif
+
+#### EDDY Intel+IntelMPI+HDF5###############
+# available env: /home/caoxiang/Modules/focus/develop
+ifeq ($(CC),eddyintel)
+ FC=mpiifort  # this is optional after recent updates
 endif
 
 ############################################################################################################
@@ -62,13 +72,13 @@ lmder1.o : lmder1.f
 hybrj.o: hybrj.f
 	$(FC) -c $(FLAGS) -o $@ $<
 
-$(ROBJS): %_r.o: %.F90
+$(ROBJS): %_r.o: %_m.F90
 	$(FC) -c $(RFLAGS) -o $@ $<  $(HDF5)
 
-$(DOBJS): %_d.o: %.F90
+$(DOBJS): %_d.o: %_m.F90
 	$(FC) -c $(DFLAGS) -o $@ $<  $(HDF5)
 
-$(FFILES): %.F90: %.h
+$(FFILES): %_m.F90: %.f90
 	m4 -P $(MACROS) $< > $@
 
 ############################################################################################################
@@ -78,12 +88,12 @@ clean:
 
 ############################################################################################################
 
-$(PFILES): %.pdf: %.h head.tex end.tex
-#	@ls -lT $*.h | cut -c 35-55 > .$*.date
-	@ls --full-time $*.h | cut -c 32-50 > .$*.date
+$(PFILES): %.pdf: %.f90 head.tex end.tex
+#	@ls -lT $*.f90 | cut -c 35-55 > .$*.date
+	@ls --full-time $*.f90 | cut -c 32-50 > .$*.date
 	@awk -v file=$* -v date=.$*.date 'BEGIN{getline cdate < date ; FS="!latex" ; print "\\input{head} \\code{"file"}"} \
 	{if(NF>1) print $$2} \
-	END{print "\\vspace{1mm} \\hrule \\vspace{1mm} \\footnotesize $*.h last modified on "cdate";" ; print "\\input{end}"}' $*.h > $*.tex
+	END{print "\\vspace{1mm} \\hrule \\vspace{1mm} \\footnotesize $*.f90 last modified on "cdate";" ; print "\\input{end}"}' $*.f90 > $*.tex
 	@echo $*.pdf
 	@pdflatex -shell-escape -interaction=nonstopmode -file-line-error $*.tex | grep ".*:[0-9]*:.*" ||:
 	@pdflatex -shell-escape -interaction=nonstopmode -file-line-error $*.tex | grep ".*:[0-9]*:.*" ||: 
