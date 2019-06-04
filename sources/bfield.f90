@@ -276,11 +276,11 @@ subroutine coils_bfield(B,x,y,z)
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  call MPI_BARRIER(MPI_COMM_MYWORLD, ierr ) ! wait all cpus;
+  call MPI_BARRIER(MPI_COMM_WORLD, ierr ) ! wait all cpus;
 
   B = zero
   do icoil = 1, Ncoils*Npc
-     if ( myworkid /= modulo(icoil-1, nworker) ) cycle ! MPI
+     ! if ( myworkid /= modulo(icoil-1, nworker) ) cycle ! MPI
      ! Bx = zero; By = zero; Bz = zero
      call bfield0( icoil, x, y, z, Bx, By, Bz )
      B(1) = B(1) + Bx
@@ -288,7 +288,7 @@ subroutine coils_bfield(B,x,y,z)
      B(3) = B(3) + Bz
   enddo
 
-  call MPI_ALLREDUCE(MPI_IN_PLACE, B, 3, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MYWORLD, ierr )
+  call MPI_ALLREDUCE(MPI_IN_PLACE, B, 3, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
 
   return
 

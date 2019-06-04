@@ -35,42 +35,13 @@ SUBROUTINE poinplot
      pp_zaxis = (z+z1)*half
   endif
   
-  ! split cores for calculating axis
-  color = 0
-  !CALL MPI_COMM_FREE(MPI_COMM_MYWORLD, ierr)
-  CALL MPI_COMM_SPLIT(MPI_COMM_WORLD, color, myid, MPI_COMM_MYWORLD, ierr)
-  CALL MPI_COMM_RANK(MPI_COMM_MYWORLD, myworkid, ierr)
-  CALL MPI_COMM_SIZE(MPI_COMM_MYWORLD, nworker, ierr)
   
   RZ(1) = pp_raxis ; RZ(2) = pp_zaxis
   start = MPI_Wtime()
   call find_axis(RZ, pp_maxiter, pp_xtol)
-  finish = MPI_Wtime()
-  !print *, 'finding axis takes ', finish-start
   pp_raxis = RZ(1) ; pp_zaxis = RZ(2)
-
-  call MPI_BARRIER( MPI_COMM_MYWORLD, ierr )
-  CALL MPI_COMM_FREE(MPI_COMM_MYWORLD, ierr)
-
-  ! split cores
-  color = modulo(myid, pp_ns)
-  CALL MPI_COMM_SPLIT(MPI_COMM_WORLD, color, myid, MPI_COMM_MYWORLD, ierr)
-  CALL MPI_COMM_RANK(MPI_COMM_MYWORLD, myworkid, ierr)
-  CALL MPI_COMM_SIZE(MPI_COMM_MYWORLD, nworker, ierr)
-
-  if (myworkid /= 0) then
-     color = MPI_UNDEFINED
-     masterid = -1
-  else 
-     color = 0
-  endif
-  !CALL MPI_COMM_FREE(MPI_COMM_MASTERS, ierr)
-  CALL MPI_COMM_SPLIT(MPI_COMM_WORLD, color, myid, MPI_COMM_MASTERS, ierr)
-  if (myworkid==0) then
-     CALL MPI_COMM_RANK(MPI_COMM_MASTERS, masterid, ierr)
-     CALL MPI_COMM_SIZE(MPI_COMM_MASTERS, nmaster, ierr)
-  endif
-  IlBCAST( nmaster, 1, master )
+  RlBCAST( pp_raxis, 1 , 0 )
+  RlBCAST( pp_zaxis, 1 , 0 )
 
   ! poincare plot and calculate iota
   SALLOCATE( ppr , (1:pp_ns, 0:pp_maxiter), zero )
@@ -89,7 +60,7 @@ SUBROUTINE poinplot
 
   do is = 1, pp_ns     ! pp_ns is the number of eavaluation surfaces
      niter = 0    ! number of successful iterations
-     if ( modulo(myid, pp_ns) /= modulo((is-1), nmaster))  cycle  ! MPI
+     !if ( modulo(myid, pp_ns) /= modulo((is-1), nmaster))  cycle  ! MPI
      rzrzt(1:5) = (/ pp_raxis + is*(pp_rmax-pp_raxis)/pp_ns, &
           pp_zaxis + is*(pp_zmax-pp_zaxis)/pp_ns, &
           pp_raxis, pp_zaxis, zero                   /)
@@ -110,30 +81,14 @@ SUBROUTINE poinplot
         iota(is) = rzrzt(5) / (niter*pi2/Nfp_raw)
      endif
 
-     if (myworkid == 0) write(ounit, '(8X": order="I6" ; masterid="I6" ; (R,Z)=("ES12.5","ES12.5 & 
-          " ) ; iota="ES12.5" ; niter="I6" .")') is, masterid, ppr(is,0), ppz(is,0), iota(is), niter
+     if (myid == 0) write(ounit, '(8X": order="I6" ; masterid="I6" ; (R,Z)=("ES12.5","ES12.5 & 
+          " ) ; iota="ES12.5" ; niter="I6" .")') is, myid, ppr(is,0), ppz(is,0), iota(is), niter
 
      if(lboozmn .and. abs(iota(is))>sqrtmachprec) then
         x = ppr(is, 0) * cos(pp_phi) ; y = ppr(is, 0) * sin(pp_phi) ; z = ppz(is, 0)
         call boozsurf( XYZB(1:total_num, 1:4, is), x, y, z, iota(is), is)
      endif
   enddo
-
-  if (masterid >= 0) then
-     call MPI_ALLREDUCE( MPI_IN_PLACE,  ppr, pp_ns*(pp_maxiter+1), MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MASTERS, ierr )
-     call MPI_ALLREDUCE( MPI_IN_PLACE,  ppz, pp_ns*(pp_maxiter+1), MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MASTERS, ierr )
-     call MPI_ALLREDUCE( MPI_IN_PLACE, iota, pp_ns               , MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MASTERS, ierr )
-
-     if(lboozmn) then
-        call MPI_ALLREDUCE (MPI_IN_PLACE, XYZB, 4*pp_ns*total_num, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MASTERS, ierr )
-        call MPI_ALLREDUCE (MPI_IN_PLACE, booz_mnc, pp_ns*booz_mn, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MASTERS, ierr )
-        call MPI_ALLREDUCE (MPI_IN_PLACE, booz_mns, pp_ns*booz_mn, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MASTERS, ierr )
-     endif
-
-     CALL MPI_COMM_FREE(MPI_COMM_MASTERS, ierr)
-  endif
-
-  CALL MPI_COMM_FREE(MPI_COMM_MYWORLD, ierr)
 
 return
 
