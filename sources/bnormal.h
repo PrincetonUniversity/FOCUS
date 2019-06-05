@@ -47,6 +47,7 @@ subroutine bnormal( ideriv )
   !--------------------------------------------------------------------------------------------
   INTEGER                               :: astat, ierr
   INTEGER                               :: icoil, iteta, jzeta, idof, ND, NumGrid, ip
+  REAL                                  :: B(3)
 
   !--------------------------initialize and allocate arrays------------------------------------- 
 
@@ -63,15 +64,13 @@ subroutine bnormal( ideriv )
 
      do jzeta = 0, Nzeta - 1
         do iteta = 0, Nteta - 1
-           if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;
-
-           do icoil = 1, Ncoils*Npc
-              call bfield0(icoil, surf(1)%xx(iteta, jzeta), surf(1)%yy(iteta, jzeta), &
-                   & surf(1)%zz(iteta, jzeta), dBx(0,0), dBy(0,0), dBz(0,0))
-              surf(1)%Bx(iteta, jzeta) = surf(1)%Bx(iteta, jzeta) + dBx( 0, 0) 
-              surf(1)%By(iteta, jzeta) = surf(1)%By(iteta, jzeta) + dBy( 0, 0) 
-              surf(1)%Bz(iteta, jzeta) = surf(1)%Bz(iteta, jzeta) + dBz( 0, 0) 
-           enddo ! end do icoil
+           !if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;
+           
+           call coils_bfield(B, surf(1)%xx(iteta, jzeta), surf(1)%yy(iteta, jzeta), &
+                   & surf(1)%zz(iteta, jzeta))
+           surf(1)%Bx(iteta, jzeta) = B(1)
+           surf(1)%By(iteta, jzeta) = B(2)
+           surf(1)%Bz(iteta, jzeta) = B(3)
 
            surf(1)%Bn(iteta, jzeta) = surf(1)%Bx(iteta, jzeta)*surf(1)%nx(iteta, jzeta) &
                 &            + surf(1)%By(iteta, jzeta)*surf(1)%ny(iteta, jzeta) &
@@ -94,12 +93,12 @@ subroutine bnormal( ideriv )
         enddo ! end do iteta
      enddo ! end do jzeta
      
-     call MPI_BARRIER( MPI_COMM_WORLD, ierr )     
-     call MPI_ALLREDUCE( MPI_IN_PLACE, surf(1)%Bx, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
-     call MPI_ALLREDUCE( MPI_IN_PLACE, surf(1)%By, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
-     call MPI_ALLREDUCE( MPI_IN_PLACE, surf(1)%Bz, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
-     call MPI_ALLREDUCE( MPI_IN_PLACE, surf(1)%Bn, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
-     call MPI_ALLREDUCE( MPI_IN_PLACE, bnorm, 1  , MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+     !call MPI_BARRIER( MPI_COMM_WORLD, ierr )     
+     !call MPI_ALLREDUCE( MPI_IN_PLACE, surf(1)%Bx, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+     !call MPI_ALLREDUCE( MPI_IN_PLACE, surf(1)%By, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+     !call MPI_ALLREDUCE( MPI_IN_PLACE, surf(1)%Bz, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+     !call MPI_ALLREDUCE( MPI_IN_PLACE, surf(1)%Bn, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+     !call MPI_ALLREDUCE( MPI_IN_PLACE, bnorm, 1  , MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
 
      bnorm = bnorm * half * discretefactor
      bn = surf(1)%Bn +  surf(1)%pb  ! bn is B.n from coils
@@ -107,7 +106,7 @@ subroutine bnormal( ideriv )
      !! if (case_bnormal == 0) bnorm = bnorm * bsconstant * bsconstant ! take bsconst back
 
      if (case_bnormal == 1) then    ! collect |B|
-        call MPI_ALLREDUCE( MPI_IN_PLACE, Bm, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+        !call MPI_ALLREDUCE( MPI_IN_PLACE, Bm, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
         !! bm = bm * bsconstant * bsconstant 
      endif
      

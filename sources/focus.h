@@ -67,12 +67,20 @@ PROGRAM focus
   
   call initial ! read input namelist and broadcast;
 
+  call fousurf   ! general format (VMEC-like) plasma boundary;
+
   select case( case_coils )
 
  !case( 0 )   ; call coilpwl ! piece-wise linear; for future;
   case( 1 )   ; call rdcoils
 
   end select
+
+  call AllocData(0) ! if not allocate data;
+  call costfun(0)
+  if (myid == 0) write(ounit, '("output  : "A6" : "8(A12," ; "))') "iout", "time (s)", "chi", "dE_norm", &
+       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." 
+  call output(0)
 
   if (myid == 0) write(ounit, *) "-----------POST-PROCESSING-----------------------------------"
 

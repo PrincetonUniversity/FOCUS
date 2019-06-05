@@ -551,18 +551,15 @@ subroutine initial
         if (IsQuiet < 1) write(ounit, 1000) 'case_postproc', case_postproc, 'No extra post-processings.'
      case ( 1 )
         if (IsQuiet < 1) write(ounit, 1000) 'case_postproc', case_postproc, 'Coil evaluations will be performed.'
-     case ( 2 )
-        if (IsQuiet < 1) write(ounit, 1000) 'case_postproc', case_postproc, & 
-             &  'Coil evaluations and writing SPEC input will be performed.'
      case ( 3 )
         if (IsQuiet < 1) write(ounit, 1000) 'case_postproc', case_postproc, & 
              &  'Coil evaluations and field-line tracing will be performed.'
-     case ( 4 )
-        if (IsQuiet < 1) write(ounit, 1000) 'case_postproc', case_postproc, & 
-             &  'Vacuum Boozer coordinates decompostion will be performed.'
      case ( 5 )
         if (IsQuiet < 1) write(ounit, 1000) 'case_postproc', case_postproc, & 
              &  'A binary mgrid file will be saved.'
+     case ( 6 )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_postproc', case_postproc, & 
+             &  'field-line tracing + A binary mgrid file will be saved.'
      case default
         FATAL( initial, .true., selected case_postproc is not supported )
      end select
