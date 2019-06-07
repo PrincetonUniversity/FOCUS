@@ -75,7 +75,7 @@ subroutine bnormal( ideriv )
            surf(1)%Bn(iteta, jzeta) = surf(1)%Bx(iteta, jzeta)*surf(1)%nx(iteta, jzeta) &
                 &            + surf(1)%By(iteta, jzeta)*surf(1)%ny(iteta, jzeta) &
                 &            + surf(1)%Bz(iteta, jzeta)*surf(1)%nz(iteta, jzeta) &
-                &            - surf(1)%pb(iteta, jzeta)
+                &            + surf(1)%pb(iteta, jzeta)
 
            select case (case_bnormal)
            case (0)     ! no normalization over |B|;
@@ -101,7 +101,7 @@ subroutine bnormal( ideriv )
      !call MPI_ALLREDUCE( MPI_IN_PLACE, bnorm, 1  , MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
 
      bnorm = bnorm * half * discretefactor
-     bn = surf(1)%Bn +  surf(1)%pb  ! bn is B.n from coils
+     bn = surf(1)%Bn - surf(1)%pb  ! bn is B.n from coils
      ! bn = surf(1)%Bx * surf(1)%nx + surf(1)%By * surf(1)%ny + surf(1)%Bz * surf(1)%nz
      !! if (case_bnormal == 0) bnorm = bnorm * bsconstant * bsconstant ! take bsconst back
 
