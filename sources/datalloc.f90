@@ -1,11 +1,11 @@
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine AllocData(itype)
-!------------------------------------------------------------------------------------------------------ 
-! DATE:  04/05/2017
-! Allocate data before using them, especially for those used several times;
-! part can be : -1('dof'), 0('costfun0'), 1('costfun1')
-!------------------------------------------------------------------------------------------------------
+  !------------------------------------------------------------------------------------------------------ 
+  ! DATE:  04/05/2017
+  ! Allocate data before using them, especially for those used several times;
+  ! part can be : -1('dof'), 0('costfun0'), 1('costfun1')
+  !------------------------------------------------------------------------------------------------------
   use globals
   use bnorm_mod
   implicit none
@@ -13,16 +13,17 @@ subroutine AllocData(itype)
 
   INTEGER, intent(in) :: itype
 
-  INTEGER             :: icoil, idof, ND, NF, icur, imag
+  INTEGER             :: icoil, idof, ND, NF, icur, imag, icpu, dof_array(0:ncpu-1)
   REAL                :: xtmp, mtmp
 
   !-------------------------------------------------------------------------------------------
   if (itype == -1) then ! dof related data;
 
-     Cdof = 0; Ndof = 0; Tdof = 0
+     Cdof = 0; Ndof = 0; Tdof = 0; ldof=0; dof_offset=0
+     dof_array = 0 
 
-     do icoil = 1, Ncoils*Npc
-        
+     do icoil = 1, Ncoils
+
         select case (coil(icoil)%itype)       
         case(1)
            ! get number of DoF for each coil and allocate arrays;
@@ -35,23 +36,25 @@ subroutine AllocData(itype)
            SALLOCATE(DoF(icoil)%zof , (0:coil(icoil)%NS-1, 1:ND), zero)
         case(2)
 #ifdef dposition
-           DoF(icoil)%ND = coil(icoil)%Lc * 5 ! number of DoF for permanent magnet
+           ND = 5
 #else
-           DoF(icoil)%ND = coil(icoil)%Lc * 2 ! number of DoF for permanent magnet
+           ND = 2           
 #endif
-           SALLOCATE(DoF(icoil)%xdof, (1:DoF(icoil)%ND), zero)
+           DoF(icoil)%ND = coil(icoil)%Lc * ND ! number of DoF for permanent magnet
+           SALLOCATE(DoF(icoil)%xdof, (1:ND), zero)
         case(3) 
-           DoF(icoil)%ND = coil(icoil)%Lc * 1 ! number of DoF for background Bt, Bz
-           SALLOCATE(DoF(icoil)%xdof, (1:DoF(icoil)%ND), zero)
+           ND = 1
+           DoF(icoil)%ND = coil(icoil)%Lc * ND ! number of DoF for background Bt, Bz
+           SALLOCATE(DoF(icoil)%xdof, (1:ND), zero)
         case default
            FATAL(AllocData, .true., not supported coil types)
         end select
-        
+
      enddo
 
      do icoil = 1, Ncoils
 
-        Ndof = Ndof + coil(icoil)%Ic + DoF(icoil)%ND
+        ldof = ldof + coil(icoil)%Ic + DoF(icoil)%ND
         if (allocated(FouCoil)) then
            Tdof = Tdof + 1              + 6*(FouCoil(icoil)%NF)+3
         else 
@@ -59,7 +62,20 @@ subroutine AllocData(itype)
         end if
         if (DoF(icoil)%ND >= Cdof) Cdof = DoF(icoil)%ND ! find the largest ND for single coil;
 
-      enddo
+     enddo
+
+     do icpu = 0, ncpu-1
+        if (myid == icpu) dof_array(icpu) = ldof
+     enddo
+
+     CALL MPI_ALLREDUCE(ldof, Ndof, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr )
+     CALL MPI_ALLREDUCE(MPI_IN_PLACE, dof_array, ncpu, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr )
+
+     FATAL( datalloc, sum(dof_array) .ne. Ndof, error in counting dof number)
+
+     do icpu = 1, ncpu-1   ! calculate the offset in dof arrays
+        if (myid == icpu) dof_offset = sum(dof_array(0:icpu-1))
+     enddo     
 
      if(Ndof == 0) then ! no DOF;
         Nouts = 0
@@ -69,8 +85,8 @@ subroutine AllocData(itype)
      SALLOCATE(    xdof, (1:Ndof), zero ) ! dof vector;
      SALLOCATE( dofnorm, (1:Ndof), one ) ! dof normalized value vector;
      SALLOCATE( evolution, (1:Nouts+1, 0:7), zero ) !evolution array;
-     SALLOCATE( coilspace, (1:Nouts+1, 1:Tdof), zero ) ! all the coil parameters;
-     
+     ! SALLOCATE( coilspace, (1:Nouts+1, 1:Tdof), zero ) ! all the coil parameters;
+
      ! determine dofnorm
      if ( IsNormalize > 0 ) then 
         ! calculate Inorm and Gnorm
@@ -89,7 +105,7 @@ subroutine AllocData(itype)
         enddo
         Gnorm = (surf(1)%vol/(pi*pi2))**(one/three)  ! Gnorm is a hybrid of major and minor radius
         Gnorm = Gnorm * weight_gnorm 
-        
+
         icur = max(1, icur) ; imag = max(1, imag)    ! avoid dividing zero
         Inorm = sqrt(Inorm/icur) * weight_inorm      ! quadratic mean
         Mnorm = sqrt(Mnorm/imag) * weight_mnorm      ! quadratic mean
@@ -106,7 +122,7 @@ subroutine AllocData(itype)
         endif
 
         ! construct dofnorm
-        idof = 0
+        idof = dof_offset
         do icoil = 1, Ncoils
 
            if(coil(icoil)%itype == 1) then  ! Fourier representation
@@ -159,9 +175,11 @@ subroutine AllocData(itype)
            endif
 
         enddo !end do icoil;
-        FATAL( AllocData , idof .ne. Ndof, counting error in unpacking )
+        FATAL( AllocData , idof-dof_offset .ne. ldof, counting error in unpacking )
 
      endif
+
+     call MPI_ALLREDUCE( MPI_IN_PLACE, dofnorm, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
 
   endif
 
@@ -189,12 +207,12 @@ subroutine AllocData(itype)
         SALLOCATE( iBmnc , (1:NBmn), zero )
         SALLOCATE( iBmns , (1:NBmn), zero )
      endif
-            
+
   endif
 
   !---------------------------------------------------------------------------------------------
   if (itype == 1) then ! 1st-order cost functions related arrays;
-     
+
      FATAL( AllocData, Ndof < 1, INVALID Ndof value )
      SALLOCATE( t1E, (1:Ndof), zero )
      SALLOCATE( deriv, (1:Ndof, 0:6), zero )
@@ -210,7 +228,7 @@ subroutine AllocData(itype)
      ! Bharm related;
      if (weight_bharm > sqrtmachprec) then
         SALLOCATE( t1H, (1:Ndof), zero )
-!       SALLOCATE( dB , (1:Ndof, 0:Nteta-1, 0:Nzeta-1), zero ) !distribution of dB/dx;
+        !       SALLOCATE( dB , (1:Ndof, 0:Nteta-1, 0:Nzeta-1), zero ) !distribution of dB/dx;
      endif
 
      ! tflux needed;
@@ -243,31 +261,31 @@ subroutine AllocData(itype)
            mbharm = 2*NBmn
            LM_mfvec = LM_mfvec + mbharm
         endif
-        
+
         if (weight_tflux > sqrtmachprec) then
            itflux = LM_mfvec
            mtflux = Nzeta
            LM_mfvec = LM_mfvec + mtflux
         endif
-        
+
         if (weight_ttlen > sqrtmachprec) then
            ittlen = LM_mfvec
            mttlen = Ncoils - Nfixgeo
            LM_mfvec = LM_mfvec + mttlen
         endif
-        
+
         if (weight_cssep > sqrtmachprec) then
            icssep = LM_mfvec
            mcssep = Ncoils - Nfixgeo
            LM_mfvec = LM_mfvec + mcssep
         endif
-        
+
         FATAL( AllocData, LM_mfvec <= 0, INVALID number of cost functions )
         SALLOCATE( LM_fvec, (1:LM_mfvec), zero )
         SALLOCATE( LM_fjac , (1:LM_mfvec, 1:Ndof), zero )
 
         if (myid == 0) write(ounit, '("datalloc: total number of cost functions for L-M is "I0)') LM_mfvec
-        
+
      endif
 
   endif

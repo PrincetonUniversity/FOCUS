@@ -314,7 +314,7 @@ subroutine initial
         write(ounit,*)'     --init / -i  :  Write an example input file'
         write(ounit,*)'     --help / -h  :  Output help message'
         write(ounit,*)'-------------------------------------------------'
-        call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+        error = 1
      case ( '-i', '--init' )
         call write_focus_namelist ! in initial.h
      case default
@@ -326,6 +326,12 @@ subroutine initial
         write(ounit, '("DEBUG info: extension from command line is "A)') trim(ext)
 #endif
      end select
+  endif
+
+  IlBCAST( error, 1, 0)
+  if (error /= 0) then
+     call MPI_FINALIZE(ierr)
+     stop
   endif
 
   ClBCAST( ext,  100,  0 )
@@ -378,10 +384,10 @@ subroutine initial
         if (trim(input_coils) == 'none') input_coils = trim(ext)//".focus"
         inquire( file=trim(input_coils), exist=exist )
         FATAL( initial, .not.exist, FOCUS coil file ext.focus not provided )
-        write(ounit, '("        : Read initial dipole  from : ", A, A)') trim(input_coils), '(Parameters only)'
+        write(ounit, '("        : Read initial dipole   from : ", A, A)') trim(input_coils), '(Parameters only)'
         inquire( file=trim(fixed_coils), exist=exist )
         FATAL( initial, .not.exist, fixed coil file ext.focus not provided )
-        write(ounit, '("        : Read fixed coils    from : ", A, A)') trim(input_coils), '(FOCUS format)'
+        write(ounit, '("        : Read fixed coils      from : ", A, A)') trim(input_coils), '(FOCUS format)'
      case( 1 )
         FATAL( initial, Ncoils < 1, should provide the No. of coils)
         FATAL( initial, init_current == zero, invalid coil current)
@@ -422,7 +428,7 @@ subroutine initial
      case (1)
         if (IsQuiet < 0) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
              &  'Plasma boundary periodicity is enforced.'
-        FATAL( initial, .true., This would cause unbalanced coils please use IsSymmetric=0 instead)
+        !FATAL( initial, .true., This would cause unbalanced coils please use IsSymmetric=0 instead)
      case (2)
         if (IsQuiet < 0) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
              &  'Plasma boundary and coil periodicity are both enforced.'
@@ -617,18 +623,14 @@ SUBROUTINE write_focus_namelist
   LOGICAL :: exist
   CHARACTER(LEN=100) :: example = 'example.input'
 
-  if( myid == 0 ) then
-     inquire(file=trim(example), EXIST=exist) ! inquire if inputfile existed;
-     FATAL( initial, exist, example input file example.input already existed )
-     write(ounit, *) 'Writing an template input file in ', trim(example)
-     open(wunit, file=trim(example), status='unknown', action='write')
-     write(wunit, focusin)
-     close(wunit)
-  endif
+  inquire(file=trim(example), EXIST=exist) ! inquire if inputfile existed;
+  FATAL( initial, exist, example input file example.input already existed )
+  write(ounit, *) 'Writing an template input file in ', trim(example)
+  open(wunit, file=trim(example), status='unknown', action='write')
+  write(wunit, focusin)
+  close(wunit)
 
-  call MPI_BARRIER( MPI_COMM_WORLD, ierr )
-  call MPI_FINALIZE( ierr )
-  stop
+  error = 1
 
   return
 END SUBROUTINE write_focus_namelist

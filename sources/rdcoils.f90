@@ -127,6 +127,7 @@ subroutine rdcoils
         write(ounit,'("rdcoils : identified "I10" fixed coils in "A" ;")') Ncoils, trim(fixed_coils)
         allocate( FouCoil(1:Ncoils) )
         allocate(    coil(1:Ncoils) )
+        allocate(     dof(1:Ncoils) )
         do icoil = 1, Ncoils
            read( runit,*)
            read( runit,*)
@@ -190,10 +191,13 @@ subroutine rdcoils
      offset = 2+(myid-1)*(Ncoils_total/(Ncpu-1))*5 ! only for dipoles
      !MPIOUT( offset )
                                
-     if (myid /= 0) allocate( coil(1:Ncoils) )
+     if (myid /= 0) then
+        allocate( coil(1:Ncoils) )
+        allocate(  dof(1:Ncoils) )
+     endif
 
      do icpu = 1, ncpu-1
-        if (myid == icpu) then                              ! each cpu read the coils in turn;
+        if (myid == icpu) then                              ! each cpu read the coils at the same time.
            open( runit, file=trim(input_coils), status="old", action='read')
            do iskip = 1, offset
               read( runit,*)
@@ -231,6 +235,11 @@ subroutine rdcoils
         SALLOCATE( coil(icoil)%dd, (0:coil(icoil)%NS), zero )
      enddo
   end if
+
+  !-----------------------allocate DoF arrays --------------------------------------------------  
+
+  itmp = -1
+  call AllocData(itmp)
 
   !-----------------------discretize coil data--------------------------------------------------
 

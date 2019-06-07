@@ -25,7 +25,7 @@ SUBROUTINE packdof(lxdof)
   ! DATE: 2017/03/19
   !--------------------------------------------------------------------------------------------- 
   use globals, only : dp, zero, myid, ounit, &
-                    & case_coils, Ncoils, coil, DoF, Ndof, DoFnorm
+                    & case_coils, Ncoils, coil, DoF, Ndof, DoFnorm, dof_offset, ldof
   implicit none
   include "mpif.h"
 
@@ -38,7 +38,7 @@ SUBROUTINE packdof(lxdof)
 
   call packcoil !pack coil parameters into DoF;
   ! packing;
-  idof = 0
+  idof = dof_offset
   do icoil = 1, Ncoils
 
      select case (coil(icoil)%itype)
@@ -85,9 +85,10 @@ SUBROUTINE packdof(lxdof)
   enddo !end do icoil;
 
   !--------------------------------------------------------------------------------------------- 
-  FATAL( packdof02 , idof .ne. Ndof, counting error in packing )
+  FATAL( packdof02 , idof-dof_offset .ne. ldof, counting error in packing )
 
   !write(ounit, *) "pack ", lxdof(1)
+  call MPI_ALLREDUCE( MPI_IN_PLACE, lxdof, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
   lxdof = lxdof / DoFnorm
   call mpi_barrier(MPI_COMM_WORLD, ierr)
 
@@ -102,7 +103,7 @@ SUBROUTINE unpacking(lxdof)
   ! DATE: 2017/04/03
   !--------------------------------------------------------------------------------------------- 
   use globals, only: dp, zero, myid, ounit, &
-       & case_coils, Ncoils, coil, DoF, Ndof, DoFnorm
+       & case_coils, Ncoils, coil, DoF, Ndof, DoFnorm, dof_offset, ldof
   implicit none
   include "mpif.h"
 
@@ -111,7 +112,7 @@ SUBROUTINE unpacking(lxdof)
   !---------------------------------------------------------------------------------------------
   !FATAL( packdof, .not. allocated(xdof), Please allocate xdof first. )
 
-  idof = 0 ; ifirst = 0
+  idof = dof_offset ; ifirst = 0
   do icoil = 1, Ncoils
 
      select case (coil(icoil)%itype)
@@ -159,10 +160,10 @@ SUBROUTINE unpacking(lxdof)
   enddo !end do icoil;
 
   !--------------------------------------------------------------------------------------------- 
-  FATAL( unpacking02 , idof .ne. Ndof, counting error in unpacking )
+  FATAL( unpacking02 , idof-dof_offset .ne. ldof, counting error in unpacking )
 
   call unpackcoil !unpack DoF to coil parameters;
-  call discoil(ifirst)
+  if (myid==0) call discoil(ifirst)
 
   call mpi_barrier(MPI_COMM_WORLD, ierr)
 
