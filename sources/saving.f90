@@ -132,6 +132,14 @@ subroutine saving
 
   HWRITEIV( 1                ,   Nfp           ,   Nfp_raw                         )
 
+  if (allocated(bn)) then
+     HWRITERA( Nteta,Nzeta      ,   plas_Bn       ,   surf(1)%pb(0:Nteta-1,0:Nzeta-1) )
+     HWRITERA( Nteta,Nzeta      ,        Bn       ,   surf(1)%bn(0:Nteta-1,0:Nzeta-1) )
+     HWRITERA( Nteta,Nzeta      ,   Bx            ,   surf(1)%Bx(0:Nteta-1,0:Nzeta-1) )
+     HWRITERA( Nteta,Nzeta      ,   By            ,   surf(1)%By(0:Nteta-1,0:Nzeta-1) )
+     HWRITERA( Nteta,Nzeta      ,   Bz            ,   surf(1)%Bz(0:Nteta-1,0:Nzeta-1) )
+  endif
+
   if (allocated(ppr)) then
      HWRITERA( pp_ns, pp_maxiter+1,   ppr         ,  ppr(1:pp_ns, 0:pp_maxiter) )
      HWRITERA( pp_ns, pp_maxiter+1,   ppz         ,  ppz(1:pp_ns, 0:pp_maxiter) )
