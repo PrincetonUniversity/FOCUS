@@ -138,8 +138,6 @@ subroutine bnormal( ideriv )
      t1B = zero ; d1B = zero
      dBn = zero ; dBm = zero
 
-     MPIOUT( allocated(dBn) )
-
      do jzeta = 0, Nzeta - 1
         do iteta = 0, Nteta - 1
            
@@ -180,35 +178,30 @@ subroutine bnormal( ideriv )
 
            enddo  !end icoil;
            FATAL( bnormal , idof-dof_offset .ne. ldof, counting error in packing )
-           if( iteta + jzeta == 0 ) then 
-              TMPOUT( dBn(0) )
-              TMPOUT( dBn(4) )
-           endif
 
-           call MPI_ALLREDUCE( MPI_IN_PLACE, dBn, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
-           if (case_bnormal == 1) then
-              call MPI_ALLREDUCE( MPI_IN_PLACE, dBm, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
-           endif
-
-           if( iteta + jzeta == 0 ) then 
-              TMPOUT( dBn(0) )
-              TMPOUT( dBn(4) )
-           endif
+!!$           call MPI_ALLREDUCE( MPI_IN_PLACE, dBn, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+!!$           if (case_bnormal == 1) then
+!!$              call MPI_ALLREDUCE( MPI_IN_PLACE, dBm, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+!!$           endif
               
            select case (case_bnormal)
            case (0)     ! no normalization over |B|;
               t1B(1:Ndof) = t1B(1:Ndof) + surf(1)%bn(iteta,jzeta) * surf(1)%ds(iteta,jzeta) * dBn(1:Ndof)
-              d1B(1:Ndof, iteta, jzeta) =  d1B(1:Ndof, iteta, jzeta) + dBn(1:Ndof)
+              if (mbnorm > 0) then ! L-M
+                 d1B(1:Ndof, iteta, jzeta) =  d1B(1:Ndof, iteta, jzeta) + dBn(1:Ndof)
+              endif 
            case (1)     ! normalized over |B|;
               t1B(1:Ndof) = t1B(1:Ndof) + ( surf(1)%Bn(iteta,jzeta) * dBn(1:Ndof) &
                    &                       / bm(iteta, jzeta)             &
                    &                       - surf(1)%Bn(iteta,jzeta) * surf(1)%Bn(iteta,jzeta) &
                    &                       / (bm(iteta, jzeta)*bm(iteta, jzeta)) &  
                    &                       * dBm(1:Ndof) ) * surf(1)%ds(iteta,jzeta)
-              d1B(1:Ndof, iteta, jzeta) = d1B(1:Ndof, iteta, jzeta) + dBn(1:Ndof) & 
-                   &                    / sqrt(bm(iteta, jzeta)) &
-                   &                    - surf(1)%Bn(iteta,jzeta) * dBm(1:Ndof) &
-                   &                    / (bm(iteta, jzeta) * sqrt(bm(iteta, jzeta)))
+              if (mbnorm > 0) then ! L-M
+                 d1B(1:Ndof, iteta, jzeta) = d1B(1:Ndof, iteta, jzeta) + dBn(1:Ndof) & 
+                      &                    / sqrt(bm(iteta, jzeta)) &
+                      &                    - surf(1)%Bn(iteta,jzeta) * dBm(1:Ndof) &
+                      &                    / (bm(iteta, jzeta) * sqrt(bm(iteta, jzeta)))
+              endif
            case default
               FATAL( bnorm, .true., case_bnormal can only be 0/1 )
            end select
@@ -216,12 +209,13 @@ subroutine bnormal( ideriv )
         enddo  !end iteta;
      enddo  !end jzeta;
 
-     call MPI_BARRIER( MPI_COMM_WORLD, ierr )
+     call MPI_ALLREDUCE( MPI_IN_PLACE, t1B, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
 
      t1B = t1B * discretefactor
 
      ! Another type of target functions
      if (mbnorm > 0) then
+        call MPI_ALLREDUCE( MPI_IN_PLACE, d1B, Ndof*Nteta*Nzeta, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
         do idof = 1, Ndof
            LM_fjac(ibnorm+1:ibnorm+mbnorm, idof) = weight_bnorm &
                 &  * reshape(d1B(idof, 0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))
@@ -239,8 +233,6 @@ subroutine bnormal( ideriv )
            endif
         enddo    
      endif
-     TMPOUT( dBn )
-     TMPOUT( t1B )
 
   endif
 
