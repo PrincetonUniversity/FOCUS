@@ -26,7 +26,7 @@ subroutine saving
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 
-  INTEGER            :: ii, jj, icoil, NF
+  INTEGER            :: ii, jj, icoil, NF, icpu
 
   ! the following are used by the macros HWRITEXX below; do not alter/remove;
   INTEGER            :: hdfier, rank
@@ -37,6 +37,63 @@ subroutine saving
 
   CHARACTER          :: srestart*6
 
+
+
+
+  !--------------------------write focus coil file-----------------------------------------
+  if( save_coils == 1 ) then
+     if (myid==0) then
+        open( wunit, file=trim(out_focus), status="unknown", form="formatted")
+        write(wunit, *) "# Total number of coils"
+        write(wunit, '(8X,I6)') Ncoils_total+Ncoils ! note the fixed coils are also written
+        close(wunit)
+     endif
+
+     call MPI_barrier( MPI_COMM_WORLD, ierr )
+
+     do icpu = 0, ncpu-1
+        if (myid == icpu) then                              ! each cpu write the data independently
+           open( wunit, file=trim(out_focus), status="old", position="append", action="write")
+
+           do icoil = 1, Ncoils
+
+              write(wunit, *) "#-----------------", icoil, "---------------------------" 
+              write(wunit, *) "#coil_type     coil_name"
+              write(wunit,'(3X,I3,4X, A10)') coil(icoil)%itype, coil(icoil)%name
+
+              select case (coil(icoil)%itype)
+              case (1)
+                 write(wunit, '(3(A6, A15, 8X))') " #Nseg", "current",  "Ifree", "Length", "Lfree", "target_length"
+                 write(wunit,'(2X, I4, ES23.15, 3X, I3, ES23.15, 3X, I3, ES23.15)') &
+                      coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo
+                 NF = FouCoil(icoil)%NF ! shorthand;
+                 write(wunit, *) "#NFcoil"
+                 write(wunit, '(I3)') NF
+                 write(wunit, *) "#Fourier harmonics for coils ( xc; xs; yc; ys; zc; zs) "
+                 write(wunit, 1000) FouCoil(icoil)%xc(0:NF)
+                 write(wunit, 1000) FouCoil(icoil)%xs(0:NF)
+                 write(wunit, 1000) FouCoil(icoil)%yc(0:NF)
+                 write(wunit, 1000) FouCoil(icoil)%ys(0:NF)
+                 write(wunit, 1000) FouCoil(icoil)%zc(0:NF)
+                 write(wunit, 1000) FouCoil(icoil)%zs(0:NF)
+              case (2) 
+                 write(wunit, *) "#  Lc  ox   oy   oz  Ic  I  mt  mp"
+                 write(wunit,'(2(I3, 3ES23.15))') coil(icoil)%Lc, coil(icoil)%ox, coil(icoil)%oy, coil(icoil)%oz, &
+                      coil(icoil)%Ic, coil(icoil)%I , coil(icoil)%mt, coil(icoil)%mp  
+              case (3)
+                 write(wunit, *) "# Ic     I    Lc  Bz  (Ic control I; Lc control Bz)"
+                 write(wunit,'(I3, ES23.15, I3, ES23.15)') coil(icoil)%Ic, coil(icoil)%I, &
+                      coil(icoil)%Lc, coil(icoil)%Bz
+              case default
+                 FATAL(restart, .true., not supported coil types)
+              end select
+           enddo
+           close(wunit)
+1000       format(9999ES23.15)
+        endif
+        call MPI_barrier( MPI_COMM_WORLD, ierr )
+     enddo
+  endif
 
   if( myid.ne.0 ) return
 
@@ -164,49 +221,6 @@ subroutine saving
   call h5close_f( hdfier ) ! close Fortran interface;
   FATAL( restart, hdfier.ne.0, error calling h5close_f )
 
-
-  !--------------------------write focus coil file-----------------------------------------
-  if( save_coils == 1 ) then
-     open( wunit, file=trim(out_focus), status="unknown", form="formatted")
-     write(wunit, *) "# Total number of coils"
-     write(wunit, '(8X,I6)') Ncoils
-
-     do icoil = 1, Ncoils
-
-        write(wunit, *) "#-----------------", icoil, "---------------------------" 
-        write(wunit, *) "#coil_type     coil_name"
-        write(wunit,'(3X,I3,4X, A10)') coil(icoil)%itype, coil(icoil)%name
-
-        select case (coil(icoil)%itype)
-        case (1)
-           write(wunit, '(3(A6, A15, 8X))') " #Nseg", "current",  "Ifree", "Length", "Lfree", "target_length"
-           write(wunit,'(2X, I4, ES23.15, 3X, I3, ES23.15, 3X, I3, ES23.15)') &
-                coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo
-           NF = FouCoil(icoil)%NF ! shorthand;
-           write(wunit, *) "#NFcoil"
-           write(wunit, '(I3)') NF
-           write(wunit, *) "#Fourier harmonics for coils ( xc; xs; yc; ys; zc; zs) "
-           write(wunit, 1000) FouCoil(icoil)%xc(0:NF)
-           write(wunit, 1000) FouCoil(icoil)%xs(0:NF)
-           write(wunit, 1000) FouCoil(icoil)%yc(0:NF)
-           write(wunit, 1000) FouCoil(icoil)%ys(0:NF)
-           write(wunit, 1000) FouCoil(icoil)%zc(0:NF)
-           write(wunit, 1000) FouCoil(icoil)%zs(0:NF)
-        case (2) 
-           write(wunit, *) "#  Lc  ox   oy   oz  Ic  I  mt  mp"
-           write(wunit,'(2(I3, 3ES23.15))') coil(icoil)%Lc, coil(icoil)%ox, coil(icoil)%oy, coil(icoil)%oz, &
-                                         coil(icoil)%Ic, coil(icoil)%I , coil(icoil)%mt, coil(icoil)%mp  
-        case (3)
-           write(wunit, *) "# Ic     I    Lc  Bz  (Ic control I; Lc control Bz)"
-           write(wunit,'(I3, ES23.15, I3, ES23.15)') coil(icoil)%Ic, coil(icoil)%I, &
-                                                     coil(icoil)%Lc, coil(icoil)%Bz
-        case default
-           FATAL(restart, .true., not supported coil types)
-        end select
-     enddo
-     close(wunit)
-1000 format(9999ES23.15)
-  endif
 
   !--------------------------write coils.ext file-----------------------------------------------  
 

@@ -65,7 +65,9 @@ subroutine AllocData(itype)
      enddo
 
      do icpu = 0, ncpu-1
-        if (myid == icpu) dof_array(icpu) = ldof
+        if (myid == icpu) then
+           dof_array(icpu) = ldof
+        endif
      enddo
 
      CALL MPI_ALLREDUCE(ldof, Ndof, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr )
