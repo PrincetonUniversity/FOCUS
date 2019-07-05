@@ -66,7 +66,7 @@ subroutine fousurf
   
   use globals, only : dp, zero, half, pi2, myid, ounit, runit, input_surf, IsQuiet, IsSymmetric, &
                       Nfou, Nfp, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
-                      Nteta, Nzeta, surf, Npc, discretefactor, Nfp_raw
+                      Nteta, Nzeta, surf, Npc, discretefactor, Nfp_raw, cosnfp, sinnfp
   
   implicit none
   
@@ -75,7 +75,7 @@ subroutine fousurf
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   LOGICAL :: exist
-  INTEGER :: iosta, astat, ierr, ii, jj, imn
+  INTEGER :: iosta, astat, ierr, ii, jj, imn, ip
   REAL    :: RR(0:2), ZZ(0:2), szeta, czeta, xx(1:3), xt(1:3), xz(1:3), ds(1:3), &
              teta, zeta, arg, dd
   
@@ -189,88 +189,99 @@ subroutine fousurf
   case ( 2 )                          !plasma and coil periodicity enabled;
      Npc = Nfp
   end select
-  discretefactor = discretefactor/Nfp
+  ! discretefactor = discretefactor/Nfp
+
+  SALLOCATE( cosnfp, (1:Npc), zero )
+  SALLOCATE( sinnfp, (1:Npc), zero )  
+  
+  do ip = 1, Npc
+     cosnfp(ip) = cos((ip-1)*pi2/Npc)
+     sinnfp(ip) = sin((ip-1)*pi2/Npc)
+  enddo
 
   allocate( surf(1:1) ) ! can allow for myltiple plasma boundaries 
                         ! if multiple currents are allowed; 14 Apr 16;
   
   surf(1)%Nteta = Nteta ! not used yet; used for multiple surfaces; 20170307;
-  surf(1)%Nzeta = Nzeta ! not used yet; used for multiple surfaces; 20170307;
+  surf(1)%Nzeta = Nzeta*Nfp ! not used yet; used for multiple surfaces; 20170307;
   
-  SALLOCATE( surf(1)%xx, (0:Nteta-1,0:Nzeta-1), zero ) !x coordinates;
-  SALLOCATE( surf(1)%yy, (0:Nteta-1,0:Nzeta-1), zero ) !y coordinates
-  SALLOCATE( surf(1)%zz, (0:Nteta-1,0:Nzeta-1), zero ) !z coordinates
-  SALLOCATE( surf(1)%nx, (0:Nteta-1,0:Nzeta-1), zero ) !unit nx;
-  SALLOCATE( surf(1)%ny, (0:Nteta-1,0:Nzeta-1), zero ) !unit ny;
-  SALLOCATE( surf(1)%nz, (0:Nteta-1,0:Nzeta-1), zero ) !unit nz;
-  SALLOCATE( surf(1)%ds, (0:Nteta-1,0:Nzeta-1), zero ) !jacobian;
-  SALLOCATE( surf(1)%xt, (0:Nteta-1,0:Nzeta-1), zero ) !dx/dtheta;
-  SALLOCATE( surf(1)%yt, (0:Nteta-1,0:Nzeta-1), zero ) !dy/dtheta;
-  SALLOCATE( surf(1)%zt, (0:Nteta-1,0:Nzeta-1), zero ) !dz/dtheta;
-  SALLOCATE( surf(1)%pb, (0:Nteta-1,0:Nzeta-1), zero ) !target Bn;
-  SALLOCATE( surf(1)%xp, (0:Nteta-1,0:Nzeta-1), zero ) !dx/dzeta;
-  SALLOCATE( surf(1)%yp, (0:Nteta-1,0:Nzeta-1), zero ) !dy/dzeta;
-  SALLOCATE( surf(1)%zp, (0:Nteta-1,0:Nzeta-1), zero ) !dz/dzeta;
+  SALLOCATE( surf(1)%xx, (0:surf(1)%Nteta-1,0:surf(1)%Nzeta-1), zero ) !x coordinates;
+  SALLOCATE( surf(1)%yy, (0:surf(1)%Nteta-1,0:surf(1)%Nzeta-1), zero ) !y coordinates
+  SALLOCATE( surf(1)%zz, (0:surf(1)%Nteta-1,0:surf(1)%Nzeta-1), zero ) !z coordinates
+  SALLOCATE( surf(1)%nx, (0:surf(1)%Nteta-1,0:surf(1)%Nzeta-1), zero ) !unit nx;
+  SALLOCATE( surf(1)%ny, (0:surf(1)%Nteta-1,0:surf(1)%Nzeta-1), zero ) !unit ny;
+  SALLOCATE( surf(1)%nz, (0:surf(1)%Nteta-1,0:surf(1)%Nzeta-1), zero ) !unit nz;
+  SALLOCATE( surf(1)%ds, (0:surf(1)%Nteta-1,0:surf(1)%Nzeta-1), zero ) !jacobian;
+  SALLOCATE( surf(1)%xt, (0:surf(1)%Nteta-1,0:surf(1)%Nzeta-1), zero ) !dx/dtheta;
+  SALLOCATE( surf(1)%yt, (0:surf(1)%Nteta-1,0:surf(1)%Nzeta-1), zero ) !dy/dtheta;
+  SALLOCATE( surf(1)%zt, (0:surf(1)%Nteta-1,0:surf(1)%Nzeta-1), zero ) !dz/dtheta;
+  SALLOCATE( surf(1)%pb, (0:        Nteta-1,0:        Nzeta-1), zero ) !target Bn;
+  SALLOCATE( surf(1)%xp, (0:surf(1)%Nteta-1,0:surf(1)%Nzeta-1), zero ) !dx/dzeta;
+  SALLOCATE( surf(1)%yp, (0:surf(1)%Nteta-1,0:surf(1)%Nzeta-1), zero ) !dy/dzeta;
+  SALLOCATE( surf(1)%zp, (0:surf(1)%Nteta-1,0:surf(1)%Nzeta-1), zero ) !dz/dzeta;
   
   surf(1)%vol = zero  ! volume enclosed by plasma boundary
  
+  discretefactor = (pi2/surf(1)%Nteta) * (pi2/surf(1)%Nzeta)
+    
 ! The center point value was used to discretize grid;
-  do ii = 0, Nteta-1; teta = ( ii + half ) * pi2 / Nteta
-   do jj = 0, Nzeta-1; zeta = ( jj + half ) * pi2 / ( Nzeta*Nfp )
-    
-    RR(0:2) = zero ; ZZ(0:2) = zero
-    
-    do imn = 1, Nfou ; arg = bim(imn) * teta - bin(imn) * zeta
-     
-     RR(0) =  RR(0) +     Rbc(imn) * cos(arg) + Rbs(imn) * sin(arg)
-     ZZ(0) =  ZZ(0) +     Zbc(imn) * cos(arg) + Zbs(imn) * sin(arg)
-     
-     RR(1) =  RR(1) + ( - Rbc(imn) * sin(arg) + Rbs(imn) * cos(arg) ) * bim(imn)
-     ZZ(1) =  ZZ(1) + ( - Zbc(imn) * sin(arg) + Zbs(imn) * cos(arg) ) * bim(imn)
-     
-     RR(2) =  RR(2) - ( - Rbc(imn) * sin(arg) + Rbs(imn) * cos(arg) ) * bin(imn)
-     ZZ(2) =  ZZ(2) - ( - Zbc(imn) * sin(arg) + Zbs(imn) * cos(arg) ) * bin(imn)
-     
-    enddo ! end of do imn; 30 Oct 15;
-    
-    szeta = sin(zeta)
-    czeta = cos(zeta)
-    
-    xx(1:3) = (/   RR(0) * czeta,   RR(0) * szeta, ZZ(0) /)
-    xt(1:3) = (/   RR(1) * czeta,   RR(1) * szeta, ZZ(1) /)
-    xz(1:3) = (/   RR(2) * czeta,   RR(2) * szeta, ZZ(2) /) + (/ - RR(0) * szeta,   RR(0) * czeta, zero  /)
+  do ii = 0, surf(1)%Nteta-1
+     teta = ( ii + half ) * pi2 / surf(1)%Nteta
+     do jj = 0, surf(1)%Nzeta-1
+        zeta = ( jj + half ) * pi2 / surf(1)%Nzeta
+        RR(0:2) = zero ; ZZ(0:2) = zero
 
-    ds(1:3) = -(/ xt(2) * xz(3) - xt(3) * xz(2), & ! minus sign for theta counterclockwise direction;
-                  xt(3) * xz(1) - xt(1) * xz(3), &
-                  xt(1) * xz(2) - xt(2) * xz(1) /)
+        do imn = 1, Nfou ; arg = bim(imn) * teta - bin(imn) * zeta
 
-    dd = sqrt( sum( ds(1:3)*ds(1:3) ) )
+           RR(0) =  RR(0) +     Rbc(imn) * cos(arg) + Rbs(imn) * sin(arg)
+           ZZ(0) =  ZZ(0) +     Zbc(imn) * cos(arg) + Zbs(imn) * sin(arg)
 
-    ! x, y, z coordinates for the surface;
-    surf(1)%xx(ii,jj) = xx(1)
-    surf(1)%yy(ii,jj) = xx(2)
-    surf(1)%zz(ii,jj) = xx(3)
+           RR(1) =  RR(1) + ( - Rbc(imn) * sin(arg) + Rbs(imn) * cos(arg) ) * bim(imn)
+           ZZ(1) =  ZZ(1) + ( - Zbc(imn) * sin(arg) + Zbs(imn) * cos(arg) ) * bim(imn)
 
-    ! dx/dt, dy/dt, dz/dt (dt for d theta)
-    surf(1)%xt(ii,jj) = xt(1)
-    surf(1)%yt(ii,jj) = xt(2)
-    surf(1)%zt(ii,jj) = xt(3)
+           RR(2) =  RR(2) - ( - Rbc(imn) * sin(arg) + Rbs(imn) * cos(arg) ) * bin(imn)
+           ZZ(2) =  ZZ(2) - ( - Zbc(imn) * sin(arg) + Zbs(imn) * cos(arg) ) * bin(imn)
 
-    ! dx/dp, dy/dp, dz/dp (dp for d zeta(phi))
-    surf(1)%xp(ii,jj) = xz(1)
-    surf(1)%yp(ii,jj) = xz(2)
-    surf(1)%zp(ii,jj) = xz(3)
+        enddo ! end of do imn; 30 Oct 15;
 
-    ! surface normal vectors and ds for the jacobian;
-    surf(1)%nx(ii,jj) = ds(1) / dd
-    surf(1)%ny(ii,jj) = ds(2) / dd
-    surf(1)%nz(ii,jj) = ds(3) / dd
-    surf(1)%ds(ii,jj) =         dd
-    
-    ! using Gauss theorom; V = \int_S x \cdot n dt dz
-    surf(1)%vol = surf(1)%vol + surf(1)%xx(ii,jj) * ds(1)
+        szeta = sin(zeta)
+        czeta = cos(zeta)
 
-   enddo ! end of do jj; 14 Apr 16;
+        xx(1:3) = (/   RR(0) * czeta,   RR(0) * szeta, ZZ(0) /)
+        xt(1:3) = (/   RR(1) * czeta,   RR(1) * szeta, ZZ(1) /)
+        xz(1:3) = (/   RR(2) * czeta,   RR(2) * szeta, ZZ(2) /) + (/ - RR(0) * szeta,   RR(0) * czeta, zero  /)
+
+        ds(1:3) = -(/ xt(2) * xz(3) - xt(3) * xz(2), & ! minus sign for theta counterclockwise direction;
+             xt(3) * xz(1) - xt(1) * xz(3), &
+             xt(1) * xz(2) - xt(2) * xz(1) /)
+
+        dd = sqrt( sum( ds(1:3)*ds(1:3) ) )
+
+        ! x, y, z coordinates for the surface;
+        surf(1)%xx(ii,jj) = xx(1)
+        surf(1)%yy(ii,jj) = xx(2)
+        surf(1)%zz(ii,jj) = xx(3)
+
+        ! dx/dt, dy/dt, dz/dt (dt for d theta)
+        surf(1)%xt(ii,jj) = xt(1)
+        surf(1)%yt(ii,jj) = xt(2)
+        surf(1)%zt(ii,jj) = xt(3)
+
+        ! dx/dp, dy/dp, dz/dp (dp for d zeta(phi))
+        surf(1)%xp(ii,jj) = xz(1)
+        surf(1)%yp(ii,jj) = xz(2)
+        surf(1)%zp(ii,jj) = xz(3)
+
+        ! surface normal vectors and ds for the jacobian;
+        surf(1)%nx(ii,jj) = ds(1) / dd
+        surf(1)%ny(ii,jj) = ds(2) / dd
+        surf(1)%nz(ii,jj) = ds(3) / dd
+        surf(1)%ds(ii,jj) =         dd
+
+        ! using Gauss theorom; V = \int_S x \cdot n dt dz
+        surf(1)%vol = surf(1)%vol + surf(1)%xx(ii,jj) * ds(1)
+
+     enddo ! end of do jj; 14 Apr 16;
   enddo ! end of do ii; 14 Apr 16;
 
   surf(1)%vol = abs(surf(1)%vol) * discretefactor

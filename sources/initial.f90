@@ -386,8 +386,8 @@ subroutine initial
         FATAL( initial, .not.exist, FOCUS coil file ext.focus not provided )
         write(ounit, '("        : Read initial dipole   from : ", A, A)') trim(input_coils), '(Parameters only)'
         inquire( file=trim(fixed_coils), exist=exist )
-        FATAL( initial, .not.exist, fixed coil file ext.focus not provided )
-        write(ounit, '("        : Read fixed coils      from : ", A, A)') trim(input_coils), '(FOCUS format)'
+        !FATAL( initial, .not.exist, fixed coil file ext.focus not provided )
+        if(exist) write(ounit, '("        : Read fixed coils      from : ", A, A)') trim(fixed_coils), '(FOCUS format)'
      case( 1 )
         FATAL( initial, Ncoils < 1, should provide the No. of coils)
         FATAL( initial, init_current == zero, invalid coil current)
@@ -595,8 +595,6 @@ subroutine initial
   ! initialize iteration and total iterations;
   iout = 1 ; Nouts = 1
   if (case_optimize >0) Nouts = DF_maxiter + CG_maxiter + LM_maxiter + HN_maxiter + TN_maxiter
-
-  discretefactor = (pi2/Nteta) * (pi2/Nzeta)
 
   !save weights before normalized
   tmpw_bnorm = weight_bnorm

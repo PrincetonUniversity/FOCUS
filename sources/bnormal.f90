@@ -135,7 +135,8 @@ subroutine bnormal( ideriv )
   !-------------------------------calculate Bn/x------------------------------------------------
   if ( ideriv >= 1 ) then
 
-     t1B = zero ; d1B = zero
+     t1B = zero 
+     if (mbnorm > 0 .or. weight_bharm > sqrtmachprec)  d1B = zero
      dBn = zero ; dBm = zero
 
      do jzeta = 0, Nzeta - 1
@@ -175,7 +176,15 @@ subroutine bnormal( ideriv )
                  idof = idof + ND
 
               endif
-
+              
+!!$              if (myid==0 .and. iteta==0 .and. jzeta==0) then
+!!$                 if (icoil==1) then
+!!$                    print *, dBx(1:3,0)
+!!$                    print *, dBy(1:3,0)
+!!$                    print *, dBz(1:3,0)
+!!$                    print *, dBn(1:3)
+!!$                 endif
+!!$              endif
            enddo  !end icoil;
            FATAL( bnormal , idof-dof_offset .ne. ldof, counting error in packing )
 
@@ -187,6 +196,10 @@ subroutine bnormal( ideriv )
            select case (case_bnormal)
            case (0)     ! no normalization over |B|;
               t1B(1:Ndof) = t1B(1:Ndof) + surf(1)%bn(iteta,jzeta) * surf(1)%ds(iteta,jzeta) * dBn(1:Ndof)
+!!$              if (myid==0 .and. iteta==0 .and. jzeta==0) then
+!!$                 print *, surf(1)%bn(iteta,jzeta), surf(1)%ds(iteta,jzeta)
+!!$                 print *, dBn(1:10)
+!!$              endif
               if (mbnorm > 0) then ! L-M
                  d1B(1:Ndof, iteta, jzeta) =  d1B(1:Ndof, iteta, jzeta) + dBn(1:Ndof)
               endif 

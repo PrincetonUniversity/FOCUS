@@ -112,67 +112,77 @@ subroutine rdcoils
 
   if(myid == 0) write(ounit, *) "-----------INITIALIZE COILS----------------------------------"
 
-  Npc = 1
+  ! Npc = 1
 
   select case( case_init )
 
      !-------------individual coil file---------------------------------------------------------------------
   case( 0 )
-
+     
      ! myid = 0 read all the fixed coils
-     if( myid==0 ) then  !get file number;
-        open( runit, file=trim(fixed_coils), status="old", action='read')
-        read( runit,*)
-        read( runit,*) Ncoils
-        write(ounit,'("rdcoils : identified "I10" fixed coils in "A" ;")') Ncoils, trim(fixed_coils)
-        allocate( FouCoil(1:Ncoils) )
-        allocate(    coil(1:Ncoils) )
-        allocate(     dof(1:Ncoils) )
-        do icoil = 1, Ncoils
+     if( myid==0 ) then
+        if (trim(fixed_coils) /= 'none') then  !get file number;
+           open( runit, file=trim(fixed_coils), status="old", action='read')
            read( runit,*)
-           read( runit,*)
-           read( runit,*) coil(icoil)%itype, coil(icoil)%name
-           if(coil(icoil)%itype == 1) then  ! Fourier representation
+           read( runit,*) Ncoils
+           write(ounit,'("rdcoils : identified "I10" normal coils in "A" ;")') Ncoils, trim(fixed_coils)
+           allocate( FouCoil(1:Ncoils) )
+           allocate(    coil(1:Ncoils) )
+           allocate(     dof(1:Ncoils) )
+           do icoil = 1, Ncoils
               read( runit,*)
-              read( runit,*) coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, &
-                   & coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo
-              FATAL( rdcoils, coil(icoil)%NS < 0                        , illegal )
-              FATAL( rdcoils, coil(icoil)%Ic < 0 .or. coil(icoil)%Ic > 1, illegal )
-              FATAL( rdcoils, coil(icoil)%Lc < 0 .or. coil(icoil)%Lc > 2, illegal )
-              FATAL( rdcoils, coil(icoil)%L  < zero                     , illegal )
-              FATAL( rdcoils, coil(icoil)%Lc < zero                     , illegal )
-              FATAL( rdcoils, coil(icoil)%Lo < zero                     , illegal )
               read( runit,*)
-              read( runit,*) FouCoil(icoil)%NF
-              FATAL( rdcoils, Foucoil(icoil)%NF  < 0                    , illegal )
-              SALLOCATE( FouCoil(icoil)%xc, (0:FouCoil(icoil)%NF), zero )
-              SALLOCATE( FouCoil(icoil)%xs, (0:FouCoil(icoil)%NF), zero )
-              SALLOCATE( FouCoil(icoil)%yc, (0:FouCoil(icoil)%NF), zero )
-              SALLOCATE( FouCoil(icoil)%ys, (0:FouCoil(icoil)%NF), zero )
-              SALLOCATE( FouCoil(icoil)%zc, (0:FouCoil(icoil)%NF), zero )
-              SALLOCATE( FouCoil(icoil)%zs, (0:FouCoil(icoil)%NF), zero )
-              read( runit,*)
-              read( runit,*) FouCoil(icoil)%xc(0:FouCoil(icoil)%NF)
-              read( runit,*) FouCoil(icoil)%xs(0:FouCoil(icoil)%NF)
-              read( runit,*) FouCoil(icoil)%yc(0:FouCoil(icoil)%NF)
-              read( runit,*) FouCoil(icoil)%ys(0:FouCoil(icoil)%NF)
-              read( runit,*) FouCoil(icoil)%zc(0:FouCoil(icoil)%NF)
-              read( runit,*) FouCoil(icoil)%zs(0:FouCoil(icoil)%NF)
-           else if (coil(icoil)%itype == 2) then  ! permanent magnets
-              read( runit,*)
-              read( runit,*) coil(icoil)%Lc, coil(icoil)%ox, coil(icoil)%oy, coil(icoil)%oz, &
-                             coil(icoil)%Ic, coil(icoil)%I , coil(icoil)%mt, coil(icoil)%mp      
-           else if (coil(icoil)%itype == 3) then  ! backgroud toroidal/vertical field
-              read( runit,*)
-              read( runit,*) coil(icoil)%Ic, coil(icoil)%I, coil(icoil)%Lc, coil(icoil)%Bz
-           else
-              STOP " wrong coil type in rdcoils"
-              call MPI_ABORT(MPI_COMM_WORLD, 1, ierr)
-           endif
-              
-        enddo !end do icoil;
+              read( runit,*) coil(icoil)%itype, coil(icoil)%symmetry, coil(icoil)%name
+              if(coil(icoil)%itype == 1) then  ! Fourier representation
+                 read( runit,*)
+                 read( runit,*) coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, &
+                      & coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo
+                 FATAL( rdcoils, coil(icoil)%NS < 0                        , illegal )
+                 FATAL( rdcoils, coil(icoil)%Ic < 0 .or. coil(icoil)%Ic > 1, illegal )
+                 FATAL( rdcoils, coil(icoil)%Lc < 0 .or. coil(icoil)%Lc > 2, illegal )
+                 FATAL( rdcoils, coil(icoil)%L  < zero                     , illegal )
+                 FATAL( rdcoils, coil(icoil)%Lc < zero                     , illegal )
+                 FATAL( rdcoils, coil(icoil)%Lo < zero                     , illegal )
+                 read( runit,*)
+                 read( runit,*) FouCoil(icoil)%NF
+                 FATAL( rdcoils, Foucoil(icoil)%NF  < 0                    , illegal )
+                 SALLOCATE( FouCoil(icoil)%xc, (0:FouCoil(icoil)%NF), zero )
+                 SALLOCATE( FouCoil(icoil)%xs, (0:FouCoil(icoil)%NF), zero )
+                 SALLOCATE( FouCoil(icoil)%yc, (0:FouCoil(icoil)%NF), zero )
+                 SALLOCATE( FouCoil(icoil)%ys, (0:FouCoil(icoil)%NF), zero )
+                 SALLOCATE( FouCoil(icoil)%zc, (0:FouCoil(icoil)%NF), zero )
+                 SALLOCATE( FouCoil(icoil)%zs, (0:FouCoil(icoil)%NF), zero )
+                 read( runit,*)
+                 read( runit,*) FouCoil(icoil)%xc(0:FouCoil(icoil)%NF)
+                 read( runit,*) FouCoil(icoil)%xs(0:FouCoil(icoil)%NF)
+                 read( runit,*) FouCoil(icoil)%yc(0:FouCoil(icoil)%NF)
+                 read( runit,*) FouCoil(icoil)%ys(0:FouCoil(icoil)%NF)
+                 read( runit,*) FouCoil(icoil)%zc(0:FouCoil(icoil)%NF)
+                 read( runit,*) FouCoil(icoil)%zs(0:FouCoil(icoil)%NF)
+              else if (coil(icoil)%itype == 2) then  ! permanent magnets
+                 read( runit,*)
+                 read( runit,*) coil(icoil)%Lc, coil(icoil)%ox, coil(icoil)%oy, coil(icoil)%oz, &
+                      coil(icoil)%Ic, coil(icoil)%I , coil(icoil)%mt, coil(icoil)%mp      
+              else if (coil(icoil)%itype == 3) then  ! backgroud toroidal/vertical field
+                 read( runit,*)
+                 read( runit,*) coil(icoil)%Ic, coil(icoil)%I, coil(icoil)%Lc, coil(icoil)%Bz
+              else
+                 STOP " wrong coil type in rdcoils"
+                 call MPI_ABORT(MPI_COMM_WORLD, 1, ierr)
+              endif
 
-        close( runit )
+           enddo !end do icoil;
+           close( runit )
+        else ! initialize one fake coil;
+           Ncoils = 1
+           allocate( coil(1:Ncoils) )
+           allocate( dof(1:Ncoils) )
+           coil(1)%itype = 3
+           coil(1)%Ic = 0
+           coil(1)%Lc = 0
+           coil(1)%I  = zero
+           coil(1)%Bz = zero
+        endif
      endif
 
      if( myid==0 ) then  !get file number;
@@ -194,6 +204,7 @@ subroutine rdcoils
      if (myid /= 0) then
         allocate( coil(1:Ncoils) )
         allocate(  dof(1:Ncoils) )
+        ! coil(1:Ncoils)%symmetry = 1
      endif
 
      do icpu = 1, ncpu-1
@@ -206,7 +217,7 @@ subroutine rdcoils
            do icoil = 1, Ncoils
               read( runit,*)
               read( runit,*)
-              read( runit,*) coil(icoil)%itype, coil(icoil)%name
+              read( runit,*) coil(icoil)%itype, coil(icoil)%symmetry, coil(icoil)%name
               read( runit,*)
               read( runit,*) coil(icoil)%Lc, coil(icoil)%ox, coil(icoil)%oy, coil(icoil)%oz, &
                    coil(icoil)%Ic, coil(icoil)%I , coil(icoil)%mt, coil(icoil)%mp      
@@ -267,7 +278,7 @@ subroutine discoil(ifirst)
 ! if ifirst = 1, it will update all the coils; otherwise, only update free coils;
 ! date: 20170314
 !---------------------------------------------------------------------------------------------
-  use globals, only: dp, zero, pi2, myid, ounit, coil, FouCoil, Ncoils
+  use globals, only: dp, zero, pi2, myid, ounit, coil, FouCoil, Ncoils, DoF
   implicit none
   include "mpif.h"
 
@@ -336,7 +347,14 @@ subroutine discoil(ifirst)
               coil(icoil)%za(0:NS) = coil(icoil)%za(0:NS) + ( - cmt(0:NS,mm) * Foucoil(icoil)%zc(mm) &
                                                               - smt(0:NS,mm) * Foucoil(icoil)%zs(mm) ) * mm*mm
            enddo ! end of do mm; 
-
+           if(ifirst /= 0) then
+              DoF(icoil)%xof(0:NS-1,      1:  NF+1) = cmt(0:NS-1, 0:NF)  !xc
+              DoF(icoil)%xof(0:NS-1,   NF+2:2*NF+1) = smt(0:NS-1, 1:NF)  !xs
+              DoF(icoil)%yof(0:NS-1, 2*NF+2:3*NF+2) = cmt(0:NS-1, 0:NF)  !yc
+              DoF(icoil)%yof(0:NS-1, 3*NF+3:4*NF+2) = smt(0:NS-1, 1:NF)  !ys
+              DoF(icoil)%zof(0:NS-1, 4*NF+3:5*NF+3) = cmt(0:NS-1, 0:NF)  !zc
+              DoF(icoil)%zof(0:NS-1, 5*NF+4:6*NF+3) = smt(0:NS-1, 1:NF)  !zs
+           endif
            coil(icoil)%dd = pi2 / NS  ! discretizing factor;
 
            DALLOCATE(cmt)

@@ -45,21 +45,21 @@ subroutine saving
      if (myid==0) then
         open( wunit, file=trim(out_focus), status="unknown", form="formatted")
         write(wunit, *) "# Total number of coils"
-        write(wunit, '(8X,I6)') Ncoils_total+Ncoils ! note the fixed coils are also written
+        write(wunit, '(8X,I6)') Ncoils_total ! note the fixed coils are not written
         close(wunit)
      endif
 
      call MPI_barrier( MPI_COMM_WORLD, ierr )
 
      do icpu = 0, ncpu-1
-        if (myid == icpu) then                              ! each cpu write the data independently
+        if (myid/=0 .and. myid == icpu) then                 ! each cpu write the data independently
            open( wunit, file=trim(out_focus), status="old", position="append", action="write")
 
            do icoil = 1, Ncoils
 
               write(wunit, *) "#-----------------", icoil, "---------------------------" 
               write(wunit, *) "#coil_type     coil_name"
-              write(wunit,'(3X,I3,4X, A10)') coil(icoil)%itype, coil(icoil)%name
+              write(wunit,'(3X,I3,4X,I3,4X,A10)') coil(icoil)%itype, coil(icoil)%symmetry, coil(icoil)%name
 
               select case (coil(icoil)%itype)
               case (1)
@@ -230,7 +230,7 @@ subroutine saving
      write(funit,'("periods "I3)') Nfp_raw
      write(funit,'("begin filament")')
      write(funit,'("mirror NIL")')
-     do icoil = 1, Ncoils*Npc
+     do icoil = 1, Ncoils
         do ii = 0, coil(icoil)%NS-1
            write(funit,1010) coil(icoil)%xx(ii), coil(icoil)%yy(ii), coil(icoil)%zz(ii), coil(icoil)%I
         enddo
@@ -253,7 +253,7 @@ subroutine saving
 
      open( funit, file="."//trim(ext)//".filaments."//srestart, status="unknown", form="unformatted" )  
      write(funit) Ncoils, Nseg
-     do icoil = 1, Ncoils*Npc
+     do icoil = 1, Ncoils
         write(funit) coil(icoil)%xx(0:coil(icoil)%NS)
         write(funit) coil(icoil)%yy(0:coil(icoil)%NS)
         write(funit) coil(icoil)%zz(0:coil(icoil)%NS)
@@ -344,7 +344,7 @@ SUBROUTINE write_plasma
            do jj = 0, Nzeta-1
               zeta = ( jj + half ) * pi2 / Nzeta
 
-              arg = im*teta - in*Nfp_raw*zeta
+              arg = im*teta - in*(Nfp_raw/Nfp)*zeta
               tmpc = tmpc + surf(1)%bn(ii,jj)*cos(arg)
               tmps = tmps + surf(1)%bn(ii,jj)*sin(arg)
 
@@ -354,7 +354,7 @@ SUBROUTINE write_plasma
         if ( (abs(tmpc) + abs(tmps)) .lt. tol ) cycle
 
         imn = imn + 1
-        bnin(imn) = in * Nfp_raw ; bnim(imn) = im
+        bnin(imn) = in * (Nfp_raw/Nfp) ; bnim(imn) = im
 
         if (im .eq. 0  ) then
            tmpc = tmpc*half
@@ -372,7 +372,6 @@ SUBROUTINE write_plasma
   bns = bns * two / (Nteta*Nzeta)
   !----------------------------------------------
 
-
   open(wunit, file=trim(out_plasma), status='unknown', action='write')
 
   write(wunit,*      ) "#Nfou Nfp  Nbnf"
@@ -388,7 +387,7 @@ SUBROUTINE write_plasma
   write(wunit,*      ) "#  n  m  bnc   bns"
   if (Nbnf .gt. 0) then
      do imn = 1, Nbnf
-        write(wunit,'(2I6, 2ES15.6)') bnin(imn)/Nfp_raw, bnim(imn), bnc(imn), bns(imn)
+        write(wunit,'(2I6, 2ES15.6)') bnin(imn)/(Nfp_raw/nfp), bnim(imn), bnc(imn), bns(imn)
      enddo
   else
      write(wunit,'(2I6, 2ES15.6)') 0, 0, 0.0, 0.0

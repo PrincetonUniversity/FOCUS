@@ -198,7 +198,7 @@ subroutine AllocData(itype)
         SALLOCATE(         Bm, (0:Nteta-1,0:Nzeta-1), zero ) ! |B| on the surface;       
         SALLOCATE( dBx, (0:Cdof,0:Cdof), zero ) ! d^2Bx/(dx1,dx2) on each coil; Cdof is the max coil dof
         SALLOCATE( dBy, (0:Cdof,0:Cdof), zero ) ! d^2By/(dx1,dx2) on each coil;
-        SALLOCATE( dBz, (0:Cdof,0:Cdof), zero ) ! d^2Bz/(dx1,dx2) on each coil;        
+        SALLOCATE( dBz, (0:Cdof,0:Cdof), zero ) ! d^2Bz/(dx1,dx2) on each coil;   
      endif
 
      ! Bharm needed;
@@ -223,7 +223,10 @@ subroutine AllocData(itype)
      if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec) then
         SALLOCATE( t1B, (1:Ndof), zero )  !total d bnorm / d x;
         SALLOCATE( dBn, (1:Ndof), zero )  !total d Bn / d x;
-        SALLOCATE( dBm, (1:Ndof), zero )  !total d Bm / d x;
+        SALLOCATE( dBm, (1:Ndof), zero )  !total d Bm / d x;   
+     endif
+
+     if ( weight_bharm > sqrtmachprec .or. LM_maxiter > 0 ) then
         SALLOCATE( d1B, (1:Ndof,0:Nteta-1,0:Nzeta-1), zero ) ! discretized dBn
      endif
 
