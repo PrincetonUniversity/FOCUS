@@ -179,10 +179,19 @@ subroutine AllocData(itype)
         enddo !end do icoil;
         FATAL( AllocData , idof-dof_offset .ne. ldof, counting error in unpacking )
 
+        call MPI_ALLREDUCE( MPI_IN_PLACE, dofnorm, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
      endif
-
-     call MPI_ALLREDUCE( MPI_IN_PLACE, dofnorm, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
-
+     
+     ! calculate the total moment
+     total_moment = zero
+     do icoil = 1, Ncoils
+        if (coil(icoil)%itype == 2) then  ! permanent magnets
+           if(coil(icoil)%Ic /= 0) then
+              total_moment = total_moment + coil(icoil)%moment
+           endif
+        endif
+     enddo
+     call MPI_ALLREDUCE( MPI_IN_PLACE, total_moment, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )     
   endif
 
   !--------------------------------------------------------------------------------------------- 
@@ -249,6 +258,11 @@ subroutine AllocData(itype)
      ! cssep needed;
      if (weight_cssep > sqrtmachprec) then
         SALLOCATE( t1S,  (1:Ndof), zero )
+     endif
+
+     ! pmsum needed;
+     if (weight_pmsum > sqrtmachprec) then
+        SALLOCATE( t1V,  (1:Ndof), zero )
      endif
 
      ! L-M algorithn enabled

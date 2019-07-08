@@ -58,7 +58,7 @@ SUBROUTINE packdof(lxdof)
      !--------------------------------------------------------------------------------------------- 
      case(2) 
         if(coil(icoil)%Ic /= 0) then 
-           lxdof(idof+1) = coil(icoil)%I
+           lxdof(idof+1) = coil(icoil)%pho
            idof = idof + 1
         endif
         ND = DoF(icoil)%ND
@@ -103,7 +103,7 @@ SUBROUTINE unpacking(lxdof)
   ! DATE: 2017/04/03
   !--------------------------------------------------------------------------------------------- 
   use globals, only: dp, zero, myid, ounit, &
-       & case_coils, Ncoils, coil, DoF, Ndof, DoFnorm, dof_offset, ldof
+       & case_coils, Ncoils, coil, DoF, Ndof, DoFnorm, dof_offset, ldof, momentq
   implicit none
   include "mpif.h"
 
@@ -133,7 +133,8 @@ SUBROUTINE unpacking(lxdof)
      !--------------------------------------------------------------------------------------------- 
      case(2) 
         if(coil(icoil)%Ic /= 0) then 
-           coil(icoil)%I = lxdof(idof+1) * dofnorm(idof+1)
+           coil(icoil)%pho = lxdof(idof+1) * dofnorm(idof+1)
+           coil(icoil)%I = coil(icoil)%moment*sin(coil(icoil)%pho)**momentq
            idof = idof + 1
         endif
         ND = DoF(icoil)%ND

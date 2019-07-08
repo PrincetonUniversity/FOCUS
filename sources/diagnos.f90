@@ -7,7 +7,8 @@ SUBROUTINE diagnos
 !------------------------------------------------------------------------------------------------------   
   use globals, only: dp, zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
        Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
-       cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, Npc, weight_bnorm, overlap
+       cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, Npc, weight_bnorm, overlap, &
+       pmsum, total_moment
                      
   implicit none
   include "mpif.h"
@@ -166,6 +167,12 @@ SUBROUTINE diagnos
           sum(abs(surf(1)%bn/sqrt(surf(1)%Bx**2 + surf(1)%By**2 + surf(1)%Bz**2))) / (Nteta*Nzeta)
   endif
 
+  !--------------------------------calculate dipole effective volume------------------------------------  
+  call minvol(0)
+  if(myid .eq. 0)  write(ounit, '(8X": Total free magnetic moment M=", ES23.15, &
+       " ; Effective ratio pmsum=", ES23.15)') total_moment, pmsum
+  !--------------------------------------------------------------------------------------------- 
+
   return
 
   !--------------------------------calculate coil importance------------------------------------  
@@ -184,7 +191,6 @@ SUBROUTINE diagnos
       minval(coil_importance), minloc(coil_importance)
 
   endif
-  !--------------------------------------------------------------------------------------------- 
 
   if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "--------------------------------------------"
  

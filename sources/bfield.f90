@@ -28,7 +28,7 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
 ! Be careful if coils have different resolutions.
 !------------------------------------------------------------------------------------------------------   
   use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, cosnfp, sinnfp, Npc, &
-                     zero, myid, ounit, Npc, Nfp, pi2, half, two, one, bsconstant
+                     zero, myid, ounit, Npc, Nfp, pi2, half, two, one, bsconstant, momentq, machprec
   implicit none
   include "mpif.h"
 
@@ -74,9 +74,9 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
            Bz = Bz + ( dly*ltx - dlx*lty ) * rm3 * coil(icoil)%dd(kseg)
         enddo    ! enddo kseg
         ! normalize currents and mu0/4pi
-        Bx = Bx * coil(icoil)%I * bsconstant
-        By = By * coil(icoil)%I * bsconstant
-        Bz = Bz * coil(icoil)%I * bsconstant
+!!$        Bx = Bx * coil(icoil)%I * bsconstant
+!!$        By = By * coil(icoil)%I * bsconstant
+!!$        Bz = Bz * coil(icoil)%I * bsconstant
      case(2) ! magnetic dipole
         dlx = xx - coil(icoil)%ox
         dly = yy - coil(icoil)%oy
@@ -92,18 +92,19 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
         By = 3.0_dp * m_dot_r * rm3 / r2 * dly - my * rm3
         Bz = 3.0_dp * m_dot_r * rm3 / r2 * dlz - mz * rm3
 
-        Bx = Bx * coil(icoil)%I * bsconstant
-        By = By * coil(icoil)%I * bsconstant
-        Bz = Bz * coil(icoil)%I * bsconstant
+        !coil(icoil)%I = coil(icoil)%moment*sin(coil(icoil)%pho)**momentq
+!!$        Bx = Bx * coil(icoil)%I * bsconstant
+!!$        By = By * coil(icoil)%I * bsconstant
+!!$        Bz = Bz * coil(icoil)%I * bsconstant
      case(3)
         ! might be only valid for cylindrical coordinates
         ! Bt = u0*I/(2 pi R)
         rr = sqrt( xx**2 + yy**2 )
-        coil(icoil)%Bt = two/rr * coil(icoil)%I * bsconstant
+        coil(icoil)%Bt = two/rr !* coil(icoil)%I * bsconstant
 
         Bx = - coil(icoil)%Bt * yy/rr
         By =   coil(icoil)%Bt * xx/rr
-        Bz =   coil(icoil)%Bz 
+        Bz =   coil(icoil)%Bz / (coil(icoil)%I * bsconstant + machprec) ! add machprec to avoid divide by zero
      case default
         FATAL(bfield0, .true., not supported coil types)
      end select
@@ -134,7 +135,7 @@ subroutine bfield1(icoil, x, y, z, tBx, tBy, tBz, ND)
 ! Discretizing factor is includeed; coil(icoil)%dd(kseg)
 !------------------------------------------------------------------------------------------------------   
   use globals, only: dp, coil, DoF, surf, NFcoil, Ncoils, Nteta, Nzeta, &
-                     zero, myid, ounit, Npc, one, bsconstant, cosnfp, sinnfp, Npc
+                     zero, myid, ounit, Npc, one, bsconstant, cosnfp, sinnfp, Npc, momentq
   implicit none
   include "mpif.h"
 
@@ -253,6 +254,8 @@ subroutine bfield1(icoil, x, y, z, tBx, tBy, tBz, ND)
         Bz(1, 2) = 3.0_dp*dlz*(-sint*sinp*dlx + sint*cosp*dly           )*rm5 
 #endif
 
+        !coil(icoil)%I = coil(icoil)%moment*sin(coil(icoil)%pho)**momentq
+
         Bx = Bx * coil(icoil)%I * bsconstant
         By = By * coil(icoil)%I * bsconstant
         Bz = Bz * coil(icoil)%I * bsconstant
@@ -309,9 +312,9 @@ subroutine coils_bfield(B,x,y,z)
      ! if ( myworkid /= modulo(icoil-1, nworker) ) cycle ! MPI
      ! Bx = zero; By = zero; Bz = zero
      call bfield0( icoil, x, y, z, Bx, By, Bz )
-     B(1) = B(1) + Bx
-     B(2) = B(2) + By
-     B(3) = B(3) + Bz  
+     B(1) = B(1) + Bx*coil(icoil)%I*bsconstant
+     B(2) = B(2) + By*coil(icoil)%I*bsconstant
+     B(3) = B(3) + Bz*coil(icoil)%I*bsconstant
   enddo
 !!$  do ip = 1, Npc
 !!$     tBx = zero ; tBy = zero ; tBz = zero

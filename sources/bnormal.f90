@@ -37,7 +37,7 @@ subroutine bnormal( ideriv )
        coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, &
        bnorm, t1B, t2B, bn, Ndof, Npc, Cdof, weight_bharm, case_bnormal, &
        weight_bnorm, ibnorm, mbnorm, ibharm, mbharm, LM_fvec, LM_fjac, &
-       bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn, dof_offset, ldof
+       bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn, dof_offset, ldof, momentq
   use bnorm_mod
   use bharm_mod
   implicit none
@@ -68,9 +68,9 @@ subroutine bnormal( ideriv )
            do icoil = 1, Ncoils
               call bfield0(icoil, surf(1)%xx(iteta, jzeta), surf(1)%yy(iteta, jzeta), &
                    & surf(1)%zz(iteta, jzeta), dBx(0,0), dBy(0,0), dBz(0,0))
-              surf(1)%Bx(iteta, jzeta) = surf(1)%Bx(iteta, jzeta) + dBx( 0, 0) 
-              surf(1)%By(iteta, jzeta) = surf(1)%By(iteta, jzeta) + dBy( 0, 0) 
-              surf(1)%Bz(iteta, jzeta) = surf(1)%Bz(iteta, jzeta) + dBz( 0, 0) 
+              surf(1)%Bx(iteta, jzeta) = surf(1)%Bx(iteta, jzeta) + dBx( 0, 0) * coil(icoil)%I * bsconstant
+              surf(1)%By(iteta, jzeta) = surf(1)%By(iteta, jzeta) + dBy( 0, 0) * coil(icoil)%I * bsconstant 
+              surf(1)%Bz(iteta, jzeta) = surf(1)%Bz(iteta, jzeta) + dBz( 0, 0) * coil(icoil)%I * bsconstant 
            enddo ! end do icoil
 
            call MPI_ALLREDUCE( MPI_IN_PLACE, surf(1)%Bx(iteta, jzeta), 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
@@ -151,11 +151,13 @@ subroutine bnormal( ideriv )
                  if (coil(icoil)%itype == 3) dBz(0,0) = zero  ! Bz doesn't change in itype=3
                  dBn(idof+1) = ( dBx(0,0)*surf(1)%nx(iteta,jzeta) &
                       &        + dBy(0,0)*surf(1)%ny(iteta,jzeta) &
-                      &        + dBz(0,0)*surf(1)%nz(iteta,jzeta) ) / coil(icoil)%I
+                      &        + dBz(0,0)*surf(1)%nz(iteta,jzeta) ) * bsconstant
+                 if (coil(icoil)%itype == 2) dBn(idof+1) = dBn(idof+1)*(coil(icoil)%moment*momentq*sin(coil(icoil)%pho)**(momentq-1)*cos(coil(icoil)%pho)) 
                  if (case_bnormal == 1) then  ! normalized over |B|;
                     dBm(idof+1) = ( dBx(0,0)*surf(1)%Bx(iteta,jzeta) &
                          &        + dBy(0,0)*surf(1)%By(iteta,jzeta) &
-                         &        + dBz(0,0)*surf(1)%Bz(iteta,jzeta) ) / coil(icoil)%I 
+                         &        + dBz(0,0)*surf(1)%Bz(iteta,jzeta) ) * bsconstant ! two is canceled below
+                    if (coil(icoil)%itype == 2) dBm(idof+1) = dBm(idof+1)*(coil(icoil)%moment*momentq*sin(coil(icoil)%pho)**(momentq-1)*cos(coil(icoil)%pho))
                  endif
 
                  idof = idof +1

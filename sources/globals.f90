@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='v0.8.01' ! version number
+  CHARACTER(LEN=10), parameter :: version='v0.9.00' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -95,6 +95,7 @@ module globals
   INTEGER              :: IsVaryGeometry =   1         
   INTEGER              :: NFcoil         =   4         
   INTEGER              :: Nseg           =   128 
+  INTEGER              :: momentq        =   4
               
   INTEGER              :: IsNormalize    =   1
   INTEGER              :: IsNormWeight   =   1
@@ -110,6 +111,7 @@ module globals
   REAL                 :: cssep_factor   =   1.000D+00 
   REAL                 :: weight_specw   =   0.000D+00
   REAL                 :: weight_ccsep   =   0.000D+00
+  REAL                 :: weight_pmsum   =   0.000D+00
   REAL                 :: weight_inorm   =   1.000D+00
   REAL                 :: weight_gnorm   =   1.000D+00
   REAL                 :: weight_mnorm   =   1.000D+00
@@ -186,6 +188,7 @@ module globals
                         IsVaryGeometry , & 
                         NFcoil         , &
                         Nseg           , &
+                        momentq        , &
                         IsNormalize    , &
                         IsNormWeight   , &
                         case_bnormal   , &
@@ -200,6 +203,7 @@ module globals
                         cssep_factor   , &
                         weight_specw   , &
                         weight_ccsep   , &
+                        weight_pmsum   , &
                         weight_inorm   , &
                         weight_gnorm   , &
                         weight_mnorm   , &
@@ -269,6 +273,7 @@ module globals
   type arbitrarycoil
      INTEGER              :: NS, Ic=0, Lc=0, itype, symmetry=0
      REAL                 :: I=zero,  L=zero, Lo, maxcurv, ox, oy, oz, mt, mp, Bt, Bz
+     REAL                 :: pho, moment
      REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), &
                              dl(:), dd(:)
      character(LEN=10)    :: name
@@ -337,6 +342,9 @@ module globals
   ! Spectral condensation;
   REAL                 :: specw
   REAL   , allocatable :: t1P(:), t2P(:,:)
+  ! PM volume
+  REAL                 :: pmsum, total_moment
+  REAL   , allocatable :: t1V(:), t2V(:,:)  
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

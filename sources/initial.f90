@@ -384,6 +384,7 @@ subroutine initial
         if (trim(input_coils) == 'none') input_coils = trim(ext)//".focus"
         inquire( file=trim(input_coils), exist=exist )
         FATAL( initial, .not.exist, FOCUS coil file ext.focus not provided )
+        FATAL( initial, mod(momentq, 2) .ne. 0, momentq can only be even number )        
         write(ounit, '("        : Read initial dipole   from : ", A, A)') trim(input_coils), '(Parameters only)'
         inquire( file=trim(fixed_coils), exist=exist )
         !FATAL( initial, .not.exist, fixed coil file ext.focus not provided )

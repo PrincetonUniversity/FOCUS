@@ -71,7 +71,7 @@ subroutine solvers
 
   if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "------------- Initial status ------------------------"
   if (myid == 0) write(ounit, '("output  : "A6" : "8(A12," ; "))') "iout", "mark", "chi", "dE_norm", &
-       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." 
+       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "PM eff. vol." 
   call costfun(1)
   call saveBmn    ! in bmnharm.h;
   iout = 0 ! reset output counter;
@@ -155,7 +155,8 @@ subroutine costfun(ideriv)
        ttlen      , t1L, t2L, weight_ttlen, case_length, &
        cssep      , t1S, t2S, weight_cssep, &
        specw      , t1P, t2P, weight_specw, &
-       ccsep      , t1C, t2C, weight_ccsep
+       ccsep      , t1C, t2C, weight_ccsep, &
+       pmsum      , t1V, t2V, weight_pmsum
 
   implicit none
   include "mpif.h"
@@ -197,6 +198,7 @@ subroutine costfun(ideriv)
 
      call length(0)
      call surfsep(0)
+     call minvol(0)
 
   endif
 
@@ -294,6 +296,19 @@ subroutine costfun(ideriv)
      endif
   endif
 
+  ! summation of PM volume
+  if (weight_pmsum > machprec) then
+ 
+     call minvol(ideriv)
+     chi = chi + weight_pmsum * pmsum
+     if     ( ideriv == 1 ) then
+        t1E = t1E +  weight_pmsum * t1V
+     elseif ( ideriv == 2 ) then
+        t1E = t1E +  weight_pmsum * t1V
+        t2E = t2E +  weight_pmsum * t2V
+     endif
+  endif
+
 !!$
 !!$  ! if (myid == 0) write(ounit,'("calling tlength used",f10.5,"seconds.")') finish-start
 !!$
@@ -375,7 +390,7 @@ end subroutine costfun
 subroutine normweight
   use globals, only: dp, zero, one, machprec, ounit, myid, xdof, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
        weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_specw, weight_ccsep, &
-       target_tflux, psi_avg, coil, Ncoils, case_length, Bmnc, Bmns, tBmnc, tBmns
+       target_tflux, psi_avg, coil, Ncoils, case_length, Bmnc, Bmns, tBmnc, tBmns, pmsum, weight_pmsum
 
   implicit none  
   include "mpif.h"
@@ -469,6 +484,17 @@ subroutine normweight
 
   endif
 
+  !-!-!-!-!-!-!-!-!-!-pmsum-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+  if( weight_pmsum >= machprec ) then
+
+     call minvol(0)
+     if (abs(pmsum) > machprec) weight_pmsum = weight_pmsum / pmsum
+     if( myid == 0 ) write(ounit, 1000) "weight_pmsum", weight_pmsum
+     if( myid .eq. 0 .and. weight_pmsum < machprec) write(ounit, '("warning : weight_pmsum < machine_precision, pmsum will not be used.")')
+
+  endif
+
 !!$!-!-!-!-!-!-!-!-!-!-eqarc-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 !!$
 !!$  if( weight_eqarc .ge. machprec ) then
@@ -503,7 +529,7 @@ subroutine output (mark)
 
   use globals, only: dp, zero, ounit, myid, ierr, astat, iout, Nouts, Ncoils, save_freq, Tdof, &
        coil, coilspace, FouCoil, chi, t1E, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
-       evolution, xdof, DoF, exit_tol, exit_signal, sumDE
+       evolution, xdof, DoF, exit_tol, exit_signal, sumDE, pmsum
 
   implicit none  
   include "mpif.h"
@@ -518,7 +544,7 @@ subroutine output (mark)
   FATAL( output , iout > Nouts+2, maximum iteration reached )
 
   if (myid == 0) write(ounit, '("output  : "I6" : "8(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, bharm, &
-       tflux, ttlen, cssep
+       tflux, ttlen, pmsum
 
   ! save evolution data;
   if (allocated(evolution)) then
@@ -529,7 +555,7 @@ subroutine output (mark)
      evolution(iout,4) = bharm
      evolution(iout,5) = tflux
      evolution(iout,6) = ttlen
-     evolution(iout,7) = cssep
+     evolution(iout,7) = pmsum
      !evolution(iout,8) = 0.0
      !evolution(iout,8) = ccsep
   endif

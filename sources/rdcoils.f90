@@ -198,7 +198,11 @@ subroutine rdcoils
      if (myid/=0) Ncoils = Ncoils_total / (Ncpu-1)
      if (myid==Ncpu-1) Ncoils = Ncoils + mod(Ncoils_total, Ncpu-1) ! The last one read more
      !MPIOUT( Ncoils )
+#ifdef TOPO
+     offset = 3+(myid-1)*(Ncoils_total/(Ncpu-1))*1 ! only for dipoles
+#else
      offset = 2+(myid-1)*(Ncoils_total/(Ncpu-1))*5 ! only for dipoles
+#endif
      !MPIOUT( offset )
                                
      if (myid /= 0) then
@@ -210,18 +214,25 @@ subroutine rdcoils
      do icpu = 1, ncpu-1
         if (myid == icpu) then                              ! each cpu read the coils at the same time.
            open( runit, file=trim(input_coils), status="old", action='read')
+
            do iskip = 1, offset
               read( runit,*)
            enddo
 
            do icoil = 1, Ncoils
-              read( runit,*)
+#ifdef TOPO
+              read( runit,*) coil(icoil)%itype, coil(icoil)%symmetry, coil(icoil)%name, &
+                   coil(icoil)%ox, coil(icoil)%oy, coil(icoil)%oz, &
+                   coil(icoil)%Ic, coil(icoil)%moment, coil(icoil)%pho, &
+                   coil(icoil)%Lc, coil(icoil)%mp, coil(icoil)%mt
+#else
               read( runit,*)
               read( runit,*) coil(icoil)%itype, coil(icoil)%symmetry, coil(icoil)%name
               read( runit,*)
               read( runit,*) coil(icoil)%Lc, coil(icoil)%ox, coil(icoil)%oy, coil(icoil)%oz, &
                    coil(icoil)%Ic, coil(icoil)%I , coil(icoil)%mt, coil(icoil)%mp      
-
+#endif
+              coil(icoil)%I = coil(icoil)%moment*sin(coil(icoil)%pho)**momentq
            enddo !end do icoil;
 
            close(runit)

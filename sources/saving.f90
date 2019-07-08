@@ -44,8 +44,12 @@ subroutine saving
   if( save_coils == 1 ) then
      if (myid==0) then
         open( wunit, file=trim(out_focus), status="unknown", form="formatted")
-        write(wunit, *) "# Total number of coils"
-        write(wunit, '(8X,I6)') Ncoils_total ! note the fixed coils are not written
+        write(wunit, '("Total number of coils")') 
+        write(wunit, '(2X,I8)') Ncoils_total ! note the fixed coils are not written
+#ifdef TOPO
+        write(wunit, '(2(A4,", "), A13, ", ", 3(A15,", "), 2(A2,", ",A15,", ",A15,", "))') &
+             "type", "symm.", "coilname", "ox", "oy", "oz", "Ic", "M_0", "pho", "Lc", "mp", "mt"
+#endif
         close(wunit)
      endif
 
@@ -56,10 +60,16 @@ subroutine saving
            open( wunit, file=trim(out_focus), status="old", position="append", action="write")
 
            do icoil = 1, Ncoils
-
+#ifdef TOPO
+              write(wunit, '(2(I4, ", ")A13,", ",3(ES15.8,", "),2(I2,", ",ES15.8,", ",ES15.8,", "))') &
+                   coil(icoil)%itype, coil(icoil)%symmetry, coil(icoil)%name, &
+                   coil(icoil)%ox, coil(icoil)%oy, coil(icoil)%oz, &
+                   coil(icoil)%Ic, coil(icoil)%moment, coil(icoil)%pho, &
+                   coil(icoil)%Lc, coil(icoil)%mp, coil(icoil)%mt
+#else
               write(wunit, *) "#-----------------", icoil, "---------------------------" 
               write(wunit, *) "#coil_type     coil_name"
-              write(wunit,'(3X,I3,4X,I3,4X,A10)') coil(icoil)%itype, coil(icoil)%symmetry, coil(icoil)%name
+              write(wunit,'(3X,I3,4X,I3,4X,A15)') coil(icoil)%itype, coil(icoil)%symmetry, coil(icoil)%name
 
               select case (coil(icoil)%itype)
               case (1)
@@ -87,6 +97,7 @@ subroutine saving
               case default
                  FATAL(restart, .true., not supported coil types)
               end select
+#endif
            enddo
            close(wunit)
 1000       format(9999ES23.15)
