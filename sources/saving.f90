@@ -44,8 +44,8 @@ subroutine saving
   if( save_coils == 1 ) then
      if (myid==0) then
         open( wunit, file=trim(out_focus), status="unknown", form="formatted")
-        write(wunit, '("Total number of coils")') 
-        write(wunit, '(2X,I8)') Ncoils_total ! note the fixed coils are not written
+        write(wunit, '("Total number of coils, momentq")') 
+        write(wunit, '(2X,I8, 2X, I4)') Ncoils_total, momentq ! note the fixed coils are not written
 #ifdef TOPO
         write(wunit, '(2(A4,", "), A13, ", ", 3(A15,", "), 2(A2,", ",A15,", ",A15,", "))') &
              "type", "symm.", "coilname", "ox", "oy", "oz", "Ic", "M_0", "pho", "Lc", "mp", "mt"
@@ -199,6 +199,14 @@ subroutine saving
   HWRITERV( 1                ,   pp_xtol       ,   pp_xtol                       )
 
   HWRITEIV( 1                ,   Nfp           ,   Nfp_raw                         )
+  HWRITERV( 1                ,   surf_vol      ,   surf(1)%vol                     )
+  HWRITERA( Nteta,Nzeta      ,   xsurf         ,   surf(1)%xx(0:Nteta-1,0:Nzeta-1) )
+  HWRITERA( Nteta,Nzeta      ,   ysurf         ,   surf(1)%yy(0:Nteta-1,0:Nzeta-1) )
+  HWRITERA( Nteta,Nzeta      ,   zsurf         ,   surf(1)%zz(0:Nteta-1,0:Nzeta-1) )
+  HWRITERA( Nteta,Nzeta      ,   nx            ,   surf(1)%nx(0:Nteta-1,0:Nzeta-1) )
+  HWRITERA( Nteta,Nzeta      ,   ny            ,   surf(1)%ny(0:Nteta-1,0:Nzeta-1) )
+  HWRITERA( Nteta,Nzeta      ,   nz            ,   surf(1)%nz(0:Nteta-1,0:Nzeta-1) )
+  HWRITERA( Nteta,Nzeta      ,   nn            ,   surf(1)%ds(0:Nteta-1,0:Nzeta-1) )
 
   if (allocated(bn)) then
      HWRITERA( Nteta,Nzeta      ,   plas_Bn       ,   surf(1)%pb(0:Nteta-1,0:Nzeta-1) )
@@ -207,6 +215,13 @@ subroutine saving
      HWRITERA( Nteta,Nzeta      ,   By            ,   surf(1)%By(0:Nteta-1,0:Nzeta-1) )
      HWRITERA( Nteta,Nzeta      ,   Bz            ,   surf(1)%Bz(0:Nteta-1,0:Nzeta-1) )
   endif
+
+  HWRITEIV( 1                ,   iout          ,   iout                          )
+  HWRITERV( 1                ,   Inorm         ,   Inorm                         )
+  HWRITERV( 1                ,   Gnorm         ,   Gnorm                         )
+  HWRITERV( 1                ,   Mnorm         ,   Mnorm                         )
+  HWRITERV( 1                ,   overlap       ,   overlap                       )
+  HWRITERA( iout, 8          ,   evolution     ,   evolution(1:iout, 0:7)        )
 
   if (allocated(ppr)) then
      HWRITERA( pp_ns, pp_maxiter+1,   ppr         ,  ppr(1:pp_ns, 0:pp_maxiter) )

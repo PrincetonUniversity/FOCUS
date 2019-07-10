@@ -48,7 +48,8 @@ SUBROUTINE minvol(ideriv)
         if ( coil(icoil)%Ic /= 0 ) then !if current is free;
            idof = idof +1
            if (coil(icoil)%itype == 2) then
-              t1V(idof) = coil(icoil)%moment*momentq*sin(coil(icoil)%pho)**(momentq-1)*cos(coil(icoil)%pho)
+              !t1V(idof) = coil(icoil)%moment*momentq*sin(coil(icoil)%pho)**(momentq-1)*cos(coil(icoil)%pho)
+              t1V(idof) = coil(icoil)%moment*momentq*(coil(icoil)%pho)**(momentq-1)
            else 
               t1V(idof) = zero
            endif

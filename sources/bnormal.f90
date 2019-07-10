@@ -152,12 +152,14 @@ subroutine bnormal( ideriv )
                  dBn(idof+1) = ( dBx(0,0)*surf(1)%nx(iteta,jzeta) &
                       &        + dBy(0,0)*surf(1)%ny(iteta,jzeta) &
                       &        + dBz(0,0)*surf(1)%nz(iteta,jzeta) ) * bsconstant
-                 if (coil(icoil)%itype == 2) dBn(idof+1) = dBn(idof+1)*(coil(icoil)%moment*momentq*sin(coil(icoil)%pho)**(momentq-1)*cos(coil(icoil)%pho)) 
+                ! if (coil(icoil)%itype == 2) dBn(idof+1) = dBn(idof+1)*(coil(icoil)%moment*momentq*sin(coil(icoil)%pho)**(momentq-1)*cos(coil(icoil)%pho)) 
+                 if (coil(icoil)%itype == 2) dBn(idof+1) = dBn(idof+1)*(coil(icoil)%moment*momentq*(coil(icoil)%pho)**(momentq-1))
                  if (case_bnormal == 1) then  ! normalized over |B|;
                     dBm(idof+1) = ( dBx(0,0)*surf(1)%Bx(iteta,jzeta) &
                          &        + dBy(0,0)*surf(1)%By(iteta,jzeta) &
                          &        + dBz(0,0)*surf(1)%Bz(iteta,jzeta) ) * bsconstant ! two is canceled below
-                    if (coil(icoil)%itype == 2) dBm(idof+1) = dBm(idof+1)*(coil(icoil)%moment*momentq*sin(coil(icoil)%pho)**(momentq-1)*cos(coil(icoil)%pho))
+                   ! if (coil(icoil)%itype == 2) dBm(idof+1) = dBm(idof+1)*(coil(icoil)%moment*momentq*sin(coil(icoil)%pho)**(momentq-1)*cos(coil(icoil)%pho))
+                    if (coil(icoil)%itype == 2) dBm(idof+1) = dBm(idof+1)*(coil(icoil)%moment*momentq*(coil(icoil)%pho)**(momentq-1))
                  endif
 
                  idof = idof +1

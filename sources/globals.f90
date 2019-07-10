@@ -128,6 +128,10 @@ module globals
   REAL                 :: CG_wolfe_c1    =   1.000D-04
   REAL                 :: CG_wolfe_c2    =   0.1
 
+  INTEGER              :: QN_maxiter     =   0
+  REAL                 :: QN_factor      =   1.000D+05
+  REAL                 :: QN_xtol        =   1.000D-08
+
   INTEGER              :: LM_maxiter     =   0
   REAL                 :: LM_xtol        =   1.000D-08
   REAL                 :: LM_ftol        =   1.000D-08
@@ -217,6 +221,9 @@ module globals
                         CG_xtol        , & 
                         CG_wolfe_c1    , &
                         CG_wolfe_c2    , &
+                        QN_maxiter     , & 
+                        QN_factor      , & 
+                        QN_xtol        , & 
                         LM_maxiter     , &  
                         LM_xtol        , & 
                         LM_ftol        , & 
@@ -305,6 +312,8 @@ module globals
   INTEGER              :: Cdof, Ndof, nfixcur, nfixgeo, Tdof, Ncoils_total, ldof, dof_offset
   REAL                 :: Inorm = one, Gnorm = one, Mnorm = one   !current, geometry, and moment normalizations;
   REAL   , allocatable :: xdof(:), dofnorm(:)
+  INTEGER, allocatable :: nbounds(:)
+  REAL   , allocatable :: lowbound(:), upbound(:)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

@@ -38,7 +38,7 @@ subroutine solvers
   use globals, only: dp, ierr, iout, myid, ounit, zero, IsQuiet, IsNormWeight, Ndof, Nouts, xdof, &
        case_optimize, DF_maxiter, LM_maxiter, CG_maxiter, HN_maxiter, TN_maxiter, coil, DoF, &
        weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, &
-       target_tflux, target_length, cssep_factor
+       target_tflux, target_length, cssep_factor, QN_maxiter
   implicit none
   include "mpif.h"
 
@@ -99,6 +99,19 @@ subroutine solvers
      call packdof(xdof)
      finish = MPI_Wtime()
      if (myid  ==  0) write(ounit,'(8X,": CG takes ", es23.15," seconds;")') finish - start
+  endif
+
+
+  !--------------------------------QN--------------------------------------------------------------------
+  if (QN_maxiter > 0)  then
+     if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "------------- Quasi-Newton method (QN)  -------------"
+     call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
+     start = MPI_Wtime()
+     call unpacking(xdof)
+     call qnewton
+     call packdof(xdof)
+     finish = MPI_Wtime()
+     if (myid  ==  0) write(ounit,'(8X,": QN takes ", es23.15," seconds;")') finish - start
   endif
 
   !--------------------------------LM--------------------------------------------------------------------

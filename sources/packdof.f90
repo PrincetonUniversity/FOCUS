@@ -134,7 +134,8 @@ SUBROUTINE unpacking(lxdof)
      case(2) 
         if(coil(icoil)%Ic /= 0) then 
            coil(icoil)%pho = lxdof(idof+1) * dofnorm(idof+1)
-           coil(icoil)%I = coil(icoil)%moment*sin(coil(icoil)%pho)**momentq
+           !coil(icoil)%I = coil(icoil)%moment*sin(coil(icoil)%pho)**momentq
+           coil(icoil)%I = coil(icoil)%moment*(coil(icoil)%pho)**momentq
            idof = idof + 1
         endif
         ND = DoF(icoil)%ND

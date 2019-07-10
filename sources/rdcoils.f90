@@ -232,7 +232,8 @@ subroutine rdcoils
               read( runit,*) coil(icoil)%Lc, coil(icoil)%ox, coil(icoil)%oy, coil(icoil)%oz, &
                    coil(icoil)%Ic, coil(icoil)%I , coil(icoil)%mt, coil(icoil)%mp      
 #endif
-              coil(icoil)%I = coil(icoil)%moment*sin(coil(icoil)%pho)**momentq
+              !coil(icoil)%I = coil(icoil)%moment*sin(coil(icoil)%pho)**momentq
+              coil(icoil)%I = coil(icoil)%moment*(coil(icoil)%pho)**momentq
            enddo !end do icoil;
 
            close(runit)

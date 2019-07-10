@@ -3,14 +3,14 @@
 ############################################################################################################
 
  ALLFILES= globals initial rdsurf rdknot rdcoils packdof bfield bmnharm bnormal fdcheck \
-           torflux length surfsep minvol datalloc solvers descent congrad lmalg saving diagnos \
+           torflux length surfsep minvol datalloc solvers descent congrad qnewton lmalg saving diagnos \
            specinp poinplot boozer wtmgrid focus
  HFILES= $(ALLFILES:=.f90)   # raw source files
  FFILES= $(ALLFILES:=_m.F90) # Fortran 90 files 
  PFILES= $(ALLFILES:=.pdf)   # documentations
  ROBJS=$(ALLFILES:=_r.o)     # release version objectives
  DOBJS=$(ALLFILES:=_d.o)     # debug version objectives
- NUMOBJ= ode.o lmder1.o hybrj.o # numerical libraries
+ NUMOBJ= ode.o lmder1.o hybrj.o lbfgsb.o # numerical libraries
 
 ############################################################################################################
 
@@ -70,6 +70,9 @@ lmder1.o : lmder1.f
 	$(FC) -c $(RFLAGS) -o $@ $<
 
 hybrj.o: hybrj.f
+	$(FC) -c $(FLAGS) -o $@ $<
+
+lbfgsb.o: lbfgsb.f
 	$(FC) -c $(FLAGS) -o $@ $<
 
 $(ROBJS): %_r.o: %_m.F90
