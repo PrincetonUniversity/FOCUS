@@ -113,6 +113,7 @@ module globals
   REAL                 :: weight_inorm   =   1.000D+00
   REAL                 :: weight_gnorm   =   1.000D+00
   REAL                 :: weight_mnorm   =   1.000D+00
+  REAL                 :: weight_curv    =   0.000D+00
 
   INTEGER              :: case_optimize  =   1
   REAL                 :: exit_tol       =   1.000D-04
@@ -196,6 +197,7 @@ module globals
                         weight_inorm   , &
                         weight_gnorm   , &
                         weight_mnorm   , &
+                        weight_curv    , &
                         case_optimize  , &
                         exit_tol       , &
                         DF_maxiter     , & 
@@ -293,8 +295,8 @@ module globals
 !latex \subsection{Optimization}
   ! General target functions;
   INTEGER              :: iout, Nouts, LM_iter, LM_mfvec
-  INTEGER              :: ibnorm = 0, ibharm = 0, itflux = 0, ittlen = 0, icssep = 0 ! starting number
-  INTEGER              :: mbnorm = 0, mbharm = 0, mtflux = 0, mttlen = 0, mcssep = 0 ! numbers of targets
+  INTEGER              :: ibnorm = 0, ibharm = 0, itflux = 0, ittlen = 0, icssep = 0, icurv = 0 ! starting number
+  INTEGER              :: mbnorm = 0, mbharm = 0, mtflux = 0, mttlen = 0, mcssep = 0, mcurv = 0 ! numbers of targets
   REAL                 :: chi, discretefactor, sumDE
   REAL   , allocatable :: t1E(:), t2E(:,:), evolution(:,:), coilspace(:,:), deriv(:,:)
   REAL   , allocatable :: LM_fvec(:), LM_fjac(:,:)
@@ -314,6 +316,9 @@ module globals
   ! Length constraint
   REAL                 :: ttlen
   REAL   , allocatable :: t1L(:), t2L(:,:)
+  ! Curvature constraint
+  REAL                 :: curv
+  REAL   , allocatable :: t1CU(:), t2CU(:,:)
   ! Coil-surface spearation
   INTEGER              :: psurf = 1 ! the prevent surface label; default 1 is the plasma boundary
   REAL                 :: cssep
@@ -347,7 +352,7 @@ module globals
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 !latex \subsection{Miscellaneous}
-  REAL                 :: tmpw_bnorm, tmpw_tflux ,tmpt_tflux, tmpw_ttlen, tmpw_specw, tmpw_ccsep, tmpw_bharm
+  REAL                 :: tmpw_bnorm, tmpw_tflux ,tmpt_tflux, tmpw_ttlen, tmpw_specw, tmpw_ccsep, tmpw_bharm !Need to add curv?
   REAL                 :: overlap = 0.0
                           !tmp weight for saving to restart file
   REAL, allocatable    :: mincc(:,:), coil_importance(:)

@@ -38,7 +38,7 @@ subroutine solvers
   use globals, only: dp, ierr, iout, myid, ounit, zero, IsQuiet, IsNormWeight, Ndof, Nouts, xdof, &
        case_optimize, DF_maxiter, LM_maxiter, CG_maxiter, HN_maxiter, TN_maxiter, coil, DoF, &
        weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, &
-       target_tflux, target_length, cssep_factor
+       target_tflux, target_length, cssep_factor, weight_curv
   implicit none
   include "mpif.h"
 
@@ -48,10 +48,10 @@ subroutine solvers
   if (myid == 0) write(ounit, *) "-----------OPTIMIZATIONS-------------------------------------"
   if (myid == 0) write(ounit, '("solvers : Total number of DOF is " I6)') Ndof
   if (myid == 0 .and. IsQuiet < 1) then
-     write(ounit, '(8X,": Initial weights are: "5(A12, ","))') "bnorm", "bharm", "tflux", &
-         "ttlen", "cssep"
-     write(ounit, '(8X,": "21X,5(ES12.5, ","))') weight_bnorm, weight_bharm, weight_tflux, &
-          weight_ttlen, weight_cssep
+     write(ounit, '(8X,": Initial weights are: "6(A12, ","))') "bnorm", "bharm", "tflux", &
+         "ttlen", "cssep", "curv"
+     write(ounit, '(8X,": "21X,6(ES12.5, ","))') weight_bnorm, weight_bharm, weight_tflux, &
+          weight_ttlen, weight_cssep, weight_curv
      write(ounit, '(8X,": target_tflux = "ES12.5" ; target_length = "ES12.5" ; cssep_factor = "ES12.5)') &
           target_tflux, target_length, cssep_factor
   endif
@@ -70,8 +70,8 @@ subroutine solvers
   if (IsNormWeight /= 0) call normweight
 
   if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "------------- Initial status ------------------------"
-  if (myid == 0) write(ounit, '("output  : "A6" : "8(A12," ; "))') "iout", "mark", "chi", "dE_norm", &
-       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." 
+  if (myid == 0) write(ounit, '("output  : "A6" : "10(A12," ; "))') "iout", "mark", "chi", "dE_norm", &
+       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep.", "curv" 
   call costfun(1)
   call saveBmn    ! in bmnharm.h;
   iout = 0 ! reset output counter;
@@ -155,7 +155,8 @@ subroutine costfun(ideriv)
        ttlen      , t1L, t2L, weight_ttlen, case_length, &
        cssep      , t1S, t2S, weight_cssep, &
        specw      , t1P, t2P, weight_specw, &
-       ccsep      , t1C, t2C, weight_ccsep
+       ccsep      , t1C, t2C, weight_ccsep, &
+       curv       , t1CU,t2CU,weight_curv
 
   implicit none
   include "mpif.h"
@@ -175,6 +176,7 @@ subroutine costfun(ideriv)
   cssep = zero
   specw = zero
   ccsep = zero
+  curv  = zero
 
   if (IsQuiet <= -2) then
 
@@ -197,6 +199,7 @@ subroutine costfun(ideriv)
 
      call length(0)
      call surfsep(0)
+     call curvature(0)
 
   endif
 
@@ -280,6 +283,19 @@ subroutine costfun(ideriv)
      endif
 
   endif
+
+  ! coil curvature
+  if (weight_curv > machprec) then
+
+     call curvature(ideriv)
+     chi = chi + weight_curv * curv
+     if     ( ideriv == 1 ) then
+        t1E = t1E +  weight_curv * t1CU
+     elseif ( ideriv == 2 ) then
+        t1E = t1E +  weight_curv * t1CU
+        t2E = t2E +  weight_curv * t2CU
+     endif
+  endif  
 
   ! coil surface separation;
   if (weight_cssep > machprec) then
@@ -375,7 +391,7 @@ end subroutine costfun
 subroutine normweight
   use globals, only: dp, zero, one, machprec, ounit, myid, xdof, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
        weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_specw, weight_ccsep, &
-       target_tflux, psi_avg, coil, Ncoils, case_length, Bmnc, Bmns, tBmnc, tBmns
+       target_tflux, psi_avg, coil, Ncoils, case_length, Bmnc, Bmns, tBmnc, tBmns, weight_curv, curv
 
   implicit none  
   include "mpif.h"
@@ -458,6 +474,17 @@ subroutine normweight
 
   endif
 
+  !-!-!-!-!-!-!-!-!-!-curv-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+  if( weight_curv >= machprec ) then
+
+     call curvature(0) 
+     if (abs(curv) > machprec) weight_curv = weight_curv / curv
+     if( myid == 0 ) write(ounit, 1000) "weight_curv", weight_curv
+     if( myid .eq. 0 .and. weight_curv < machprec) write(ounit, '("warning : weight_curv < machine_precision, curvature will not be used.")')
+
+  endif
+
   !-!-!-!-!-!-!-!-!-!-cssep-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   if( weight_cssep >= machprec ) then
@@ -503,7 +530,7 @@ subroutine output (mark)
 
   use globals, only: dp, zero, ounit, myid, ierr, astat, iout, Nouts, Ncoils, save_freq, Tdof, &
        coil, coilspace, FouCoil, chi, t1E, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
-       evolution, xdof, DoF, exit_tol, exit_signal, sumDE
+       evolution, xdof, DoF, exit_tol, exit_signal, sumDE, curv
 
   implicit none  
   include "mpif.h"
@@ -518,7 +545,7 @@ subroutine output (mark)
   FATAL( output , iout > Nouts+2, maximum iteration reached )
 
   if (myid == 0) write(ounit, '("output  : "I6" : "8(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, bharm, &
-       tflux, ttlen, cssep
+       tflux, ttlen, cssep, curv
 
   ! save evolution data;
   if (allocated(evolution)) then
@@ -532,6 +559,7 @@ subroutine output (mark)
      evolution(iout,7) = cssep
      !evolution(iout,8) = 0.0
      !evolution(iout,8) = ccsep
+     evolution(iout,8) = curv
   endif
 
   ! exit the optimization if no obvious changes in past 5 outputs; 07/20/2017

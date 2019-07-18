@@ -52,6 +52,7 @@ subroutine saving
      if(allocated(t1S)) deriv(1:Ndof,4) = t1S(1:Ndof)
      if(allocated(t1C)) deriv(1:Ndof,5) = t1C(1:Ndof)
      if(allocated(t1H)) deriv(1:Ndof,6) = t1H(1:Ndof)
+     if(allocated(t1CU)) deriv(1:Ndof,7)=t1CU(1:Ndof)
   endif
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -100,6 +101,7 @@ subroutine saving
   HWRITERV( 1                ,   weight_gnorm  ,   weight_gnorm                  )
   HWRITERV( 1                ,   weight_inorm  ,   weight_inorm                  )
   HWRITERV( 1                ,   weight_mnorm  ,   weight_mnorm                  )
+  HWRITERV( 1                ,   weight_curv   ,   weight_curv                   )
   HWRITERV( 1                ,   DF_tausta     ,   DF_tausta                     )
   HWRITERV( 1                ,   DF_tauend     ,   DF_tauend                     )
   HWRITERV( 1                ,   DF_xtol       ,   DF_xtol                       )
@@ -153,7 +155,7 @@ subroutine saving
   HWRITERV( 1                ,   Gnorm         ,   Gnorm                         )
   HWRITERV( 1                ,   Mnorm         ,   Mnorm                         )
   HWRITERV( 1                ,   overlap       ,   overlap                       )
-  HWRITERA( iout, 8          ,   evolution     ,   evolution(1:iout, 0:7)        )
+  HWRITERA( iout, 8          ,   evolution     ,   evolution(1:iout, 0:8)        )
   HWRITERA( iout, Tdof       ,   coilspace     ,   coilspace(1:iout, 1:Tdof)     )
 
   if (allocated(deriv)) then
@@ -186,6 +188,8 @@ subroutine saving
      HWRITEIV( 1                ,   mttlen        ,   mttlen                     )     
      HWRITEIV( 1                ,   icssep        ,   icssep                     )
      HWRITEIV( 1                ,   mcssep        ,   mcssep                     )
+     HWRITEIV( 1                ,   icurv         ,   icurv                      )
+     HWRITEIV( 1                ,   mcurv         ,   mcurv                      )
      HWRITERV( LM_mfvec         ,   LM_fvec       ,   LM_fvec                    )
      HWRITERA( LM_mfvec, Ndof   ,   LM_fjac       ,   LM_fjac                    )     
   endif

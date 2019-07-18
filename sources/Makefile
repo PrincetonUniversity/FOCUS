@@ -2,9 +2,9 @@
 
 ############################################################################################################
 
- ALLFILES= globals initial rdsurf rdknot rdcoils packdof bfield bmnharm bnormal fdcheck \
+ ALLFILES= globals curvature initial rdsurf rdknot rdcoils packdof bfield bmnharm bnormal fdcheck \
            torflux length surfsep datalloc solvers descent congrad lmalg saving diagnos \
-           specinp poinplot boozer wtmgrid focus
+           specinp poinplot boozer wtmgrid focus 
  HFILES= $(ALLFILES:=.f90)   # raw source files
  FFILES= $(ALLFILES:=_m.F90) # Fortran 90 files 
  PFILES= $(ALLFILES:=.pdf)   # documentations
