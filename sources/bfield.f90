@@ -117,7 +117,7 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
         case default
            FATAL(bfield0, .true., not supported coil types)
         end select
-        sBx = sBx + Bx * (-1)**is
+        sBx = sBx + Bx
         sBy = sBy + By
         sBz = sBz + Bz
      end do ! end do is
@@ -293,7 +293,7 @@ subroutine bfield1(icoil, x, y, z, tBx, tBy, tBz, ND)
            Bz = one
 
         end select
-        sBx = sBx + Bx * (-1)**is
+        sBx = sBx + Bx
         sBy = sBy + By
         sBz = sBz + Bz
      end do ! end do is
@@ -306,9 +306,9 @@ subroutine bfield1(icoil, x, y, z, tBx, tBy, tBz, ND)
         exit
      endif
      ! otherwise, sum the symmetric points
-     tBx = tBx + Bx*cosnfp(ip) - By*sinnfp(ip)
-     tBy = tBy + By*cosnfp(ip) + Bx*sinnfp(ip)
-     tBz = tBz + Bz
+     tBx = tBx + sBx*cosnfp(ip) - By*sinnfp(ip)
+     tBy = tBy + sBy*cosnfp(ip) + Bx*sinnfp(ip)
+     tBz = tBz + sBz
   enddo ! end do ip
 
   return
