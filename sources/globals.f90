@@ -99,7 +99,8 @@ module globals
   INTEGER              :: IsNormalize    =   1
   INTEGER              :: IsNormWeight   =   1
   INTEGER              :: case_bnormal   =   0
-  INTEGER              :: case_length    =   1         
+  INTEGER              :: case_length    =   1
+  INTEGER              :: case_curv      =   1  
   REAL                 :: weight_bnorm   =   1.000D+00
   REAL                 :: weight_bharm   =   0.000D+00
   REAL                 :: weight_tflux   =   0.000D+00
@@ -184,6 +185,7 @@ module globals
                         IsNormWeight   , &
                         case_bnormal   , &
                         case_length    , &
+                        case_curv      , &
                         weight_bnorm   , &
                         weight_bharm   , &
                         weight_tflux   , &

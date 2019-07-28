@@ -552,6 +552,15 @@ subroutine initial
         FATAL( initial, .true., selected case_length is not supported )
      end select
 
+     select case ( case_curv )
+     case ( 1 )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_curv', case_curv, 'Linear format of curvature penalty.'
+     case ( 2 )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_curv', case_curv, 'Quadratic format of curvature penalty.'
+     case default
+        FATAL( initial, .true., selected case_curv is not supported )
+     end select
+
      FATAL( initial, weight_bnorm  < zero, illegal )
      FATAL( initial, weight_bharm  < zero, illegal )
      FATAL( initial, weight_tflux  < zero, illegal )
