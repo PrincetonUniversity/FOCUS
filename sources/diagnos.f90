@@ -86,8 +86,9 @@ SUBROUTINE diagnos
      if(coil(icoil)%itype .ne. 1) exit ! only for Fourier
 
      if(Ncoils .eq. 1) exit !if only one coil
-     itmp = icoil + 1
-     if(icoil .eq. Ncoils) itmp = 1
+     itmp = icoil + 1 ! the guessed adjacent coil
+     if(icoil .eq. Ncoils .and. npc==1) itmp = 1
+     ! only when if npc==1, the last coil would be compared with the first one
 
      SALLOCATE(Atmp, (1:3,0:coil(icoil)%NS-1), zero)
      SALLOCATE(Btmp, (1:3,0:coil(itmp )%NS-1), zero)
