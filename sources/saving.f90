@@ -91,6 +91,7 @@ subroutine saving
   HWRITEIV( 1                ,   case_bnormal  ,   case_bnormal                  )
   HWRITEIV( 1                ,   case_length   ,   case_length                   )
   HWRITEIV( 1                ,   case_curv     ,   case_curv                     )
+  HWRITEIV( 1                ,   curv_alpha    ,   curv_alpha                    )
   HWRITERV( 1                ,   weight_bnorm  ,   weight_bnorm                  )
   HWRITERV( 1                ,   weight_bharm  ,   weight_bharm                  )
   HWRITERV( 1                ,   weight_tflux  ,   weight_tflux                  )

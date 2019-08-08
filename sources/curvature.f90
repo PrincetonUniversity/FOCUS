@@ -40,7 +40,6 @@ subroutine curvature(ideriv)
         if(coil(icoil)%itype .ne. 1) exit ! only for Fourier
         call CurvDeriv0(icoil,curvAdd)
         curv = curv + curvAdd; 
-        !Will update with more complex function probably
      enddo
 
      curv = curv / (Ncoils - Nfixgeo + machprec)
@@ -86,7 +85,7 @@ end subroutine curvature
 
 subroutine CurvDeriv0(icoil,curvRet)
 
-  use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils, case_curv
+  use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils, case_curv, k0, curv_alpha 
 
   implicit none
   include "mpif.h"
@@ -94,7 +93,7 @@ subroutine CurvDeriv0(icoil,curvRet)
   INTEGER, intent(in)  :: icoil
   REAL   , intent(out) :: curvRet 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  INTEGER              :: kseg
+  INTEGER              :: kseg, NS
   REAL,allocatable     :: curvv(:)
 
   SALLOCATE(curvv, (0:coil(icoil)%NS),zero)
@@ -117,6 +116,14 @@ subroutine CurvDeriv0(icoil,curvRet)
      curvv = curvv*curvv
      curvRet = sum(curvv) 
      curvRet = curvRet/coil(icoil)%NS
+  elseif( case_curv == 3 ) then
+     NS = coil(icoil)%NS
+     ! Put in penalty function
+     do kseg = 0,NS
+        if( curvv(kseg) > k0 ) then
+           
+        end if
+     enddo 
   else   
      FATAL( CurvDeriv0, .true. , invalid case_curv option ) 
   end if
