@@ -86,8 +86,9 @@ SUBROUTINE diagnos
      if(coil(icoil)%itype .ne. 1) exit ! only for Fourier
 
      if(Ncoils .eq. 1) exit !if only one coil
-     itmp = icoil + 1
-     if(icoil .eq. Ncoils) itmp = 1
+     itmp = icoil + 1 ! the guessed adjacent coil
+     if(icoil .eq. Ncoils .and. npc==1) itmp = 1
+     ! only when if npc==1, the last coil would be compared with the first one
 
      SALLOCATE(Atmp, (1:3,0:coil(icoil)%NS-1), zero)
      SALLOCATE(Btmp, (1:3,0:coil(itmp )%NS-1), zero)
@@ -101,6 +102,11 @@ SUBROUTINE diagnos
      Btmp(3, 0:coil(itmp )%NS-1) = coil(itmp)%zz(0:coil(itmp )%NS-1)
      
      call mindist(Atmp, coil(icoil)%NS, Btmp, coil(itmp)%NS, tmp_dist)
+
+#ifdef DEBUG
+     if(myid .eq. 0) write(ounit, '(8X": distance between  "I3 "-th and "I3"-th coil is : " ES23.15)') &
+          icoil, itmp, tmp_dist
+#endif
 
      if (minCCdist .ge. tmp_dist) minCCdist=tmp_dist
 
