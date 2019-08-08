@@ -103,6 +103,11 @@ SUBROUTINE diagnos
      
      call mindist(Atmp, coil(icoil)%NS, Btmp, coil(itmp)%NS, tmp_dist)
 
+#ifdef DEBUG
+     if(myid .eq. 0) write(ounit, '(8X": distance between  "I3 "-th and "I3"-th coil is : " ES23.15)') &
+          icoil, itmp, tmp_dist
+#endif
+
      if (minCCdist .ge. tmp_dist) minCCdist=tmp_dist
 
      DALLOCATE(Atmp)
