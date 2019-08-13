@@ -590,6 +590,8 @@ subroutine initial
 
   endif
 
+  ClBCAST( input_coils, 100, 0 )
+
   FATAL( initial, ncpu >= 1000 , too macy cpus, modify nodelabel)
   write(nodelabel,'(i3.3)') myid ! nodelabel is global; 30 Oct 15;
 

@@ -188,7 +188,7 @@ subroutine AllocData(itype)
 !!$     endif
      
      ! calculate the total moment
-     total_moment = zero
+     total_moment = machprec
      do icoil = 1, Ncoils
         if (coil(icoil)%itype == 2) then  ! permanent magnets
            if(coil(icoil)%Ic /= 0) then

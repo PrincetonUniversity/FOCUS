@@ -15,7 +15,7 @@ SUBROUTINE diagnos
 
   INTEGER           :: icoil, itmp=0, astat, ierr, NF, idof, i, j
   LOGICAL           :: lwbnorm = .True. , l_raw = .False.!if use raw coils data
-  REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist, ReDot, ImDot
+  REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist, ReDot, ImDot, B(3), x, y, z
   REAL, parameter   :: infmax = 1.0E6
   REAL, allocatable :: Atmp(:,:), Btmp(:,:)
 
@@ -28,6 +28,11 @@ SUBROUTINE diagnos
   if (myid == 0) write(ounit, '("diagnos : "5(A12," ; "))') , &
        "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." 
   if (myid == 0) write(ounit, '("        : "6(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep
+
+  ! output origin magnetic field
+  x = 1.5_dp ; y = 0 ; z = 0 ; B = 0
+  call coils_bfield(B,x,y,z)
+  if (myid == 0) write(ounit, '("        : B("3(F4.2,", ")") = ("3(ES12.5", ")")")') x,y,z,B(1),B(2),B(3) 
 
   !save all the coil parameters;
   if (allocated(coilspace)) then
