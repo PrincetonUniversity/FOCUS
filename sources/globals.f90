@@ -101,7 +101,7 @@ module globals
   INTEGER              :: case_bnormal   =   0
   INTEGER              :: case_length    =   1
   INTEGER              :: case_curv      =   1 
-  INTEGER              :: curv_alpha     =   2
+  REAL                 :: curv_alpha     =   2
   REAL                 :: k0             =   10 
   REAL                 :: weight_bnorm   =   1.000D+00
   REAL                 :: weight_bharm   =   0.000D+00
@@ -189,6 +189,7 @@ module globals
                         case_length    , &
                         case_curv      , &
                         curv_alpha     , &
+                        k0             , &
                         weight_bnorm   , &
                         weight_bharm   , &
                         weight_tflux   , &
