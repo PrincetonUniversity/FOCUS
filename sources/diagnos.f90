@@ -178,6 +178,8 @@ SUBROUTINE diagnos
        " ; Effective ratio pmsum=", ES23.15)') total_moment, pmsum
   !--------------------------------------------------------------------------------------------- 
 
+  call mag_torque()
+
   return
 
   !--------------------------------calculate coil importance------------------------------------  

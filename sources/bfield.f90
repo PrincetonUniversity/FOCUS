@@ -331,7 +331,7 @@ subroutine coils_bfield(B,x,y,z)
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   INTEGER              :: ierr, astat, ip
-  REAL                 :: Bx, By, Bz, tBx, tBy, tBz
+  REAL                 :: Bx, By, Bz
   INTEGER              :: icoil
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -346,20 +346,6 @@ subroutine coils_bfield(B,x,y,z)
      B(2) = B(2) + By*coil(icoil)%I*bsconstant
      B(3) = B(3) + Bz*coil(icoil)%I*bsconstant
   enddo
-!!$  do ip = 1, Npc
-!!$     tBx = zero ; tBy = zero ; tBz = zero
-!!$     do icoil = 1, Ncoils
-!!$        ! if ( myworkid /= modulo(icoil-1, nworker) ) cycle ! MPI
-!!$        ! Bx = zero; By = zero; Bz = zero
-!!$        call bfield0( icoil, x, y, z, Bx, By, Bz )
-!!$        tBx = tBx + Bx
-!!$        tBy = tBy + By
-!!$        tBz = tBz + Bz        
-!!$     enddo
-!!$     B(1) = B(1) + tBx*cosnfp(ip) - tBy*sinnfp(ip)
-!!$     B(2) = B(2) + tBy*cosnfp(ip) + tBx*sinnfp(ip)
-!!$     B(3) = B(3) + tBz
-!!$  enddo
   call MPI_ALLREDUCE(MPI_IN_PLACE, B, 3, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
 
   return
@@ -367,3 +353,76 @@ subroutine coils_bfield(B,x,y,z)
 end subroutine coils_bfield
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+SUBROUTINE mag_torque
+  use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, &
+       zero, myid, ounit, Npc, bsconstant, one, Ncoils_total, magtau, Ncpu
+  use mpi
+  implicit none
+
+  !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+  INTEGER :: offset, this_id, index
+  REAL :: x, y, z, mx, my, mz
+  REAL :: B(3)
+
+  INTEGER              :: ierr, astat, ip
+  REAL                 :: Bx, By, Bz
+  INTEGER              :: icoil
+
+
+  SALLOCATE( magtau, (1:3, 1:Ncoils_total), zero )
+
+  call MPI_BARRIER(MPI_COMM_WORLD, ierr ) ! wait all cpus;
+  offset = 0
+  if (myid/=0) then
+     offset = (myid-1) * (Ncoils_total / (Ncpu-1))
+  endif
+  
+  ! calculate the magnetic field
+  do index = 1, Ncoils_total
+     B = zero
+     ! find the CPU id
+     this_id = floor( (index-0.01) / (Ncoils_total/(Ncpu-1)) ) + 1
+     if (this_id > (Ncpu-1) ) this_id = (Ncpu-1)
+     ! if(myid==0) print *, 'index=', index, ', this_id=', this_id
+     ! get the position and broadcast
+     if (myid==this_id) then
+        x = coil(index-offset)%ox
+        y = coil(index-offset)%oy
+        z = coil(index-offset)%oz
+        mx = sin(coil(index-offset)%mt) * cos(coil(index-offset)%mp)
+        my = sin(coil(index-offset)%mt) * sin(coil(index-offset)%mp)
+        mz = cos(coil(index-offset)%mt)
+     endif
+     RlBCAST( x, 1, this_id )
+     RlBCAST( y, 1, this_id )
+     RlBCAST( z, 1, this_id )
+     RlBCAST( mx, 1, this_id )
+     RlBCAST( my, 1, this_id )
+     RlBCAST( mz, 1, this_id )
+
+     do icoil = 1, Ncoils
+        if (myid/=0 .and. index > offset .and. index <= (offset+Ncoils)) cycle ! exclude itself
+        call bfield0( icoil, x, y, z, Bx, By, Bz )
+        B(1) = B(1) + Bx*coil(icoil)%I*bsconstant
+        B(2) = B(2) + By*coil(icoil)%I*bsconstant
+        B(3) = B(3) + Bz*coil(icoil)%I*bsconstant
+     enddo
+
+     call MPI_ALLREDUCE(MPI_IN_PLACE, B, 3, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+
+     ! compute torque
+     magtau(1, index) =  my*B(3) - mz*B(2)
+     magtau(2, index) =  mz*B(1) - mx*B(3)
+     magtau(3, index) =  mx*B(2) - my*B(1)
+     
+  enddo
+
+  if(myid .eq. 0) write(ounit, '(8X": The maximum magnetic torque is : "ES23.15" N.m .")') &
+       sqrt( MAXVAL( magtau(1,1:Ncoils_total)*magtau(1,1:Ncoils_total) &
+                   + magtau(2,1:Ncoils_total)*magtau(2,1:Ncoils_total) &
+                   + magtau(3,1:Ncoils_total)*magtau(3,1:Ncoils_total) ) )
+
+  return
+
+END SUBROUTINE mag_torque
