@@ -4,7 +4,8 @@
 
  ALLFILES= globals initial rdsurf rdknot rdcoils packdof bfield bmnharm bnormal fdcheck \
            torflux length surfsep minvol datalloc solvers descent congrad qnewton lmalg saving diagnos \
-           specinp poinplot boozer wtmgrid focus
+           specinp poinplot boozer wtmgrid focus \
+           ncsx_ports_mod ncsx_ports_load ncsx_ports_eval
  HFILES= $(ALLFILES:=.f90)   # raw source files
  FFILES= $(ALLFILES:=_m.F90) # Fortran 90 files 
  PFILES= $(ALLFILES:=.pdf)   # documentations
