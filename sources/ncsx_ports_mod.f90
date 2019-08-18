@@ -6,6 +6,8 @@
 !-------------------------------------------------------------------------------
 module ncsx_ports_mod
 
+    use globals, only: dp
+
     implicit none
 
     REAL, parameter :: in2m = 0.0254  ! number of meters in one inch

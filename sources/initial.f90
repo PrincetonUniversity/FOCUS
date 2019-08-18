@@ -351,8 +351,8 @@ subroutine initial
         read(runit, focusin)
 
         ! turn on ncsx_ports functions only if namelist is found:
-        read(unit=runit, nml=ncsx_ports, iostat=port_nml_stat)
-        if (port_nml_stat == 0) ncsx_ports_on = .true.   
+        read(unit=runit, nml=ncsx_ports, iostat=ports_nml_stat)
+        if (ports_nml_stat == 0) ncsx_ports_on = .true.   
 
         close(runit)
      endif ! end of if( myid == 0 )

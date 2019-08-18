@@ -6,6 +6,8 @@
 !-------------------------------------------------------------------------------
 module ncsx_ports_load
 
+use globals, only: dp
+
 implicit none
 
 contains
@@ -93,6 +95,7 @@ subroutine load_circular_ports()
     INTEGER :: i
     REAL    :: ignore
     CHARACTER(len=16) :: errpfx = "load_circular_ports: "
+    CHARACTER(len=500) :: err_msg
 
     !---------------------------------------------------------------------------
     ! Loading of parameters from file
@@ -101,13 +104,19 @@ subroutine load_circular_ports()
     filename_cir = trim(dir_ncsx_param) // file_param_cir
     open(unit=port_unit, file=filename_cir, status="old", action="read", &
          iostat=open_status)
-    if (open_status /= 0) &
-        stop trim(errpfx) // " Unable to open file " // filename_cir
+    if (open_status /= 0) then
+        err_msg = trim(errpfx) // " Unable to open file " // filename_cir
+        write(*,*) trim(err_msg)
+        stop
+    end if 
 
     ! Skip over the first row (titles)
     read(unit=port_unit, fmt='(A200)', iostat=read_status) 
-    if (read_status /= 0) &
-        stop trim(errpfx) // " Error reading title row of " // filename_cir
+    if (read_status /= 0) then
+        err_msg = trim(errpfx) // " Error reading title row of " // filename_cir
+        write(*,*) trim(err_msg)
+        stop 
+    end if 
 
     ! Read data from each row
     do i = 1, nCirPrt
@@ -115,8 +124,11 @@ subroutine load_circular_ports()
              id_cir(i), plane_y0_in, plane_phi_deg, r_intersect_in, &
              root_cir(i), elev_theta_deg, ignore, ignore, ignore, &
              ir_cir_in, thick_cir_in, l0_cir_in, l1_cir_in
-        if (read_status /= 0) &
-            stop trim(errpfx) // " Error reading file " // filename_cir 
+        if (read_status /= 0) then
+            err_msg = trim(errpfx) // " Error reading file " // filename_cir 
+            write(*,*) trim(err_msg)
+            stop
+        end if
 
         ! Convert to metric units where necessary
         plane_y0(i)    = in2m    * plane_y0_in
@@ -192,25 +204,35 @@ subroutine load_dome_cyl
     CHARACTER(len=150) :: filename
     INTEGER :: open_status, read_status
     CHARACTER(len=16) :: errpfx = "load_dome_cyl: "
+    CHARACTER(len=500) :: err_msg
 
     ! Load data from file
     filename = trim(dir_ncsx_param) // file_param_dom
     open(unit=port_unit, file=filename, status="old", action="read", &
          iostat=open_status)
-    if (open_status /= 0) &
-        stop trim(errpfx) // " Unable to open file " // filename
+    if (open_status /= 0) then
+        err_msg = trim(errpfx) // " Unable to open file " // filename
+        write(*,*) trim(err_msg)
+        stop 
+    end if
 
     ! Skip the first line (headers)
     read(unit=port_unit, fmt=*, iostat=read_status)
-    if (read_status /= 0) &
-        stop trim(errpfx) // " Error reading header of " // filename
+    if (read_status /= 0) then
+        err_msg = trim(errpfx) // " Error reading header of " // filename
+        write(*,*) trim(err_msg)
+        stop 
+    end if 
 
     ! Extract data from second line
     read(unit=port_unit, fmt=*, iostat=read_status) &
         xo_dom_in, yo_dom_in, zo_dom_in, ax_dom_pre, ay_dom_pre, az_dom_pre, &
         ir_dom_in, l0_dom_in, l1_dom_in, thick_dom_in
-    if (read_status /= 0) &
-        stop trim(errpfx) // " Error extracting data from " // filename
+    if (read_status /= 0) then
+        err_msg = trim(errpfx) // " Error extracting data from " // filename
+        write(*,*) trim(err_msg)
+        stop
+    end if
 
     close(port_unit)
 
@@ -272,18 +294,25 @@ subroutine load_nb_port()
     INTEGER :: open_status, read_status
     REAL    :: ignore
     CHARACTER(len=20) :: errpfx = "load_nb_port: "
+    CHARACTER(len=500) :: err_msg
 
     ! Open the relevant file
     filename = trim(dir_ncsx_param) // file_param_nbp
     open(unit=port_unit, file=filename, status="old", action="read", &
          iostat=open_status)
-    if (open_status /= 0) &
-        stop trim(errpfx) // " Unable to open file " // filename
+    if (open_status /= 0) then
+        err_msg = trim(errpfx) // " Unable to open file " // filename
+        write(*,*) trim(err_msg)
+        stop
+    end if
 
     ! Ignore the header line
     read(unit=port_unit, fmt=*, iostat=read_status)
-    if (read_status /= 0) &
-        stop trim(errpfx) // " Error reading header line of " // filename
+    if (read_status /= 0) then
+        err_msg = trim(errpfx) // " Error reading header line of " // filename
+        write(*,*) trim(err_msg)
+        stop
+    end if 
 
     ! Read data from second line
     read(unit=port_unit, fmt=*, iostat=read_status) &
@@ -293,8 +322,11 @@ subroutine load_nb_port()
         ignore, ignore, ignore, ignore, ignore, ignore, &
         yo6_pnb_in, zo6_pnb_in, ir6_pnb_in, &
         ignore, thick_pnb_in, l0_pnb_in, l1_pnb_in
-    if (read_status /= 0) &
-        stop trim(errpfx) // " Error extracting data from " // filename
+    if (read_status /= 0) then
+        err_msg = trim(errpfx) // " Error extracting data from " // filename
+        write(*,*) trim(err_msg)
+        stop
+    end if
 
     close(port_unit)
 
@@ -391,26 +423,36 @@ subroutine load_port_4()
     CHARACTER(len=150) :: filename
     INTEGER :: open_status, read_status
     CHARACTER(len=25) :: errpfx = "load_port_4: "
+    CHARACTER(len=500) :: err_msg
 
     ! Open the file
     filename = trim(dir_ncsx_param) // file_param_p04
     open(unit=port_unit, file=filename, status="old", action="read", &
          iostat=open_status)
-    if (open_status /= 0) &
-        stop trim(errpfx) // " Unable to open file " // filename
+    if (open_status /= 0) then
+        err_msg = trim(errpfx) // " Unable to open file " // filename
+        write(*,*) trim(err_msg)
+        stop
+    end if
 
     ! Skip the header line
     read(unit=port_unit, fmt=*, iostat=read_status)
-    if (read_status /= 0) &
-        stop trim(errpfx) // " Error reading header line of " // filename
+    if (read_status /= 0) then
+        err_msg = trim(errpfx) // " Error reading header line of " // filename
+        write(*,*) trim(err_msg)
+        stop
+    end if
 
     ! Extract the data
     read(unit=port_unit, fmt=*, iostat=read_status) &
         phi_p04_deg, theta_a_p04_deg, theta_b_p04_deg, &
         w1a_p04_in, w1b_p04_in, w2a_p04_in, w2b_p04_in, h_p04_in, &
         r_circ_p04_in, l1_p04_in, d_in, d0_in, thick_p04_in
-    if (read_status /= 0) &
-        stop trim(errpfx) // " Error loading data from " // filename
+    if (read_status /= 0) then
+        err_msg = trim(errpfx) // " Error loading data from " // filename
+        write(*,*) trim(err_msg)
+        stop
+    end if
 
     close(port_unit)
 
@@ -487,25 +529,35 @@ subroutine load_port_12
     CHARACTER(len=150) filename
     INTEGER :: open_status, read_status
     CHARACTER(len=25) :: errpfx = "load_port_12: "
+    CHARACTER(len=500) :: err_msg
 
     ! Open the source file
     filename = trim(dir_ncsx_param) // file_param_p12
     open(unit=port_unit, file=filename, status="old", action="read", &
          iostat=open_status)
-    if (open_status /= 0) &
-        stop trim(errpfx) // " Unable to open file " // filename
+    if (open_status /= 0) then
+        err_msg = trim(errpfx) // " Unable to open file " // filename
+        write(*,*) trim(err_msg)
+        stop
+    end if
 
     ! Ignore the header row
     read(unit=port_unit, fmt=*, iostat=read_status)
-    if (read_status /= 0) &
-        stop trim(errpfx) // " Error reading header of " // filename
+    if (read_status /= 0) then
+        err_msg = trim(errpfx) // " Error reading header of " // filename
+        write(*,*) trim(err_msg)
+        stop
+    end if
 
     ! Read data from file
     read(unit=port_unit, fmt=*, iostat=read_status) &
          xo1_p12_in, ir1_p12_in, xo2_p12_in, ir2_p12_in, &
          l0_p12_in, l1_p12_in, thick_p12_in
-    if (read_status /= 0) &
-        stop trim(errpfx) // " Error importing data from " // filename
+    if (read_status /= 0) then
+        err_msg = trim(errpfx) // " Error importing data from " // filename
+        write(*,*) trim(err_msg)
+        stop
+    end if
 
     close(port_unit)
 

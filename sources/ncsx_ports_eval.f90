@@ -8,6 +8,8 @@
 
 module ncsx_ports_eval
 
+use globals, only: dp
+
 implicit none
 
 contains
