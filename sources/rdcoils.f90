@@ -94,12 +94,13 @@
 subroutine rdcoils
 
   use globals
+  use ncsx_ports_eval, only: in_ncsx_port
 
   implicit none
 
   include "mpif.h"
 
-  LOGICAL   :: exist
+  LOGICAL   :: exist, in_port
   INTEGER   :: icoil, maxnseg, ifirst, NF, itmp, ip, icoef, total_coef, num_pm, num_bg, & 
                num_per_array, num_tor, ipol, itor, offset, icpu, iskip
   REAL      :: Rmaj, zeta, totalcurrent, z0, r1, r2, z1, z2, rtmp, teta
@@ -225,6 +226,13 @@ subroutine rdcoils
                    coil(icoil)%ox, coil(icoil)%oy, coil(icoil)%oz, &
                    coil(icoil)%Ic, coil(icoil)%moment, coil(icoil)%pho, &
                    coil(icoil)%Lc, coil(icoil)%mp, coil(icoil)%mt
+              call in_ncsx_port(coil(icoil)%ox, coil(icoil)%oy, coil(icoil)%oz,&
+                                in_port)
+              if (in_port) then
+                  coil(icoil)%Ic = 0
+                  coil(icoil)%Lc = 0
+                  coil(icoil)%pho = 0
+              end if
 #else
               read( runit,*)
               read( runit,*) coil(icoil)%itype, coil(icoil)%symmetry, coil(icoil)%name

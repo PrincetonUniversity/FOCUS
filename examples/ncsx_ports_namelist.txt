@@ -1,0 +1,33 @@
+&NCSX_PORTS
+
+! Path to directory for files containing the port geometric parameter values
+dir_ncsx_param = 'dir_loc' ! Path to directory containing default files
+
+! Paths to parameter files (should normally assume the default names unless
+! the user creates new files with customized port geometry)
+!file_param_cir  ! Default: '[dir_ncsx_param]/Circular_Port_Parameters.csv'
+!file_param_nbp  ! Default: '[dir_ncsx_param]/NB_Port_Parameters.csv'
+!file_param_p12  ! Default: '[dir_ncsx_param]/Port_12_Parameters.csv'
+!file_param_p04  ! Default: '[dir_ncsx_param]/Port_4_Parameters.csv'
+!file_param_dom  ! Default: '[dir_ncsx_param]/Dome_Cylindrical_Parameters.csv'
+
+! Space to reserve around the wall of each port (in meters)
+port_gap = 0.0
+
+! Ports to be considered (default is false for each port)
+incl_port_nb = F
+incl_port_02 = F
+incl_port_04 = F
+incl_port_06 = F
+incl_port_07 = F
+incl_port_08 = F
+incl_port_09 = F
+incl_port_10 = F
+incl_port_11 = F
+incl_port_12 = F
+incl_port_15 = F
+incl_port_17 = F
+incl_port_18 = F
+incl_dome    = F  ! should normally be included if ports 17 or 18 are present
+
+/
