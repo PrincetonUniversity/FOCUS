@@ -18,6 +18,7 @@ port_gap = 0.0
 incl_port_nb = F
 incl_port_02 = F
 incl_port_04 = F
+incl_port_05 = F
 incl_port_06 = F
 incl_port_07 = F
 incl_port_08 = F
