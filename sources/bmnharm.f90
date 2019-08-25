@@ -126,7 +126,7 @@ SUBROUTINE readBmn
   !----------------------------------------------------------------------------------------
   use globals, only: dp, zero, half, pi2, myid, ounit, runit, ext, IsQuiet, Nteta, Nzeta, Nfp, &
                      NBmn, Bmnin, Bmnim, wBmn, tBmnc, tBmns, carg, sarg, Nfp_raw, case_bnormal, &
-                     input_harm
+                     input_harm, bharm_jsurf, surf
   use bharm_mod
   implicit none
   include "mpif.h"
@@ -195,6 +195,14 @@ SUBROUTINE readBmn
             carg(ij, imn) = cos(arg)
             sarg(ij, imn) = sin(arg)
          enddo
+         ! Additional weighting
+         if (bharm_jsurf == 1) then ! Bn * dA**2
+            carg(ij, 1:NBmn) = carg(ij, 1:NBmn) * (surf(1)%ds(ii, jj) * (pi2/(Nzeta*Nfp)) * (pi2/Nteta))**2
+            sarg(ij, 1:NBmn) = sarg(ij, 1:NBmn) * (surf(1)%ds(ii, jj) * (pi2/(Nzeta*Nfp)) * (pi2/Nteta))**2
+         else if ( bharm_jsurf == 2) then ! Bn * dA
+            carg(ij, 1:NBmn) = carg(ij, 1:NBmn) * (surf(1)%ds(ii, jj) * (pi2/(Nzeta*Nfp)) * (pi2/Nteta))
+            sarg(ij, 1:NBmn) = sarg(ij, 1:NBmn) * (surf(1)%ds(ii, jj) * (pi2/(Nzeta*Nfp)) * (pi2/Nteta))
+         end if
       enddo
    enddo
 

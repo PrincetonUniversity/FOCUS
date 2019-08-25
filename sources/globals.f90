@@ -101,6 +101,7 @@ module globals
   INTEGER              :: case_bnormal   =   0
   INTEGER              :: case_length    =   1         
   REAL                 :: weight_bnorm   =   1.000D+00
+  INTEGER              :: bharm_jsurf    =   0
   REAL                 :: weight_bharm   =   0.000D+00
   REAL                 :: weight_tflux   =   0.000D+00
   REAL                 :: target_tflux   =   0.000D+00
@@ -184,6 +185,7 @@ module globals
                         case_bnormal   , &
                         case_length    , &
                         weight_bnorm   , &
+                        bharm_jsurf    , &
                         weight_bharm   , &
                         weight_tflux   , &
                         target_tflux   , &
