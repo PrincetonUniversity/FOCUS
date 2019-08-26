@@ -31,7 +31,7 @@
 !latex the strong Wolfe conditions.
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
+#ifdef oldcg
 SUBROUTINE congrad
   use globals, only: dp, sqrtmachprec, myid, ounit, Ncoils, Ndof, t1E, iout, CG_maxiter, CG_xtol, xdof, &
        exit_signal, tstart, tfinish
@@ -95,6 +95,7 @@ SUBROUTINE congrad
 
   return
 END SUBROUTINE congrad
+#endif
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -105,9 +106,9 @@ SUBROUTINE wolfe( x0, p, alpha, iflag )
   implicit none
   include "mpif.h"
 
-  REAL   , INTENT( in)    :: x0(1:Ndof), p(1:Ndof)
-  INTEGER, INTENT(out)    :: iflag
-  REAL   , INTENT(out)    :: alpha
+  REAL   , INTENT( in)     :: x0(1:Ndof), p(1:Ndof)
+  INTEGER, INTENT(out)     :: iflag
+  REAL   , INTENT(inout)   :: alpha
 
   REAL                    :: zoom
   INTEGER                 :: i, maxiter
@@ -265,3 +266,89 @@ SUBROUTINE getdf(lxdof, f, g)
 
   return
 END SUBROUTINE getdf
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+#ifndef oldcg
+
+SUBROUTINE congrad
+  use globals, only: dp, sqrtmachprec, myid, ounit, Ncoils, Ndof, t1E, iout, CG_maxiter, CG_xtol, xdof, &
+       exit_signal, tstart, tfinish
+  use mpi
+  implicit none
+
+  INTEGER                 :: ierr, astat, iter, n, nfunc, ngrad, status
+  REAL                    :: f, gnorm
+  REAL, dimension(1:Ndof) :: x, g, d, xtemp, gtemp
+  EXTERNAL                :: myvalue, mygrad
+
+  tfinish = MPI_Wtime()
+  iter = 0
+  n = Ndof
+  call packdof(x(1:n)) ! initial xdof;
+  call cg_descent (CG_xtol, x, n, myvalue, mygrad, status, gnorm, f, iter, nfunc, ngrad, d, g, xtemp, gtemp)
+
+  tstart = MPI_Wtime()
+  call output(tstart-tfinish)
+
+  if (myid == 0) then
+     select case (status)
+     case (0) 
+        write(ounit, '("congrad : status="I1": convergence tolerance satisfied.")')  status
+     case (1) 
+        write(ounit, '("congrad : status="I1": change in func <= feps*|f|.")')  status
+     case (2) 
+        write(ounit, '("congrad : status="I1": total iterations exceeded maxit.")')  status
+     case (3) 
+        write(ounit, '("congrad : status="I1": slope always negative in line search.")')  status
+     case (4) 
+        write(ounit, '("congrad : status="I1": number secant iterations exceed nsecant.")')  status
+     case (5) 
+        write(ounit, '("congrad : status="I1": search direction not a descent direction.")')  status
+     case (6) 
+        write(ounit, '("congrad : status="I1": line search fails in initial interval.")')  status
+     case (7) 
+        write(ounit, '("congrad : status="I1": line search fails during bisection.")')  status
+     case (8) 
+        write(ounit, '("congrad : status="I1": line search fails during interval update.")')  status
+     case default 
+        write(ounit, '("congrad : status="I1": unknow options!")')  status
+     end select
+  end if
+
+  if(myid .eq. 0) write(ounit, '("congrad : Computation using conjugate gradient finished.")')
+     
+  return
+END SUBROUTINE congrad
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+SUBROUTINE myvalue(f, x, n)
+  use globals, only: dp, myid, ounit, ierr, chi
+  implicit none
+  include "mpif.h"
+
+  INTEGER, INTENT(in) :: n
+  REAL, INTENT(in)    :: x(n) 
+  REAL, INTENT(out)   :: f
+
+  call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
+  call unpacking(x)
+  call costfun(0)
+  f = chi
+  return
+
+END SUBROUTINE myvalue
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+SUBROUTINE mygrad(g, x, n)
+  use globals, only: dp, myid, ounit, ierr, t1E
+  implicit none
+  include "mpif.h"
+
+  INTEGER, INTENT(in) :: n
+  REAL, INTENT(in)    :: x(n)
+  REAL, INTENT(out)   :: g(n)
+
+  call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
+  call unpacking(x)
+  call costfun(1)
+  g = t1E
+END SUBROUTINE mygrad
+#endif

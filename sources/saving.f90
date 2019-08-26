@@ -164,7 +164,7 @@ subroutine saving
   HWRITERV( 1                ,   weight_ttlen  ,   weight_ttlen                  )
   HWRITERV( 1                ,   target_length ,   target_length                 )
   HWRITERV( 1                ,   weight_specw  ,   weight_specw                  )
-  HWRITERV( 1                ,   weight_ccsep  ,   weight_ccsep                  )
+  HWRITERV( 1                ,   weight_cssep  ,   weight_cssep                  )
   HWRITERV( 1                ,   weight_gnorm  ,   weight_gnorm                  )
   HWRITERV( 1                ,   weight_inorm  ,   weight_inorm                  )
   HWRITERV( 1                ,   weight_mnorm  ,   weight_mnorm                  )
