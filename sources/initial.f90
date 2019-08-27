@@ -289,11 +289,12 @@
 subroutine initial
 
   use globals
+  use ncsx_ports_mod, only: ncsx_ports, ncsx_ports_on
   implicit none
   include "mpif.h"
 
   LOGICAL :: exist
-  INTEGER :: icpu, index_dot
+  INTEGER :: icpu, index_dot, ports_nml_stat
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -348,6 +349,11 @@ subroutine initial
      if (myid == icpu-1) then                              ! each cpu read the namelist in turn;
         open(runit, file=trim(inputfile), status="old", action='read')
         read(runit, focusin)
+
+        ! turn on ncsx_ports functions only if namelist is found:
+        read(unit=runit, nml=ncsx_ports, iostat=ports_nml_stat)
+        if (ports_nml_stat == 0) ncsx_ports_on = .true.   
+
         close(runit)
      endif ! end of if( myid == 0 )
   enddo
