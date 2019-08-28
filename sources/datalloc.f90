@@ -192,7 +192,15 @@ subroutine AllocData(itype)
      do icoil = 1, Ncoils
         if (coil(icoil)%itype == 2) then  ! permanent magnets
            if(coil(icoil)%Ic /= 0) then
-              total_moment = total_moment + coil(icoil)%moment
+              if (coil(icoil)%symmetry == 0) then ! no symmetries
+                 total_moment = total_moment + coil(icoil)%moment
+              else if (coil(icoil)%symmetry == 1) then ! periodicity
+                 total_moment = total_moment + coil(icoil)%moment*Nfp
+              else if (coil(icoil)%symmetry == 2) then ! stellarator symmetry
+                 total_moment = total_moment + coil(icoil)%moment*Nfp*2
+              else
+                 FATAL( minvol01, .true., unspoorted symmetry option )
+              end if               
            endif
         endif
      enddo

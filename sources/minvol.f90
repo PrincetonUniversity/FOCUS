@@ -17,7 +17,7 @@ SUBROUTINE minvol(ideriv)
   ! minimize the volume of PM (summation of dipole manitude)
   ! pmsum = \sum M = \sum sin(pho)^momentq
   ! Here momentq is even to make sure M>0
-  use globals, only: dp, zero, ncpu, myid, ounit, &
+  use globals, only: dp, zero, ncpu, myid, ounit, Nfp, &
        pmsum, t1V, coil, Ndof, Ncoils, DoF, total_moment, dof_offset, ldof, momentq
   implicit none
   include "mpif.h"
@@ -32,7 +32,15 @@ SUBROUTINE minvol(ideriv)
      do icoil = 1, Ncoils
         if ( coil(icoil)%Ic /= 0 ) then !if current is free;
            if (coil(icoil)%itype == 2) then
-              pmsum = pmsum + coil(icoil)%I
+              if (coil(icoil)%symmetry == 0) then ! no symmetries
+                 pmsum = pmsum + coil(icoil)%I
+              else if (coil(icoil)%symmetry == 1) then ! periodicity
+                 pmsum = pmsum + coil(icoil)%I*Nfp
+              else if (coil(icoil)%symmetry == 2) then ! stellarator symmetry
+                 pmsum = pmsum + coil(icoil)%I*Nfp*2
+              else
+                 FATAL( minvol01, .true., unspoorted symmetry option )
+              end if 
            endif
         endif
      enddo
@@ -48,8 +56,16 @@ SUBROUTINE minvol(ideriv)
         if ( coil(icoil)%Ic /= 0 ) then !if current is free;
            idof = idof +1
            if (coil(icoil)%itype == 2) then
+              if (coil(icoil)%symmetry == 0) then ! no symmetries
+                 t1V(idof) = coil(icoil)%moment*momentq*(coil(icoil)%pho)**(momentq-1)
+              else if (coil(icoil)%symmetry == 1) then ! periodicity
+                 t1V(idof) = coil(icoil)%moment*momentq*(coil(icoil)%pho)**(momentq-1)*Nfp
+              else if (coil(icoil)%symmetry == 2) then ! stellarator symmetry
+                 t1V(idof) = coil(icoil)%moment*momentq*(coil(icoil)%pho)**(momentq-1)*Nfp*2
+              else
+                 FATAL( minvol02, .true., unspoorted symmetry option )
+              end if 
               !t1V(idof) = coil(icoil)%moment*momentq*sin(coil(icoil)%pho)**(momentq-1)*cos(coil(icoil)%pho)
-              t1V(idof) = coil(icoil)%moment*momentq*(coil(icoil)%pho)**(momentq-1)
            else 
               t1V(idof) = zero
            endif

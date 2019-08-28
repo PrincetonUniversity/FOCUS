@@ -37,7 +37,7 @@ endif
 
 #### EDDY Intel+IntelMPI+HDF5###############
 # available env: /home/caoxiang/Modules/focus/develop
-ifeq ($(CC),eddyintel)
+ifneq (,$(findstring eddy,$(HOSTNAME)))
  FC=mpiifort  # this is optional after recent updates
 endif
 
