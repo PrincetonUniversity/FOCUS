@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='v0.7.12' ! version number
+  CHARACTER(LEN=10), parameter :: version='v0.8.00' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -124,8 +124,8 @@ module globals
  
   INTEGER              :: CG_maxiter     =   0
   REAL                 :: CG_xtol        =   1.000D-08
-  REAL                 :: CG_wolfe_c1    =   1.000D-04
-  REAL                 :: CG_wolfe_c2    =   0.1
+  REAL                 :: CG_wolfe_c1    =   0.1
+  REAL                 :: CG_wolfe_c2    =   0.9
 
   INTEGER              :: LM_maxiter     =   0
   REAL                 :: LM_xtol        =   1.000D-08
@@ -349,7 +349,7 @@ module globals
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 !latex \subsection{Miscellaneous}
-  REAL                 :: tmpw_bnorm, tmpw_tflux ,tmpt_tflux, tmpw_ttlen, tmpw_specw, tmpw_ccsep, tmpw_bharm
+  REAL                 :: tmpw_bnorm, tmpw_tflux ,tmpt_tflux, tmpw_ttlen, tmpw_specw, tmpw_cssep, tmpw_bharm
   REAL                 :: overlap = 0.0
                           !tmp weight for saving to restart file
   REAL, allocatable    :: mincc(:,:), coil_importance(:)
