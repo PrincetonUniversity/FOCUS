@@ -25,7 +25,7 @@ module magnet_set_globals
 
     ! General parameters
     INTEGER :: coiltype = 2 ! FOCUS setting (should be 2 to indicate dipole)
-    INTEGER :: symm = 1     ! whether FOCUS should copy magnets to symmetric
+    INTEGER :: symm = 2     ! whether FOCUS should copy magnets to symmetric
                             ! locations
 
     ! Vacuum vessel geometric information
@@ -53,6 +53,8 @@ module magnet_set_globals
     INTEGER, dimension(np) :: segs_on_plate ! number of finite-length segmts
     REAL, dimension(np,nv) :: vert_r        ! r coordinates of each vertex
     REAL, dimension(np,nv) :: vert_z        ! z coordinates of each vertex
+    REAL, dimension(np,nv) :: vessel_r      ! r coordinate on vessel near vertex
+    REAL, dimension(np,nv) :: vessel_z      ! z coordinate on vessel near vertex
     REAL, dimension(np,nv) :: vert_theta    ! theta coord of each vertex (rad)
     REAL, dimension(np,nv) :: vert_sep      ! sep. btwn vertex and vessel (m)
 

@@ -12,6 +12,7 @@ contains
 subroutine arrays_zero()
 
     use magnet_set_globals, only: np, nv, nw, nl, vert_r, vert_z, &
+                                  vert_theta, vert_sep, vessel_r, vessel_z, &
                                   avail_mag_wd, avail_mag_lg, &
                                   arrays_zeroed
 
@@ -23,6 +24,10 @@ subroutine arrays_zero()
         do j = 1, nv
             vert_r(i,j) = 0
             vert_z(i,j) = 0
+            vert_theta(i,j) = 0
+            vert_sep(i,j) = 0
+            vessel_r(i,j) = 0
+            vessel_z(i,j) = 0
         end do
     end do
 
@@ -204,7 +209,7 @@ subroutine print_magnets_to_file(filename, output_type)
     !---------------------------------------------------------------------------
     if (trim(output_type) == 'focus') then
 
-        write(unit=file_unit, fmt=*) '# Total number of dipoles '
+        write(unit=file_unit, fmt='(A)') '# Total number of dipoles '
         write(unit=file_unit, fmt='(I0)', iostat=write_status) nMagnets_total
         if (write_status /= 0) then
             write(*, *) 'print_magnets_to_file: unable to write ' &
@@ -212,7 +217,7 @@ subroutine print_magnets_to_file(filename, output_type)
             stop
         end if
 
-        write(unit=file_unit, fmt=*) &
+        write(unit=file_unit, fmt='(A)') &
              '# coiltype, symmetry,  coilname,  ox,  oy,  oz,  Ic,  M_0,  ' &
              // 'pho,  Lc,  mp,  mt '
         
@@ -220,8 +225,9 @@ subroutine print_magnets_to_file(filename, output_type)
     
             write(mag_name, fmt='(A, I10.10)') 'pm_', i
             write(unit=file_unit, &
-                  fmt='(I0, A, I0, 3A, E15.8, A, E15.8, A, E15.8, A, ' // &
-                                      'E15.8, A, E15.8, A, E15.8, A, E15.8)', &
+                  fmt='(I0, A, I0, 3A, '                         // &
+                        'ES15.8, A, ES15.8, A, ES15.8, A, '      // &
+                        'ES15.8, A, ES15.8, A, ES15.8, A, ES15.8)', &
                   iostat=write_status) &
                       magnets(i)%coiltype,       ', ', &
                       magnets(i)%symm,           ', ', &
@@ -250,9 +256,9 @@ subroutine print_magnets_to_file(filename, output_type)
     
             write(mag_name, fmt='(A, I10.10)') 'pm_', i
             write(unit=file_unit, &
-                  fmt='(E15.8, X, E15.8, X, E15.8, X, E15.8, X, ' // &
-                      ' E15.8, X, E15.8, X, E15.8, X, E15.8, X, ' // &
-                      ' E15.8, X, E15.8, X, E15.8, X, E15.8      )', &
+                  fmt='(ES15.8, X, ES15.8, X, ES15.8, X, ES15.8, X, ' // &
+                      ' ES15.8, X, ES15.8, X, ES15.8, X, ES15.8, X, ' // &
+                      ' ES15.8, X, ES15.8, X, ES15.8, X, ES15.8      )', &
                   iostat=write_status) &
                       magnets(i)%ox, magnets(i)%oy, magnets(i)%oz, &
                       magnets(i)%nx, magnets(i)%ny, magnets(i)%nz, &

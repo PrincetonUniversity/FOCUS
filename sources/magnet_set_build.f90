@@ -19,13 +19,14 @@ contains
 subroutine vertex_theta_to_rz()
 
     use magnet_set_globals, only: pi, nPlates, nVertices, plate_phi, &
-                                  vert_theta, vert_sep, vert_r, vert_z
+                                  vert_theta, vert_sep, vert_r, vert_z, &
+                                  vessel_r, vessel_z
     use magnet_set_calc,    only: ves_r, ves_z, ves_drdt, ves_dzdt, cross_prod
 
     implicit none
 
     INTEGER :: i, j
-    REAL :: vr, vz, drdt, dzdt, alpha, nr, nz
+    REAL :: drdt, dzdt, alpha, nr, nz
 
     do i = 1, nPlates
 
@@ -36,12 +37,14 @@ subroutine vertex_theta_to_rz()
 
                 vert_r(i,j) = 0
                 vert_z(i,j) = 0
+                vessel_r(i,j) = 0
+                vessel_z(i,j) = 0
 
             else
 
                 ! Coordinates and derivatives on the vessel
-                vr   = ves_r( vert_theta(i,j), plate_phi(i) )
-                vz   = ves_z( vert_theta(i,j), plate_phi(i) )
+                vessel_r(i,j) = ves_r( vert_theta(i,j), plate_phi(i) )
+                vessel_z(i,j) = ves_z( vert_theta(i,j), plate_phi(i) )
                 drdt = ves_drdt( vert_theta(i,j), plate_phi(i) )
                 dzdt = ves_dzdt( vert_theta(i,j), plate_phi(i) )
 
@@ -51,8 +54,8 @@ subroutine vertex_theta_to_rz()
                 nz = sin(alpha)
 
                 ! r and z coordinates of the vertex
-                vert_r(i,j) = vr + vert_sep(i,j)*nr
-                vert_z(i,j) = vz + vert_sep(i,j)*nz
+                vert_r(i,j) = vessel_r(i,j) + vert_sep(i,j)*nr
+                vert_z(i,j) = vessel_z(i,j) + vert_sep(i,j)*nz
 
             end if
 
@@ -61,6 +64,54 @@ subroutine vertex_theta_to_rz()
     end do
 
 end subroutine vertex_theta_to_rz
+
+!-------------------------------------------------------------------------------
+! vertex_rz_to_theta_sep
+!
+! Calculates the length (separation distance) and poloidal angle of the line
+! that (1) connects the vessel to each plate vertex given by r and z coordinates
+! and (2) is perpendicular to the vessel in the phi plane of the plate vertex.
+!-------------------------------------------------------------------------------
+subroutine vertex_rz_to_theta_sep()
+
+    use magnet_set_globals, only: pi, ves_r00, nPlates, nVertices, plate_phi, &
+                                  vert_theta, vert_sep, vert_r, vert_z, &
+                                  vessel_r, vessel_z
+    use magnet_set_calc,    only: ves_perp_intersect_2d
+
+    implicit none
+
+    INTEGER :: i, j
+    REAL :: l0, theta0, chi2
+
+    do i = 1, nPlates
+
+        do j = 1, nVertices
+
+            ! Assume vertices with (0,0) are meant to not exist
+            if (vert_r(i,j) == 0 .and. vert_z(i,j) == 0) then
+
+                vert_sep(i,j) = 0
+                vert_theta(i,j) = 0
+                vessel_r(i,j) = 0
+                vessel_z(i,j) = 0
+
+            else
+
+                l0 = 0.0
+                theta0 = atan2(vert_z(i,j), vert_r(i,j)-ves_r00)
+                call ves_perp_intersect_2d(plate_phi(i), &
+                         vert_r(i,j), vert_z(i,j), l0, theta0, &
+                         vert_sep(i,j), vert_theta(i,j), &
+                         vessel_r(i,j), vessel_z(i,j), chi2)
+
+            end if
+
+        end do
+
+    end do
+
+end subroutine vertex_rz_to_theta_sep
 
 !-------------------------------------------------------------------------------
 ! count_stacks()
@@ -73,7 +124,8 @@ subroutine count_stacks()
  
     use magnet_set_globals, only: pi, vertex_mode, nPlates, nVertices, &
                                   plate_phi, plate_dphi, &
-                                  vert_r, vert_z, &
+                                  vert_r, vert_z, vert_theta, vert_sep, &
+                                  vessel_r, vessel_z, &
                                   segs_on_plate, nSegments, segments, &
                                   gap_tor, gap_pol, gap_end, &
                                   stack_ht_max, avail_mag_lg, &
@@ -84,7 +136,7 @@ subroutine count_stacks()
 
     INTEGER :: i, j, n
     REAL :: vert_dr, vert_dz
-    REAL, allocatable :: seg_lg(:,:), alpha(:,:), avail_dims(:)
+    REAL, allocatable :: seg_lg(:,:), alpha(:,:), beta(:,:), avail_dims(:)
 
     ! Initial status checks
     if (.not. plates_initialized) then
@@ -95,11 +147,19 @@ subroutine count_stacks()
     end if
 
     ! Calculate vertex r and z coords if not explicitly supplied
-    if (trim(vertex_mode) == 'theta_sep') call vertex_theta_to_rz
+    if (trim(vertex_mode) == 'theta_sep') then
+        call vertex_theta_to_rz
+    else if (trim(vertex_mode) == 'rz') then
+        call vertex_rz_to_theta_sep
+    else
+        write(*,*) 'count_stacks: unrecognized vertex_mode'
+        stop
+    end if
 
     ! Determine the lengths and angles of each vertex
     nSegments = 0
-    allocate( seg_lg(nPlates, nVertices-1),  alpha(nPlates, nVertices-1) )
+    allocate( seg_lg(nPlates, nVertices-1),  alpha(nPlates, nVertices-1) , &
+              beta(nPlates, nVertices-1) )
     do i = 1, nPlates
         segs_on_plate(i) = 0
         do j = 1, nVertices-1
@@ -107,10 +167,17 @@ subroutine count_stacks()
             ! If no more nonzero vertices, move on to the next plate
             if (vert_r(i,j+1) == 0 .and. vert_z(i,j+1) == 0) exit
 
+            ! Segment length and angle relative to r-hat
             vert_dr = vert_r(i,j+1) - vert_r(i,j)
             vert_dz = vert_z(i,j+1) - vert_z(i,j)
             seg_lg(i,j) = sqrt( vert_dr*vert_dr + vert_dz*vert_dz )
             alpha(i,j) = atan2( vert_dz, vert_dr ) - 0.5 * pi
+
+            ! Angle of the line to the segment from the vessel reference point
+            beta(i,j) = atan2(vert_z(i,j) - vessel_z(i,j), &
+                              vert_r(i,j) - vessel_r(i,j))
+
+            ! Running total of the segments on the current support plate
             nSegments = nSegments + 1
             segs_on_plate(i) = segs_on_plate(i) + 1
 
@@ -137,14 +204,16 @@ subroutine count_stacks()
                 segments(n)%gap_con_1 = 0
             else
                 segments(n)%gap_con_1 = &
-                    concavity_gap(alpha(i,j-1), alpha(i,j), stack_ht_max)
+                    concavity_gap(alpha(i,j-1), alpha(i,j), stack_ht_max, &
+                                  1, vert_sep(i,j), beta(i,j))
             end if
 
             if (j == segs_on_plate(i)) then
                 segments(n)%gap_con_2 = 0
             else
                 segments(n)%gap_con_2 = &
-                    concavity_gap(alpha(i,j), alpha(i,j+1), stack_ht_max)
+                    concavity_gap(alpha(i,j), alpha(i,j+1), stack_ht_max, &
+                                  2, vert_sep(i,j+1), beta(i,j+1))
            end if
 
         end do
@@ -165,7 +234,7 @@ subroutine count_stacks()
         nStacks_total = nStacks_total + segments(i)%nStacks
     end do   
 
-    deallocate(seg_lg, alpha, avail_dims)
+    deallocate(seg_lg, alpha, beta, avail_dims)
 
     segments_initialized = .true.
 
@@ -306,6 +375,8 @@ subroutine count_magnets()
 
     end do
 
+    deallocate(avail_dims)
+
     stacks_initialized = .true.
 
 end subroutine count_magnets 
@@ -377,6 +448,10 @@ subroutine magnet_properties
             magnets(n)%coiltype = coiltype
             magnets(n)%symm = symm
 
+            magnets(n)%n_phi = atan2(magnets(n)%ny, magnets(n)%nx)
+            magnets(n)%n_theta = &
+                atan2(sqrt(magnets(n)%nx**2 + magnets(n)%ny**2), magnets(n)%nz)
+
         end do
 
     end do
@@ -387,7 +462,7 @@ end subroutine magnet_properties
 
 
 !-------------------------------------------------------------------------------
-! concavity_gap(alpha1, alpha2, h)
+! concavity_gap(alpha1, alpha2, h, vert_sep, beta)
 !
 ! Determines the gap spacing required between a rectangular magnet block and the
 ! vertex of a plate segment that makes a concave angle with an adjoining
@@ -404,28 +479,56 @@ end subroutine magnet_properties
 !                                major-radius unit vector.
 !     REAL :: h               -> height of the magnet block above the plate
 !                                segment
+!     INTEGER :: which_alpha  -> 1 or 2, depending on which value of alpha
+!                                corresponds to the segment under consideration
+!     REAL :: vert_sep        -> separation distance between the vertex and
+!                                the point on the vessel along a vessel normal
+!     REAL :: beta            -> angle of the normal relative to the radial
+!                                unit vector
 !-------------------------------------------------------------------------------
-REAL function concavity_gap(alpha1, alpha2, h)
+REAL function concavity_gap(alpha1, alpha2, h, which_alpha, vert_sep, beta)
 
     use magnet_set_globals, only: pi
 
     implicit none
 
     ! Input parameters are as defined in the documentation string
-    REAL, intent(IN) :: alpha1, alpha2, h
-    REAL :: d_alpha
+    REAL, intent(IN) :: alpha1, alpha2, h, vert_sep, beta
+    INTEGER, intent(IN) :: which_alpha
+    REAL :: d_alpha, angle, allowable_ht
 
-    d_alpha = alpha2 - alpha1
-
-    ! Adjust d_alpha to account for phase jumps
-    if (d_alpha < -pi) d_alpha = d_alpha + 2 * pi
-    if (d_alpha >  pi) d_alpha = d_alpha - 2 * pi
-
-    if (d_alpha <= 0) then
-        ! Case of a convex or straight angle
-        concavity_gap = 0.0
+    ! Angle btw. vessel normal and perp. bisector of segment from pt. on vessel
+    if (which_alpha == 1) then
+        angle = beta - alpha1
+    else if (which_alpha == 2) then
+        angle = alpha2 - beta
     else
-        concavity_gap = h / tan( 0.5 * (pi - d_alpha) )
+        write(*,*) 'concavity_gap: bad input for which_alpha parameter'
+        stop
+    end if
+    
+    ! Determine the allowable height from the segment to avoid vessel collision
+    allowable_ht = vert_sep * cos(angle)
+
+    if (allowable_ht < h) then
+
+        concavity_gap = max(0.0, vert_sep * sin(angle))
+
+    else
+
+        d_alpha = alpha2 - alpha1
+    
+        ! Adjust d_alpha to account for phase jumps
+        if (d_alpha < -pi) d_alpha = d_alpha + 2 * pi
+        if (d_alpha >  pi) d_alpha = d_alpha - 2 * pi
+    
+        if (d_alpha <= 0) then
+            ! Case of a convex or straight angle
+            concavity_gap = 0.0
+        else
+            concavity_gap = h / tan( 0.5 * (pi - d_alpha) )
+        end if
+
     end if
 
 end function concavity_gap

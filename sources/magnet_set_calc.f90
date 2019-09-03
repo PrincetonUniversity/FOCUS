@@ -186,6 +186,94 @@ subroutine ves_dist_2d(phi, or, oz, ar, az, l0, theta0, l, theta, r, z, chi2)
 end subroutine ves_dist_2d
 
 !-------------------------------------------------------------------------------
+! ves_perp_intersect_2d(phi, or, oz, l0, theta0, l, theta, r, z)
+!
+! Computes the poloidal angle at which a line extending from a given point
+! (or, oz) in a poloidal plane interscts the vessel wall at a perpendicular
+! angle. Also computes the distance from the input point and the vessel 
+! intersection point.
+!
+! Input parameters:
+!     REAL :: phi         -> the toroidal angle (radians) of the cross-section
+!     REAL :: or, oz      -> r and z coordinates (meters) of the ref. point
+!     REAL :: l0, theta0  -> initial guesses of the distance l, as well as
+!                            the theta coordinate of the intersection point
+!                            on the vessel
+!
+! Return parameters:
+!     REAL :: l           -> distance from the point to the vessel
+!     REAL :: theta       -> theta coordinate of the intersection point
+!     REAL :: r, z        -> r and z coordinates of the intersection point
+!-------------------------------------------------------------------------------
+subroutine ves_perp_intersect_2d(phi, or, oz, l0, theta0, l, theta, r, z, chi2)
+
+    use magnet_set_globals, only: ves_tol, maxIter
+
+    implicit none
+
+    REAL, intent(IN)  :: phi, or, oz, l0, theta0
+    REAL, intent(OUT) :: l, theta, r, z, chi2
+    INTEGER :: i
+    REAL :: vr, vz, nr, nz, fr, fz, sl, st
+    REAL :: drdt, dzdt, d2rdt2, d2zdt2, norm, dnorm_dt, dnr_dt, dnz_dt
+    REAL ::  jac_rl,  jac_rt,  jac_zl,  jac_zt
+    REAL :: ijac_lr, ijac_lz, ijac_tr, ijac_tz
+
+    ! Initialize values for which to solve
+    l     = l0
+    theta = theta0
+
+    do i = 1, maxIter
+
+        ! Compute vessel coordinates and derivatives
+        vr = ves_r(theta, phi)
+        vz = ves_z(theta, phi)
+        drdt = ves_drdt(theta, phi)
+        dzdt = ves_dzdt(theta, phi)
+        d2rdt2 = ves_d2rdt2(theta, phi)
+        d2zdt2 = ves_d2zdt2(theta, phi)
+
+        ! Unit vector normal to the vessel
+        norm = sqrt(drdt**2 + dzdt**2)
+        nr = dzdt/norm
+        nz = -drdt/norm
+
+        ! components that should ideally be zero
+        fr = vr + l*nr - or
+        fz = vz + l*nz - oz
+
+        ! terminate if solution has sufficiently converged
+        chi2 = fr*fr + fz*fz
+        if (chi2 < ves_tol*ves_tol) exit
+
+        ! Compute the Jacobian, first column
+        jac_rl = nr
+        jac_zl = nz
+        
+        ! compute the Jacobian, second column
+        dnorm_dt = (drdt*d2rdt2 + dzdt*d2zdt2) / norm
+        dnr_dt =  d2zdt2/norm - dzdt*dnorm_dt/norm**2
+        dnz_dt = -d2rdt2/norm + drdt*dnorm_dt/norm**2
+        jac_rt = drdt + l*dnr_dt
+        jac_zt = dzdt + l*dnz_dt
+
+        ! invert the Jacobian
+        call inverse_2x2( jac_rl,  jac_rt,  jac_zl,  jac_zt, &
+                         ijac_lr, ijac_lz, ijac_tr, ijac_tz )
+
+        ! The Newton step
+        sl = -ijac_lr * fr - ijac_lz * fz
+        st = -ijac_tr * fr - ijac_tz * fz
+
+        ! Update the parameters
+        l     = l     + sl
+        theta = theta + st
+
+    end do
+
+end subroutine ves_perp_intersect_2d
+
+!-------------------------------------------------------------------------------
 ! ves_unorm(phi, r, drdt, drdp, dzdt, dzdp, ux, uy, uz)
 !
 ! Computes the unit normal vector at a given point characterized by theta and
@@ -326,6 +414,8 @@ REAL function ves_drdp(theta, phi)
                             + vn(i)*vrs(i)*cos(vm(i)*theta + vn(i)*nfp*phi)
     end do
 
+    ves_drdp = ves_drdp * nfp
+
 end function ves_drdp
 
 !-------------------------------------------------------------------------------
@@ -372,7 +462,60 @@ REAL function ves_dzdp(theta, phi)
                             - vn(i)*vzc(i)*sin(vm(i)*theta + vn(i)*nfp*phi)
     end do
 
+    ves_dzdp = ves_dzdp * nfp
+
 end function ves_dzdp
+
+!-------------------------------------------------------------------------------
+! ves_d2rdt2(theta, phi)
+!
+! Computes the second derivative of the r coordinate of the vessel boundary with
+! respect to the poloidal angle at the location given by theta and phi.
+!-------------------------------------------------------------------------------
+REAL function ves_d2rdt2(theta, phi)
+
+    use magnet_set_globals, only: nModes, nfp, vrc, vrs, vm, vn
+
+    implicit none
+
+    REAL, intent(IN) :: theta, phi
+    INTEGER :: i
+
+    ves_d2rdt2 = 0
+    do i = 1, nModes
+        ves_d2rdt2 = ves_d2rdt2 &
+                         - vm(i)**2*vrc(i)*cos(vm(i)*theta + vn(i)*nfp*phi) &
+                         - vm(i)**2*vrs(i)*sin(vm(i)*theta + vn(i)*nfp*phi)
+    end do
+
+
+end function ves_d2rdt2
+
+!-------------------------------------------------------------------------------
+! ves_d2zdt2(theta, phi)
+!
+! Computes the second derivative of the z coordinate of the vessel boundary with
+! respect to the toroidal angle at the location given by theta and phi.
+!-------------------------------------------------------------------------------
+REAL function ves_d2zdt2(theta, phi)
+
+    use magnet_set_globals, only: nModes, nfp, vzs, vzc, vm, vn
+
+    implicit none
+
+    REAL, intent(IN) :: theta, phi
+    INTEGER :: i
+
+    ves_d2zdt2 = 0
+    do i = 1, nModes
+        ves_d2zdt2 = ves_d2zdt2 &
+                         - vm(i)**2*vzs(i)*sin(vm(i)*theta + vn(i)*nfp*phi) &
+                         - vm(i)**2*vzc(i)*cos(vm(i)*theta + vn(i)*nfp*phi)
+    end do
+
+end function ves_d2zdt2
+
+
 
 !-------------------------------------------------------------------------------
 ! cross_prod(ax, ay, az, bx, by, bz, cx, cy, cz)
