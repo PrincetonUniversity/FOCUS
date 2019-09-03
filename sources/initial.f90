@@ -612,7 +612,7 @@ subroutine initial
   tmpt_tflux = target_tflux
   tmpw_ttlen = weight_ttlen
  !tmpw_specw = weight_specw
-  tmpw_ccsep = weight_ccsep
+  tmpw_cssep = weight_cssep
 
   call MPI_BARRIER( MPI_COMM_WORLD, ierr )
 
