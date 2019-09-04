@@ -41,7 +41,7 @@
  DF_tausta      =        0.000D+00      ! starting value of τ. Usually 0.0 is a good idea
  DF_tauend      =        1.000D-00      ! ending value of τ. The larger value of τend − τsta, the more optimized
 
- CG_maxiter     =        50             ! maximum iterations allowed for using Conjugate Gradient (CG)
+ CG_maxiter     =       10              ! maximum iterations allowed for using Conjugate Gradient (CG)
  CG_xtol        =        1.000D-08      ! the stopping criteria of finding minimum; if |dχ2/dX| < CG xtol, exit the optimization
  CG_wolfe_c1    =        0.1            ! c1 value in the strong wolfe condition for line search, (0.0, 0.5) 
  CG_wolfe_c2    =        0.9            ! c2 value in the strong wolfe condition for line search; 0 < c1 < c2 < 1

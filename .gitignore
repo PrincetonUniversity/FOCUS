@@ -21,3 +21,7 @@
 
 bin/
 docs/
+
+examples/d3d_RMPx/
+examples/rotating_ellipse/
+examples/lhd/
