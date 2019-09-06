@@ -219,9 +219,13 @@ subroutine AllocData(itype)
         do icoil = 1, Ncoils
               if(coil(icoil)%Ic /= 0) then 
                  if (coil(icoil)%itype == 2) then  ! permanent magnets
-                    lowbound(idof+1) = zero
-                    upbound(idof+1)  = one 
-                    nbounds(idof+1)  = 2
+                    if (allow_inverse) then
+                       lowbound(idof+1) = -one
+                    else
+                       lowbound(idof+1) = zero
+                    endif
+                    upbound(idof+1)  =  one 
+                    nbounds(idof+1)  =  2
                  endif
                  idof = idof + 1
               endif
@@ -230,7 +234,7 @@ subroutine AllocData(itype)
                  if (coil(icoil)%itype == 2) then  ! permanent magnets
                     lowbound(idof+1:idof+ND) = -pi
                     upbound(idof+1:idof+ND)  =  pi
-                    nbounds(idof+1:idof+ND)  = 2   
+                    nbounds(idof+1:idof+ND)  =  2   
                  endif
                  idof = idof + ND
               endif

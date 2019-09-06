@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='v0.9.01' ! version number
+  CHARACTER(LEN=10), parameter :: version='v0.9.02' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -96,6 +96,7 @@ module globals
   INTEGER              :: NFcoil         =   4         
   INTEGER              :: Nseg           =   128 
   INTEGER              :: momentq        =   4
+  LOGICAL              :: allow_inverse  =  .false. 
               
   INTEGER              :: IsNormalize    =   1
   INTEGER              :: IsNormWeight   =   1
@@ -193,6 +194,7 @@ module globals
                         NFcoil         , &
                         Nseg           , &
                         momentq        , &
+                        allow_inverse  , &
                         IsNormalize    , &
                         IsNormWeight   , &
                         case_bnormal   , &
