@@ -514,7 +514,7 @@ subroutine initial
      end select
 
      if (allow_inverse .and. mod(momentq, 2)==0) then
-        write(ounit, '("warnning: You are using an even number for MomentQ and will not be able to have negative directions)')
+        write(ounit, '("warnning: You are using an even number for MomentQ and will not be able to have negative directions")')
      endif
      
      if (case_optimize > 0) then
