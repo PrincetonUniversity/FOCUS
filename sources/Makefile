@@ -71,10 +71,10 @@ lmder1.o : lmder1.f
 	$(FC) -c $(RFLAGS) -o $@ $<
 
 hybrj.o: hybrj.f
-	$(FC) -c $(FLAGS) -o $@ $<
+	$(FC) -c $(RFLAGS) -o $@ $<
 
 lbfgsb.o: lbfgsb.f
-	$(FC) -c $(FLAGS) -o $@ $<
+	$(FC) -c $(RFLAGS) -o $@ $<
 
 cg_descent.o : cg_descent.f
 	$(FC) -c $(RFLAGS) -o $@ $<
