@@ -8,7 +8,7 @@ SUBROUTINE diagnos
   use globals, only: dp, zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
        Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
        cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, Npc, weight_bnorm, overlap, &
-       pmsum, total_moment
+       pmsum, total_moment, magtorque
                      
   implicit none
   include "mpif.h"
@@ -168,17 +168,20 @@ SUBROUTINE diagnos
   !--------------------------------calculate the average Bn error-------------------------------
   if (allocated(surf(1)%bn)) then
      ! \sum{ |Bn| / |B| }/ (Nt*Nz)
-     if(myid .eq. 0) write(ounit, '(8X": Average relative absolute Bn error is  :" ES23.15)') &
-          sum(abs(surf(1)%bn/sqrt(surf(1)%Bx**2 + surf(1)%By**2 + surf(1)%Bz**2))) / (Nteta*Nzeta)
+     if(myid .eq. 0) then 
+        write(ounit, '(8X": Average relative absolute Bn error    :" ES12.5"; max(Bn)="ES12.5" .")') &
+          sum(abs(surf(1)%bn/sqrt(surf(1)%Bx**2 + surf(1)%By**2 + surf(1)%Bz**2))) / (Nteta*Nzeta), &
+          maxval(abs(surf(1)%bn))
+     endif
   endif
 
   !--------------------------------calculate dipole effective volume------------------------------------  
   call minvol(0)
-  if(myid .eq. 0)  write(ounit, '(8X": Total free magnetic moment M=", ES23.15, &
-       " ; Effective ratio pmsum=", ES23.15)') total_moment, pmsum
+  if(myid .eq. 0)  write(ounit, '(8X": Total free magnetic moment M           :", ES12.5, &
+       " ; Effective ratio :", ES12.5)') total_moment, pmsum
   !--------------------------------------------------------------------------------------------- 
 
-  call mag_torque()
+  if (magtorque) call mag_torque()
 
   return
 
