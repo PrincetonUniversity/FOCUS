@@ -6,11 +6,11 @@ If there are FOCUS related papers/presentations that haven't not been shown here
 
 ### 2019
 -----------------
-- **Identification of dangerous error fields in stellarators using Hessian matrix method**
+- **Identification of important error fields in stellarators using Hessian matrix method**
 
   Caoxiang Zhu, David A. Gates, Stuart R. Hudson, Haifeng Liu, Yuhong Xu, Akihiro Shimizu, Shoichi Okamura
   
-  [arXiv:1904.04147](https://arxiv.org/abs/1904.04147)
+  [*Nuclear Fusion* 2019](https://iopscience.iop.org/article/10.1088/1741-4326/ab3a7c) (also available at [arXiv:1904.04147](https://arxiv.org/abs/1904.04147)).
   
 -----------------
 
@@ -48,7 +48,7 @@ If there are FOCUS related papers/presentations that haven't not been shown here
 
   Caoxiang Zhu, Stuart R. Hudson, Yuntao Song & Yuanxi Wan
   
-  [*Nuclear Fusion*, **58**(1), 016008](http://iopscience.iop.org/article/10.1088/1741-4326/aa8e0a) (also available on [arXiv:1705.02333](https://arxiv.org/abs/1705.02333))
+  [*Nuclear Fusion*, **58**(1), 016008](http://iopscience.iop.org/article/10.1088/1741-4326/aa8e0a) (also available at [arXiv:1705.02333](https://arxiv.org/abs/1705.02333))
   
 -----------------
 
