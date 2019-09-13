@@ -27,9 +27,9 @@ If you are fresh to GitHub, you can visit this [page](https://princetonuniversit
 
   The current version of FOCUS uses the following compilers/libraries: 
   
-  - **[Intel](https://software.intel.com/en-us/fortran-compilers)/[GFotran](https://gcc.gnu.org/wiki/GFortran) compiler** 
-  - **[OpenMPI](https://www.open-mpi.org/)**
-  - **[HDF5](https://support.hdfgroup.org/HDF5/)**
+  - **[Intel](https://software.intel.com/en-us/fortran-compilers)/[GCC](https://gcc.gnu.org/wiki/GFortran) Fortran compiler** 
+  - **[OpenMPI](https://www.open-mpi.org/) (for parallel computation)**
+  - **[HDF5-serial](https://support.hdfgroup.org/HDF5/) (for output)**
     
   If the versions you downloaded are not compatible, please raise an issue.
 
@@ -167,10 +167,10 @@ Intermediate coil data (XYZ points in space) are store in binary file *.example.
 # Plotting
 There are several tools for processing the data. If you need to use one of them, please contact the author(s).
 
-  - **python:** There is an python package written by Dr. Caoxiang Zhu, using [Matplotlib](https://matplotlib.org/) and [Mayavi](http://docs.enthought.com/mayavi/mayavi/).
+  - **python:** There is an [python package](https://zhucaoxiang.github.io/CoilPy/) written by Dr. Caoxiang Zhu, using [Matplotlib](https://matplotlib.org/) and [Mayavi](http://docs.enthought.com/mayavi/mayavi/).
   - **OMFIT:** In the [OMFIT](https://gafusion.github.io/OMFIT-source/) frame, there is a powerful module [*focus*](https://docs.google.com/document/d/1aGpRUMpYxBJmQXfkOK2OFMZ4P0Mn5H1_OSAjJVvxpHU/edit?ts=5ad10d28#) managed by Dr. Nikolas Logan.
   - **IDL:** There is a GUI interface Echidna in IDL written by Dr. Stuart Hudson.
-  - **Matlab:** There are also some MATLAB scripts by Dr. Lazerson.  
+  - **Matlab:** There are also some MATLAB scripts by Dr. Samuel Lazerson.  
 
 &nbsp;
 
