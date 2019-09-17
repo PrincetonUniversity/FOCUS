@@ -44,7 +44,7 @@ subroutine saving
   if( save_coils == 1 ) then
      if (myid==0) then
         open( wunit, file=trim(out_focus), status="unknown", form="formatted")
-        write(wunit, '("Total number of coils, momentq")') 
+        write(wunit, '("Total number of dipoles, momentq")') 
         write(wunit, '(2X,I8, 2X, I4)') Ncoils_total, momentq ! note the fixed coils are not written
 #ifdef TOPO
         write(wunit, '(2(A4,", "), A13, ", ", 3(A15,", "), 2(A2,", ",A15,", ",A15,", "))') &
@@ -221,7 +221,7 @@ subroutine saving
   HWRITERV( 1                ,   Gnorm         ,   Gnorm                         )
   HWRITERV( 1                ,   Mnorm         ,   Mnorm                         )
   HWRITERV( 1                ,   overlap       ,   overlap                       )
-  HWRITERA( iout, 8          ,   evolution     ,   evolution(1:iout, 0:7)        )
+  HWRITERA( iout, 9          ,   evolution     ,   evolution(1:iout, 0:8)        )
 
   if (allocated(ppr)) then
      HWRITERA( pp_ns, pp_maxiter+1,   ppr         ,  ppr(1:pp_ns, 0:pp_maxiter) )

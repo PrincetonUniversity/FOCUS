@@ -8,7 +8,7 @@ SUBROUTINE diagnos
   use globals, only: dp, zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
        Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
        cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, Npc, weight_bnorm, overlap, &
-       pmsum, total_moment, magtorque
+       pmsum, total_moment, magtorque, ext
                      
   implicit none
   include "mpif.h"
@@ -29,10 +29,10 @@ SUBROUTINE diagnos
        "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." 
   if (myid == 0) write(ounit, '("        : "6(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep
 
-  ! output origin magnetic field
-  x = 1.5_dp ; y = 0 ; z = 0 ; B = 0
-  call coils_bfield(B,x,y,z)
-  if (myid == 0) write(ounit, '("        : B("3(F4.2,", ")") = ("3(ES12.5", ")")")') x,y,z,B(1),B(2),B(3) 
+!!$  ! output origin magnetic field
+!!$  x = 1.5_dp ; y = 0 ; z = 0 ; B = 0
+!!$  call coils_bfield(B,x,y,z)
+!!$  if (myid == 0) write(ounit, '("        : B("3(F4.2,", ")") = ("3(ES12.5", ")")")') x,y,z,B(1),B(2),B(3) 
 
   !save all the coil parameters;
   if (allocated(coilspace)) then
@@ -181,8 +181,11 @@ SUBROUTINE diagnos
        " ; Effective ratio :", ES12.5)') total_moment, pmsum
   !--------------------------------------------------------------------------------------------- 
 
-  if (magtorque) call mag_torque()
-
+  if (magtorque) then
+     call mag_torque()
+     if (myid==0) write(ounit, '(8X": magnetic field and moment data are saved in "A)') trim(ext)//".mag"
+  endif
+  
   return
 
   !--------------------------------calculate coil importance------------------------------------  

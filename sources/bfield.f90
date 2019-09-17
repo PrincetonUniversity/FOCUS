@@ -356,7 +356,7 @@ end subroutine coils_bfield
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE mag_torque
-  use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, &
+  use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, ext, wunit, &
        zero, myid, ounit, Npc, bsconstant, one, Ncoils_total, magtau, Ncpu
   use mpi
   implicit none
@@ -369,14 +369,24 @@ SUBROUTINE mag_torque
   INTEGER              :: ierr, astat, ip
   REAL                 :: Bx, By, Bz
   INTEGER              :: icoil
+  CHARACTER(LEN=100)   :: magfile
 
 
-  SALLOCATE( magtau, (1:3, 1:Ncoils_total), zero )
+!!$  SALLOCATE( magtau, (1:3, 1:Ncoils_total), zero )
 
   call MPI_BARRIER(MPI_COMM_WORLD, ierr ) ! wait all cpus;
   offset = 0
   if (myid/=0) then
      offset = (myid-1) * (Ncoils_total / (Ncpu-1))
+  endif
+
+  magfile = trim(ext)//".mag" ! save all magnetic data
+
+  if (myid==0) then
+     open( wunit, file=trim(magfile), status="unknown", form="formatted")
+!!$     write(wunit, '("Total number of dipoles")') 
+!!$     write(wunit, '(2X,I8)') Ncoils_total
+     write(wunit, '(10(A15,", "))') "index", "ox", "oy", "oz", "mx", "my", "mz", "bx", "by", "bz"
   endif
   
   ! calculate the magnetic field
@@ -395,6 +405,7 @@ SUBROUTINE mag_torque
         my = sin(coil(index-offset)%mt) * sin(coil(index-offset)%mp)
         mz = cos(coil(index-offset)%mt)
      endif
+     
      RlBCAST( x, 1, this_id )
      RlBCAST( y, 1, this_id )
      RlBCAST( z, 1, this_id )
@@ -403,7 +414,7 @@ SUBROUTINE mag_torque
      RlBCAST( mz, 1, this_id )
 
      do icoil = 1, Ncoils
-        if (myid/=0 .and. index > offset .and. index <= (offset+Ncoils)) cycle ! exclude itself
+        if (myid==this_id .and. icoil==(index-offset)) cycle ! exclude itself
         call bfield0( icoil, x, y, z, Bx, By, Bz )
         B(1) = B(1) + Bx*coil(icoil)%I*bsconstant
         B(2) = B(2) + By*coil(icoil)%I*bsconstant
@@ -412,17 +423,22 @@ SUBROUTINE mag_torque
 
      call MPI_ALLREDUCE(MPI_IN_PLACE, B, 3, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
 
-     ! compute torque
-     magtau(1, index) =  my*B(3) - mz*B(2)
-     magtau(2, index) =  mz*B(1) - mx*B(3)
-     magtau(3, index) =  mx*B(2) - my*B(1)
+     ! write out data
+     if (myid==0) write(wunit, '(I15, ", ", 9(ES15.8,", "))') index, x, y, z, mx, my, mz, B(1), B(2), B(3)
+     
+!!$     ! compute torque
+!!$     magtau(1, index) =  my*B(3) - mz*B(2)
+!!$     magtau(2, index) =  mz*B(1) - mx*B(3)
+!!$     magtau(3, index) =  mx*B(2) - my*B(1)
      
   enddo
 
-  if(myid .eq. 0) write(ounit, '(8X": The maximum magnetic torque is : "ES23.15" N.m .")') &
-       sqrt( MAXVAL( magtau(1,1:Ncoils_total)*magtau(1,1:Ncoils_total) &
-                   + magtau(2,1:Ncoils_total)*magtau(2,1:Ncoils_total) &
-                   + magtau(3,1:Ncoils_total)*magtau(3,1:Ncoils_total) ) )
+!!$  if(myid .eq. 0) write(ounit, '(8X": The maximum magnetic torque is : "ES23.15" N.m .")') &
+!!$       sqrt( MAXVAL( magtau(1,1:Ncoils_total)*magtau(1,1:Ncoils_total) &
+!!$                   + magtau(2,1:Ncoils_total)*magtau(2,1:Ncoils_total) &
+!!$                   + magtau(3,1:Ncoils_total)*magtau(3,1:Ncoils_total) ) )
+  
+  if (myid==0) close(wunit)
 
   return
 

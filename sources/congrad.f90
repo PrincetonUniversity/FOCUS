@@ -287,9 +287,6 @@ SUBROUTINE congrad
   call packdof(x(1:n)) ! initial xdof;
   call cg_descent (CG_xtol, x, n, myvalue, mygrad, status, gnorm, f, iter, nfunc, ngrad, d, g, xtemp, gtemp)
 
-  tstart = MPI_Wtime()
-  call output(tstart-tfinish)
-
   if (myid == 0) then
      select case (status)
      case (0) 

@@ -37,7 +37,7 @@
 subroutine solvers
   use globals, only: dp, ierr, iout, myid, ounit, zero, IsQuiet, IsNormWeight, Ndof, Nouts, xdof, &
        case_optimize, DF_maxiter, LM_maxiter, CG_maxiter, HN_maxiter, TN_maxiter, coil, DoF, &
-       weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, &
+       weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_pmsum, &
        target_tflux, target_length, cssep_factor, QN_maxiter
   implicit none
   include "mpif.h"
@@ -48,10 +48,10 @@ subroutine solvers
   if (myid == 0) write(ounit, *) "-----------OPTIMIZATIONS-------------------------------------"
   if (myid == 0) write(ounit, '("solvers : Total number of DOF is " I6)') Ndof
   if (myid == 0 .and. IsQuiet < 1) then
-     write(ounit, '(8X,": Initial weights are: "5(A12, ","))') "bnorm", "bharm", "tflux", &
-         "ttlen", "cssep"
-     write(ounit, '(8X,": "21X,5(ES12.5, ","))') weight_bnorm, weight_bharm, weight_tflux, &
-          weight_ttlen, weight_cssep
+     write(ounit, '(8X,": Initial weights are: "6(A12, ","))') "bnorm", "bharm", "tflux", &
+         "ttlen", "cssep", "pmsum"
+     write(ounit, '(8X,": "21X,6(ES12.5, ","))') weight_bnorm, weight_bharm, weight_tflux, &
+          weight_ttlen, weight_cssep, weight_pmsum
      write(ounit, '(8X,": target_tflux = "ES12.5" ; target_length = "ES12.5" ; cssep_factor = "ES12.5)') &
           target_tflux, target_length, cssep_factor
   endif
@@ -568,9 +568,9 @@ subroutine output (mark)
      evolution(iout,4) = bharm
      evolution(iout,5) = tflux
      evolution(iout,6) = ttlen
-     evolution(iout,7) = pmsum
+     evolution(iout,7) = ccsep
+     evolution(iout,8) = pmsum
      !evolution(iout,8) = 0.0
-     !evolution(iout,8) = ccsep
   endif
 
   ! exit the optimization if no obvious changes in past 5 outputs; 07/20/2017

@@ -287,7 +287,7 @@ module globals
      REAL                 :: pho, moment
      REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), &
                              dl(:), dd(:)
-     character(LEN=10)    :: name
+     character(LEN=15)    :: name
   end type arbitrarycoil
 
   type FourierCoil
