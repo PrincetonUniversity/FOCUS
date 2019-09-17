@@ -114,6 +114,70 @@ subroutine vertex_rz_to_theta_sep()
 end subroutine vertex_rz_to_theta_sep
 
 !-------------------------------------------------------------------------------
+! lcfs_theta_to_ves_theta
+!
+! Determines the poloidal angle at which a 2d normal vector extending from
+! an LCFS cross-section intersects the vessel.
+!-------------------------------------------------------------------------------
+subroutine lcfs_theta_to_ves_theta
+
+    use magnet_set_globals, only: nPlates, nVertices, plate_phi, &
+                                  vert_theta, vert_sep, vert_tlcfs
+
+    use magnet_set_calc,    only: ves_dist_2d, plas_r, plas_z, &
+                                  plas_drdt, plas_dzdt 
+
+    implicit none
+
+    INTEGER :: i, j
+    REAL :: rplas, zplas, drdt, dzdt, norm, nr, nz
+    REAL :: l0, theta0, l, vr, vz, chi2
+
+    do i = 1, nPlates
+
+        do j = 1, nVertices
+
+            ! Assume vertices with theta and separation of zero don't exist
+            if (vert_tlcfs(i,j) == 0 .and. vert_sep(i,j) == 0) then
+
+                vert_theta(i,j) = 0
+
+            else
+
+                rplas = plas_r(vert_tlcfs(i,j), plate_phi(i))
+                zplas = plas_z(vert_tlcfs(i,j), plate_phi(i))
+
+                ! Normal vector to the plasma LCFS
+                drdt = plas_drdt(vert_tlcfs(i,j), plate_phi(i))
+                dzdt = plas_dzdt(vert_tlcfs(i,j), plate_phi(i))
+                !norm = sqrt(drdt**2 + dzdt**2)
+                !nr = dzdt/norm
+                !nz = -drdt/norm          
+                norm = atan2(dzdt, drdt) - 0.5*3.141592653589793
+                nr = cos(norm)
+                nz = sin(norm)
+
+                l0 = 0.5
+                theta0 = vert_tlcfs(i,j)
+                call ves_dist_2d(plate_phi(i), rplas, zplas, nr, nz, & 
+                                 l0, theta0, l, vert_theta(i,j), vr, vz, chi2)
+
+                write(*,'(A, I2, A, I2, A, F7.1, A, F7.1, A, F6.2, A, F6.2, A, F6.2)') &
+                      '  (', i, ',', j, '): tlcfs = ', &
+                      vert_tlcfs(i,j)*180./3.1415927, &
+                      ' theta = ', vert_theta(i,j)*180./3.1415927, &
+                      '  l = ', l, ' vr = ', vr, &
+                      '  vz = ', vz
+
+            end if
+
+        end do
+
+    end do
+
+end subroutine lcfs_theta_to_ves_theta
+
+!-------------------------------------------------------------------------------
 ! count_stacks()
 ! 
 ! Determines the number of available places for magnets (or stacks of magnets)
@@ -140,14 +204,17 @@ subroutine count_stacks()
 
     ! Initial status checks
     if (.not. plates_initialized) then
-        stop 'count_magnets: plates not yet initialized'
+        stop 'count_stacks: plates not yet initialized'
     end if
     if (segments_initialized) then
-        stop 'count_magnets: plate segments have already been initialized'
+        stop 'count_stacks: plate segments have already been initialized'
     end if
 
     ! Calculate vertex r and z coords if not explicitly supplied
     if (trim(vertex_mode) == 'theta_sep') then
+        call vertex_theta_to_rz
+    else if (trim(vertex_mode) == 'tlcfs_sep') then
+        call lcfs_theta_to_ves_theta
         call vertex_theta_to_rz
     else if (trim(vertex_mode) == 'rz') then
         call vertex_rz_to_theta_sep

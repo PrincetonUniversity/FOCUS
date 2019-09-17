@@ -126,18 +126,18 @@ end subroutine ves_dist_3d
 ! Return parameters:
 !     REAL :: l           -> distance from the point to the vessel
 !     REAL :: theta       -> theta coordinate of the intersection point
-!     REAL :: r, z        -> r and z coordinates of the intersection point
+!     REAL :: vr, vz      -> r and z coordinates of the intersection point
 !-------------------------------------------------------------------------------
-subroutine ves_dist_2d(phi, or, oz, ar, az, l0, theta0, l, theta, r, z, chi2)
+subroutine ves_dist_2d(phi, or, oz, ar, az, l0, theta0, l, theta, vr, vz, chi2)
 
     use magnet_set_globals, only: ves_tol, maxIter
 
     implicit none
 
     REAL, intent(IN)  :: phi, or, oz, ar, az, l0, theta0
-    REAL, intent(OUT) :: l, theta, r, z, chi2
+    REAL, intent(OUT) :: l, theta, vr, vz, chi2
     INTEGER :: i
-    REAL :: vr, vz, fr, fz, sl, st
+    REAL :: fr, fz, sl, st
     REAL :: drdt, dzdt
     REAL ::  jac_rl,  jac_rt,  jac_zl,  jac_zt
     REAL :: ijac_lr, ijac_lz, ijac_tr, ijac_tz
@@ -514,6 +514,99 @@ REAL function ves_d2zdt2(theta, phi)
     end do
 
 end function ves_d2zdt2
+
+!-------------------------------------------------------------------------------
+! plas_r(theta, phi)
+!
+! Computes the r coordinate on the plasma lcfs at poloidal angle theta and 
+! toroidal angle phi.
+!-------------------------------------------------------------------------------
+REAL function plas_r(theta, phi)
+
+    use magnet_set_globals, only: nModesPl, nfp, prc, prs, pm, pn
+
+    implicit none
+
+    REAL, intent(IN) :: theta, phi
+    INTEGER :: i
+
+    plas_r = 0
+    do i = 1, nModesPl
+        plas_r = plas_r + prc(i)*cos(pm(i)*theta - pn(i)*nfp*phi) &
+                        + prs(i)*sin(pm(i)*theta - pn(i)*nfp*phi)
+    end do
+
+end function plas_r
+
+!-------------------------------------------------------------------------------
+! plas_z(theta, phi)
+!
+! Computes the z coordinate on the plasma lcfs at poloidal angle theta and 
+! toroidal angle phi.
+!-------------------------------------------------------------------------------
+REAL function plas_z(theta, phi)
+
+    use magnet_set_globals, only: nModesPl, nfp, pzs, pzc, pm, pn
+
+    implicit none
+
+    REAL, intent(IN) :: theta, phi
+    INTEGER :: i
+
+    plas_z = 0
+    do i = 1, nModesPl
+        plas_z = plas_z + pzs(i)*sin(pm(i)*theta - pn(i)*nfp*phi) &
+                        + pzc(i)*cos(pm(i)*theta - pn(i)*nfp*phi)
+    end do
+
+end function plas_z
+
+
+!-------------------------------------------------------------------------------
+! plas_drdt(theta, phi)
+!
+! Computes the derivative of the r coordinate on the plasma lcfs with respect
+! to poloigal angle at poloidal angle theta and toroidal angle phi.
+!-------------------------------------------------------------------------------
+REAL function plas_drdt(theta, phi)
+
+    use magnet_set_globals, only: nModesPl, nfp, prc, prs, pm, pn
+
+    implicit none
+
+    REAL, intent(IN) :: theta, phi
+    INTEGER :: i
+
+    plas_drdt = 0
+    do i = 1, nModesPl
+        plas_drdt = plas_drdt - pm(i)*prc(i)*sin(pm(i)*theta - pn(i)*nfp*phi) &
+                              + pm(i)*prs(i)*cos(pm(i)*theta - pn(i)*nfp*phi)
+    end do
+
+end function plas_drdt
+
+!-------------------------------------------------------------------------------
+! plas_dzdt(theta, phi)
+!
+! Computes the derivative of the z coordinate on the plasma lcfs with respect
+! to poloidal angle at poloidal angle theta and toroidal angle phi.
+!-------------------------------------------------------------------------------
+REAL function plas_dzdt(theta, phi)
+
+    use magnet_set_globals, only: nModesPl, nfp, pzs, pzc, pm, pn
+
+    implicit none
+
+    REAL, intent(IN) :: theta, phi
+    INTEGER :: i
+
+    plas_dzdt = 0
+    do i = 1, nModesPl
+        plas_dzdt = plas_dzdt + pm(i)*pzs(i)*cos(pm(i)*theta - pn(i)*nfp*phi) &
+                              - pm(i)*pzc(i)*sin(pm(i)*theta - pn(i)*nfp*phi)
+    end do
+
+end function plas_dzdt
 
 
 

@@ -12,7 +12,8 @@ contains
 subroutine arrays_zero()
 
     use magnet_set_globals, only: np, nv, nw, nl, vert_r, vert_z, &
-                                  vert_theta, vert_sep, vessel_r, vessel_z, &
+                                  vert_theta, vert_sep, vert_tlcfs, &
+                                  vessel_r, vessel_z, &
                                   avail_mag_wd, avail_mag_lg, &
                                   arrays_zeroed
 
@@ -26,6 +27,7 @@ subroutine arrays_zero()
             vert_z(i,j) = 0
             vert_theta(i,j) = 0
             vert_sep(i,j) = 0
+            vert_tlcfs(i,j) = 0
             vessel_r(i,j) = 0
             vessel_z(i,j) = 0
         end do
@@ -168,6 +170,94 @@ subroutine read_vessel_coeffs()
     vessel_loaded = .true.
         
 end subroutine read_vessel_coeffs
+
+!-------------------------------------------------------------------------------
+! read_lcfs_coeffs()
+!
+! Reads in Fourier coefficients parametrizing the plasma lcfs from 
+! a file. The file must have one row containing the integer number of modes N,
+! followed by N rows with 6 columns:
+!     1. toroidal (n) mode number
+!     2. poloidal (m) mode number -- NEGATIVE helicity is assumed
+!     3. cosine coefficient, radial coordinate
+!     4. sine coefficient, z coordinate
+!     5. sine coefficient, r coordinate
+!     6. cosine coefficient, z coordinate
+! All other rows must begin with the commenting character (!)
+!
+! Input parameters
+!     CHARACTER :: pfile  -> Path to the file with the table of coefficients.
+!-------------------------------------------------------------------------------
+subroutine read_lcfs_coeffs()
+
+    use magnet_set_globals, only: pfile, nModesPl, prc, pzs, prs, pzc, pm, pn, &
+                                  plasma_loaded, pla_r00
+
+    implicit none
+
+    INTEGER :: punit = 13, i, open_stat, read_stat, pm_in, pn_in
+    REAL    :: prc_in, pzs_in, prs_in, pzc_in
+    logical :: nModes_read = .false.
+
+    if (pfile == 'none') then
+        write(*, *) 'Warning: no vessel file given'
+        write(*, *) 'Vessel-dependent operations will not be available.'
+        return
+    end if
+
+    ! Open the file
+    open(unit=punit, file=pfile, status='old', action='read', iostat=open_stat)
+    if (open_stat /= 0) then
+        write(*, *) 'Warning: unable to open vessel file ' // trim(pfile)
+        write(*, *) 'Vessel-dependent operations will not be available.'
+        return
+    end if
+
+    ! Read the number of modes
+    do while (.not. nModes_read)
+        read(unit=punit, fmt=*, iostat=read_stat) nModesPl
+        if (read_stat > 0) cycle
+        if (read_stat < 0) exit
+        nModes_read = .true.
+    end do
+    if (.not. nModes_read) then
+        write(*, *) 'Warning: unable to read number of modes from file ' &
+                    // trim(pfile)
+        write(*, *) 'Vessel-dependent operations will not be available.'
+        return
+    end if
+
+    ! Allocate the mode arrays
+    allocate( prc(nModesPl), pzs(nModesPl), prs(nModesPl), pzc(nModesPl), &
+              pm(nModesPl),  pn(nModesPl) )
+
+    ! Read in the coefficients
+    i = 0
+    do while (i < nModesPl)
+        read(unit=punit, fmt=*, iostat=read_stat) &
+            pn_in, pm_in, prc_in, prs_in, pzc_in, pzs_in
+        if (read_stat > 0) cycle
+        if (read_stat < 0) then
+            write(*, *) 'Warning: unable to obtain expected number of ' &
+                        // 'coefficients from file ' // trim(pfile)
+            write(*, *) '    Number expected: ', nModesPl
+            write(*, *) '    Number obtained: ', i
+            write(*, *) 'Vessel-dependent operations will not be available.'
+            return
+        end if
+        i = i + 1
+        pm(i) = pm_in
+        pn(i) = pn_in
+        prc(i) = prc_in
+        pzs(i) = pzs_in
+        prs(i) = prs_in
+        pzc(i) = pzc_in
+        if (pm_in == 0 .and. pn_in == 0) pla_r00 = prc_in
+    end do
+
+    plasma_loaded = .true.
+        
+end subroutine read_lcfs_coeffs
 
 !-------------------------------------------------------------------------------
 ! print_magnets_to_file(filename, output_type)

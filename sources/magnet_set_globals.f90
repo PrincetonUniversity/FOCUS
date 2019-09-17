@@ -43,6 +43,18 @@ module magnet_set_globals
     INTEGER, allocatable :: vm(:)   ! poloidal mode numbers for the above coeffs
     INTEGER, allocatable :: vn(:)   ! toroidal mode numbers for the above coeffs
 
+    ! Plasma lcfs geometric information
+    logical :: plasma_loaded = .false.
+    CHARACTER(len=500) :: pfile = 'none' ! path to the file with the coeffs
+    INTEGER :: nModesPl             ! total number of Fourier modes
+    REAL :: pla_r00                 ! R_00 coefficient
+    REAL, allocatable :: prc(:)     ! cosine coefficients, lcfs r
+    REAL, allocatable :: pzs(:)     ! sine coefficients, lcfs z
+    REAL, allocatable :: prs(:)     ! sine coefficients, lcfs r
+    REAL, allocatable :: pzc(:)     ! cosine coefficients, lcfs z
+    INTEGER, allocatable :: pm(:)   ! poloidal mode numbers for the above coeffs
+    INTEGER, allocatable :: pn(:)   ! toroidal mode numbers for the above coeffs
+
     ! Details about the support plates 
     logical :: plates_initialized = .false.
     CHARACTER(len=10) :: vertex_mode = 'rz'
@@ -57,6 +69,7 @@ module magnet_set_globals
     REAL, dimension(np,nv) :: vessel_z      ! z coordinate on vessel near vertex
     REAL, dimension(np,nv) :: vert_theta    ! theta coord of each vertex (rad)
     REAL, dimension(np,nv) :: vert_sep      ! sep. btwn vertex and vessel (m)
+    REAL, dimension(np,nv) :: vert_tlcfs    ! lcfs theta coord of vertex (rad)
 
     ! Details about each plate segment (populated in call to count_magnets)
     logical :: segments_initialized = .false.
@@ -139,6 +152,7 @@ module magnet_set_globals
     type(magnet), allocatable :: magnets(:)
 
     NAMELIST /magnet_set/ vfile,          &
+                          pfile,          &
                           nfp,            &
                           ves_tol,        &
                           maxIter,        &
@@ -152,6 +166,7 @@ module magnet_set_globals
                           vert_r,         &
                           vert_z,         &
                           vert_theta,     &
+                          vert_tlcfs,     &
                           vert_sep,       &
                           gap_rad,        &
                           gap_tor,        &
