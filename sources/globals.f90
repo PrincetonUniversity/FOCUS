@@ -253,7 +253,7 @@ module globals
                              xt(:,:), yt(:,:), zt(:,:), xp(:,:), yp(:,:), zp(:,:), &
                              ds(:,:), bn(:,:), pb(:,:), &
                              Bx(:,:), By(:,:), Bz(:,:)
-     REAL                 :: vol
+     REAL                 :: vol, area
   end type toroidalsurface
 
   type arbitrarycoil
