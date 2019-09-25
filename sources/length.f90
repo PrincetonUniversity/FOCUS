@@ -130,30 +130,33 @@ subroutine length(ideriv)
      idof = 0 ; ivec = 1
      do icoil = 1, Ncoils
 
-        if(coil(icoil)%itype .ne. 1) exit ! only for Fourier
-
         ND = DoF(icoil)%ND
-
-        if (case_length == 1) then
-           norm(icoil) = (coil(icoil)%L - coil(icoil)%Lo) / coil(icoil)%Lo**2  ! quadratic;
-        elseif (case_length == 2) then
-           norm(icoil) = exp(coil(icoil)%L) / exp(coil(icoil)%Lo)       ! exponential;
-        else
-           FATAL( length, .true. , invalid case_length option )
-        end if
 
         if ( coil(icoil)%Ic /= 0 ) then !if current is free;
            idof = idof +1
         endif
 
         if ( coil(icoil)%Lc /= 0 ) then !if geometry is free;
-           call lenDeriv1( icoil, d1L(idof+1:idof+ND), ND )
-           t1L(idof+1:idof+ND) = d1L(idof+1:idof+ND) * norm(icoil)
-           if (mttlen > 0) then ! L-M format of targets
-              LM_fjac(ivec, idof+1:idof+ND) = weight_ttlen * d1L(idof+1:idof+ND)
-              if (case_length == 2) LM_fjac(ivec, idof+1:idof+ND) = LM_fjac(ivec, idof+1:idof+ND) * exp(coil(icoil)%L) / exp(coil(icoil)%Lo)
-              ivec = ivec + 1
-           endif
+           if(coil(icoil)%itype .eq. 1) then ! only for Fourier
+              ! calculate normalization
+              if (case_length == 1) then
+                 norm(icoil) = (coil(icoil)%L - coil(icoil)%Lo) / coil(icoil)%Lo**2  ! quadratic;
+              elseif (case_length == 2) then
+                 norm(icoil) = exp(coil(icoil)%L) / exp(coil(icoil)%Lo)       ! exponential;
+              else
+                 FATAL( length, .true. , invalid case_length option )
+              end if
+              ! call lederiv1 to calculate the 1st derivatives
+              call lenDeriv1( icoil, d1L(idof+1:idof+ND), ND )
+              t1L(idof+1:idof+ND) = d1L(idof+1:idof+ND) * norm(icoil)
+              if (mttlen > 0) then ! L-M format of targets
+                 LM_fjac(ivec, idof+1:idof+ND) = weight_ttlen * d1L(idof+1:idof+ND)
+                 if (case_length == 2) &
+                      & LM_fjac(ivec, idof+1:idof+ND) = LM_fjac(ivec, idof+1:idof+ND) &
+                      & * exp(coil(icoil)%L) / exp(coil(icoil)%Lo)
+                 ivec = ivec + 1
+              endif
+           endif 
            idof = idof + ND
         endif
 
