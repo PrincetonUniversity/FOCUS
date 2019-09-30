@@ -496,19 +496,6 @@ subroutine initial
                 &  " ; CG_xtol = "ES12.5)') CG_wolfe_c1, CG_wolfe_c2, CG_xtol
         endif
 
-        if (HN_maxiter > 0) then
-           if (IsQuiet < 1) write(ounit, '(26X,": Hybrid Newton method will be used, maxiter=", I6)') HN_maxiter
-           if (IsQuiet < 0) write(ounit,'(26X,": HN_factor = "ES12.5" ; HN_xtol = " &
-                &  ES12.5)') HN_factor, HN_xtol
-        endif
-
-        if (TN_maxiter > 0) then        
-           FATAL( Initial, TN_cr <= zero .or. TN_cr > one, should be 0<cr<=1 )
-           if (IsQuiet < 1) write(ounit, '(26X,": Truncated Newton method will be used, maxiter=", I6)') TN_maxiter
-           if (IsQuiet < 0) write(ounit,'(26X,": TN_cr = "ES12.5" ; TN_reorder = "I1" ; TN_xtol = " &
-                &  ES12.5)') TN_cr, TN_reorder, TN_xtol
-        endif
-
      case default
         FATAL( initial, .true., selected case_optimize is not supported )
      end select
@@ -520,8 +507,6 @@ subroutine initial
      if (case_optimize > 0) then
         FATAL( initial, DF_maxiter < 0, must be non-negative )
         FATAL( initial, CG_maxiter < 0, must be non-negative )
-        FATAL( initial, HN_maxiter < 0, must be non-negative )
-        FATAL( initial, TN_maxiter < 0, must be non-negative )
      endif
 
      select case (IsNormalize)
@@ -607,7 +592,7 @@ subroutine initial
 
   ! initialize iteration and total iterations;
   iout = 1 ; Nouts = 1
-  if (case_optimize >0) Nouts = DF_maxiter + CG_maxiter + +QN_maxiter + LM_maxiter + HN_maxiter + TN_maxiter
+  if (case_optimize >0) Nouts = DF_maxiter + CG_maxiter + +QN_maxiter + LM_maxiter
 
   !save weights before normalized
   tmpw_bnorm = weight_bnorm

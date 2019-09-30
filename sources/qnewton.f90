@@ -195,8 +195,7 @@ SUBROUTINE qnewton
   use mpi
   implicit none
 
-  INTEGER,  parameter     :: m = QN_mcorrect
-  INTEGER                 :: idof, icoil, c1, n, ierr, astat, iter, iflag
+  INTEGER                 :: idof, icoil, c1, n, m, ierr, astat, iter, iflag
   REAL                    :: alpha, beta, f
   REAL, dimension(1:Ndof) :: x, g
   !REAL, parameter         :: factr  = 1.0d+3, pgtol  = 1.0d-5
@@ -214,6 +213,7 @@ SUBROUTINE qnewton
   call getdf(x, f, g)
 
   n = Ndof
+  m = QN_mcorrect
   ! allocate data
   SALLOCATE( iwa, (3*n), 0 )
   SALLOCATE(  wa, (2*m*n + 5*n + 11*m*m + 8*m), zero )
