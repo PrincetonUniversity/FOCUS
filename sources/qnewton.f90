@@ -190,12 +190,12 @@
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE qnewton
-  use globals, only: dp, zero, sqrtmachprec, myid, ounit, Ncoils, Ndof, t1E, iout, CG_maxiter, CG_xtol, xdof, &
+  use globals, only: dp, zero, sqrtmachprec, myid, ounit, Ncoils, Ndof, t1E, iout, xdof, QN_mcorrect, &
        exit_signal, tstart, tfinish, lowbound, upbound, nbounds, QN_maxiter, QN_factor, QN_xtol
   use mpi
   implicit none
 
-  INTEGER,  parameter     :: m = 5
+  INTEGER,  parameter     :: m = QN_mcorrect
   INTEGER                 :: idof, icoil, c1, n, ierr, astat, iter, iflag
   REAL                    :: alpha, beta, f
   REAL, dimension(1:Ndof) :: x, g

@@ -85,6 +85,7 @@ module globals
   REAL                 :: ellipticity    =   0.000D+00
   INTEGER              :: Nteta          =   64           
   INTEGER              :: Nzeta          =   64  
+  LOGICAL              :: half_shift     =   .true.
 
   INTEGER              :: case_init      =   0
   INTEGER              :: case_coils     =   1
@@ -131,6 +132,7 @@ module globals
   REAL                 :: CG_wolfe_c2    =   0.9
 
   INTEGER              :: QN_maxiter     =   0
+  INTEGER              :: QN_mcorrect    =   5  
   REAL                 :: QN_factor      =   1.000D+05
   REAL                 :: QN_xtol        =   1.000D-08
 
@@ -138,15 +140,6 @@ module globals
   REAL                 :: LM_xtol        =   1.000D-08
   REAL                 :: LM_ftol        =   1.000D-08
   REAL                 :: LM_factor      =   1.000D+02
-
-  INTEGER              :: HN_maxiter     =   0
-  REAL                 :: HN_xtol        =   1.000D-08
-  REAL                 :: HN_factor      =   100.0
-
-  INTEGER              :: TN_maxiter     =   0
-  REAL                 :: TN_xtol        =   1.000D-08
-  INTEGER              :: TN_reorder     =   0
-  REAL                 :: TN_cr          =   0.1
 
   INTEGER              :: case_postproc  =   1
   INTEGER              :: save_freq      =   1
@@ -185,6 +178,7 @@ module globals
                         ellipticity    , & 
                         Nteta          , &
                         Nzeta          , & 
+                        half_shift     , &
                         case_init      , &
                         case_coils     , &  
                         Ncoils         , &
@@ -226,19 +220,13 @@ module globals
                         CG_wolfe_c1    , &
                         CG_wolfe_c2    , &
                         QN_maxiter     , & 
+                        QN_mcorrect    , &
                         QN_factor      , & 
                         QN_xtol        , & 
                         LM_maxiter     , &  
                         LM_xtol        , & 
                         LM_ftol        , & 
                         LM_factor      , & 
-                        HN_maxiter     , &  
-                        HN_xtol        , & 
-                        HN_factor      , & 
-                        TN_maxiter     , &
-                        TN_reorder     , &
-                        TN_xtol        , &
-                        TN_cr          , &  
                         case_postproc  , & 
                         save_freq      , & 
                         save_coils     , &
