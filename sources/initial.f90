@@ -592,7 +592,10 @@ subroutine initial
 
   ! initialize iteration and total iterations;
   iout = 1 ; Nouts = 1
-  if (case_optimize >0) Nouts = DF_maxiter + CG_maxiter + +QN_maxiter + LM_maxiter
+  if (case_optimize >0) then
+     Nouts = DF_maxiter + CG_maxiter + +QN_maxiter + LM_maxiter
+     Nouts = max(1, HY_maxiter) * Nouts
+  endif
 
   !save weights before normalized
   tmpw_bnorm = weight_bnorm

@@ -80,7 +80,8 @@ MODULE simulated_anneal
 ! URL   :  http://users.bigpond.net.au/amiller
 
 ! Latest revision of Fortran 90 version - 2 October 2013
-USE globals, ony : dp_global => dp
+USE globals, only : dp_global => dp, tstart, tfinish, SA_maxiter, myid, ounit
+USE MPI
 IMPLICIT NONE
 
 INTEGER, PARAMETER :: dp = dp_global
@@ -387,7 +388,7 @@ fstar = 1.0D+20
 !  If the initial temperature is not positive, notify the user and
 !  return to the calling routine.
 IF (t <= 0.0) THEN
-  WRITE(*,'(/, "  THE INITIAL TEMPERATURE IS NOT POSITIVE. "/,  &
+  IF(myid.eq.0) WRITE(ounit,'(/, "  THE INITIAL TEMPERATURE IS NOT POSITIVE. "/,  &
         &    "  reset the variable t. "/)')
   ier = 3
   RETURN
@@ -397,6 +398,8 @@ END IF
 !  to the calling routine.
 DO i = 1, n
   IF ((x(i) > ub(i)) .OR. (x(i) < lb(i))) THEN
+    IF(myid.eq.0) WRITE(ounit,'("ERROR: DOF("i0")="ES12.5" is out of bounds ("ES12.5","ES12.5").")') &
+         i, lb(i), x(i), ub(i)
     CALL prt1()
     ier = 2
     RETURN
@@ -462,7 +465,7 @@ DO m = 1, nt
 !  Accept the new point if the function value increases.
       IF(fp >= f) THEN
         IF(iprint >= 3) THEN
-          WRITE(*,'("  POINT ACCEPTED")')
+          IF(myid.eq.0) WRITE(ounit,'("  POINT ACCEPTED")')
         END IF
         x(1:n) = xp(1:n)
         f = fp
@@ -472,12 +475,14 @@ DO m = 1, nt
         
 !  If greater than any other point, record as new optimum.
         IF (fp > fopt) THEN
-          IF(iprint >= 3) THEN
-            WRITE(*,'("  NEW OPTIMUM")')
-          END IF
+!!$          IF(iprint >= 3) THEN
+!!$            IF(myid.eq.0) WRITE(ounit,'("  NEW OPTIMUM")')
+!!$          END IF
           xopt(1:n) = xp(1:n)
           fopt = fp
           nnew = nnew + 1
+          tstart = MPI_Wtime()
+          call output(tstart-tfinish)          
         END IF
         
 !  If the point is lower, use the Metropolis criteria to decide on
@@ -533,6 +538,9 @@ IF ((fopt - fstar(1)) <= eps) quit = .true.
 DO i = 1, neps
   IF (ABS(f - fstar(i)) > eps) quit = .false.
 END DO
+
+! reach the maximum iteration
+IF (nnew > SA_maxiter) quit = .true.
 
 !  Terminate SA if appropriate.
 IF (quit) THEN
@@ -598,9 +606,9 @@ INTEGER :: i, j, k, l, ii, jj, m
 REAL    :: s, t
 
 IF( ij < 0  .OR.  ij > 31328  .OR. kl < 0  .OR.  kl > 30081 ) THEN
-  WRITE(*, '(A)') ' The first random number seed must have a value ',  &
+  IF(myid.eq.0) WRITE(ounit, '(A)') ' The first random number seed must have a value ',  &
                'between 0 AND 31328'
-  WRITE(*, '(A)') ' The second seed must have a value between 0 and 30081'
+  IF(myid.eq.0) WRITE(ounit, '(A)') ' The second seed must have a value between 0 and 30081'
   STOP
 END IF
 i = MOD(ij/177, 177) + 2
@@ -663,7 +671,7 @@ SUBROUTINE prt1()
 !  correction is because SA was written to maximize functions and
 !  it minimizes by maximizing the negative a function.
 
-WRITE(*, '(/, "  THE STARTING VALUE (X) IS OUTSIDE THE BOUNDS "/,  &
+IF(myid.eq.0) WRITE(ounit, '(/, "  THE STARTING VALUE (X) IS OUTSIDE THE BOUNDS "/,  &
       &     "  (lb AND ub). execution terminated without any"/,  &
       &     "  optimization. respecify x, ub OR lb so that  "/,  &
       &     "  lb(i) < x(i) < ub(i), i = 1, n. "/)')
@@ -678,12 +686,12 @@ REAL (dp), INTENT(IN) ::  x(:), f
 INTEGER, INTENT(IN)   ::  n
 LOGICAL, INTENT(IN)   ::  max
 
-WRITE(*, '("  ")')
+IF(myid.eq.0) WRITE(ounit, '("  ")')
 CALL prtvec(x,n,'INITIAL X')
 IF (max) THEN
-  WRITE(*, '("  INITIAL F: ",/, G25.18)') f
+  IF(myid.eq.0) WRITE(ounit, '("  INITIAL F: ",/, G25.18)') f
 ELSE
-  WRITE(*, '("  INITIAL F: ",/, G25.18)') -f
+  IF(myid.eq.0) WRITE(ounit, '("  INITIAL F: ",/, G25.18)') -f
 END IF
 
 RETURN
@@ -696,15 +704,15 @@ REAL (dp), INTENT(IN) ::  xp(:), x(:), f
 INTEGER, INTENT(IN)   ::  n
 LOGICAL, INTENT(IN)   ::  max
 
-WRITE(*, '("  ")')
+IF(myid.eq.0) WRITE(ounit, '("  ")')
 CALL prtvec(x, n, 'CURRENT X')
 IF (max) THEN
-  WRITE(*, '("  CURRENT F: ", G25.18)') f
+  IF(myid.eq.0) WRITE(ounit, '("  CURRENT F: ", G25.18)') f
 ELSE
-  WRITE(*, '("  CURRENT F: ", G25.18)') -f
+  IF(myid.eq.0) WRITE(ounit, '("  CURRENT F: ", G25.18)') -f
 END IF
 CALL prtvec(xp, n, 'TRIAL X')
-WRITE(*, '("  POINT REJECTED SINCE OUT OF BOUNDS")')
+IF(myid.eq.0) WRITE(ounit, '("  POINT REJECTED SINCE OUT OF BOUNDS")')
 
 RETURN
 END SUBROUTINE prt3
@@ -716,16 +724,16 @@ REAL (dp), INTENT(IN) ::  xp(:), x(:), fp, f
 INTEGER, INTENT(IN)   ::  n
 LOGICAL, INTENT(IN)   ::  max
 
-WRITE(*,'("  ")')
+IF(myid.eq.0) WRITE(ounit,'("  ")')
 CALL prtvec(x,n,'CURRENT X')
 IF (max) THEN
-  WRITE(*,'("  CURRENT F: ",G25.18)') f
+  IF(myid.eq.0) WRITE(ounit,'("  CURRENT F: ",G25.18)') f
   CALL prtvec(xp,n,'TRIAL X')
-  WRITE(*,'("  RESULTING F: ",G25.18)') fp
+  IF(myid.eq.0) WRITE(ounit,'("  RESULTING F: ",G25.18)') fp
 ELSE
-  WRITE(*,'("  CURRENT F: ",G25.18)') -f
+  IF(myid.eq.0) WRITE(ounit,'("  CURRENT F: ",G25.18)') -f
   CALL prtvec(xp,n,'TRIAL X')
-  WRITE(*,'("  RESULTING F: ",G25.18)') -fp
+  IF(myid.eq.0) WRITE(ounit,'("  RESULTING F: ",G25.18)') -fp
 END IF
 
 RETURN
@@ -734,7 +742,7 @@ END SUBROUTINE prt4
 
 SUBROUTINE prt5()
 
-WRITE(*, '(/, "  TOO MANY FUNCTION EVALUATIONS; CONSIDER "/,  &
+IF(myid.eq.0) WRITE(ounit, '(/, "  TOO MANY FUNCTION EVALUATIONS; CONSIDER "/,  &
       &     "  increasing maxevl OR eps, OR decreasing "/,  &
       &     "  nt OR rt. these results are likely TO be "/, "  poor.",/)')
 
@@ -746,9 +754,9 @@ SUBROUTINE prt6(max)
 LOGICAL, INTENT(IN) ::  max
 
 IF (max) THEN
-  WRITE(*,'("  THOUGH LOWER, POINT ACCEPTED")')
+  IF(myid.eq.0) WRITE(ounit,'("  THOUGH LOWER, POINT ACCEPTED")')
 ELSE
-  WRITE(*,'("  THOUGH HIGHER, POINT ACCEPTED")')
+  IF(myid.eq.0) WRITE(ounit,'("  THOUGH HIGHER, POINT ACCEPTED")')
 END IF
 
 RETURN
@@ -759,9 +767,9 @@ SUBROUTINE prt7(max)
 LOGICAL, INTENT(IN) :: max
 
 IF (max) THEN
-  WRITE(*,'("  LOWER POINT REJECTED")')
+  IF(myid.eq.0) WRITE(ounit,'("  LOWER POINT REJECTED")')
 ELSE
-  WRITE(*,'("  HIGHER POINT REJECTED")')
+  IF(myid.eq.0) WRITE(ounit,'("  HIGHER POINT REJECTED")')
 END IF
 
 RETURN
@@ -773,11 +781,11 @@ SUBROUTINE prt8(n, vm, xopt, x)
 REAL (dp), INTENT(IN) :: vm(:), xopt(:), x(:)
 INTEGER, INTENT(IN)   :: n
 
-WRITE(*,'(/, " intermediate results after step length adjustment", /)')
+IF(myid.eq.0) WRITE(ounit,'(/, " intermediate results after step length adjustment", /)')
 CALL prtvec(vm, n, 'NEW STEP LENGTH (VM)')
 CALL prtvec(xopt, n, 'CURRENT OPTIMAL X')
 CALL prtvec(x, n, 'CURRENT X')
-WRITE(*,'(" ")')
+IF(myid.eq.0) WRITE(ounit,'(" ")')
 
 RETURN
 END SUBROUTINE prt8
@@ -794,28 +802,28 @@ INTEGER :: totmov
 
 totmov = nup + ndown + nrej
 
-WRITE(*,'(/," intermediate results before next temperature reduction",/)')
-WRITE(*,'("  CURRENT TEMPERATURE:            ",G12.5)') t
+IF(myid.eq.0) WRITE(ounit,'(/," intermediate results before next temperature reduction",/)')
+IF(myid.eq.0) WRITE(ounit,'("  CURRENT TEMPERATURE:            ",G12.5)') t
 IF (max) THEN
-  WRITE(*, '("  MAX FUNCTION VALUE SO FAR:  ",G25.18)') fopt
-  WRITE(*, '("  TOTAL MOVES:                ",I8)') totmov
-  WRITE(*, '("     UPHILL:                  ",I8)') nup
-  WRITE(*, '("     ACCEPTED DOWNHILL:       ",I8)') ndown
-  WRITE(*, '("     REJECTED DOWNHILL:       ",I8)') nrej
-  WRITE(*, '("  OUT OF BOUNDS TRIALS:       ",I8)') lnobds
-  WRITE(*, '("  NEW MAXIMA THIS TEMPERATURE:",I8)') nnew
+  IF(myid.eq.0) WRITE(ounit, '("  MAX FUNCTION VALUE SO FAR:  ",G25.18)') fopt
+  IF(myid.eq.0) WRITE(ounit, '("  TOTAL MOVES:                ",I8)') totmov
+  IF(myid.eq.0) WRITE(ounit, '("     UPHILL:                  ",I8)') nup
+  IF(myid.eq.0) WRITE(ounit, '("     ACCEPTED DOWNHILL:       ",I8)') ndown
+  IF(myid.eq.0) WRITE(ounit, '("     REJECTED DOWNHILL:       ",I8)') nrej
+  IF(myid.eq.0) WRITE(ounit, '("  OUT OF BOUNDS TRIALS:       ",I8)') lnobds
+  IF(myid.eq.0) WRITE(ounit, '("  NEW MAXIMA THIS TEMPERATURE:",I8)') nnew
 ELSE
-  WRITE(*, '("  MIN FUNCTION VALUE SO FAR:  ",G25.18)') -fopt
-  WRITE(*, '("  TOTAL MOVES:                ",I8)') totmov
-  WRITE(*, '("     DOWNHILL:                ",I8)')  nup
-  WRITE(*, '("     ACCEPTED UPHILL:         ",I8)')  ndown
-  WRITE(*, '("     REJECTED UPHILL:         ",I8)')  nrej
-  WRITE(*, '("  TRIALS OUT OF BOUNDS:       ",I8)')  lnobds
-  WRITE(*, '("  NEW MINIMA THIS TEMPERATURE:",I8)')  nnew
+  IF(myid.eq.0) WRITE(ounit, '("  MIN FUNCTION VALUE SO FAR:  ",G25.18)') -fopt
+  IF(myid.eq.0) WRITE(ounit, '("  TOTAL MOVES:                ",I8)') totmov
+  IF(myid.eq.0) WRITE(ounit, '("     DOWNHILL:                ",I8)')  nup
+  IF(myid.eq.0) WRITE(ounit, '("     ACCEPTED UPHILL:         ",I8)')  ndown
+  IF(myid.eq.0) WRITE(ounit, '("     REJECTED UPHILL:         ",I8)')  nrej
+  IF(myid.eq.0) WRITE(ounit, '("  TRIALS OUT OF BOUNDS:       ",I8)')  lnobds
+  IF(myid.eq.0) WRITE(ounit, '("  NEW MINIMA THIS TEMPERATURE:",I8)')  nnew
 END IF
 CALL prtvec(xopt, n, 'CURRENT OPTIMAL X')
 CALL prtvec(vm, n, 'STEP LENGTH (VM)')
-WRITE(*, '(" ")')
+IF(myid.eq.0) WRITE(ounit, '(" ")')
 
 RETURN
 END SUBROUTINE prt9
@@ -823,7 +831,7 @@ END SUBROUTINE prt9
 
 SUBROUTINE prt10()
 
-WRITE(*, '(/, "  SA ACHIEVED TERMINATION CRITERIA. IER = 0. ",/)')
+IF(myid.eq.0) WRITE(ounit, '(/, "  SA ACHIEVED TERMINATION CRITERIA. IER = 0. ",/)')
 
 RETURN
 END SUBROUTINE prt10
@@ -842,19 +850,19 @@ CHARACTER (LEN=*), INTENT(IN) :: name
 
 INTEGER :: i, lines, ll
 
-WRITE(*,1001) NAME
+IF(myid.eq.0) WRITE(ounit,1001) NAME
 
 IF (ncols > 10) THEN
   lines = INT(ncols/10.)
   
   DO i = 1, lines
     ll = 10*(i - 1)
-    WRITE(*,1000) vector(1+ll:10+ll)
+    IF(myid.eq.0) WRITE(ounit,1000) vector(1+ll:10+ll)
   END DO
   
-  WRITE(*,1000) vector(11+ll:ncols)
+  IF(myid.eq.0) WRITE(ounit,1000) vector(11+ll:ncols)
 ELSE
-  WRITE(*,1000) vector(1:ncols)
+  IF(myid.eq.0) WRITE(ounit,1000) vector(1:ncols)
 END IF
 
 1000 FORMAT( 10(g12.5, ' '))
@@ -868,68 +876,50 @@ END MODULE simulated_anneal
 
 
 SUBROUTINE simann
-  use globals, only: dp, zero, sqrtmachprec, myid, ounit, Ncoils, Ndof, t1E, iout, xdof, &
-       exit_signal, tstart, tfinish, lowbound, upbound, nbounds, SA_maxiter
+  use globals, only: zero, sqrtmachprec, myid, ounit, Ncoils, Ndof, t1E, iout, &
+       exit_signal, tstart, tfinish, lowbound, upbound, nbounds, SA_maxiter, SA_XTOL
   use mpi
   USE simulated_anneal
   IMPLICIT NONE
-  INTEGER, PARAMETER :: n = Ndof, neps = 4
+  INTEGER, PARAMETER :: neps = 4
 
-  REAL (dp)   :: lb(n), ub(n), x(n), xopt(n), c(n), vm(n), t, eps, rt, fopt
-
-  INTEGER     :: ns, nt, nfcnev, ier, iseed1, iseed2, i, maxevl, iprint,  &
-       nacc, nobds
-
+  REAL(dp)    :: lb(Ndof), ub(Ndof), x(Ndof), xopt(Ndof), c(Ndof), vm(Ndof), t, eps, rt, fopt
+  INTEGER     :: n, ns, nt, nfcnev, ier, iseed1, iseed2, i, maxevl, iprint, acc, nobds, nacc
   LOGICAL     :: max
 
   !  Set input parameters.
+  n = Ndof
   max = .false.
-  eps = 1.0D-6
+  eps = SA_XTOL
   rt = .5
   iseed1 = 1
   iseed2 = 2
   ns = 20
-  nt = 5
+  nt = 100
   maxevl = 100000
-  iprint = 1
-  DO i = 1, n
-     lb(i) = -1.0D25
-     ub(i) =  1.0D25
-     c(i) = 2.0
-  END DO
-
-  !  Note start at local, but not global, optima of the Judge function.
-  x(1) =  2.354471
-  x(2) = -0.319186
-
+  iprint = 0
+  c = 2 
+  
+  call packdof(x(1:n))
   !  Set input values of the input/output parameters.
   t = 5.0
   vm(1:n) = 1.0
+  tfinish = MPI_Wtime()
+  if (myid == 0) write(ounit, '("output  : "A6" : "8(A12," ; "))') "iout", "time (s)", "chi", "dE_norm", &
+       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "PM eff. vol."   
 
-  WRITE(*,1000) n, max, t, rt, eps, ns, nt, neps, maxevl, iprint, iseed1, iseed2
-
-  CALL prtvec(x, n, 'STARTING VALUES')
-  CALL prtvec(vm, n, 'INITIAL STEP LENGTH')
-  CALL prtvec(lb, n, 'LOWER BOUND')
-  CALL prtvec(ub, n, 'UPPER BOUND')
-  CALL prtvec(c, n, 'C VECTOR')
-  WRITE(*, '(/, "  ****   END OF DRIVER ROUTINE OUTPUT   ****"/,  &
-       &     "  ****   before CALL TO sa.             ****")')
-
-  CALL sa(n, x, max, rt, eps, ns, nt, neps, maxevl, lb, ub, c, iprint, iseed1,  &
+  CALL sa(n, x, max, rt, eps, ns, nt, neps, maxevl, lowbound, upbound, c, iprint, iseed1,  &
        iseed2, t, vm, xopt, fopt, nacc, nfcnev, nobds, ier)
 
-  WRITE(*, '(/, "  ****   RESULTS AFTER SA   ****   ")')
-  CALL prtvec(xopt, n, 'SOLUTION')
-  CALL prtvec(vm, n, 'FINAL STEP LENGTH')
-  WRITE(*,1001) fopt, nfcnev, nacc, nobds, t, ier
+  call unpacking(xopt)
 
-1000 FORMAT(/,' SIMULATED ANNEALING EXAMPLE',/,/,  &
-       ' NUMBER OF PARAMETERS: ',i3,'   MAXIMIZATION: ',l5, /, &
-       ' INITIAL TEMP: ', g8.2, '   RT: ',g8.2, '   EPS: ',g8.2, /, &
-       ' NS: ',i3, '   NT: ',i2, '   NEPS: ',i2, /,  &
-       ' MAXEVL: ',i10, '   IPRINT: ',i1, '   ISEED1: ',i4,  &
-       '   ISEED2: ',i4)
+  if(myid==0) then
+     WRITE(ounit, '(/, "  ****   RESULTS AFTER SA   ****   ")')
+     !CALL prtvec(xopt, n, 'SOLUTION')
+     !CALL prtvec(vm, n, 'FINAL STEP LENGTH')
+     WRITE(ounit,1001) fopt, nfcnev, nacc, nobds, t, ier
+  endif
+
 1001 FORMAT(/,' OPTIMAL FUNCTION VALUE: ',g20.13  &
        /,' NUMBER OF FUNCTION EVALUATIONS:     ',i10,  &
        /,' NUMBER OF ACCEPTED EVALUATIONS:     ',i10,  &
@@ -944,7 +934,6 @@ SUBROUTINE fcn(n, theta, h)
   USE globals, ONLY: dp, myid, ounit, ierr, chi
   USE MPI
   IMPLICIT NONE
-  INTEGER, PARAMETER     :: dp = SELECTED_REAL_KIND(15, 307)
   INTEGER, INTENT(IN)    :: n
   REAL (dp), INTENT(IN)  :: theta(:)
   REAL (dp), INTENT(OUT) :: h

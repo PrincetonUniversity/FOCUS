@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='dp_v0.9.04' ! version number
+  CHARACTER(LEN=10), parameter :: version='dp_v1.0.02' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -141,6 +141,11 @@ module globals
   REAL                 :: LM_ftol        =   1.000D-08
   REAL                 :: LM_factor      =   1.000D+02
 
+  INTEGER              :: SA_maxiter     =   0
+  REAL                 :: SA_xtol        =   1.000D-08
+
+  INTEGER              :: HY_maxiter     =   0
+
   INTEGER              :: case_postproc  =   1
   INTEGER              :: save_freq      =   1
   INTEGER              :: save_coils     =   0 
@@ -227,6 +232,9 @@ module globals
                         LM_xtol        , & 
                         LM_ftol        , & 
                         LM_factor      , & 
+                        SA_maxiter     , & 
+                        SA_xtol        , & 
+                        HY_maxiter     , & 
                         case_postproc  , & 
                         save_freq      , & 
                         save_coils     , &
@@ -242,8 +250,8 @@ module globals
                         pp_maxiter     , &
                         pp_xtol        , &
                         mgrid_rmax     , &
-                        mgrid_zmax      , &
-                        mgrid_rmin      , &
+                        mgrid_zmax     , &
+                        mgrid_rmin     , &
                         mgrid_zmin
 
 
