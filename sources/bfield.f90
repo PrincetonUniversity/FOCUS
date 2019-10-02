@@ -91,6 +91,7 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
            dly = yy - (-1)**is * coil(icoil)%oy
            dlz = zz - (-1)**is * coil(icoil)%oz
            r2  = dlx**2 + dly**2 + dlz**2
+           ! if(r2<1E-4) write(ounit,*) myid, icoil, r2
            rm3 = one/(sqrt(r2)*r2)
            mx = sin(coil(icoil)%mt) * cos(coil(icoil)%mp) * (-1)**is
            my = sin(coil(icoil)%mt) * sin(coil(icoil)%mp)
@@ -401,9 +402,9 @@ SUBROUTINE mag_torque
         x = coil(index-offset)%ox
         y = coil(index-offset)%oy
         z = coil(index-offset)%oz
-        mx = sin(coil(index-offset)%mt) * cos(coil(index-offset)%mp)
-        my = sin(coil(index-offset)%mt) * sin(coil(index-offset)%mp)
-        mz = cos(coil(index-offset)%mt)
+        mx = sin(coil(index-offset)%mt) * cos(coil(index-offset)%mp) * coil(index-offset)%I
+        my = sin(coil(index-offset)%mt) * sin(coil(index-offset)%mp) * coil(index-offset)%I
+        mz = cos(coil(index-offset)%mt) * coil(index-offset)%I
      endif
      
      RlBCAST( x, 1, this_id )
