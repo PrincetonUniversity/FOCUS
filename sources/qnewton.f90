@@ -190,13 +190,12 @@
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE qnewton
-  use globals, only: dp, zero, sqrtmachprec, myid, ounit, Ncoils, Ndof, t1E, iout, CG_maxiter, CG_xtol, xdof, &
+  use globals, only: dp, zero, sqrtmachprec, myid, ounit, Ncoils, Ndof, t1E, iout, xdof, QN_mcorrect, &
        exit_signal, tstart, tfinish, lowbound, upbound, nbounds, QN_maxiter, QN_factor, QN_xtol
   use mpi
   implicit none
 
-  INTEGER,  parameter     :: m = 5
-  INTEGER                 :: idof, icoil, c1, n, ierr, astat, iter, iflag
+  INTEGER                 :: idof, icoil, c1, n, m, ierr, astat, iter, iflag
   REAL                    :: alpha, beta, f
   REAL, dimension(1:Ndof) :: x, g
   !REAL, parameter         :: factr  = 1.0d+3, pgtol  = 1.0d-5
@@ -214,6 +213,7 @@ SUBROUTINE qnewton
   call getdf(x, f, g)
 
   n = Ndof
+  m = QN_mcorrect
   ! allocate data
   SALLOCATE( iwa, (3*n), 0 )
   SALLOCATE(  wa, (2*m*n + 5*n + 11*m*m + 8*m), zero )

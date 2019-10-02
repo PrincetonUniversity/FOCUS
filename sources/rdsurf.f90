@@ -66,7 +66,7 @@ subroutine fousurf
   
   use globals, only : dp, zero, half, pi2, myid, ounit, runit, input_surf, IsQuiet, IsSymmetric, &
                       Nfou, Nfp, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
-                      Nteta, Nzeta, surf, Npc, discretefactor, Nfp_raw, cosnfp, sinnfp
+                      Nteta, Nzeta, surf, Npc, discretefactor, Nfp_raw, cosnfp, sinnfp, half_shift
   
   implicit none
   
@@ -77,7 +77,7 @@ subroutine fousurf
   LOGICAL :: exist
   INTEGER :: iosta, astat, ierr, ii, jj, imn, ip
   REAL    :: RR(0:2), ZZ(0:2), szeta, czeta, xx(1:3), xt(1:3), xz(1:3), ds(1:3), &
-             teta, zeta, arg, dd
+             teta, zeta, arg, dd, shift
   
   !-------------read plasma.boundary---------------------------------------------------------------------  
   inquire( file=trim(input_surf), exist=exist)  
@@ -223,12 +223,19 @@ subroutine fousurf
   surf(1)%vol = zero  ! volume enclosed by plasma boundary
  
   discretefactor = (pi2/surf(1)%Nteta) * (pi2/surf(1)%Nzeta)
+
+  if (half_shift) then
+     shift = half
+  else 
+     shift = zero
+     if(myid.eq.0) write(ounit, '(8X": half-shift in surface evaluation is turned off." )')
+  endif
     
 ! The center point value was used to discretize grid;
   do ii = 0, surf(1)%Nteta-1
-     teta = ( ii + half ) * pi2 / surf(1)%Nteta
+     teta = ( ii + shift ) * pi2 / surf(1)%Nteta
      do jj = 0, surf(1)%Nzeta-1
-        zeta = ( jj + half ) * pi2 / surf(1)%Nzeta
+        zeta = ( jj + shift ) * pi2 / surf(1)%Nzeta
         RR(0:2) = zero ; ZZ(0:2) = zero
 
         do imn = 1, Nfou ; arg = bim(imn) * teta - bin(imn) * zeta
@@ -290,8 +297,8 @@ subroutine fousurf
   !calculate target Bn with input harmonics; 05 Jan 17;
   if(NBnf >  0) then
 
-     do jj = 0, Nzeta-1 ; zeta = ( jj + half ) * pi2 / (Nzeta*Nfp)
-        do ii = 0, Nteta-1 ; teta = ( ii + half ) * pi2 / Nteta
+     do jj = 0, Nzeta-1 ; zeta = ( jj + shift ) * pi2 / (Nzeta*Nfp)
+        do ii = 0, Nteta-1 ; teta = ( ii + shift ) * pi2 / Nteta
            do imn = 1, NBnf
               arg = Bnim(imn) * teta - Bnin(imn) * zeta
               surf(1)%pb(ii,jj) = surf(1)%pb(ii,jj) + Bnc(imn)*cos(arg) + Bns(imn)*sin(arg)

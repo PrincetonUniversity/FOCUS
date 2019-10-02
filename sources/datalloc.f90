@@ -206,8 +206,8 @@ subroutine AllocData(itype)
      enddo
      call MPI_ALLREDUCE( MPI_IN_PLACE, total_moment, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr ) 
 
-     ! set bounds for quasi-newton method
-     if (QN_maxiter>0) then
+     ! set bounds for quasi-newton method and SA
+     if (QN_maxiter>0 .or. SA_maxiter>0) then
         SALLOCATE( lowbound, (1:Ndof), zero ) ! lower bounds;
         SALLOCATE(  upbound, (1:Ndof), zero ) ! upper bounds;
         SALLOCATE(  nbounds, (1:Ndof), 0    ) ! bounds flag;
@@ -217,27 +217,27 @@ subroutine AllocData(itype)
         !              3 if x(i) has only an upper bound.
         idof = dof_offset
         do icoil = 1, Ncoils
-              if(coil(icoil)%Ic /= 0) then 
-                 if (coil(icoil)%itype == 2) then  ! permanent magnets
-                    if (allow_inverse) then
-                       lowbound(idof+1) = -one
-                    else
-                       lowbound(idof+1) = zero
-                    endif
-                    upbound(idof+1)  =  one 
-                    nbounds(idof+1)  =  2
+           if(coil(icoil)%Ic /= 0) then 
+              if (coil(icoil)%itype == 2) then  ! permanent magnets
+                 if (allow_inverse) then
+                    lowbound(idof+1) = -one
+                 else
+                    lowbound(idof+1) = zero
                  endif
-                 idof = idof + 1
+                 upbound(idof+1)  =  one 
+                 nbounds(idof+1)  =  2
               endif
-              ND = DoF(icoil)%ND
-              if(coil(icoil)%Lc /= 0) then
-                 if (coil(icoil)%itype == 2) then  ! permanent magnets
-                    lowbound(idof+1:idof+ND) = -pi
-                    upbound(idof+1:idof+ND)  =  pi
-                    nbounds(idof+1:idof+ND)  =  2   
-                 endif
-                 idof = idof + ND
+              idof = idof + 1
+           endif
+           ND = DoF(icoil)%ND
+           if(coil(icoil)%Lc /= 0) then
+              if (coil(icoil)%itype == 2) then  ! permanent magnets
+                 lowbound(idof+1:idof+ND) = -pi
+                 upbound(idof+1:idof+ND)  =  pi
+                 nbounds(idof+1:idof+ND)  =  2   
               endif
+              idof = idof + ND
+           endif
         enddo !end do icoil;
         FATAL( datalloc , idof-dof_offset .ne. ldof, counting error in packing )
         call MPI_ALLREDUCE( MPI_IN_PLACE, lowbound, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )

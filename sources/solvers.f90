@@ -36,12 +36,13 @@
 
 subroutine solvers
   use globals, only: dp, ierr, iout, myid, ounit, zero, IsQuiet, IsNormWeight, Ndof, Nouts, xdof, &
-       case_optimize, DF_maxiter, LM_maxiter, CG_maxiter, HN_maxiter, TN_maxiter, coil, DoF, &
+       case_optimize, DF_maxiter, LM_maxiter, CG_maxiter, coil, DoF, &
        weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_pmsum, &
-       target_tflux, target_length, cssep_factor, QN_maxiter
+       target_tflux, target_length, cssep_factor, QN_maxiter, SA_maxiter, HY_maxiter
+  use mpi
   implicit none
-  include "mpif.h"
 
+  INTEGER :: iter
   REAL :: start, finish
 
 
@@ -76,6 +77,22 @@ subroutine solvers
   call saveBmn    ! in bmnharm.h;
   iout = 0 ! reset output counter;
   call output(zero)
+
+  !--------------------------------HY--------------------------------------------------------------------
+  if (HY_maxiter > 0)  then
+     if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "------------- Hybrid QN & SA      (HY)  -------------"
+     call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
+     start = MPI_Wtime()
+     do iter = 1, HY_maxiter
+        call unpacking(xdof)
+        call qnewton
+        call simann
+        call packdof(xdof)
+     enddo
+     finish = MPI_Wtime()
+     if (myid  ==  0) write(ounit,'(8X,": HY takes ", es23.15," seconds;")') finish - start
+     return  ! exit
+  endif
   
   !--------------------------------DF--------------------------------------------------------------------
   if (DF_maxiter > 0)  then
@@ -125,33 +142,18 @@ subroutine solvers
      finish = MPI_Wtime()
      if (myid  ==  0) write(ounit,'(8X,": LM takes ", es23.15," seconds;")') finish - start
   endif
-  
-  !--------------------------------HN--------------------------------------------------------------------
-  if (HN_maxiter > 0)  then
-     if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "---------------------------------------------------"
-     if (myid == 0 .and. IsQuiet < 0) write(ounit, *) " Optimizing with Hybrid Newton Method (HN) "
+
+  !--------------------------------SA--------------------------------------------------------------------
+  if (SA_maxiter > 0)  then
+     if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "------------- Simulated Annealing (SA)  -------------"
      call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
      start = MPI_Wtime()
      call unpacking(xdof)
-     !call hybridnt
-     finish = MPI_Wtime()
-     if (myid  ==  0) write(ounit,'(8X,": HN takes ", es23.15," seconds;")') finish - start
-  endif
-  
-  !--------------------------------TN--------------------------------------------------------------------
-  if (TN_maxiter > 0)  then
-     if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "---------------------------------------------------"
-     if (myid == 0 .and. IsQuiet < 0) write(ounit, *) " Optimizing with Truncated Newton Method (TN) "
-     call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
-     start = MPI_Wtime()
-     call unpacking(xdof)
-     !call truncnt
+     call simann
      call packdof(xdof)
      finish = MPI_Wtime()
-     if (myid  ==  0) write(ounit,'(8X,": TN takes ", es23.15," seconds;")') finish - start
+     if (myid  ==  0) write(ounit,'(8X,": SA takes ", es23.15," seconds;")') finish - start
   endif
-  
-  !------------------------------------------------------------------------------------------------------
   
   return
 end subroutine solvers
