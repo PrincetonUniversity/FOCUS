@@ -172,7 +172,7 @@ subroutine boozsurf(XYZB, x, y, z, iota, isurf)
 
   ! finish decomposition
 
-  write(ounit, '("boozmn  : myid="I6" ; Gpol="ES12.5" ; iota="ES12.5" ; Booz_mnc(1)="ES12.5 &
+  write(ounit, '("boozmn  : myid ="I6" ; Gpol="ES12.5" ; iota="ES12.5" ; Booz_mnc(1)="ES12.5 &
        " ; Booz_mns(1)="ES12.5)') masterid, Gpol, iota, booz_mnc(1, isurf), booz_mns(1, isurf)
   
   return

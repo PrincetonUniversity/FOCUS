@@ -51,7 +51,7 @@
  LM_ftol        =        1.000D-08      ! if both the actual and predicted relative reductions in the sum of squares are at most ftol, the optimization terminates;
  LM_factor      =      100.0            ! the initial step bound, which is set to the product of factor and the euclidean norm of diag*x if nonzero
 
- case_postproc  =        4              ! 0: no extra post-processing; 1: evaluate the current coils; 2: write SPEC file; 3: perform Poincare plots; 4: calculates |B| Fourier harmonics in Boozer coordinates
+ case_postproc  =        3              ! 0: no extra post-processing; 1: evaluate the current coils; 2: write SPEC file; 3: perform Poincare plots; 4: calculates |B| Fourier harmonics in Boozer coordinates
  save_freq      =        1              ! frequency for writing output files; should be positive
  save_coils     =        1              ! flag for indicating whether write example.focus and example.coils
  save_harmonics =        0              ! flag for indicating whether write example.harmonics
