@@ -421,9 +421,11 @@ IF(iprint >= 1) CALL prt2(max, n, x, f)
 !  Start the main loop. Note that it terminates if (i) the algorithm
 !  succesfully optimizes the function or (ii) there are too many
 !  function evaluations (more than MAXEVL).
+
+nnew = 0
 100 nup = 0
 nrej = 0
-nnew = 0
+
 ndown = 0
 lnobds = 0
 
@@ -482,7 +484,11 @@ DO m = 1, nt
           fopt = fp
           nnew = nnew + 1
           tstart = MPI_Wtime()
-          call output(tstart-tfinish)          
+          call output(tstart-tfinish)  
+          IF (nnew > SA_maxiter) THEN
+             IF(myid.eq.0) WRITE(ounit,'("SA--max. iterations reached.")')
+             RETURN
+          END IF
         END IF
         
 !  If the point is lower, use the Metropolis criteria to decide on
@@ -539,8 +545,13 @@ DO i = 1, neps
   IF (ABS(f - fstar(i)) > eps) quit = .false.
 END DO
 
+
+IF(myid.eq.0) WRITE(ounit,*) "nnew", nnew, " SA_maxiter", SA_maxiter
+
 ! reach the maximum iteration
-IF (nnew > SA_maxiter) quit = .true.
+IF (nnew > SA_maxiter) THEN
+   quit = .true.
+END IF
 
 !  Terminate SA if appropriate.
 IF (quit) THEN
@@ -885,17 +896,17 @@ SUBROUTINE simann
 
   REAL(dp)    :: lb(Ndof), ub(Ndof), x(Ndof), xopt(Ndof), c(Ndof), vm(Ndof), t, eps, rt, fopt
   INTEGER     :: n, ns, nt, nfcnev, ier, iseed1, iseed2, i, maxevl, iprint, acc, nobds, nacc
-  LOGICAL     :: max
+  LOGICAL     :: lmax
 
   !  Set input parameters.
   n = Ndof
-  max = .false.
+  lmax = .false.
   eps = SA_XTOL
   rt = .5
-  iseed1 = 1
-  iseed2 = 2
+  iseed1 = 1000
+  iseed2 = 20000
   ns = 20
-  nt = 100
+  nt = max(100, 5*n)
   maxevl = 100000
   iprint = 0
   c = 2 
@@ -908,7 +919,7 @@ SUBROUTINE simann
   if (myid == 0) write(ounit, '("output  : "A6" : "8(A12," ; "))') "iout", "time (s)", "chi", "dE_norm", &
        "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "PM eff. vol."   
 
-  CALL sa(n, x, max, rt, eps, ns, nt, neps, maxevl, lowbound, upbound, c, iprint, iseed1,  &
+  CALL sa(n, x, lmax, rt, eps, ns, nt, neps, maxevl, lowbound, upbound, c, iprint, iseed1,  &
        iseed2, t, vm, xopt, fopt, nacc, nfcnev, nobds, ier)
 
   call unpacking(xopt)
