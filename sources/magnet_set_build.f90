@@ -3,6 +3,10 @@
 !
 ! Routines for defining the locations, orientations, etc. of the magnets based
 ! on input geometric data
+!
+! Author:       K. C. Hammond
+! Contact:      khammond@pppl.gov
+! Last updated: 2019-10-18
 !-------------------------------------------------------------------------------
 module magnet_set_build
 
@@ -191,15 +195,16 @@ subroutine count_stacks()
                                   vert_r, vert_z, vert_theta, vert_sep, &
                                   vessel_r, vessel_z, &
                                   segs_on_plate, nSegments, segments, &
+                                  fill_wedge_gaps, &
                                   gap_tor, gap_pol, gap_end, &
-                                  stack_ht_max, avail_mag_lg, &
+                                  stack_ht_max, avail_mag_lg, avail_mag_ht, &
                                   nStacks_total, &
                                   plates_initialized, segments_initialized
 
     implicit none
 
     INTEGER :: i, j, n
-    REAL :: vert_dr, vert_dz
+    REAL :: vert_dr, vert_dz, block_ht
     REAL, allocatable :: seg_lg(:,:), alpha(:,:), beta(:,:), avail_dims(:)
 
     ! Initial status checks
@@ -253,6 +258,14 @@ subroutine count_stacks()
 
     ! Determine the gaps required by the concavity at the ends of each segment
     n = 0
+    block_ht = stack_ht_max
+    if (fill_wedge_gaps) then
+        do i = 1, size(avail_mag_ht)
+            if ((avail_mag_ht(i) > 0) .and. (avail_mag_ht(i) < block_ht)) then
+                block_ht = avail_mag_ht(i)
+            end if
+        end do
+    end if
     allocate(segments(nSegments))
     do i = 1, nPlates
         do j = 1, segs_on_plate(i)
@@ -269,18 +282,22 @@ subroutine count_stacks()
 
             if (j == 1) then
                 segments(n)%gap_con_1 = 0
+                segments(n)%divider_elev_1 = 0.5*pi
             else
-                segments(n)%gap_con_1 = &
-                    concavity_gap(alpha(i,j-1), alpha(i,j), stack_ht_max, &
-                                  1, vert_sep(i,j), beta(i,j))
+                call concavity_gap(alpha(i,j-1), alpha(i,j), block_ht, &
+                                   1, vert_sep(i,j), beta(i,j), &
+                                   segments(n)%gap_con_1, &
+                                   segments(n)%divider_elev_1)
             end if
 
             if (j == segs_on_plate(i)) then
                 segments(n)%gap_con_2 = 0
+                segments(n)%divider_elev_2 = 0.5*pi
             else
-                segments(n)%gap_con_2 = &
-                    concavity_gap(alpha(i,j), alpha(i,j+1), stack_ht_max, &
-                                  2, vert_sep(i,j+1), beta(i,j+1))
+                call concavity_gap(alpha(i,j), alpha(i,j+1), block_ht, &
+                                   2, vert_sep(i,j+1), beta(i,j+1), &
+                                   segments(n)%gap_con_2, &
+                                   segments(n)%divider_elev_2)
            end if
 
         end do
@@ -321,7 +338,7 @@ subroutine count_magnets()
                                   gap_rad, gap_tor, gap_pol, gap_end, &
                                   gap_seg, gap_vac, &
                                   stacks, nStacks_total, stack_ht_max, &
-                                  fixed_stack_ht, &
+                                  fixed_stack_ht, fill_wedge_gaps, &
                                   avail_mag_lg, avail_mag_ht, nMagnets_total, &
                                   segments_initialized, stacks_initialized
     use magnet_set_calc,    only: ves_dist_2d
@@ -336,7 +353,7 @@ subroutine count_magnets()
     REAL :: x2, y2, z2                     ! coordinates of segment end point
     REAL :: ux, uy, uz                     ! unit vector along segment
     REAL :: nx, ny, nz, nr                 ! normal vector to segment
-    REAL :: r, z, theta0, vdist, theta, vr, vz, chi2
+    REAL :: ht_div_1, ht_div_2, r, z, theta0, vdist, theta, vr, vz, chi2
 
     ! Initialization checks
     if (.not. segments_initialized) then
@@ -348,7 +365,7 @@ subroutine count_magnets()
 
     ! Array of available heights
     allocate(avail_dims(size(avail_mag_ht)))
-    do i = 1, size(avail_mag_lg)
+    do i = 1, size(avail_mag_ht)
         avail_dims(i) = avail_mag_ht(i)
     end do
 
@@ -408,9 +425,17 @@ subroutine count_magnets()
             stacks(n)%lg = length
 
             ! Available height within the stack in which to fit magnets
+
+            ! Height allowed by dividing lines (relevant if fill_gaps == true)
+            ht_div_1 = (seg_dist - 0.5*length) * tan(segments(i)%divider_elev_1)
+            ht_div_2 = (segments(i)%lg - seg_dist - 0.5*length) &
+                           * tan(segments(i)%divider_elev_2)
+            if (ht_div_1 < 0) ht_div_1 = stack_ht_max
+            if (ht_div_2 < 0) ht_div_2 = stack_ht_max
+
             if (fixed_stack_ht) then
 
-                stacks(n)%ht = stack_ht_max
+                stacks(n)%ht = min(stack_ht_max, ht_div_1, ht_div_2)
 
             else
 
@@ -425,11 +450,11 @@ subroutine count_magnets()
                                  theta0, vdist, theta, vr, vz, chi2)
                 if (vdist > 0) then
                     stacks(n)%ht = 0
-                elseif (vdist < -stack_ht_max .or. chi2 > ves_tol**2) then
-                    stacks(n)%ht = stack_ht_max
+                else if (vdist < -stack_ht_max .or. chi2 > ves_tol**2) then
+                    stacks(n)%ht = min(stack_ht_max, ht_div_1, ht_div_2)
                 else
-                    stacks(n)%ht = -vdist
-                endif
+                    stacks(n)%ht = min(-vdist, ht_div_1, ht_div_2)
+                end if
             end if
 
             ! Number of magnets per stack based on available ht.
@@ -456,22 +481,26 @@ end subroutine count_magnets
 !-------------------------------------------------------------------------------
 subroutine magnet_properties
 
-    use magnet_set_globals, only: m_bulk, symm, coiltype, &
+    use magnet_set_globals, only: ves_r00, m_bulk, symm, coiltype, pi, &
                                   stacks, nStacks_total, &
                                   magnets, nMagnets_total, avail_mag_ht, &
                                   gap_seg, gap_rad, gap_vac, &
-                                  stacks_initialized, magnets_initialized
+                                  stacks_initialized, magnets_initialized, &
+                                  polarization_mode, pol_err_count, ves_tol
+    use magnet_set_calc, only: ves_perp_intersect_3d, ves_dist_2d, ves_r, ves_z
 
     implicit none
 
     INTEGER :: i, j, n
-    REAL :: height, stack_dist
+    REAL :: height, stack_dist, mag_r, mag_l0, mag_theta0, mag_phi0, ignore
+    REAL :: mag_ux, mag_uy, mag_uz
+    REAL :: sol_l, sol_theta, sol_phi, sol_x, sol_y, sol_z, sol_chi2
 
     if (.not. stacks_initialized) then
-        stop 'count_magnets: plate segments not initialized'
+        stop 'magnet_properties: plate segments not initialized'
     end if
     if (magnets_initialized) then
-        stop 'count_magnets: magnets already initialized'
+        stop 'magnet_properties: magnets already initialized'
     end if
 
     allocate( magnets(nMagnets_total) )
@@ -515,9 +544,31 @@ subroutine magnet_properties
             magnets(n)%coiltype = coiltype
             magnets(n)%symm = symm
 
-            magnets(n)%n_phi = atan2(magnets(n)%ny, magnets(n)%nx)
-            magnets(n)%n_theta = &
-                atan2(sqrt(magnets(n)%nx**2 + magnets(n)%ny**2), magnets(n)%nz)
+            magnets(n)%err = .false.
+
+            if (polarization_mode == 'stack') then
+                magnets(n)%n_phi = atan2(magnets(n)%ny, magnets(n)%nx)
+                magnets(n)%n_theta = atan2(sqrt(magnets(n)%nx**2 &
+                                         + magnets(n)%ny**2), magnets(n)%nz)
+            else if (polarization_mode == 'vessel') then
+                mag_r = sqrt(magnets(n)%ox**2 + magnets(n)%oy**2)
+                mag_theta0 = atan2(magnets(n)%oz, mag_r - ves_r00)
+                mag_phi0 = atan2(magnets(n)%oy, magnets(n)%ox)
+                mag_l0 = 0.0
+                call ves_perp_intersect_3d( &
+                         magnets(n)%ox, magnets(n)%oy, magnets(n)%oz, &
+                         mag_l0, mag_theta0, mag_phi0, &
+                         sol_l, sol_theta, sol_phi, &
+                         sol_x, sol_y, sol_z, mag_ux, mag_uy, mag_uz, sol_chi2)
+                magnets(n)%n_phi = atan2(mag_uy, mag_ux)
+                magnets(n)%n_theta = atan2(sqrt(mag_ux**2 + mag_uy**2), mag_uz)
+                if (sol_chi2 > ves_tol**2) then
+                    magnets(n)%err = .true.
+                    pol_err_count = pol_err_count + 1
+                end if
+            else
+                stop 'magnet_properties: unrecognized magnet polarization_mode'
+            end if
 
         end do
 
@@ -552,8 +603,16 @@ end subroutine magnet_properties
 !                                the point on the vessel along a vessel normal
 !     REAL :: beta            -> angle of the normal relative to the radial
 !                                unit vector
+!
+! Output parameters:
+!     REAL :: gap             -> the required gap from the end of the segment 
+!                                indicated by the which_alpha parameter
+!     REAL :: divider_elev    -> elevation angle (radians) above the segment
+!                                of the dividing line between adjacent
+!                                segments, up to which the gap could be filled 
 !-------------------------------------------------------------------------------
-REAL function concavity_gap(alpha1, alpha2, h, which_alpha, vert_sep, beta)
+subroutine concavity_gap(alpha1, alpha2, h, which_alpha, vert_sep, beta, &
+                         gap, divider_elev)
 
     use magnet_set_globals, only: pi
 
@@ -562,6 +621,7 @@ REAL function concavity_gap(alpha1, alpha2, h, which_alpha, vert_sep, beta)
     ! Input parameters are as defined in the documentation string
     REAL, intent(IN) :: alpha1, alpha2, h, vert_sep, beta
     INTEGER, intent(IN) :: which_alpha
+    REAL, intent(OUT) :: gap, divider_elev
     REAL :: d_alpha, angle, allowable_ht
 
     ! Angle btw. vessel normal and perp. bisector of segment from pt. on vessel
@@ -579,7 +639,8 @@ REAL function concavity_gap(alpha1, alpha2, h, which_alpha, vert_sep, beta)
 
     if (allowable_ht < h) then
 
-        concavity_gap = max(0.0, vert_sep * sin(angle))
+        gap = max(0.0, vert_sep * sin(angle))
+        divider_elev = 0.5*pi - max(0.0, angle)
 
     else
 
@@ -591,14 +652,16 @@ REAL function concavity_gap(alpha1, alpha2, h, which_alpha, vert_sep, beta)
     
         if (d_alpha <= 0) then
             ! Case of a convex or straight angle
-            concavity_gap = 0.0
+            gap = 0.0
+            divider_elev = 0.5*pi
         else
-            concavity_gap = h / tan( 0.5 * (pi - d_alpha) )
+            divider_elev = 0.5 * (pi - d_alpha)
+            gap = h / tan(divider_elev)
         end if
 
     end if
 
-end function concavity_gap
+end subroutine concavity_gap
 
 
 !-------------------------------------------------------------------------------
@@ -637,6 +700,9 @@ subroutine best_magnet_dim(avail_dims, gap_btwn, gap_end1, gap_end2, &
     nMagnets = 0
 
     do i = 1, nAvail
+
+        ! Skip if the element is empty or unphysical
+        if (avail_dims(i) <= 0) cycle
 
         ! Determine the number of magnets of the given length that will fit
         reserve_per_mag = avail_dims(i) + gap_btwn

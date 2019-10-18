@@ -2,6 +2,10 @@
 ! magnet_set_io.f90
 !
 ! Subroutines input and output relating to the magnet set
+!
+! Author:       K. C. Hammond
+! Contact:      khammond@pppl.gov
+! Last updated: 2019-10-18
 !-------------------------------------------------------------------------------
 module magnet_set_io
 
@@ -103,7 +107,7 @@ end subroutine read_namelist
 subroutine read_vessel_coeffs()
 
     use magnet_set_globals, only: vfile, nModes, vrc, vzs, vrs, vzc, vm, vn, &
-                                  vessel_loaded, ves_r00
+                                  vessel_loaded, ves_r00, ves_r10
 
     implicit none
 
@@ -165,6 +169,7 @@ subroutine read_vessel_coeffs()
         vrs(i) = vrs_in
         vzc(i) = vzc_in
         if (vm_in == 0 .and. vn_in == 0) ves_r00 = vrc_in
+        if (vm_in == 1 .and. vn_in == 0) ves_r10 = vrc_in
     end do
 
     vessel_loaded = .true.
@@ -200,8 +205,8 @@ subroutine read_lcfs_coeffs()
     logical :: nModes_read = .false.
 
     if (pfile == 'none') then
-        write(*, *) 'Warning: no vessel file given'
-        write(*, *) 'Vessel-dependent operations will not be available.'
+        write(*, *) 'Warning: no LCFS file given'
+        write(*, *) 'LCFS-dependent operations will not be available.'
         return
     end if
 
@@ -348,12 +353,14 @@ subroutine print_magnets_to_file(filename, output_type)
             write(unit=file_unit, &
                   fmt='(ES15.8, X, ES15.8, X, ES15.8, X, ES15.8, X, ' // &
                       ' ES15.8, X, ES15.8, X, ES15.8, X, ES15.8, X, ' // &
-                      ' ES15.8, X, ES15.8, X, ES15.8, X, ES15.8      )', &
+                      ' ES15.8, X, ES15.8, X, ES15.8, X, ES15.8, X, ' // &
+                      ' ES15.8, X, ES15.8 )', &
                   iostat=write_status) &
                       magnets(i)%ox, magnets(i)%oy, magnets(i)%oz, &
                       magnets(i)%nx, magnets(i)%ny, magnets(i)%nz, &
                       magnets(i)%lx, magnets(i)%ly, magnets(i)%lz, &
-                      magnets(i)%lg, magnets(i)%wd, magnets(i)%ht
+                      magnets(i)%lg, magnets(i)%wd, magnets(i)%ht, &
+                      magnets(i)%n_phi, magnets(i)%n_theta
             if (write_status /= 0) then
                 write(*, fmt='(A, I0, A)') &
                     'print_magnets_to_file: unable to write line ', i, &

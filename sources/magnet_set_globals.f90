@@ -3,6 +3,10 @@
 !
 ! Global variables pertaining to the spatial layout of the set of magnets for
 ! the SAS device.
+!
+! Author:       K. C. Hammond
+! Contact:      khammond@pppl.gov
+! Last updated: 2019-10-18
 !-------------------------------------------------------------------------------
 module magnet_set_globals
 
@@ -14,8 +18,8 @@ module magnet_set_globals
     REAL, parameter :: deg2rad = pi/180.
 
     ! Upper limits on some array bounds
-    INTEGER, parameter :: np = 50
-    INTEGER, parameter :: nv = 50
+    INTEGER, parameter :: np = 200
+    INTEGER, parameter :: nv = 200
     INTEGER, parameter :: ns = nv-1
     INTEGER, parameter :: nw = 10
     INTEGER, parameter :: nl = 10
@@ -36,6 +40,7 @@ module magnet_set_globals
     INTEGER :: nModes               ! total number of Fourier modes
     INTEGER :: nfp = 3              ! number of field periods
     REAL :: ves_r00                 ! R_00 coefficient
+    REAL :: ves_r10                 ! R_01 coefficient
     REAL, allocatable :: vrc(:)     ! cosine coefficients, vessel surface r
     REAL, allocatable :: vzs(:)     ! sine coefficients, vessel surface z
     REAL, allocatable :: vrs(:)     ! sine coefficients, vessel surface r
@@ -57,6 +62,8 @@ module magnet_set_globals
 
     ! Details about the support plates 
     logical :: plates_initialized = .false.
+    logical :: fill_wedge_gaps = .true.  ! if wedge-shaped gaps between segments
+                                         ! are to be filled with magnets
     CHARACTER(len=10) :: vertex_mode = 'rz'
     INTEGER :: nPlates                ! number of support plates per half-module
     INTEGER :: nVertices              ! (maximum) number of vertices per plate
@@ -75,17 +82,19 @@ module magnet_set_globals
     logical :: segments_initialized = .false.
     INTEGER :: nSegments
     type segment
-        REAL :: lg            ! length of the segment between vertices
-        REAL :: wd            ! width (toroidal dimension) of the segment
-        REAL :: r1, r2        ! r coordinates of each end
-        REAL :: z1, z2        ! z coordinates of each end
-        REAL :: phi           ! toroidal angle of the segment (center)
-        REAL :: dphi          ! toroidal angle subtended by the segment
-        REAL :: alpha         ! angle between plate normal and r-hat
-        REAL :: gap_con_1     ! concavity gap, begin. of plate segmt
-        REAL :: gap_con_2     ! concavity gap, end of plate segmt
-        INTEGER :: nStacks    ! num. of mag. stacks on each segmt
-        INTEGER :: mag_lg_ind ! index of magnet length for segmt
+        REAL :: lg             ! length of the segment between vertices
+        REAL :: wd             ! width (toroidal dimension) of the segment
+        REAL :: r1, r2         ! r coordinates of each end
+        REAL :: z1, z2         ! z coordinates of each end
+        REAL :: phi            ! toroidal angle of the segment (center)
+        REAL :: dphi           ! toroidal angle subtended by the segment
+        REAL :: alpha          ! angle between plate normal and r-hat
+        REAL :: gap_con_1      ! concavity gap, begin. of plate segmt
+        REAL :: gap_con_2      ! concavity gap, end of plate segmt
+        REAL :: divider_elev_1 ! elev angle of div line above segmt, beginning
+        REAL :: divider_elev_2 ! elev angle of div line above segmt, end
+        INTEGER :: nStacks     ! num. of mag. stacks on each segmt
+        INTEGER :: mag_lg_ind  ! index of magnet length for segmt
     end type segment
     type(segment), allocatable :: segments(:)
 
@@ -127,8 +136,10 @@ module magnet_set_globals
 
     ! Individual magnet parameters
     logical :: magnets_initialized = .false.
+    CHARACTER(len=20) :: polarization_mode = 'stack'
     INTEGER :: nMagnets_total         ! total number of magnets
     REAL    :: m_bulk                 ! magnetization per unit volume
+    INTEGER :: pol_err_count = 0      ! number of erroneous magnet vectors
     type magnet
         REAL :: ht     ! height of the magnet (minor radial)
         REAL :: wd     ! width of the magnet (toroidal)
@@ -143,43 +154,46 @@ module magnet_set_globals
         REAL :: lx     ! x comp. poloidal unit vector (for rect. orientation)
         REAL :: ly     ! y component of poloidal unit vector
         REAL :: lz     ! z component of poloidal unit vector
-        REAL :: n_phi  ! azimuthal angle of normal vector
-        REAL :: n_theta ! polar angle of normal vector
+        REAL :: n_phi  ! azimuthal angle of the unit polarization vector
+        REAL :: n_theta ! polar angle of the unit polarization vector
         REAL :: moment  ! magnetic moment
         INTEGER :: coiltype ! coil type number for input to FOCUS
         INTEGER :: symm     ! symmetry number for input to FOCUS
+        logical :: err
     end type magnet
     type(magnet), allocatable :: magnets(:)
 
-    NAMELIST /magnet_set/ vfile,          &
-                          pfile,          &
-                          nfp,            &
-                          ves_tol,        &
-                          maxIter,        &
-                          nPlates,        &
-                          nVertices,      &
-                          plate_phi,      &
-                          plate_dphi,     &
-                          coiltype,       &
-                          symm,           &
-                          vertex_mode,    &
-                          vert_r,         &
-                          vert_z,         &
-                          vert_theta,     &
-                          vert_tlcfs,     &
-                          vert_sep,       &
-                          gap_rad,        &
-                          gap_tor,        &
-                          gap_pol,        &
-                          gap_end,        &
-                          gap_seg,        &
-                          gap_vac,        &
-                          stack_ht_max,   &
-                          fixed_stack_ht, &
-                          avail_mag_wd,   &
-                          avail_mag_lg,   &
-                          avail_mag_ht,   &
-                          m_bulk       
+    NAMELIST /magnet_set/ vfile,             &
+                          pfile,             &
+                          nfp,               &
+                          ves_tol,           &
+                          maxIter,           &
+                          nPlates,           &
+                          nVertices,         &
+                          plate_phi,         &
+                          plate_dphi,        &
+                          coiltype,          &
+                          symm,              &
+                          vertex_mode,       &
+                          vert_r,            &
+                          vert_z,            &
+                          vert_theta,        &
+                          vert_tlcfs,        &
+                          vert_sep,          &
+                          gap_rad,           &
+                          gap_tor,           &
+                          gap_pol,           &
+                          gap_end,           &
+                          gap_seg,           &
+                          gap_vac,           &
+                          fill_wedge_gaps,   &
+                          stack_ht_max,      &
+                          fixed_stack_ht,    &
+                          avail_mag_wd,      &
+                          avail_mag_lg,      &
+                          avail_mag_ht,      &
+                          m_bulk,            &
+                          polarization_mode       
     
 end module magnet_set_globals
 
