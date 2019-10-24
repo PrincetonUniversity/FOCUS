@@ -13,7 +13,7 @@ FOCUS uses 3D curves to represent coils in fusion devices, mainly for toroidal d
 3. [Running](#running)
 4. [Output files](#output-files)
 5. [Plotting](#plotting)
-6. [Documentations](#documentations)
+6. [Documentation](#documentation)
 7. [Publications](#publications)
 
 # Before running
@@ -92,7 +92,7 @@ For instance, you want to run the code with a case name of "example".
   - *case_init = -1* :  **input_coils** (default: 'coils.example') 
   
     Read the coils data from **coils.example** and fit the coils with Fourier coefficients. 
-    The format ofcoils.\* file can be seen in [VMECwiki](https://bitbucket.org/lazerson_princeton/stellopt/wiki/MAKEGRID).
+    The format ofcoils.\* file can be seen in [VMECwiki](https://princetonuniversity.github.io/STELLOPT/MAKEGRID).
 	Here is an example for the rotating ellipse case [coils.ellipse](https://github.com/PrincetonUniversity/FOCUS/tree/master/examples/rotating_ellipse/coils.ellipse)
     
   - *case_init =  0* : **input_coils** (default: 'example.focus')
@@ -135,7 +135,7 @@ xfocus --help  (or xfocus -h)
 
 # Output files
 
-Once calling [saving](https://github.com/PrincetonUniversity/FOCUS/tree/master/sources/saving.h), present calculating results will be saved to local files.
+Once calling the subroutuine [saving](https://github.com/PrincetonUniversity/FOCUS/blob/master/sources/saving.f90), present calculating results will be saved to local files.
 The frequency of writing outputs is controlled by the variable *save_freq*.
 The basic output file is written in hdf5 format.
 
@@ -173,8 +173,8 @@ There are several tools for processing the data. If you need to use one of them,
 
 &nbsp;
 
-# Documentations
-In the source files, the comments starting with "!latex " can be exported into a tex file and generate pdf documentations.
+# Documentation
+In the source files, the comments starting with "!latex " can be exported into a tex file and generate pdf documentation.
 You can find some of them in [Subroutines](https://princetonuniversity.github.io/FOCUS/subroutines).
 
 &nbsp;
