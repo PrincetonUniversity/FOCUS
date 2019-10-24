@@ -2,8 +2,7 @@
 
 FOCUS uses 3D curves to represent coils in fusion devices, mainly for toroidal devices including stellarators and tokamaks. For a given configuration, FOCUS can find optimal coils, which can produced the required magnetic field for confining the plasma meeting the user-specified physics and engineering constraints.
 
-<img alt="FOCUS" src="http://joshburns.net/blog/wp-content/uploads/2013/08/focus.jpg" height="180">
-*Photo credit: iStockphoto.com*
+![](logo.png)
 
 &nbsp;
 
