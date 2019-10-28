@@ -289,6 +289,9 @@ SUBROUTINE unpackcoil
 #endif
            coil(icoil)%mt = DoF(icoil)%xdof(idof+1) ; idof = idof + 1
            coil(icoil)%mp = DoF(icoil)%xdof(idof+1) ; idof = idof + 1
+           coil(icoil)%mx = sin(coil(icoil)%mt) * cos(coil(icoil)%mp) * coil(icoil)%I
+           coil(icoil)%my = sin(coil(icoil)%mt) * sin(coil(icoil)%mp) * coil(icoil)%I
+           coil(icoil)%mz = cos(coil(icoil)%mt) * coil(icoil)%I
         endif
         FATAL( unpackcoil04 , idof .ne. DoF(icoil)%ND, counting error in packing )
 

@@ -19,6 +19,7 @@ module bnorm_mod
 
   ! 0-order
   REAL, allocatable :: dBx(:,:), dBy(:,:), dBz(:,:), Bm(:,:)
+  REAL, allocatable :: gx(:,:,:), gy(:,:,:), gz(:,:,:) ! inductance matrix
   ! 1st-order
   REAL, allocatable :: dBn(:), dBm(:), d1B(:,:,:)
 
@@ -260,3 +261,166 @@ subroutine bnormal( ideriv )
   return
 end subroutine bnormal
 
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+subroutine bnormal2( ideriv )
+!------------------------------------------------------------------------------------------------------ 
+! DATE:  10/28/2019;
+! Calculate the Bn surface integral and its derivatives;
+! ideriv = 0 -> only calculate the Bn surface integral;
+! ideriv = 1 -> calculate the Bn surface integral and its first derivatives;
+!------------------------------------------------------------------------------------------------------   
+  use globals, only: dp, zero, half, one, pi2, sqrtmachprec, bsconstant, ncpu, myid, ounit, &
+       coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, symmetry, npc, cosnfp, sinnfp, &
+       bnorm, t1B, t2B, bn, Ndof, Npc, Cdof, weight_bharm, case_bnormal, &
+       weight_bnorm, ibnorm, mbnorm, ibharm, mbharm, LM_fvec, LM_fjac, &
+       bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn, dof_offset, ldof, momentq
+  use bnorm_mod
+  use bharm_mod
+  use mpi
+  implicit none
+
+  INTEGER, INTENT(in)                   :: ideriv
+  !--------------------------------------------------------------------------------------------
+  INTEGER                               :: astat, ierr
+  INTEGER                               :: icoil, iteta, jzeta, idof, ND, NumGrid, ip, is, index
+
+  !--------------------------initialize and allocate arrays------------------------------------- 
+
+  NumGrid = Nteta*Nzeta
+  ! reset to zero;
+  bnorm = zero 
+  surf(1)%Bn = zero     
+  dBx = zero; dBy = zero; dBz = zero; Bm = zero
+  bn = zero
+
+  !-------------------------------calculate Bn-------------------------------------------------- 
+  if( ideriv >= 0 ) then
+
+     do jzeta = 0, Nzeta - 1
+        do iteta = 0, Nteta - 1
+           
+           if (myid==0) then ! contribution from the master cpu and plasma currents
+              surf(1)%Bn(iteta, jzeta) = surf(1)%Bx(iteta, jzeta)*surf(1)%nx(iteta, jzeta) &
+                   &                   + surf(1)%By(iteta, jzeta)*surf(1)%ny(iteta, jzeta) &
+                   &                   + surf(1)%Bz(iteta, jzeta)*surf(1)%nz(iteta, jzeta) &
+                   &                   + surf(1)%pb(iteta, jzeta)
+           else ! contribution from dipoles
+              do ip = 1, Npc
+                 do is = 0, symmetry
+                    index = is*Ncoils+(ip-1)*2**symmetry*Ncoils
+                    surf(1)%Bn(iteta, jzeta) = surf(1)%Bn(iteta, jzeta) + 1.0/surf(1)%ds(iteta, jzeta)*( &
+                         & + sum(gx(iteta, jzeta, index+1:index+Ncoils) * (coil(1:Ncoils)%mx*(-1)**is*cosnfp(ip) - coil(1:Ncoils)%my*sinnfp(ip))) &
+                         & + sum(gy(iteta, jzeta, index+1:index+Ncoils) * (coil(1:Ncoils)%mx*(-1)**is*sinnfp(ip) + coil(1:Ncoils)%my*cosnfp(ip))) &
+                         & + sum(gz(iteta, jzeta, index+1:index+Ncoils) * (coil(1:Ncoils)%mz                                                   )) )
+                 enddo
+              enddo
+           endif
+
+           ! gather all the data
+           call MPI_ALLREDUCE( MPI_IN_PLACE, surf(1)%Bn(iteta, jzeta), 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+           
+           select case (case_bnormal)
+           case (0)     ! no normalization over |B|;
+              bnorm = bnorm + surf(1)%Bn(iteta, jzeta) * surf(1)%Bn(iteta, jzeta) * surf(1)%ds(iteta, jzeta)
+           case default
+              FATAL( bnorm, .true., case_bnormal can only be 0 )
+           end select
+
+        enddo ! end do iteta
+     enddo ! end do jzeta
+     
+     bnorm = bnorm * half * discretefactor
+     bn = surf(1)%Bn -  surf(1)%pb  ! bn is B.n from coils
+     ! bn = surf(1)%Bx * surf(1)%nx + surf(1)%By * surf(1)%ny + surf(1)%Bz * surf(1)%nz
+     !! if (case_bnormal == 0) bnorm = bnorm * bsconstant * bsconstant ! take bsconst back
+     
+     ! Another type of target functions
+     if (mbnorm > 0) then
+        select case (case_bnormal)
+        case (0)     ! no normalization over |B|;
+           LM_fvec(ibnorm+1:ibnorm+mbnorm) =  weight_bnorm &
+                &  * reshape(surf(1)%bn(0:Nteta-1, 0:Nzeta-1)                               , (/Nteta*Nzeta/))
+        case (1)    ! normalized over |B|;
+           LM_fvec(ibnorm+1:ibnorm+mbnorm) =  weight_bnorm &
+                &  * reshape(surf(1)%bn(0:Nteta-1, 0:Nzeta-1)/sqrt(bm(0:Nteta-1, 0:Nzeta-1)), (/Nteta*Nzeta/))
+        case default
+           FATAL( bnorm, .true., case_bnormal can only be 0/1 )
+        end select
+           
+     endif
+
+     ! Bn harmonics related
+     if (weight_bharm > sqrtmachprec) then
+        call twodft( bn, Bmns, Bmnc, Bmnim, Bmnin, NBmn ) ! Bn from coils
+        bharm = half * sum( wBmn * ((Bmnc - tBmnc)**2 + (Bmns - tBmns)**2) )
+
+        if (mbharm > 0) then
+           LM_fvec(ibharm+1:ibharm+mbharm/2) = weight_bharm * wBmn * (Bmnc - tBmnc)
+           LM_fvec(ibharm+mbharm/2+1:ibharm+mbharm) = weight_bharm * wBmn * (Bmns - tBmns)
+        endif
+
+     endif
+  endif
+
+end subroutine bnormal2
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+subroutine prepare_inductance()
+  use globals, only: dp, ierr, iout, myid, ounit, zero, Ncpu, Ncoils_total, Npc, symmetry, &
+       coil, surf, bsconstant, cosnfp, sinnfp, Ncoils, Nzeta, Nteta, one, three
+  use bnorm_mod
+  use mpi
+  implicit none
+
+  ! local variables
+  INTEGER :: is, ip, iteta, jzeta, icoil, astat
+  REAL :: ox, oy, oz, rx, ry, rz, rr, rm3, rm5, rdotN
+  
+  SALLOCATE( gx, (0:Nteta-1,0:Nzeta-1,1:Ncoils*Npc*2**symmetry), zero ) ! inductance matrix for calculating B.n
+  SALLOCATE( gy, (0:Nteta-1,0:Nzeta-1,1:Ncoils*Npc*2**symmetry), zero ) ! inductance matrix for calculating B.n
+  SALLOCATE( gz, (0:Nteta-1,0:Nzeta-1,1:Ncoils*Npc*2**symmetry), zero ) ! inductance matrix for calculating B.n
+  
+  if (myid==0) then   ! calculate the field from coil on the master cpu
+     do icoil = 1, Ncoils         
+        call bfield0(icoil, surf(1)%xx(iteta, jzeta), surf(1)%yy(iteta, jzeta), &
+             & surf(1)%zz(iteta, jzeta), dBx(0,0), dBy(0,0), dBz(0,0))
+        surf(1)%Bx(iteta, jzeta) = surf(1)%Bx(iteta, jzeta) + dBx( 0, 0) * coil(icoil)%I * bsconstant
+        surf(1)%By(iteta, jzeta) = surf(1)%By(iteta, jzeta) + dBy( 0, 0) * coil(icoil)%I * bsconstant 
+        surf(1)%Bz(iteta, jzeta) = surf(1)%Bz(iteta, jzeta) + dBz( 0, 0) * coil(icoil)%I * bsconstant 
+     enddo ! end do icoil
+  else ! each slave cpu calculates their contribution (0:Ntheta-1, 0:Nzeta-1, 1:Ncoils*Npc*Symmetry).     
+     do ip = 1, Npc
+        do is = 0, symmetry
+           do icoil = 1, Ncoils
+              do jzeta = 0, Nzeta-1
+                 do iteta = 0, Nteta-1
+                    ! position vector
+                    ox = coil(icoil)%ox*cosnfp(ip) - coil(icoil)%oy*(-1)**is*sinnfp(ip)
+                    oy = coil(icoil)%ox*sinnfp(ip) + coil(icoil)%oy*(-1)**is*cosnfp(ip)
+                    oz = coil(icoil)%oz*(-1)**is
+                    rx = surf(1)%xx(iteta, jzeta) - ox
+                    ry = surf(1)%yy(iteta, jzeta) - oy
+                    rz = surf(1)%zz(iteta, jzeta) - oz
+                    rr = sqrt(rx*rx+ry*ry+rz*rz)
+                    rm3 = one/(rr**3)
+                    rm5 = one/(rr**5)
+                    rdotN = three*(rx*surf(1)%nx(iteta, jzeta)+ry*surf(1)%ny(iteta, jzeta)+rz*surf(1)%nz(iteta, jzeta))*surf(1)%ds(iteta, jzeta)
+                    ! compute gx, gy, gz
+                    gx(iteta, jzeta, icoil+is*Ncoils+(ip-1)*2**symmetry*Ncoils) = rdotN*rm5*rx - rm3*surf(1)%nx(iteta, jzeta)*surf(1)%ds(iteta, jzeta)
+                    gy(iteta, jzeta, icoil+is*Ncoils+(ip-1)*2**symmetry*Ncoils) = rdotN*rm5*ry - rm3*surf(1)%ny(iteta, jzeta)*surf(1)%ds(iteta, jzeta)
+                    gz(iteta, jzeta, icoil+is*Ncoils+(ip-1)*2**symmetry*Ncoils) = rdotN*rm5*rz - rm3*surf(1)%nz(iteta, jzeta)*surf(1)%ds(iteta, jzeta)
+                 enddo ! end iteta
+              enddo ! end jzeta
+           enddo ! end icoil
+        enddo
+     enddo
+     ! add contant
+     gx = gx*bsconstant
+     gy = gy*bsconstant
+     gz = gz*bsconstant
+  endif
+
+  return
+end subroutine prepare_inductance

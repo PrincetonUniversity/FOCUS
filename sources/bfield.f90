@@ -27,7 +27,7 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
 ! Biot-Savart constant and currents are not included for later simplication. 
 ! Be careful if coils have different resolutions.
 !------------------------------------------------------------------------------------------------------   
-  use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, cosnfp, sinnfp, Npc, &
+  use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, cosnfp, sinnfp, Npc, symmetry, &
                      zero, myid, ounit, Npc, Nfp, pi2, half, two, one, bsconstant, momentq, machprec
   implicit none
   include "mpif.h"
@@ -38,7 +38,7 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  INTEGER              :: ierr, astat, kseg, ip, is, symmetry
+  INTEGER              :: ierr, astat, kseg, ip, is
   REAL                 :: dlx, dly, dlz, rm3, ltx, lty, ltz, rr, r2, m_dot_r, &
                         & mx, my, mz, xx, yy, zz, Bx, By, Bz, sBx, sBy, sBz
 
@@ -49,13 +49,6 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
   tBx = zero ; tBy = zero ; tBz = zero
   dlx = zero ; dly = zero ; dlz = zero
   ltx = zero ; lty = zero ; ltz = zero
-
-  ! check if stellarator symmetric
-  if (coil(icoil)%symmetry == 2) then
-     symmetry = 1
-  else
-     symmetry = 0
-  endif
   
   do ip = 1, Npc
      xx =  x*cosnfp(ip) + y*sinnfp(ip) ! find the point on plasma
@@ -92,9 +85,9 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
            dlz = zz - (-1)**is * coil(icoil)%oz
            r2  = dlx**2 + dly**2 + dlz**2
            rm3 = one/(sqrt(r2)*r2)
-           mx = sin(coil(icoil)%mt) * cos(coil(icoil)%mp) * (-1)**is
-           my = sin(coil(icoil)%mt) * sin(coil(icoil)%mp)
-           mz = cos(coil(icoil)%mt)
+           mx = coil(icoil)%mx * (-1)**is
+           my = coil(icoil)%my
+           mz = coil(icoil)%mz
            m_dot_r = mx * dlx + my * dly + mz * dlz
            ! Magnetic field
            Bx = 3.0_dp * m_dot_r * rm3 / r2 * dlx - mx * rm3 
