@@ -85,9 +85,9 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
            dlz = zz - (-1)**is * coil(icoil)%oz
            r2  = dlx**2 + dly**2 + dlz**2
            rm3 = one/(sqrt(r2)*r2)
-           mx = coil(icoil)%mx * (-1)**is
-           my = coil(icoil)%my
-           mz = coil(icoil)%mz
+           mx = sin(coil(icoil)%mt) * cos(coil(icoil)%mp) * (-1)**is
+           my = sin(coil(icoil)%mt) * sin(coil(icoil)%mp)
+           mz = cos(coil(icoil)%mt)
            m_dot_r = mx * dlx + my * dly + mz * dlz
            ! Magnetic field
            Bx = 3.0_dp * m_dot_r * rm3 / r2 * dlx - mx * rm3 
