@@ -228,8 +228,20 @@ subroutine costfun(ideriv)
 
   ! Bn cost functions
   if (weight_bnorm > machprec .or. weight_bharm > machprec) then
- 
-     call bnormal(ideriv)
+     call MPI_BARRIER(MPI_COMM_WORLD, ierr ) ! wait all cpus;
+     start = MPI_WTIME()
+     do ivec = 1, 100
+        call bnormal(ideriv)
+     enddo
+     call MPI_BARRIER(MPI_COMM_WORLD, ierr ) ! wait all cpus;
+     finish = MPI_WTIME()
+     TMPOUT(finish-start)
+     do ivec = 1, 100
+        call bnormal2(ideriv)
+     enddo
+     call MPI_BARRIER(MPI_COMM_WORLD, ierr ) ! wait all cpus;
+     start = MPI_WTIME()
+     TMPOUT(start-finish)
      ! Bnormal surface intergration;
      if (weight_bnorm > machprec) then
         chi = chi + weight_bnorm * bnorm

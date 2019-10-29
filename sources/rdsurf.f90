@@ -191,7 +191,10 @@ subroutine fousurf
      symmetry = 0
   case ( 2 )                          !plasma and coil periodicity enabled;
      Npc = Nfp
-     symmetry = 1
+     symmetry = 0
+  case ( 3 )                          ! stellarator symmetry enforced;
+     Npc = Nfp
+     symmetry = 1     
   end select
   ! discretefactor = discretefactor/Nfp
 

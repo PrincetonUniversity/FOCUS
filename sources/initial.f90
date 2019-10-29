@@ -439,6 +439,9 @@ subroutine initial
      case (2)
         if (IsQuiet < 0) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
              &  'Plasma boundary and coil periodicity are both enforced.'
+     case (3)
+        if (IsQuiet < 0) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
+             &  'Stellarator symmetry for magnetic dipoles are enforced.' 
      case default
         FATAL( initial, .true., IsSymmetric /= 0 or 2 unspported option)
      end select

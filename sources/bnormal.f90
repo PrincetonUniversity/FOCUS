@@ -290,7 +290,7 @@ subroutine bnormal2( ideriv )
   NumGrid = Nteta*Nzeta
   ! reset to zero;
   bnorm = zero 
-  surf(1)%Bn = zero     
+  surf(1)%Bx = zero; surf(1)%By = zero; surf(1)%Bz = zero; surf(1)%Bn = zero     
   dBx = zero; dBy = zero; dBz = zero; Bm = zero
   bn = zero
 
@@ -301,6 +301,13 @@ subroutine bnormal2( ideriv )
         do iteta = 0, Nteta - 1
            
            if (myid==0) then ! contribution from the master cpu and plasma currents
+              do icoil = 1, Ncoils         
+                 call bfield0(icoil, surf(1)%xx(iteta, jzeta), surf(1)%yy(iteta, jzeta), &
+                      & surf(1)%zz(iteta, jzeta), dBx(0,0), dBy(0,0), dBz(0,0))
+                 surf(1)%Bx(iteta, jzeta) = surf(1)%Bx(iteta, jzeta) + dBx( 0, 0) * coil(icoil)%I * bsconstant
+                 surf(1)%By(iteta, jzeta) = surf(1)%By(iteta, jzeta) + dBy( 0, 0) * coil(icoil)%I * bsconstant 
+                 surf(1)%Bz(iteta, jzeta) = surf(1)%Bz(iteta, jzeta) + dBz( 0, 0) * coil(icoil)%I * bsconstant 
+              enddo ! end do icoil
               surf(1)%Bn(iteta, jzeta) = surf(1)%Bx(iteta, jzeta)*surf(1)%nx(iteta, jzeta) &
                    &                   + surf(1)%By(iteta, jzeta)*surf(1)%ny(iteta, jzeta) &
                    &                   + surf(1)%Bz(iteta, jzeta)*surf(1)%nz(iteta, jzeta) &
@@ -383,13 +390,18 @@ subroutine prepare_inductance()
   SALLOCATE( gz, (0:Nteta-1,0:Nzeta-1,1:Ncoils*Npc*2**symmetry), zero ) ! inductance matrix for calculating B.n
   
   if (myid==0) then   ! calculate the field from coil on the master cpu
-     do icoil = 1, Ncoils         
-        call bfield0(icoil, surf(1)%xx(iteta, jzeta), surf(1)%yy(iteta, jzeta), &
-             & surf(1)%zz(iteta, jzeta), dBx(0,0), dBy(0,0), dBz(0,0))
-        surf(1)%Bx(iteta, jzeta) = surf(1)%Bx(iteta, jzeta) + dBx( 0, 0) * coil(icoil)%I * bsconstant
-        surf(1)%By(iteta, jzeta) = surf(1)%By(iteta, jzeta) + dBy( 0, 0) * coil(icoil)%I * bsconstant 
-        surf(1)%Bz(iteta, jzeta) = surf(1)%Bz(iteta, jzeta) + dBz( 0, 0) * coil(icoil)%I * bsconstant 
-     enddo ! end do icoil
+     surf(1)%Bx = zero; surf(1)%By = zero; surf(1)%Bz = zero
+     do jzeta = 0, Nzeta-1
+        do iteta = 0, Nteta-1
+           do icoil = 1, Ncoils         
+              call bfield0(icoil, surf(1)%xx(iteta, jzeta), surf(1)%yy(iteta, jzeta), &
+                   & surf(1)%zz(iteta, jzeta), dBx(0,0), dBy(0,0), dBz(0,0))
+              surf(1)%Bx(iteta, jzeta) = surf(1)%Bx(iteta, jzeta) + dBx( 0, 0) * coil(icoil)%I * bsconstant
+              surf(1)%By(iteta, jzeta) = surf(1)%By(iteta, jzeta) + dBy( 0, 0) * coil(icoil)%I * bsconstant 
+              surf(1)%Bz(iteta, jzeta) = surf(1)%Bz(iteta, jzeta) + dBz( 0, 0) * coil(icoil)%I * bsconstant 
+           enddo ! end do icoil
+        enddo
+     enddo
   else ! each slave cpu calculates their contribution (0:Ntheta-1, 0:Nzeta-1, 1:Ncoils*Npc*Symmetry).     
      do ip = 1, Npc
         do is = 0, symmetry
