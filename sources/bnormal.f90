@@ -284,13 +284,15 @@ subroutine bnormal2( ideriv )
   !--------------------------------------------------------------------------------------------
   INTEGER                               :: astat, ierr
   INTEGER                               :: icoil, iteta, jzeta, idof, ND, NumGrid, ip, is, index
+  REAL                                  :: sinp, sint, cosp, cost, drho, dmx, dmy, dmz
 
   !--------------------------initialize and allocate arrays------------------------------------- 
 
   NumGrid = Nteta*Nzeta
   ! reset to zero;
   bnorm = zero 
-  surf(1)%Bx = zero; surf(1)%By = zero; surf(1)%Bz = zero; surf(1)%Bn = zero     
+!!$  surf(1)%Bx = zero; surf(1)%By = zero; surf(1)%Bz = zero
+  surf(1)%Bn = zero     
   dBx = zero; dBy = zero; dBz = zero; Bm = zero
   bn = zero
 
@@ -301,13 +303,13 @@ subroutine bnormal2( ideriv )
         do iteta = 0, Nteta - 1
            
            if (myid==0) then ! contribution from the master cpu and plasma currents
-              do icoil = 1, Ncoils         
-                 call bfield0(icoil, surf(1)%xx(iteta, jzeta), surf(1)%yy(iteta, jzeta), &
-                      & surf(1)%zz(iteta, jzeta), dBx(0,0), dBy(0,0), dBz(0,0))
-                 surf(1)%Bx(iteta, jzeta) = surf(1)%Bx(iteta, jzeta) + dBx( 0, 0) * coil(icoil)%I * bsconstant
-                 surf(1)%By(iteta, jzeta) = surf(1)%By(iteta, jzeta) + dBy( 0, 0) * coil(icoil)%I * bsconstant 
-                 surf(1)%Bz(iteta, jzeta) = surf(1)%Bz(iteta, jzeta) + dBz( 0, 0) * coil(icoil)%I * bsconstant 
-              enddo ! end do icoil
+!!$              do icoil = 1, Ncoils         
+!!$                 call bfield0(icoil, surf(1)%xx(iteta, jzeta), surf(1)%yy(iteta, jzeta), &
+!!$                      & surf(1)%zz(iteta, jzeta), dBx(0,0), dBy(0,0), dBz(0,0))
+!!$                 surf(1)%Bx(iteta, jzeta) = surf(1)%Bx(iteta, jzeta) + dBx( 0, 0) * coil(icoil)%I * bsconstant
+!!$                 surf(1)%By(iteta, jzeta) = surf(1)%By(iteta, jzeta) + dBy( 0, 0) * coil(icoil)%I * bsconstant 
+!!$                 surf(1)%Bz(iteta, jzeta) = surf(1)%Bz(iteta, jzeta) + dBz( 0, 0) * coil(icoil)%I * bsconstant 
+!!$              enddo ! end do icoil
               surf(1)%Bn(iteta, jzeta) = surf(1)%Bx(iteta, jzeta)*surf(1)%nx(iteta, jzeta) &
                    &                   + surf(1)%By(iteta, jzeta)*surf(1)%ny(iteta, jzeta) &
                    &                   + surf(1)%Bz(iteta, jzeta)*surf(1)%nz(iteta, jzeta) &
@@ -339,37 +341,99 @@ subroutine bnormal2( ideriv )
      
      bnorm = bnorm * half * discretefactor
      bn = surf(1)%Bn -  surf(1)%pb  ! bn is B.n from coils
-     ! bn = surf(1)%Bx * surf(1)%nx + surf(1)%By * surf(1)%ny + surf(1)%Bz * surf(1)%nz
-     !! if (case_bnormal == 0) bnorm = bnorm * bsconstant * bsconstant ! take bsconst back
-     
-     ! Another type of target functions
-     if (mbnorm > 0) then
-        select case (case_bnormal)
-        case (0)     ! no normalization over |B|;
-           LM_fvec(ibnorm+1:ibnorm+mbnorm) =  weight_bnorm &
-                &  * reshape(surf(1)%bn(0:Nteta-1, 0:Nzeta-1)                               , (/Nteta*Nzeta/))
-        case (1)    ! normalized over |B|;
-           LM_fvec(ibnorm+1:ibnorm+mbnorm) =  weight_bnorm &
-                &  * reshape(surf(1)%bn(0:Nteta-1, 0:Nzeta-1)/sqrt(bm(0:Nteta-1, 0:Nzeta-1)), (/Nteta*Nzeta/))
-        case default
-           FATAL( bnorm, .true., case_bnormal can only be 0/1 )
-        end select
-           
-     endif
 
-     ! Bn harmonics related
-     if (weight_bharm > sqrtmachprec) then
-        call twodft( bn, Bmns, Bmnc, Bmnim, Bmnin, NBmn ) ! Bn from coils
-        bharm = half * sum( wBmn * ((Bmnc - tBmnc)**2 + (Bmns - tBmns)**2) )
+  endif
+  
+  !-------------------------------calculate Bn/x------------------------------------------------
+  if ( ideriv >= 1 ) then
 
-        if (mbharm > 0) then
-           LM_fvec(ibharm+1:ibharm+mbharm/2) = weight_bharm * wBmn * (Bmnc - tBmnc)
-           LM_fvec(ibharm+mbharm/2+1:ibharm+mbharm) = weight_bharm * wBmn * (Bmns - tBmns)
-        endif
+     t1B = zero 
+     if (mbnorm > 0 .or. weight_bharm > sqrtmachprec)  d1B = zero
+     dBn = zero ; dBm = zero
 
-     endif
+     do jzeta = 0, Nzeta - 1
+        do iteta = 0, Nteta - 1           
+           idof = dof_offset
+           dBn = zero
+           if (myid==0) then
+              continue
+           else
+              do icoil = 1, Ncoils
+                 cost = cos(coil(icoil)%mt) ; sint = sin(coil(icoil)%mt)
+                 cosp = cos(coil(icoil)%mp) ; sinp = sin(coil(icoil)%mp) 
+                 if ( coil(icoil)%Ic /= 0 ) then !if current is free;
+                    ! dBn/drho
+                    do ip = 1, Npc
+                       do is = 0, symmetry
+                          index = is*Ncoils+(ip-1)*2**symmetry*Ncoils
+                          drho = coil(icoil)%moment*momentq*(coil(icoil)%pho)**(momentq-1)
+                          dmx = drho*sint*cosp
+                          dmy = drho*sint*sinp
+                          dmz = drho*cost
+                          dBn(idof+1) = dBn(idof+1) + 1.0/surf(1)%ds(iteta, jzeta)*( &
+                               & + gx(iteta, jzeta, index+icoil) * (dmx*(-1)**is*cosnfp(ip) - dmy*sinnfp(ip)) &
+                               & + gy(iteta, jzeta, index+icoil) * (dmx*(-1)**is*sinnfp(ip) + dmy*cosnfp(ip)) &
+                               & + gz(iteta, jzeta, index+icoil) * (dmz                                    ))
+                       enddo
+                    enddo
+                    idof = idof +1
+                 endif
+                 if ( coil(icoil)%Lc /= 0 ) then !if geometry is free;
+                    drho = coil(icoil)%I
+                    ! dBn/dmt
+                    do ip = 1, Npc
+                       do is = 0, symmetry
+                          index = is*Ncoils+(ip-1)*2**symmetry*Ncoils                          
+                          dmx =  drho*cost*cosp
+                          dmy =  drho*cost*sinp
+                          dmz = -drho*sint
+                          dBn(idof+1) = dBn(idof+1) + 1.0/surf(1)%ds(iteta, jzeta)*( &
+                               & + gx(iteta, jzeta, index+icoil) * (dmx*(-1)**is*cosnfp(ip) - dmy*sinnfp(ip)) &
+                               & + gy(iteta, jzeta, index+icoil) * (dmx*(-1)**is*sinnfp(ip) + dmy*cosnfp(ip)) &
+                               & + gz(iteta, jzeta, index+icoil) * (dmz                                    ))
+                       enddo
+                    enddo
+                    idof = idof +1
+                    ! dBn/dmp
+                    do ip = 1, Npc
+                       do is = 0, symmetry
+                          index = is*Ncoils+(ip-1)*2**symmetry*Ncoils
+                          dmx = -drho*sint*sinp
+                          dmy =  drho*sint*cosp
+                          dmz =  0
+                          dBn(idof+1) = dBn(idof+1) + 1.0/surf(1)%ds(iteta, jzeta)*( &
+                               & + gx(iteta, jzeta, index+icoil) * (dmx*(-1)**is*cosnfp(ip) - dmy*sinnfp(ip)) &
+                               & + gy(iteta, jzeta, index+icoil) * (dmx*(-1)**is*sinnfp(ip) + dmy*cosnfp(ip)) &
+                               & + gz(iteta, jzeta, index+icoil) * (dmz                                    ))
+                       enddo
+                    enddo
+                    idof = idof +1
+                 endif                 
+              enddo  !end icoil;
+           endif
+           FATAL( bnormal , idof-dof_offset .ne. ldof, counting error in packing )             
+           select case (case_bnormal)
+           case (0)     ! no normalization over |B|;
+              t1B(1:Ndof) = t1B(1:Ndof) + surf(1)%bn(iteta,jzeta) * surf(1)%ds(iteta,jzeta) * dBn(1:Ndof)
+           case default
+              FATAL( bnorm, .true., case_bnormal can only be 0 )
+           end select
+
+        enddo  !end iteta;
+     enddo  !end jzeta;
+
+     call MPI_ALLREDUCE( MPI_IN_PLACE, t1B, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+
+     t1B = t1B * discretefactor
+
   endif
 
+  !--------------------------------------------------------------------------------------------
+
+  call MPI_barrier( MPI_COMM_WORLD, ierr )
+
+  return
+  
 end subroutine bnormal2
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -384,6 +448,9 @@ subroutine prepare_inductance()
   ! local variables
   INTEGER :: is, ip, iteta, jzeta, icoil, astat
   REAL :: ox, oy, oz, rx, ry, rz, rr, rm3, rm5, rdotN
+
+  ! return if allocated
+  if (allocated(gx)) return
   
   SALLOCATE( gx, (0:Nteta-1,0:Nzeta-1,1:Ncoils*Npc*2**symmetry), zero ) ! inductance matrix for calculating B.n
   SALLOCATE( gy, (0:Nteta-1,0:Nzeta-1,1:Ncoils*Npc*2**symmetry), zero ) ! inductance matrix for calculating B.n
