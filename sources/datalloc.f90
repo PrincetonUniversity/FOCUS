@@ -262,7 +262,8 @@ subroutine AllocData(itype)
         SALLOCATE(         Bm, (0:Nteta-1,0:Nzeta-1), zero ) ! |B| on the surface;       
         SALLOCATE( dBx, (0:Cdof,0:Cdof), zero ) ! d^2Bx/(dx1,dx2) on each coil; Cdof is the max coil dof
         SALLOCATE( dBy, (0:Cdof,0:Cdof), zero ) ! d^2By/(dx1,dx2) on each coil;
-        SALLOCATE( dBz, (0:Cdof,0:Cdof), zero ) ! d^2Bz/(dx1,dx2) on each coil;   
+        SALLOCATE( dBz, (0:Cdof,0:Cdof), zero ) ! d^2Bz/(dx1,dx2) on each coil;
+        call prepare_inductance() ! calculate gx, gy, gz for future usage
      endif
 
      ! Bharm needed;

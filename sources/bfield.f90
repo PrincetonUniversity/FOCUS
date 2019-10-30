@@ -38,7 +38,7 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  INTEGER              :: ierr, astat, kseg, ip, is, symmetry
+  INTEGER              :: ierr, astat, kseg, ip, is, symmetry ! local symmetry
   REAL                 :: dlx, dly, dlz, rm3, ltx, lty, ltz, rr, r2, m_dot_r, &
                         & mx, my, mz, xx, yy, zz, Bx, By, Bz, sBx, sBy, sBz
 
@@ -49,7 +49,7 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
   tBx = zero ; tBy = zero ; tBz = zero
   dlx = zero ; dly = zero ; dlz = zero
   ltx = zero ; lty = zero ; ltz = zero
-
+  
   ! check if stellarator symmetric
   if (coil(icoil)%symmetry == 2) then
      symmetry = 1

@@ -66,7 +66,8 @@ subroutine fousurf
   
   use globals, only : dp, zero, half, pi2, myid, ounit, runit, input_surf, IsQuiet, IsSymmetric, &
                       Nfou, Nfp, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
-                      Nteta, Nzeta, surf, Npc, discretefactor, Nfp_raw, cosnfp, sinnfp, half_shift
+                      Nteta, Nzeta, surf, Npc, discretefactor, Nfp_raw, cosnfp, sinnfp, &
+                      symmetry, half_shift
   
   implicit none
   
@@ -183,11 +184,17 @@ subroutine fousurf
   select case (IsSymmetric)
   case ( 0 )
      Nfp = 1                          !reset Nfp to 1;
-     Npc = 1                          !number of coils periodicity 
+     Npc = 1                          !number of coils periodicity
+     symmetry = 0
   case ( 1 )                          !plasma periodicity enabled;
      Npc = 1
+     symmetry = 0
   case ( 2 )                          !plasma and coil periodicity enabled;
      Npc = Nfp
+     symmetry = 0
+  case ( 3 )                          ! stellarator symmetry enforced;
+     Npc = Nfp
+     symmetry = 1     
   end select
   ! discretefactor = discretefactor/Nfp
 
