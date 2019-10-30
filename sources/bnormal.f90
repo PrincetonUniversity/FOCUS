@@ -26,7 +26,7 @@ module bnorm_mod
 end module bnorm_mod
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-subroutine bnormal( ideriv )
+subroutine bnormal_old( ideriv )
 !------------------------------------------------------------------------------------------------------ 
 ! DATE:  04/02/2017;
 ! Calculate the Bn surface integral and its derivatives;
@@ -259,11 +259,11 @@ subroutine bnormal( ideriv )
   call MPI_barrier( MPI_COMM_WORLD, ierr )
 
   return
-end subroutine bnormal
+end subroutine bnormal_old
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-subroutine bnormal2( ideriv )
+subroutine bnormal( ideriv )
 !------------------------------------------------------------------------------------------------------ 
 ! DATE:  10/28/2019;
 ! Calculate the Bn surface integral and its derivatives;
@@ -401,7 +401,7 @@ subroutine bnormal2( ideriv )
 
   return
   
-end subroutine bnormal2
+end subroutine bnormal
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -418,10 +418,6 @@ subroutine prepare_inductance()
 
   ! return if allocated
   if (allocated(gx)) return
-  
-!!$  SALLOCATE( gx, (0:Nteta-1,0:Nzeta-1,1:Ncoils*Npc*2**symmetry), zero ) ! inductance matrix for calculating B.n
-!!$  SALLOCATE( gy, (0:Nteta-1,0:Nzeta-1,1:Ncoils*Npc*2**symmetry), zero ) ! inductance matrix for calculating B.n
-!!$  SALLOCATE( gz, (0:Nteta-1,0:Nzeta-1,1:Ncoils*Npc*2**symmetry), zero ) ! inductance matrix for calculating B.n
 
   SALLOCATE( gx, (0:Nteta-1,0:Nzeta-1,1:Ncoils), zero ) ! inductance matrix for calculating B.n
   SALLOCATE( gy, (0:Nteta-1,0:Nzeta-1,1:Ncoils), zero ) ! inductance matrix for calculating B.n

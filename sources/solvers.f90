@@ -233,13 +233,13 @@ subroutine costfun(ideriv)
 !!$     call MPI_BARRIER(MPI_COMM_WORLD, ierr ) ! wait all cpus;
 !!$     start = MPI_WTIME()
 !!$     do ivec = 1, 100
-!!$        call bnormal(ideriv)
+!!$        call bnormal_old(ideriv)
 !!$     enddo
 !!$     call MPI_BARRIER(MPI_COMM_WORLD, ierr ) ! wait all cpus;
 !!$     finish = MPI_WTIME()
 !!$     TMPOUT(finish-start)
 !!$     do ivec = 1, 100
-        call bnormal2(ideriv)
+        call bnormal(ideriv)
 !!$     enddo
 !!$     call MPI_BARRIER(MPI_COMM_WORLD, ierr ) ! wait all cpus;
 !!$     start = MPI_WTIME()
