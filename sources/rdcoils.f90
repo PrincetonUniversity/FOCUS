@@ -279,7 +279,7 @@ subroutine rdcoils
   endif
 
   ifirst = 1
-  if(myid==0) call discoil(ifirst)
+  call discoil(ifirst)
   ifirst = 0
 
   call MPI_BARRIER( MPI_COMM_WORLD, ierr )
@@ -311,7 +311,7 @@ subroutine discoil(ifirst)
 
   do icoil = 1, Ncoils
 
-     if( (coil(icoil)%Lc + ifirst) /= 0) then  !first time or if Lc/=0, then need discretize;
+     if( (coil(icoil)%Lc + coil(icoil)%Ic + ifirst) /= 0) then  !first time or if Lc/=0, then need discretize;
 
         !if( myid.ne.modulo(icoil-1,ncpu) ) cycle ! parallelization loop;
 
@@ -381,6 +381,10 @@ subroutine discoil(ifirst)
            DALLOCATE(smt)
 
         case(2)
+           
+           coil(icoil)%mx = sin(coil(icoil)%mt) * cos(coil(icoil)%mp) * coil(icoil)%I
+           coil(icoil)%my = sin(coil(icoil)%mt) * sin(coil(icoil)%mp) * coil(icoil)%I
+           coil(icoil)%mz = cos(coil(icoil)%mt) * coil(icoil)%I
 
         case(3)
 

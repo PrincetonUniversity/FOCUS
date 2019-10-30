@@ -165,7 +165,7 @@ SUBROUTINE unpacking(lxdof)
   FATAL( unpacking02 , idof-dof_offset .ne. ldof, counting error in unpacking )
 
   call unpackcoil !unpack DoF to coil parameters;
-  if (myid==0) call discoil(ifirst)
+  call discoil(ifirst)
 
   call mpi_barrier(MPI_COMM_WORLD, ierr)
 
@@ -289,9 +289,6 @@ SUBROUTINE unpackcoil
 #endif
            coil(icoil)%mt = DoF(icoil)%xdof(idof+1) ; idof = idof + 1
            coil(icoil)%mp = DoF(icoil)%xdof(idof+1) ; idof = idof + 1
-           coil(icoil)%mx = sin(coil(icoil)%mt) * cos(coil(icoil)%mp) * coil(icoil)%I
-           coil(icoil)%my = sin(coil(icoil)%mt) * sin(coil(icoil)%mp) * coil(icoil)%I
-           coil(icoil)%mz = cos(coil(icoil)%mt) * coil(icoil)%I
         endif
         FATAL( unpackcoil04 , idof .ne. DoF(icoil)%ND, counting error in packing )
 
