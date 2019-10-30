@@ -169,7 +169,7 @@ SUBROUTINE diagnos
   if (allocated(surf(1)%bn)) then
      ! \sum{ |Bn| / |B| }/ (Nt*Nz)
      if(myid .eq. 0) then 
-        write(ounit, '(8X": Ave. relative absolute Bn error |Bn|/B :" ES12.5"; max(|Bn|)="ES12.5" .")') &
+        write(ounit, '(8X": Ave. relative absolute Bn error |Bn|/B : " ES12.5"; max(|Bn|)="ES12.5)') &
           sum(abs(surf(1)%bn/sqrt(surf(1)%Bx**2 + surf(1)%By**2 + surf(1)%Bz**2))) / (Nteta*Nzeta), &
           maxval(abs(surf(1)%bn))
      endif
@@ -178,7 +178,7 @@ SUBROUTINE diagnos
   !--------------------------------calculate dipole effective volume------------------------------------  
   call minvol(0)
   if(myid .eq. 0)  write(ounit, '(8X": Total free magnetic moment M           :", ES12.5, &
-       " ; Effective ratio :", ES12.5)') total_moment, pmsum
+       "; Effective ratio=", ES12.5)') total_moment, pmsum
   !--------------------------------------------------------------------------------------------- 
 
   if (magtorque) then
