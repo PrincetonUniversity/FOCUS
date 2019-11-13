@@ -21,35 +21,35 @@ contains
 ! line in 3D space, using the Newton-Raphson method.
 !
 ! Input parameters:
-!     REAL :: ox, oy, oz  -> x, y, and z coordinates of the reference point
-!     REAL :: ax, ay, az  -> x, y, and z components of a unit vector defining
+!     REAL(8) :: ox, oy, oz  -> x, y, and z coordinates of the reference point
+!     REAL(8) :: ax, ay, az  -> x, y, and z components of a unit vector defining
 !                            the direction from the test point to the vessel
-!     REAL :: l0, theta0, 
+!     REAL(8) :: l0, theta0, 
 !             phi0        -> initial guesses of the distance l, as well as
 !                            the theta and phi coordinates of the intersection
 !                            point on the vessel
 !
 ! Return parameters:
-!     REAL :: l           -> distance from the point to the vessel
-!     REAL :: theta, phi  -> theta and phi coordinates of the intersection point
-!     REAL :: x, y, z     -> x, y, and z coordinates of the intersection point
+!     REAL(8) :: l           -> distance from the point to the vessel
+!     REAL(8) :: theta, phi  -> theta and phi coordinates of the intersection point
+!     REAL(8) :: vx, vy, vz  -> x, y, and z coordinates of the intersection point
 !-------------------------------------------------------------------------------
 subroutine ves_dist_3d(ox, oy, oz, ax, ay, az, l0, theta0, phi0, &
-                       l, theta, phi, x, y, z, chi2)
+                       l, theta, phi, vx, vy, vz, chi2)
 
     use magnet_set_globals, only: ves_tol, maxIter
 
     implicit none
 
-    REAL, intent(IN)  :: ox, oy, oz, ax, ay, az, l0, theta0, phi0
-    REAL, intent(OUT) :: l, theta, phi, x, y, z, chi2
+    REAL(8), intent(IN)  :: ox, oy, oz, ax, ay, az, l0, theta0, phi0
+    REAL(8), intent(OUT) :: l, theta, phi, vx, vy, vz, chi2
     INTEGER :: i
-    REAL :: vx, vy, vz, vr, fx, fy, fz, sl, st, sp
-    REAL :: drdt, drdp, dzdt, dzdp
-    REAL ::  jac_xl,  jac_xt,  jac_xp, &
+    REAL(8) :: vr, fx, fy, fz, sl, st, sp
+    REAL(8) :: drdt, drdp, dzdt, dzdp
+    REAL(8) ::  jac_xl,  jac_xt,  jac_xp, &
              jac_yl,  jac_yt,  jac_yp, &
              jac_zl,  jac_zt,  jac_zp
-    REAL :: ijac_lx, ijac_ly, ijac_lz, &
+    REAL(8) :: ijac_lx, ijac_ly, ijac_lz, &
             ijac_px, ijac_py, ijac_pz, &
             ijac_tx, ijac_ty, ijac_tz
 
@@ -119,18 +119,18 @@ end subroutine ves_dist_3d
 ! line in a 2D (poloidal, constant-phi) cross-section
 !
 ! Input parameters:
-!     REAL :: phi         -> the toroidal angle (radians) of the cross-section
-!     REAL :: or, oz      -> r and z coordinates (meters) of the ref. point
-!     REAL :: ar, az      -> r and z components of a unit vector defining
+!     REAL(8) :: phi         -> the toroidal angle (radians) of the cross-section
+!     REAL(8) :: or, oz      -> r and z coordinates (meters) of the ref. point
+!     REAL(8) :: ar, az      -> r and z components of a unit vector defining
 !                            the direction from the test point to the vessel
-!     REAL :: l0, theta0  -> initial guesses of the distance l, as well as
+!     REAL(8) :: l0, theta0  -> initial guesses of the distance l, as well as
 !                            the theta coordinate of the intersection point
 !                            on the vessel
 !
 ! Return parameters:
-!     REAL :: l           -> distance from the point to the vessel
-!     REAL :: theta       -> theta coordinate of the intersection point
-!     REAL :: vr, vz      -> r and z coordinates of the intersection point
+!     REAL(8) :: l           -> distance from the point to the vessel
+!     REAL(8) :: theta       -> theta coordinate of the intersection point
+!     REAL(8) :: vr, vz      -> r and z coordinates of the intersection point
 !-------------------------------------------------------------------------------
 subroutine ves_dist_2d(phi, or, oz, ar, az, l0, theta0, l, theta, vr, vz, chi2)
 
@@ -138,13 +138,13 @@ subroutine ves_dist_2d(phi, or, oz, ar, az, l0, theta0, l, theta, vr, vz, chi2)
 
     implicit none
 
-    REAL, intent(IN)  :: phi, or, oz, ar, az, l0, theta0
-    REAL, intent(OUT) :: l, theta, vr, vz, chi2
+    REAL(8), intent(IN)  :: phi, or, oz, ar, az, l0, theta0
+    REAL(8), intent(OUT) :: l, theta, vr, vz, chi2
     INTEGER :: i
-    REAL :: fr, fz, sl, st
-    REAL :: drdt, dzdt
-    REAL ::  jac_rl,  jac_rt,  jac_zl,  jac_zt
-    REAL :: ijac_lr, ijac_lz, ijac_tr, ijac_tz
+    REAL(8) :: fr, fz, sl, st
+    REAL(8) :: drdt, dzdt
+    REAL(8) ::  jac_rl,  jac_rt,  jac_zl,  jac_zt
+    REAL(8) :: ijac_lr, ijac_lz, ijac_tr, ijac_tz
 
     ! constant components of the Jacobian (first column)
     jac_rl = -ar
@@ -197,40 +197,40 @@ end subroutine ves_dist_2d
 ! intersects a given query point.
 !
 ! Input parameters:
-!     REAL :: ox, oy, oz  -> x, y, and z coordinates of the reference point
-!     REAL :: l0, theta0, 
+!     REAL(8) :: ox, oy, oz  -> x, y, and z coordinates of the reference point
+!     REAL(8) :: l0, theta0, 
 !             phi0        -> initial guesses of the distance l, as well as
 !                            the theta and phi coordinates of the intersection
 !                            point on the vessel
 !
 ! Return parameters:
-!     REAL :: l           -> distance from the point to the vessel
-!     REAL :: theta, phi  -> theta and phi coordinates of the intersection point
-!     REAL :: x, y, z     -> x, y, and z coordinates of the intersection point
-!     REAL :: ux, uy, uz  -> x, y, and z components of the unit normal vector
+!     REAL(8) :: l           -> distance from the point to the vessel
+!     REAL(8) :: theta, phi  -> theta and phi coordinates of the intersection point
+!     REAL(8) :: vx, vy, vz  -> x, y, and z coordinates of the intersection point
+!     REAL(8) :: ux, uy, uz  -> x, y, and z components of the unit normal vector
 !                            at the vessel intersection point
 !-------------------------------------------------------------------------------
 subroutine ves_perp_intersect_3d(ox, oy, oz, l0, theta0, phi0, &
-                                 l, theta, phi, x, y, z, ux, uy, uz, chi2)
+                                 l, theta, phi, vx, vy, vz, ux, uy, uz, chi2)
 
     use magnet_set_globals, only: ves_tol, maxIter
 
     implicit none
 
-    REAL, intent(IN)  :: ox, oy, oz, l0, theta0, phi0
-    REAL, intent(OUT) :: l, theta, phi, x, y, z, ux, uy, uz, chi2
+    REAL(8), intent(IN)  :: ox, oy, oz, l0, theta0, phi0
+    REAL(8), intent(OUT) :: l, theta, phi, vx, vy, vz, ux, uy, uz, chi2
     INTEGER :: i
-    REAL :: fx, fy, fz, sl, st, sp
-    REAL :: vx, vy, vz, vr, nx, ny, nz, ln 
-    REAL :: drdt, drdp, dzdt, dzdp, dxdt, dxdp, dydt, dydp
-    REAL :: d2rdt2, d2rdp2, d2zdt2, d2zdp2, d2rdtdp, d2zdtdp
-    REAL :: dnxdt, dnydt, dnzdt, dnxdp, dnydp, dnzdp, dlndt, dlndp
-    REAL :: duxdt, duydt, duzdt, duxdp, duydp, duzdp
-    REAL :: grad_l, grad_t, grad_p, slope
-    REAL ::  jac_xl,  jac_xt,  jac_xp, &
+    REAL(8) :: fx, fy, fz, sl, st, sp
+    REAL(8) :: vr, nx, ny, nz, ln 
+    REAL(8) :: drdt, drdp, dzdt, dzdp, dxdt, dxdp, dydt, dydp
+    REAL(8) :: d2rdt2, d2rdp2, d2zdt2, d2zdp2, d2rdtdp, d2zdtdp
+    REAL(8) :: dnxdt, dnydt, dnzdt, dnxdp, dnydp, dnzdp, dlndt, dlndp
+    REAL(8) :: duxdt, duydt, duzdt, duxdp, duydp, duzdp
+    REAL(8) :: grad_l, grad_t, grad_p, slope
+    REAL(8) ::  jac_xl,  jac_xt,  jac_xp, &
              jac_yl,  jac_yt,  jac_yp, &
              jac_zl,  jac_zt,  jac_zp
-    REAL :: ijac_lx, ijac_ly, ijac_lz, &
+    REAL(8) :: ijac_lx, ijac_ly, ijac_lz, &
             ijac_px, ijac_py, ijac_pz, &
             ijac_tx, ijac_ty, ijac_tz
 
@@ -334,8 +334,8 @@ subroutine calcF_ves_perp_intersect_3d(l, theta, phi, ox, oy, oz, &
 
     implicit none
 
-    REAL, intent(IN)  :: l, theta, phi, ox, oy, oz
-    REAL, intent(OUT) :: fx, fy, fz, vr, vx, vy, vz, drdt, dzdt, drdp, dzdp, &
+    REAL(8), intent(IN)  :: l, theta, phi, ox, oy, oz
+    REAL(8), intent(OUT) :: fx, fy, fz, vr, vx, vy, vz, drdt, dzdt, drdp, dzdp, &
                          nx, ny, nz, ln, ux, uy, uz
 
     vr = ves_r(theta, phi)
@@ -376,12 +376,12 @@ subroutine updateStep_ves_perp_intersect_3d(sl, st, sp, l, theta, phi, &
 
     implicit none
 
-    REAL, intent(IN)  :: sl, st, sp, slope, ox, oy, oz
-    REAL, intent(OUT) :: l, theta, phi, fx, fy, fz, vr, vx, vy, vz, &
+    REAL(8), intent(IN)  :: sl, st, sp, slope, ox, oy, oz
+    REAL(8), intent(OUT) :: l, theta, phi, fx, fy, fz, vr, vx, vy, vz, &
                          drdt, dzdt, drdp, dzdp, nx, ny, nz, ln, ux, uy, uz
-    REAL :: lambda, fsq, fsq_prev, l_prev, theta_prev, phi_prev, newlambda, &
+    REAL(8) :: lambda, fsq, fsq_prev, l_prev, theta_prev, phi_prev, newlambda, &
             lambda2, rhs1, rhs2, a, b, disc, fsq2, test
-    REAL :: alpha = 1.0e-4, tol = 1.0e-7
+    REAL(8) :: alpha = 1.0e-4, tol = 1.0e-7
     INTEGER :: j
 
     ! Adjust the step according to the line search algorithm if necessary
@@ -447,16 +447,16 @@ end subroutine updateStep_ves_perp_intersect_3d
 ! intersection point.
 !
 ! Input parameters:
-!     REAL :: phi         -> the toroidal angle (radians) of the cross-section
-!     REAL :: or, oz      -> r and z coordinates (meters) of the ref. point
-!     REAL :: l0, theta0  -> initial guesses of the distance l, as well as
+!     REAL(8) :: phi         -> the toroidal angle (radians) of the cross-section
+!     REAL(8) :: or, oz      -> r and z coordinates (meters) of the ref. point
+!     REAL(8) :: l0, theta0  -> initial guesses of the distance l, as well as
 !                            the theta coordinate of the intersection point
 !                            on the vessel
 !
 ! Return parameters:
-!     REAL :: l           -> distance from the point to the vessel
-!     REAL :: theta       -> theta coordinate of the intersection point
-!     REAL :: r, z        -> r and z coordinates of the intersection point
+!     REAL(8) :: l           -> distance from the point to the vessel
+!     REAL(8) :: theta       -> theta coordinate of the intersection point
+!     REAL(8) :: r, z        -> r and z coordinates of the intersection point
 !-------------------------------------------------------------------------------
 subroutine ves_perp_intersect_2d(phi, or, oz, l0, theta0, l, theta, r, z, chi2)
 
@@ -464,13 +464,13 @@ subroutine ves_perp_intersect_2d(phi, or, oz, l0, theta0, l, theta, r, z, chi2)
 
     implicit none
 
-    REAL, intent(IN)  :: phi, or, oz, l0, theta0
-    REAL, intent(OUT) :: l, theta, r, z, chi2
+    REAL(8), intent(IN)  :: phi, or, oz, l0, theta0
+    REAL(8), intent(OUT) :: l, theta, r, z, chi2
     INTEGER :: i
-    REAL :: vr, vz, nr, nz, fr, fz, sl, st
-    REAL :: drdt, dzdt, d2rdt2, d2zdt2, norm, dnorm_dt, dnr_dt, dnz_dt
-    REAL ::  jac_rl,  jac_rt,  jac_zl,  jac_zt
-    REAL :: ijac_lr, ijac_lz, ijac_tr, ijac_tz
+    REAL(8) :: vr, vz, nr, nz, fr, fz, sl, st
+    REAL(8) :: drdt, dzdt, d2rdt2, d2zdt2, norm, dnorm_dt, dnr_dt, dnz_dt
+    REAL(8) ::  jac_rl,  jac_rt,  jac_zl,  jac_zt
+    REAL(8) :: ijac_lr, ijac_lz, ijac_tr, ijac_tz
 
     ! Initialize values for which to solve
     l     = l0
@@ -536,28 +536,28 @@ end subroutine ves_perp_intersect_2d
 ! implicitly on theta.
 !
 ! Input parameters
-!     REAL :: phi        -> toroidal angle (radians) where the vector is to be 
+!     REAL(8) :: phi        -> toroidal angle (radians) where the vector is to be 
 !                           computed
-!     REAL :: r          -> radial coordinate (meters) where is the vector is 
+!     REAL(8) :: r          -> radial coordinate (meters) where is the vector is 
 !                           computed, output by ves_r(theta, phi)
-!     REAL :: drdt, drdp -> derivatives of the radial coordinate with respect
+!     REAL(8) :: drdt, drdp -> derivatives of the radial coordinate with respect
 !                           to theta and phi, output by ves_drdt(theta, phi)
 !                           and ves_drdp(theta, phi)
-!     REAL :: dzdt, dzdp -> derivatives of the z coordinate with respect 
+!     REAL(8) :: dzdt, dzdp -> derivatives of the z coordinate with respect 
 !                           to theta and phi, output by ves_dzdt(theta, phi)
 !                           and ves_dzdp(theta, phi)
 !
 ! Output parameters:
-!     REAL :: ux, uy, uz -> x, y, and z components of the unit normal vector
+!     REAL(8) :: ux, uy, uz -> x, y, and z components of the unit normal vector
 !                           at poloidal angle theta, and toroidal angle phi
 !-------------------------------------------------------------------------------
 subroutine ves_unorm(phi, r, drdt, drdp, dzdt, dzdp, ux, uy, uz)
 
     implicit none
 
-    REAL, intent(IN) :: phi, r, drdt, drdp, dzdt, dzdp
-    REAL, intent(OUT) :: ux, uy, uz
-    REAL :: dxdt, dxdp, dydp, dydt, vx, vy, vz, length
+    REAL(8), intent(IN) :: phi, r, drdt, drdp, dzdt, dzdp
+    REAL(8), intent(OUT) :: ux, uy, uz
+    REAL(8) :: dxdt, dxdp, dydp, dydt, vx, vy, vz, length
 
     ! x = r*cos(phi)
     ! y = r*sin(phi)
@@ -583,13 +583,13 @@ end subroutine ves_unorm
 ! Computes the r coordinate on the vessel at poloidal angle theta and toroidal
 ! angle phi.
 !-------------------------------------------------------------------------------
-REAL function ves_r(theta, phi)
+REAL(8) function ves_r(theta, phi)
 
     use magnet_set_globals, only: nModes, nfp, vrc, vrs, vm, vn
 
     implicit none
 
-    REAL, intent(IN) :: theta, phi
+    REAL(8), intent(IN) :: theta, phi
     INTEGER :: i
 
     ves_r = 0
@@ -606,13 +606,13 @@ end function ves_r
 ! Computes the r coordinate on the vessel at poloidal angle theta and toroidal
 ! angle phi.
 !-------------------------------------------------------------------------------
-REAL function ves_z(theta, phi)
+REAL(8) function ves_z(theta, phi)
 
     use magnet_set_globals, only: nModes, nfp, vzs, vzc, vm, vn
 
     implicit none
 
-    REAL, intent(IN) :: theta, phi
+    REAL(8), intent(IN) :: theta, phi
     INTEGER :: i
 
     ves_z = 0
@@ -629,13 +629,13 @@ end function ves_z
 ! Computes the derivative of the r coordinate of the vessel boundary with
 ! respect to the poloidal angle at the location given by theta and phi.
 !-------------------------------------------------------------------------------
-REAL function ves_drdt(theta, phi)
+REAL(8) function ves_drdt(theta, phi)
 
     use magnet_set_globals, only: nModes, nfp, vrc, vrs, vm, vn
 
     implicit none
 
-    REAL, intent(IN) :: theta, phi
+    REAL(8), intent(IN) :: theta, phi
     INTEGER :: i
 
     ves_drdt = 0
@@ -652,13 +652,13 @@ end function ves_drdt
 ! Computes the derivative of the r coordinate of the vessel boundary with
 ! respect to the toroidal angle at the location given by theta and phi.
 !-------------------------------------------------------------------------------
-REAL function ves_drdp(theta, phi)
+REAL(8) function ves_drdp(theta, phi)
 
     use magnet_set_globals, only: nModes, nfp, vrc, vrs, vm, vn
 
     implicit none
 
-    REAL, intent(IN) :: theta, phi
+    REAL(8), intent(IN) :: theta, phi
     INTEGER :: i
 
     ves_drdp = 0
@@ -677,13 +677,13 @@ end function ves_drdp
 ! Computes the derivative of the z coordinate of the vessel boundary with
 ! respect to the poloidal angle at the location given by theta and phi.
 !-------------------------------------------------------------------------------
-REAL function ves_dzdt(theta, phi)
+REAL(8) function ves_dzdt(theta, phi)
 
     use magnet_set_globals, only: nModes, nfp, vzs, vzc, vm, vn
 
     implicit none
 
-    REAL, intent(IN) :: theta, phi
+    REAL(8), intent(IN) :: theta, phi
     INTEGER :: i
 
     ves_dzdt = 0
@@ -700,13 +700,13 @@ end function ves_dzdt
 ! Computes the derivative of the z coordinate of the vessel boundary with
 ! respect to the toroidal angle at the location given by theta and phi.
 !-------------------------------------------------------------------------------
-REAL function ves_dzdp(theta, phi)
+REAL(8) function ves_dzdp(theta, phi)
 
     use magnet_set_globals, only: nModes, nfp, vzs, vzc, vm, vn
 
     implicit none
 
-    REAL, intent(IN) :: theta, phi
+    REAL(8), intent(IN) :: theta, phi
     INTEGER :: i
 
     ves_dzdp = 0
@@ -725,13 +725,13 @@ end function ves_dzdp
 ! Computes the second derivative of the r coordinate of the vessel boundary with
 ! respect to the poloidal angle at the location given by theta and phi.
 !-------------------------------------------------------------------------------
-REAL function ves_d2rdt2(theta, phi)
+REAL(8) function ves_d2rdt2(theta, phi)
 
     use magnet_set_globals, only: nModes, nfp, vrc, vrs, vm, vn
 
     implicit none
 
-    REAL, intent(IN) :: theta, phi
+    REAL(8), intent(IN) :: theta, phi
     INTEGER :: i
 
     ves_d2rdt2 = 0
@@ -750,13 +750,13 @@ end function ves_d2rdt2
 ! Computes the second derivative of the r coordinate of the vessel boundary with
 ! respect to the toroidal angle at the location given by theta and phi.
 !-------------------------------------------------------------------------------
-REAL function ves_d2rdp2(theta, phi)
+REAL(8) function ves_d2rdp2(theta, phi)
 
     use magnet_set_globals, only: nModes, nfp, vrc, vrs, vm, vn
 
     implicit none
 
-    REAL, intent(IN) :: theta, phi
+    REAL(8), intent(IN) :: theta, phi
     INTEGER :: i
 
     ves_d2rdp2 = 0
@@ -776,13 +776,13 @@ end function ves_d2rdp2
 ! Computes the second derivative of the z coordinate of the vessel boundary with
 ! respect to the toroidal angle at the location given by theta and phi.
 !-------------------------------------------------------------------------------
-REAL function ves_d2zdt2(theta, phi)
+REAL(8) function ves_d2zdt2(theta, phi)
 
     use magnet_set_globals, only: nModes, nfp, vzs, vzc, vm, vn
 
     implicit none
 
-    REAL, intent(IN) :: theta, phi
+    REAL(8), intent(IN) :: theta, phi
     INTEGER :: i
 
     ves_d2zdt2 = 0
@@ -800,13 +800,13 @@ end function ves_d2zdt2
 ! Computes the second derivative of the z coordinate of the vessel boundary with
 ! respect to the toroidal angle at the location given by theta and phi.
 !-------------------------------------------------------------------------------
-REAL function ves_d2zdp2(theta, phi)
+REAL(8) function ves_d2zdp2(theta, phi)
 
     use magnet_set_globals, only: nModes, nfp, vzs, vzc, vm, vn
 
     implicit none
 
-    REAL, intent(IN) :: theta, phi
+    REAL(8), intent(IN) :: theta, phi
     INTEGER :: i
 
     ves_d2zdp2 = 0
@@ -827,13 +827,13 @@ end function ves_d2zdp2
 ! respect to the poloidal and toroidal angles at the location given by theta 
 ! and phi.
 !-------------------------------------------------------------------------------
-REAL function ves_d2rdtdp(theta, phi)
+REAL(8) function ves_d2rdtdp(theta, phi)
 
     use magnet_set_globals, only: nModes, nfp, vrc, vrs, vm, vn
 
     implicit none
 
-    REAL, intent(IN) :: theta, phi
+    REAL(8), intent(IN) :: theta, phi
     INTEGER :: i
 
     ves_d2rdtdp = 0
@@ -852,13 +852,13 @@ end function ves_d2rdtdp
 ! respect to the poloidal and toroidal angles at the location given by theta 
 ! and phi.
 !-------------------------------------------------------------------------------
-REAL function ves_d2zdtdp(theta, phi)
+REAL(8) function ves_d2zdtdp(theta, phi)
 
     use magnet_set_globals, only: nModes, nfp, vzs, vzc, vm, vn
 
     implicit none
 
-    REAL, intent(IN) :: theta, phi
+    REAL(8), intent(IN) :: theta, phi
     INTEGER :: i
 
     ves_d2zdtdp = 0
@@ -876,13 +876,13 @@ end function ves_d2zdtdp
 ! Computes the r coordinate on the plasma lcfs at poloidal angle theta and 
 ! toroidal angle phi.
 !-------------------------------------------------------------------------------
-REAL function plas_r(theta, phi)
+REAL(8) function plas_r(theta, phi)
 
     use magnet_set_globals, only: nModesPl, nfp, prc, prs, pm, pn
 
     implicit none
 
-    REAL, intent(IN) :: theta, phi
+    REAL(8), intent(IN) :: theta, phi
     INTEGER :: i
 
     plas_r = 0
@@ -899,13 +899,13 @@ end function plas_r
 ! Computes the z coordinate on the plasma lcfs at poloidal angle theta and 
 ! toroidal angle phi.
 !-------------------------------------------------------------------------------
-REAL function plas_z(theta, phi)
+REAL(8) function plas_z(theta, phi)
 
     use magnet_set_globals, only: nModesPl, nfp, pzs, pzc, pm, pn
 
     implicit none
 
-    REAL, intent(IN) :: theta, phi
+    REAL(8), intent(IN) :: theta, phi
     INTEGER :: i
 
     plas_z = 0
@@ -923,13 +923,13 @@ end function plas_z
 ! Computes the derivative of the r coordinate on the plasma lcfs with respect
 ! to poloigal angle at poloidal angle theta and toroidal angle phi.
 !-------------------------------------------------------------------------------
-REAL function plas_drdt(theta, phi)
+REAL(8) function plas_drdt(theta, phi)
 
     use magnet_set_globals, only: nModesPl, nfp, prc, prs, pm, pn
 
     implicit none
 
-    REAL, intent(IN) :: theta, phi
+    REAL(8), intent(IN) :: theta, phi
     INTEGER :: i
 
     plas_drdt = 0
@@ -946,13 +946,13 @@ end function plas_drdt
 ! Computes the derivative of the z coordinate on the plasma lcfs with respect
 ! to poloidal angle at poloidal angle theta and toroidal angle phi.
 !-------------------------------------------------------------------------------
-REAL function plas_dzdt(theta, phi)
+REAL(8) function plas_dzdt(theta, phi)
 
     use magnet_set_globals, only: nModesPl, nfp, pzs, pzc, pm, pn
 
     implicit none
 
-    REAL, intent(IN) :: theta, phi
+    REAL(8), intent(IN) :: theta, phi
     INTEGER :: i
 
     plas_dzdt = 0
@@ -971,18 +971,18 @@ end function plas_dzdt
 ! Computes the cross product of two Cartesian 3-dimensional vectors
 !
 ! Input parameters
-!     REAL :: ax, ay, az  -> x, y, and z components of the first vector
-!     REAL :: bx, by, bz  -> x, y, and z components of the second vector
+!     REAL(8) :: ax, ay, az  -> x, y, and z components of the first vector
+!     REAL(8) :: bx, by, bz  -> x, y, and z components of the second vector
 !
 ! Output parameters
-!     REAL :: cx, cy, cz  -> x, y, and z components of a cross b
+!     REAL(8) :: cx, cy, cz  -> x, y, and z components of a cross b
 !-------------------------------------------------------------------------------
 subroutine cross_prod(ax, ay, az, bx, by, bz, cx, cy, cz)
 
     implicit none
 
-    REAL, intent(IN) :: ax, ay, az, bx, by, bz
-    REAL, intent(OUT) :: cx, cy, cz
+    REAL(8), intent(IN) :: ax, ay, az, bx, by, bz
+    REAL(8), intent(OUT) :: cx, cy, cz
 
     cx =  ay*bz - az*by
     cy = -ax*bz + az*bx
@@ -1005,9 +1005,9 @@ subroutine inverse_3x3(m11, m12, m13, m21, m22, m23, m31, m32, m33, &
 
     implicit none
 
-    REAL, intent(IN)  :: m11, m12, m13, m21, m22, m23, m31, m32, m33
-    REAL, intent(OUT) :: i11, i12, i13, i21, i22, i23, i31, i32, i33
-    REAL :: det
+    REAL(8), intent(IN)  :: m11, m12, m13, m21, m22, m23, m31, m32, m33
+    REAL(8), intent(OUT) :: i11, i12, i13, i21, i22, i23, i31, i32, i33
+    REAL(8) :: det
 
     det = m11*(m22*m33-m23*m32) - m12*(m21*m33-m23*m31) + m13*(m21*m32-m22*m31)
 
@@ -1036,9 +1036,9 @@ subroutine inverse_2x2(m11, m12, m21, m22, i11, i12, i21, i22)
 
     implicit none
 
-    REAL, intent(IN)  :: m11, m12, m21, m22
-    REAL, intent(OUT) :: i11, i12, i21, i22
-    REAL :: det
+    REAL(8), intent(IN)  :: m11, m12, m21, m22
+    REAL(8), intent(OUT) :: i11, i12, i21, i22
+    REAL(8) :: det
 
     det = m11*m22 - m12*m21
 
@@ -1062,9 +1062,9 @@ subroutine product_3x3(a11, a12, a13, a21, a22, a23, a31, a32, a33, &
 
     implicit none
 
-    REAL, intent(IN)  :: a11, a12, a13, a21, a22, a23, a31, a32, a33
-    REAL, intent(IN)  :: b11, b12, b13, b21, b22, b23, b31, b32, b33
-    REAL, intent(OUT) :: p11, p12, p13, p21, p22, p23, p31, p32, p33
+    REAL(8), intent(IN)  :: a11, a12, a13, a21, a22, a23, a31, a32, a33
+    REAL(8), intent(IN)  :: b11, b12, b13, b21, b22, b23, b31, b32, b33
+    REAL(8), intent(OUT) :: p11, p12, p13, p21, p22, p23, p31, p32, p33
 
     p11 = a11*b11 + a12*b21 + a13*b31
     p12 = a11*b12 + a12*b22 + a13*b32
@@ -1077,6 +1077,428 @@ subroutine product_3x3(a11, a12, a13, a21, a22, a23, a31, a32, a33, &
     p33 = a31*b13 + a32*b23 + a33*b33
 
 end subroutine product_3x3
+
+!-------------------------------------------------------------------------------
+! plane_3point(x1, y1, z1, x2, y2, z2, x3, y3, z3, nx, ny, nz)
+!
+! Calculates the normal vector of a plane that includes three input points.
+! The vector is oriented as the cross-product of the vectors from the second
+! point to the first point, and from the second point to the third point,
+! respectively.
+! 
+! Input parameters:
+!     REAL(8) :: x1, x2, x3   -> x coordinates of the three points
+!     REAL(8) :: y1, y2, y3   -> y coordinates of the three points
+!     REAL(8) :: z1, z2, z3   -> z coordinates of the three points
+!
+! Return parameters:
+!     REAL(8) :: nx, ny, nz   -> x, y, and z components of the unit normal
+!-------------------------------------------------------------------------------
+subroutine plane_3point(x1, y1, z1, x2, y2, z2, x3, y3, z3, nx, ny, nz)
+
+    implicit none
+
+    REAL(8), intent(IN)  :: x1, y1, z1, x2, y2, z2, x3, y3, z3
+    REAL(8), intent(OUT) :: nx, ny, nz
+    REAL(8) :: v1_x, v1_y, v1_z, v2_x, v2_y, v2_z, cprod_x, cprod_y, cprod_z, norm
+
+    v1_x = x1 - x2
+    v1_y = y1 - y2
+    v1_z = z1 - z2
+    v2_x = x3 - x2
+    v2_y = y3 - y2
+    v2_z = z3 - z2
+
+    cprod_x =  v1_y * v2_z - v1_z * v2_y
+    cprod_y = -v1_x * v2_z + v1_z * v2_x
+    cprod_z =  v1_x * v2_y - v1_y * v2_x
+
+    norm = sqrt(cprod_x**2 + cprod_y**2 + cprod_z**2)
+
+    nx = cprod_x/norm
+    ny = cprod_y/norm
+    nz = cprod_z/norm   
+
+end subroutine plane_3point
+
+!-------------------------------------------------------------------------------
+! plane_4point(x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4, 
+!              nx, ny, nz, ox, oy, oz)
+!
+! Calculates the normal vector and a reference point for a plane that fits
+! best (in a least-squares sense) to a set of four input points. The sign of
+! the normal vector will be determined by the handedness of the first three
+! points supplied.
+!
+! Input parameters:
+!     REAL(8) :: x1, y1, z1   -> x, y, and z coordinates of the first point
+!     REAL(8) :: x2, y2, z2   -> x, y, and z coordinates of the second point
+!     REAL(8) :: x3, y3, z3   -> x, y, and z coordinates of the third point
+!     REAL(8) :: x4, y4, z4   -> x, y, and z coordinates of the fourth point
+!
+! Output parameters:
+!     REAL(8) :: nx, ny, nz   -> x, y, and z components of the unit normal
+!     REAL(8) :: ox, oy, oz   -> x, y, and z coordinates of a reference point
+!-------------------------------------------------------------------------------
+subroutine plane_4point(x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4, &
+                        nx, ny, nz, ox, oy, oz)
+
+    implicit none
+
+    REAL(8), intent(IN)  :: x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4
+    REAL(8), intent(OUT) :: nx, ny, nz, ox, oy, oz
+    REAL(8) :: maxdx, maxdy, maxdz
+    REAL(8) :: x1m, y1m, z1m, x2m, y2m, z2m, x3m, y3m, z3m, x4m, y4m, z4m
+    REAL(8) :: M11, M12, M13, M21, M22, M23, M31, M32, M33, M41, M42, M43
+    REAL(8) :: MT11, MT12, MT13, MT14, MT21, MT22, MT23, MT24, &
+            MT31, MT32, MT33, MT34
+    REAL(8) :: MTM11, MTM12, MTM13, MTM21, MTM22, MTM23, MTM31, MTM32, MTM33
+    REAL(8) :: MTMI11, MTMI12, MTMI13, MTMI21, MTMI22, MTMI23, &
+            MTMI31, MTMI32, MTMI33
+    REAL(8) :: S11, S12, S13, S14, S21, S22, S23, S24, S31, S32, S33, S34
+    REAL(8) :: norm, a, b, c, nxm, nym, nzm, oxm, oym, ozm, cprodx, cprody, cprodz
+    integer :: permute
+
+    ! Permute the coordinates to minimize the expected slopes
+    maxdx = abs(max(x1, x2, x3, x4) - min(x1, x2, x3, x4))
+    maxdy = abs(max(y1, y2, y3, y4) - min(y1, y2, y3, y4))
+    maxdz = abs(max(z1, z2, z3, z4) - min(z1, z2, z3, z4))
+    if (maxdz <= maxdx .and. maxdz <= maxdy) then
+        permute = 0
+    else if (maxdy < maxdx .and. maxdy < maxdz) then
+        permute = 1
+    else
+        permute = 2
+    end if
+
+    ! cancel permutation
+    permute = 0
+
+    if (permute == 0) then
+        x1m = x1; x2m = x2; x3m = x3; x4m = x4
+        y1m = y1; y2m = y2; y3m = y3; y4m = y4
+        z1m = z1; z2m = z2; z3m = z3; z4m = z4
+    else if (permute == 1) then
+        x1m = y1; x2m = y2; x3m = y3; x4m = y4
+        y1m = z1; y2m = z2; y3m = z3; y4m = z4
+        z1m = x1; z2m = x2; z3m = x3; z4m = x4
+    else if (permute == 2) then
+        x1m = z1; x2m = z2; x3m = z3; x4m = z4
+        y1m = x1; y2m = x2; y3m = x3; y4m = x4
+        z1m = y1; z2m = y2; z3m = y3; z4m = y4
+    end if
+    
+    ! Populate the "M" matrix for the least-squares projection
+    M11 = x1m; M12 = y1m; M13 = 1.0
+    M21 = x2m; M22 = y2m; M23 = 1.0
+    M31 = x3m; M32 = y3m; M33 = 1.0
+    M41 = x4m; M42 = y4m; M43 = 1.0
+
+    ! M-transpose
+    MT11 = M11; MT12 = M21; MT13 = M31; MT14 = M41
+    MT21 = M12; MT22 = M22; MT23 = M32; MT24 = M42
+    MT31 = M13; MT32 = M23; MT33 = M33; MT34 = M43
+
+    ! Product of M-transpose with M
+    MTM11 = MT11*M11 + MT12*M21 + MT13*M31 + MT14*M41
+    MTM12 = MT11*M12 + MT12*M22 + MT13*M32 + MT14*M42
+    MTM13 = MT11*M13 + MT12*M23 + MT13*M33 + MT14*M43
+    MTM21 = MT21*M11 + MT22*M21 + MT23*M31 + MT24*M41
+    MTM22 = MT21*M12 + MT22*M22 + MT23*M32 + MT24*M42
+    MTM23 = MT21*M13 + MT22*M23 + MT23*M33 + MT24*M43
+    MTM31 = MT31*M11 + MT32*M21 + MT33*M31 + MT34*M41
+    MTM32 = MT31*M12 + MT32*M22 + MT33*M32 + MT34*M42
+    MTM33 = MT31*M13 + MT32*M23 + MT33*M33 + MT34*M43
+
+    ! Inverse of MTM
+    call inverse_3x3(MTM11, MTM12, MTM13, MTM21, MTM22, MTM23, &
+                     MTM31, MTM32, MTM33, MTMI11, MTMI12, MTMI13, &
+                     MTMI21, MTMI22, MTMI23, MTMI31, MTMI32, MTMI33)
+
+    ! "Solution" matrix: inverse(M-transpose * M) * M-transpose
+    S11 = MTMI11*MT11 + MTMI12*MT21 + MTMI13*MT31
+    S12 = MTMI11*MT12 + MTMI12*MT22 + MTMI13*MT32
+    S13 = MTMI11*MT13 + MTMI12*MT23 + MTMI13*MT33
+    S14 = MTMI11*MT14 + MTMI12*MT24 + MTMI13*MT34
+    S21 = MTMI21*MT11 + MTMI22*MT21 + MTMI23*MT31
+    S22 = MTMI21*MT12 + MTMI22*MT22 + MTMI23*MT32
+    S23 = MTMI21*MT13 + MTMI22*MT23 + MTMI23*MT33
+    S24 = MTMI21*MT14 + MTMI22*MT24 + MTMI23*MT34
+    S31 = MTMI31*MT11 + MTMI32*MT21 + MTMI33*MT31
+    S32 = MTMI31*MT12 + MTMI32*MT22 + MTMI33*MT32
+    S33 = MTMI31*MT13 + MTMI32*MT23 + MTMI33*MT33
+    S34 = MTMI31*MT14 + MTMI32*MT24 + MTMI33*MT34
+
+    ! Best-fit coefficients: zm = a*xm + b*ym + c
+    a = S11*z1m + S12*z2m + S13*z3m + S14*z4m
+    b = S21*z1m + S22*z2m + S23*z3m + S24*z4m
+    c = S31*z1m + S32*z2m + S33*z3m + S34*z4m
+
+    ! Normal vector (in permuted coordinates)
+    norm = sqrt(a**2 + b**2 + 1.0)
+    nxm = -a/norm
+    nym = -b/norm
+    nzm = 1.0/norm
+
+    ! Reference point (in permuted coordinates)
+    oxm = x1m
+    oym = y1m
+    ozm = a*oxm + b*oym + c
+
+    ! De-permute if necessary
+    if (permute == 0) then
+        nx = nxm; ox = oxm
+        ny = nym; oy = oym
+        nz = nzm; oz = ozm
+    else if (permute == 1) then
+        nx = nzm; ox = ozm
+        ny = nxm; oy = oxm
+        nz = oym; oz = oym
+    else if (permute == 2) then
+        nx = nym; ox = oym
+        ny = nzm; oy = ozm
+        nz = nxm; oz = oxm
+    else
+    end if
+
+    ! Reverse the normal vector depending on the handedness of the input points
+    call cross_prod((x2-x1), (y2-y1), (z2-z1), (x3-x1), (y3-y1), (z3-z1), &
+                    cprodx, cprody, cprodz)
+    if (cprodx*nx + cprody*ny + cprodz*nz < 0) then 
+        nx = -nx
+        ny = -ny
+        nz = -nz
+    end if
+
+end subroutine plane_4point
+!-------------------------------------------------------------------------------
+! plane_6point(x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4, 
+!              nx, ny, nz, ox, oy, oz)
+!
+! Calculates the normal vector and a reference point for a plane that fits
+! best (in a least-squares sense) to a set of four input points. 
+!
+! Input parameters:
+!     ingeger :: np                                -> number of query points
+!     REAL(8), allocatable :: xq(:), yq(:), zq(:)  -> x, y, and z coordinates of
+!                                                     the query points
+!
+! Output parameters:
+!     REAL(8) :: nx, ny, nz   -> x, y, and z components of the unit normal
+!     REAL(8) :: ox, oy, oz   -> x, y, and z coordinates of a reference point
+!-------------------------------------------------------------------------------
+subroutine plane_Npoint(np, xq, yq, zq, nx, ny, nz, ox, oy, oz, a, b, c)
+
+    implicit none
+
+    integer, intent(IN)  :: np
+    REAL(8), allocatable, intent(IN)  :: xq(:), yq(:), zq(:)
+    REAL(8), intent(OUT) :: nx, ny, nz, ox, oy, oz
+    REAL(8) :: maxdx, maxdy, maxdz
+    REAL(8), allocatable :: xm(:), ym(:), zm(:)
+    REAL(8), allocatable :: M(:,:), MT(:,:)
+    REAL(8) :: MTM11, MTM12, MTM13, MTM21, MTM22, MTM23, MTM31, MTM32, MTM33
+    REAL(8) :: MTMI11, MTMI12, MTMI13, MTMI21, MTMI22, MTMI23, &
+            MTMI31, MTMI32, MTMI33
+    REAL(8), allocatable :: S(:,:)
+    REAL(8) :: norm, a, b, c, nxm, nym, nzm, oxm, oym, ozm, cprodx, cprody, cprodz
+    integer :: permute, i
+
+    allocate( xm(np), ym(np), zm(np), M(np, 3), MT(3, np), S(3, np) )
+
+    ! Permute the coordinates to minimize the expected slopes
+    maxdx = abs(maxval(xq) - minval(xq))
+    maxdy = abs(maxval(yq) - minval(yq))
+    maxdz = abs(maxval(zq) - minval(zq))
+    if (maxdz <= maxdx .and. maxdz <= maxdy) then
+        permute = 0
+    else if (maxdy < maxdx .and. maxdy < maxdz) then
+        permute = 1
+    else
+        permute = 2
+    end if
+
+    ! uncomment to cancel permutation
+    permute = 0
+
+    do i = 1, np
+        if (permute == 0) then
+            xm(i) = xq(i)
+            ym(i) = yq(i)
+            zm(i) = zq(i)
+        else if (permute == 1) then
+            xm(i) = yq(i)
+            ym(i) = zq(i)
+            zm(i) = xq(i)
+        else if (permute == 2) then
+            xm(i) = zq(i)
+            ym(i) = xq(i)
+            zm(i) = yq(i)
+        end if
+    end do
+    
+    ! Populate the "M" matrix and its transpose for the least-squares projection
+    do i = 1, np
+        M(i,1) = xq(i); MT(1,i) = xq(i)
+        M(i,2) = yq(i); MT(2,i) = yq(i)
+        M(i,3) = 1.0;   MT(3,i) = 1.0
+    end do
+
+    ! Product of M-transpose with M
+    MTM11 = 0.0; MTM12 = 0.0; MTM13 = 0.0
+    MTM21 = 0.0; MTM22 = 0.0; MTM23 = 0.0
+    MTM31 = 0.0; MTM32 = 0.0; MTM33 = 0.0
+    do i = 1, np
+        MTM11 = MTM11 + MT(1,i)*M(i,1)
+        MTM12 = MTM12 + MT(1,i)*M(i,2)
+        MTM13 = MTM13 + MT(1,i)*M(i,3)
+        MTM21 = MTM21 + MT(2,i)*M(i,1)
+        MTM22 = MTM22 + MT(2,i)*M(i,2)
+        MTM23 = MTM23 + MT(2,i)*M(i,3)
+        MTM31 = MTM31 + MT(3,i)*M(i,1)
+        MTM32 = MTM32 + MT(3,i)*M(i,2)
+        MTM33 = MTM33 + MT(3,i)*M(i,3)
+    end do
+
+    ! Inverse of MTM
+    call inverse_3x3(MTM11, MTM12, MTM13, MTM21, MTM22, MTM23, &
+                     MTM31, MTM32, MTM33, MTMI11, MTMI12, MTMI13, &
+                     MTMI21, MTMI22, MTMI23, MTMI31, MTMI32, MTMI33)
+
+    ! "Solution" matrix: inverse(M-transpose * M) * M-transpose
+    do i = 1, np
+        S(1,i) = MTMI11*MT(1,i) + MTMI12*MT(2,i) + MTMI13*MT(3,i)
+        S(2,i) = MTMI21*MT(1,i) + MTMI22*MT(2,i) + MTMI23*MT(3,i)
+        S(3,i) = MTMI31*MT(1,i) + MTMI32*MT(2,i) + MTMI33*MT(3,i)
+    end do
+
+    ! Best-fit coefficients: zm = a*xm + b*ym + c
+    a = 0.0
+    b = 0.0
+    c = 0.0
+    do i = 1, np
+        a = a + S(1,i)*zm(i) 
+        b = b + S(2,i)*zm(i) 
+        c = c + S(3,i)*zm(i)
+    end do
+
+    ! Normal vector (in permuted coordinates)
+    norm = sqrt(a**2 + b**2 + 1.0)
+    nxm = -a/norm
+    nym = -b/norm
+    nzm = 1.0/norm
+
+    ! Reference point (in permuted coordinates)
+    oxm = xm(1)
+    oym = ym(1)
+    ozm = a*oxm + b*oym + c
+
+    ! De-permute if necessary
+    if (permute == 0) then
+        nx = nxm; ox = oxm
+        ny = nym; oy = oym
+        nz = nzm; oz = ozm
+    else if (permute == 1) then
+        nx = nzm; ox = ozm
+        ny = nxm; oy = oxm
+        nz = oym; oz = oym
+    else if (permute == 2) then
+        nx = nym; ox = oym
+        ny = nzm; oy = ozm
+        nz = nxm; oz = oxm
+    else
+    end if
+
+    deallocate( xm, ym, zm, M, MT, S )
+
+end subroutine plane_Npoint
+
+
+!-------------------------------------------------------------------------------
+! plane_elev(ox, oy, oz, nx, ny, nz)
+!
+! Calculates the elevation of a point above a plane.
+!
+! Input parameters:
+!     REAL(8) :: x, y, z    -> x, y, z coords of the query/input point
+!     REAL(8) :: ox, oy, oz -> x, y, z coords of a reference point on the plane
+!     REAL(8) :: nx, ny, nz -> x, y, z components of the plane normal vector
+!
+! Returns:
+!     REAL(8) :: plane_elev -> elevation of the input point above the plane
+!-------------------------------------------------------------------------------
+REAL(8) function plane_elev(x, y, z, ox, oy, oz, nx, ny, nz)
+
+    implicit none
+
+    REAL(8), intent(IN)  :: x, y, z, ox, oy, oz, nx, ny, nz
+    
+    plane_elev = (x - ox) * nx + (y - oy) * ny + (z - oz) * nz
+    
+end function plane_elev
+
+!-------------------------------------------------------------------------------
+! plane_intersect(ox1, oy1, oz1, nx1, ny1, nz1, &
+!                 ox2, oy2, oz2, nx2, ny2, nz2, &
+!                 ox3, oy3, oz3, nx3, ny3, nz3, &
+!                 xi, yi, zi)
+!
+! Calculates the point of intersection between three planes. The approach is
+! to solve a matrix equation of the form Ax = b, where:
+!     A is a matrix in which each row is a normal vector
+!     x contains the components of the intersection point
+!     b vector in which each component is the dot product of a normal vector
+!       with its corresponding intersection point.
+!
+! Equivalently, solves the system of 3 equations of the form 
+!     (I - On) dot Nn = 0,
+! where I is the intersection point, On is the origin point of plane n, and 
+! Nn is the normal vector of plane n.
+!
+! Note: normal vectors are assumed to be linearly independent from one another;
+! i.e., a solution is assumed to exist.
+!
+! Input parameters:
+!     REAL(8) :: ox1, oy1, oz1 -> x, y, and z coords, ref point on plane 1
+!     REAL(8) :: nx1, ny1, nz1 -> x, y, and z components, norm vector to plane 1
+!     REAL(8) :: ox2, oy2, oz2 -> x, y, and z coords, ref point on plane 2
+!     REAL(8) :: nx2, ny2, nz2 -> x, y, and z components, norm vector to plane 2
+!     REAL(8) :: ox3, oy3, oz3 -> x, y, and z coords, ref point on plane 3
+!     REAL(8) :: nx3, ny3, nz3 -> x, y, and z components, norm vector to plane 3
+!
+! Output parameters:
+!     REAL(8) :: xi, yi, zi      -> x, y, and z coords, intersection point
+!-------------------------------------------------------------------------------
+subroutine plane_intersect(ox1, oy1, oz1, nx1, ny1, nz1, &
+                           ox2, oy2, oz2, nx2, ny2, nz2, &
+                           ox3, oy3, oz3, nx3, ny3, nz3, &
+                           xi, yi, zi)
+
+    implicit none
+
+    REAL(8), intent(IN)  :: ox1, oy1, oz1, nx1, ny1, nz1
+    REAL(8), intent(IN)  :: ox2, oy2, oz2, nx2, ny2, nz2
+    REAL(8), intent(IN)  :: ox3, oy3, oz3, nx3, ny3, nz3
+    REAL(8), intent(OUT) :: xi, yi, zi
+    REAL(8) :: ni11, ni12, ni13, ni21, ni22, ni23, ni31, ni32, ni33
+    REAL(8) :: b1, b2, b3
+
+    ! The right-hand side of the matrix equation (see doc string)
+    b1 = nx1*ox1 + ny1*oy1 + nz1*oz1
+    b2 = nx2*ox2 + ny2*oy2 + nz2*oz2
+    b3 = nx3*ox3 + ny3*oy3 + nz3*oz3
+
+    ! The inverse of the matrix of normal vectors
+    call inverse_3x3(nx1,  ny1,  nz1,  nx2,  ny2,  nz2,  nx3,  ny3,  nz3, &
+                     ni11, ni12, ni13, ni21, ni22, ni23, ni31, ni32, ni33)
+
+    ! Solution
+    xi = ni11*b1 + ni12*b2 + ni13*b3
+    yi = ni21*b1 + ni22*b2 + ni23*b3
+    zi = ni31*b1 + ni32*b2 + ni33*b3
+
+end subroutine plane_intersect
+    
 
 end module magnet_set_calc
 

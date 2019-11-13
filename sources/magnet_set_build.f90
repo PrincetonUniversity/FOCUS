@@ -6,7 +6,14 @@
 !
 ! Author:       K. C. Hammond
 ! Contact:      khammond@pppl.gov
-! Last updated: 2019-10-18
+! Last updated: 2019-10-31
+!
+! Update history
+! --------------
+!
+!     2019-10-31: adjusted vertex_theta_to_rz, vertex_rz_to_theta_sep, and
+!                 lcfs_theta_to_ves_theta to populate an extra row of vertices
+!                 in the case of trapezoidal construction
 !-------------------------------------------------------------------------------
 module magnet_set_build
 
@@ -22,17 +29,35 @@ contains
 !-------------------------------------------------------------------------------
 subroutine vertex_theta_to_rz()
 
-    use magnet_set_globals, only: pi, nPlates, nVertices, plate_phi, &
+    use magnet_set_globals, only: pi, &
+                                  nPlates, nVertices, plate_phi, plate_dphi, &
                                   vert_theta, vert_sep, vert_r, vert_z, &
-                                  vessel_r, vessel_z
+                                  vessel_r, vessel_z, construction
     use magnet_set_calc,    only: ves_r, ves_z, ves_drdt, ves_dzdt, cross_prod
 
     implicit none
 
-    INTEGER :: i, j
-    REAL :: drdt, dzdt, alpha, nr, nz
+    INTEGER :: i, j, iMax
+    REAL(8) :: offs, vert_phi, drdt, dzdt, alpha, nr, nz
 
-    do i = 1, nPlates
+    ! Choose the number of toroidal indices
+    if (trim(construction) == 'trapezoidal') then
+        ! Trapezoidal construction: adjacent plates share vertices
+        iMax = nPlates + 1
+        offs = 1.0
+    else
+        ! Planar construction: each plate has independently-defined vertices
+        iMax = nPlates
+        offs = 0.0
+    end if
+
+    do i = 1, iMax
+
+        if (i == 1) then
+            vert_phi = plate_phi(i) - 0.5 * offs * plate_dphi(i)
+        else
+            vert_phi = plate_phi(i-1) + 0.5 * offs * plate_dphi(i-1)
+        end if
 
         do j = 1, nVertices
 
@@ -47,10 +72,10 @@ subroutine vertex_theta_to_rz()
             else
 
                 ! Coordinates and derivatives on the vessel
-                vessel_r(i,j) = ves_r( vert_theta(i,j), plate_phi(i) )
-                vessel_z(i,j) = ves_z( vert_theta(i,j), plate_phi(i) )
-                drdt = ves_drdt( vert_theta(i,j), plate_phi(i) )
-                dzdt = ves_dzdt( vert_theta(i,j), plate_phi(i) )
+                vessel_r(i,j) = ves_r( vert_theta(i,j), vert_phi )
+                vessel_z(i,j) = ves_z( vert_theta(i,j), vert_phi )
+                drdt = ves_drdt( vert_theta(i,j), vert_phi )
+                dzdt = ves_dzdt( vert_theta(i,j), vert_phi )
 
                 ! Normal vector pointing away from the vessel
                 alpha = atan2( dzdt, drdt )  - 0.5*pi
@@ -78,17 +103,35 @@ end subroutine vertex_theta_to_rz
 !-------------------------------------------------------------------------------
 subroutine vertex_rz_to_theta_sep()
 
-    use magnet_set_globals, only: pi, ves_r00, nPlates, nVertices, plate_phi, &
+    use magnet_set_globals, only: pi, ves_r00, &
+                                  nPlates, nVertices, plate_phi, plate_dphi, &
                                   vert_theta, vert_sep, vert_r, vert_z, &
-                                  vessel_r, vessel_z
+                                  vessel_r, vessel_z, construction
     use magnet_set_calc,    only: ves_perp_intersect_2d
 
     implicit none
 
-    INTEGER :: i, j
-    REAL :: l0, theta0, chi2
+    INTEGER :: i, j, iMax
+    REAL(8) :: offs, vert_phi, l0, theta0, chi2
 
-    do i = 1, nPlates
+    ! Choose the number of toroidal indices
+    if (trim(construction) == 'trapezoidal') then
+        ! Trapezoidal construction: adjacent plates share vertices
+        iMax = nPlates + 1
+        offs = 1.0
+    else
+        ! Planar construction: each plate has independently-defined vertices
+        iMax = nPlates
+        offs = 0.0
+    end if
+
+    do i = 1, iMax
+
+        if (i == 1) then
+            vert_phi = plate_phi(i) - 0.5 * offs * plate_dphi(i)
+        else
+            vert_phi = plate_phi(i-1) + 0.5 * offs * plate_dphi(i-1)
+        end if
 
         do j = 1, nVertices
 
@@ -104,7 +147,7 @@ subroutine vertex_rz_to_theta_sep()
 
                 l0 = 0.0
                 theta0 = atan2(vert_z(i,j), vert_r(i,j)-ves_r00)
-                call ves_perp_intersect_2d(plate_phi(i), &
+                call ves_perp_intersect_2d(vert_phi, &
                          vert_r(i,j), vert_z(i,j), l0, theta0, &
                          vert_sep(i,j), vert_theta(i,j), &
                          vessel_r(i,j), vessel_z(i,j), chi2)
@@ -125,19 +168,36 @@ end subroutine vertex_rz_to_theta_sep
 !-------------------------------------------------------------------------------
 subroutine lcfs_theta_to_ves_theta
 
-    use magnet_set_globals, only: nPlates, nVertices, plate_phi, &
-                                  vert_theta, vert_sep, vert_tlcfs
+    use magnet_set_globals, only: nPlates, nVertices, plate_phi, plate_dphi, &
+                                  vert_theta, vert_sep, vert_tlcfs, construction
 
     use magnet_set_calc,    only: ves_dist_2d, plas_r, plas_z, &
                                   plas_drdt, plas_dzdt 
 
     implicit none
 
-    INTEGER :: i, j
-    REAL :: rplas, zplas, drdt, dzdt, norm, nr, nz
-    REAL :: l0, theta0, l, vr, vz, chi2
+    INTEGER :: i, j, iMax
+    REAL(8) :: rplas, zplas, drdt, dzdt, norm, nr, nz
+    REAL(8) :: offs, vert_phi, l0, theta0, l, vr, vz, chi2
 
-    do i = 1, nPlates
+    ! Choose the number of toroidal indices
+    if (trim(construction) == 'trapezoidal') then
+        ! Trapezoidal construction: adjacent plates share vertices
+        iMax = nPlates + 1
+        offs = 1.0
+    else
+        ! Planar construction: each plate has independently-defined vertices
+        iMax = nPlates
+        offs = 0.0
+    end if
+
+    do i = 1, iMax
+
+        if (i == 1) then
+            vert_phi = plate_phi(i) - 0.5 * offs * plate_dphi(i)
+        else
+            vert_phi = plate_phi(i-1) + 0.5 * offs * plate_dphi(i-1)
+        end if
 
         do j = 1, nVertices
 
@@ -148,12 +208,12 @@ subroutine lcfs_theta_to_ves_theta
 
             else
 
-                rplas = plas_r(vert_tlcfs(i,j), plate_phi(i))
-                zplas = plas_z(vert_tlcfs(i,j), plate_phi(i))
+                rplas = plas_r(vert_tlcfs(i,j), vert_phi)
+                zplas = plas_z(vert_tlcfs(i,j), vert_phi)
 
                 ! Normal vector to the plasma LCFS
-                drdt = plas_drdt(vert_tlcfs(i,j), plate_phi(i))
-                dzdt = plas_dzdt(vert_tlcfs(i,j), plate_phi(i))
+                drdt = plas_drdt(vert_tlcfs(i,j), vert_phi)
+                dzdt = plas_dzdt(vert_tlcfs(i,j), vert_phi)
                 !norm = sqrt(drdt**2 + dzdt**2)
                 !nr = dzdt/norm
                 !nz = -drdt/norm          
@@ -163,7 +223,7 @@ subroutine lcfs_theta_to_ves_theta
 
                 l0 = 0.5
                 theta0 = vert_tlcfs(i,j)
-                call ves_dist_2d(plate_phi(i), rplas, zplas, nr, nz, & 
+                call ves_dist_2d(vert_phi, rplas, zplas, nr, nz, & 
                                  l0, theta0, l, vert_theta(i,j), vr, vz, chi2)
 
                 write(*,'(A, I2, A, I2, A, F7.1, A, F7.1, A, F6.2, A, F6.2, A, F6.2)') &
@@ -204,8 +264,8 @@ subroutine count_stacks()
     implicit none
 
     INTEGER :: i, j, n
-    REAL :: vert_dr, vert_dz, block_ht
-    REAL, allocatable :: seg_lg(:,:), alpha(:,:), beta(:,:), avail_dims(:)
+    REAL(8) :: vert_dr, vert_dz, block_ht
+    REAL(8), allocatable :: seg_lg(:,:), alpha(:,:), beta(:,:), avail_dims(:)
 
     ! Initial status checks
     if (.not. plates_initialized) then
@@ -346,14 +406,14 @@ subroutine count_magnets()
     implicit none
 
     INTEGER :: i, j, k, n
-    REAL :: rmin, width, length, seg_dist, height, stack_dist
-    REAL :: row_lg, avail_lg, offset
-    REAL, allocatable :: avail_dims(:)
-    REAL :: x1, y1, z1                     ! coordinates of segment start point
-    REAL :: x2, y2, z2                     ! coordinates of segment end point
-    REAL :: ux, uy, uz                     ! unit vector along segment
-    REAL :: nx, ny, nz, nr                 ! normal vector to segment
-    REAL :: ht_div_1, ht_div_2, r, z, theta0, vdist, theta, vr, vz, chi2
+    REAL(8) :: rmin, width, length, seg_dist, height, stack_dist
+    REAL(8) :: row_lg, avail_lg, offset
+    REAL(8), allocatable :: avail_dims(:)
+    REAL(8) :: x1, y1, z1                     ! coordinates of segment start point
+    REAL(8) :: x2, y2, z2                     ! coordinates of segment end point
+    REAL(8) :: ux, uy, uz                     ! unit vector along segment
+    REAL(8) :: nx, ny, nz, nr                 ! normal vector to segment
+    REAL(8) :: ht_div_1, ht_div_2, r, z, theta0, vdist, theta, vr, vz, chi2
 
     ! Initialization checks
     if (.not. segments_initialized) then
@@ -492,9 +552,9 @@ subroutine magnet_properties
     implicit none
 
     INTEGER :: i, j, n
-    REAL :: height, stack_dist, mag_r, mag_l0, mag_theta0, mag_phi0, ignore
-    REAL :: mag_ux, mag_uy, mag_uz
-    REAL :: sol_l, sol_theta, sol_phi, sol_x, sol_y, sol_z, sol_chi2
+    REAL(8) :: height, stack_dist, mag_r, mag_l0, mag_theta0, mag_phi0, ignore
+    REAL(8) :: mag_ux, mag_uy, mag_uz
+    REAL(8) :: sol_l, sol_theta, sol_phi, sol_x, sol_y, sol_z, sol_chi2
 
     if (.not. stacks_initialized) then
         stop 'magnet_properties: plate segments not initialized'
@@ -592,22 +652,22 @@ end subroutine magnet_properties
 ! and the vessel.
 !
 ! Input parameters:
-!     REAL :: alpha1, alpha2  -> angles (in radians) that the normal vectors
+!     REAL(8) :: alpha1, alpha2  -> angles (in radians) that the normal vectors
 !                                of the two segments make relative to the
 !                                major-radius unit vector.
-!     REAL :: h               -> height of the magnet block above the plate
+!     REAL(8) :: h               -> height of the magnet block above the plate
 !                                segment
 !     INTEGER :: which_alpha  -> 1 or 2, depending on which value of alpha
 !                                corresponds to the segment under consideration
-!     REAL :: vert_sep        -> separation distance between the vertex and
+!     REAL(8) :: vert_sep        -> separation distance between the vertex and
 !                                the point on the vessel along a vessel normal
-!     REAL :: beta            -> angle of the normal relative to the radial
+!     REAL(8) :: beta            -> angle of the normal relative to the radial
 !                                unit vector
 !
 ! Output parameters:
-!     REAL :: gap             -> the required gap from the end of the segment 
+!     REAL(8) :: gap             -> the required gap from the end of the segment 
 !                                indicated by the which_alpha parameter
-!     REAL :: divider_elev    -> elevation angle (radians) above the segment
+!     REAL(8) :: divider_elev    -> elevation angle (radians) above the segment
 !                                of the dividing line between adjacent
 !                                segments, up to which the gap could be filled 
 !-------------------------------------------------------------------------------
@@ -619,10 +679,10 @@ subroutine concavity_gap(alpha1, alpha2, h, which_alpha, vert_sep, beta, &
     implicit none
 
     ! Input parameters are as defined in the documentation string
-    REAL, intent(IN) :: alpha1, alpha2, h, vert_sep, beta
+    REAL(8), intent(IN) :: alpha1, alpha2, h, vert_sep, beta
     INTEGER, intent(IN) :: which_alpha
-    REAL, intent(OUT) :: gap, divider_elev
-    REAL :: d_alpha, angle, allowable_ht
+    REAL(8), intent(OUT) :: gap, divider_elev
+    REAL(8) :: d_alpha, angle, allowable_ht
 
     ! Angle btw. vessel normal and perp. bisector of segment from pt. on vessel
     if (which_alpha == 1) then
@@ -671,11 +731,11 @@ end subroutine concavity_gap
 ! in the optimal total magnet length on a particular support plate segment.
 !
 ! Input parameters:
-!     REAL :: avail_dims -> array of possible dimensions
-!     REAL :: gap_btwn    -> required gap between magnets 
-!     REAL :: gap_end1  -> required gap, begin. of plate segment
-!     REAL :: gap_end2  -> required gap, end of plate segment
-!     REAL :: l_seg      -> length of the plate segment
+!     REAL(8) :: avail_dims -> array of possible dimensions
+!     REAL(8) :: gap_btwn    -> required gap between magnets 
+!     REAL(8) :: gap_end1  -> required gap, begin. of plate segment
+!     REAL(8) :: gap_end2  -> required gap, end of plate segment
+!     REAL(8) :: l_seg      -> length of the plate segment
 !
 ! Output parameters:
 !     INTEGER :: ind_best -> index of the optimal length in avail_mag_lg
@@ -688,9 +748,9 @@ subroutine best_magnet_dim(avail_dims, gap_btwn, gap_end1, gap_end2, &
 
     implicit none
 
-    REAL, allocatable, intent(IN) :: avail_dims(:)
-    REAL, intent(IN) :: gap_btwn, gap_end1, gap_end2, l_seg
-    REAL :: reserve_per_seg, reserve_per_mag, total_length, opt_total_length 
+    REAL(8), allocatable, intent(IN) :: avail_dims(:)
+    REAL(8), intent(IN) :: gap_btwn, gap_end1, gap_end2, l_seg
+    REAL(8) :: reserve_per_seg, reserve_per_mag, total_length, opt_total_length 
     INTEGER :: i, nAvail, nMagnets_i
     INTEGER, intent(OUT) :: ind_best, nMagnets
 

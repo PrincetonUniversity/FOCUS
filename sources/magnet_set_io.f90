@@ -112,7 +112,7 @@ subroutine read_vessel_coeffs()
     implicit none
 
     INTEGER :: vunit = 13, i, open_stat, read_stat, vm_in, vn_in
-    REAL    :: vrc_in, vzs_in, vrs_in, vzc_in
+    REAL(8)    :: vrc_in, vzs_in, vrs_in, vzc_in
     logical :: nModes_read = .false.
 
     if (vfile == 'none') then
@@ -201,7 +201,7 @@ subroutine read_lcfs_coeffs()
     implicit none
 
     INTEGER :: punit = 13, i, open_stat, read_stat, pm_in, pn_in
-    REAL    :: prc_in, pzs_in, prs_in, pzc_in
+    REAL(8)    :: prc_in, pzs_in, prs_in, pzc_in
     logical :: nModes_read = .false.
 
     if (pfile == 'none') then
@@ -277,7 +277,9 @@ end subroutine read_lcfs_coeffs
 !-------------------------------------------------------------------------------
 subroutine print_magnets_to_file(filename, output_type)
 
-    use magnet_set_globals, only: magnets, nMagnets_total, magnets_initialized
+    use magnet_set_globals, only: magnets, nMagnets_total, &
+                                  subtraps, nSubtraps, &
+                                  magnets_initialized, subtraps_initialized
 
     implicit none
 
@@ -285,11 +287,6 @@ subroutine print_magnets_to_file(filename, output_type)
     CHARACTER(len=20),  intent(IN) :: output_type
     CHARACTER(len=13) :: mag_name
     INTEGER :: i, file_unit = 12, open_status, write_status
-
-    ! Verify that the magnets have been initialized
-    if (.not. magnets_initialized) then
-        stop 'print_magnets_to_file: magnet set has not been initialized'
-    end if
 
     ! Open the file
     open(unit=file_unit, file=trim(filename), action='write', &
@@ -303,6 +300,11 @@ subroutine print_magnets_to_file(filename, output_type)
     ! File for input to FOCUS
     !---------------------------------------------------------------------------
     if (trim(output_type) == 'focus') then
+
+        ! Verify that the magnets have been initialized
+        if (.not. magnets_initialized) then
+            stop 'print_magnets_to_file: magnet set has not been initialized'
+        end if
 
         write(unit=file_unit, fmt='(A)') '# Total number of dipoles '
         write(unit=file_unit, fmt='(I0)', iostat=write_status) nMagnets_total
@@ -347,9 +349,13 @@ subroutine print_magnets_to_file(filename, output_type)
     !---------------------------------------------------------------------------
     else if (trim(output_type) == 'geometric') then
        
+        ! Verify that the magnets have been initialized
+        if (.not. magnets_initialized) then
+            stop 'print_magnets_to_file: magnet set has not been initialized'
+        end if
+
         do i = 1, nMagnets_total
     
-            write(mag_name, fmt='(A, I10.10)') 'pm_', i
             write(unit=file_unit, &
                   fmt='(ES15.8, X, ES15.8, X, ES15.8, X, ES15.8, X, ' // &
                       ' ES15.8, X, ES15.8, X, ES15.8, X, ES15.8, X, ' // &
@@ -361,6 +367,50 @@ subroutine print_magnets_to_file(filename, output_type)
                       magnets(i)%lx, magnets(i)%ly, magnets(i)%lz, &
                       magnets(i)%lg, magnets(i)%wd, magnets(i)%ht, &
                       magnets(i)%n_phi, magnets(i)%n_theta
+            if (write_status /= 0) then
+                write(*, fmt='(A, I0, A)') &
+                    'print_magnets_to_file: unable to write line ', i, &
+                    'to ' // trim(filename)
+                stop
+            end if
+        end do
+
+    !---------------------------------------------------------------------------
+    ! File with geometric data (trapezoid corners)
+    !---------------------------------------------------------------------------
+    else if (trim(output_type) == 'trapezoids') then
+
+        ! Verify that the trapezoids have been initialized
+        if (.not. subtraps_initialized) then
+            stop 'print_magnets_to_file: trapezoids not initialized'
+        end if
+
+        do i = 1, nSubtraps
+
+            write(unit=file_unit, &
+                 fmt='(ES15.8, X, ES15.8, X, ES15.8, X, ES15.8, X, ' // &
+                     ' ES15.8, X, ES15.8, X, ES15.8, X, ES15.8, X, ' // &
+                     ' ES15.8, X, ES15.8, X, ES15.8, X, ES15.8, X, ' // &
+                     ' ES15.8, X, ES15.8, X, ES15.8, X, ES15.8, X, ' // &
+                     ' ES15.8, X, ES15.8, X, ES15.8, X, ES15.8, X, ' // &
+                     !' ES15.8, X )', &
+                     ' ES15.8, X, ES15.8, X, ES15.8, X, ES15.8, X ) ', &
+                 iostat=write_status) &
+                     !traps(i)%otbx, traps(i)%otby, traps(i)%otbz, &
+                     !traps(i)%otfx, traps(i)%otfy, traps(i)%otfz, &
+                     !traps(i)%opbx, traps(i)%opby, traps(i)%opbz, &
+                     !traps(i)%opfx, traps(i)%opfy, traps(i)%opfz, &
+                     !traps(i)%vx,   traps(i)%vy,   traps(i)%vz,   &
+                     !traps(i)%otx,  traps(i)%oty,  traps(i)%otz,  &
+                     !traps(i)%obx,  traps(i)%oby,  traps(i)%obz
+                     subtraps(i)%ctx1, subtraps(i)%cty1, subtraps(i)%ctz1, &
+                     subtraps(i)%ctx2, subtraps(i)%cty2, subtraps(i)%ctz2, &
+                     subtraps(i)%ctx3, subtraps(i)%cty3, subtraps(i)%ctz3, &
+                     subtraps(i)%ctx4, subtraps(i)%cty4, subtraps(i)%ctz4, &
+                     subtraps(i)%cbx1, subtraps(i)%cby1, subtraps(i)%cbz1, &
+                     subtraps(i)%cbx2, subtraps(i)%cby2, subtraps(i)%cbz2, &
+                     subtraps(i)%cbx3, subtraps(i)%cby3, subtraps(i)%cbz3, &
+                     subtraps(i)%cbx4, subtraps(i)%cby4, subtraps(i)%cbz4 
             if (write_status /= 0) then
                 write(*, fmt='(A, I0, A)') &
                     'print_magnets_to_file: unable to write line ', i, &
