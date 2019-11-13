@@ -41,6 +41,14 @@ ifneq (,$(findstring eddy,$(HOSTNAME)))
  FC=mpiifort  # this is optional after recent updates
 endif
 
+#### Traverse + GNU Fortran ################
+ifneq (,$(findstring traverse,$(HOSTNAME)))
+# RFLAGS=-O3 -w -fdefault-real-8 -ffree-line-length-none -march=native -ffast-math
+ RFLAGS=-O3 -w -ffree-line-length-none -mcpu=power9 -ffast-math $(PFLAGS)
+ DFLAGS=-Og $(PFLAGS) -w -ffree-line-length-none -Wextra -Wtarget-lifetime -fbacktrace -fbounds-check  \
+     -ffpe-trap=zero -fcheck=all -DDEBUG
+endif
+
 ############################################################################################################
 
  HDF5=-I$(HDF5_HOME)/include -L$(HDF5_HOME)/lib -lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran \
