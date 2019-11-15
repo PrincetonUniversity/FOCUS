@@ -6,7 +6,8 @@ SUBROUTINE poinplot
   USE globals, only : dp, myid, ncpu, zero, half, pi, pi2, ounit, pi, sqrtmachprec, pp_maxiter, &
                       pp_phi, pp_raxis, pp_zaxis, pp_xtol, pp_rmax, pp_zmax, ppr, ppz, pp_ns, iota, nfp_raw, &
                       XYZB, lboozmn, booz_mnc, booz_mns, booz_mn, total_num, &
-                      master, nmaster, nworker, masterid, color, myworkid, MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS
+                      master, nmaster, nworker, masterid, color, myworkid, MPI_COMM_MASTERS, &
+                      MPI_COMM_MYWORLD, MPI_COMM_WORKERS
   USE mpi
   IMPLICIT NONE
 
@@ -328,7 +329,7 @@ SUBROUTINE BRpZ_iota( t, x, dx )
   ! dR/dphi = BR / Bphi
   ! dZ/dphi = BZ / Bphi
   !----------------------
-  use globals, only : dp, zero, ounit, myid, ierr
+  use globals, only : dp, zero, ounit, myid, ierr, machprec
   USE MPI
   implicit none
 
@@ -371,6 +372,7 @@ SUBROUTINE BRpZ_iota( t, x, dx )
 
   ! integrate theta
   length = (x(1) - x(3))**2 + (x(2)-x(4))**2  ! delta R^2 + delta Z^2
+  FATAL( poinplot, length < machprec, the field line is too close to the axis )
   dx(5) = ( (x(1) - x(3))*(dx(2)-dx(4)) - (x(2)-x(4))*(dx(1)-dx(3)) ) / length
 
   return
