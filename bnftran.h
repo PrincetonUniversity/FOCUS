@@ -317,6 +317,7 @@ SUBROUTINE Bmodule2
   SALLOCATE( bmc , (1:mn), zero ) 
   SALLOCATE( bms , (1:mn), zero ) 
 
+  imn = 0
 
   do im = 0, mf
      do in = -nf, nf
@@ -349,6 +350,8 @@ SUBROUTINE Bmodule2
   bmc = bmc * two / (Nteta*Nzeta)
   bms = bms * two / (Nteta*Nzeta)
 
+  mn = imn
+
   !------------------------------------
   open(lunit, file=trim(ext)//".Bmod", status='unknown', action='write')
 
@@ -363,6 +366,7 @@ SUBROUTINE Bmodule2
 
   write(lunit,*      ) "#-------|B| harmonics----------"
   write(lunit,*      ) "#   n       m        bmc        bms   "
+
   if (mn .gt. 0) then
      do imn = 1, mn
         write(lunit,'(2I, 2ES15.6)') bmin(imn), bmim(imn), bmc(imn), bms(imn)

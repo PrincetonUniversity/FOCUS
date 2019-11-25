@@ -24,7 +24,7 @@ subroutine testderivs1
 
   INTEGER         :: icoil, ifd, idof, iteta, jzeta, jcoil, astat, ierr, infou
   REAL            :: tmpE(-1:1), diff, rdiff, xdof(Ndof), bdof(1:Ndof), start, finish, Ax(0:Cdof), Ay(0:Cdof), Az(0:Cdof), lx, ly, lz
-  REAL, parameter :: fd = 1.0E-6
+  REAL, parameter :: fd = 1.0E-4
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!  
   if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : Checking the first derivatives using finite-difference method")')
@@ -195,7 +195,7 @@ subroutine testderivs1
          rdiff = diff / tmpE(0)
      endif
      
-     if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : "I5" : "I8, 4(" : "ES23.15))') icoil, infou, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
+     if( myid.eq.0 ) write(ounit,'("fdcheck : " F10.6 " : "I5" : "I8, 4(" : "ES23.15))') bdof(idof), icoil, infou, tmpE(0), (tmpE(1) - tmpE(-1)) / fd, diff, rdiff
   enddo
   call cpu_time(finish)
   if(myid .eq. 0) write(ounit,'("fdcheck : " 10X " : First order derivatives of energy function takes " ES23.15 " seconds.")') finish - start
@@ -724,7 +724,7 @@ subroutine testderivs2
 
 
 !----------------------------------------------
-  jcoil = 2; jdof = 4;   !chang here for testing different terms
+  jcoil = 1; jdof = 1;   !chang here for testing different terms
   if( myid.eq.0 ) write(ounit,'("fdcheck : " 10X " : Checking the second derivatives using finite-difference method on t1E(",i4,", "i4")")') jcoil, jdof
 
 !!$  call bnormal(0)

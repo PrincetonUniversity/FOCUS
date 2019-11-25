@@ -552,26 +552,30 @@ subroutine SVD
 
 
 !-------------
-!!$  call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-!!$  RlBCAST( a(1:n, 1:n), n*n,  0)
-!!$
-!!$  step = 0.001 ; nstep = 500 ; f0 = totalenergy
-!!$  SALLOCATE(diff,(1:2*nstep+1, 1:n), zero)
-!!$  call pack(xdof)
-!!$  bdof = xdof
-!!$  do i = 1, n
-!!$     if (myid ==0) write(ounit,'("myid == ", I3, " ; i="I)') myid, i
-!!$     do j = -nstep, nstep
-!!$        xdof = bdof + j*step*a(1:n, i)
-!!$        call unpack(xdof) ; call costfun(0)
-!!$        diff(j+nstep+1, i) = totalenergy - f0
-!!$     enddo
-!!$  enddo
+  call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+  RlBCAST( a(1:n, 1:n), n*n,  0)
+
+  step = 1.0E-6 ; nstep = 500 ; f0 = totalenergy
+  if (myid ==0) write(ounit, '("Eigen   : "10X" : Original total_f = " ES23.15)') f0
+  SALLOCATE(diff,(1:2*nstep+1, 1:n), zero)
+  call pack(xdof)
+  bdof = xdof
+  do i = 1, n
+     if ( (i .ne. 1) .and. (i .ne. n) ) cycle
+     if (myid ==0) write(ounit,'("myid == ", I3, " ; i="I)') myid, i
+     do j = -nstep, nstep
+        xdof = bdof + j*step*a(1:n, i)
+        call unpack(xdof) ; call costfun(0)
+        diff(j+nstep+1, i) = totalenergy - f0
+     enddo
+  enddo
+  call unpack(bdof) ; call costfun(0)
+
 !--------------
    
 !!$  step = 0.01; nstep = 500  !evolution stepsize
 !!$  call coilevl( a(1:n,n/2), step, nstep )  !array for the direction; step for the stepsize  
-!!$  write(ounit, '("Eigen   : "10X" : Writing coils evolution finished")')
+  if (myid ==0) write(ounit, '("Eigen   : "10X" : Writing coils evolution finished")')
   
   ! call inverse procedure
   !call matrinv(ab(1:n,1:n), inver(1:n,1:n), n, ifail)
@@ -593,7 +597,7 @@ subroutine SVD
   HWRITERA( n, n       ,  VT       ,  vt(1:n,1:n))
   HWRITERV( n          ,  S        ,  s(1:n     ))
   HWRITERV( n          ,  eigenW   ,  w(1:n     ))
- ! HWRITERA( 2*nstep+1, n ,  diff   ,  diff(1:2*nstep+1, 1:n))
+  HWRITERA( 2*nstep+1, n ,  diff   ,  diff(1:2*nstep+1, 1:n))
 !!$  if(info .gt. 0) then
 !!$     HWRITERV( lwork      ,  Work     ,work(1:lwork))
 !!$  endif
@@ -679,9 +683,9 @@ subroutine coilevl( dir, stepsize, nstep )
      write(*,*) istep
      xdof = bdof + stepsize*istep*dir
      call unpack(xdof(1:Ndof))
-     write(*,*) "before costfun"
+     !write(*,*) "before costfun"
      call costfun(0)
-     write(*,*) "after costfun"
+     !write(*,*) "after costfun"
      if(allocated(evolution)) then
         evolution(itau,0) = itau
         evolution(itau,1) = totalenergy

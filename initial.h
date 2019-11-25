@@ -80,6 +80,7 @@ subroutine initial
   RlBCAST( weight_eqarc  ,    1,  0 )
   RlBCAST( weight_ccsep  ,    1,  0 )
   RlBCAST( weight_qasym  ,    1,  0 )
+  RlBCAST( weight_resbn  ,    1,  0 )
   RlBCAST( tauend        ,    1,  0 )
   RlBCAST( tautol        ,    1,  0 )
   IlBCAST( Ntauout       ,    1,  0 )

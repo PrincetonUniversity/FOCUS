@@ -776,7 +776,7 @@ subroutine bnormal( nderiv )
        coil, surf, NFcoil, cmt, smt, NDcoil, Ncoils, Nteta, Cdof, Nzeta, discretefactor, &
        bnorm, t1B, t2B, bn, bm, tbn, SaveBx, SaveBy, SaveBz, &
        ncpu, myid, ounit, &
-       weight_qasym, qasym, t1S, t2S, Mpol, Ntor, bNfp, cosarg
+       weight_qasym, qasym, t1S, t2S, Mpol, Ntor, bNfp, cosarg, sinarg, weight_resbn, resbn, t1R, t2R,  target_resbn
 
   implicit none
   include "mpif.h"
@@ -790,9 +790,10 @@ subroutine bnormal( nderiv )
   REAL, allocatable :: l1B( :, :), l2B( :, :, :, :), b1n( :, :), b2n( :, :, :, :), b1m( :, :), b2m( :, :, :, :)
   INTEGER           :: array2size, array4size
   REAL              :: lBx(0:Nteta, 0:Nzeta), lBy(0:Nteta, 0:Nzeta), lBz(0:Nteta, 0:Nzeta)
-  REAL, allocatable :: lmc(:), bmc(:), l1f(:,:,:), b1f(:,:,:), l2f(:,:,:,:,:), b2f(:,:,:,:,:)
+  REAL, allocatable :: lmc(:), bmc(:), l1f(:,:,:), b1f(:,:,:), l2f(:,:,:,:,:), b2f(:,:,:,:,:), &
+                       l1s(:,:), b1s(:,:), l2s(:,:,:,:), b2s(:,:,:,:), l1c(:,:), b1c(:,:), l2c(:,:,:,:), b2c(:,:,:,:)
   INTEGER           :: mn, im, in, imn
-  REAL              :: arg, teta, zeta
+  REAL              :: arg, teta, zeta, lnc, bnc, lns, bns
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -858,6 +859,29 @@ subroutine bnormal( nderiv )
      endif
   endif
 
+  if (weight_resbn .gt. sqrtmachprec) then
+     FATAL( bnormal, Mpol .le. 0, wrong poloidal mode number)
+     FATAL( bnormal, Ntor .le. 0, wrong toroidal mode number)
+     resbn = zero
+     lnc = zero ;  lns = zero ;  bnc = zero ;  bns = zero 
+     mn = 1
+     if (.not. allocated(cosarg) ) then
+        SALLOCATE( cosarg, (0:mn, 0:Nteta-1, 0:Nzeta-1), zero )
+        SALLOCATE( sinarg, (0:mn, 0:Nteta-1, 0:Nzeta-1), zero )
+        imn = 1 ; im = Mpol ; in = Ntor
+        do jzeta = 0, Nzeta - 1
+           zeta = ( jzeta + half ) * pi2 / Nzeta
+           do iteta = 0, Nteta - 1
+              teta = ( iteta + half ) * pi2 / Nteta
+              arg = im*teta - in*zeta
+              cosarg(imn, iteta, jzeta) = cos(arg)
+              sinarg(imn, iteta, jzeta) = sin(arg)
+           enddo
+        enddo
+        FATAL( bnormal, imn .ne. mn, wrong counting )
+     endif
+  endif
+
   select case ( nderiv )
 
    !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -894,6 +918,12 @@ subroutine bnormal( nderiv )
         enddo
      endif
 
+     if (weight_resbn .gt. sqrtmachprec) then ! resonant Bn perturbation
+        imn = 1
+        lnc = lnc + bn(iteta, jzeta) * cosarg(imn, iteta, jzeta)
+        lns = lns + bn(iteta, jzeta) * sinarg(imn, iteta, jzeta)
+     endif
+
     enddo ! end do iteta
    enddo ! end do jzeta
 
@@ -906,17 +936,37 @@ subroutine bnormal( nderiv )
 
    if (weight_qasym .gt. sqrtmachprec) then
       call MPI_ALLREDUCE( lmc, bmc, mn+1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+
+      if (.false.) then
+         write(ounit,'("   n   ,    m   ,   Bmc   ")')
+         write(ounit,'(I6," , ", I6," , ", ES23.15)')  0,  0, bmc(0) * two / (Nteta*Nzeta)
+         imn = 0
+         do in = -Ntor, Ntor
+            do im = 0, Mpol
+               if (in == 0 .or. (im==0 .and. in<0)) cycle
+               imn = imn + 1
+               write(ounit,'(I6," , ", I6," , ", ES23.15)') in, im, bmc(imn) * two / (Nteta*Nzeta)
+            enddo
+         enddo
+         FATAL( bnormal, imn .ne. mn, wrong counting )
+      endif
+
       do imn = 1, mn
          qasym = qasym + ( bmc(imn)*bmc(imn) )/( bmc(0)*bmc(0) ) ! n/= 0 terms
       enddo
 
       !TMPOUT(mn)
-      !TMPOUT(bmc(6))
-
+      !TMPOUT(bmc(6))      
       DALLOCATE(lmc)
       DALLOCATE(bmc)
    endif
 
+   if (weight_resbn .gt. sqrtmachprec) then
+      call MPI_ALLREDUCE( lnc, bnc, mn, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+      call MPI_ALLREDUCE( lns, bns, mn, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr ) 
+      resbn = (bnc*bnc + bns*bns - target_resbn)**2
+      if(myid==0) write(ounit, '("Resonant Bmn spectrum = "ES23.15)'), sqrt(bnc*bnc + bns*bns)
+   endif
 
    !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   case(1)
@@ -928,6 +978,13 @@ subroutine bnormal( nderiv )
    if (weight_qasym .gt. sqrtmachprec) then
       SALLOCATE( l1f, (0:mn, 1:Ncoils, 0:Cdof), zero ) ! local d Bmn / dx
       SALLOCATE( b1f, (0:mn, 1:Ncoils, 0:Cdof), zero ) ! total d Bmn / dx
+   endif
+
+   if (weight_resbn .gt. sqrtmachprec) then
+      SALLOCATE( l1s, ( 1:Ncoils, 0:Cdof), zero ) ! local d Bn_mn / dx
+      SALLOCATE( b1s, ( 1:Ncoils, 0:Cdof), zero ) ! total d Bn_mn / dx
+      SALLOCATE( l1c, ( 1:Ncoils, 0:Cdof), zero ) ! local d Bn_mn / dx
+      SALLOCATE( b1c, ( 1:Ncoils, 0:Cdof), zero ) ! total d Bn_mn / dx
    endif
    
    do jzeta = 0, Nzeta - 1
@@ -1019,7 +1076,17 @@ subroutine bnormal( nderiv )
         enddo ! end imn
      endif
         
-
+     if (weight_resbn .gt. sqrtmachprec) then  ! resonant Bn error
+        imn = 1
+        lnc = lnc + bn(iteta, jzeta) * cosarg(imn, iteta, jzeta)
+        lns = lns + bn(iteta, jzeta) * sinarg(imn, iteta, jzeta)        
+           do n1 = 0, Cdof
+              do c1 = 1, Ncoils
+                 l1c(c1, n1) =  l1c(c1, n1) + b1n(c1, n1)*cosarg(imn, iteta, jzeta)
+                 l1s(c1, n1) =  l1s(c1, n1) + b1n(c1, n1)*sinarg(imn, iteta, jzeta)
+              enddo
+           enddo
+     endif
 
     enddo ! end do iteta
    enddo ! end do jzeta
@@ -1063,6 +1130,25 @@ subroutine bnormal( nderiv )
 
     endif 
 
+   if (weight_resbn .gt. sqrtmachprec) then 
+
+      if ( .not. allocated(t1R) ) allocate(t1R(1:Ncoils, 0:Cdof), stat=astat)
+      t1R = zero
+      call MPI_ALLREDUCE( lnc, bnc, mn, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+      call MPI_ALLREDUCE( lns, bns, mn, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr ) 
+      call MPI_ALLREDUCE( l1c, b1c, array2size, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+      call MPI_ALLREDUCE( l1s, b1s, array2size, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+
+      resbn = (bnc*bnc + bns*bns - target_resbn)**2
+      t1R(1:Ncoils, 0:Cdof) = two * (bnc*bnc + bns*bns - target_resbn) * ( two * bnc * b1c(1:Ncoils, 0:Cdof) + two * bns * b1s(1:Ncoils, 0:Cdof) )
+         
+      DALLOCATE(l1c)
+      DALLOCATE(l1s)
+      DALLOCATE(b1c)
+      DALLOCATE(b1s)
+
+    endif 
+
    DALLOCATE(l1B)
    DALLOCATE(b1n)
    DALLOCATE(b1m)
@@ -1085,6 +1171,18 @@ subroutine bnormal( nderiv )
       SALLOCATE( b1f, (0:mn, 1:Ncoils, 0:Cdof), zero ) ! total d Bmn / dx
       SALLOCATE( l2f, (0:mn, 1:Ncoils, 0:Cdof, 1:Ncoils, 0:Cdof), zero ) ! local d2 Bmn / dx1 dx2
       SALLOCATE( b2f, (0:mn, 1:Ncoils, 0:Cdof, 1:Ncoils, 0:Cdof), zero ) ! total d2 Bmn / dx1 dx2     
+   endif
+
+   if (weight_resbn .gt. sqrtmachprec) then
+      SALLOCATE( l1s, ( 1:Ncoils, 0:Cdof), zero ) ! local d Bn_mn / dx
+      SALLOCATE( b1s, ( 1:Ncoils, 0:Cdof), zero ) ! total d Bn_mn / dx
+      SALLOCATE( l1c, ( 1:Ncoils, 0:Cdof), zero ) ! local d Bn_mn / dx
+      SALLOCATE( b1c, ( 1:Ncoils, 0:Cdof), zero ) ! total d Bn_mn / dx
+
+      SALLOCATE( l2c, ( 1:Ncoils, 0:Cdof, 1:Ncoils, 0:Cdof), zero ) ! local d2 Bn_mn / dx1 dx2
+      SALLOCATE( b2c, ( 1:Ncoils, 0:Cdof, 1:Ncoils, 0:Cdof), zero ) ! total d2 Bn_mn / dx1 dx2     
+      SALLOCATE( l2s, ( 1:Ncoils, 0:Cdof, 1:Ncoils, 0:Cdof), zero ) ! local d2 Bn_mn / dx1 dx2
+      SALLOCATE( b2s, ( 1:Ncoils, 0:Cdof, 1:Ncoils, 0:Cdof), zero ) ! total d2 Bn_mn / dx1 dx2 
    endif
 
    do jzeta = 0, Nzeta - 1
@@ -1396,6 +1494,24 @@ subroutine bnormal( nderiv )
         enddo ! end imn
      endif
 
+     if (weight_resbn .gt. sqrtmachprec) then  ! resonant magnetic perturbation
+        imn = 1
+        lnc = lnc + bn(iteta, jzeta) * cosarg(imn, iteta, jzeta)
+        lns = lns + bn(iteta, jzeta) * sinarg(imn, iteta, jzeta)        
+        do n1 = 0, Cdof
+           do c1 = 1, Ncoils
+              l1c(c1, n1) =  l1c(c1, n1) + b1n(c1, n1)*cosarg(imn, iteta, jzeta)
+              l1s(c1, n1) =  l1s(c1, n1) + b1n(c1, n1)*sinarg(imn, iteta, jzeta)
+              do n2 = 0, Cdof
+                 do c2 = 1, Ncoils
+                    l2c(c1, n1, c2, n2) = l2c(c1, n1, c2, n2) + b2n(c1, n1, c2, n2) * cosarg(imn, iteta, jzeta)
+                    l2s(c1, n1, c2, n2) = l2s(c1, n1, c2, n2) + b2n(c1, n1, c2, n2) * sinarg(imn, iteta, jzeta)
+                 enddo
+              enddo
+           enddo
+        enddo
+     endif
+
 
     enddo ! end do iteta
    enddo ! end do jzeta
@@ -1499,6 +1615,47 @@ subroutine bnormal( nderiv )
       DALLOCATE(b2f)
 
     endif 
+
+
+   if (weight_resbn .gt. sqrtmachprec) then
+
+      if ( .not. allocated(t1R) ) allocate(t1R(1:Ncoils, 0:Cdof), stat=astat)
+      if ( .not. allocated(t2R) ) allocate(t2R(1:Ncoils, 0:Cdof, 1:Ncoils, 0:Cdof), stat=astat)
+      t1R = zero ; t2R = zero
+
+      call MPI_ALLREDUCE( lnc, bnc, mn, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+      call MPI_ALLREDUCE( lns, bns, mn, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr ) 
+      call MPI_ALLREDUCE( l1c, b1c, array2size, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+      call MPI_ALLREDUCE( l1s, b1s, array2size, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+      call MPI_ALLREDUCE( l2c, b2c, array4size, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+      call MPI_ALLREDUCE( l2s, b2s, array4size, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+
+      resbn = (bnc*bnc + bns*bns - target_resbn)**2
+      t1R(1:Ncoils, 0:Cdof) = two * (bnc*bnc + bns*bns - target_resbn) * ( two * bnc * b1c(1:Ncoils, 0:Cdof) + two * bns * b1s(1:Ncoils, 0:Cdof) )
+
+      do n1 = 0, Cdof
+         do c1 = 1, Ncoils                    
+            do n2 = 0, Cdof
+               do c2 = 1, Ncoils
+                  t2R(c1,n1,c2,n2) = two * (bnc*bnc + bns*bns - target_resbn) * ( two * b1c(c1, n1) * b1c(c2, n2) + two * bnc * b2c(c1, n1, c2, n2) &
+                                                                                + two * b1s(c1, n1) * b1s(c2, n2) + two * bns * b2s(c1, n1, c2, n2) ) &
+                                   + two * ( two * bnc * b1c(c1, n1) + two * bns * b1s(c1, n1) ) * ( two * bnc * b1c(c2, n2) + two * bns * b1s(c2, n2) )
+               enddo
+            enddo
+         enddo
+      enddo
+
+      DALLOCATE(l1c)
+      DALLOCATE(l1s)
+      DALLOCATE(b1c)
+      DALLOCATE(b1s)
+      DALLOCATE(l2c)
+      DALLOCATE(l2s)
+      DALLOCATE(b2c)
+      DALLOCATE(b2s)
+
+    endif 
+
 
 
    DALLOCATE(l1B)

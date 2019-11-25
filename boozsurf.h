@@ -87,6 +87,40 @@
 !latex  Number of $B_n$ coefficients, $nbf$, should also be zero, except for RMP coils.
 !latex 
 
+!latex \section{Boozer coordinates integration in FOCUS} \label{booz_xform}
+!latex BOOZ\_XFORM transforms the VMEC coordinates into the straight field line coordinates introduced by Boozer.
+!latex Although Boozer coordinates are normally used for representing magnetic fields, we are going to use Boozer angles ($\t_B, \z_B$) parameterizing the flux surface, on which magnetic field lines are lying.
+!latex The surface in cylindrical coordinates is transformed into Boozer coordinates by
+!latex \begin{equation}
+!latex \left \{
+!latex \begin{array}{lll}
+!latex \ds R(\t_B, \z_B)   =  \sum_{m,n} R^B_{mn} \cos(m\t_B - n\z_B) ; \\
+!latex \ds \phi(\t_B, \z_B)  =  \z_B +\sum_{m,n} P^B_{mn} \sin(m\t_B - n\z_B) ; \\
+!latex \ds Z(\t_B, \z_B)  =  \sum_{m,n} Z^B_{mn} \sin(m\t_B - n\z_B) \ .
+!latex \end{array}
+!latex \right .
+!latex \end{equation}
+!latex Here, stellarator symmetry is assumed.
+!latex Fourier coefficients, $R^B_{mn}$, $Z^B_{mn}$ and $P^B_{mn}$, are provided in BOOZ\_XFORM outputs.
+!latex 
+!latex FOCUS uses Cartesian coordinates $\vect{x}(\t_B, \z_B)$, therefore, the flux surface is parameterized as
+!latex \begin{equation}
+!latex \left \{
+!latex \begin{array}{lll}
+!latex x(\t_B, \z_B)  =  R(\t_B, \z_B) \cos(\phi) ;  \\
+!latex y(\t_B, \z_B)  =  R(\t_B, \z_B) \sin(\phi) ;  \\
+!latex z(\t_B, \z_B)  =  Z(\t_B, \z_B) \ . 
+!latex \end{array}
+!latex \right .
+!latex \end{equation}
+!latex Then the tangential derivatives are
+!latex \begin{align} 
+!latex \pdv{x}{\t_B} = & \pdv{R}{\t_B} \cos(\phi) - R \sin(\phi) \pdv{\phi}{\t_B} ;\\
+!latex \pdv{x}{\z_B} = & \pdv{R}{\z_B} \cos(\phi) - R \sin(\phi) \pdv{\phi}{\z_B} .
+!latex \end{align}
+!latex Likewise, $\partial y / \partial {\t_B}$, $\partial y / \partial {\z_B}$, $\partial z / \partial {\t_B}$ and $\partial z / \partial {\z_B}$ are computed.
+!latex The surface normal is $\vect{n} = \vect{x}_{\z} \times \vect{x}_{\t}$ and so is the Jacobian $J = \frac{\partial (x, y, z)}{\partial (\t_B, \z_B)} = |\vect{x}_{\t} \times \vect{x}_{\z}|$.
+
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine boozsurf

@@ -663,7 +663,8 @@ subroutine costfun(nderiv)
        ttlen      , t1L, t2L, weight_ttlen, &
        eqarc      , t1A, t2A, weight_eqarc, &
        ccsep      , t1C, t2C, weight_ccsep, &
-       qasym      , t1S, t2S, weight_qasym
+       qasym      , t1S, t2S, weight_qasym, &
+       resbn      , t1R, t2R, weight_resbn
 
   implicit none
   include "mpif.h"
@@ -718,7 +719,7 @@ subroutine costfun(nderiv)
   call discretecoil
 
 
-  if (weight_bnorm .gt. sqrtmachprec .or. weight_qasym .gt. sqrtmachprec) then
+  if (weight_bnorm .gt. sqrtmachprec .or. weight_qasym .gt. sqrtmachprec .or. weight_resbn .gt. sqrtmachprec) then
 
 #ifdef NORM
     call bnormal(nderiv)
@@ -745,6 +746,16 @@ subroutine costfun(nderiv)
    elseif ( nderiv .eq. 2 ) then
     t1E = t1E +  weight_qasym * t1S
     t2E = t2E +  weight_qasym * t2S
+   endif
+  endif
+
+  if (weight_resbn .gt. sqrtmachprec) then
+   totalenergy = totalenergy + weight_resbn * resbn
+   if     ( nderiv .eq. 1 ) then
+    t1E = t1E +  weight_resbn * t1R
+   elseif ( nderiv .eq. 2 ) then
+    t1E = t1E +  weight_resbn * t1R
+    t2E = t2E +  weight_resbn * t2R
    endif
   endif
 
@@ -871,6 +882,7 @@ subroutine costfun(nderiv)
   if( allocated(t1A) ) deallocate(t1A)
   if( allocated(t1C) ) deallocate(t1C)
   if( allocated(t1S) ) deallocate(t1S)
+  if( allocated(t1R) ) deallocate(t1R)
 
   if( allocated(t2B) ) deallocate(t2B)
   if( allocated(t2F) ) deallocate(t2F)
@@ -878,6 +890,7 @@ subroutine costfun(nderiv)
   if( allocated(t2A) ) deallocate(t2A)
   if( allocated(t2C) ) deallocate(t2C)
   if( allocated(t2S) ) deallocate(t2S)
+  if( allocated(t2R) ) deallocate(t2R)
 
   FATAL( denergy, iter.gt.100000, too many iterations )
   !if(iter .ge. 1E5) call MPI_ABORT( MPI_COMM_WORLD, 10, ierr )
@@ -941,8 +954,8 @@ subroutine denergy2( tau, xdof, dE )
 
 subroutine weightnormalize
   use kmodule, only:  zero, Io,  coil, Ncoils,  &
-                      weight_bnorm, weight_tflux, weight_ttlen, weight_eqarc, weight_ccsep, &
-                             bnorm,        tflux,        ttlen,        eqarc,        ccsep, &
+                      weight_bnorm, weight_tflux, weight_ttlen, weight_eqarc, weight_ccsep, weight_qasym, weight_resbn, &
+                             bnorm,        tflux,        ttlen,        eqarc,        ccsep,        qasym,        resbn, &
                      target_tflux, isign, Lnormalize, sqrtmachprec, myid, ounit, lc          
   implicit none
   include "mpif.h"
@@ -986,17 +999,30 @@ subroutine weightnormalize
 
 !-!-!-!-!-!-!-!-!-!-bnorm-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  if( weight_bnorm .ge. sqrtmachprec ) then
+  if (weight_bnorm .gt. sqrtmachprec .or. weight_qasym .gt. sqrtmachprec .or. weight_resbn .gt. sqrtmachprec) then
+  ! if( weight_bnorm .ge. sqrtmachprec ) then
 
 #ifdef NORM
-    call bnormal(0)
+     call bnormal(0)
 #else
-    call bnormal2(0)
+     call bnormal2(0)
 #endif
   
-   if (abs(bnorm) .gt. sqrtmachprec) weight_bnorm = weight_bnorm / bnorm
-   if( myid .eq. 0 ) write(ounit, 1000) "weight_bnorm", weight_bnorm
+     if( weight_bnorm .ge. sqrtmachprec ) then
+        if (abs(bnorm) .gt. sqrtmachprec) weight_bnorm = weight_bnorm / bnorm
+        if( myid .eq. 0 ) write(ounit, 1000) "weight_bnorm", weight_bnorm
+     endif
+
+     if( weight_qasym .ge. sqrtmachprec ) then
+        if (abs(qasym) .gt. sqrtmachprec) weight_qasym = weight_qasym / qasym
+        if( myid .eq. 0 ) write(ounit, 1000) "weight_qasym", weight_qasym
+     endif
    
+     if( weight_resbn .ge. sqrtmachprec ) then
+        if (abs(resbn) .gt. sqrtmachprec) weight_resbn = weight_resbn / resbn
+        if( myid .eq. 0 ) write(ounit, 1000) "weight_resbn", weight_resbn
+     endif
+
   endif
 
 !-!-!-!-!-!-!-!-!-!-ttlen-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!

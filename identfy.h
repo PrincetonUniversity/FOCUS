@@ -12,7 +12,8 @@
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine identfy
-  use kmodule, only: ounit, myid, zero, coil, surf, Nteta, Nzeta, coilsI, antibscont, Ncoils, bnorm, tflux, ttlen, tbn, target_tflux, isign, Lnormalize
+  use kmodule, only: ounit, myid, zero, coil, surf, Nteta, Nzeta, coilsI, antibscont, Ncoils, &
+       bnorm, tflux, ttlen, tbn, target_tflux, isign, Lnormalize, qasym
   implicit none
   include "mpif.h"
 
@@ -51,6 +52,7 @@ subroutine identfy
   call torflux(0)
   call tlengthExp(0)
   if(myid .eq. 0) write(ounit, '("evaluate: "10X" : bnorm = "ES23.15" ; tflux = "ES23.15" ; ttlen = "ES23.15" ; ")') bnorm, tflux, ttlen
+  if (myid==0) write(ounit, '("evaluate: "10X" : Quasi-axisymmetric functional = "ES23.15)'), qasym
 
   !if(l_raw) deallocate( coil ) 
   !return        !for avoiding evaluating curvature for straight lines; 2017/02/10
