@@ -36,16 +36,16 @@ module magnet_set_globals
     ! Vacuum vessel geometric information
     logical :: vessel_loaded = .false.
     CHARACTER(len=500) :: vfile = 'none' ! path to the file with the coeffs
-    REAL(8) :: ves_tol = 1.0e-5        ! tolerance for vessel-related calculations
+    REAL(8) :: ves_tol = 1.0e-5     ! tolerance for vessel-related calculations
     INTEGER :: maxIter = 10         ! max iterations for vessel calculations
     INTEGER :: nModes               ! total number of Fourier modes
     INTEGER :: nfp = 3              ! number of field periods
-    REAL(8) :: ves_r00                 ! R_00 coefficient
-    REAL(8) :: ves_r10                 ! R_01 coefficient
-    REAL(8), allocatable :: vrc(:)     ! cosine coefficients, vessel surface r
-    REAL(8), allocatable :: vzs(:)     ! sine coefficients, vessel surface z
-    REAL(8), allocatable :: vrs(:)     ! sine coefficients, vessel surface r
-    REAL(8), allocatable :: vzc(:)     ! cosine coefficients, vessel surface z
+    REAL(8) :: ves_r00              ! R_00 coefficient
+    REAL(8) :: ves_r10              ! R_01 coefficient
+    REAL(8), allocatable :: vrc(:)  ! cosine coefficients, vessel surface r
+    REAL(8), allocatable :: vzs(:)  ! sine coefficients, vessel surface z
+    REAL(8), allocatable :: vrs(:)  ! sine coefficients, vessel surface r
+    REAL(8), allocatable :: vzc(:)  ! cosine coefficients, vessel surface z
     INTEGER, allocatable :: vm(:)   ! poloidal mode numbers for the above coeffs
     INTEGER, allocatable :: vn(:)   ! toroidal mode numbers for the above coeffs
 
@@ -53,11 +53,11 @@ module magnet_set_globals
     logical :: plasma_loaded = .false.
     CHARACTER(len=500) :: pfile = 'none' ! path to the file with the coeffs
     INTEGER :: nModesPl             ! total number of Fourier modes
-    REAL(8) :: pla_r00                 ! R_00 coefficient
-    REAL(8), allocatable :: prc(:)     ! cosine coefficients, lcfs r
-    REAL(8), allocatable :: pzs(:)     ! sine coefficients, lcfs z
-    REAL(8), allocatable :: prs(:)     ! sine coefficients, lcfs r
-    REAL(8), allocatable :: pzc(:)     ! cosine coefficients, lcfs z
+    REAL(8) :: pla_r00              ! R_00 coefficient
+    REAL(8), allocatable :: prc(:)  ! cosine coefficients, lcfs r
+    REAL(8), allocatable :: pzs(:)  ! sine coefficients, lcfs z
+    REAL(8), allocatable :: prs(:)  ! sine coefficients, lcfs r
+    REAL(8), allocatable :: pzc(:)  ! cosine coefficients, lcfs z
     INTEGER, allocatable :: pm(:)   ! poloidal mode numbers for the above coeffs
     INTEGER, allocatable :: pn(:)   ! toroidal mode numbers for the above coeffs
 
@@ -66,18 +66,20 @@ module magnet_set_globals
     logical :: fill_wedge_gaps = .true.  ! if wedge-shaped gaps between segments
                                          ! are to be filled with magnets
     CHARACTER(len=10) :: vertex_mode = 'rz'
+    logical :: eq_pol_seg_length = .false. ! if true, forces equal poloidal
+                                           ! segment lengths in theta_sep mode
     INTEGER :: nPlates                ! number of support plates per half-module
     INTEGER :: nVertices              ! (maximum) number of vertices per plate
-    REAL(8), dimension(np) :: plate_phi  ! toroidal angle (central) of each plate
+    REAL(8), dimension(np) :: plate_phi  ! tor. angle (central) of each plate
     REAL(8), dimension(np) :: plate_dphi ! toroidal angle subtended by the plate
     INTEGER, dimension(np) :: segs_on_plate ! number of finite-length segmts
-    REAL(8), dimension(np,nv) :: vert_r        ! r coordinates of each vertex
-    REAL(8), dimension(np,nv) :: vert_z        ! z coordinates of each vertex
-    REAL(8), dimension(np,nv) :: vessel_r      ! r coordinate on vessel near vertex
-    REAL(8), dimension(np,nv) :: vessel_z      ! z coordinate on vessel near vertex
-    REAL(8), dimension(np,nv) :: vert_theta    ! theta coord of each vertex (rad)
-    REAL(8), dimension(np,nv) :: vert_sep      ! sep. btwn vertex and vessel (m)
-    REAL(8), dimension(np,nv) :: vert_tlcfs    ! lcfs theta coord of vertex (rad)
+    REAL(8), dimension(np,nv) :: vert_r     ! r coordinates of each vertex
+    REAL(8), dimension(np,nv) :: vert_z     ! z coordinates of each vertex
+    REAL(8), dimension(np,nv) :: vessel_r   ! r coordinate on vessel near vertex
+    REAL(8), dimension(np,nv) :: vessel_z   ! z coordinate on vessel near vertex
+    REAL(8), dimension(np,nv) :: vert_theta ! theta coord of each vertex (rad)
+    REAL(8), dimension(np,nv) :: vert_sep   ! sep. btwn vertex and vessel (m)
+    REAL(8), dimension(np,nv) :: vert_tlcfs ! lcfs theta coord of vertex (rad)
 
     ! Details about each plate segment (populated in call to count_magnets)
     logical :: segments_initialized = .false.
@@ -92,7 +94,7 @@ module magnet_set_globals
         REAL(8) :: alpha          ! angle between plate normal and r-hat
         REAL(8) :: gap_con_1      ! concavity gap, begin. of plate segmt
         REAL(8) :: gap_con_2      ! concavity gap, end of plate segmt
-        REAL(8) :: divider_elev_1 ! elev angle of div line above segmt, beginning
+        REAL(8) :: divider_elev_1 ! elev angle of div line above segmt, start
         REAL(8) :: divider_elev_2 ! elev angle of div line above segmt, end
         INTEGER :: nStacks     ! num. of mag. stacks on each segmt
         INTEGER :: mag_lg_ind  ! index of magnet length for segmt
@@ -102,10 +104,16 @@ module magnet_set_globals
     ! Details about each trapezoidal box
     logical :: trapezoids_initialized = .false.
     logical :: subtraps_initialized = .false.
-    integer :: nTrapezoids
-    integer :: trap_err_count
-    integer :: nTraps_per_stack = 1
-    integer :: nSubtraps
+    integer :: nTrapezoids            ! Number of trapezoids in total
+    integer :: trap_err_count         ! Num. traps. with erroneous properties
+    integer :: nTraps_per_stack = 1   ! Num. vertical subdivisions per box
+    integer :: nSubtraps              ! Number of subdivided traps. in total
+    integer :: n_box_pol = 1          ! Num. of adj. traps. for pol. boxcar avg.
+    integer :: n_box_tor = 1          ! Num. of adj. traps. for tor. boxcar avg.
+    !REAL(8) :: weight_pol(np)         ! Weighting for poloidal boxcar averaging
+    !REAL(8) :: weight_tor(nt)         ! Weighting for toroidal boxcar averaging
+    logical :: traps_poloidally_periodic = .false. 
+    logical :: traps_toroidally_periodic = .true.
     type trapezoid
         REAL(8) :: ntbx, ntby, ntbz ! unit normal vector of toroidal back plane
         REAL(8) :: ntfx, ntfy, ntfz ! unit normal vector of toroidal front plane
@@ -203,39 +211,43 @@ module magnet_set_globals
     end type magnet
     type(magnet), allocatable :: magnets(:)
 
-    NAMELIST /magnet_set/ vfile,             &
-                          pfile,             &
-                          nfp,               &
-                          ves_tol,           &
-                          maxIter,           &
-                          nPlates,           &
-                          construction,      &
-                          nVertices,         &
-                          plate_phi,         &
-                          plate_dphi,        &
-                          nTraps_per_stack,  &
-                          coiltype,          &
-                          symm,              &
-                          vertex_mode,       &
-                          vert_r,            &
-                          vert_z,            &
-                          vert_theta,        &
-                          vert_tlcfs,        &
-                          vert_sep,          &
-                          gap_rad,           &
-                          gap_tor,           &
-                          gap_pol,           &
-                          gap_end,           &
-                          gap_seg,           &
-                          gap_vac,           &
-                          gap_trp,           &
-                          fill_wedge_gaps,   &
-                          stack_ht_max,      &
-                          fixed_stack_ht,    &
-                          avail_mag_wd,      &
-                          avail_mag_lg,      &
-                          avail_mag_ht,      &
-                          m_bulk,            &
+    NAMELIST /magnet_set/ vfile,                     &
+                          pfile,                     &
+                          nfp,                       &
+                          ves_tol,                   &
+                          maxIter,                   &
+                          nPlates,                   &
+                          construction,              &
+                          nVertices,                 &
+                          plate_phi,                 &
+                          plate_dphi,                &
+                          nTraps_per_stack,          &
+                          n_box_pol,                 &
+                          n_box_tor,                 &
+                          traps_poloidally_periodic, &
+                          traps_toroidally_periodic, &
+                          coiltype,                  &
+                          symm,                      &
+                          vertex_mode,               &
+                          vert_r,                    &
+                          vert_z,                    &
+                          vert_theta,                &
+                          vert_tlcfs,                &
+                          vert_sep,                  &
+                          gap_rad,                   &
+                          gap_tor,                   &
+                          gap_pol,                   &
+                          gap_end,                   &
+                          gap_seg,                   &
+                          gap_vac,                   &
+                          gap_trp,                   &
+                          fill_wedge_gaps,           &
+                          stack_ht_max,              &
+                          fixed_stack_ht,            &
+                          avail_mag_wd,              &
+                          avail_mag_lg,              &
+                          avail_mag_ht,              &
+                          m_bulk,                    &
                           polarization_mode       
     
 end module magnet_set_globals
