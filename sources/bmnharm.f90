@@ -194,11 +194,6 @@ SUBROUTINE readBmn
             arg = Bmnim(imn) * teta - Bmnin(imn) * zeta
             carg(ij, imn) = cos(arg)
             sarg(ij, imn) = sin(arg)
-            if (ij==1 .and. imn==6) then
-               TMPOUT( Bmnim(imn) )
-               TMPOUT( Bmnin(imn) )
-               TMPOUT( arg )
-            endif
          enddo
          ! Additional weighting
          if (bharm_jsurf == 0) then
@@ -215,10 +210,6 @@ SUBROUTINE readBmn
 
    SALLOCATE( dBc, (1:NBmn), zero )  ! dB_mn_cos
    SALLOCATE( dBs, (1:NBmn), zero )  ! dB_mn_sin
-
-   TMPOUT( carg(1, 6) )
-   TMPOUT( sarg(1, 6) )
-   TMPOUT( surf(1)%ds(0, 0) )
 
   return
 END SUBROUTINE readBmn
