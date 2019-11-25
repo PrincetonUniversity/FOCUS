@@ -126,7 +126,7 @@ SUBROUTINE readBmn
   !----------------------------------------------------------------------------------------
   use globals, only: dp, zero, half, pi2, myid, ounit, runit, ext, IsQuiet, Nteta, Nzeta, Nfp, &
                      NBmn, Bmnin, Bmnim, wBmn, tBmnc, tBmns, carg, sarg, Nfp_raw, case_bnormal, &
-                     input_harm
+                     input_harm, bharm_jsurf, surf
   use bharm_mod
   implicit none
   include "mpif.h"
@@ -195,6 +195,16 @@ SUBROUTINE readBmn
             carg(ij, imn) = cos(arg)
             sarg(ij, imn) = sin(arg)
          enddo
+         ! Additional weighting
+         if (bharm_jsurf == 0) then
+            continue
+         else if (bharm_jsurf == 1) then ! Bn * dA
+            carg(ij, 1:NBmn) = carg(ij, 1:NBmn) * (surf(1)%ds(ii, jj))
+            sarg(ij, 1:NBmn) = sarg(ij, 1:NBmn) * (surf(1)%ds(ii, jj))
+         else if ( bharm_jsurf == 2) then ! Bn * sqrt(dA)
+            carg(ij, 1:NBmn) = carg(ij, 1:NBmn) * sqrt(surf(1)%ds(ii, jj))
+            sarg(ij, 1:NBmn) = sarg(ij, 1:NBmn) * sqrt(surf(1)%ds(ii, jj))
+         end if
       enddo
    enddo
 
@@ -215,7 +225,8 @@ SUBROUTINE twodft(func, hs, hc, im, in, mn)
   ! carg and sarg stored the trig functions.
   ! Right now, it's using normal Fourier transforming, later FFT will be enabled.
   !-------------------------------------------------------------------------------!
-  use globals, only: dp, zero, half, two, pi2, myid, ounit, Nteta, Nzeta, carg, sarg
+  use globals, only: dp, zero, half, two, pi2, myid, ounit, &
+       Nteta, Nzeta, carg, sarg, bharm_jsurf, surf
   implicit none
   include "mpif.h"
   !-------------------------------------------------------------------------------
@@ -240,6 +251,7 @@ SUBROUTINE twodft(func, hs, hc, im, in, mn)
      hs(imn) = sum(func(1:Nteta*Nzeta) * sarg(1:Nteta*Nzeta, imn))
 
      if (m==0 .and. n==0) then  ! for (0,0) term, times a half factor;
+     ! if (m==0) then  ! for (0,0) term, times a half factor;
         hc(imn) = hc(imn)*half
         hs(imn) = hs(imn)*half
      endif
@@ -248,6 +260,19 @@ SUBROUTINE twodft(func, hs, hc, im, in, mn)
 
   hc = hc * two/(Nteta*Nzeta)  ! Discretizing factor;
   hs = hs * two/(Nteta*Nzeta)  ! Discretizing factor;
+
+  ! Additional weighting
+  if (bharm_jsurf == 0) then
+     ! continue
+     hc = hc * two
+     hs = hs * two
+  else if (bharm_jsurf == 1) then ! divide by A
+     hc = hc / surf(1)%area * two * pi2**2
+     hs = hs / surf(1)%area * two * pi2**2
+  else if (bharm_jsurf == 2) then ! divide by sqrt(A)
+     hc = hc / sqrt(surf(1)%area) * two * pi2
+     hs = hs / sqrt(surf(1)%area) * two * pi2
+  end if
 
   return
 END SUBROUTINE twodft

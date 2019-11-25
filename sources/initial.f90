@@ -543,6 +543,17 @@ subroutine initial
         FATAL( initial, .true., selected case_bnormal is not supported )
      end select
 
+     select case ( bharm_jsurf )
+     case ( 0 )
+        if (IsQuiet < 1) write(ounit, 1000) 'bharm_jsurf', case_bnormal, 'No normalization on Bn harmonics.'
+     case ( 1 )
+        if (IsQuiet < 1) write(ounit, 1000) 'bharm_jsurf', case_bnormal, 'Bn harmonics are multiplied with surface area.'
+     case ( 2 )
+        if (IsQuiet < 1) write(ounit, 1000) 'bharm_jsurf', case_bnormal, 'Bn harmonics are multiplied with sqrt(surface area).'
+     case default
+        FATAL( initial, .true., selected case_bnormal is not supported )
+     end select
+
      select case ( case_length )
      case ( 1 )
         if (IsQuiet < 1) write(ounit, 1000) 'case_length', case_length, 'Quadratic format of length penalty.'
