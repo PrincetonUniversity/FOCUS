@@ -33,11 +33,11 @@ subroutine vertex_theta_to_rz()
                                   nPlates, nVertices, plate_phi, plate_dphi, &
                                   vert_theta, vert_sep, vert_r, vert_z, &
                                   vessel_r, vessel_z, construction
-    use magnet_set_calc,    only: ves_r, ves_z, ves_drdt, ves_dzdt, cross_prod
+    use magnet_set_calc,    only: vertex_rz_in_poloidal_plane
 
     implicit none
 
-    INTEGER :: i, j, iMax
+    INTEGER :: i, j, iMax, nVertices_i
     REAL(8) :: offs, vert_phi, drdt, dzdt, alpha, nr, nz
 
     ! Choose the number of toroidal indices
@@ -59,6 +59,8 @@ subroutine vertex_theta_to_rz()
             vert_phi = plate_phi(i-1) + 0.5 * offs * plate_dphi(i-1)
         end if
 
+        ! Count number of vertices that exist (i.e., have nonzero input)
+        nVertices_i = 0
         do j = 1, nVertices
 
             ! Assume vertices with (0,0) are meant to not exist
@@ -71,24 +73,17 @@ subroutine vertex_theta_to_rz()
 
             else
 
-                ! Coordinates and derivatives on the vessel
-                vessel_r(i,j) = ves_r( vert_theta(i,j), vert_phi )
-                vessel_z(i,j) = ves_z( vert_theta(i,j), vert_phi )
-                drdt = ves_drdt( vert_theta(i,j), vert_phi )
-                dzdt = ves_dzdt( vert_theta(i,j), vert_phi )
-
-                ! Normal vector pointing away from the vessel
-                alpha = atan2( dzdt, drdt )  - 0.5*pi
-                nr = cos(alpha)
-                nz = sin(alpha)
-
-                ! r and z coordinates of the vertex
-                vert_r(i,j) = vessel_r(i,j) + vert_sep(i,j)*nr
-                vert_z(i,j) = vessel_z(i,j) + vert_sep(i,j)*nz
+                nVertices_i = nVertices_i + 1
 
             end if
 
         end do
+
+        ! Determine the r and z coordinates for each (existing) vertex
+        call vertex_rz_in_poloidal_plane(nVertices_i, vert_phi,            &
+                 vert_theta(i, 1:nVertices_i), vert_sep(i, 1:nVertices_i), &
+                 vert_r(i, 1:nVertices_i), vert_z(i, 1:nVertices_i),       &
+                 vessel_r(i, 1:nVertices_i), vessel_z(i, 1:nVertices_i)     )
 
     end do
 
@@ -226,13 +221,6 @@ subroutine lcfs_theta_to_ves_theta
                 call ves_dist_2d(vert_phi, rplas, zplas, nr, nz, & 
                                  l0, theta0, l, vert_theta(i,j), vr, vz, chi2)
 
-                write(*,'(A, I2, A, I2, A, F7.1, A, F7.1, A, F6.2, A, F6.2, A, F6.2)') &
-                      '  (', i, ',', j, '): tlcfs = ', &
-                      vert_tlcfs(i,j)*180./3.1415927, &
-                      ' theta = ', vert_theta(i,j)*180./3.1415927, &
-                      '  l = ', l, ' vr = ', vr, &
-                      '  vz = ', vz
-
             end if
 
         end do
@@ -276,7 +264,8 @@ subroutine count_stacks()
     end if
 
     ! Calculate vertex r and z coords if not explicitly supplied
-    if (trim(vertex_mode) == 'theta_sep') then
+    if (trim(vertex_mode) == 'theta_sep' &
+        .or. trim(vertex_mode) == 'uniform_theta_sep') then
         call vertex_theta_to_rz
     else if (trim(vertex_mode) == 'tlcfs_sep') then
         call lcfs_theta_to_ves_theta

@@ -31,8 +31,8 @@ contains
 !
 ! Return parameters:
 !     REAL(8) :: l           -> distance from the point to the vessel
-!     REAL(8) :: theta, phi  -> theta and phi coordinates of the intersection point
-!     REAL(8) :: vx, vy, vz  -> x, y, and z coordinates of the intersection point
+!     REAL(8) :: theta, phi  -> theta and phi coordinates, intersection point
+!     REAL(8) :: vx, vy, vz  -> x, y, and z coordinates, intersection point
 !-------------------------------------------------------------------------------
 subroutine ves_dist_3d(ox, oy, oz, ax, ay, az, l0, theta0, phi0, &
                        l, theta, phi, vx, vy, vz, chi2)
@@ -119,7 +119,7 @@ end subroutine ves_dist_3d
 ! line in a 2D (poloidal, constant-phi) cross-section
 !
 ! Input parameters:
-!     REAL(8) :: phi         -> the toroidal angle (radians) of the cross-section
+!     REAL(8) :: phi         -> toroidal angle (radians) of the cross-section
 !     REAL(8) :: or, oz      -> r and z coordinates (meters) of the ref. point
 !     REAL(8) :: ar, az      -> r and z components of a unit vector defining
 !                            the direction from the test point to the vessel
@@ -199,16 +199,16 @@ end subroutine ves_dist_2d
 ! Input parameters:
 !     REAL(8) :: ox, oy, oz  -> x, y, and z coordinates of the reference point
 !     REAL(8) :: l0, theta0, 
-!             phi0        -> initial guesses of the distance l, as well as
-!                            the theta and phi coordinates of the intersection
-!                            point on the vessel
+!                phi0        -> initial guesses of the distance l, as well as
+!                               the theta and phi coordinates of the 
+!                               intersection point on the vessel
 !
 ! Return parameters:
 !     REAL(8) :: l           -> distance from the point to the vessel
-!     REAL(8) :: theta, phi  -> theta and phi coordinates of the intersection point
-!     REAL(8) :: vx, vy, vz  -> x, y, and z coordinates of the intersection point
+!     REAL(8) :: theta, phi  -> theta and phi coordinates, intersection point
+!     REAL(8) :: vx, vy, vz  -> x, y, and z coordinates, intersection point
 !     REAL(8) :: ux, uy, uz  -> x, y, and z components of the unit normal vector
-!                            at the vessel intersection point
+!                               at the vessel intersection point
 !-------------------------------------------------------------------------------
 subroutine ves_perp_intersect_3d(ox, oy, oz, l0, theta0, phi0, &
                                  l, theta, phi, vx, vy, vz, ux, uy, uz, chi2)
@@ -335,8 +335,8 @@ subroutine calcF_ves_perp_intersect_3d(l, theta, phi, ox, oy, oz, &
     implicit none
 
     REAL(8), intent(IN)  :: l, theta, phi, ox, oy, oz
-    REAL(8), intent(OUT) :: fx, fy, fz, vr, vx, vy, vz, drdt, dzdt, drdp, dzdp, &
-                         nx, ny, nz, ln, ux, uy, uz
+    REAL(8), intent(OUT) :: fx, fy, fz, vr, vx, vy, vz, drdt, dzdt, drdp, dzdp
+    REAL(8), intent(OUT) :: nx, ny, nz, ln, ux, uy, uz
 
     vr = ves_r(theta, phi)
     vx = vr * cos(phi)
@@ -447,11 +447,11 @@ end subroutine updateStep_ves_perp_intersect_3d
 ! intersection point.
 !
 ! Input parameters:
-!     REAL(8) :: phi         -> the toroidal angle (radians) of the cross-section
+!     REAL(8) :: phi         -> toroidal angle (radians) of the cross-section
 !     REAL(8) :: or, oz      -> r and z coordinates (meters) of the ref. point
 !     REAL(8) :: l0, theta0  -> initial guesses of the distance l, as well as
-!                            the theta coordinate of the intersection point
-!                            on the vessel
+!                               the theta coordinate of the intersection point
+!                               on the vessel
 !
 ! Return parameters:
 !     REAL(8) :: l           -> distance from the point to the vessel
@@ -536,20 +536,20 @@ end subroutine ves_perp_intersect_2d
 ! implicitly on theta.
 !
 ! Input parameters
-!     REAL(8) :: phi        -> toroidal angle (radians) where the vector is to be 
-!                           computed
-!     REAL(8) :: r          -> radial coordinate (meters) where is the vector is 
-!                           computed, output by ves_r(theta, phi)
+!     REAL(8) :: phi        -> toroidal angle (radians) where the vector is to 
+!                              be computed
+!     REAL(8) :: r          -> radial coordinate (meters) where is the vector is
+!                              computed, output by ves_r(theta, phi)
 !     REAL(8) :: drdt, drdp -> derivatives of the radial coordinate with respect
-!                           to theta and phi, output by ves_drdt(theta, phi)
-!                           and ves_drdp(theta, phi)
+!                              to theta and phi, output by ves_drdt(theta, phi)
+!                              and ves_drdp(theta, phi)
 !     REAL(8) :: dzdt, dzdp -> derivatives of the z coordinate with respect 
-!                           to theta and phi, output by ves_dzdt(theta, phi)
-!                           and ves_dzdp(theta, phi)
+!                              to theta and phi, output by ves_dzdt(theta, phi)
+!                              and ves_dzdp(theta, phi)
 !
 ! Output parameters:
 !     REAL(8) :: ux, uy, uz -> x, y, and z components of the unit normal vector
-!                           at poloidal angle theta, and toroidal angle phi
+!                              at poloidal angle theta, and toroidal angle phi
 !-------------------------------------------------------------------------------
 subroutine ves_unorm(phi, r, drdt, drdp, dzdt, dzdp, ux, uy, uz)
 
@@ -1498,7 +1498,257 @@ subroutine plane_intersect(ox1, oy1, oz1, nx1, ny1, nz1, &
     zi = ni31*b1 + ni32*b2 + ni33*b3
 
 end subroutine plane_intersect
+
+!-------------------------------------------------------------------------------
+! unit_vector(vx, vy, vz, ux, uy, uz)
+!
+! Scales an input vector to a unit-length vector of the same direction.
+!
+! Input parameters:
+!     REAL(8) :: vx, vy, vz   -> x, y, z components of the input vector
+!
+! Output parameters:
+!     REAL(8) :: ux, uy, uz   -> x, y, z components of the rescaled unit vector
+!-------------------------------------------------------------------------------
+subroutine unit_vector(vx, vy, vz, ux, uy, uz)
+
+    implicit none
+
+    REAL(8), intent(IN)  :: vx, vy, vz
+    REAL(8), intent(OUT) :: ux, uy, uz
+    REAL(8) :: norm
+
+    norm = sqrt(vx**2 + vy**2 + vz**2)
+    ux = vx / norm
+    uy = vy / norm
+    uz = vz / norm
+
+end subroutine unit_vector
+
+!-------------------------------------------------------------------------------
+! vertex_rz_in_poloidal_plane(nTheta, phi, ves_theta, sep_in
+!                             ves_theta_out, sep_out, r_out, z_out)
+!
+! Wrapper that iterates the vertex_segment_lengths and reset_ves_theta 
+! subroutines until the output vertex segments converge to an equal 
+! segment-length/theta ratio
+!
+! Input parameters:
+!     REAL(8) :: phi           -> Toroidal angle of the vertex array
+!     integer :: nTheta        -> Number of points in the poloidal array
+!
+! Updated parameters:
+!     REAL(8) :: ves_theta     -> Vessel theta values of the input vertex points
+!     REAL(8) :: vert_sep      -> Separation distance of vertex from vessel
+!
+! Output parameters:
+!     REAL(8) :: r, z          -> r and z coordinates of the output vertex pts  
+!     REAL(8) :: r_ves, z_ves  -> r and z coordinates of corresponding locations
+!                                 on the vacuum vessel
+!-------------------------------------------------------------------------------
+subroutine vertex_rz_in_poloidal_plane(nTheta, phi, ves_theta, vert_sep, &
+                                       r, z, r_ves, z_ves)
+
+    use magnet_set_globals, only: ves_tol, pi, vertex_mode, maxIter
+
+    implicit none
+
+    integer, intent(IN)    :: nTheta
+    REAL(8), intent(IN)    :: phi
+    REAL(8), intent(INOUT) :: ves_theta(:), vert_sep(:)
+    REAL(8), intent(OUT)   :: r(:), z(:), r_ves(:), z_ves(:)
+    REAL(8), allocatable   :: ves_theta_in(:), ves_theta_prev(:), vert_sep_in(:)
+    REAL(8), allocatable   :: s_ideal(:), s(:)
+    integer :: i, j
+    logical :: adjust_vertex_spacing
+    REAL(8) :: meanSqResid, drdt, dzdt, alpha, nr, nz
     
+    allocate(ves_theta_in(nTheta), ves_theta_prev(nTheta), &
+             vert_sep_in(nTheta), s_ideal(nTheta), s(nTheta))
+
+    if (trim(vertex_mode) == 'uniform_theta_sep') then
+        adjust_vertex_spacing = .true.
+    else
+        adjust_vertex_spacing = .false.
+    end if
+
+    ! Ideal normalized segment length (proportional to user-input angle)
+    s_ideal = (ves_theta - ves_theta(1))/(ves_theta(nTheta) - ves_theta(1))
+
+    ! Store initial values of vessel theta and segment length
+    ves_theta_in = ves_theta
+    vert_sep_in = vert_sep
+
+    do i = 1, maxIter
+
+        ! Update the r and z coordinates of the vertex points
+        do j = 1, nTheta
+            r_ves(j) = ves_r(ves_theta(j), phi)
+            z_ves(j) = ves_z(ves_theta(j), phi)
+            drdt = ves_drdt(ves_theta(j), phi)
+            dzdt = ves_dzdt(ves_theta(j), phi)
+
+            alpha = atan2(dzdt, drdt) - 0.5*pi
+            nr = cos(alpha)
+            nz = sin(alpha)
+
+            r(j) = r_ves(j) + vert_sep(j)*nr
+            z(j) = z_ves(j) + vert_sep(j)*nz
+        end do
+
+        ! Determine the variance in arclength/angle ratio between segments
+        ! according to the user-input vessel theta angles
+        call vertex_segment_lengths(nTheta, s_ideal, r, z, s, meanSqResid)
+
+        if (isnan(meanSqResid)) then
+            stop 'ves_rz_in_poloidal_plane: NaN encountered in segment ' // &
+                 'length resituals. Check values of vert_theta and nVertices.'
+        end if
+
+        ! Terminate if adequately converged or if not enforcing equal ratios
+        if (meanSqResid < ves_tol**2 .or. .not. adjust_vertex_spacing) exit
+
+        ! Reset the vessel angles corresponding to the vertex points
+        ves_theta_prev = ves_theta
+        call linear_interpolate(nTheta, s, ves_theta_prev, nTheta, &
+                                s_ideal, ves_theta)
+
+        ! Update the vessel separation for the vertex points
+        call linear_interpolate(nTheta, ves_theta_in, vert_sep_in, nTheta, &
+                                ves_theta, vert_sep)
+
+    end do
+
+    deallocate(ves_theta_in, ves_theta_prev, vert_sep_in, s_ideal, s)
+
+end subroutine vertex_rz_in_poloidal_plane
+
+!-------------------------------------------------------------------------------
+! vertex_segment_lengths(nTheta, s_ideal, r, z, s, meanSqResid)
+!
+! Calculates the normalized cumulative segment lengths array for a 
+! poloidally-arranged set of vertices, each of which are associated with a 
+! vessel poloidal angle.
+!
+! Input parameters:
+!     integer :: nTheta   -> Number of points in the poloidal array
+!     REAL(8) :: s_ideal  -> Desired normalized cumul. arc length btwn vertices
+!     REAL(8) :: r, z     -> r and z coordinates of the input vetex points
+!
+! Output parameters:
+!     REAL(8) :: s        -> Actual normalized cumul. arc length btwn vertices
+!     REAL(8) :: meanSqResid -> Mean squared residual, scaled to total length
+!-------------------------------------------------------------------------------
+subroutine vertex_segment_lengths(nTheta, s_ideal, r, z, s, meanSqResid)
+    
+    implicit none
+
+    integer, intent(IN)  :: nTheta
+    REAL(8), intent(IN)  :: s_ideal(:), r(:), z(:)
+    REAL(8), intent(OUT) :: s(:), meanSqResid
+    integer :: i
+    REAL(8) :: dl, l_total
+    REAL(8), allocatable :: l(:)
+
+    allocate(l(nTheta))
+
+    ! Compute the individual (dl) and cumulative (l) segment ("arc") lengths
+    l(1) = 0.0
+    do i = 1, nTheta-1
+        dl = sqrt((r(i+1) - r(i))**2 + (z(i+1) - z(i))**2)
+        l(i+1) = l(i) + dl
+    end do
+
+    ! Normalize the arc lengths to the interval [0,1]
+    l_total = l(ntheta)
+    s = l / l_total
+
+    ! Calculate the mean squared residual
+    meanSqResid = 0.0
+    do i = 2, nTheta-1
+        meanSqResid = meanSqResid + (s(i) - s_ideal(i))**2
+    end do
+
+    ! Calculate the mean and rescale to the squared total length
+    meanSqResid = l_total**2 * meanSqResid/(nTheta - 2)
+
+    deallocate(l)
+
+end subroutine vertex_segment_lengths
+
+!-------------------------------------------------------------------------------
+! reset_ves_theta(nTheta, s, ves_theta)
+!
+! Updates values of vessel theta corresponding to vertex points such that the
+! advance in theta between two vertices is proportional to the length of the
+! line segment connecting the two vertices. This subroutine uses a single-pass
+! linear interpolation approach for resetting; thus it should be iterated to 
+! converge toward exactly equal spacing.
+
+! Input parameters:
+!     integer :: nTheta        -> Number of points in the poloidal array
+!     REAL(8) :: s             -> Cumulative arc length at each vertex point
+!
+! Updated parameters:
+!     REAL(8) :: ves_theta     -> Vessel theta values of the input vertex points
+!-------------------------------------------------------------------------------
+!subroutine reset_ves_theta(nTheta, s_ideal, s_actual, ves_theta)
+!
+!    implicit none
+!
+!    integer, intent(IN)  :: nTheta
+!    REAL(8), intent(IN)  :: s_ideal(:), s_actual(:)
+!    REAL(8), intent(INOUT) :: ves_theta(:)
+!    REAL(8) :: dsdTheta
+!    integer :: i
+!
+!    ! Determine the arc-length/angle ratio based on total cumulative length
+!    dsdTheta = s(nTheta)/(ves_theta(nTheta) - ves_theta(1))
+!
+!    ! Calculate updated theta values based on the ratio and cumulative lengths
+!    do i = 1, nTheta
+!        s_ideal(i) = s(i)/dsdTheta
+!    end do
+!
+!end subroutine reset_ves_theta
+
+!-------------------------------------------------------------------------------
+! linear_interpolate(n_data, x_data, y_data, n_query, x_query, y_interp)
+!
+! Basic 1d linear interpolator. 
+! 
+! *** Note: x_data are assumed to be in ascending order!!
+!
+! Input parameters:
+!     integer :: n_data           -> number of (x,y) pairs in the input data
+!     REAL(8) :: x_data, y_data   -> x and y values of the input data
+!     integer :: n_query          -> number of query points
+!
+! Output parameters:
+!     REAL(8) :: y_interp         -> interpolation of y at the query points
+!-------------------------------------------------------------------------------
+subroutine linear_interpolate(n_data, x_data, y_data, n_query, x_query, &
+                              y_interp)
+
+    implicit none
+
+    integer, intent(IN)  :: n_data, n_query
+    REAL(8), intent(IN)  :: x_data(:), y_data(:), x_query(:)
+    REAL(8), intent(OUT) :: y_interp(:)
+    integer :: i, j
+    REAL(8) :: dydx
+
+    do i = 1, n_query
+        do j = 2, n_data
+            if (x_query(i) < x_data(j) .or. j == n_data) then
+                dydx = (y_data(j)-y_data(j-1))/(x_data(j)-x_data(j-1))
+                y_interp(i) = y_data(j-1) + dydx*(x_query(i) - x_data(j-1))
+                exit
+            end if
+        end do
+    end do
+
+end subroutine linear_interpolate
 
 end module magnet_set_calc
 

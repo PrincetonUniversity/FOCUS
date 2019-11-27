@@ -58,7 +58,8 @@ subroutine trapezoid_properties()
     end if
 
     ! Calculate vertex r and z coords if not explicitly supplied
-    if (trim(vertex_mode) == 'theta_sep') then
+    if (trim(vertex_mode) == 'theta_sep' &
+        .or. trim(vertex_mode) == 'uniform_theta_sep') then
         call vertex_theta_to_rz
     else if (trim(vertex_mode) == 'tlcfs_sep') then
         call lcfs_theta_to_ves_theta
@@ -188,30 +189,6 @@ subroutine trapezoid_properties()
             call check_trapezoid(traps(n))
             if (traps(n)%err) trap_err_count = trap_err_count + 1
 
-            ! Output for debugging
-            if (n >= 0 .and. n <= 0) then
-                write(*,fmt='(ES11.4, X, ES11.4, X, ES11.4, X, ' // &
-                             'ES11.4, X, ES11.4, X, ES11.4, X, ' // &
-                             'ES11.4, X, ES11.4, X, ES11.4, X, ' // &
-                             'ES11.4, X, ES11.4, X, ES11.4, X, ' // &
-                             'ES11.4, X, ES11.4, X, ES11.4, X, ' // &
-                             'ES11.4, X, ES11.4, X, ES11.4, X, ' // &
-                             'ES11.4, X, ES11.4, X, ES11.4, X, ' // &
-                             'ES11.4, X, ES11.4, X, ES11.4 )') &
-                      traps(n)%ctx1, traps(n)%cty1, traps(n)%ctz1, & 
-                      traps(n)%ctx2, traps(n)%cty2, traps(n)%ctz2, &
-                      traps(n)%ctx3, traps(n)%cty3, traps(n)%ctz3, &
-                      traps(n)%ctx4, traps(n)%cty4, traps(n)%ctz4, &
-                      traps(n)%cbx1, traps(n)%cby1, traps(n)%cbz1, & 
-                      traps(n)%cbx2, traps(n)%cby2, traps(n)%cbz2, &
-                      traps(n)%cbx3, traps(n)%cby3, traps(n)%cbz3, &
-                      traps(n)%cbx4, traps(n)%cby4, traps(n)%cbz4
-            end if
-            if (n >= 0 .and. n <= 0) then
-                write(*, fmt='(ES11.4, X, ES11.4, X, ES11.4, A)') &
-                      traps(n)%ox, traps(n)%oy, traps(n)%oz, '; ...'
-            end if
-
         end do
     end do
 
@@ -321,8 +298,9 @@ subroutine bounding_planes_lateral(i_plate, j_vertex, vert_x, vert_y, vert_z, &
     type(trapezoid) :: trap
     integer :: n_arr_pol_max, n_arr_pol, n_arr_tor_max, n_arr_tor
     integer :: ind_min_pol, ind_max_pol, ind_min_tor, ind_max_tor
+    integer :: ind_ref_pol, ind_ref_tor
     integer :: m, n, tor_index, disp, disp_min
-    integer :: pol_index, pol_ind_offs, vert_index
+    integer :: pol_index, pol_ind_offs 
     logical :: reflect
     REAL(8) :: phiref
     REAL(8), allocatable :: arr_base_pb_x(:), arr_base_pb_y(:), arr_base_pb_z(:)
@@ -333,6 +311,7 @@ subroutine bounding_planes_lateral(i_plate, j_vertex, vert_x, vert_y, vert_z, &
     REAL(8), allocatable :: arr_top_pf_x(:),  arr_top_pf_y(:),  arr_top_pf_z(:)
     REAL(8), allocatable :: arr_top_tb_x(:),  arr_top_tb_y(:),  arr_top_tb_z(:)
     REAL(8), allocatable :: arr_top_tf_x(:),  arr_top_tf_y(:),  arr_top_tf_z(:)
+    REAL(8) :: ang_dx, ang_dy, ang_dz
 
     !---------------------------------------------------------------------------
     ! Part 0: Allocate arrays to store vertex points for plane boxcar averaging.
@@ -342,18 +321,18 @@ subroutine bounding_planes_lateral(i_plate, j_vertex, vert_x, vert_y, vert_z, &
     n_arr_pol_max = 2*n_box_pol + 2
     n_arr_tor_max = 2*n_box_tor + 2
 
-    allocate(arr_base_tb_x(n_arr_pol_max), arr_base_tb_y(n_arr_pol_max), &
-             arr_base_tb_z(n_arr_pol_max), arr_base_tf_x(n_arr_pol_max), &
-             arr_base_tf_y(n_arr_pol_max), arr_base_tf_z(n_arr_pol_max), &
-             arr_top_tb_x(n_arr_pol_max), arr_top_tb_y(n_arr_pol_max),   &
-             arr_top_tb_z(n_arr_pol_max), arr_top_tf_x(n_arr_pol_max),   &
-             arr_top_tf_y(n_arr_pol_max), arr_top_tf_z(n_arr_pol_max),   &
-             arr_base_pb_x(n_arr_tor_max), arr_base_pb_y(n_arr_tor_max), &
-             arr_base_pb_z(n_arr_tor_max), arr_base_pf_x(n_arr_tor_max), &
-             arr_base_pf_y(n_arr_tor_max), arr_base_pf_z(n_arr_tor_max), &
-             arr_top_pb_x(n_arr_tor_max), arr_top_pb_y(n_arr_tor_max),   &
-             arr_top_pb_z(n_arr_tor_max), arr_top_pf_x(n_arr_tor_max),   &
-             arr_top_pf_y(n_arr_tor_max), arr_top_pf_z(n_arr_tor_max)     )
+    allocate(arr_base_tb_x(n_arr_tor_max), arr_base_tb_y(n_arr_tor_max), &
+             arr_base_tb_z(n_arr_tor_max), arr_base_tf_x(n_arr_tor_max), &
+             arr_base_tf_y(n_arr_tor_max), arr_base_tf_z(n_arr_tor_max), &
+             arr_top_tb_x(n_arr_tor_max), arr_top_tb_y(n_arr_tor_max),   &
+             arr_top_tb_z(n_arr_tor_max), arr_top_tf_x(n_arr_tor_max),   &
+             arr_top_tf_y(n_arr_tor_max), arr_top_tf_z(n_arr_tor_max),   &
+             arr_base_pb_x(n_arr_pol_max), arr_base_pb_y(n_arr_pol_max), &
+             arr_base_pb_z(n_arr_pol_max), arr_base_pf_x(n_arr_pol_max), &
+             arr_base_pf_y(n_arr_pol_max), arr_base_pf_z(n_arr_pol_max), &
+             arr_top_pb_x(n_arr_pol_max), arr_top_pb_y(n_arr_pol_max),   &
+             arr_top_pb_z(n_arr_pol_max), arr_top_pf_x(n_arr_pol_max),   &
+             arr_top_pf_y(n_arr_pol_max), arr_top_pf_z(n_arr_pol_max)     )
 
     !---------------------------------------------------------------------------
     ! Part 1: For the input trapezoid with a location on the grid defined
@@ -369,18 +348,22 @@ subroutine bounding_planes_lateral(i_plate, j_vertex, vert_x, vert_y, vert_z, &
     !---------------------------------------------------------------------------
     if (traps_poloidally_periodic) then
         n_arr_pol = n_arr_pol_max
+        ind_ref_pol = n_box_pol + 1
     else
-        ind_min_pol = min(0, j_vertex-n_box_pol)
-        ind_max_pol = max(nVertices, j_vertex+1+n_box_pol)
+        ind_min_pol = max(1, j_vertex-n_box_pol)
+        ind_max_pol = min(nVertices, j_vertex+1+n_box_pol)
         n_arr_pol = ind_max_pol - ind_min_pol + 1
+        ind_ref_pol = j_vertex - ind_min_pol + 1
     end if
 
     if (traps_toroidally_periodic) then
         n_arr_tor = n_arr_tor_max
+        ind_ref_tor = n_box_tor + 1
     else
-        ind_min_tor = min(0, i_plate-n_box_tor)
-        ind_max_tor = max(nPlates+1, i_plate+1+n_box_tor)
+        ind_min_tor = max(1, i_plate-n_box_tor)
+        ind_max_tor = min(nPlates+1, i_plate+1+n_box_tor)
         n_arr_tor = ind_max_tor - ind_min_tor + 1
+        ind_ref_tor = i_plate - ind_min_tor + 1
     end if
 
     !---------------------------------------------------------------------------
@@ -415,12 +398,6 @@ subroutine bounding_planes_lateral(i_plate, j_vertex, vert_x, vert_y, vert_z, &
             pol_index = ind_min_pol + m - 1
 
         end if
-
-        !if (i_plate == 1 .and. j_vertex < 10) then
-        !    write(*,fmt='(A, I2, A, I2, A, I2)') &
-        !        '    m = ', m, '; i_plate = ', i_plate, '; pol_index = ', &
-        !        pol_index
-        !end if
 
         ! Populate array parameters for the toroidal front and back planes
         arr_base_tb_x(m) = vert_x(i_plate, pol_index)
@@ -470,14 +447,11 @@ subroutine bounding_planes_lateral(i_plate, j_vertex, vert_x, vert_y, vert_z, &
 
         else
 
-            vert_index = ind_min_tor + m - 1
+            tor_index = ind_min_tor + n - 1
+            pol_index = j_vertex
+            pol_ind_offs = 1
+            reflect = .false.
 
-        end if
-
-        if (i_plate == 1 .and. j_vertex < 10) then
-            write(*,fmt='(A, I2, A, I2, A, I2, A, I2)') &
-                '    n = ', n, '; tor_index= ', tor_index, '; pol_index = ', &
-                pol_index, '; pol_ind_offs = ', pol_ind_offs
         end if
 
         ! Populate array parameters for the toroidal front and back planes
@@ -493,18 +467,6 @@ subroutine bounding_planes_lateral(i_plate, j_vertex, vert_x, vert_y, vert_z, &
         call stell_reflect(reflect, phiref, tor_index, pol_index+pol_ind_offs, &
                            ves_x, ves_y, ves_z, &
                            arr_top_pf_x(n), arr_top_pf_y(n), arr_top_pf_z(n))
-        !arr_base_pb_x(n) = vert_x(tor_index, pol_index)
-        !arr_base_pb_y(n) = vert_y(tor_index, pol_index)
-        !arr_base_pb_z(n) = sgn_z * vert_z(tor_index, pol_index)
-        !arr_base_pf_x(n) = vert_x(tor_index, pol_index+pol_ind_offs)
-        !arr_base_pf_y(n) = vert_y(tor_index, pol_index+pol_ind_offs)
-        !arr_base_pf_z(n) = sgn_z * vert_z(tor_index, pol_index+pol_ind_offs)
-        !arr_top_pb_x(n) = ves_x(tor_index, pol_index)
-        !arr_top_pb_y(n) = ves_y(tor_index, pol_index)
-        !arr_top_pb_z(n) = sgn_z * ves_z(tor_index, pol_index)
-        !arr_top_pf_x(n) = ves_x(tor_index, pol_index+pol_ind_offs)
-        !arr_top_pf_y(n) = ves_y(tor_index, pol_index+pol_ind_offs)
-        !arr_top_pf_z(n) = sgn_z * ves_z(tor_index, pol_index+pol_ind_offs)
 
     end do
 
@@ -519,12 +481,18 @@ subroutine bounding_planes_lateral(i_plate, j_vertex, vert_x, vert_y, vert_z, &
                       arr_top_tb_x, arr_top_tb_y, arr_top_tb_z,    &
                       trap%ntbx, trap%ntby, trap%ntbz,             &
                       trap%otbx, trap%otby, trap%otbz               )
-    trap%otbx = trap%otbx + 0.5 * gap_trp * trap%ntbx
-    trap%otby = trap%otby + 0.5 * gap_trp * trap%ntby
-    trap%otbz = trap%otbz + 0.5 * gap_trp * trap%ntbz
+    trap%otbx = &
+        0.5 * (vert_x(i_plate, j_vertex) + vert_x(i_plate, j_vertex+1)) & 
+        + 0.5 * gap_trp * trap%ntbx
+    trap%otby = &
+        0.5 * (vert_y(i_plate, j_vertex) + vert_y(i_plate, j_vertex+1)) &
+        + 0.5 * gap_trp * trap%ntby
+    trap%otbz = &
+        0.5 * (vert_z(i_plate, j_vertex) + vert_z(i_plate, j_vertex+1)) &
+        + 0.5 * gap_trp * trap%ntbz
 
     ! Toroidal front plane
-    call plane_boxcar(n_arr_pol,                                   &
+    call plane_boxcar(n_arr_pol,                                   & 
                       arr_base_tf_x, arr_base_tf_y, arr_base_tf_z, &
                       arr_top_tf_x, arr_top_tf_y, arr_top_tf_z,    &
                       trap%ntfx, trap%ntfy, trap%ntfz,             &
@@ -532,9 +500,15 @@ subroutine bounding_planes_lateral(i_plate, j_vertex, vert_x, vert_y, vert_z, &
     trap%ntfx = -trap%ntfx
     trap%ntfy = -trap%ntfy
     trap%ntfz = -trap%ntfz
-    trap%otfx = trap%otfx + 0.5 * gap_trp * trap%ntfx
-    trap%otfy = trap%otfy + 0.5 * gap_trp * trap%ntfy
-    trap%otfz = trap%otfz + 0.5 * gap_trp * trap%ntfz
+    trap%otfx = &
+        0.5 * (vert_x(i_plate+1, j_vertex) + vert_x(i_plate+1, j_vertex+1)) &
+        + 0.5 * gap_trp * trap%ntfx
+    trap%otfy = &
+        0.5 * (vert_y(i_plate+1, j_vertex) + vert_y(i_plate+1, j_vertex+1)) &
+        + 0.5 * gap_trp * trap%ntfy
+    trap%otfz = &
+        0.5 * (vert_z(i_plate+1, j_vertex) + vert_z(i_plate+1, j_vertex+1)) &
+        + 0.5 * gap_trp * trap%ntfz
 
     ! Poloidal back plane
     call plane_boxcar(n_arr_tor,                                   &
@@ -550,7 +524,7 @@ subroutine bounding_planes_lateral(i_plate, j_vertex, vert_x, vert_y, vert_z, &
     trap%opbz = trap%opbz + 0.5 * gap_trp * trap%npbz
          
     ! Poloidal front plane
-    call plane_boxcar(n_arr_tor,                                   &
+    call plane_boxcar(n_arr_tor,                                   & 
                       arr_base_pf_x, arr_base_pf_y, arr_base_pf_z, &
                       arr_top_pf_x, arr_top_pf_y, arr_top_pf_z,    &
                       trap%npfx, trap%npfy, trap%npfz,             &
@@ -567,13 +541,6 @@ subroutine bounding_planes_lateral(i_plate, j_vertex, vert_x, vert_y, vert_z, &
                arr_base_pf_x, arr_base_pf_y, arr_base_pf_z, &
                arr_top_pb_x, arr_top_pb_y, arr_top_pb_z,    &
                arr_top_pf_x, arr_top_pf_y, arr_top_pf_z      )
-
-    if (i_plate == 1 .and. j_vertex < 10) then
-        write(*,fmt='(A, F7.4, A, F7.4, A, F7.4, A, F7.4, A, F7.4, A, F7.4)') &
-            '        otbx = ', trap%otbx, '; otby = ', trap%otby, &
-            '; otbz = ', trap%otbz, '; ntbx = ', trap%ntbx, &
-            '; ntby = ', trap%ntby, '; ntbz = ', trap%ntbz
-    end if
 
 end subroutine bounding_planes_lateral
 
@@ -622,7 +589,7 @@ end subroutine stell_reflect
 subroutine plane_boxcar(n, base_x, base_y, base_z, top_x, top_y, top_z, &
                         nx, ny, nz, ox, oy, oz)
 
-    use magnet_set_calc, only: cross_prod
+    use magnet_set_calc, only: cross_prod, unit_vector
 
     implicit none
 
@@ -690,14 +657,67 @@ subroutine plane_boxcar(n, base_x, base_y, base_z, top_x, top_y, top_z, &
     ! Plane-normal vectors
     call cross_prod(angular_dx, angular_dy, angular_dz, &
                     radial_dx,  radial_dy,  radial_dz, perp_x, perp_y, perp_z)
-    norm_perp = sqrt(perp_x**2 + perp_y**2 + perp_z**2)
-    nx = perp_x/norm_perp
-    ny = perp_y/norm_perp
-    nz = perp_z/norm_perp
+    call unit_vector(perp_x, perp_y, perp_z, nx, ny, nz)
 
     deallocate(rdx, rdy, rdz)
 
 end subroutine plane_boxcar
+
+!-------------------------------------------------------------------------------
+! plane_boxcar_radial(n, ang_nx, ang_ny, ang_nz, ang_ox, ang_oy, ang_oz, 
+!                     base_x, base_y, base_z, top_x, top_y, top_z, 
+!                     nx, ny, nz, ox, oy, oz
+!
+! Similar to plane_boxcar(), but only performs boxcar averaging for the 
+! radial tangent vector of the plane. The angular tangent vector and reference
+! point are supplied as inputs.
+!-------------------------------------------------------------------------------
+subroutine plane_boxcar_radial(n, angular_dx, angular_dy, angular_dz,       &
+                               base_x, base_y, base_z, top_x, top_y, top_z, &
+                               nx, ny, nz)
+
+    use magnet_set_calc, only: cross_prod, unit_vector
+
+    implicit none
+
+    integer, intent(IN)  :: n
+    REAL(8), intent(IN)  :: angular_dx, angular_dy, angular_dz
+    REAL(8), intent(IN)  :: base_x(:), base_y(:), base_z(:)
+    REAL(8), intent(IN)  :: top_x(:), top_y(:), top_z(:)
+    REAL(8), intent(OUT) :: nx, ny, nz
+
+    integer :: i
+    REAL(8) :: rdx, rdy, rdz, radial_dx, radial_dy, radial_dz, norm_r
+    REAL(8) :: perp_x, perp_y, perp_z, norm_perp
+
+    radial_dx  = 0.0; radial_dy  = 0.0; radial_dz  = 0.0
+
+    do i = 1, n
+
+        ! Construct the radial vector as the avg. of top-to-base unit vectors
+        rdx = base_x(i) - top_x(i)
+        rdy = base_y(i) - top_y(i)
+        rdz = base_z(i) - top_z(i)
+
+        norm_r = sqrt(rdx**2 + rdy**2 + rdz**2)
+
+        radial_dx = radial_dx + rdx/norm_r
+        radial_dy = radial_dy + rdy/norm_r
+        radial_dz = radial_dz + rdz/norm_r
+
+    end do
+
+    ! Division for the average calculations
+    radial_dx = radial_dx/n
+    radial_dy = radial_dy/n
+    radial_dz = radial_dz/n
+
+    ! Plane-normal vectors
+    call cross_prod(angular_dx, angular_dy, angular_dz, &
+                    radial_dx,  radial_dy,  radial_dz, perp_x, perp_y, perp_z)
+    call unit_vector(perp_x, perp_y, perp_z, nx, ny, nz)
+
+end subroutine plane_boxcar_radial
 
 !-------------------------------------------------------------------------------
 ! subdivide_trapezoids()
@@ -889,6 +909,8 @@ end subroutine trapezoid_corners
 subroutine query_points(np, d, x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4, &
                         nq, xq, yq, zq)
 
+    use magnet_set_calc, only: unit_vector
+
     implicit none
 
     integer, intent(IN) :: np
@@ -897,42 +919,13 @@ subroutine query_points(np, d, x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4, &
     REAL(8), allocatable :: xq(:), yq(:), zq(:)
     integer, intent(OUT) :: nq
     integer :: i
-    REAL(8) :: dx1, dy1, dz1, dx2, dy2, dz2, dx3, dy3, dz3, dx4, dy4, dz4
     REAL(8) :: nx1, ny1, nz1, nx2, ny2, nz2, nx3, ny3, nz3, nx4, ny4, nz4
-    REAL(8) :: norm_1, norm_2, norm_3, norm_4
 
     ! Compute normal vectors for each segment
-    dx1 = x2 - x1
-    dy1 = y2 - y1
-    dz1 = z2 - z1
-    norm_1 = sqrt(dx1**2 + dy1**2 + dz1**2)
-    nx1 = dx1/norm_1
-    ny1 = dy1/norm_1
-    nz1 = dz1/norm_1
-    
-    dx2 = x3 - x2
-    dy2 = y3 - y2
-    dz2 = z3 - z2
-    norm_2 = sqrt(dx2**2 + dy2**2 + dz2**2)
-    nx2 = dx2/norm_2
-    ny2 = dy2/norm_2
-    nz2 = dz2/norm_2
-
-    dx3 = x4 - x3
-    dy3 = y4 - y3
-    dz3 = z4 - z3
-    norm_3 = sqrt(dx3**2 + dy3**2 + dz3**2)
-    nx3 = dx3/norm_3
-    ny3 = dy3/norm_3
-    nz3 = dz3/norm_3
-
-    dx4 = x1 - x4
-    dy4 = y1 - y4
-    dz4 = z1 - z4
-    norm_4 = sqrt(dz4**2 + dy4**2 + dz4**2)
-    nx4 = dx4/norm_4
-    ny4 = dy4/norm_4
-    nz4 = dz4/norm_4
+    call unit_vector(x2-x1, y2-y1, z2-z1, nx1, ny1, nz1)
+    call unit_vector(x3-x2, y3-y2, z3-z2, nx2, ny2, nz2)
+    call unit_vector(x4-x3, y4-y3, z4-z3, nx3, ny3, nz3)
+    call unit_vector(x1-x4, y1-y4, z1-z4, nx4, ny4, nz4)
 
     ! Generate query points along each segment
     do i = 1, np
@@ -1024,54 +1017,32 @@ end subroutine avg_plane_4pt
 subroutine reset_trap_height(tp)
 
     use magnet_set_globals, only: ves_r00, gap_vac, trapezoid
-    use magnet_set_calc,    only: ves_dist_3d, plane_elev
+    use magnet_set_calc,    only: ves_dist_3d, plane_elev, unit_vector
 
     implicit none
 
     type(trapezoid) :: tp
-    REAL(8) :: dx1, dy1, dz1, dx2, dy2, dz2, dx3, dy3, dz3, dx4, dy4, dz4
     REAL(8) :: ax1, ay1, az1, ax2, ay2, az2, ax3, ay3, az3, ax4, ay4, az4
-    REAL(8) :: norm_1, norm_2, norm_3, norm_4
     REAL(8) :: length_1, length_2, length_3, length_4
     REAL(8) :: l0, theta0, phi0, theta, phi, chi2
     REAL(8) :: xv1, yv1, zv1, xv2, yv2, zv2, xv3, yv3, zv3, xv4, yv4, zv4
     REAL(8) :: elev1t, elev2t, elev3t, elev4t, elev5t, elev_top
 
-    ! Directional unit vectors for edge 1
-    dx1 = tp%cbx1 - tp%ctx1
-    dy1 = tp%cby1 - tp%cty1
-    dz1 = tp%cbz1 - tp%ctz1
-    norm_1 = sqrt(dx1**2 + dy1**2 + dz1**2)
-    ax1 = dx1 / norm_1
-    ay1 = dy1 / norm_1
-    az1 = dz1 / norm_1
+    ! Directional unit vector for edge 1
+    call unit_vector(tp%cbx1 - tp%ctx1, tp%cby1 - tp%cty1, tp%cbz1 - tp%ctz1, &
+                     ax1, ay1, az1)
     
-    ! Directional unit vectors for edge 2
-    dx2 = tp%cbx2 - tp%ctx2
-    dy2 = tp%cby2 - tp%cty2
-    dz2 = tp%cbz2 - tp%ctz2
-    norm_2 = sqrt(dx2**2 + dy2**2 + dz2**2)
-    ax2 = dx2 / norm_2
-    ay2 = dy2 / norm_2
-    az2 = dz2 / norm_2
+    ! Directional unit vector for edge 2
+    call unit_vector(tp%cbx2 - tp%ctx2, tp%cby2 - tp%cty2, tp%cbz2 - tp%ctz2, &
+                     ax2, ay2, az2)
     
-    ! Directional unit vectors for edge 3
-    dx3 = tp%cbx3 - tp%ctx3
-    dy3 = tp%cby3 - tp%cty3
-    dz3 = tp%cbz3 - tp%ctz3
-    norm_3 = sqrt(dx3**2 + dy3**2 + dz3**2)
-    ax3 = dx3 / norm_3
-    ay3 = dy3 / norm_3
-    az3 = dz3 / norm_3
+    ! Directional unit vector for edge 3
+    call unit_vector(tp%cbx3 - tp%ctx3, tp%cby3 - tp%cty3, tp%cbz3 - tp%ctz3, &
+                     ax3, ay3, az3)
     
-    ! Directional unit vectors for edge 4
-    dx4 = tp%cbx4 - tp%ctx4
-    dy4 = tp%cby4 - tp%cty4
-    dz4 = tp%cbz4 - tp%ctz4
-    norm_4 = sqrt(dx4**2 + dy4**2 + dz4**2)
-    ax4 = dx4 / norm_4
-    ay4 = dy4 / norm_4
-    az4 = dz4 / norm_4
+    ! Directional unit vector for edge 4
+    call unit_vector(tp%cbx4 - tp%ctx4, tp%cby4 - tp%cty4, tp%cbz4 - tp%ctz4, &
+                     ax4, ay4, az4)
     
     ! Determine the intersection points on the vessel for each edge
     l0 = 0.0

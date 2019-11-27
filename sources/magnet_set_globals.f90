@@ -65,9 +65,7 @@ module magnet_set_globals
     logical :: plates_initialized = .false.
     logical :: fill_wedge_gaps = .true.  ! if wedge-shaped gaps between segments
                                          ! are to be filled with magnets
-    CHARACTER(len=10) :: vertex_mode = 'rz'
-    logical :: eq_pol_seg_length = .false. ! if true, forces equal poloidal
-                                           ! segment lengths in theta_sep mode
+    CHARACTER(len=20) :: vertex_mode = 'rz'
     INTEGER :: nPlates                ! number of support plates per half-module
     INTEGER :: nVertices              ! (maximum) number of vertices per plate
     REAL(8), dimension(np) :: plate_phi  ! tor. angle (central) of each plate
