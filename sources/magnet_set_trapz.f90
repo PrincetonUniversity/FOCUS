@@ -48,6 +48,7 @@ subroutine trapezoid_properties()
     REAL(8), allocatable :: vx(:,:), vy(:,:), vz(:,:)
     REAL(8), allocatable :: ves_nx(:,:), ves_ny(:,:), ves_nz(:,:)
     REAL(8), allocatable :: ves_theta(:,:), ves_phi(:,:)
+    integer, allocatable :: overlap(:)
 
     ! Initial status checks
     if (.not. plates_initialized) then
@@ -80,7 +81,7 @@ subroutine trapezoid_properties()
               ves_nz(nPlates+1, nVertices),  ves_theta(nPlates+1, nVertices), &
               ves_phi(nPlates+1, nVertices) )
     nTrapezoids = nPlates * (nVertices-1)
-    allocate( traps(nTrapezoids) )
+    allocate( traps(nTrapezoids), overlap(nTrapezoids) )
 
     write(*,*) '    Arrays allocated'
 
@@ -192,9 +193,22 @@ subroutine trapezoid_properties()
         end do
     end do
 
+    ! Check for overlapping trapezoids
+    overlap = 0  ! Initialize the array
+    do i = 1, nTrapezoids
+        do j = i + 1, nTrapezoids
+            if (traps_overlapping(traps(i), traps(j))) then
+                overlap(i) = 1
+                overlap(j) = 1
+                write(*,fmt='(A, I3, A, I3)') '    Overlap at i = ', i, '; j = ', j
+            end if
+        end do
+    end do
+    write(*,*) overlap
+
     deallocate(vert_x, vert_y, vert_nx, vert_ny, vert_nz, &
                vx, vy, vz, ves_nx, ves_ny, ves_nz, &
-               ves_theta, ves_phi)
+               ves_theta, ves_phi, overlap)
 
     trapezoids_initialized = .true.
 
@@ -1321,7 +1335,7 @@ end subroutine trap_volume_ctr
 subroutine check_trapezoid(tp)
 
     use magnet_set_globals, only: trapezoid
-    use magnet_set_calc,    only: cross_prod
+    use magnet_set_calc,    only: cross_prod, segments_crossed
 
     implicit none
 
@@ -1381,56 +1395,270 @@ subroutine check_trapezoid(tp)
 end subroutine check_trapezoid
 
 !-------------------------------------------------------------------------------
-! segments_crossed(x1s, y1s, x2s, y2s, x1e, y1e, x2e, y2e)
+! traps_overlapping(tp1, tp2)
 !
-! Determines whether two line segments in a 2d plane intersect one another.
+! Checks whether two trapezoidal prisms overlap one another.
 !
-! Input parameters:
-!     REAL(8) x1s, y1s   -> x, y coordinates, start point, segment 1
-!     REAL(8) x2s, y2s   -> x, y coordinates, start point, segment 2
-!     REAL(8) x1e, y1e   -> x, y coordinates, end point, segment 1
-!     REAL(8) x2e, y2e   -> x, y coordinates, end point, segment 2
+! The method is to determine whether any pair of lateral faces intersect one
+! another.
 !-------------------------------------------------------------------------------
-logical function segments_crossed(x1s, y1s, x2s, y2s, x1e, y1e, x2e, y2e)
+logical function traps_overlapping(tp1, tp2)
 
-    use magnet_set_calc, only: inverse_2x2
+    use magnet_set_globals, only: trapezoid
 
     implicit none
 
-    REAL(8), intent(IN) :: x1s, y1s, x2s, y2s, x1e, y1e, x2e, y2e
-    REAL(8) :: ax1, ay1, ax2, ay2, length1, length2
-    REAL(8) :: inv11, inv12, inv21, inv22
-    REAL(8) :: s1, s2
+    type(trapezoid), intent(IN) :: tp1, tp2
+    integer :: i, j, nFaces = 6
+    REAL(8), dimension(6, 15) :: fp1, fp2
 
-    ! Lengths of each segment
-    length1 = sqrt( (x1e-x1s)**2 + (y1e-y1s)**2 )
-    length2 = sqrt( (x2e-x2s)**2 + (y2e-y2s)**2 )
+    ! Collect the face parameters of each trapezoid
+    call trapezoid_face_parameters(tp1, fp1)
+    call trapezoid_face_parameters(tp2, fp2)
 
-    ! Unit axis vectors for each segment
-    ax1 = (x1e-x1s) / length1
-    ay1 = (y1e-y1s) / length1
-    ax2 = (x2e-x2s) / length2
-    ay2 = (y2e-y2s) / length2
+    ! Check all pairs of faces, returning true immediately if an intersecting
+    ! pair is identified
+    do i = 1, nFaces
+        do j = 1, nFaces
+            if (trap_face_intersect( &
+                fp1(i,1),  fp1(i,2),  fp1(i,3),  fp1(i,4),  fp1(i,5),  &
+                fp1(i,6),  fp1(i,7),  fp1(i,8),  fp1(i,9),  fp1(i,10), &
+                fp1(i,11), fp1(i,12), fp1(i,13), fp1(i,14), fp1(i,15), &
+                fp2(j,1),  fp2(j,2),  fp2(j,3),  fp2(j,4),  fp2(j,5),  &
+                fp2(j,6),  fp2(j,7),  fp2(j,8),  fp2(j,9),  fp2(j,10), &
+                fp2(j,11), fp2(j,12), fp2(j,13), fp2(j,14), fp2(j,15)   )) then
+                    traps_overlapping = .true.
+                    return
+            end if
+        end do
+    end do
 
-    ! Inverse of the matrix defined by [ ax1  -ax2;  ay1  -ay2  ]
-    call inverse_2x2(ax1, -ax2, ay1, -ay2, inv11, inv12, inv21, inv22)
+    ! Return false if no intersecting pairs are found
+    traps_overlapping = .false.
 
-    ! Distances of the intersection from start points of each line segment
-    s1 = inv11*(x2s-x1s) + inv12*(y2s-y1s)
-    s2 = inv21*(x2s-x1s) + inv22*(y2s-y1s)
+end function traps_overlapping
 
-    ! Determine whether the line intersection point is within both segments
-    if (s1 >= 0.0 .and. s1 <= length1 .and. s2 >= 0.0 .and. s2 <= length2) then
-        segments_crossed = .true.
+!-------------------------------------------------------------------------------
+! trapezoid_face_parameters(tp, fp)
+!
+! Collects normal vectors and vertex coordinates of each of the six faces of
+! a trapezoid into an ordered 2D array to help streamline iteration through
+! the faces of the trapezoids in the traps_overlapping subroutine.
+!
+! Input parameter:
+!     type(trapezoid) tp :: trapezoid object for which the array is to be made
+!
+! Output parameter:
+!     REAL(8), dimension(6,15) :: array in which each row corresponds to a 
+!                                 trapezoid face, and the columns contain the
+!                                 x, y, and z components of the normal vector
+!                                 and the coordinates of the vertices
+!-------------------------------------------------------------------------------
+subroutine trapezoid_face_parameters(tp, fp)
+
+    use magnet_set_globals, only: trapezoid
+
+    implicit none
+
+    type(trapezoid), intent(IN) :: tp
+    REAL(8), dimension(6,15), intent(OUT) :: fp
+    integer :: TOP = 1, BASE = 2, TB = 3, TF = 4, PB = 5, PF = 6
+
+    ! Top face: row 1 of the array
+    fp(TOP,1:3)   = (/ tp%snx,  tp%sny,  tp%snz  /)
+    fp(TOP,4:6)   = (/ tp%ctx1, tp%cty1, tp%ctz1 /)
+    fp(TOP,7:9)   = (/ tp%ctx2, tp%cty2, tp%ctz2 /)
+    fp(TOP,10:12) = (/ tp%ctx3, tp%cty3, tp%ctz3 /)
+    fp(TOP,13:15) = (/ tp%ctx4, tp%cty4, tp%ctz4 /)
+
+    ! Base/"bottom" face: row 2 of the array
+    fp(BASE,1:3)   = (/ tp%snx,  tp%sny,  tp%snz  /)
+    fp(BASE,4:6)   = (/ tp%cbx1, tp%cby1, tp%cbz1 /)
+    fp(BASE,7:9)   = (/ tp%cbx2, tp%cby2, tp%cbz2 /)
+    fp(BASE,10:12) = (/ tp%cbx3, tp%cby3, tp%cbz3 /)
+    fp(BASE,13:15) = (/ tp%cbx4, tp%cby4, tp%cbz4 /)
+
+    ! Toroidal back face: row 3 of the array
+    fp(TB,1:3)   = (/ tp%ntbx, tp%ntby, tp%ntbz /)
+    fp(TB,4:6)   = (/ tp%cbx1, tp%cby1, tp%cbz1 /)
+    fp(TB,7:9)   = (/ tp%cbx4, tp%cby4, tp%cbz4 /)
+    fp(TB,10:12) = (/ tp%ctx4, tp%cty4, tp%ctz4 /)
+    fp(TB,13:15) = (/ tp%ctx1, tp%cty1, tp%ctz1 /)
+
+    ! Toroidal front face: row 4 of the array
+    fp(TF,1:3)   = (/ tp%ntfx, tp%ntfy, tp%ntfz /)
+    fp(TF,4:6)   = (/ tp%cbx3, tp%cby3, tp%cbz3 /)
+    fp(TF,7:9)   = (/ tp%cbx2, tp%cby2, tp%cbz2 /)
+    fp(TF,10:12) = (/ tp%ctx2, tp%cty2, tp%ctz2 /)
+    fp(TF,13:15) = (/ tp%ctx3, tp%cty3, tp%ctz3 /)
+
+    ! Poloidal back face: row 5 of the array
+    fp(PB,1:3)   = (/ tp%npbx, tp%npby, tp%npbz /)
+    fp(PB,4:6)   = (/ tp%cbx2, tp%cby2, tp%cbz2 /)
+    fp(PB,7:9)   = (/ tp%cbx1, tp%cby1, tp%cbz1 /)
+    fp(PB,10:12) = (/ tp%ctx1, tp%cty1, tp%ctz1 /)
+    fp(PB,13:15) = (/ tp%ctx2, tp%cty2, tp%ctz2 /)
+
+    ! Poloidal front face: row 6 of the array
+    fp(PF,1:3)   = (/ tp%npfx, tp%npfy, tp%npfz /)
+    fp(PF,4:6)   = (/ tp%cbx4, tp%cby4, tp%cbz4 /)
+    fp(PF,7:9)   = (/ tp%cbx3, tp%cby3, tp%cbz3 /)
+    fp(PF,10:12) = (/ tp%ctx3, tp%cty3, tp%ctz3 /)
+    fp(PF,13:15) = (/ tp%ctx4, tp%cty4, tp%ctz4 /)
+
+end subroutine trapezoid_face_parameters
+
+!-------------------------------------------------------------------------------
+! trap_face_intersect(f1nx, f1ny, f1nz, f1x1, f1y1, f1z1, f1x2, f1y2, f1z2, 
+!                     f1x3, f1y3, f1z3, f1x4, f1y4, f1z4, 
+!                     f2nx, f2ny, f2nz, f2x1, f2y1, f2z1, f2x2, f2y2, f2z2,
+!                     f2x3, f2y3, f2z3, f2x4, f2y4, f2z4)
+!
+! Determines whether two faces of a trapezoid intersect/collide with one 
+! another.
+!
+! Input parameters:
+!     REAL(8) :: f1nx, f1ny, f1nz -> x, y, z components, unit normal, face 1
+!     REAL(8) :: f1x1, f1y1, f1z1 -> x, y, z coords, vertex 1, face 1
+!     REAL(8) :: f1x2, f1y2, f1z2 -> x, y, z coords, vertex 2, face 1
+!     REAL(8) :: f1x3, f1y3, f1z3 -> x, y, z coords, vertex 3, face 1
+!     REAL(8) :: f1x4, f1y4, f1z4 -> x, y, z coords, vertex 4, face 1
+!     REAL(8) :: f2nx, f2ny, f2nz -> x, y, z components, unit normal, face 2
+!     REAL(8) :: f2x1, f2y1, f2z1 -> x, y, z coords, vertex 1, face 2
+!     REAL(8) :: f2x2, f2y2, f2z2 -> x, y, z coords, vertex 2, face 2
+!     REAL(8) :: f2x3, f2y3, f2z3 -> x, y, z coords, vertex 3, face 2
+!     REAL(8) :: f2x4, f2y4, f2z4 -> x, y, z coords, vertex 4, face 2
+!-------------------------------------------------------------------------------
+logical function trap_face_intersect( &
+                     f1nx, f1ny, f1nz, f1x1, f1y1, f1z1, f1x2, f1y2, f1z2, &
+                                       f1x3, f1y3, f1z3, f1x4, f1y4, f1z4, &
+                     f2nx, f2ny, f2nz, f2x1, f2y1, f2z1, f2x2, f2y2, f2z2, &
+                                       f2x3, f2y3, f2z3, f2x4, f2y4, f2z4)
+
+    use magnet_set_calc, only: cross_prod, &
+                               two_plane_intersect, segment_crossing_2d
+
+    implicit none
+
+    REAL(8), intent(IN) :: f1nx, f1ny, f1nz, f1x1, f1y1, f1z1, f1x2, f1y2, f1z2
+    REAL(8), intent(IN) :: f1x3, f1y3, f1z3, f1x4, f1y4, f1z4
+    REAL(8), intent(IN) :: f2nx, f2ny, f2nz, f2x1, f2y1, f2z1, f2x2, f2y2, f2z2
+    REAL(8), intent(IN) :: f2x3, f2y3, f2z3, f2x4, f2y4, f2z4
+    integer :: i, next, ind1, ind2
+    REAL(8) :: oxi, oyi, ozi, axi, ayi, azi, bx1, by1, bz1, bx2, by2, bz2
+    REAL(8) :: ais, bis, aie, bie
+    REAL(8), dimension(4) :: a1, b1, a2, b2
+    REAL(8), dimension(4) :: s1, s2, s1i, s2i
+    logical, dimension(4) :: crossed_trap1, crossed_trap2
+    integer :: nCrossed_trap1, nCrossed_trap2
+    REAL(8), allocatable :: cross_s1i(:), cross_s2i(:)
+    logical :: ignore
+
+    ! Determine the line of intersection between the planes of each face
+    call two_plane_intersect(f1x1, f1y1, f1z1, f1nx, f1ny, f1nz, &
+                             f2x1, f2y1, f2z1, f2nx, f2ny, f2nz, &
+                              oxi,  oyi,  ozi,  axi,  ayi,  azi   )
+
+    ! Determine 2d coordinates for vertices of first face, with the axis of
+    ! the intersect line corresponding to the "a" coordinate and the reference
+    ! point of the intersect line corresponding to the origin
+    call cross_prod(f1nx, f1ny, f1nz, axi, ayi, azi, bx1, by1, bz1)
+    a1(1) = (f1x1-oxi)*axi + (f1y1-oyi)*ayi + (f1z1-ozi)*azi
+    b1(1) = (f1x1-oxi)*bx1 + (f1y1-oyi)*by1 + (f1z1-ozi)*bz1
+    a1(2) = (f1x2-oxi)*axi + (f1y2-oyi)*ayi + (f1z2-ozi)*azi
+    b1(2) = (f1x2-oxi)*bx1 + (f1y2-oyi)*by1 + (f1z2-ozi)*bz1
+    a1(3) = (f1x3-oxi)*axi + (f1y3-oyi)*ayi + (f1z3-ozi)*azi
+    b1(3) = (f1x3-oxi)*bx1 + (f1y3-oyi)*by1 + (f1z3-ozi)*bz1
+    a1(4) = (f1x4-oxi)*axi + (f1y4-oyi)*ayi + (f1z4-ozi)*azi
+    b1(4) = (f1x4-oxi)*bx1 + (f1y4-oyi)*by1 + (f1z4-ozi)*bz1
+
+    ! Determine 2d coordinates for vertices of the second face, with the axis of
+    ! the intersect line corresponding to the "a" coordinate and the reference
+    ! point of the intersect line corresponding to the origin
+    call cross_prod(f2nx, f2ny, f2nz, axi, ayi, azi, bx2, by2, bz2)
+    a2(1) = (f2x1-oxi)*axi + (f2y1-oyi)*ayi + (f2z1-ozi)*azi
+    b2(1) = (f2x1-oxi)*bx2 + (f2y1-oyi)*by2 + (f2z1-ozi)*bz2
+    a2(2) = (f2x2-oxi)*axi + (f2y2-oyi)*ayi + (f2z2-ozi)*azi
+    b2(2) = (f2x2-oxi)*bx2 + (f2y2-oyi)*by2 + (f2z2-ozi)*bz2
+    a2(3) = (f2x3-oxi)*axi + (f2y3-oyi)*ayi + (f2z3-ozi)*azi
+    b2(3) = (f2x3-oxi)*bx2 + (f2y3-oyi)*by2 + (f2z3-ozi)*bz2
+    a2(4) = (f2x4-oxi)*axi + (f2y4-oyi)*ayi + (f2z4-ozi)*azi
+    b2(4) = (f2x4-oxi)*bx2 + (f2y4-oyi)*by2 + (f2z4-ozi)*bz2
+
+    ! Start (s) and end (e) points for a segment of unit (arbitrary) length on 
+    ! the intersection axis, which are the same in the 2d coordinate systems for
+    ! both face 1 and face 2
+    ais = 0.0
+    bis = 0.0
+    aie = 1.0
+    bie = 0.0
+
+    ! Determine line intersections between edges of the trapezoid and the plane
+    ! intersection line, noting whether the edges are crossed by the line
+    nCrossed_trap1 = 0
+    nCrossed_trap2 = 0
+    do i = 1, 4
+        if (i < 4) then
+            next = i + 1
+        else
+            next = 1
+        end if
+        call segment_crossing_2d(a1(i), b1(i), ais, bis, &
+                                 a1(next), b1(next), aie, bie, &
+                                 s1(i), s1i(i), crossed_trap1(i), ignore)
+        call segment_crossing_2d(a2(i), b2(i), ais, bis, &
+                                 a2(next), b2(next), aie, bie, &
+                                 s2(i), s2i(i), crossed_trap2(i), ignore)
+        if (crossed_trap1(i)) nCrossed_trap1 = nCrossed_trap1 + 1
+        if (crossed_trap2(i)) nCrossed_trap2 = nCrossed_trap2 + 1
+    end do
+
+    ! Populate arrays containing the positions (s{1,2}i) of the segment 
+    ! crossing points along the plane intersect line 
+    allocate(cross_s1i(nCrossed_trap1), cross_s2i(nCrossed_trap2))
+    ind1 = 1
+    ind2 = 1
+    do i = 1, 4
+        if (crossed_trap1(i)) then
+            cross_s1i(ind1) = s1i(i)
+            ind1 = ind1 + 1
+        end if
+        if (crossed_trap2(i)) then
+            cross_s2i(ind2) = s2i(i)
+            ind2 = ind2 + 1
+        end if
+    end do
+
+    ! Determine whether the trapezoidal faces intersect one another; 
+    ! i.e., whether the positions of edge crossings with the line of plane 
+    ! intersection (if any crossings exist) overlap one another
+    if (nCrossed_trap1 == 0 .or. nCrossed_trap2 == 0) then
+        trap_face_intersect = .false.
+    else if (maxval(cross_s1i) < minval(cross_s2i) .or. &
+             maxval(cross_s2i) < minval(cross_s1i)       ) then
+        trap_face_intersect = .false.
     else
-        segments_crossed = .false.
+        trap_face_intersect = .true.
+        write(*,fmt='(A, F8.4, F8.4, F8.4)') '        Line origin: ', oxi, oyi, ozi
+        write(*,fmt='(A, F8.4, F8.4, F8.4)') '        Line axis:   ', axi, ayi, azi
+        write(*,fmt='(A, F8.4, F8.4, F8.4, A, F8.4, F8.4, F8.4, ' // &
+                    ' A, F8.4, F8.4, F8.4, A, F8.4, F8.4, F8.4, A)')    &
+              '        Trapezoid 1 points: [', f1x1, f1y1, f1z1, &
+              ';  ', f1x2, f1y2, f1z2, ';  ', f1x3, f1y3, f1z3, &
+              ';  ', f1x4, f1y4, f1z4, ']'
+        write(*,fmt='(A, F8.4, F8.4, F8.4, A, F8.4, F8.4, F8.4, ' // &
+                    ' A, F8.4, F8.4, F8.4, A, F8.4, F8.4, F8.4, A)')    &
+              '        Trapezoid 2 points: [', f2x1, f2y1, f2z1, &
+              ';  ', f2x2, f2y2, f2z2, ';  ', f2x3, f2y3, f2z3, &
+              ';  ', f2x4, f2y4, f2z4, ']'
+        write(*,fmt='(A)') '        Intersections:'
+        write(*,*) cross_s1i
+        write(*,*) cross_s2i
     end if
+    
+    deallocate(cross_s1i, cross_s2i)
 
-    ! Uncomment for debugging
-    !write(*,fmt='(A, F8.4, A, F8.4)') &
-    !    'Intersection: ', x1s+s1*ax1, ', ', y1s+s1*ay1
-
-end function segments_crossed
+end function trap_face_intersect
 
 end module magnet_set_trapz
 

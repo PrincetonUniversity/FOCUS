@@ -1500,6 +1500,58 @@ subroutine plane_intersect(ox1, oy1, oz1, nx1, ny1, nz1, &
 end subroutine plane_intersect
 
 !-------------------------------------------------------------------------------
+! two_plane_intersect(ox1, oy1, oz1, nx1, ny1, nz1, &
+!                     ox2, oy2, oz2, nx2, ny2, nz2, &
+!                     oxi, oyi, ozi, axi, ayi, azi   )
+!
+! Calculates the line of intersection between two planes. 
+!
+! Note: if the two planes are parallel, all outputs will be NaN. 
+!
+! Input parameters:
+!     REAL(8) :: ox1, oy1, oz1 -> x, y, and z coords, ref point on plane 1
+!     REAL(8) :: nx1, ny1, nz1 -> x, y, and z components, norm vector to plane 1
+!     REAL(8) :: ox2, oy2, oz2 -> x, y, and z coords, ref point on plane 2
+!     REAL(8) :: nx2, ny2, nz2 -> x, y, and z components, norm vector to plane 2
+!
+! Output parameters:
+!     REAL(8) :: oxi, oyi, ozi -> x, y, z coords, ref. point, intersect line
+!     REAL(8) :: axi, ayi, azi -> x, y, z comps, unit vector, intersect axis
+!-------------------------------------------------------------------------------
+subroutine two_plane_intersect(ox1, oy1, oz1, nx1, ny1, nz1, &
+                               ox2, oy2, oz2, nx2, ny2, nz2, &
+                               oxi, oyi, ozi, axi, ayi, azi   )
+
+    implicit none
+
+    REAL(8), intent(IN)  :: ox1, oy1, oz1, nx1, ny1, nz1
+    REAL(8), intent(IN)  :: ox2, oy2, oz2, nx2, ny2, nz2
+    REAL(8), intent(OUT) :: oxi, oyi, ozi, axi, ayi, azi
+    REAL(8) :: axi_vec, ayi_vec, azi_vec
+    REAL(8) :: l, bx1, by1, bz1, diff_dot_n2, b_dot_n2
+
+    ! The direction of the line of intersection
+    call cross_prod(nx1, ny1, nz1, nx2, ny2, nz2, axi_vec, ayi_vec, azi_vec)
+    call unit_vector(axi_vec, ayi_vec, azi_vec, axi, ayi, azi)
+
+    ! Vector perpendicular to plane 1's normal vector and the intersect axis
+    call cross_prod(nx1, ny1, nz1, axi, ayi, azi, bx1, by1, bz1)
+
+    ! Distance l along b vector from plane 1 origin to reach intersection line:
+    !     (o1 + l*b - o2).n2 = 0
+    !           (o1 - o2).n2 = -l*b.n2
+    !                      l = (o2 - o1).n2 / b.n2
+    diff_dot_n2 = (ox2 - ox1)*nx2 + (oy2 - oy1)*ny2 + (oz2 - oz1)*nz2
+    b_dot_n2 = bx1*nx2 + by1*ny2 + bz1*nz2
+    l = diff_dot_n2 / b_dot_n2
+
+    oxi = ox1 + l*bx1
+    oyi = oy1 + l*by1
+    ozi = oz1 + l*bz1
+
+end subroutine two_plane_intersect
+
+!-------------------------------------------------------------------------------
 ! unit_vector(vx, vy, vz, ux, uy, uz)
 !
 ! Scales an input vector to a unit-length vector of the same direction.
@@ -1524,6 +1576,100 @@ subroutine unit_vector(vx, vy, vz, ux, uy, uz)
     uz = vz / norm
 
 end subroutine unit_vector
+
+!-------------------------------------------------------------------------------
+! segments_crossed(x1s, y1s, x2s, y2s, x1e, y1e, x2e, y2e)
+!
+! Wrapper for segment_crossings_2d that returns a logical if two line segments
+! in the x-y plane cross one another.
+!
+! Input parameters:
+!     REAL(8) x1s, y1s   -> x, y coordinates, start point, segment 1
+!     REAL(8) x2s, y2s   -> x, y coordinates, start point, segment 2
+!     REAL(8) x1e, y1e   -> x, y coordinates, end point, segment 1
+!     REAL(8) x2e, y2e   -> x, y coordinates, end point, segment 2
+!-------------------------------------------------------------------------------
+logical function segments_crossed(x1s, y1s, x2s, y2s, x1e, y1e, x2e, y2e)
+
+    implicit none
+
+    REAL(8), intent(IN) :: x1s, y1s, x2s, y2s, x1e, y1e, x2e, y2e
+    REAL(8) :: s1, s2
+    logical :: seg1_crossed, seg2_crossed
+
+    ! Find the crossings points for each segment
+    call segment_crossing_2d(x1s, y1s, x2s, y2s, x1e, y1e, x2e, y2e, &
+                             s1, s2, seg1_crossed, seg2_crossed)
+
+    ! Set return value according to the outcome of the subroutine call
+    segments_crossed = (seg1_crossed .and. seg2_crossed)
+
+    ! Uncomment for debugging
+    !write(*,fmt='(A, F8.4, A, F8.4)') &
+    !    'Intersection: ', x1s+s1*ax1, ', ', y1s+s1*ay1
+
+end function segments_crossed
+
+!-------------------------------------------------------------------------------
+! segment_crossing_2d(x1s, y1s, x2s, y2s, x1e, y1e, x2e, y2e, 
+!                     s1, s2, seg1_crossed, seg2_crossed)
+!
+! Determines the crossing points of lines defined by two segments
+! in the x-y plane.
+!
+! Input parameters:
+!     REAL(8) :: x1s, y1s -> x, y coordinates, start point, segment 1
+!     REAL(8) :: x2s, y2s -> x, y coordinates, start point, segment 2
+!     REAL(8) :: x1e, y1e -> x, y coordinates, end point, segment 1
+!     REAL(8) :: x2e, y2e -> x, y coordinates, end point, segment 2
+!
+! Output parameters:
+!     REAL(8) :: s1, s2   -> Distance from the start point of line 1, 2 to the
+!                            intersection, in the direction toward the end point
+!     logical :: seg1_crossed  -> True if the first segment is crossed by the
+!                                 line parametrized by the second segment
+!     logical :: seg2_crossed  -> True if the second segment is crossed by the
+!                                 line parametrized by the first segment
+!-------------------------------------------------------------------------------
+subroutine segment_crossing_2d(x1s, y1s, x2s, y2s, x1e, y1e, x2e, y2e, &
+                               s1, s2, seg1_crossed, seg2_crossed)
+
+    REAL(8), intent(IN)  :: x1s, y1s, x2s, y2s, x1e, y1e, x2e, y2e
+    REAL(8), intent(OUT) :: s1, s2
+    logical, intent(OUT) :: seg1_crossed, seg2_crossed
+    REAL(8) :: ax1, ay1, ax2, ay2, length1, length2
+    REAL(8) :: inv11, inv12, inv21, inv22
+
+    ! Lengths of each segment
+    length1 = sqrt( (x1e-x1s)**2 + (y1e-y1s)**2 )
+    length2 = sqrt( (x2e-x2s)**2 + (y2e-y2s)**2 )
+
+    ! Unit axis vectors for each segment
+    ax1 = (x1e-x1s) / length1
+    ay1 = (y1e-y1s) / length1
+    ax2 = (x2e-x2s) / length2
+    ay2 = (y2e-y2s) / length2
+
+    ! Inverse of the matrix defined by [ ax1  -ax2;  ay1  -ay2  ]
+    call inverse_2x2(ax1, -ax2, ay1, -ay2, inv11, inv12, inv21, inv22)
+
+    ! Distances of the intersection from start points of each line segment
+    s1 = inv11*(x2s-x1s) + inv12*(y2s-y1s)
+    s2 = inv21*(x2s-x1s) + inv22*(y2s-y1s)
+
+    ! Determine whether the line intersection point is within both segments
+    if (s1 >= 0.0 .and. s1 <= length1) then
+        seg1_crossed = .true. 
+    else
+        seg1_crossed = .false.
+    end if
+    if (s2 >= 0.0 .and. s2 <= length2) then
+        seg2_crossed = .true.
+    else
+        seg2_crossed = .false.
+    end if
+
+end subroutine segment_crossing_2d
 
 !-------------------------------------------------------------------------------
 ! vertex_rz_in_poloidal_plane(nTheta, phi, ves_theta, sep_in
@@ -1675,42 +1821,6 @@ subroutine vertex_segment_lengths(nTheta, s_ideal, r, z, s, meanSqResid)
     deallocate(l)
 
 end subroutine vertex_segment_lengths
-
-!-------------------------------------------------------------------------------
-! reset_ves_theta(nTheta, s, ves_theta)
-!
-! Updates values of vessel theta corresponding to vertex points such that the
-! advance in theta between two vertices is proportional to the length of the
-! line segment connecting the two vertices. This subroutine uses a single-pass
-! linear interpolation approach for resetting; thus it should be iterated to 
-! converge toward exactly equal spacing.
-
-! Input parameters:
-!     integer :: nTheta        -> Number of points in the poloidal array
-!     REAL(8) :: s             -> Cumulative arc length at each vertex point
-!
-! Updated parameters:
-!     REAL(8) :: ves_theta     -> Vessel theta values of the input vertex points
-!-------------------------------------------------------------------------------
-!subroutine reset_ves_theta(nTheta, s_ideal, s_actual, ves_theta)
-!
-!    implicit none
-!
-!    integer, intent(IN)  :: nTheta
-!    REAL(8), intent(IN)  :: s_ideal(:), s_actual(:)
-!    REAL(8), intent(INOUT) :: ves_theta(:)
-!    REAL(8) :: dsdTheta
-!    integer :: i
-!
-!    ! Determine the arc-length/angle ratio based on total cumulative length
-!    dsdTheta = s(nTheta)/(ves_theta(nTheta) - ves_theta(1))
-!
-!    ! Calculate updated theta values based on the ratio and cumulative lengths
-!    do i = 1, nTheta
-!        s_ideal(i) = s(i)/dsdTheta
-!    end do
-!
-!end subroutine reset_ves_theta
 
 !-------------------------------------------------------------------------------
 ! linear_interpolate(n_data, x_data, y_data, n_query, x_query, y_interp)
