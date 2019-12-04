@@ -372,7 +372,7 @@ subroutine updateStep_ves_perp_intersect_3d(sl, st, sp, l, theta, phi, &
                slope, ox, oy, oz, fx, fy, fz, vr, vx, vy, vz, &
                drdt, dzdt, drdp, dzdp, nx, ny, nz, ln, ux, uy, uz)
 
-    use magnet_set_globals, only: ves_tol, ves_r00, ves_r10
+    use magnet_set_globals, only: ves_tol, ves_r00, ves_r10, maxIter
 
     implicit none
 
@@ -382,7 +382,7 @@ subroutine updateStep_ves_perp_intersect_3d(sl, st, sp, l, theta, phi, &
     REAL(8) :: lambda, fsq, fsq_prev, l_prev, theta_prev, phi_prev, newlambda, &
             lambda2, rhs1, rhs2, a, b, disc, fsq2, test
     REAL(8) :: alpha = 1.0e-4, tol = 1.0e-7
-    INTEGER :: j
+    INTEGER :: i, j
 
     ! Adjust the step according to the line search algorithm if necessary
     lambda = 1.0
@@ -392,7 +392,7 @@ subroutine updateStep_ves_perp_intersect_3d(sl, st, sp, l, theta, phi, &
     theta_prev = theta
     phi_prev = phi
 
-    do while (.true.)
+    do i = 1, maxIter
         j = j + 1
         l     =     l_prev + lambda * sl
         theta = theta_prev + lambda * st
@@ -1859,6 +1859,61 @@ subroutine linear_interpolate(n_data, x_data, y_data, n_query, x_query, &
     end do
 
 end subroutine linear_interpolate
+
+!-------------------------------------------------------------------------------
+! handedness_vector(n, x, y, z, vx, vy, vz)
+!
+! Calculates a handedness vector for an ordered set of points in 3-space based
+! on the sum of the cross-products of vectors between subsequent pairs of
+! points
+!
+! Input parameters
+!     integer :: n                 -> number of points in the set
+!     REAL(8) :: x(:), y(:), z(:)  -> x, y, and z coordinates of each 
+!                                              point, in order
+!
+! Output parameters
+!     REAL(8) :: vx, vy, vz        -> handedness vector for the set
+!-------------------------------------------------------------------------------
+subroutine handedness_vector(n, x, y, z, vx, vy, vz)
+
+    implicit none
+
+    integer, intent(IN) :: n
+    REAL(8), intent(IN) :: x(:), y(:), z(:)
+    REAL(8), intent(OUT) :: vx, vy, vz
+    REAL(8) :: vx_i, vy_i, vz_i
+    integer :: i1, i2, i3
+
+    if (n < 3) stop 'handedness_vector: set must contain at lest 3 points'
+
+    vx = 0.0
+    vy = 0.0
+    vz = 0.0
+
+    do i1 = 1, n
+
+        if (i1 == n) then
+            i2 = 1
+            i3 = 2
+        else if (i1 == n - 1) then
+            i2 = i1 + 1
+            i3 = 1
+        else
+            i2 = i1 + 1
+            i3 = i1 + 2
+        end if
+
+        call cross_prod(x(i2)-x(i1), y(i2)-y(i1), z(i2)-z(i1), &
+                        x(i3)-x(i2), y(i3)-y(i2), z(i3)-z(i2), vx_i, vy_i, vz_i)
+
+        vx = vx + vx_i
+        vy = vy + vy_i
+        vz = vz + vz_i
+
+    end do
+
+end subroutine handedness_vector
 
 end module magnet_set_calc
 

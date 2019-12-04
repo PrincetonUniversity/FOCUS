@@ -393,16 +393,8 @@ subroutine print_magnets_to_file(filename, output_type)
                      ' ES15.8, X, ES15.8, X, ES15.8, X, ES15.8, X, ' // &
                      ' ES15.8, X, ES15.8, X, ES15.8, X, ES15.8, X, ' // &
                      ' ES15.8, X, ES15.8, X, ES15.8, X, ES15.8, X, ' // &
-                     !' ES15.8, X )', &
                      ' ES15.8, X, ES15.8, X, ES15.8, X, ES15.8, X ) ', &
                  iostat=write_status) &
-                     !traps(i)%otbx, traps(i)%otby, traps(i)%otbz, &
-                     !traps(i)%otfx, traps(i)%otfy, traps(i)%otfz, &
-                     !traps(i)%opbx, traps(i)%opby, traps(i)%opbz, &
-                     !traps(i)%opfx, traps(i)%opfy, traps(i)%opfz, &
-                     !traps(i)%vx,   traps(i)%vy,   traps(i)%vz,   &
-                     !traps(i)%otx,  traps(i)%oty,  traps(i)%otz,  &
-                     !traps(i)%obx,  traps(i)%oby,  traps(i)%obz
                      subtraps(i)%ctx1, subtraps(i)%cty1, subtraps(i)%ctz1, &
                      subtraps(i)%ctx2, subtraps(i)%cty2, subtraps(i)%ctz2, &
                      subtraps(i)%ctx3, subtraps(i)%cty3, subtraps(i)%ctz3, &

@@ -102,6 +102,15 @@ module magnet_set_globals
     ! Details about each trapezoidal box
     logical :: trapezoids_initialized = .false.
     logical :: subtraps_initialized = .false.
+    logical :: avoid_overlap = .false.
+    logical :: opt_trap_vol = .false. ! Attempt to increase volume of each
+                                      ! trapezoid by adjusting its lat. faces
+    REAL(8) :: face_adj_interval = 0.002 ! Adjustment interval for faces when
+                                         ! fixing overlaps 
+    REAL(8) :: face_adj_int_vol = 0.02   ! Adjustment interval for faces during
+                                         ! volume optimization
+    integer :: n_face_adj_vol = 10    ! # face adjustment intervals to try for 
+                                      ! volume optimization
     integer :: nTrapezoids            ! Number of trapezoids in total
     integer :: trap_err_count         ! Num. traps. with erroneous properties
     integer :: nTraps_per_stack = 1   ! Num. vertical subdivisions per box
@@ -112,6 +121,10 @@ module magnet_set_globals
     !REAL(8) :: weight_tor(nt)         ! Weighting for toroidal boxcar averaging
     logical :: traps_poloidally_periodic = .false. 
     logical :: traps_toroidally_periodic = .true.
+    integer, parameter :: nTrapFaces = 6
+    integer, parameter :: iTOP = 1, iBASE = 2  ! IDs, top and base face
+    integer, parameter :: iTB  = 3, iTF   = 4  ! IDs, tor. back and front faces
+    integer, parameter :: iPB  = 5, iPF   = 6  ! IDs, pol. back and front faces
     type trapezoid
         REAL(8) :: ntbx, ntby, ntbz ! unit normal vector of toroidal back plane
         REAL(8) :: ntfx, ntfy, ntfz ! unit normal vector of toroidal front plane
@@ -141,13 +154,14 @@ module magnet_set_globals
     end type trapezoid
     type(trapezoid), allocatable :: traps(:)
     type(trapezoid), allocatable :: subtraps(:)
+    integer, allocatable :: trap_overlap(:) 
 
     ! Specifications for spacing between magnets
-    REAL(8) :: gap_rad = 0  ! gap between magnets within a stack (minor radial)
-    REAL(8) :: gap_tor = 0  ! gap between magnets on adjacent plates (toroidal)
-    REAL(8) :: gap_pol = 0  ! gap between magnets along a plate segment (poloidal)
-    REAL(8) :: gap_end = 0  ! gap on each end of a plate edge (not incl. concavity)
-    REAL(8) :: gap_seg = 0  ! gap between plate segment and bottom of magnet stack
+    REAL(8) :: gap_rad = 0  ! gap betwn magnets within a stack (minor radial)
+    REAL(8) :: gap_tor = 0  ! gap betwn magnets on adjacent plates (toroidal)
+    REAL(8) :: gap_pol = 0  ! gap betwn magnets along a plate segment (poloidal)
+    REAL(8) :: gap_end = 0  ! gap, each end of plate edge (not incl. concavity)
+    REAL(8) :: gap_seg = 0  ! gap betwn plate segment and bottom of magnet stack
     REAL(8) :: gap_vac = 0  ! gap between top of magnet stack and vacuum vessel
     REAL(8) :: gap_top = 0  ! clearance for top magnet (additional to gap_vac)
     REAL(8) :: gap_trp = 0  ! gap between adjacent trapezoidal boxes
@@ -220,6 +234,11 @@ module magnet_set_globals
                           plate_phi,                 &
                           plate_dphi,                &
                           nTraps_per_stack,          &
+                          avoid_overlap,             &
+                          opt_trap_vol,              &
+                          face_adj_interval,         &
+                          face_adj_int_vol,          &
+                          n_face_adj_vol,            &
                           n_box_pol,                 &
                           n_box_tor,                 &
                           traps_poloidally_periodic, &

@@ -28,7 +28,9 @@ subroutine trapezoid_properties()
                                   vert_r, vert_z, vert_theta, vert_sep, &
                                   vessel_r, vessel_z, &
                                   traps, nTrapezoids, trapezoids_initialized, &
-                                  trap_err_count, gap_vac, gap_trp
+                                  trap_err_count, gap_vac, gap_trp, &
+                                  nTrapFaces, avoid_overlap, trap_overlap, &
+                                  face_adj_interval, opt_trap_vol
     use magnet_set_build, only: vertex_theta_to_rz, lcfs_theta_to_ves_theta, &
                                 vertex_rz_to_theta_sep
     use magnet_set_calc, only: ves_perp_intersect_3d, ves_unorm, &
@@ -48,7 +50,8 @@ subroutine trapezoid_properties()
     REAL(8), allocatable :: vx(:,:), vy(:,:), vz(:,:)
     REAL(8), allocatable :: ves_nx(:,:), ves_ny(:,:), ves_nz(:,:)
     REAL(8), allocatable :: ves_theta(:,:), ves_phi(:,:)
-    integer, allocatable :: overlap(:)
+    logical, dimension(nTrapFaces) :: ovl_i, ovl_j
+    logical :: no_overlaps
 
     ! Initial status checks
     if (.not. plates_initialized) then
@@ -81,7 +84,7 @@ subroutine trapezoid_properties()
               ves_nz(nPlates+1, nVertices),  ves_theta(nPlates+1, nVertices), &
               ves_phi(nPlates+1, nVertices) )
     nTrapezoids = nPlates * (nVertices-1)
-    allocate( traps(nTrapezoids), overlap(nTrapezoids) )
+    allocate( traps(nTrapezoids), trap_overlap(nTrapezoids) )
 
     write(*,*) '    Arrays allocated'
 
@@ -193,22 +196,48 @@ subroutine trapezoid_properties()
         end do
     end do
 
+    ! Attempt to increase the trapezoid volume by adjusting faces (if desired)
+    if (opt_trap_vol) call attempt_volume_increase(traps(n))
+
     ! Check for overlapping trapezoids
-    overlap = 0  ! Initialize the array
+    trap_overlap = 0  ! Initialize the array
+    no_overlaps = .true.
     do i = 1, nTrapezoids
         do j = i + 1, nTrapezoids
-            if (traps_overlapping(traps(i), traps(j))) then
-                overlap(i) = 1
-                overlap(j) = 1
-                write(*,fmt='(A, I3, A, I3)') '    Overlap at i = ', i, '; j = ', j
+            if (avoid_overlap) then
+                do while (traps_overlapping(traps(i), traps(j), ovl_i, ovl_j))
+                    if (traps(i)%err .or. traps(j)%err) exit
+                    call adjust_lateral_faces(traps(i), traps(j), ovl_i, ovl_j)
+                end do
+            else if (traps_overlapping(traps(i), traps(j), ovl_i, ovl_j)) then
+                trap_overlap(i) = 1
+                trap_overlap(j) = 1
+                no_overlaps = .false.
             end if
         end do
     end do
-    write(*,*) overlap
+
+    ! Re-check all prisms to ensure no overlaps if avoid_overlap option is on
+    if (avoid_overlap) then
+        trap_overlap = 0
+        do i = 1, nTrapezoids
+            do j = i + 1, nTrapezoids
+                if (traps_overlapping(traps(i), traps(j), ovl_i, ovl_j)) then
+                    no_overlaps = .false.
+                    trap_overlap(i) = 1
+                    trap_overlap(j) = 1
+                end if
+            end do
+        end do
+        write(*,*) trap_overlap
+        if (.not. no_overlaps) then
+            write(*,*) 'trapezoid_properties: unable to remove cases of overlap'
+        end if
+    end if
 
     deallocate(vert_x, vert_y, vert_nx, vert_ny, vert_nz, &
                vx, vy, vz, ves_nx, ves_ny, ves_nz, &
-               ves_theta, ves_phi, overlap)
+               ves_theta, ves_phi)
 
     trapezoids_initialized = .true.
 
@@ -781,7 +810,7 @@ subroutine subdivide_trapezoids()
 
         if (.not. traps(i)%err) then
 
-        do j = 1, nTraps_per_stack
+            do j = 1, nTraps_per_stack
     
                 n = n + 1
                 subtraps(n) = traps(i)
@@ -823,9 +852,9 @@ subroutine subdivide_trapezoids()
                 magnets(n)%coiltype = coiltype
                 magnets(n)%symm = symm
     
-        end do
+            end do
 
-    end if
+        end if
 
     end do
 
@@ -1335,12 +1364,15 @@ end subroutine trap_volume_ctr
 subroutine check_trapezoid(tp)
 
     use magnet_set_globals, only: trapezoid
-    use magnet_set_calc,    only: cross_prod, segments_crossed
+    use magnet_set_calc,    only: cross_prod, segments_crossed, &
+                                  plane_elev, handedness_vector
 
     implicit none
 
     type(trapezoid) :: tp
     REAL(8) :: height
+    REAL(8) :: hand_top_x,  hand_top_y,  hand_top_z
+    REAL(8) :: hand_base_x, hand_base_y, hand_base_z
     REAL(8) :: ut1, ut2, ut3, ut4, vt1, vt2, vt3, vt4
     REAL(8) :: ub1, ub2, ub3, ub4, vb1, vb2, vb3, vb4
     REAL(8) :: unx, uny, unz, vnx, vny, vnz, norm
@@ -1354,6 +1386,57 @@ subroutine check_trapezoid(tp)
     height = (tp%otx-tp%obx)*tp%snx + (tp%oty-tp%oby)*tp%sny + &
              (tp%otz-tp%obz)*tp%snz
     if (height < 0.0) tp%err = .true.
+
+    !---------------------------------------------------------------------------
+    ! Ensure that lateral faces are not crossing and have not switched places
+    ! (note: this test may make the next two tests redundant)
+    !---------------------------------------------------------------------------
+
+    ! Toroidal front and back planes (elev. of toroidal back points above 
+    ! toroidal front plane must be positive, as the normal vectors point inward)
+    if (plane_elev(tp%ctx1, tp%cty1, tp%ctz1, &
+                   tp%otfx, tp%otfy, tp%otfz, &
+                   tp%ntfx, tp%ntfy, tp%ntfz   ) < 0) tp%err = .true.
+    if (plane_elev(tp%ctx4, tp%cty4, tp%ctz4, &
+                   tp%otfx, tp%otfy, tp%otfz, &
+                   tp%ntfx, tp%ntfy, tp%ntfz   ) < 0) tp%err = .true.
+    if (plane_elev(tp%cbx1, tp%cby1, tp%cbz1, &
+                   tp%otfx, tp%otfy, tp%otfz, &
+                   tp%ntfx, tp%ntfy, tp%ntfz   ) < 0) tp%err = .true.
+    if (plane_elev(tp%cbx4, tp%cby4, tp%cbz4, &
+                   tp%otfx, tp%otfy, tp%otfz, &
+                   tp%ntfx, tp%ntfy, tp%ntfz   ) < 0) tp%err = .true.
+
+    ! Poloidal front and back planes
+    if (plane_elev(tp%ctx1, tp%cty1, tp%ctz1, &
+                   tp%opfx, tp%opfy, tp%opfz, &
+                   tp%npfx, tp%npfy, tp%npfz   ) < 0) tp%err = .true.
+    if (plane_elev(tp%ctx2, tp%cty2, tp%ctz2, &
+                   tp%opfx, tp%opfy, tp%opfz, &
+                   tp%npfx, tp%npfy, tp%npfz   ) < 0) tp%err = .true.
+    if (plane_elev(tp%cbx1, tp%cby1, tp%cbz1, &
+                   tp%opfx, tp%opfy, tp%opfz, &
+                   tp%npfx, tp%npfy, tp%npfz   ) < 0) tp%err = .true.
+    if (plane_elev(tp%cbx2, tp%cby2, tp%cbz2, &
+                   tp%opfx, tp%opfy, tp%opfz, &
+                   tp%npfx, tp%npfy, tp%npfz   ) < 0) tp%err = .true.
+
+    !---------------------------------------------------------------------------
+    ! Ensure that the corners have the right handedness (i.e., front and back
+    ! poloidal/toroidal planes haven't switched places)
+    !---------------------------------------------------------------------------
+    call handedness_vector(4, (/ tp%ctx1, tp%ctx2, tp%ctx3, tp%ctx4 /), &
+                              (/ tp%cty1, tp%cty2, tp%cty3, tp%cty4 /), &
+                              (/ tp%ctz1, tp%ctz2, tp%ctz3, tp%ctz4 /), &
+                              hand_top_x, hand_top_y, hand_top_z         )
+    call handedness_vector(4, (/ tp%cbx1, tp%cbx2, tp%cbx3, tp%cbx4 /), &
+                              (/ tp%cby1, tp%cby2, tp%cby3, tp%cby4 /), &
+                              (/ tp%cbz1, tp%cbz2, tp%cbz3, tp%cbz4 /), &
+                              hand_base_x, hand_base_y, hand_base_z         )
+    if (hand_top_x*tp%snx + hand_top_y*tp%sny + hand_top_z*tp%snz > 0 .or. &
+        hand_base_x*tp%snx + hand_base_y*tp%sny + hand_base_z*tp%snz > 0) then
+            tp%err = .true.
+    end if
 
     !---------------------------------------------------------------------------
     ! Check for crossed segments after transform to 2D coords in top/base planes
@@ -1395,20 +1478,21 @@ subroutine check_trapezoid(tp)
 end subroutine check_trapezoid
 
 !-------------------------------------------------------------------------------
-! traps_overlapping(tp1, tp2)
+! traps_overlapping(tp1, tp2, ovl1, ovl2)
 !
 ! Checks whether two trapezoidal prisms overlap one another.
 !
 ! The method is to determine whether any pair of lateral faces intersect one
 ! another.
 !-------------------------------------------------------------------------------
-logical function traps_overlapping(tp1, tp2)
+logical function traps_overlapping(tp1, tp2, ovl1, ovl2)
 
-    use magnet_set_globals, only: trapezoid
+    use magnet_set_globals, only: trapezoid, nTrapFaces
 
     implicit none
 
     type(trapezoid), intent(IN) :: tp1, tp2
+    logical, dimension(nTrapFaces), intent(OUT) :: ovl1, ovl2
     integer :: i, j, nFaces = 6
     REAL(8), dimension(6, 15) :: fp1, fp2
 
@@ -1416,8 +1500,13 @@ logical function traps_overlapping(tp1, tp2)
     call trapezoid_face_parameters(tp1, fp1)
     call trapezoid_face_parameters(tp2, fp2)
 
-    ! Check all pairs of faces, returning true immediately if an intersecting
+    ! Initialize overlap arrays
+    ovl1 = .false.
+    ovl2 = .false.
+
+    ! Check all pairs of faces, returning true if at least one intersecting
     ! pair is identified
+    traps_overlapping = .false.
     do i = 1, nFaces
         do j = 1, nFaces
             if (trap_face_intersect( &
@@ -1428,13 +1517,11 @@ logical function traps_overlapping(tp1, tp2)
                 fp2(j,6),  fp2(j,7),  fp2(j,8),  fp2(j,9),  fp2(j,10), &
                 fp2(j,11), fp2(j,12), fp2(j,13), fp2(j,14), fp2(j,15)   )) then
                     traps_overlapping = .true.
-                    return
+                    ovl1(i) = .true.
+                    ovl2(j) = .true.
             end if
         end do
     end do
-
-    ! Return false if no intersecting pairs are found
-    traps_overlapping = .false.
 
 end function traps_overlapping
 
@@ -1456,55 +1543,55 @@ end function traps_overlapping
 !-------------------------------------------------------------------------------
 subroutine trapezoid_face_parameters(tp, fp)
 
-    use magnet_set_globals, only: trapezoid
+    use magnet_set_globals, only: trapezoid, nTrapFaces, &
+                                  iTOP, iBASE, iTB, iTF, iPB, iPF
 
     implicit none
 
     type(trapezoid), intent(IN) :: tp
-    REAL(8), dimension(6,15), intent(OUT) :: fp
-    integer :: TOP = 1, BASE = 2, TB = 3, TF = 4, PB = 5, PF = 6
+    REAL(8), dimension(nTrapFaces,15), intent(OUT) :: fp
 
     ! Top face: row 1 of the array
-    fp(TOP,1:3)   = (/ tp%snx,  tp%sny,  tp%snz  /)
-    fp(TOP,4:6)   = (/ tp%ctx1, tp%cty1, tp%ctz1 /)
-    fp(TOP,7:9)   = (/ tp%ctx2, tp%cty2, tp%ctz2 /)
-    fp(TOP,10:12) = (/ tp%ctx3, tp%cty3, tp%ctz3 /)
-    fp(TOP,13:15) = (/ tp%ctx4, tp%cty4, tp%ctz4 /)
+    fp(iTOP,1:3)   = (/ tp%snx,  tp%sny,  tp%snz  /)
+    fp(iTOP,4:6)   = (/ tp%ctx1, tp%cty1, tp%ctz1 /)
+    fp(iTOP,7:9)   = (/ tp%ctx2, tp%cty2, tp%ctz2 /)
+    fp(iTOP,10:12) = (/ tp%ctx3, tp%cty3, tp%ctz3 /)
+    fp(iTOP,13:15) = (/ tp%ctx4, tp%cty4, tp%ctz4 /)
 
     ! Base/"bottom" face: row 2 of the array
-    fp(BASE,1:3)   = (/ tp%snx,  tp%sny,  tp%snz  /)
-    fp(BASE,4:6)   = (/ tp%cbx1, tp%cby1, tp%cbz1 /)
-    fp(BASE,7:9)   = (/ tp%cbx2, tp%cby2, tp%cbz2 /)
-    fp(BASE,10:12) = (/ tp%cbx3, tp%cby3, tp%cbz3 /)
-    fp(BASE,13:15) = (/ tp%cbx4, tp%cby4, tp%cbz4 /)
+    fp(iBASE,1:3)   = (/ tp%snx,  tp%sny,  tp%snz  /)
+    fp(iBASE,4:6)   = (/ tp%cbx1, tp%cby1, tp%cbz1 /)
+    fp(iBASE,7:9)   = (/ tp%cbx2, tp%cby2, tp%cbz2 /)
+    fp(iBASE,10:12) = (/ tp%cbx3, tp%cby3, tp%cbz3 /)
+    fp(iBASE,13:15) = (/ tp%cbx4, tp%cby4, tp%cbz4 /)
 
     ! Toroidal back face: row 3 of the array
-    fp(TB,1:3)   = (/ tp%ntbx, tp%ntby, tp%ntbz /)
-    fp(TB,4:6)   = (/ tp%cbx1, tp%cby1, tp%cbz1 /)
-    fp(TB,7:9)   = (/ tp%cbx4, tp%cby4, tp%cbz4 /)
-    fp(TB,10:12) = (/ tp%ctx4, tp%cty4, tp%ctz4 /)
-    fp(TB,13:15) = (/ tp%ctx1, tp%cty1, tp%ctz1 /)
+    fp(iTB,1:3)   = (/ tp%ntbx, tp%ntby, tp%ntbz /)
+    fp(iTB,4:6)   = (/ tp%cbx1, tp%cby1, tp%cbz1 /)
+    fp(iTB,7:9)   = (/ tp%cbx4, tp%cby4, tp%cbz4 /)
+    fp(iTB,10:12) = (/ tp%ctx4, tp%cty4, tp%ctz4 /)
+    fp(iTB,13:15) = (/ tp%ctx1, tp%cty1, tp%ctz1 /)
 
     ! Toroidal front face: row 4 of the array
-    fp(TF,1:3)   = (/ tp%ntfx, tp%ntfy, tp%ntfz /)
-    fp(TF,4:6)   = (/ tp%cbx3, tp%cby3, tp%cbz3 /)
-    fp(TF,7:9)   = (/ tp%cbx2, tp%cby2, tp%cbz2 /)
-    fp(TF,10:12) = (/ tp%ctx2, tp%cty2, tp%ctz2 /)
-    fp(TF,13:15) = (/ tp%ctx3, tp%cty3, tp%ctz3 /)
+    fp(iTF,1:3)   = (/ tp%ntfx, tp%ntfy, tp%ntfz /)
+    fp(iTF,4:6)   = (/ tp%cbx3, tp%cby3, tp%cbz3 /)
+    fp(iTF,7:9)   = (/ tp%cbx2, tp%cby2, tp%cbz2 /)
+    fp(iTF,10:12) = (/ tp%ctx2, tp%cty2, tp%ctz2 /)
+    fp(iTF,13:15) = (/ tp%ctx3, tp%cty3, tp%ctz3 /)
 
     ! Poloidal back face: row 5 of the array
-    fp(PB,1:3)   = (/ tp%npbx, tp%npby, tp%npbz /)
-    fp(PB,4:6)   = (/ tp%cbx2, tp%cby2, tp%cbz2 /)
-    fp(PB,7:9)   = (/ tp%cbx1, tp%cby1, tp%cbz1 /)
-    fp(PB,10:12) = (/ tp%ctx1, tp%cty1, tp%ctz1 /)
-    fp(PB,13:15) = (/ tp%ctx2, tp%cty2, tp%ctz2 /)
+    fp(iPB,1:3)   = (/ tp%npbx, tp%npby, tp%npbz /)
+    fp(iPB,4:6)   = (/ tp%cbx2, tp%cby2, tp%cbz2 /)
+    fp(iPB,7:9)   = (/ tp%cbx1, tp%cby1, tp%cbz1 /)
+    fp(iPB,10:12) = (/ tp%ctx1, tp%cty1, tp%ctz1 /)
+    fp(iPB,13:15) = (/ tp%ctx2, tp%cty2, tp%ctz2 /)
 
     ! Poloidal front face: row 6 of the array
-    fp(PF,1:3)   = (/ tp%npfx, tp%npfy, tp%npfz /)
-    fp(PF,4:6)   = (/ tp%cbx4, tp%cby4, tp%cbz4 /)
-    fp(PF,7:9)   = (/ tp%cbx3, tp%cby3, tp%cbz3 /)
-    fp(PF,10:12) = (/ tp%ctx3, tp%cty3, tp%ctz3 /)
-    fp(PF,13:15) = (/ tp%ctx4, tp%cty4, tp%ctz4 /)
+    fp(iPF,1:3)   = (/ tp%npfx, tp%npfy, tp%npfz /)
+    fp(iPF,4:6)   = (/ tp%cbx4, tp%cby4, tp%cbz4 /)
+    fp(iPF,7:9)   = (/ tp%cbx3, tp%cby3, tp%cbz3 /)
+    fp(iPF,10:12) = (/ tp%ctx3, tp%cty3, tp%ctz3 /)
+    fp(iPF,13:15) = (/ tp%ctx4, tp%cty4, tp%ctz4 /)
 
 end subroutine trapezoid_face_parameters
 
@@ -1639,26 +1726,201 @@ logical function trap_face_intersect( &
         trap_face_intersect = .false.
     else
         trap_face_intersect = .true.
-        write(*,fmt='(A, F8.4, F8.4, F8.4)') '        Line origin: ', oxi, oyi, ozi
-        write(*,fmt='(A, F8.4, F8.4, F8.4)') '        Line axis:   ', axi, ayi, azi
-        write(*,fmt='(A, F8.4, F8.4, F8.4, A, F8.4, F8.4, F8.4, ' // &
-                    ' A, F8.4, F8.4, F8.4, A, F8.4, F8.4, F8.4, A)')    &
-              '        Trapezoid 1 points: [', f1x1, f1y1, f1z1, &
-              ';  ', f1x2, f1y2, f1z2, ';  ', f1x3, f1y3, f1z3, &
-              ';  ', f1x4, f1y4, f1z4, ']'
-        write(*,fmt='(A, F8.4, F8.4, F8.4, A, F8.4, F8.4, F8.4, ' // &
-                    ' A, F8.4, F8.4, F8.4, A, F8.4, F8.4, F8.4, A)')    &
-              '        Trapezoid 2 points: [', f2x1, f2y1, f2z1, &
-              ';  ', f2x2, f2y2, f2z2, ';  ', f2x3, f2y3, f2z3, &
-              ';  ', f2x4, f2y4, f2z4, ']'
-        write(*,fmt='(A)') '        Intersections:'
-        write(*,*) cross_s1i
-        write(*,*) cross_s2i
     end if
     
     deallocate(cross_s1i, cross_s2i)
 
 end function trap_face_intersect
+
+!-------------------------------------------------------------------------------
+! attempt_volume_increase(trap)
+!
+! Attempts to increase the volume of a trapezoidal prism by retracting the
+! lateral faces inward by different permutations. This may increase the volume
+! in severely concave regions of the vessel. The permutation that leads to
+! the greatest volume, excluding permutations that lead to erroneous trapezoids,
+! is adopted for the input trapezoid.
+!-------------------------------------------------------------------------------
+subroutine attempt_volume_increase(trap)
+
+    use magnet_set_globals, only: trapezoid, iTB, iTF, iPB, iPF, &
+                                  face_adj_int_vol, n_face_adj_vol
+
+    implicit none
+
+    type(trapezoid), intent(INOUT) :: trap
+    integer :: i, j, k, l
+    REAL(8) :: adjTB, adjTF, adjPB, adjPF
+    REAL(8) :: vol_opt, adjTB_opt, adjTF_opt, adjPB_opt, adjPF_opt
+
+    ! Initialize the optimal values
+    vol_opt = trap%vol
+    adjTB_opt = 0.0
+    adjTF_opt = 0.0
+    adjPB_opt = 0.0
+    adjPF_opt = 0.0
+
+    do i = 0, (n_face_adj_vol-1)
+        do j = 0, (n_face_adj_vol-1)
+            do k = 0, (n_face_adj_vol-1)
+                do l = 0, (n_face_adj_vol-1)
+
+                    ! Current permutation of adjustments to the lateral faces
+                    adjTB = i*abs(face_adj_int_vol)
+                    adjTF = j*abs(face_adj_int_vol)
+                    adjPB = k*abs(face_adj_int_vol)
+                    adjPF = l*abs(face_adj_int_vol)
+
+                    ! Adjust the faces according to the permutation
+                    call adjust_face(trap, iTB, adjTB)
+                    call adjust_face(trap, iTF, adjTF)
+                    call adjust_face(trap, iPB, adjPB)
+                    call adjust_face(trap, iPF, adjPF)
+
+                    ! Check to see if there is room for a height increase
+                    call reset_trap_height(trap)
+                    call trap_volume_ctr(trap)
+                    call check_trapezoid(trap)
+
+                    ! Update optimum adjustments if a new max vol is found
+                    if (.not. trap%err .and. trap%vol > vol_opt) then
+                        vol_opt = trap%vol
+                        adjTB_opt = adjTB
+                        adjTF_opt = adjTF
+                        adjPB_opt = adjPB
+                        adjPF_opt = adjPF
+                    end if
+
+                    ! Reset trapezoid before trying the next permutation
+                    call adjust_face(trap, iTB, -adjTB)
+                    call adjust_face(trap, iTF, -adjTF)
+                    call adjust_face(trap, iPB, -adjPB)
+                    call adjust_face(trap, iPF, -adjPF)
+                    call reset_trap_height(trap)
+                    call trap_volume_ctr(trap)
+                    call check_trapezoid(trap)
+
+                end do
+            end do
+        end do
+    end do
+
+    ! Adjust the trapezoid according to the optimal values
+    call adjust_face(trap, iTB, adjTB_opt)
+    call adjust_face(trap, iTF, adjTF_opt)
+    call adjust_face(trap, iPB, adjPB_opt)
+    call adjust_face(trap, iPF, adjPF_opt)
+    call reset_trap_height(trap)
+    call trap_volume_ctr(trap)
+    call check_trapezoid(trap)
+
+end subroutine attempt_volume_increase
+
+!-------------------------------------------------------------------------------
+! adjust_lateral_faces(trap1, trap2, ovl1, ovl2)
+! 
+! Wrapper for adjust_face: adjusts the faces of a pair of trapezoids as 
+! indicated by corresponding logical input arrays.
+!
+! Input parameters:
+!     type(trapezoid) :: trap1, trap2  -> pair of trapezoids to be adjusted
+!     logical, dimension(nTrapFaces) :: ovl1, ovl2 
+!                                      -> logical arrays whose values in the
+!                                         positions corresponding to lateral
+!                                         face IDs determine whether the 
+!                                         respective lateral face should be 
+!                                         adjusted
+!-------------------------------------------------------------------------------
+subroutine adjust_lateral_faces(trap1, trap2, ovl1, ovl2)
+
+    use magnet_set_globals, only: trapezoid, nTrapFaces, iTB, iTF, iPB, iPF, &
+                                  face_adj_interval
+
+    implicit none
+
+    type(trapezoid), intent(INOUT) :: trap1, trap2
+    logical, dimension(nTrapFaces), intent(IN) :: ovl1, ovl2
+
+    ! Adjust the faces of trapezoid 1
+    if (ovl1(iTB)) call adjust_face(trap1, iTB, abs(face_adj_interval))
+    if (ovl1(iTF)) call adjust_face(trap1, iTF, abs(face_adj_interval))
+    if (ovl1(iPB)) call adjust_face(trap1, iPB, abs(face_adj_interval))
+    if (ovl1(iPF)) call adjust_face(trap1, iPF, abs(face_adj_interval))
+
+    ! Adjust the faces of trapezoid 2
+    if (ovl2(iTB)) call adjust_face(trap2, iTB, abs(face_adj_interval))
+    if (ovl2(iTF)) call adjust_face(trap2, iTF, abs(face_adj_interval))
+    if (ovl2(iPB)) call adjust_face(trap2, iPB, abs(face_adj_interval))
+    if (ovl2(iPF)) call adjust_face(trap2, iPF, abs(face_adj_interval))
+
+end subroutine adjust_lateral_faces
+
+!-------------------------------------------------------------------------------
+! adjust_face(trap, face, dist)
+!
+! Modifies the geometry of a trapezoid by moving one of the lateral faces
+! (toroidal front/back or poloidal front/back) by a specified distance along
+! the respective face's normal vector. The geometry of the trapezoid is 
+! then updated to reflect this displacement.
+!
+! Input parameters:
+!     type(trapezoid) :: trap  -> Trapezoid to be modified
+!     integer :: face          -> Index of face to modify (iTB, iTF, iPB, iPF)
+!     REAL(8) :: dist          -> (signed) displacement dist. along face normal
+!------------------------------------------------------------------------------
+subroutine adjust_face(trap, face, dist)
+
+    use magnet_set_globals, only: trapezoid, iTOP, iBASE, iTB, iTF, iPB, iPF, &
+                                  trap_err_count
+
+    implicit none
+
+    type(trapezoid), intent(INOUT) :: trap
+    integer, intent(IN) :: face
+    REAL(8), intent(IN) :: dist
+    logical :: was_erroneous
+
+    ! Keep track of whether the trapezoid was erroneous upon arrival
+    was_erroneous = trap%err
+
+    ! Change reference point of specified face to attain desired displacement
+    select case (face)
+        case (iTB)
+            trap%otbx = trap%otbx + dist*trap%ntbx
+            trap%otby = trap%otby + dist*trap%ntby
+            trap%otbz = trap%otbz + dist*trap%ntbz
+        case (iTF)
+            trap%otfx = trap%otfx + dist*trap%ntfx
+            trap%otfy = trap%otfy + dist*trap%ntfy
+            trap%otfz = trap%otfz + dist*trap%ntfz
+        case (iPB)
+            trap%opbx = trap%opbx + dist*trap%npbx
+            trap%opby = trap%opby + dist*trap%npby
+            trap%opbz = trap%opbz + dist*trap%npbz
+        case (iPF)
+            trap%opfx = trap%opfx + dist*trap%npfx
+            trap%opfy = trap%opfy + dist*trap%npfy
+            trap%opfz = trap%opfz + dist*trap%npfz
+        case (iTOP, iBASE)
+            stop 'adjust_face: not currently supported for top or base'
+        case default
+            stop 'adjust_face: unrecognized face ID'
+    end select
+        
+    ! Update the trapezoid geometry based on this modification
+    call trapezoid_corners(trap)
+    !call reset_trap_height(trap)
+    call trap_volume_ctr(trap)
+    call check_trapezoid(trap)
+
+    ! Update the running total of erroneous trapezoids if necessary
+    if (was_erroneous .and. .not. trap%err) then
+        trap_err_count = trap_err_count - 1
+    else if (.not. was_erroneous .and. trap%err) then
+        trap_err_count = trap_err_count + 1
+    end if
+
+end subroutine adjust_face
 
 end module magnet_set_trapz
 
