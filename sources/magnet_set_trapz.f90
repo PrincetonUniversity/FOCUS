@@ -345,7 +345,7 @@ subroutine bounding_planes_lateral(i_plate, j_vertex, vert_x, vert_y, vert_z, &
     integer :: m, n, tor_index, disp, disp_min
     integer :: pol_index, pol_ind_offs 
     logical :: reflect
-    REAL(8) :: phiref
+    REAL(8) :: phiref, phi, zero = 0.0
     REAL(8), allocatable :: arr_base_pb_x(:), arr_base_pb_y(:), arr_base_pb_z(:)
     REAL(8), allocatable :: arr_base_pf_x(:), arr_base_pf_y(:), arr_base_pf_z(:)
     REAL(8), allocatable :: arr_base_tb_x(:), arr_base_tb_y(:), arr_base_tb_z(:)
@@ -519,63 +519,122 @@ subroutine bounding_planes_lateral(i_plate, j_vertex, vert_x, vert_y, vert_z, &
     !---------------------------------------------------------------------------
 
     ! Toroidal back plane
-    call plane_boxcar(n_arr_pol,                                   &
-                      arr_base_tb_x, arr_base_tb_y, arr_base_tb_z, &
-                      arr_top_tb_x, arr_top_tb_y, arr_top_tb_z,    &
-                      trap%ntbx, trap%ntby, trap%ntbz,             &
-                      trap%otbx, trap%otby, trap%otbz               )
-    trap%otbx = &
-        0.5 * (vert_x(i_plate, j_vertex) + vert_x(i_plate, j_vertex+1)) & 
-        + 0.5 * gap_trp * trap%ntbx
-    trap%otby = &
-        0.5 * (vert_y(i_plate, j_vertex) + vert_y(i_plate, j_vertex+1)) &
-        + 0.5 * gap_trp * trap%ntby
-    trap%otbz = &
-        0.5 * (vert_z(i_plate, j_vertex) + vert_z(i_plate, j_vertex+1)) &
-        + 0.5 * gap_trp * trap%ntbz
+    !call plane_boxcar(n_arr_pol,                                   &
+    !                  arr_base_tb_x, arr_base_tb_y, arr_base_tb_z, &
+    !                  arr_top_tb_x, arr_top_tb_y, arr_top_tb_z,    &
+    !                  trap%ntbx, trap%ntby, trap%ntbz,             &
+    !                  trap%otbx, trap%otby, trap%otbz               )
+    !trap%otbx = &
+    !    0.5 * (vert_x(i_plate, j_vertex) + vert_x(i_plate, j_vertex+1)) & 
+    !    + 0.5 * gap_trp * trap%ntbx
+    !trap%otby = &
+    !    0.5 * (vert_y(i_plate, j_vertex) + vert_y(i_plate, j_vertex+1)) &
+    !    + 0.5 * gap_trp * trap%ntby
+    !trap%otbz = &
+    !    0.5 * (vert_z(i_plate, j_vertex) + vert_z(i_plate, j_vertex+1)) &
+    !    + 0.5 * gap_trp * trap%ntbz
+
+    call plane_boxcar_radial(n_arr_pol, &
+             vert_x(i_plate, j_vertex+1) - vert_x(i_plate, j_vertex), &
+             vert_y(i_plate, j_vertex+1) - vert_y(i_plate, j_vertex), &
+             vert_z(i_plate, j_vertex+1) - vert_z(i_plate, j_vertex), &
+             arr_base_tb_x, arr_base_tb_y, arr_base_tb_z,             &
+             arr_top_tb_x,  arr_top_tb_y,  arr_top_tb_z,              &
+             trap%ntbx,     trap%ntby,     trap%ntbz                   )
+    trap%otbx = vert_x(i_plate, j_vertex) + 0.5*gap_trp*trap%ntbx
+    trap%otby = vert_y(i_plate, j_vertex) + 0.5*gap_trp*trap%ntby
+    trap%otbz = vert_z(i_plate, j_vertex) + 0.5*gap_trp*trap%ntbz
 
     ! Toroidal front plane
-    call plane_boxcar(n_arr_pol,                                   & 
-                      arr_base_tf_x, arr_base_tf_y, arr_base_tf_z, &
-                      arr_top_tf_x, arr_top_tf_y, arr_top_tf_z,    &
-                      trap%ntfx, trap%ntfy, trap%ntfz,             &
-                      trap%otfx, trap%otfy, trap%otfz               )
+    !call plane_boxcar(n_arr_pol,                                   & 
+    !                  arr_base_tf_x, arr_base_tf_y, arr_base_tf_z, &
+    !                  arr_top_tf_x, arr_top_tf_y, arr_top_tf_z,    &
+    !                  trap%ntfx, trap%ntfy, trap%ntfz,             &
+    !                  trap%otfx, trap%otfy, trap%otfz               )
+    !trap%ntfx = -trap%ntfx
+    !trap%ntfy = -trap%ntfy
+    !trap%ntfz = -trap%ntfz
+    !trap%otfx = &
+    !    0.5 * (vert_x(i_plate+1, j_vertex) + vert_x(i_plate+1, j_vertex+1)) &
+    !    + 0.5 * gap_trp * trap%ntfx
+    !trap%otfy = &
+    !    0.5 * (vert_y(i_plate+1, j_vertex) + vert_y(i_plate+1, j_vertex+1)) &
+    !    + 0.5 * gap_trp * trap%ntfy
+    !trap%otfz = &
+    !    0.5 * (vert_z(i_plate+1, j_vertex) + vert_z(i_plate+1, j_vertex+1)) &
+    !    + 0.5 * gap_trp * trap%ntfz
+
+    call plane_boxcar_radial(n_arr_pol, &
+             vert_x(i_plate+1, j_vertex+1) - vert_x(i_plate+1, j_vertex), &
+             vert_y(i_plate+1, j_vertex+1) - vert_y(i_plate+1, j_vertex), &
+             vert_z(i_plate+1, j_vertex+1) - vert_z(i_plate+1, j_vertex), &
+             arr_base_tf_x, arr_base_tf_y, arr_base_tf_z,             &
+             arr_top_tf_x,  arr_top_tf_y,  arr_top_tf_z,              &
+             trap%ntfx,     trap%ntfy,     trap%ntfz                   )
     trap%ntfx = -trap%ntfx
     trap%ntfy = -trap%ntfy
     trap%ntfz = -trap%ntfz
-    trap%otfx = &
-        0.5 * (vert_x(i_plate+1, j_vertex) + vert_x(i_plate+1, j_vertex+1)) &
-        + 0.5 * gap_trp * trap%ntfx
-    trap%otfy = &
-        0.5 * (vert_y(i_plate+1, j_vertex) + vert_y(i_plate+1, j_vertex+1)) &
-        + 0.5 * gap_trp * trap%ntfy
-    trap%otfz = &
-        0.5 * (vert_z(i_plate+1, j_vertex) + vert_z(i_plate+1, j_vertex+1)) &
-        + 0.5 * gap_trp * trap%ntfz
+    trap%otfx = vert_x(i_plate+1, j_vertex) + 0.5*gap_trp*trap%ntfx
+    trap%otfy = vert_y(i_plate+1, j_vertex) + 0.5*gap_trp*trap%ntfy
+    trap%otfz = vert_z(i_plate+1, j_vertex) + 0.5*gap_trp*trap%ntfz
 
     ! Poloidal back plane
-    call plane_boxcar(n_arr_tor,                                   &
-                      arr_base_pb_x, arr_base_pb_y, arr_base_pb_z, &
-                      arr_top_pb_x, arr_top_pb_y, arr_top_pb_z,    &
-                      trap%npbx, trap%npby, trap%npbz,             &
-                      trap%opbx, trap%opby, trap%opbz               )
+    !call plane_boxcar(n_arr_tor,                                   &
+    !                  arr_base_pb_x, arr_base_pb_y, arr_base_pb_z, &
+    !                  arr_top_pb_x, arr_top_pb_y, arr_top_pb_z,    &
+    !                  trap%npbx, trap%npby, trap%npbz,             &
+    !                  trap%opbx, trap%opby, trap%opbz               )
+    !trap%npbx = -trap%npbx
+    !trap%npby = -trap%npby
+    !trap%npbz = -trap%npbz
+    !trap%opbx = trap%opbx + 0.5 * gap_trp * trap%npbx
+    !trap%opby = trap%opby + 0.5 * gap_trp * trap%npby
+    !trap%opbz = trap%opbz + 0.5 * gap_trp * trap%npbz
+         
+    phi = atan2( &
+              0.5*(vert_y(i_plate+1, j_vertex) + vert_y(i_plate, j_vertex)), &
+              0.5*(vert_x(i_plate+1, j_vertex) + vert_x(i_plate, j_vertex)))
+    call plane_boxcar_radial(n_arr_pol, -sin(phi), cos(phi), zero,        &
+                             arr_base_pb_x, arr_base_pb_y, arr_base_pb_z, &
+                             arr_top_pb_x,  arr_top_pb_y,  arr_top_pb_z,  &
+                             trap%npbx,     trap%npby,     trap%npbz       )
     trap%npbx = -trap%npbx
     trap%npby = -trap%npby
     trap%npbz = -trap%npbz
-    trap%opbx = trap%opbx + 0.5 * gap_trp * trap%npbx
-    trap%opby = trap%opby + 0.5 * gap_trp * trap%npby
-    trap%opbz = trap%opbz + 0.5 * gap_trp * trap%npbz
-         
+    trap%opbx = 0.5*(vert_x(i_plate, j_vertex) + vert_x(i_plate+1, j_vertex))  &
+                + 0.5*gap_trp*trap%npbx
+    trap%opby = 0.5*(vert_y(i_plate, j_vertex) + vert_y(i_plate+1, j_vertex))  &
+                + 0.5*gap_trp*trap%npby
+    trap%opbz = 0.5*(vert_z(i_plate, j_vertex) + vert_z(i_plate+1, j_vertex))  &
+                + 0.5*gap_trp*trap%npbz
+
     ! Poloidal front plane
-    call plane_boxcar(n_arr_tor,                                   & 
-                      arr_base_pf_x, arr_base_pf_y, arr_base_pf_z, &
-                      arr_top_pf_x, arr_top_pf_y, arr_top_pf_z,    &
-                      trap%npfx, trap%npfy, trap%npfz,             &
-                      trap%opfx, trap%opfy, trap%opfz               )
-    trap%opfx = trap%opfx + 0.5 * gap_trp * trap%npfx
-    trap%opfy = trap%opfy + 0.5 * gap_trp * trap%npfy
-    trap%opfz = trap%opfz + 0.5 * gap_trp * trap%npfz
+    !call plane_boxcar(n_arr_tor,                                   & 
+    !                  arr_base_pf_x, arr_base_pf_y, arr_base_pf_z, &
+    !                  arr_top_pf_x, arr_top_pf_y, arr_top_pf_z,    &
+    !                  trap%npfx, trap%npfy, trap%npfz,             &
+    !                  trap%opfx, trap%opfy, trap%opfz               )
+    !trap%opfx = trap%opfx + 0.5 * gap_trp * trap%npfx
+    !trap%opfy = trap%opfy + 0.5 * gap_trp * trap%npfy
+    !trap%opfz = trap%opfz + 0.5 * gap_trp * trap%npfz
  
+    phi = atan2( &
+              0.5*(vert_y(i_plate+1, j_vertex) + vert_y(i_plate, j_vertex)), &
+              0.5*(vert_x(i_plate+1, j_vertex) + vert_x(i_plate, j_vertex))   )
+    call plane_boxcar_radial(n_arr_pol, -sin(phi), cos(phi), zero,        &
+             arr_base_pf_x, arr_base_pf_y, arr_base_pf_z,             &
+             arr_top_pf_x,  arr_top_pf_y,  arr_top_pf_z,              &
+             trap%npfx,     trap%npfy,     trap%npfz                   )
+    trap%opfx = &
+        0.5*(vert_x(i_plate, j_vertex+1) + vert_x(i_plate+1, j_vertex+1))  &
+        + 0.5*gap_trp*trap%npfx
+    trap%opfy = &
+        0.5*(vert_y(i_plate, j_vertex+1) + vert_y(i_plate+1, j_vertex+1))  &
+        + 0.5*gap_trp*trap%npfy
+    trap%opfz = &
+        0.5*(vert_z(i_plate, j_vertex+1) + vert_z(i_plate+1, j_vertex+1))  &
+        + 0.5*gap_trp*trap%npfz
+
     deallocate(arr_base_tb_x, arr_base_tb_y, arr_base_tb_z, &
                arr_base_tf_x, arr_base_tf_y, arr_base_tf_z, &
                arr_top_tb_x, arr_top_tb_y, arr_top_tb_z,    &
@@ -707,9 +766,9 @@ subroutine plane_boxcar(n, base_x, base_y, base_z, top_x, top_y, top_z, &
 end subroutine plane_boxcar
 
 !-------------------------------------------------------------------------------
-! plane_boxcar_radial(n, ang_nx, ang_ny, ang_nz, ang_ox, ang_oy, ang_oz, 
+! plane_boxcar_radial(n, ang_dx, ang_dy, ang_dz, 
 !                     base_x, base_y, base_z, top_x, top_y, top_z, 
-!                     nx, ny, nz, ox, oy, oz
+!                     nx, ny, nz)
 !
 ! Similar to plane_boxcar(), but only performs boxcar averaging for the 
 ! radial tangent vector of the plane. The angular tangent vector and reference
