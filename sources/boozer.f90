@@ -48,7 +48,7 @@ end subroutine boozmn
 subroutine boozsurf(XYZB, x, y, z, iota, isurf)
   USE globals, only : dp, myid, ncpu, zero, half, two, pi, pi2, ounit, total_num, pp_maxiter, &
                       bmin, bmim, booz_mnc, booz_mns, booz_mn, machprec, &
-                      masterid
+                      masterid, myworkid
   USE mpi
   IMPLICIT NONE
 
@@ -172,8 +172,9 @@ subroutine boozsurf(XYZB, x, y, z, iota, isurf)
 
   ! finish decomposition
 
-  write(ounit, '("boozmn  : myid ="I6" ; Gpol="ES12.5" ; iota="ES12.5" ; Booz_mnc(1)="ES12.5 &
-       " ; Booz_mns(1)="ES12.5)') masterid, Gpol, iota, booz_mnc(1, isurf), booz_mns(1, isurf)
+  if (myworkid == 0) write(ounit, '("boozmn  : order="I6" ; Gpol="ES12.5" ; iota="ES12.5 &
+       " ; Booz_mnc(1)="ES12.5" ; Booz_mns(1)="ES12.5)') isurf, Gpol, iota, &
+       booz_mnc(1, isurf), booz_mns(1, isurf)
   
   return
 end subroutine boozsurf

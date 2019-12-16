@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='v0.8.03' ! version number
+  CHARACTER(LEN=10), parameter :: version='v0.9.00' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -101,6 +101,7 @@ module globals
   INTEGER              :: case_bnormal   =   0
   INTEGER              :: case_length    =   1         
   REAL                 :: weight_bnorm   =   1.000D+00
+  INTEGER              :: bharm_jsurf    =   0
   REAL                 :: weight_bharm   =   0.000D+00
   REAL                 :: weight_tflux   =   0.000D+00
   REAL                 :: target_tflux   =   0.000D+00
@@ -184,6 +185,7 @@ module globals
                         case_bnormal   , &
                         case_length    , &
                         weight_bnorm   , &
+                        bharm_jsurf    , &
                         weight_bharm   , &
                         weight_tflux   , &
                         target_tflux   , &
@@ -251,7 +253,7 @@ module globals
                              xt(:,:), yt(:,:), zt(:,:), xp(:,:), yp(:,:), zp(:,:), &
                              ds(:,:), bn(:,:), pb(:,:), &
                              Bx(:,:), By(:,:), Bz(:,:)
-     REAL                 :: vol
+     REAL                 :: vol, area
   end type toroidalsurface
 
   type arbitrarycoil
