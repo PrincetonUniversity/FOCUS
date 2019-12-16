@@ -98,7 +98,7 @@ subroutine torflux( ideriv )
   use globals, only: dp, zero, half, one, pi2, sqrtmachprec, bsconstant, ncpu, myid, ounit, &
        coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, Cdof, Npc, &
        tflux, t1F, t2F, Ndof, psi_avg, target_tflux, &
-       itflux, mtflux, LM_fvec, LM_fjac, weight_tflux
+       itflux, mtflux, LM_fvec, LM_fjac, weight_tflux, plasma
 
   implicit none
   include "mpif.h"
@@ -106,7 +106,7 @@ subroutine torflux( ideriv )
   INTEGER, INTENT(in)                   :: ideriv
   !--------------------------------------------------------------------------------------------
   INTEGER                               :: astat, ierr
-  INTEGER                               :: icoil, iteta, jzeta, idof, ND, ip
+  INTEGER                               :: icoil, iteta, jzeta, idof, ND, ip, isurf
   REAL                                  :: dflux, lflux, lsum
   REAL                                  :: lax, lay, laz          ! local Ax, Ay and Az
   REAL, dimension(0:Cdof, 0:Cdof)       :: dAx, dAy, dAz          ! dA of each coil;
@@ -135,9 +135,9 @@ subroutine torflux( ideriv )
               enddo ! end do icoil
            enddo  ! end do ip;
 
-           lflux = lflux + lax * surf(1)%xt(iteta,jzeta) + &    ! local flux;
-                           lay * surf(1)%yt(iteta,jzeta) + &
-                           laz * surf(1)%zt(iteta,jzeta)
+           lflux = lflux + lax * surf(isurf)%xt(iteta,jzeta) + &    ! local flux;
+                           lay * surf(isurf)%yt(iteta,jzeta) + &
+                           laz * surf(isurf)%zt(iteta,jzeta)
         enddo ! end do iteta
         lflux = lflux * pi2/Nteta ! discretization factor;
         lsum  = lsum + lflux
@@ -183,9 +183,9 @@ subroutine torflux( ideriv )
                          & dAx(0,0), dAy(0,0), dAz(0,0))
 
                     ldF(idof+1, jzeta) = ldF(idof+1, jzeta) &
-                         & + bsconstant * ( dAx(0,0)*surf(1)%xt(iteta,jzeta)   &
-                         &                + dAy(0,0)*surf(1)%yt(iteta,jzeta)   &
-                         &                + dAz(0,0)*surf(1)%zt(iteta,jzeta) )
+                         & + bsconstant * ( dAx(0,0)*surf(isurf)%xt(iteta,jzeta)   &
+                         &                + dAy(0,0)*surf(isurf)%yt(iteta,jzeta)   &
+                         &                + dAz(0,0)*surf(isurf)%zt(iteta,jzeta) )
                     idof = idof +1
                  endif
 
@@ -194,9 +194,9 @@ subroutine torflux( ideriv )
                          &       dAx(1:ND,0), dAy(1:ND,0), dAz(1:ND,0), ND)
 
                     ldF(idof+1:idof+ND, jzeta) = ldF(idof+1:idof+ND, jzeta) &
-                         & + bsconstant * coil(icoil)%I * ( dAx(1:ND,0)*surf(1)%xt(iteta,jzeta)   &
-                         &                                + dAy(1:ND,0)*surf(1)%yt(iteta,jzeta)   &
-                         &                                + dAz(1:ND,0)*surf(1)%zt(iteta,jzeta) )
+                         & + bsconstant * coil(icoil)%I * ( dAx(1:ND,0)*surf(isurf)%xt(iteta,jzeta)   &
+                         &                                + dAy(1:ND,0)*surf(isurf)%yt(iteta,jzeta)   &
+                         &                                + dAz(1:ND,0)*surf(isurf)%zt(iteta,jzeta) )
 
                     idof = idof + ND
                  endif
@@ -244,7 +244,7 @@ subroutine bpotential0(icoil, iteta, jzeta, Ax, Ay, Az)
 ! Discretizing factor is includeed; coil(icoil)%dd(kseg) 
 !------------------------------------------------------------------------------------------------------   
   use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, Npc, &
-                     zero, myid, ounit
+                     zero, myid, ounit, plasma
   implicit none
   include "mpif.h"
 
@@ -253,7 +253,7 @@ subroutine bpotential0(icoil, iteta, jzeta, Ax, Ay, Az)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  INTEGER              :: ierr, astat, kseg
+  INTEGER              :: ierr, astat, kseg, isurf
   REAL                 :: dlx, dly, dlz, rm, ltx, lty, ltz
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -268,9 +268,9 @@ subroutine bpotential0(icoil, iteta, jzeta, Ax, Ay, Az)
 
   do kseg = 0, coil(icoil)%NS-1
         
-   dlx = surf(1)%xx(iteta,jzeta) - coil(icoil)%xx(kseg)
-   dly = surf(1)%yy(iteta,jzeta) - coil(icoil)%yy(kseg)
-   dlz = surf(1)%zz(iteta,jzeta) - coil(icoil)%zz(kseg)
+   dlx = surf(isurf)%xx(iteta,jzeta) - coil(icoil)%xx(kseg)
+   dly = surf(isurf)%yy(iteta,jzeta) - coil(icoil)%yy(kseg)
+   dlz = surf(isurf)%zz(iteta,jzeta) - coil(icoil)%zz(kseg)
    rm  = 1.0 / sqrt(dlx**2 + dly**2 + dlz**2)
 
    ltx = coil(icoil)%xt(kseg)
@@ -297,7 +297,7 @@ subroutine bpotential1(icoil, iteta, jzeta, Ax, Ay, Az, ND)
 ! Discretizing factor is includeed; coil(icoil)%dd(kseg) 
 !------------------------------------------------------------------------------------------------------    
   use globals, only: dp, coil, DoF, surf, NFcoil, Ncoils, Nteta, Nzeta, Npc, &
-                     zero, myid, ounit
+                     zero, myid, ounit, plasma
   implicit none
   include "mpif.h"
 
@@ -306,7 +306,7 @@ subroutine bpotential1(icoil, iteta, jzeta, Ax, Ay, Az, ND)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  INTEGER              :: ierr, astat, kseg, NS
+  INTEGER              :: ierr, astat, kseg, NS, isurf
   REAL                 :: dlx, dly, dlz, r, rm3, ltx, lty, ltz
   REAL, dimension(1:1, 0:coil(icoil)%NS-1)   :: dAxx, dAxy, dAxz, dAyx, dAyy, dAyz, dAzx, dAzy, dAzz
 
@@ -328,9 +328,9 @@ subroutine bpotential1(icoil, iteta, jzeta, Ax, Ay, Az, ND)
 
   do kseg = 0, NS-1
      
-     dlx = surf(1)%xx(iteta,jzeta) - coil(icoil)%xx(kseg)
-     dly = surf(1)%yy(iteta,jzeta) - coil(icoil)%yy(kseg)
-     dlz = surf(1)%zz(iteta,jzeta) - coil(icoil)%zz(kseg)
+     dlx = surf(isurf)%xx(iteta,jzeta) - coil(icoil)%xx(kseg)
+     dly = surf(isurf)%yy(iteta,jzeta) - coil(icoil)%yy(kseg)
+     dlz = surf(isurf)%zz(iteta,jzeta) - coil(icoil)%zz(kseg)
 
      r = sqrt(dlx**2 + dly**2 + dlz**2); rm3 = r**(-3)
 

@@ -7,17 +7,18 @@ SUBROUTINE diagnos
 !------------------------------------------------------------------------------------------------------   
   use globals, only: dp, zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
        Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
-       cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, Npc, weight_bnorm, overlap
+       cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, Npc, weight_bnorm, overlap, plasma
                      
   implicit none
   include "mpif.h"
 
-  INTEGER           :: icoil, itmp=0, astat, ierr, NF, idof, i, j
+  INTEGER           :: icoil, itmp=0, astat, ierr, NF, idof, i, j, isurf
   LOGICAL           :: lwbnorm = .True. , l_raw = .False.!if use raw coils data
   REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist, ReDot, ImDot
   REAL, parameter   :: infmax = 1.0E6
   REAL, allocatable :: Atmp(:,:), Btmp(:,:)
 
+  isurf = plasma
   if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "-----------COIL DIAGNOSTICS----------------------------------"
 
   !--------------------------------cost functions-------------------------------------------------------  
@@ -130,9 +131,9 @@ SUBROUTINE diagnos
      Atmp(2, 0:coil(icoil)%NS-1) = coil(icoil)%yy(0:coil(icoil)%NS-1)
      Atmp(3, 0:coil(icoil)%NS-1) = coil(icoil)%zz(0:coil(icoil)%NS-1)
 
-     Btmp(1, 1:(Nteta*Nzeta)) = reshape(surf(1)%xx(0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))
-     Btmp(2, 1:(Nteta*Nzeta)) = reshape(surf(1)%yy(0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))
-     Btmp(3, 1:(Nteta*Nzeta)) = reshape(surf(1)%zz(0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))
+     Btmp(1, 1:(Nteta*Nzeta)) = reshape(surf(isurf)%xx(0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))
+     Btmp(2, 1:(Nteta*Nzeta)) = reshape(surf(isurf)%yy(0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))
+     Btmp(3, 1:(Nteta*Nzeta)) = reshape(surf(isurf)%zz(0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))
 
      call mindist(Atmp, coil(icoil)%NS, Btmp, Nteta*Nzeta, tmp_dist)
 
@@ -166,10 +167,10 @@ SUBROUTINE diagnos
   endif
 
   !--------------------------------calculate the average Bn error-------------------------------
-  if (allocated(surf(1)%bn)) then
+  if (allocated(surf(isurf)%bn)) then
      ! \sum{ |Bn| / |B| }/ (Nt*Nz)
      if(myid .eq. 0) write(ounit, '(8X": Average relative absolute Bn error is  :" ES23.15)') &
-          sum(abs(surf(1)%bn/sqrt(surf(1)%Bx**2 + surf(1)%By**2 + surf(1)%Bz**2))) / (Nteta*Nzeta)
+          sum(abs(surf(isurf)%bn/sqrt(surf(isurf)%Bx**2 + surf(isurf)%By**2 + surf(isurf)%Bz**2))) / (Nteta*Nzeta)
   endif
 
   return
@@ -258,18 +259,19 @@ end subroutine mindist
 
 subroutine importance(icoil)
   use globals, only: dp,  zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils, &
-                     surf, Nteta, Nzeta, bsconstant, coil_importance
+                     surf, Nteta, Nzeta, bsconstant, coil_importance, plasma
   implicit none
   include "mpif.h"
 
   INTEGER, INTENT(in) :: icoil  
 
-  INTEGER                               :: iteta, jzeta, NumGrid
+  INTEGER                               :: iteta, jzeta, NumGrid, isurf
   REAL                                  :: dBx, dBy, dBz
   REAL, dimension(0:Nteta-1, 0:Nzeta-1) :: tbx, tby, tbz        ! summed Bx, By and Bz
 
   !--------------------------initialize and allocate arrays------------------------------------- 
 
+  isurf = plasma
   NumGrid = Nteta*Nzeta
   tbx = zero; tby = zero; tbz = zero        !already allocted; reset to zero;
 
@@ -277,8 +279,8 @@ subroutine importance(icoil)
      do iteta = 0, Nteta - 1
 
         if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;
-        call bfield0(icoil, surf(1)%xx(iteta, jzeta), surf(1)%yy(iteta, jzeta), &
-                   & surf(1)%zz(iteta, jzeta), tbx(iteta, jzeta), tby(iteta, jzeta), tbz(iteta, jzeta))
+        call bfield0(icoil, surf(isurf)%xx(iteta, jzeta), surf(isurf)%yy(iteta, jzeta), &
+                   & surf(isurf)%zz(iteta, jzeta), tbx(iteta, jzeta), tby(iteta, jzeta), tbz(iteta, jzeta))
 
      enddo ! end do iteta
   enddo ! end do jzeta
@@ -288,8 +290,8 @@ subroutine importance(icoil)
   call MPI_ALLREDUCE( MPI_IN_PLACE, tby, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
   call MPI_ALLREDUCE( MPI_IN_PLACE, tbz, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
 
-  coil_importance(icoil) = sum( (tbx*surf(1)%Bx + tby*surf(1)%By + tbz*surf(1)%Bz) / &
-                                (surf(1)%Bx**2 + surf(1)%By**2 + surf(1)%Bz**2) ) / NumGrid
+  coil_importance(icoil) = sum( (tbx*surf(isurf)%Bx + tby*surf(isurf)%By + tbz*surf(isurf)%Bz) / &
+                                (surf(isurf)%Bx**2 + surf(isurf)%By**2 + surf(isurf)%Bz**2) ) / NumGrid
 
   return
 

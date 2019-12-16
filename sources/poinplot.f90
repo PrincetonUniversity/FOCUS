@@ -7,7 +7,7 @@ SUBROUTINE poinplot
                       pp_phi, pp_raxis, pp_zaxis, pp_xtol, pp_rmax, pp_zmax, ppr, ppz, pp_ns, iota, nfp_raw, &
                       XYZB, lboozmn, booz_mnc, booz_mns, booz_mn, total_num, &
                       master, nmaster, nworker, masterid, color, myworkid, MPI_COMM_MASTERS, &
-                      MPI_COMM_MYWORLD, MPI_COMM_WORKERS
+                      MPI_COMM_MYWORLD, MPI_COMM_WORKERS, plasma
   USE mpi
   IMPLICIT NONE
 
@@ -29,8 +29,8 @@ SUBROUTINE poinplot
   ! if raxis, zaxis not provided
   if ( (abs(pp_raxis) + abs(pp_zaxis)) < sqrtmachprec) then
      zeta = pp_phi
-     theta = zero ; call surfcoord( theta, zeta, r , z )
-     theta = pi   ; call surfcoord( theta, zeta, r1, z1)
+     theta = zero ; call surfcoord( plasma, theta, zeta, r , z )
+     theta = pi   ; call surfcoord( plasma, theta, zeta, r1, z1)
      
      pp_raxis = (r+r1)*half
      pp_zaxis = (z+z1)*half
@@ -81,7 +81,7 @@ SUBROUTINE poinplot
   ! if pp_rmax and pp_zmax not provied 
   if ( (abs(pp_rmax) + abs(pp_zmax)) < sqrtmachprec) then
      zeta = pp_phi
-     theta = zero ; call surfcoord( theta, zeta, r , z )
+     theta = zero ; call surfcoord( plasma, theta, zeta, r , z )
      pp_rmax = r*1.0 ; pp_zmax = z*1.0
   endif
 

@@ -358,8 +358,8 @@ subroutine rdcoils
         !initilize with circular coils;
         zeta = (icoil-1+half) * pi2 / (Ncoils*Npc)  ! put a half for a shift;
 
-        call surfcoord( zero, zeta, r1, z1)
-        call surfcoord(   pi, zeta, r2, z2)
+        call surfcoord( plasma, zero, zeta, r1, z1)
+        call surfcoord( plasma,   pi, zeta, r2, z2)
 
         Rmaj = half * (r1 + r2)
         z0   = half * (z1 + z2)        
@@ -409,8 +409,8 @@ subroutine rdcoils
 
         !initilize with circular coils;
         zeta = (itor-1) * pi2 / num_tor  ! put a half for a shift;
-        call surfcoord( zero, zeta, r1, z1)
-        call surfcoord(   pi, zeta, r2, z2)
+        call surfcoord( plasma, zero, zeta, r1, z1)
+        call surfcoord( plasma,   pi, zeta, r2, z2)
         Rmaj = half * (r1 + r2)
         z0   = half * (z1 + z2)     
 

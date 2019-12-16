@@ -160,10 +160,12 @@ module globals
   CHARACTER(LEN=100)   :: input_surf     = 'plasma.boundary'  ! surface file
   CHARACTER(LEN=100)   :: input_coils    = 'none'             ! input file for coils
   CHARACTER(LEN=100)   :: input_harm     = 'target.harmonics' ! input target harmonics file
+  CHARACTER(LEN=100)   :: limiter_surf   = 'none'             ! limiter surface
                                                          
   namelist / focusin /  IsQuiet        , &
                         IsSymmetric    , &
-                        input_surf     , & 
+                        input_surf     , &
+                        limiter_surf   , &
                         input_harm     , &
                         input_coils    , & 
                         case_surface   , &
@@ -248,11 +250,13 @@ module globals
 
 !latex \subsection{surface and coils data}
   type toroidalsurface
-     INTEGER              :: Nteta, Nzeta
+     INTEGER              :: Nteta, Nzeta, Nfou=0, Nfp=0, NBnf=0
+     REAL   , allocatable :: Rbc(:), Zbs(:), Rbs(:), Zbc(:), Bnc(:), Bns(:)
      REAL   , allocatable :: xx(:,:), yy(:,:), zz(:,:), nx(:,:), ny(:,:), nz(:,:), &
                              xt(:,:), yt(:,:), zt(:,:), xp(:,:), yp(:,:), zp(:,:), &
                              ds(:,:), bn(:,:), pb(:,:), &
                              Bx(:,:), By(:,:), Bz(:,:)
+     INTEGER, allocatable :: bim(:), bin(:), Bnim(:), Bnin(:)
      REAL                 :: vol, area
   end type toroidalsurface
 
@@ -279,9 +283,9 @@ module globals
   type(FourierCoil)    , allocatable :: FouCoil(:)
   type(DegreeOfFreedom), allocatable :: DoF(:)
 
-  INTEGER              :: Nfou=0, Nfp=0, NBnf=0, Npc = 1, Nfp_raw = 1
-  INTEGER, allocatable :: bim(:), bin(:), Bnim(:), Bnin(:)
-  REAL   , allocatable :: Rbc(:), Zbs(:), Rbs(:), Zbc(:), Bnc(:), Bns(:), cosip(:), sinip(:)
+  INTEGER              :: Nfp = 1, Npc = 1, Nfp_raw = 1
+  INTEGER              :: plasma = 1, limiter = 1
+  REAL   , allocatable :: cosip(:), sinip(:)
     
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

@@ -289,8 +289,8 @@
 subroutine initial
 
   use globals
+  use mpi
   implicit none
-  include "mpif.h"
 
   LOGICAL :: exist
   INTEGER :: icpu, index_dot
@@ -361,6 +361,12 @@ subroutine initial
      write(ounit, *) "-----------INPUT NAMELIST------------------------------------"
      write(ounit, '("initial : Read namelist focusin from : ", A)') trim(inputfile)
      write(ounit, '("        : Read plasma boundary  from : ", A)') trim(input_surf)
+     if ( weight_cssep > machprec ) then
+        if (trim(limiter_surf) == 'none') then ! by default, use the plasma surface
+           limiter_surf = input_surf
+        endif
+        write(ounit, '("        : Read limiter surface  from : ", A)') trim(limiter_surf)
+     endif
      if (weight_bharm > machprec) then
         write(ounit, '("        : Read Bmn harmonics    from : ", A)') trim(input_harm)
      endif
@@ -606,6 +612,9 @@ subroutine initial
      endif
 
   endif
+  
+  ClBCAST( limiter_surf,  100,  0 )
+  ClBCAST( input_coils ,  100,  0 )
 
   FATAL( initial, ncpu >= 1000 , too macy cpus, modify nodelabel)
   write(nodelabel,'(i3.3)') myid ! nodelabel is global; 30 Oct 15;

@@ -13,8 +13,10 @@ subroutine AllocData(itype)
 
   INTEGER, intent(in) :: itype
 
-  INTEGER             :: icoil, idof, ND, NF, icur, imag
+  INTEGER             :: icoil, idof, ND, NF, icur, imag, isurf
   REAL                :: xtmp, mtmp
+
+  isurf = plasma
 
   !-------------------------------------------------------------------------------------------
   if (itype == -1) then ! dof related data;
@@ -87,7 +89,7 @@ subroutine AllocData(itype)
               imag = imag + 1
            endif
         enddo
-        Gnorm = (surf(1)%vol/(pi*pi2))**(one/three)  ! Gnorm is a hybrid of major and minor radius
+        Gnorm = (surf(plasma)%vol/(pi*pi2))**(one/three)  ! Gnorm is a hybrid of major and minor radius
         Gnorm = Gnorm * weight_gnorm 
         
         icur = max(1, icur) ; imag = max(1, imag)    ! avoid dividing zero
@@ -171,10 +173,10 @@ subroutine AllocData(itype)
      ! Bnorm and Bharm needed;
      if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec .or. IsQuiet <= -2) then
         SALLOCATE(         bn, (0:Nteta-1,0:Nzeta-1), zero ) ! Bn from coils;        
-        SALLOCATE( surf(1)%bn, (0:Nteta-1,0:Nzeta-1), zero ) ! total Bn;
-        SALLOCATE( surf(1)%Bx, (0:Nteta-1,0:Nzeta-1), zero ) ! Bx on the surface;
-        SALLOCATE( surf(1)%By, (0:Nteta-1,0:Nzeta-1), zero ) ! By on the surface;
-        SALLOCATE( surf(1)%Bz, (0:Nteta-1,0:Nzeta-1), zero ) ! Bz on the surface;
+        SALLOCATE( surf(isurf)%bn, (0:Nteta-1,0:Nzeta-1), zero ) ! total Bn;
+        SALLOCATE( surf(isurf)%Bx, (0:Nteta-1,0:Nzeta-1), zero ) ! Bx on the surface;
+        SALLOCATE( surf(isurf)%By, (0:Nteta-1,0:Nzeta-1), zero ) ! By on the surface;
+        SALLOCATE( surf(isurf)%Bz, (0:Nteta-1,0:Nzeta-1), zero ) ! Bz on the surface;
         SALLOCATE(         Bm, (0:Nteta-1,0:Nzeta-1), zero ) ! |B| on the surface;       
         SALLOCATE( dBx, (0:Cdof,0:Cdof), zero ) ! d^2Bx/(dx1,dx2) on each coil; Cdof is the max coil dof
         SALLOCATE( dBy, (0:Cdof,0:Cdof), zero ) ! d^2By/(dx1,dx2) on each coil;

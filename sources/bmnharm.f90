@@ -126,12 +126,12 @@ SUBROUTINE readBmn
   !----------------------------------------------------------------------------------------
   use globals, only: dp, zero, half, pi2, myid, ounit, runit, ext, IsQuiet, Nteta, Nzeta, Nfp, &
                      NBmn, Bmnin, Bmnim, wBmn, tBmnc, tBmns, carg, sarg, Nfp_raw, case_bnormal, &
-                     input_harm, bharm_jsurf, surf
+                     input_harm, bharm_jsurf, surf, plasma
   use bharm_mod
   implicit none
   include "mpif.h"
 
-  INTEGER  :: ii, jj, ij, imn, ierr, astat
+  INTEGER  :: ii, jj, ij, imn, ierr, astat, isurf
   REAL     :: teta, zeta, arg
   LOGICAL  :: exist
 
@@ -199,11 +199,11 @@ SUBROUTINE readBmn
          if (bharm_jsurf == 0) then
             continue
          else if (bharm_jsurf == 1) then ! Bn * dA
-            carg(ij, 1:NBmn) = carg(ij, 1:NBmn) * (surf(1)%ds(ii, jj))
-            sarg(ij, 1:NBmn) = sarg(ij, 1:NBmn) * (surf(1)%ds(ii, jj))
+            carg(ij, 1:NBmn) = carg(ij, 1:NBmn) * (surf(isurf)%ds(ii, jj))
+            sarg(ij, 1:NBmn) = sarg(ij, 1:NBmn) * (surf(isurf)%ds(ii, jj))
          else if ( bharm_jsurf == 2) then ! Bn * sqrt(dA)
-            carg(ij, 1:NBmn) = carg(ij, 1:NBmn) * sqrt(surf(1)%ds(ii, jj))
-            sarg(ij, 1:NBmn) = sarg(ij, 1:NBmn) * sqrt(surf(1)%ds(ii, jj))
+            carg(ij, 1:NBmn) = carg(ij, 1:NBmn) * sqrt(surf(isurf)%ds(ii, jj))
+            sarg(ij, 1:NBmn) = sarg(ij, 1:NBmn) * sqrt(surf(isurf)%ds(ii, jj))
          end if
       enddo
    enddo
@@ -226,7 +226,7 @@ SUBROUTINE twodft(func, hs, hc, im, in, mn)
   ! Right now, it's using normal Fourier transforming, later FFT will be enabled.
   !-------------------------------------------------------------------------------!
   use globals, only: dp, zero, half, two, pi2, myid, ounit, &
-       Nteta, Nzeta, carg, sarg, bharm_jsurf, surf
+       Nteta, Nzeta, carg, sarg, bharm_jsurf, surf, plasma 
   implicit none
   include "mpif.h"
   !-------------------------------------------------------------------------------
@@ -234,11 +234,12 @@ SUBROUTINE twodft(func, hs, hc, im, in, mn)
   REAL   , INTENT(out) :: hc(1:mn), hs(1:mn)
   INTEGER, INTENT(in ) :: mn, im(1:mn), in(1:mn)
 
-  INTEGER              :: m, n, imn, maxN, maxM, astat, ierr
+  INTEGER              :: m, n, imn, maxN, maxM, astat, ierr, isurf
   !------------------------------------------------------------------------------- 
 
   FATAL(twodft, mn < 1, invalid size for 2D Fourier transformation)
 
+  isurf = plasma
   maxN = maxval(abs(in))
   maxM = maxval(abs(im))
   FATAL(twodft, maxN >= Nzeta/2, toroidal grid resolution not enough)
@@ -267,11 +268,11 @@ SUBROUTINE twodft(func, hs, hc, im, in, mn)
      hc = hc * two
      hs = hs * two
   else if (bharm_jsurf == 1) then ! divide by A
-     hc = hc / surf(1)%area * two * pi2**2
-     hs = hs / surf(1)%area * two * pi2**2
+     hc = hc / surf(isurf)%area * two * pi2**2
+     hs = hs / surf(isurf)%area * two * pi2**2
   else if (bharm_jsurf == 2) then ! divide by sqrt(A)
-     hc = hc / sqrt(surf(1)%area) * two * pi2
-     hs = hs / sqrt(surf(1)%area) * two * pi2
+     hc = hc / sqrt(surf(isurf)%area) * two * pi2
+     hs = hs / sqrt(surf(isurf)%area) * two * pi2
   end if
 
   return
