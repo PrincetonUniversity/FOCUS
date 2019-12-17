@@ -43,7 +43,7 @@ endif
 
 #### Traverse + GNU Fortran ################
 ifneq (,$(findstring traverse,$(HOSTNAME)))
-# RFLAGS=-O3 -w -fdefault-real-8 -ffree-line-length-none -march=native -ffast-math
+# available env: /home/caoxiang/Modules/focus/
  RFLAGS=-O3 -w -ffree-line-length-none -mcpu=power9 -ffast-math $(PFLAGS)
  DFLAGS=-Og $(PFLAGS) -w -ffree-line-length-none -Wextra -Wtarget-lifetime -fbacktrace -fbounds-check  \
      -ffpe-trap=zero -fcheck=all -DDEBUG
