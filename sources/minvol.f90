@@ -33,11 +33,11 @@ SUBROUTINE minvol(ideriv)
         if ( coil(icoil)%Ic /= 0 ) then !if current is free;
            if (coil(icoil)%itype == 2) then
               if (coil(icoil)%symmetry == 0) then ! no symmetries
-                 pmsum = pmsum + coil(icoil)%I
+                 pmsum = pmsum + coil(icoil)%I*coil(icoil)%I
               else if (coil(icoil)%symmetry == 1) then ! periodicity
-                 pmsum = pmsum + coil(icoil)%I*Nfp
+                 pmsum = pmsum + coil(icoil)%I*coil(icoil)%I*Nfp
               else if (coil(icoil)%symmetry == 2) then ! stellarator symmetry
-                 pmsum = pmsum + coil(icoil)%I*Nfp*2
+                 pmsum = pmsum + coil(icoil)%I*coil(icoil)%I*Nfp*2
               else
                  FATAL( minvol01, .true., unspoorted symmetry option )
               end if 
@@ -57,11 +57,14 @@ SUBROUTINE minvol(ideriv)
            idof = idof +1
            if (coil(icoil)%itype == 2) then
               if (coil(icoil)%symmetry == 0) then ! no symmetries
-                 t1V(idof) = coil(icoil)%moment*momentq*(coil(icoil)%pho)**(momentq-1)
+                 t1V(idof) = 2*coil(icoil)%I*coil(icoil)%moment*momentq &
+                      &       *(coil(icoil)%pho)**(momentq-1)
               else if (coil(icoil)%symmetry == 1) then ! periodicity
-                 t1V(idof) = coil(icoil)%moment*momentq*(coil(icoil)%pho)**(momentq-1)*Nfp
+                 t1V(idof) = 2*coil(icoil)%I*coil(icoil)%moment*momentq &
+                      &       *(coil(icoil)%pho)**(momentq-1)*Nfp
               else if (coil(icoil)%symmetry == 2) then ! stellarator symmetry
-                 t1V(idof) = coil(icoil)%moment*momentq*(coil(icoil)%pho)**(momentq-1)*Nfp*2
+                 t1V(idof) = 2*coil(icoil)%I*coil(icoil)%moment*momentq &
+                      &       *(coil(icoil)%pho)**(momentq-1)*Nfp*2
               else
                  FATAL( minvol02, .true., unspoorted symmetry option )
               end if 
