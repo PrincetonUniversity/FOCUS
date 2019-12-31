@@ -302,7 +302,12 @@ subroutine initial
   sqrtmachprec = sqrt(machprec)  ! sqrt of machine precision
   vsmall = ten * machprec        ! very small number
   small = thousand * machprec    ! small number
-
+!!$
+!!$  machprec = 1.0E-32
+!!$  sqrtmachprec = 1.0E-32
+!!$  vsmall = 1E-16
+!!$  small = 1E-10
+  
   !-------------read input namelist----------------------------------------------------------------------
   if( myid == 0 ) then ! only the master node reads the input; 25 Mar 15;
      call getarg(1,ext) ! get argument from command line
