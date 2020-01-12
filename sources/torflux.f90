@@ -97,7 +97,7 @@ subroutine torflux( ideriv )
 !------------------------------------------------------------------------------------------------------   
   use globals, only: dp, zero, half, one, pi2, sqrtmachprec, bsconstant, ncpu, myid, ounit, &
        coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, Cdof, Npc, &
-       tflux, t1F, t2F, Ndof, psi_avg, target_tflux, &
+       tflux, t1F, t2F, Ndof, psi_avg, target_tflux, tflux_sign, &
        itflux, mtflux, LM_fvec, LM_fjac, weight_tflux
 
   implicit none
@@ -139,7 +139,7 @@ subroutine torflux( ideriv )
                            lay * surf(1)%yt(iteta,jzeta) + &
                            laz * surf(1)%zt(iteta,jzeta)
         enddo ! end do iteta
-        lflux = lflux * pi2/Nteta ! discretization factor;
+        lflux = lflux * pi2/Nteta * tflux_sign ! discretization factor;
         lsum  = lsum + lflux
         ldiff(jzeta) = lflux - target_tflux
         dflux = dflux + ldiff(jzeta)**2
@@ -208,7 +208,7 @@ subroutine torflux( ideriv )
         enddo !end iteta;
      enddo !end jzeta
 
-     ldF = ldF * pi2/Nteta
+     ldF = ldF * pi2/Nteta * tflux_sign
 
      call MPI_BARRIER( MPI_COMM_WORLD, ierr )
      call MPI_REDUCE(ldF, dF, Ndof*Nzeta, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
