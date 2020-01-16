@@ -157,12 +157,14 @@ subroutine bnormal( ideriv )
               do icoil = 1, Ncoils
                  ND = DoF(icoil)%ND
                  if ( coil(icoil)%Ic /= 0 ) then !if current is free;
+
                     call bfield0(icoil+(ip-1)*Ncoils, surf(isurf)%xx(iteta, jzeta), surf(isurf)%yy(iteta, jzeta), &
                    & surf(isurf)%zz(iteta, jzeta), dBx(0,0), dBy(0,0), dBz(0,0))
-                    if (coil(icoil+(ip-1)*Ncoils)%itype == 3) dBz(0,0) = zero  ! Bz doesn't change in itype=3
+                    if (coil(icoil+(ip-1)*Ncoils)%type == 3) dBz(0,0) = zero  ! Bz doesn't change in type=3
                     dBn(idof+1) = ( dBx(0,0)*surf(isurf)%nx(iteta,jzeta) &
                          &        + dBy(0,0)*surf(isurf)%ny(iteta,jzeta) &
                          &        + dBz(0,0)*surf(isurf)%nz(iteta,jzeta) ) / coil(icoil+(ip-1)*Ncoils)%I
+
                     if (case_bnormal == 1) then  ! normalized over |B|;
                     dBm(idof+1) = ( dBx(0,0)*surf(isurf)%Bx(iteta,jzeta) &
                          &        + dBy(0,0)*surf(isurf)%By(iteta,jzeta) &

@@ -22,8 +22,8 @@
 !latex  \item[1.] \inputvar{case\_init = 1} : Toroidally placing \inputvar{Ncoils} circular coils with a 
 !latex             radius of \inputvar{init\_radius} and current of \inputvar{init\_current}. The $i$th coil 
 !latex             is placed at $\z = \frac{i-1}{Ncoils} \frac{2\pi}{Nfp}$.
-!latex  \item[2.] \inputvar{case\_init = 0} : Read coils data from {\bf ext.focus} file. The format is as following. \red{This is the most flexible way, and
-!latex             each coil can be different.}            
+!latex  \item[2.] \inputvar{case\_init = 0} : Read coils data from {\bf ext.focus} file. The format is as following. 
+!latex     \red{This is the most flexible way, and  each coil can be different.}            
 !latex  \begin{raw}
 !latex   # Total number of coils
 !latex              16
@@ -192,7 +192,7 @@ subroutine rdcoils
      DALLOCATE( coilseg)
      DALLOCATE(coilname)
 
-     coil(1:Ncoils)%itype = case_coils
+     coil(1:Ncoils)%type = case_coils
 
      !-------------individual coil file---------------------------------------------------------------------
   case( 0 )
@@ -213,8 +213,8 @@ subroutine rdcoils
         do icoil = 1, Ncoils
            read( runit,*)
            read( runit,*)
-           read( runit,*) coil(icoil)%itype, coil(icoil)%name
-           if(coil(icoil)%itype == 1) then  ! Fourier representation
+           read( runit,*) coil(icoil)%type, coil(icoil)%name
+           if(coil(icoil)%type == 1) then  ! Fourier representation
               read( runit,*)
               read( runit,*) coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, &
                    & coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo
@@ -240,11 +240,11 @@ subroutine rdcoils
               read( runit,*) FouCoil(icoil)%ys(0:FouCoil(icoil)%NF)
               read( runit,*) FouCoil(icoil)%zc(0:FouCoil(icoil)%NF)
               read( runit,*) FouCoil(icoil)%zs(0:FouCoil(icoil)%NF)
-           else if (coil(icoil)%itype == 2) then  ! permanent magnets
+           else if (coil(icoil)%type == 2) then  ! permanent magnets
               read( runit,*)
               read( runit,*) coil(icoil)%Lc, coil(icoil)%ox, coil(icoil)%oy, coil(icoil)%oz, &
                              coil(icoil)%Ic, coil(icoil)%I , coil(icoil)%mt, coil(icoil)%mp      
-           else if (coil(icoil)%itype == 3) then  ! backgroud toroidal/vertical field
+           else if (coil(icoil)%type == 3) then  ! backgroud toroidal/vertical field
               read( runit,*)
               read( runit,*) coil(icoil)%Ic, coil(icoil)%I, coil(icoil)%Lc, coil(icoil)%Bz
            else
@@ -259,10 +259,10 @@ subroutine rdcoils
 
      do icoil = 1, Ncoils
 
-        IlBCAST( coil(icoil)%itype        , 1        ,  0 )
+        IlBCAST( coil(icoil)%type        , 1        ,  0 )
         ClBCAST( coil(icoil)%name         , 10       ,  0 )
 
-        if(coil(icoil)%itype == 1) then  ! Fourier representation
+        if(coil(icoil)%type == 1) then  ! Fourier representation
 
            IlBCAST( coil(icoil)%NS           , 1        ,  0 )
            RlBCAST( coil(icoil)%I            , 1        ,  0 )
@@ -290,7 +290,7 @@ subroutine rdcoils
            if(coil(icoil)%Ic == 0) Nfixcur = Nfixcur + 1
            if(coil(icoil)%Lc == 0) Nfixgeo = Nfixgeo + 1
 
-        else if (coil(icoil)%itype == 2) then  ! permanent magnets
+        else if (coil(icoil)%type == 2) then  ! permanent magnets
 
            IlBCAST( coil(icoil)%Ic, 1 , 0 )
            RlBCAST( coil(icoil)%I , 1 , 0 )
@@ -301,7 +301,7 @@ subroutine rdcoils
            RlBCAST( coil(icoil)%mt, 1 , 0 )
            RlBCAST( coil(icoil)%mp, 1 , 0 )
 
-        else if (coil(icoil)%itype == 3) then  ! backgroud toroidal/vertical field
+        else if (coil(icoil)%type == 3) then  ! backgroud toroidal/vertical field
            
            IlBCAST( coil(icoil)%Ic, 1 , 0 )
            RlBCAST( coil(icoil)%I , 1 , 0 )
@@ -373,7 +373,7 @@ subroutine rdcoils
 
      enddo ! end of do icoil;
 
-     coil(1:Ncoils)%itype = 1
+     coil(1:Ncoils)%type = 1
 
      !------------- permanent dipoles and background magnetic field ----------------------------------------
   case( 2 ) ! averagely positioned permanent dipoles ; 2019/01/03
@@ -403,7 +403,7 @@ subroutine rdcoils
      coil(icoil)%Lo =  target_length
      coil(icoil)%Bz =  zero
      coil(icoil)%name = 'bg_BtBz_01'
-     coil(icoil)%itype = 3
+     coil(icoil)%type = 3
 
      do itor = 1, num_tor
 
@@ -419,7 +419,7 @@ subroutine rdcoils
            icoil = icoil + 1
 
            !general coil parameters;
-           coil(icoil)%itype = 2
+           coil(icoil)%type = 2
            coil(icoil)%Ic =  IsVaryCurrent
            coil(icoil)%I  =  init_current
            coil(icoil)%L  =  pi2*init_radius
@@ -497,7 +497,7 @@ subroutine rdcoils
      do ip = 1, Npc-1
         cosip(ip) = cos(ip*pi2/Npc) ; sinip(ip) = sin(ip*pi2/Npc)
         do icoil = 1, Ncoils
-           select case (coil(icoil)%itype)
+           select case (coil(icoil)%type)
            case( 1 )
               NF = FouCoil(icoil)%NF
               SALLOCATE( FouCoil(icoil+ip*Ncoils)%xc, (0:NF), zero )
@@ -567,7 +567,7 @@ subroutine mapcoil
      
      do icoil = 1, Ncoils
 
-        coil(icoil+ip*Ncoils)%itype   = coil(icoil)%itype
+        coil(icoil+ip*Ncoils)%type   = coil(icoil)%type
         coil(icoil+ip*Ncoils)%NS      = coil(icoil)%NS
         coil(icoil+ip*Ncoils)%Ic      = coil(icoil)%Ic
         coil(icoil+ip*Ncoils)%Lc      = coil(icoil)%Lc
@@ -577,7 +577,7 @@ subroutine mapcoil
         coil(icoil+ip*Ncoils)%maxcurv = coil(icoil)%maxcurv
         coil(icoil+ip*Ncoils)%name    = coil(icoil)%name
 
-        select case (coil(icoil)%itype)
+        select case (coil(icoil)%type)
         case( 1 )
            Foucoil(icoil+ip*Ncoils)%NF = Foucoil(icoil)%NF
            Foucoil(icoil+ip*Ncoils)%xc = Foucoil(icoil)%xc * cosip(ip) - Foucoil(icoil)%yc * sinip(ip)
@@ -627,7 +627,7 @@ subroutine discoil(ifirst)
 
         !if( myid.ne.modulo(icoil-1,ncpu) ) cycle ! parallelization loop;
 
-        select case (coil(icoil)%itype)
+        select case (coil(icoil)%type)
         case( 1 )
 
            !reset to zero for all the coils;

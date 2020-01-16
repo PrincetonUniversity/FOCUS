@@ -1,6 +1,6 @@
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-subroutine AllocData(itype)
+subroutine AllocData(type)
 !------------------------------------------------------------------------------------------------------ 
 ! DATE:  04/05/2017
 ! Allocate data before using them, especially for those used several times;
@@ -11,7 +11,7 @@ subroutine AllocData(itype)
   implicit none
   include "mpif.h"
 
-  INTEGER, intent(in) :: itype
+  INTEGER, intent(in) :: type
 
   INTEGER             :: icoil, idof, ND, NF, icur, imag, isurf
   REAL                :: xtmp, mtmp
@@ -19,13 +19,13 @@ subroutine AllocData(itype)
   isurf = plasma
 
   !-------------------------------------------------------------------------------------------
-  if (itype == -1) then ! dof related data;
+  if (type == -1) then ! dof related data;
 
      Cdof = 0; Ndof = 0; Tdof = 0
 
      do icoil = 1, Ncoils*Npc
         
-        select case (coil(icoil)%itype)       
+        select case (coil(icoil)%type)       
         case(1)
            ! get number of DoF for each coil and allocate arrays;
            NF = FouCoil(icoil)%NF
@@ -79,11 +79,11 @@ subroutine AllocData(itype)
         Inorm = zero ; Mnorm = zero
         icur = 0 ; imag = 0 ! icur for coil current count, imag for dipole count
         do icoil = 1, Ncoils
-           if(coil(icoil)%itype == 1 .or. coil(icoil)%itype == 3 ) then  
+           if(coil(icoil)%type == 1 .or. coil(icoil)%type == 3 ) then  
               ! Fourier representation or central currents
               Inorm = Inorm + coil(icoil)%I**2
               icur = icur + 1
-           else if (coil(icoil)%itype == 2) then
+           else if (coil(icoil)%type == 2) then
               ! permanent dipole
               Mnorm = Mnorm + coil(icoil)%I**2
               imag = imag + 1
@@ -111,7 +111,7 @@ subroutine AllocData(itype)
         idof = 0
         do icoil = 1, Ncoils
 
-           if(coil(icoil)%itype == 1) then  ! Fourier representation
+           if(coil(icoil)%type == 1) then  ! Fourier representation
               if(coil(icoil)%Ic /= 0) then
                  dofnorm(idof+1) = Inorm
                  idof = idof + 1
@@ -122,7 +122,7 @@ subroutine AllocData(itype)
                  dofnorm(idof+1:idof+ND) = Gnorm
                  idof = idof + ND
               endif
-           else if (coil(icoil)%itype == 2) then  ! permanent magnets
+           else if (coil(icoil)%type == 2) then  ! permanent magnets
               if(coil(icoil)%Ic /= 0) then
                  dofnorm(idof+1) = Mnorm
                  idof = idof + 1
@@ -141,7 +141,7 @@ subroutine AllocData(itype)
                  idof = idof + 2
 #endif
               endif
-           else if (coil(icoil)%itype == 3) then  ! backgroud toroidal/vertical field
+           else if (coil(icoil)%type == 3) then  ! backgroud toroidal/vertical field
               if(coil(icoil)%Ic /= 0) then
                  dofnorm(idof+1) = Inorm
                  idof = idof + 1
@@ -168,7 +168,7 @@ subroutine AllocData(itype)
   endif
 
   !--------------------------------------------------------------------------------------------- 
-  if (itype == 0 .or. itype == 1) then  ! 0-order cost functions related arrays;
+  if (type == 0 .or. type == 1) then  ! 0-order cost functions related arrays;
 
      ! Bnorm and Bharm needed;
      if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec .or. IsQuiet <= -2) then
@@ -195,7 +195,7 @@ subroutine AllocData(itype)
   endif
 
   !---------------------------------------------------------------------------------------------
-  if (itype == 1) then ! 1st-order cost functions related arrays;
+  if (type == 1) then ! 1st-order cost functions related arrays;
      
      FATAL( AllocData, Ndof < 1, INVALID Ndof value )
      SALLOCATE( t1E, (1:Ndof), zero )

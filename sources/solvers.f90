@@ -545,7 +545,7 @@ subroutine output (mark)
      do icoil = 1, Ncoils
         coilspace(iout, idof+1 ) = coil(icoil)%I ;  idof = idof + 1
 
-        select case (coil(icoil)%itype)
+        select case (coil(icoil)%type)
         case (1)
            NF = FouCoil(icoil)%NF
            coilspace(iout, idof+1:idof+NF+1) = FouCoil(icoil)%xc(0:NF) ; idof = idof + NF +1

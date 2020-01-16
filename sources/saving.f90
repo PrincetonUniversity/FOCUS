@@ -225,9 +225,9 @@ subroutine saving
 
         write(wunit, *) "#-----------------", icoil, "---------------------------" 
         write(wunit, *) "#coil_type     coil_name"
-        write(wunit,'(3X,I3,4X, A10)') coil(icoil)%itype, coil(icoil)%name
+        write(wunit,'(3X,I3,4X, A10)') coil(icoil)%type, coil(icoil)%name
 
-        select case (coil(icoil)%itype)
+        select case (coil(icoil)%type)
         case (1)
            write(wunit, '(3(A6, A15, 8X))') " #Nseg", "current",  "Ifree", "Length", "Lfree", "target_length"
            write(wunit,'(2X, I4, ES23.15, 3X, I3, ES23.15, 3X, I3, ES23.15)') &

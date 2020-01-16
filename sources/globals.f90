@@ -261,7 +261,7 @@ module globals
   end type toroidalsurface
 
   type arbitrarycoil
-     INTEGER              :: NS, Ic=0, Lc=0, itype
+     INTEGER              :: NS, Ic=0, Lc=0, type, symm=0
      REAL                 :: I=zero,  L=zero, Lo, maxcurv, ox, oy, oz, mt, mp, Bt, Bz
      REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), &
                              dl(:), dd(:)

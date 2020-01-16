@@ -49,7 +49,7 @@ subroutine bfield0(icoil, xx, yy, zz, Bx, By, Bz)
   dlx = zero ; dly = zero ; dlz = zero
   ltx = zero ; lty = zero ; ltz = zero
   
-  select case (coil(icoil)%itype)
+  select case (coil(icoil)%type)
   !--------------------------------------------------------------------------------------------- 
   case(1)
 
@@ -149,7 +149,7 @@ subroutine bfield1(icoil, xx, yy, zz, Bx, By, Bz, ND)
   dlx = zero ; dly = zero ; dlz = zero
   ltx = zero ; lty = zero ; ltz = zero
 
-  select case (coil(icoil)%itype)
+  select case (coil(icoil)%type)
   !--------------------------------------------------------------------------------------------- 
   case(1)
      

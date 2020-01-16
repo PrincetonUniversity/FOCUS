@@ -78,7 +78,7 @@ subroutine length(ideriv)
 
      do icoil = 1, Ncoils     !only care about unique coils;
 
-        if(coil(icoil)%itype .ne. 1) exit ! only for Fourier
+        if(coil(icoil)%type .ne. 1) exit ! only for Fourier
         !if( myid.ne.modulo(icoil-1,ncpu) ) cycle ! parallelization loop;
         call LenDeriv0(icoil, coil(icoil)%L)
         !RlBCAST( coil(icoil)%L, 1, modulo(icoil-1,ncpu) ) !broadcast each coil's length        
@@ -89,7 +89,7 @@ subroutine length(ideriv)
 
      if (case_length == 1) then ! quadratic;
         do icoil = 1, Ncoils
-           if(coil(icoil)%itype .ne. 1) exit ! only for Fourier
+           if(coil(icoil)%type .ne. 1) exit ! only for Fourier
            if ( coil(icoil)%Lc /= 0 ) then
               ttlen = ttlen +  half * (coil(icoil)%L - coil(icoil)%Lo)**2 / coil(icoil)%Lo**2
               if (mttlen > 0) then ! L-M format of targets
@@ -100,7 +100,7 @@ subroutine length(ideriv)
         enddo
      elseif (case_length == 2) then ! exponential;
         do icoil = 1, Ncoils
-           if(coil(icoil)%itype .ne. 1) exit ! only for Fourier
+           if(coil(icoil)%type .ne. 1) exit ! only for Fourier
            if ( coil(icoil)%Lc /= 0 ) then
               ttlen = ttlen + exp(coil(icoil)%L) / exp(coil(icoil)%Lo)
               if (mttlen > 0) then ! L-M format of targets
@@ -137,7 +137,7 @@ subroutine length(ideriv)
         endif
 
         if ( coil(icoil)%Lc /= 0 ) then !if geometry is free;
-           if(coil(icoil)%itype .eq. 1) then ! only for Fourier
+           if(coil(icoil)%type .eq. 1) then ! only for Fourier
               ! calculate normalization
               if (case_length == 1) then
                  norm(icoil) = (coil(icoil)%L - coil(icoil)%Lo) / coil(icoil)%Lo**2  ! quadratic;

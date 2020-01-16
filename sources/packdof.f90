@@ -41,7 +41,7 @@ SUBROUTINE packdof(lxdof)
   idof = 0
   do icoil = 1, Ncoils
 
-     select case (coil(icoil)%itype)
+     select case (coil(icoil)%type)
      !--------------------------------------------------------------------------------------------- 
      case(1)
 
@@ -114,7 +114,7 @@ SUBROUTINE unpacking(lxdof)
   idof = 0 ; ifirst = 0
   do icoil = 1, Ncoils
 
-     select case (coil(icoil)%itype)
+     select case (coil(icoil)%type)
      !--------------------------------------------------------------------------------------------- 
      case(1)
 
@@ -188,7 +188,7 @@ SUBROUTINE packcoil
 
   do icoil = 1, Ncoils
 
-     select case (coil(icoil)%itype)
+     select case (coil(icoil)%type)
      !--------------------------------------------------------------------------------------------- 
      case(1)
         ! get number of DoF for each coil and allocate arrays;
@@ -257,7 +257,7 @@ SUBROUTINE unpackcoil
 
   do icoil = 1, Ncoils
 
-     select case (coil(icoil)%itype)
+     select case (coil(icoil)%type)
      !--------------------------------------------------------------------------------------------- 
      case(1)
         ! get number of DoF for each coil and allocate arrays;
