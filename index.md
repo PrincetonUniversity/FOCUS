@@ -34,7 +34,7 @@ If you are fresh to GitHub, you can visit this [page](https://princetonuniversit
 
 * Compiling
   
-  All the Fortran90 sources are in \*.h files. When **make**, \*.h file will produce \*.F90 with extracted macros (*seen in [macros](https://github.com/PrincetonUniversity/FOCUS/tree/master/sources/macros)*).
+  All the Fortran90 sources are in \*.f9 files. When **make**, \*.f90 file will produce \*_m.F90 with extracted macros (*seen in [macros](https://github.com/PrincetonUniversity/FOCUS/tree/master/sources/macros)*).
 
   There are two options vailable in [Makefile](https://github.com/PrincetonUniversity/FOCUS/tree/master/sources/Makefile):
   
@@ -72,7 +72,10 @@ For instance, you want to run the code with a case name of "example".
   The file **example.input** contains all the input variables for FOCUS.
   Here is an example input file for the rotating ellipse case [ellipse.input](https://github.com/PrincetonUniversity/FOCUS/tree/master/examples/rotating_ellipse/ellipse.input)
   A detailed description for these variables can be found in [initial.pdf](https://princetonuniversity.github.io/FOCUS/initial.pdf).
-  These files should be placed in the same directory as the executable.
+  These files should be placed in the same directory as the
+  executable.
+  To obtain an template of the input namelist, you can just run
+  `xfocus -i`.
   
 * target plasma boundary
 
@@ -186,6 +189,6 @@ The first paper introducing FOCUS is [C. Zhu, S.R. Hudson, Y. Song, and Y. Wan, 
 For a full list of publications and presentations, please view [FOCUS Publications](https://princetonuniversity.github.io/FOCUS/publications).
 
 # Contact
-If you have any questions, please contact Dr. Caoxiang Zhu (czhu@pppl.gov or caoxiangzhu@gmail.com).
+If you have any questions, please contact Dr. Caoxiang Zhu (czhu[at]pppl.gov or caoxiangzhu[at]gmail.com).
 
 -----------
