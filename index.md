@@ -88,7 +88,7 @@ For instance, you want to run the code with a case name of "example".
     Detalis about the format can be seen in [rdsurf.pdf](https://princetonuniversity.github.io/FOCUS/rdsurf.pdf)
     Here is an example for the rotating ellipse case [plasma.boundary](https://github.com/PrincetonUniversity/FOCUS/tree/master/examples/rotating_ellipse/plasma.boundary)
     
-    For more information about preparing FOCUS boundary from VMEC and BNORM, please view [here](Coil_design_codes_benchmark.html).
+    For more information about preparing FOCUS boundary from VMEC and BNORM, please view [here](notes/Coil_design_codes_benchmark.html).
     
 * initial coils
 
