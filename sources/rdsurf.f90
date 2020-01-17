@@ -64,8 +64,8 @@
 
 subroutine fousurf(filename, index)
   use globals, only : dp, zero, half, pi2, myid, ounit, runit, IsQuiet, IsSymmetric,  &
-                      Nteta, Nzeta, surf, Npc, discretefactor, Nfp_raw, Nfp, plasma,  &
-                      tflux_sign
+                      Nteta, Nzeta, surf, discretefactor, Nfp, plasma, symmetry,      &
+                      tflux_sign, cosnfp, sinnfp
   use mpi
   implicit none
 
@@ -74,9 +74,9 @@ subroutine fousurf(filename, index)
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-  INTEGER :: iosta, astat, ierr, ii, jj, imn, Nfou, Nbnf
+  INTEGER :: iosta, astat, ierr, ii, jj, imn, Nfou, Nbnf, ip
   REAL    :: RR(0:2), ZZ(0:2), szeta, czeta, xx(1:3), xt(1:3), xz(1:3), ds(1:3), &
-             teta, zeta, arg, dd, theta0, zeta0, r0, z0
+             teta, zeta, arg, dd, dz
   
   ! read the header
   if( myid == 0 ) then
@@ -177,23 +177,32 @@ subroutine fousurf(filename, index)
      endif
   endif
 
-  if (index == plasma) then
-     Nfp = surf(plasma)%Nfp
-     Nfp_raw = Nfp ! save the raw value of Nfp
+  surf(index)%Nteta = Nteta 
+  surf(index)%Nzeta = Nzeta
+
+  if (index == plasma) then    
      select case (IsSymmetric)
      case ( 0 )
-        Nfp = 1                          !reset Nfp to 1;
-        Npc = 1                          !number of coils periodicity 
-     case ( 1 )                          !plasma periodicity enabled;
-        Npc = 1
-     case ( 2 )                          !plasma and coil periodicity enabled;
-        Npc = Nfp
+        Nfp = 1                    ! reset Nfp to 1;
+        symmetry = 0
+     case ( 1 )                    ! plasma and coil periodicity enabled;
+        Nfp = surf(plasma)%Nfp     ! use the raw Nfp
+        symmetry = 0
+     case ( 2 )                    ! stellarator symmetry enforced;
+        Nfp = surf(plasma)%Nfp     ! use the raw Nfp
+        symmetry = 1     
      end select
-     discretefactor = discretefactor/Nfp
+
+     SALLOCATE( cosnfp, (1:Nfp), zero )
+     SALLOCATE( sinnfp, (1:Nfp), zero )  
+     do ip = 1, Nfp
+        cosnfp(ip) = cos((ip-1)*pi2/Nfp)
+        sinnfp(ip) = sin((ip-1)*pi2/Nfp)
+     enddo
+     ! discretefactor = discretefactor/Nfp
+     surf(index)%Nzeta = Nzeta * Nfp * 2**symmetry ! the total number from [0, 2pi]
+     discretefactor = (pi2/surf(plasma)%Nteta) * (pi2/surf(plasma)%Nzeta)
   endif
-  
-  surf(index)%Nteta = Nteta ! not used yet; used for multiple surfaces; 20170307;
-  surf(index)%Nzeta = Nzeta ! not used yet; used for multiple surfaces; 20170307;
   
   SALLOCATE( surf(index)%xx, (0:Nteta-1,0:Nzeta-1), zero ) !x coordinates;
   SALLOCATE( surf(index)%yy, (0:Nteta-1,0:Nzeta-1), zero ) !y coordinates
@@ -215,9 +224,9 @@ subroutine fousurf(filename, index)
  
   ! The center point value was used to discretize grid;
   do ii = 0, Nteta-1
-     teta = ( ii + half ) * pi2 / Nteta
+     teta = ( ii + half ) * pi2 / surf(index)%Nteta
      do jj = 0, Nzeta-1
-        zeta = ( jj + half ) * pi2 / ( Nzeta*Nfp )
+        zeta = ( jj + half ) * pi2 / surf(index)%Nzeta
         RR(0:2) = zero ; ZZ(0:2) = zero
         do imn = 1, surf(index)%Nfou
            arg = surf(index)%bim(imn) * teta - surf(index)%bin(imn) * zeta
@@ -232,8 +241,10 @@ subroutine fousurf(filename, index)
         czeta = cos(zeta)
         xx(1:3) = (/   RR(0) * czeta,   RR(0) * szeta, ZZ(0) /)
         xt(1:3) = (/   RR(1) * czeta,   RR(1) * szeta, ZZ(1) /)
-        xz(1:3) = (/   RR(2) * czeta,   RR(2) * szeta, ZZ(2) /) + (/ - RR(0) * szeta,   RR(0) * czeta, zero  /)
-        ds(1:3) = -(/ xt(2) * xz(3) - xt(3) * xz(2), & ! minus sign for theta counterclockwise direction;
+        xz(1:3) = (/   RR(2) * czeta,   RR(2) * szeta, ZZ(2) /) &
+                + (/ - RR(0) * szeta,   RR(0) * czeta, zero  /)
+        ! minus sign for theta counterclockwise direction;
+        ds(1:3) = -(/ xt(2) * xz(3) - xt(3) * xz(2), & 
                       xt(3) * xz(1) - xt(1) * xz(3), &
                       xt(1) * xz(2) - xt(2) * xz(1) /)
         dd = sqrt( sum( ds(1:3)*ds(1:3) ) )
@@ -262,32 +273,37 @@ subroutine fousurf(filename, index)
   enddo ! end of do ii; 14 Apr 16;
 
   ! print volume and area
-  surf(index)%vol  = abs(surf(index)%vol ) * discretefactor * Nfp
-  surf(index)%area = abs(surf(index)%area) * discretefactor * Nfp
-
-  theta0 = 0.1_dp ; zeta0 = zero
-  call surfcoord( theta0, zeta0, r0, z0 )
-  if (z0 > 0) then
-     ! counter-clockwise
-     if( myid == 0) write(ounit, '(8X": The theta angle used is counter-clockwise.")')
-     tflux_sign = -1
-  else
-     ! clockwise
-     if( myid == 0) write(ounit, '(8X": The theta angle used is clockwise.")')
-     tflux_sign =  1 
-  endif
-     
+  surf(index)%vol  = abs(surf(index)%vol ) * (pi2/surf(index)%Nteta) * (pi2/surf(index)%Nzeta)
+  surf(index)%area = abs(surf(index)%area) * (pi2/surf(index)%Nteta) * (pi2/surf(index)%Nzeta)
+  if (index == plasma) then
+     surf(index)%vol  = surf(index)%vol  * Nfp * 2**symmetry
+     surf(index)%area = surf(index)%area * Nfp * 2**symmetry
+  endif    
   if( myid == 0 .and. IsQuiet <= 0) then
      write(ounit, '(8X": Enclosed total surface volume ="ES12.5" m^3 ; area ="ES12.5" m^2." )') &
           surf(index)%vol, surf(index)%area
   endif
 
+  ! check theta direction for the plasma surface and determine the toroidal flux sign
+  if (index == plasma) then
+     dz = surf(plasma)%zz(1,0) - surf(plasma)%zz(0,0)
+     if (dz > 0) then
+        ! counter-clockwise
+        if( myid == 0) write(ounit, '(8X": The theta angle used is counter-clockwise.")')
+        tflux_sign = -1
+     else
+        ! clockwise
+        if( myid == 0) write(ounit, '(8X": The theta angle used is clockwise.")')
+        tflux_sign =  1 
+     endif
+  endif
+
   !calculate target Bn with input harmonics; 05 Jan 17;
   if(surf(index)%NBnf >  0) then
      do jj = 0, Nzeta-1
-        zeta = ( jj + half ) * pi2 / (Nzeta*Nfp)
+        zeta = ( jj + half ) * pi2 / surf(index)%Nzeta
         do ii = 0, Nteta-1
-           teta = ( ii + half ) * pi2 / Nteta
+           teta = ( ii + half ) * pi2 / surf(index)%Nteta
            do imn = 1, surf(index)%NBnf
               arg = surf(index)%Bnim(imn) * teta - surf(index)%Bnin(imn) * zeta
               surf(index)%pb(ii,jj) = surf(index)%pb(ii,jj) + surf(index)%Bnc(imn)*cos(arg) + surf(index)%Bns(imn)*sin(arg)
@@ -295,7 +311,7 @@ subroutine fousurf(filename, index)
         enddo
      enddo
   endif
-  
+
   return
   
 end subroutine fousurf

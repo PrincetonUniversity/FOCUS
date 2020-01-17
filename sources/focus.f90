@@ -75,6 +75,8 @@ PROGRAM focus
 
   end select
 
+  call MPI_FINALIZE( ierr )
+  STOP
     
   select case( case_coils )
 

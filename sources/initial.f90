@@ -23,9 +23,9 @@
 !latex  \item \inputvar{IsSymmetric = 0} \\
 !latex    \textit{Enforce stellarator symmetry or not} \\
 !latex    \bi \vspace{-5mm}
-!latex    \item[0:] no stellarator symmetry enforced;
+!latex    \item[0:] no symmetry or periodicity enforced;
 !latex    \item[1:] plasma periodicty enforced;
-!latex    \item[2:] coil and plasma periodicity enforced. 
+!latex    \item[2:] periodicity and stellartor symmetry enforced. 
 !latex    \ei
 !latex 
 !latex  \par \begin{tikzpicture} \draw[dashed] (0,1) -- (10,1); \end{tikzpicture}
@@ -424,11 +424,10 @@ subroutine initial
              &  'No stellarator symmetry or periodicity enforced.'
      case (1)
         if (IsQuiet < 0) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
-             &  'Plasma boundary periodicity is enforced.'
-        FATAL( initial, .true., This would cause unbalanced coils please use IsSymmetric=0 instead)
+             &  'Periodicity is enforced.'
      case (2)
         if (IsQuiet < 0) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
-             &  'Plasma boundary and coil periodicity are both enforced.'
+             &  'Periodicity and stellarator symmetry are both enforced.'
      case default
         FATAL( initial, .true., IsSymmetric /= 0 or 2 unspported option)
      end select

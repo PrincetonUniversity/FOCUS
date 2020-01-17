@@ -261,7 +261,7 @@ module globals
   end type toroidalsurface
 
   type arbitrarycoil
-     INTEGER              :: NS, Ic=0, Lc=0, type, symm=0
+     INTEGER              :: NS, Ic=0, Lc=0, type=0, symm=0
      REAL                 :: I=zero,  L=zero, Lo, maxcurv, ox, oy, oz, mt, mp, Bt, Bz
      REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), &
                              dl(:), dd(:)
@@ -283,9 +283,10 @@ module globals
   type(FourierCoil)    , allocatable :: FouCoil(:)
   type(DegreeOfFreedom), allocatable :: DoF(:)
 
-  INTEGER              :: Nfp = 1, Npc = 1, Nfp_raw = 1
+  INTEGER              :: Nfp = 1, symmetry = 0, Nfp_raw, Npc
   INTEGER              :: plasma = 1, limiter = 1
   REAL   , allocatable :: cosip(:), sinip(:)
+  REAL   , allocatable :: cosnfp(:), sinnfp(:)
     
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
