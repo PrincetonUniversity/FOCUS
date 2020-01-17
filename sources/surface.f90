@@ -9,7 +9,7 @@ SUBROUTINE surface
   INTEGER :: iosta, astat, ierr
 
   ! determine the total number of surfaces
-  if ( weight_cssep > machprec .and. trim(limiter_surf) /= 'none' ) then
+  if ( weight_cssep > machprec .and. trim(limiter_surf) /= trim(input_surf) ) then
      plasma = 1
      limiter = 2
   else ! use the plasma surface as limiter

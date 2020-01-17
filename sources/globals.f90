@@ -108,14 +108,14 @@ module globals
   REAL                 :: weight_ttlen   =   0.000D+00
   REAL                 :: target_length  =   0.000D+00
   REAL                 :: weight_cssep   =   0.000D+00
-  REAL                 :: cssep_factor   =   1.000D+00 
+  REAL                 :: cssep_factor   =   4.000D+00 
   REAL                 :: weight_specw   =   0.000D+00
   REAL                 :: weight_ccsep   =   0.000D+00
   REAL                 :: weight_inorm   =   1.000D+00
   REAL                 :: weight_gnorm   =   1.000D+00
   REAL                 :: weight_mnorm   =   1.000D+00
 
-  INTEGER              :: case_optimize  =   1
+  INTEGER              :: case_optimize  =   0
   REAL                 :: exit_tol       =   1.000D-04
   INTEGER              :: DF_maxiter     =   0
   REAL                 :: DF_xtol        =   1.000D-08     
