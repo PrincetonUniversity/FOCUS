@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='v0.10.00' ! version number
+  CHARACTER(LEN=10), parameter :: version='v0.10.01' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -315,6 +315,7 @@ module globals
   REAL   , allocatable :: t1H(:), t2H(:,:), Bmnc(:),Bmns(:), wBmn(:), tBmnc(:), tBmns(:), &
                           carg(:,:), sarg(:,:), iBmnc(:), iBmns(:)
   ! Tflux error;
+  INTEGER              :: tflux_sign = -1 ! default theta : counter-clockwise
   REAL                 :: tflux, psi_avg
   REAL   , allocatable :: t1F(:), t2F(:,:)
   ! Length constraint
