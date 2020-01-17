@@ -64,7 +64,8 @@
 
 subroutine fousurf(filename, index)
   use globals, only : dp, zero, half, pi2, myid, ounit, runit, IsQuiet, IsSymmetric,  &
-                      Nteta, Nzeta, surf, Npc, discretefactor, Nfp_raw, Nfp, plasma
+                      Nteta, Nzeta, surf, Npc, discretefactor, Nfp_raw, Nfp, plasma,  &
+                      tflux_sign
   use mpi
   implicit none
 

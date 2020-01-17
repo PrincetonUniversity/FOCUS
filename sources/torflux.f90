@@ -97,7 +97,7 @@ subroutine torflux( ideriv )
 !------------------------------------------------------------------------------------------------------   
   use globals, only: dp, zero, half, one, pi2, sqrtmachprec, bsconstant, ncpu, myid, ounit, &
        coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, Cdof, Npc, &
-       tflux, t1F, t2F, Ndof, psi_avg, target_tflux, tflux_sig, &
+       tflux, t1F, t2F, Ndof, psi_avg, target_tflux, tflux_sign, &
        itflux, mtflux, LM_fvec, LM_fjac, weight_tflux, plasma
 
   implicit none
