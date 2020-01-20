@@ -99,14 +99,13 @@ subroutine torflux( ideriv )
        coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, Cdof, &
        tflux, t1F, t2F, Ndof, psi_avg, target_tflux, tflux_sign, &
        itflux, mtflux, LM_fvec, LM_fjac, weight_tflux, plasma
-
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER, INTENT(in)                   :: ideriv
   !--------------------------------------------------------------------------------------------
   INTEGER                               :: astat, ierr
-  INTEGER                               :: icoil, iteta, jzeta, idof, ND, ip, isurf
+  INTEGER                               :: icoil, iteta, jzeta, idof, ND, isurf
   REAL                                  :: dflux, lflux, lsum
   REAL                                  :: lax, lay, laz          ! local Ax, Ay and Az
   REAL, dimension(0:Cdof, 0:Cdof)       :: dAx, dAy, dAz          ! dA of each coil;
@@ -126,15 +125,12 @@ subroutine torflux( ideriv )
         lflux = zero
         do iteta = 0, Nteta - 1
            lax = zero; lay = zero; laz = zero
-           do ip = 1, 1
-              do icoil = 1, Ncoils
-                 call bpotential0(icoil+(ip-1)*Ncoils, iteta, jzeta, dAx(0,0), dAy(0,0), dAz(0,0))
-                 lax = lax + dAx( 0, 0) * coil(icoil)%I * bsconstant
-                 lay = lay + dAy( 0, 0) * coil(icoil)%I * bsconstant
-                 laz = laz + dAz( 0, 0) * coil(icoil)%I * bsconstant
-              enddo ! end do icoil
-           enddo  ! end do ip;
-
+           do icoil = 1, Ncoils
+              call bpotential0(icoil, iteta, jzeta, dAx(0,0), dAy(0,0), dAz(0,0))
+              lax = lax + dAx( 0, 0) * coil(icoil)%I * bsconstant
+              lay = lay + dAy( 0, 0) * coil(icoil)%I * bsconstant
+              laz = laz + dAz( 0, 0) * coil(icoil)%I * bsconstant
+           enddo ! end do icoil
            lflux = lflux + lax * surf(isurf)%xt(iteta,jzeta) + &    ! local flux;
                            lay * surf(isurf)%yt(iteta,jzeta) + &
                            laz * surf(isurf)%zt(iteta,jzeta)
@@ -171,39 +167,35 @@ subroutine torflux( ideriv )
 
      do jzeta = 0, Nzeta - 1
         if( myid.ne.modulo(jzeta,ncpu) ) cycle ! parallelization loop;
-
         do iteta = 0, Nteta - 1             
-           
-           do ip = 1, 1
-              idof = 0
-              do icoil = 1, Ncoils
-                 ND = DoF(icoil)%ND
-                 if ( coil(icoil)%Ic /= 0 ) then !if current is free;
-                    call bpotential0(icoil, iteta, jzeta, &
-                         & dAx(0,0), dAy(0,0), dAz(0,0))
+           idof = 0
+           do icoil = 1, Ncoils
+              ND = DoF(icoil)%ND
+              if ( coil(icoil)%Ic /= 0 ) then !if current is free;
+                 call bpotential0(icoil, iteta, jzeta, &
+                      & dAx(0,0), dAy(0,0), dAz(0,0))
 
-                    ldF(idof+1, jzeta) = ldF(idof+1, jzeta) &
-                         & + bsconstant * ( dAx(0,0)*surf(isurf)%xt(iteta,jzeta)   &
-                         &                + dAy(0,0)*surf(isurf)%yt(iteta,jzeta)   &
-                         &                + dAz(0,0)*surf(isurf)%zt(iteta,jzeta) )
-                    idof = idof +1
-                 endif
+                 ldF(idof+1, jzeta) = ldF(idof+1, jzeta) &
+                      & + bsconstant * ( dAx(0,0)*surf(isurf)%xt(iteta,jzeta)   &
+                      &                + dAy(0,0)*surf(isurf)%yt(iteta,jzeta)   &
+                      &                + dAz(0,0)*surf(isurf)%zt(iteta,jzeta) )
+                 idof = idof +1
+              endif
 
-                 if ( coil(icoil)%Lc /= 0 ) then !if geometry is free;
-                    call bpotential1(icoil, iteta, jzeta, &
-                         &       dAx(1:ND,0), dAy(1:ND,0), dAz(1:ND,0), ND)
+              if ( coil(icoil)%Lc /= 0 ) then !if geometry is free;
+                 call bpotential1(icoil, iteta, jzeta, &
+                      &       dAx(1:ND,0), dAy(1:ND,0), dAz(1:ND,0), ND)
 
-                    ldF(idof+1:idof+ND, jzeta) = ldF(idof+1:idof+ND, jzeta) &
-                         & + bsconstant * coil(icoil)%I * ( dAx(1:ND,0)*surf(isurf)%xt(iteta,jzeta)   &
-                         &                                + dAy(1:ND,0)*surf(isurf)%yt(iteta,jzeta)   &
-                         &                                + dAz(1:ND,0)*surf(isurf)%zt(iteta,jzeta) )
+                 ldF(idof+1:idof+ND, jzeta) = ldF(idof+1:idof+ND, jzeta) &
+                      & + bsconstant * coil(icoil)%I * ( dAx(1:ND,0)*surf(isurf)%xt(iteta,jzeta)   &
+                      &                                + dAy(1:ND,0)*surf(isurf)%yt(iteta,jzeta)   &
+                      &                                + dAz(1:ND,0)*surf(isurf)%zt(iteta,jzeta) )
 
-                    idof = idof + ND
-                 endif
+                 idof = idof + ND
+              endif
 
-              enddo !end icoil;
-              FATAL( torflux , idof .ne. Ndof, counting error in packing )
-           enddo  ! end do ip;
+           enddo !end icoil;
+           FATAL( torflux , idof .ne. Ndof, counting error in packing )
 
         enddo !end iteta;
      enddo !end jzeta
@@ -236,7 +228,7 @@ end subroutine torflux
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-subroutine bpotential0(icoil, iteta, jzeta, Ax, Ay, Az)
+subroutine bpotential0(icoil, iteta, jzeta, tAx, tAy, tAz)
 !------------------------------------------------------------------------------------------------------ 
 ! DATE:  06/15/2017
 ! calculate the magnetic potential from coil(icoil) at the evaluation point (iteta, jzeta);
@@ -244,27 +236,41 @@ subroutine bpotential0(icoil, iteta, jzeta, Ax, Ay, Az)
 ! Discretizing factor is includeed; coil(icoil)%dd(kseg) 
 !------------------------------------------------------------------------------------------------------   
   use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta,  &
-                     zero, myid, ounit, plasma
+                     zero, myid, ounit, plasma, Nfp, cosnfp, sinnfp
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER, intent(in ) :: icoil, iteta, jzeta
-  REAL   , intent(out) :: Ax, Ay, Az
+  REAL   , intent(out) :: tAx, tAy, tAz
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  INTEGER              :: ierr, astat, kseg, isurf
-  REAL                 :: dlx, dly, dlz, rm, ltx, lty, ltz
+  INTEGER              :: ierr, astat, kseg, isurf, ip, is, cs, Npc
+  REAL                 :: dlx, dly, dlz, rm, ltx, lty, ltz, &
+       &                  Ax, Ay, Az
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   FATAL( bpotential0, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
   FATAL( bpotential0, iteta .lt. 0 .or. iteta .gt. Nteta , iteta not in right range )
   FATAL( bpotential0, jzeta .lt. 0 .or. jzeta .gt. Nzeta , jzeta not in right range )
-  
+  ! initialization
+  Npc = 1 ; cs = 0  
   dlx = zero; ltx = zero; Ax = zero
   dly = zero; lty = zero; Ay = zero
   dlz = zero; ltz = zero; Az = zero
+  ! check if the coil is stellarator symmetric
+  select case (coil(icoil)%symm) 
+  case ( 0 )
+     cs  = 0
+     Npc = 1
+  case ( 1 )
+     cs  = 0
+     Npc = Nfp
+  case ( 2) 
+     cs  = 1
+     Npc = Nfp
+  end select
 
   do kseg = 0, coil(icoil)%NS-1
         
@@ -297,16 +303,16 @@ subroutine bpotential1(icoil, iteta, jzeta, Ax, Ay, Az, ND)
 ! Discretizing factor is includeed; coil(icoil)%dd(kseg) 
 !------------------------------------------------------------------------------------------------------    
   use globals, only: dp, coil, DoF, surf, NFcoil, Ncoils, Nteta, Nzeta, &
-                     zero, myid, ounit, plasma
+                     zero, myid, ounit, plasma, Nfp, cosnfp, sinnfp
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER, intent(in ) :: icoil, iteta, jzeta, ND
   REAL, dimension(1:1, 1:ND), intent(inout) :: Ax, Ay, Az
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  INTEGER              :: ierr, astat, kseg, NS, isurf
+  INTEGER              :: ierr, astat, kseg, NS, isurf, ip, is, cs, Npc
   REAL                 :: dlx, dly, dlz, r, rm3, ltx, lty, ltz
   REAL, dimension(1:1, 0:coil(icoil)%NS-1)   :: dAxx, dAxy, dAxz, dAyx, dAyy, dAyz, dAzx, dAzy, dAzz
 

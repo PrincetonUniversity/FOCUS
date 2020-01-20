@@ -59,10 +59,10 @@ subroutine AllocData(type)
            ! the derivatives of dx/dv 
            DoF(icoil)%xof(0:NS-1,      1:  NF+1) = FouCoil(icoil)%cmt(0:NS-1, 0:NF)  !x/xc
            DoF(icoil)%xof(0:NS-1,   NF+2:2*NF+1) = FouCoil(icoil)%smt(0:NS-1, 1:NF)  !x/xs
-           DoF(icoil)%xof(0:NS-1, 2*NF+2:3*NF+2) = FouCoil(icoil)%cmt(0:NS-1, 0:NF)  !x/yc 
-           DoF(icoil)%xof(0:NS-1, 3*NF+3:4*NF+2) = FouCoil(icoil)%smt(0:NS-1, 1:NF)  !x/ys 
-           DoF(icoil)%yof(0:NS-1,      1:  NF+1) = FouCoil(icoil)%cmt(0:NS-1, 0:NF)  !y/xc 
-           DoF(icoil)%yof(0:NS-1,   NF+2:2*NF+1) = FouCoil(icoil)%smt(0:NS-1, 1:NF)  !y/xs 
+           !DoF(icoil)%xof(0:NS-1, 2*NF+2:3*NF+2) = FouCoil(icoil)%cmt(0:NS-1, 0:NF)  !x/yc 
+           !DoF(icoil)%xof(0:NS-1, 3*NF+3:4*NF+2) = FouCoil(icoil)%smt(0:NS-1, 1:NF)  !x/ys 
+           !DoF(icoil)%yof(0:NS-1,      1:  NF+1) = FouCoil(icoil)%cmt(0:NS-1, 0:NF)  !y/xc 
+           !DoF(icoil)%yof(0:NS-1,   NF+2:2*NF+1) = FouCoil(icoil)%smt(0:NS-1, 1:NF)  !y/xs 
            DoF(icoil)%yof(0:NS-1, 2*NF+2:3*NF+2) = FouCoil(icoil)%cmt(0:NS-1, 0:NF)  !y/yc
            DoF(icoil)%yof(0:NS-1, 3*NF+3:4*NF+2) = FouCoil(icoil)%smt(0:NS-1, 1:NF)  !y/ys
            DoF(icoil)%zof(0:NS-1, 4*NF+3:5*NF+3) = FouCoil(icoil)%cmt(0:NS-1, 0:NF)  !z/zc
