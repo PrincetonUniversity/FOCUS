@@ -20,96 +20,111 @@
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-subroutine bfield0(icoil, xx, yy, zz, Bx, By, Bz)
+subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
 !------------------------------------------------------------------------------------------------------ 
 ! DATE:  06/15/2016; 03/26/2017
 ! calculate the magnetic field of icoil using manually discretized coils. 
 ! Biot-Savart constant and currents are not included for later simplication. 
 ! Be careful if coils have different resolutions.
 !------------------------------------------------------------------------------------------------------   
-  use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, &
-                     zero, myid, ounit, Npc, Nfp, pi2, half, two, one, bsconstant
+  use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, cosnfp, sinnfp, &
+                     zero, myid, ounit, Nfp, pi2, half, two, one, bsconstant
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER, intent(in ) :: icoil
-  REAL,    intent(in ) :: xx, yy, zz
-  REAL   , intent(out) :: Bx, By, Bz
+  REAL,    intent(in ) :: x, y, z
+  REAL   , intent(out) :: tBx, tBy, tBz
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  INTEGER              :: ierr, astat, kseg
-  REAL                 :: dlx, dly, dlz, rm3, ltx, lty, ltz, rr, r2, m_dot_r, mx, my, mz
+  INTEGER              :: ierr, astat, kseg, ip, is, cs, Npc
+  REAL                 :: dlx, dly, dlz, rm3, ltx, lty, ltz, rr, r2, m_dot_r, &
+       &                  mx, my, mz, xx, yy, zz, Bx, By, Bz
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  FATAL( bfield0, icoil .lt. 1 .or. icoil .gt. Ncoils*Npc, icoil not in right range )
-
-  Bx = zero; By = zero; Bz = zero
+  FATAL( bfield0, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
+  ! initialization
+  Npc = 1 ; cs = 0
+  tBx = zero ; tBy = zero ; tBz = zero
   dlx = zero ; dly = zero ; dlz = zero
   ltx = zero ; lty = zero ; ltz = zero
-  
-  select case (coil(icoil)%type)
-  !--------------------------------------------------------------------------------------------- 
-  case(1)
-
-     do kseg = 0, coil(icoil)%NS-1
-
-        dlx = xx - coil(icoil)%xx(kseg)
-        dly = yy - coil(icoil)%yy(kseg)
-        dlz = zz - coil(icoil)%zz(kseg)
-        rm3 = (sqrt(dlx**2 + dly**2 + dlz**2))**(-3)
-
-        ltx = coil(icoil)%xt(kseg)
-        lty = coil(icoil)%yt(kseg)
-        ltz = coil(icoil)%zt(kseg)
-
-        Bx = Bx + ( dlz*lty - dly*ltz ) * rm3 * coil(icoil)%dd(kseg)
-        By = By + ( dlx*ltz - dlz*ltx ) * rm3 * coil(icoil)%dd(kseg)
-        Bz = Bz + ( dly*ltx - dlx*lty ) * rm3 * coil(icoil)%dd(kseg)
-
-     enddo    ! enddo kseg
-
-     Bx = Bx * coil(icoil)%I * bsconstant
-     By = By * coil(icoil)%I * bsconstant
-     Bz = Bz * coil(icoil)%I * bsconstant
-
-  !--------------------------------------------------------------------------------------------- 
-  case(2)
-
-     dlx = xx - coil(icoil)%ox
-     dly = yy - coil(icoil)%oy
-     dlz = zz - coil(icoil)%oz
-     r2  = dlx**2 + dly**2 + dlz**2
-     rm3 = one/(sqrt(r2)*r2)
-     mx = sin(coil(icoil)%mt) * cos(coil(icoil)%mp)
-     my = sin(coil(icoil)%mt) * sin(coil(icoil)%mp)
-     mz = cos(coil(icoil)%mt)
-     m_dot_r = mx * dlx + my * dly + mz * dlz
-
-     Bx = 3.0_dp * m_dot_r * rm3 / r2 * dlx - mx * rm3
-     By = 3.0_dp * m_dot_r * rm3 / r2 * dly - my * rm3
-     Bz = 3.0_dp * m_dot_r * rm3 / r2 * dlz - mz * rm3
-
-     Bx = Bx * coil(icoil)%I * bsconstant
-     By = By * coil(icoil)%I * bsconstant
-     Bz = Bz * coil(icoil)%I * bsconstant
-
-  !--------------------------------------------------------------------------------------------- 
-  case(3)
-     ! might be only valid for cylindrical coordinates
-     ! Bt = u0*I/(2 pi R)
-     rr = sqrt( xx**2 + yy**2 )
-     coil(icoil)%Bt = two/rr * coil(icoil)%I * bsconstant
-
-     Bx = - coil(icoil)%Bt * yy/rr
-     By =   coil(icoil)%Bt * xx/rr
-     Bz =   coil(icoil)%Bz 
-
-  !---------------------------------------------------------------------------------------------
-  case default
-     FATAL(bfield0, .true., not supported coil types)
+  ! check if the coil is stellarator symmetric
+  select case (coil(icoil)%symm) 
+  case ( 0 )
+     cs  = 0
+     Npc = 1
+  case ( 1 )
+     cs  = 0
+     Npc = Nfp
+  case ( 2) 
+     cs  = 1
+     Npc = Nfp
   end select
+  ! periodicity and stellarator symmetry
+  do ip = 1, Npc
+     do is = 0, cs
+        ! find the point on plasma by rotating in reverse direction. + symmetric
+        xx = ( x*cosnfp(ip) + y*sinnfp(ip) )
+        yy = (-x*sinnfp(ip) + y*cosnfp(ip) ) * (-1)**is
+        zz =  z * (-1)**is
+        Bx = zero; By = zero; Bz = zero
+        select case (coil(icoil)%type)
+        ! Fourier coils
+        case(1)
+           ! Biot-Savart law
+           do kseg = 0, coil(icoil)%NS-1
+              dlx = xx - coil(icoil)%xx(kseg)
+              dly = yy - coil(icoil)%yy(kseg)
+              dlz = zz - coil(icoil)%zz(kseg)
+              rm3 = (sqrt(dlx**2 + dly**2 + dlz**2))**(-3)
+              ltx = coil(icoil)%xt(kseg)
+              lty = coil(icoil)%yt(kseg)
+              ltz = coil(icoil)%zt(kseg)
+              Bx = Bx + ( dlz*lty - dly*ltz ) * rm3 * coil(icoil)%dd(kseg)
+              By = By + ( dlx*ltz - dlz*ltx ) * rm3 * coil(icoil)%dd(kseg)
+              Bz = Bz + ( dly*ltx - dlx*lty ) * rm3 * coil(icoil)%dd(kseg)
+           enddo    ! enddo kseg
+           Bx = Bx * coil(icoil)%I * bsconstant
+           By = By * coil(icoil)%I * bsconstant
+           Bz = Bz * coil(icoil)%I * bsconstant
+        ! magnetic dipoles
+        case(2)
+           ! Biot-Savart law
+           dlx = xx - coil(icoil)%ox
+           dly = yy - coil(icoil)%oy
+           dlz = zz - coil(icoil)%oz
+           r2  = dlx**2 + dly**2 + dlz**2
+           rm3 = one/(sqrt(r2)*r2)
+           mx = sin(coil(icoil)%mt) * cos(coil(icoil)%mp)
+           my = sin(coil(icoil)%mt) * sin(coil(icoil)%mp)
+           mz = cos(coil(icoil)%mt)
+           m_dot_r = mx * dlx + my * dly + mz * dlz
+           Bx = 3.0_dp * m_dot_r * rm3 / r2 * dlx - mx * rm3
+           By = 3.0_dp * m_dot_r * rm3 / r2 * dly - my * rm3
+           Bz = 3.0_dp * m_dot_r * rm3 / r2 * dlz - mz * rm3
+           Bx = Bx * coil(icoil)%I * bsconstant
+           By = By * coil(icoil)%I * bsconstant
+           Bz = Bz * coil(icoil)%I * bsconstant
+        ! toroidal field and verticle field
+        case(3)
+           ! might be only valid for cylindrical coordinates
+           ! Bt = u0*I/(2 pi R)
+           rr = sqrt( xx**2 + yy**2 )
+           coil(icoil)%Bt = two/rr * coil(icoil)%I * bsconstant
+           Bx = - coil(icoil)%Bt * yy/rr
+           By =   coil(icoil)%Bt * xx/rr
+           Bz =   coil(icoil)%Bz 
+        case default
+           FATAL(bfield0, .true., not supported coil types)
+        end select     
+        ! sum all the contributions
+        tBx = tBx + (Bx*cosnfp(ip) - By*sinnfp(ip))*(-1)**is
+        tBy = tBy + (By*cosnfp(ip) + Bx*sinnfp(ip))
+        tBz = tBz +  Bz
+     enddo
+  enddo
 
   return
 
@@ -125,7 +140,7 @@ subroutine bfield1(icoil, xx, yy, zz, Bx, By, Bz, ND)
 ! Discretizing factor is includeed; coil(icoil)%dd(kseg)
 !------------------------------------------------------------------------------------------------------   
   use globals, only: dp, coil, DoF, surf, NFcoil, Ncoils, Nteta, Nzeta, &
-                     zero, myid, ounit, Npc, one, bsconstant
+                     zero, myid, ounit, Nfp, one, bsconstant
   implicit none
   include "mpif.h"
 
@@ -142,7 +157,7 @@ subroutine bfield1(icoil, xx, yy, zz, Bx, By, Bz, ND)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-  FATAL( bfield1, icoil .lt. 1 .or. icoil .gt. Ncoils*Npc, icoil not in right range )
+  FATAL( bfield1, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
   FATAL( bfield1, ND <= 0, wrong inout dimension of ND )
 
   Bx = zero; By = zero; Bz = zero
@@ -259,7 +274,7 @@ end subroutine bfield1
 
 subroutine coils_bfield(B,x,y,z)
   use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, &
-       zero, myid, ounit, Npc, bsconstant, one, two, ncpu, &
+       zero, myid, ounit, Nfp, bsconstant, one, two, ncpu, &
        master, nworker, myworkid, MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS
   use mpi
   implicit none
@@ -279,7 +294,7 @@ subroutine coils_bfield(B,x,y,z)
   call MPI_BARRIER(MPI_COMM_MYWORLD, ierr ) ! wait all cpus;
 
   B = zero
-  do icoil = 1, Ncoils*Npc
+  do icoil = 1, Ncoils
      if ( myworkid /= modulo(icoil-1, nworker) ) cycle ! MPI
      ! Bx = zero; By = zero; Bz = zero
      call bfield0( icoil, x, y, z, Bx, By, Bz )

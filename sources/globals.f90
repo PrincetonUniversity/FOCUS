@@ -270,7 +270,7 @@ module globals
 
   type FourierCoil
      INTEGER              :: NF
-     REAL   , allocatable :: xc(:), xs(:), yc(:), ys(:), zc(:), zs(:)
+     REAL   , allocatable :: xc(:), xs(:), yc(:), ys(:), zc(:), zs(:), cmt(:,:), smt(:,:)
   end type FourierCoil
 
   type DegreeOfFreedom
@@ -283,9 +283,8 @@ module globals
   type(FourierCoil)    , allocatable :: FouCoil(:)
   type(DegreeOfFreedom), allocatable :: DoF(:)
 
-  INTEGER              :: Nfp = 1, symmetry = 0, Nfp_raw, Npc
+  INTEGER              :: Nfp = 1, symmetry = 0
   INTEGER              :: plasma = 1, limiter = 1
-  REAL   , allocatable :: cosip(:), sinip(:)
   REAL   , allocatable :: cosnfp(:), sinnfp(:)
     
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!

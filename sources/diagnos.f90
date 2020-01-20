@@ -7,18 +7,21 @@ SUBROUTINE diagnos
 !------------------------------------------------------------------------------------------------------   
   use globals, only: dp, zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
        Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
-       cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, Npc, weight_bnorm, overlap, plasma
-                     
+       cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, Nfp, weight_bnorm, overlap, plasma, &
+       cosnfp, sinnfp
+  use mpi
   implicit none
-  include "mpif.h"
 
-  INTEGER           :: icoil, itmp=0, astat, ierr, NF, idof, i, j, isurf
-  LOGICAL           :: lwbnorm = .True. , l_raw = .False.!if use raw coils data
+  INTEGER           :: icoil, itmp, astat, ierr, NF, idof, i, j, isurf, cs, ip, is
+  LOGICAL           :: lwbnorm, l_raw
   REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist, ReDot, ImDot
   REAL, parameter   :: infmax = 1.0E6
   REAL, allocatable :: Atmp(:,:), Btmp(:,:)
 
   isurf = plasma
+  itmp = 0
+  lwbnorm = .True. 
+  l_raw = .False. ! if use raw coils data
   if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "-----------COIL DIAGNOSTICS----------------------------------"
 
   !--------------------------------cost functions-------------------------------------------------------  
@@ -83,37 +86,42 @@ SUBROUTINE diagnos
   ! coils are supposed to be placed in order
   minCCdist = infmax
   do icoil = 1, Ncoils
-
      if(coil(icoil)%type .ne. 1) exit ! only for Fourier
-
-     if(Ncoils .eq. 1) exit !if only one coil
-     itmp = icoil + 1 ! the guessed adjacent coil
-     if(icoil .eq. Ncoils .and. npc==1) itmp = 1
-     ! only when if npc==1, the last coil would be compared with the first one
-
+     if(Ncoils .eq. 1) exit ! if only one coil
+     ! Data for the first coil
      SALLOCATE(Atmp, (1:3,0:coil(icoil)%NS-1), zero)
-     SALLOCATE(Btmp, (1:3,0:coil(itmp )%NS-1), zero)
-
      Atmp(1, 0:coil(icoil)%NS-1) = coil(icoil)%xx(0:coil(icoil)%NS-1)
      Atmp(2, 0:coil(icoil)%NS-1) = coil(icoil)%yy(0:coil(icoil)%NS-1)
      Atmp(3, 0:coil(icoil)%NS-1) = coil(icoil)%zz(0:coil(icoil)%NS-1)
-
-     Btmp(1, 0:coil(itmp )%NS-1) = coil(itmp)%xx(0:coil(itmp )%NS-1)
-     Btmp(2, 0:coil(itmp )%NS-1) = coil(itmp)%yy(0:coil(itmp )%NS-1)
-     Btmp(3, 0:coil(itmp )%NS-1) = coil(itmp)%zz(0:coil(itmp )%NS-1)
-     
-     call mindist(Atmp, coil(icoil)%NS, Btmp, coil(itmp)%NS, tmp_dist)
-
+     do itmp = 1, Ncoils
+        ! skip self and non-Fourier coils
+        if (itmp == icoil .or. coil(icoil)%type /= 1) cycle
+        SALLOCATE(Btmp, (1:3,0:coil(itmp )%NS-1), zero)
+        ! check if the coil is stellarator symmetric
+        if (coil(icoil)%symm == 2) then
+           cs = 1
+        else
+           cs = 0
+        endif
+        ! load data
+        do ip = 1, Nfp
+           do is = 0, cs
+              Btmp(1, 0:coil(itmp)%NS-1) =            (coil(itmp)%xx(0:coil(itmp)%NS-1)*cosnfp(ip) &
+                                                   & - coil(itmp)%yy(0:coil(itmp)%NS-1)*sinnfp(ip) )
+              Btmp(2, 0:coil(itmp)%NS-1) = (-1)**is * (coil(itmp)%xx(0:coil(itmp)%NS-1)*sinnfp(ip) &
+                                                   & + coil(itmp)%yy(0:coil(itmp)%NS-1)*cosnfp(ip) )
+              Btmp(3, 0:coil(itmp)%NS-1) = (-1)**is * (coil(itmp)%zz(0:coil(itmp)%NS-1))
+              call mindist(Atmp, coil(icoil)%NS, Btmp, coil(itmp)%NS, tmp_dist)
 #ifdef DEBUG
-     if(myid .eq. 0) write(ounit, '(8X": distance between  "I3 "-th and "I3"-th coil is : " ES23.15)') &
-          icoil, itmp, tmp_dist
+              if(myid .eq. 0) write(ounit, '(8X": distance between  "I3.3"-th and "I3.3"-th coil (ip="I2.2 & 
+                   ", is="I1") is : " ES23.15)') icoil, itmp, tmp_dist
 #endif
-
-     if (minCCdist .ge. tmp_dist) minCCdist=tmp_dist
-
+              if (minCCdist .ge. tmp_dist) minCCdist=tmp_dist
+           enddo
+        enddo
+        DALLOCATE(Btmp)
+     enddo
      DALLOCATE(Atmp)
-     DALLOCATE(Btmp)
-
   enddo
 
   if(myid .eq. 0) write(ounit, '(8X": The minimum coil-coil distance is "4X" :" ES23.15)') minCCdist
@@ -177,11 +185,11 @@ SUBROUTINE diagnos
 
   !--------------------------------calculate coil importance------------------------------------  
   if (.not. allocated(coil_importance)) then
-     SALLOCATE( coil_importance, (1:Ncoils*Npc), zero )
+     SALLOCATE( coil_importance, (1:Ncoils), zero )
   endif
 
   if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec) then  ! make sure data_allocated
-     do icoil = 1, Ncoils*Npc
+     do icoil = 1, Ncoils
         call importance(icoil)
      enddo
   

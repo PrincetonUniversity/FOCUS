@@ -13,21 +13,19 @@ subroutine AllocData(type)
 
   INTEGER, intent(in) :: type
 
-  INTEGER             :: icoil, idof, ND, NF, icur, imag, isurf
-  REAL                :: xtmp, mtmp
+  INTEGER             :: icoil, idof, ND, NF, icur, imag, isurf, NS, mm, iseg
+  REAL                :: xtmp, mtmp, tt
 
   isurf = plasma
 
   !-------------------------------------------------------------------------------------------
   if (type == -1) then ! dof related data;
-
      Cdof = 0; Ndof = 0; Tdof = 0
-
-     do icoil = 1, Ncoils*Npc
-        
+     do icoil = 1, Ncoils 
         select case (coil(icoil)%type)       
         case(1)
            ! get number of DoF for each coil and allocate arrays;
+           NS = coil(icoil)%NS
            NF = FouCoil(icoil)%NF
            ND = (6*NF + 3) ! total variables for geometry
            DoF(icoil)%ND = coil(icoil)%Lc * ND !# of DoF for icoil;
@@ -35,6 +33,53 @@ subroutine AllocData(type)
            SALLOCATE(DoF(icoil)%xof , (0:coil(icoil)%NS-1, 1:ND), zero)
            SALLOCATE(DoF(icoil)%yof , (0:coil(icoil)%NS-1, 1:ND), zero)
            SALLOCATE(DoF(icoil)%zof , (0:coil(icoil)%NS-1, 1:ND), zero)
+           ! allocate and calculate trignometric functions for re-use           
+           SALLOCATE( FouCoil(icoil)%cmt, (0:NS, 0:NF), zero )
+           SALLOCATE( FouCoil(icoil)%smt, (0:NS, 0:NF), zero )           
+           do iseg = 0, NS
+              tt = iseg * pi2 / NS
+              do mm = 0, NF
+                 FouCoil(icoil)%cmt(iseg,mm) = cos( mm * tt )
+                 FouCoil(icoil)%smt(iseg,mm) = sin( mm * tt )
+              enddo
+           enddo
+
+!!$           ip = (icoil-1)/Ncoils  ! the integer is the period number;
+!!$           DoF(icoil)%xof(0:NS-1,      1:  NF+1) =  cosip(ip) * cmt(0:NS-1, 0:NF)  !x/xc
+!!$           DoF(icoil)%xof(0:NS-1,   NF+2:2*NF+1) =  cosip(ip) * smt(0:NS-1, 1:NF)  !x/xs
+!!$           DoF(icoil)%xof(0:NS-1, 2*NF+2:3*NF+2) = -sinip(ip) * cmt(0:NS-1, 0:NF)  !x/yc ; valid for ip>0 ;
+!!$           DoF(icoil)%xof(0:NS-1, 3*NF+3:4*NF+2) = -sinip(ip) * smt(0:NS-1, 1:NF)  !x/ys ; valid for ip>0 ;
+!!$           DoF(icoil)%yof(0:NS-1,      1:  NF+1) =  sinip(ip) * cmt(0:NS-1, 0:NF)  !y/xc ; valid for ip>0 ;
+!!$           DoF(icoil)%yof(0:NS-1,   NF+2:2*NF+1) =  sinip(ip) * smt(0:NS-1, 1:NF)  !y/xs ; valid for ip>0 ;
+!!$           DoF(icoil)%yof(0:NS-1, 2*NF+2:3*NF+2) =  cosip(ip) * cmt(0:NS-1, 0:NF)  !y/yc
+!!$           DoF(icoil)%yof(0:NS-1, 3*NF+3:4*NF+2) =  cosip(ip) * smt(0:NS-1, 1:NF)  !y/ys
+!!$           DoF(icoil)%zof(0:NS-1, 4*NF+3:5*NF+3) =              cmt(0:NS-1, 0:NF)  !z/zc
+!!$           DoF(icoil)%zof(0:NS-1, 5*NF+4:6*NF+3) =              smt(0:NS-1, 1:NF)  !z/zs
+
+           ! the derivatives of dx/dv 
+           DoF(icoil)%xof(0:NS-1,      1:  NF+1) = FouCoil(icoil)%cmt(0:NS-1, 0:NF)  !x/xc
+           DoF(icoil)%xof(0:NS-1,   NF+2:2*NF+1) = FouCoil(icoil)%smt(0:NS-1, 1:NF)  !x/xs
+           DoF(icoil)%xof(0:NS-1, 2*NF+2:3*NF+2) = FouCoil(icoil)%cmt(0:NS-1, 0:NF)  !x/yc 
+           DoF(icoil)%xof(0:NS-1, 3*NF+3:4*NF+2) = FouCoil(icoil)%smt(0:NS-1, 1:NF)  !x/ys 
+           DoF(icoil)%yof(0:NS-1,      1:  NF+1) = FouCoil(icoil)%cmt(0:NS-1, 0:NF)  !y/xc 
+           DoF(icoil)%yof(0:NS-1,   NF+2:2*NF+1) = FouCoil(icoil)%smt(0:NS-1, 1:NF)  !y/xs 
+           DoF(icoil)%yof(0:NS-1, 2*NF+2:3*NF+2) = FouCoil(icoil)%cmt(0:NS-1, 0:NF)  !y/yc
+           DoF(icoil)%yof(0:NS-1, 3*NF+3:4*NF+2) = FouCoil(icoil)%smt(0:NS-1, 1:NF)  !y/ys
+           DoF(icoil)%zof(0:NS-1, 4*NF+3:5*NF+3) = FouCoil(icoil)%cmt(0:NS-1, 0:NF)  !z/zc
+           DoF(icoil)%zof(0:NS-1, 5*NF+4:6*NF+3) = FouCoil(icoil)%smt(0:NS-1, 1:NF)  !z/zs
+           ! allocate xyz data
+           SALLOCATE( coil(icoil)%xx, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%yy, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%zz, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%xt, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%yt, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%zt, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%xa, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%ya, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%za, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%dl, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%dd, (0:coil(icoil)%NS), zero )
+           coil(icoil)%dd = pi2 / NS  ! discretizing factor;
         case(2)
 #ifdef dposition
            DoF(icoil)%ND = coil(icoil)%Lc * 5 ! number of DoF for permanent magnet

@@ -4,10 +4,10 @@ SUBROUTINE poinplot
   ! Poincare plots of the vacuum flux surfaces and calculate the rotational transform
   !------------------------------------------------------------------------------------------------------ 
   USE globals, only : dp, myid, ncpu, zero, half, pi, pi2, ounit, pi, sqrtmachprec, pp_maxiter, &
-                      pp_phi, pp_raxis, pp_zaxis, pp_xtol, pp_rmax, pp_zmax, ppr, ppz, pp_ns, iota, nfp_raw, &
+                      pp_phi, pp_raxis, pp_zaxis, pp_xtol, pp_rmax, pp_zmax, ppr, ppz, pp_ns, iota,  &
                       XYZB, lboozmn, booz_mnc, booz_mns, booz_mn, total_num, &
                       master, nmaster, nworker, masterid, color, myworkid, MPI_COMM_MASTERS, &
-                      MPI_COMM_MYWORLD, MPI_COMM_WORKERS, plasma
+                      MPI_COMM_MYWORLD, MPI_COMM_WORKERS, plasma, surf
   USE mpi
   IMPLICIT NONE
 
@@ -108,7 +108,7 @@ SUBROUTINE poinplot
      if (niter==0) then
         iota(is) = zero
      else 
-        iota(is) = rzrzt(5) / (niter*pi2/Nfp_raw)
+        iota(is) = rzrzt(5) / (niter*pi2/surf(Plasma)%Nfp)
      endif
 
      if (myworkid == 0) write(ounit, '(8X": order="I6" ; masterid="I6" ; (R,Z)=("ES12.5","ES12.5 & 
@@ -143,7 +143,7 @@ END SUBROUTINE poinplot
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE find_axis(RZ, MAXFEV, XTOL)
-  USE globals, only : dp, myid, ounit, zero, pp_phi, Nfp_raw
+  USE globals, only : dp, myid, ounit, zero, pp_phi
   USE mpi
   IMPLICIT NONE
 
@@ -201,7 +201,7 @@ END SUBROUTINE find_axis
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE axis_fcn(n,x,fvec,iflag)
-  USE globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, Nfp_raw, pp_xtol
+  USE globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, surf, pp_xtol, plasma
   USE mpi
   IMPLICIT NONE
 
@@ -216,7 +216,7 @@ SUBROUTINE axis_fcn(n,x,fvec,iflag)
   relerr = pp_xtol
   abserr = sqrtmachprec
   phi_init = pp_phi
-  phi_stop = pp_phi + pi2/Nfp_raw
+  phi_stop = pp_phi + pi2/surf(plasma)%Nfp
   rz_end = x
 
   call ode( BRpZ, n, rz_end, phi_init, phi_stop, relerr, abserr, ifail, work, iwork )
@@ -246,7 +246,7 @@ END SUBROUTINE axis_fcn
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE ppiota(rzrzt,iflag)
-  USE globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, Nfp_raw, pp_xtol
+  USE globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, surf, pp_xtol, plasma
   USE mpi
   IMPLICIT NONE
 
@@ -262,7 +262,7 @@ SUBROUTINE ppiota(rzrzt,iflag)
   relerr = pp_xtol
   abserr = sqrtmachprec
   phi_init = pp_phi
-  phi_stop = pp_phi + pi2/Nfp_raw
+  phi_stop = pp_phi + pi2/surf(plasma)%Nfp
 
   call ode( BRpZ_iota, n, rzrzt, phi_init, phi_stop, relerr, abserr, ifail, work, iwork )
   if ( ifail /= 2 ) then     

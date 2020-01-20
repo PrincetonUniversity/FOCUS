@@ -125,7 +125,7 @@ SUBROUTINE readBmn
   ! allocate trig functions;
   !----------------------------------------------------------------------------------------
   use globals, only: dp, zero, half, pi2, myid, ounit, runit, ext, IsQuiet, Nteta, Nzeta, Nfp, &
-                     NBmn, Bmnin, Bmnim, wBmn, tBmnc, tBmns, carg, sarg, Nfp_raw, case_bnormal, &
+                     NBmn, Bmnin, Bmnim, wBmn, tBmnc, tBmns, carg, sarg, case_bnormal, &
                      input_harm, bharm_jsurf, surf, plasma
   use bharm_mod
   implicit none
@@ -136,6 +136,7 @@ SUBROUTINE readBmn
   LOGICAL  :: exist
 
   !----------------------------------------------------------------------------------------
+  isurf = plasma
   inquire( file=trim(input_harm), exist=exist)  
   FATAL( readBmn, .not.exist, ext.harmonics does not exist ) 
 
@@ -184,11 +185,14 @@ SUBROUTINE readBmn
    SALLOCATE( carg,  (1:Nteta*Nzeta, 1:NBmn), zero )
    SALLOCATE( sarg,  (1:Nteta*Nzeta, 1:NBmn), zero )
 
-   Bmnin(1:NBmn) = Bmnin(1:NBmn) * Nfp_raw
+   Bmnin(1:NBmn) = Bmnin(1:NBmn) * surf(isurf)%Nfp
 
    ij = 0
-   do jj = 0, Nzeta-1 ; zeta = ( jj + half ) * pi2 / (Nzeta*Nfp) ! the same as in rdsurf.h
-      do ii = 0, Nteta-1 ; teta = ( ii + half ) * pi2 / Nteta
+   ! the same as in rdsurf.h
+   do jj = 0, Nzeta-1
+      zeta = ( jj + half ) * pi2 / surf(isurf)%Nzeta
+      do ii = 0, Nteta-1
+         teta = ( ii + half ) * pi2 / surf(isurf)%Nteta
          ij = ij + 1
          do imn = 1, NBmn
             arg = Bmnim(imn) * teta - Bmnin(imn) * zeta

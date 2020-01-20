@@ -6,12 +6,12 @@ SUBROUTINE specinp
   ! 2. Calculate the poloidal and toroidal closed currents (Itor and Gpol)
   ! 3. Write down a xxx.Vns file with all the information for SPEC
   !-------------------------------------------------------------------------------!
-  use globals, only: dp, zero, half, two, pi2, mu0,  myid, wunit, ounit,  surf, bn, ext, &
-                     Nfp_raw, Nteta, Nzeta, plasma
+  use globals, only: dp, zero, half, two, pi2, mu0, myid, wunit, ounit,  surf, bn, ext, &
+                     Nteta, Nzeta, plasma
   implicit none
   include "mpif.h"
   !-------------------------------------------------------------------------------
-  INTEGER             :: mf, nf  ! Fourier modes size
+  INTEGER             :: mf, nf, Nfp_raw  ! Fourier modes size
   INTEGER             :: imn=0, ii, jj, im, in, astat, ierr, Nbf, iteta, jzeta, isurf
   REAL                :: teta, zeta, arg, tol, tmpc, tmps, curtor, curpol
   INTEGER, allocatable:: bnim(:), bnin(:)
@@ -19,6 +19,7 @@ SUBROUTINE specinp
 
   ! use the plasma for now; could be the limiter surface; 2019/12/15
   isurf = plasma
+  Nfp_raw = surf(isurf)%Nfp
   ! default Fourier resolution; could be customized
   mf = 24 ; nf = 12
   ! compute Bn
@@ -40,7 +41,7 @@ SUBROUTINE specinp
            teta = ( ii + half ) * pi2 / Nteta
            do jj = 0, Nzeta-1
               zeta = ( jj + half ) * pi2 / Nzeta
-              arg = im*teta - in*Nfp_raw*zeta
+              arg = im*teta - in*surf(isurf)%Nfp*zeta
               tmpc = tmpc + (-bn(ii, jj)*surf(isurf)%ds(ii,jj))*cos(arg)  ! minus sign is required because
               tmps = tmps + (-bn(ii, jj)*surf(isurf)%ds(ii,jj))*sin(arg)  ! the normal vector in SPEC is e_t x e_z
            enddo ! end jj

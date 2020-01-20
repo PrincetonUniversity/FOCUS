@@ -1,6 +1,6 @@
 subroutine boozmn
   USE globals, only : dp, myid, ncpu, zero, ounit, total_num, pp_maxiter, pp_ns, &
-       XYZB, lboozmn, bmin, bmim, booz_mnc, booz_mns, booz_mpol, booz_ntor, booz_mn, nfp_raw
+       XYZB, lboozmn, bmin, bmim, booz_mnc, booz_mns, booz_mpol, booz_ntor, booz_mn
   USE mpi
   IMPLICIT NONE
 

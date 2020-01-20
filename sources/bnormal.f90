@@ -35,7 +35,7 @@ subroutine bnormal( ideriv )
 !------------------------------------------------------------------------------------------------------   
   use globals, only: dp, zero, half, one, pi2, sqrtmachprec, bsconstant, ncpu, myid, ounit, &
        coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, plasma, &
-       bnorm, t1B, t2B, bn, Ndof, Npc, Cdof, weight_bharm, case_bnormal, &
+       bnorm, t1B, t2B, bn, Ndof, Cdof, weight_bharm, case_bnormal, &
        weight_bnorm, ibnorm, mbnorm, ibharm, mbharm, LM_fvec, LM_fjac, &
        bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn
   use bnorm_mod
@@ -66,7 +66,7 @@ subroutine bnormal( ideriv )
         do iteta = 0, Nteta - 1
            if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;
 
-           do icoil = 1, Ncoils*Npc
+           do icoil = 1, Ncoils
               call bfield0(icoil, surf(isurf)%xx(iteta, jzeta), surf(isurf)%yy(iteta, jzeta), &
                    & surf(isurf)%zz(iteta, jzeta), dBx(0,0), dBy(0,0), dBz(0,0))
               surf(isurf)%Bx(iteta, jzeta) = surf(isurf)%Bx(iteta, jzeta) + dBx( 0, 0) 
@@ -151,7 +151,7 @@ subroutine bnormal( ideriv )
 
            if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;
 
-           do ip = 1, Npc
+           do ip = 1, 1
 
               idof = 0
               do icoil = 1, Ncoils

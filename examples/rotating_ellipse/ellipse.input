@@ -8,7 +8,7 @@
  Nteta          =      128              ! poloidal number for discretizing the surface
  Nzeta          =      128              ! toroidal number for discretizing the surface
 
- case_init      =        1              ! -1: read coils.ext file; 0: read ext.focus file; 1: initialize with circular coils; 2: initialize with dipoles
+ case_init      =        0              ! -1: read coils.ext file; 0: read ext.focus file; 1: initialize with circular coils; 2: initialize with dipoles
  case_coils     =        1              ! 0: using piecewise linear representation; (not ready); 1: using Fourier series representation
  Ncoils         =        16             ! number of coils; only valid when case_init = 1
  init_current   =        1.000D+06      ! initial coil currents (Amper); only valid when case_init = 1
@@ -33,7 +33,7 @@
  weight_inorm   =        1.000D+00	! weight for normalization of current. Larger weight makes the derivatives more important.
  weight_gnorm   =        1.000D+00	! weight for normalization of geometric coefficients. Larger weight makes the derivatives more important.
 
- case_optimize  =        1              ! -2: check the 2nd derivatives (not ready); -1: check the 1st derivatives; 0: no optimizations performed; 1: optimizing using the gradient (DF and/or CG); 
+ case_optimize  =        0              ! -2: check the 2nd derivatives (not ready); -1: check the 1st derivatives; 0: no optimizations performed; 1: optimizing using the gradient (DF and/or CG); 
  exit_tol       =        1.000D-04      ! Exit the optimizer if the percent change in the cost function over the last 5 steps is below this threshold
 
  DF_maxiter     =        0              ! maximum iterations allowed for using Differential Flow (DF)
@@ -53,7 +53,7 @@
 
  case_postproc  =        3              ! 0: no extra post-processing; 1: evaluate the current coils; 2: write SPEC file; 3: perform Poincare plots; 4: calculates |B| Fourier harmonics in Boozer coordinates
  save_freq      =        1              ! frequency for writing output files; should be positive
- save_coils     =        1              ! flag for indicating whether write example.focus and example.coils
+ save_coils     =        0              ! flag for indicating whether write example.focus and example.coils
  save_harmonics =        0              ! flag for indicating whether write example.harmonics
  save_filaments =        0              ! flag for indicating whether write .example.filaments.xxxxxx
 

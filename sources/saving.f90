@@ -130,7 +130,7 @@ subroutine saving
   HWRITEIV( 1                ,   pp_maxiter    ,   pp_maxiter                    )
   HWRITERV( 1                ,   pp_xtol       ,   pp_xtol                       )
 
-  HWRITEIV( 1                ,   Nfp           ,   Nfp_raw                         )
+  HWRITEIV( 1                ,   Nfp           ,   surf(plasma)%Nfp                     )
   HWRITERV( 1                ,   surf_vol      ,   surf(plasma)%vol                     )
   HWRITERA( Nteta,Nzeta      ,   xsurf         ,   surf(plasma)%xx(0:Nteta-1,0:Nzeta-1) )
   HWRITERA( Nteta,Nzeta      ,   ysurf         ,   surf(plasma)%yy(0:Nteta-1,0:Nzeta-1) )
@@ -172,7 +172,7 @@ subroutine saving
   endif
 
   if (allocated(coil_importance)) then
-     HWRITERV( Ncoils*Npc    , coil_importance ,  coil_importance                )
+     HWRITERV( Ncoils        , coil_importance ,  coil_importance                )
   endif
   
   if (allocated(LM_fvec)) then
@@ -263,10 +263,10 @@ subroutine saving
   if( save_coils == 1 ) then
 
      open(funit,file=trim(out_coils), status="unknown", form="formatted" )
-     write(funit,'("periods "I3)') Nfp_raw
+     write(funit,'("periods "I3)') surf(plasma)%Nfp
      write(funit,'("begin filament")')
      write(funit,'("mirror NIL")')
-     do icoil = 1, Ncoils*Npc
+     do icoil = 1, Ncoils
         do ii = 0, coil(icoil)%NS-1
            write(funit,1010) coil(icoil)%xx(ii), coil(icoil)%yy(ii), coil(icoil)%zz(ii), coil(icoil)%I
         enddo
@@ -289,7 +289,7 @@ subroutine saving
 
      open( funit, file="."//trim(ext)//".filaments."//srestart, status="unknown", form="unformatted" )  
      write(funit) Ncoils, Nseg
-     do icoil = 1, Ncoils*Npc
+     do icoil = 1, Ncoils
         write(funit) coil(icoil)%xx(0:coil(icoil)%NS)
         write(funit) coil(icoil)%yy(0:coil(icoil)%NS)
         write(funit) coil(icoil)%zz(0:coil(icoil)%NS)
@@ -308,7 +308,8 @@ subroutine saving
      write(wunit,'(I6)') NBmn                     ! write dimensions
      write(wunit,'("# n  m   Bmnc  Bmns  wBmn")') ! comment line;
      do imn = 1, NBmn
-        write(wunit,'(2(I3, 4X), 3(ES23.15,4X))') Bmnin(imn)/Nfp_raw, Bmnim(imn), Bmnc(imn), Bmns(imn), wBmn(imn)
+        write(wunit,'(2(I3, 4X), 3(ES23.15,4X))') Bmnin(imn)/surf(plasma)%Nfp, & 
+             Bmnim(imn), Bmnc(imn), Bmns(imn), wBmn(imn)
      enddo
      close(wunit)
 
@@ -332,7 +333,7 @@ SUBROUTINE write_plasma
 !-------------------------------------------------------------------------------!
   use globals, only : dp, zero, half, two, pi2, myid, ncpu, ounit, wunit, ext, &
                       plasma, &
-                      Nteta, Nzeta, surf, Nfp_raw, bnorm, sqrtmachprec, out_plasma
+                      Nteta, Nzeta, surf, bnorm, sqrtmachprec, out_plasma
   
   implicit none  
   include "mpif.h"
@@ -382,7 +383,7 @@ SUBROUTINE write_plasma
            do jj = 0, Nzeta-1
               zeta = ( jj + half ) * pi2 / Nzeta
 
-              arg = im*teta - in*Nfp_raw*zeta
+              arg = im*teta - in*surf(isurf)%Nfp*zeta
               tmpc = tmpc + surf(isurf)%bn(ii,jj)*cos(arg)
               tmps = tmps + surf(isurf)%bn(ii,jj)*sin(arg)
 
@@ -392,7 +393,7 @@ SUBROUTINE write_plasma
         if ( (abs(tmpc) + abs(tmps)) .lt. tol ) cycle
 
         imn = imn + 1
-        surf(isurf)%bnin(imn) = in * Nfp_raw
+        surf(isurf)%bnin(imn) = in * surf(isurf)%Nfp
         surf(isurf)%bnim(imn) = im
 
         if (im .eq. 0  ) then
@@ -415,20 +416,20 @@ SUBROUTINE write_plasma
   open(wunit, file=trim(out_plasma), status='unknown', action='write')
 
   write(wunit,*      ) "#Nfou Nfp  Nbnf"
-  write(wunit,'(3I6)' ) surf(isurf)%Nfou, Nfp_raw, surf(isurf)%Nbnf
+  write(wunit,'(3I6)' ) surf(isurf)%Nfou, surf(isurf)%Nfp, surf(isurf)%Nbnf
 
   write(wunit,*      ) "#------- plasma boundary------"
   write(wunit,*      ) "#  n   m   Rbc   Rbs    Zbc   Zbs"
   do imn = 1, surf(isurf)%Nfou
-     write(wunit,'(2I6, 4ES15.6)') surf(isurf)%bin(imn)/Nfp_raw, surf(isurf)%bim(imn), surf(isurf)%Rbc(imn), &
-          surf(isurf)%Rbs(imn), surf(isurf)%Zbc(imn), surf(isurf)%Zbs(imn)
+     write(wunit,'(2I6, 4ES15.6)') surf(isurf)%bin(imn)/surf(isurf)%Nfp, surf(isurf)%bim(imn), & 
+          surf(isurf)%Rbc(imn), surf(isurf)%Rbs(imn), surf(isurf)%Zbc(imn), surf(isurf)%Zbs(imn)
   enddo
 
   write(wunit,*      ) "#-------Bn harmonics----------"
   write(wunit,*      ) "#  n  m  bnc   bns"
   if (surf(isurf)%Nbnf .gt. 0) then
      do imn = 1, surf(isurf)%Nbnf
-        write(wunit,'(2I6, 2ES15.6)') surf(isurf)%bnin(imn)/Nfp_raw, surf(isurf)%bnim(imn), &
+        write(wunit,'(2I6, 2ES15.6)') surf(isurf)%bnin(imn)/surf(isurf)%Nfp, surf(isurf)%bnim(imn), &
              surf(isurf)%bnc(imn), surf(isurf)%bns(imn)
      enddo
   else
