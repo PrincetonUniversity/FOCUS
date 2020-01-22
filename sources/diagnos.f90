@@ -8,7 +8,7 @@ SUBROUTINE diagnos
   use globals, only: dp, zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
        Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
        cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, Nfp, weight_bnorm, overlap, plasma, &
-       cosnfp, sinnfp
+       cosnfp, sinnfp, symmetry, discretefactor
   use mpi
   implicit none
 
@@ -114,7 +114,7 @@ SUBROUTINE diagnos
               call mindist(Atmp, coil(icoil)%NS, Btmp, coil(itmp)%NS, tmp_dist)
 #ifdef DEBUG
               if(myid .eq. 0) write(ounit, '(8X": distance between  "I3.3"-th and "I3.3"-th coil (ip="I2.2 & 
-                   ", is="I1") is : " ES23.15)') icoil, itmp, tmp_dist
+                   ", is="I1") is : " ES23.15)') icoil, itmp, ip, is, tmp_dist
 #endif
               if (minCCdist .ge. tmp_dist) minCCdist=tmp_dist
            enddo
@@ -177,8 +177,14 @@ SUBROUTINE diagnos
   !--------------------------------calculate the average Bn error-------------------------------
   if (allocated(surf(isurf)%bn)) then
      ! \sum{ |Bn| / |B| }/ (Nt*Nz)
-     if(myid .eq. 0) write(ounit, '(8X": Average relative absolute Bn error is  :" ES23.15)') &
-          sum(abs(surf(isurf)%bn/sqrt(surf(isurf)%Bx**2 + surf(isurf)%By**2 + surf(isurf)%Bz**2))) / (Nteta*Nzeta)
+     if(myid .eq. 0) then
+        write(ounit, '(8X": Ave. relative absolute Bn error |Bn|/B : " ES12.5"; max(|Bn|)="ES12.5)') &
+             sum(abs(surf(plasma)%bn/sqrt(surf(plasma)%Bx**2+surf(plasma)%By**2+surf(plasma)%Bz**2))) &
+             / (Nteta*Nzeta), maxval(abs(surf(plasma)%bn))
+        write(ounit, '(8X": Surface area normalized Bn error int(|Bn|/B*ds)/A : "ES23.15)') &
+             sum(abs(surf(plasma)%bn)/sqrt(surf(plasma)%Bx**2+surf(plasma)%By**2+surf(plasma)%Bz**2) &
+             *surf(plasma)%ds)*discretefactor/(surf(plasma)%area/(Nfp*2**symmetry))
+     endif
   endif
 
   return

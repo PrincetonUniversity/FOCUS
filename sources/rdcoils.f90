@@ -28,8 +28,8 @@
 !latex   # Total number of coils
 !latex              16
 !latex   #------------1--------------------------------
-!latex   #coil_type     coil_name
-!latex       1    Mod_001   
+!latex   #coil_type  symm   coil_name
+!latex       1   0  Mod_001   
 !latex   #Nseg        current         Ifree         Length         Lfree  target_length
 !latex     128  9.844910899889484E+05     1  5.889288927667147E+00     1  1.000000000000000E+00
 !latex   #NFcoil
@@ -42,13 +42,13 @@
 !latex   -4.293247278325474E-17 -1.303273952226587E-15  7.710821807870230E-16 -3.156539892466338E-16  9.395672288215928E-17
 !latex    0.000000000000000E+00  9.997301975562740E-01  2.929938238054118E-02  2.436889176706748E-02  1.013941937492003E-03
 !latex   #-----------2--permanent magnet---------------
-!latex   #coil_type     coil_name
-!latex       2    dipole_01  
+!latex   #coil_type  symm   coil_name
+!latex       2  0  dipole_01  
 !latex   #  Lc  ox   oy   oz  Ic  I  mt  mp
 !latex      1   0.0  0.0  0.0  1 1.0E6  0.0  0.0
 !latex   #-----------3--backgound Bt Bz----------------
-!latex   #coil_type     coil_name
-!latex       3    bg_BtBz_01
+!latex   #coil_type  symm   coil_name
+!latex       3  0  bg_BtBz_01
 !latex   # Ic     I    Lc  Bz  (Ic control I; Lc control Bz)
 !latex     1    1.0E6  0  0.0
 !latex      .

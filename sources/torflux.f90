@@ -112,7 +112,7 @@ subroutine torflux( ideriv )
   REAL, dimension(1:Ndof, 0:Nzeta-1)    :: ldF, dF
   REAL, dimension(0:Nzeta-1)            :: ldiff, psi_diff
   !--------------------------initialize and allocate arrays------------------------------------- 
-
+  isurf = plasma
   tflux = zero ; lsum = zero ; psi_avg = zero ; dflux = zero ; psi_diff = zero
   ldiff = zero ; lax = zero; lay = zero; laz = zero      !already allocted; reset to zero;
 
@@ -230,7 +230,7 @@ end subroutine torflux
 
 subroutine bpotential0(icoil, iteta, jzeta, tAx, tAy, tAz)
 !------------------------------------------------------------------------------------------------------ 
-! DATE:  06/15/2017
+! DATE:  06/15/2017; 01/20/2020
 ! calculate the magnetic potential from coil(icoil) at the evaluation point (iteta, jzeta);
 ! Biot-Savart constant and currents are not included for later simplication.
 ! Discretizing factor is includeed; coil(icoil)%dd(kseg) 
@@ -247,18 +247,18 @@ subroutine bpotential0(icoil, iteta, jzeta, tAx, tAy, tAz)
 
   INTEGER              :: ierr, astat, kseg, isurf, ip, is, cs, Npc
   REAL                 :: dlx, dly, dlz, rm, ltx, lty, ltz, &
-       &                  Ax, Ay, Az
+       &                  Ax, Ay, Az, xx, yy, zz
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
+  isurf = plasma
   FATAL( bpotential0, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
   FATAL( bpotential0, iteta .lt. 0 .or. iteta .gt. Nteta , iteta not in right range )
   FATAL( bpotential0, jzeta .lt. 0 .or. jzeta .gt. Nzeta , jzeta not in right range )
   ! initialization
   Npc = 1 ; cs = 0  
-  dlx = zero; ltx = zero; Ax = zero
-  dly = zero; lty = zero; Ay = zero
-  dlz = zero; ltz = zero; Az = zero
+  tAx = zero ; tAy = zero ; tAz = zero
+  dlx = zero ; dly = zero ; dlz = zero
+  ltx = zero ; lty = zero ; ltz = zero
   ! check if the coil is stellarator symmetric
   select case (coil(icoil)%symm) 
   case ( 0 )
@@ -272,22 +272,38 @@ subroutine bpotential0(icoil, iteta, jzeta, tAx, tAy, tAz)
      Npc = Nfp
   end select
 
-  do kseg = 0, coil(icoil)%NS-1
-        
-   dlx = surf(isurf)%xx(iteta,jzeta) - coil(icoil)%xx(kseg)
-   dly = surf(isurf)%yy(iteta,jzeta) - coil(icoil)%yy(kseg)
-   dlz = surf(isurf)%zz(iteta,jzeta) - coil(icoil)%zz(kseg)
-   rm  = 1.0 / sqrt(dlx**2 + dly**2 + dlz**2)
-
-   ltx = coil(icoil)%xt(kseg)
-   lty = coil(icoil)%yt(kseg)
-   ltz = coil(icoil)%zt(kseg)
-   
-   Ax = Ax + ltx * rm * coil(icoil)%dd(kseg)
-   Ay = Ay + lty * rm * coil(icoil)%dd(kseg)
-   Az = Az + ltz * rm * coil(icoil)%dd(kseg)
-
-  enddo    ! enddo kseg
+  ! periodicity and stellarator symmetry
+  do ip = 1, Npc
+     do is = 0, cs
+        ! find the point on plasma by rotating in reverse direction. + symmetric
+        xx = ( surf(isurf)%xx(iteta,jzeta)*cosnfp(ip) + surf(isurf)%yy(iteta,jzeta)*sinnfp(ip) )
+        yy = (-surf(isurf)%xx(iteta,jzeta)*sinnfp(ip) + surf(isurf)%yy(iteta,jzeta)*cosnfp(ip) ) * (-1)**is
+        zz =   surf(isurf)%zz(iteta,jzeta) * (-1)**is
+        Ax = zero; Ay = zero; Az = zero
+        select case (coil(icoil)%type)        
+        case(1)        
+           ! Fourier coils
+           do kseg = 0, coil(icoil)%NS-1
+              dlx = xx - coil(icoil)%xx(kseg)
+              dly = yy - coil(icoil)%yy(kseg)
+              dlz = zz - coil(icoil)%zz(kseg)
+              rm  = 1.0 / sqrt(dlx**2 + dly**2 + dlz**2)
+              ltx = coil(icoil)%xt(kseg)
+              lty = coil(icoil)%yt(kseg)
+              ltz = coil(icoil)%zt(kseg)
+              Ax = Ax + ltx * rm * coil(icoil)%dd(kseg)
+              Ay = Ay + lty * rm * coil(icoil)%dd(kseg)
+              Az = Az + ltz * rm * coil(icoil)%dd(kseg)
+           enddo    ! enddo kseg
+        case default
+           FATAL(bpotential0, .true., not supported coil types)
+        end select 
+        ! sum all the contributions
+        tAx = tAx + (Ax*cosnfp(ip) - Ay*sinnfp(ip))*(-1)**is
+        tAy = tAy + (Ay*cosnfp(ip) + Ax*sinnfp(ip))
+        tAz = tAz +  Az
+     enddo
+  enddo
 
   return
 
@@ -295,7 +311,7 @@ end subroutine bpotential0
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-subroutine bpotential1(icoil, iteta, jzeta, Ax, Ay, Az, ND)
+subroutine bpotential1(icoil, iteta, jzeta, tAx, tAy, tAz, ND)
 !------------------------------------------------------------------------------------------------------ 
 ! DATE:  06/15/2017
 ! calculate the magnetic potential and its 1st derivatives from coil(icoil) at the evaluation point;
@@ -308,12 +324,13 @@ subroutine bpotential1(icoil, iteta, jzeta, Ax, Ay, Az, ND)
   implicit none
 
   INTEGER, intent(in ) :: icoil, iteta, jzeta, ND
-  REAL, dimension(1:1, 1:ND), intent(inout) :: Ax, Ay, Az
+  REAL, dimension(1:1, 1:ND), intent(inout) :: tAx, tAy, tAz
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   INTEGER              :: ierr, astat, kseg, NS, isurf, ip, is, cs, Npc
-  REAL                 :: dlx, dly, dlz, r, rm3, ltx, lty, ltz
+  REAL                 :: dlx, dly, dlz, r, rm3, ltx, lty, ltz, xx, yy, zz
+  REAL, dimension(1:1, 1:ND) :: Ax, Ay, Az
   REAL, dimension(1:1, 0:coil(icoil)%NS-1)   :: dAxx, dAxy, dAxz, dAyx, dAyy, dAyz, dAzx, dAzy, dAzz
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -322,43 +339,67 @@ subroutine bpotential1(icoil, iteta, jzeta, Ax, Ay, Az, ND)
   FATAL( bpotential1, iteta .lt. 0 .or. iteta .gt. Nteta , iteta not in right range )
   FATAL( bpotential1, jzeta .lt. 0 .or. jzeta .gt. Nzeta , jzeta not in right range )
   FATAL( bpotential1, ND <= 0, wrong inout dimension of ND )
+
+  ! initialization
+  Npc = 1 ; cs = 0  
+  tAx = zero ; tAy = zero ; tAz = zero
+  dlx = zero ; dly = zero ; dlz = zero
+  ltx = zero ; lty = zero ; ltz = zero
+  ! check if the coil is stellarator symmetric
+  select case (coil(icoil)%symm) 
+  case ( 0 )
+     cs  = 0
+     Npc = 1
+  case ( 1 )
+     cs  = 0
+     Npc = Nfp
+  case ( 2) 
+     cs  = 1
+     Npc = Nfp
+  end select
   
   NS = coil(icoil)%NS
-
-  dlx = zero; ltx = zero; Ax = zero
-  dly = zero; lty = zero; Ay = zero
-  dlz = zero; ltz = zero; Az = zero
-
-  do kseg = 0, NS-1
-     
-     dlx = surf(isurf)%xx(iteta,jzeta) - coil(icoil)%xx(kseg)
-     dly = surf(isurf)%yy(iteta,jzeta) - coil(icoil)%yy(kseg)
-     dlz = surf(isurf)%zz(iteta,jzeta) - coil(icoil)%zz(kseg)
-
-     r = sqrt(dlx**2 + dly**2 + dlz**2); rm3 = r**(-3)
-
-     ltx = coil(icoil)%xt(kseg)
-     lty = coil(icoil)%yt(kseg)
-     ltz = coil(icoil)%zt(kseg)
-
-     dAxx(1,kseg) = - (dly*lty + dlz*ltz) * rm3 * coil(icoil)%dd(kseg) !Ax/x
-     dAxy(1,kseg) =    dly*ltx            * rm3 * coil(icoil)%dd(kseg) !Ax/y
-     dAxz(1,kseg) =    dlz*ltx            * rm3 * coil(icoil)%dd(kseg) !Ax/z
-
-     dAyx(1,kseg) =    dlx*lty            * rm3 * coil(icoil)%dd(kseg) !Ay/x
-     dAyy(1,kseg) = - (dlx*ltx + dlz*ltz) * rm3 * coil(icoil)%dd(kseg) !Ay/y
-     dAyz(1,kseg) =    dlz*lty            * rm3 * coil(icoil)%dd(kseg) !Ay/z
-
-     dAzx(1,kseg) =    dlx*ltz            * rm3 * coil(icoil)%dd(kseg) !Az/x
-     dAzy(1,kseg) =    dly*ltz            * rm3 * coil(icoil)%dd(kseg) !Az/y
-     dAzz(1,kseg) = - (dlx*ltx + dly*lty) * rm3 * coil(icoil)%dd(kseg) !Az/z
-
-  enddo    ! enddo kseg
-
-  Ax(1:1, 1:ND) = matmul(dAxx, DoF(icoil)%xof) + matmul(dAxy, DoF(icoil)%yof) + matmul(dAxz, DoF(icoil)%zof)
-  Ay(1:1, 1:ND) = matmul(dAyx, DoF(icoil)%xof) + matmul(dAyy, DoF(icoil)%yof) + matmul(dAyz, DoF(icoil)%zof)
-  Az(1:1, 1:ND) = matmul(dAzx, DoF(icoil)%xof) + matmul(dAzy, DoF(icoil)%yof) + matmul(dAzz, DoF(icoil)%zof)
-
+  ! periodicity and stellarator symmetry
+  do ip = 1, Npc
+     do is = 0, cs
+        ! find the point on plasma by rotating in reverse direction. + symmetric
+        xx = ( surf(isurf)%xx(iteta,jzeta)*cosnfp(ip) + surf(isurf)%yy(iteta,jzeta)*sinnfp(ip) )
+        yy = (-surf(isurf)%xx(iteta,jzeta)*sinnfp(ip) + surf(isurf)%yy(iteta,jzeta)*cosnfp(ip) ) * (-1)**is
+        zz =   surf(isurf)%zz(iteta,jzeta) * (-1)**is
+        Ax = zero; Ay = zero; Az = zero
+        select case (coil(icoil)%type)        
+        case(1)        
+           ! Fourier coils
+           do kseg = 0, NS-1
+              dlx = xx - coil(icoil)%xx(kseg)
+              dly = yy - coil(icoil)%yy(kseg)
+              dlz = zz - coil(icoil)%zz(kseg)     
+              r = sqrt(dlx**2 + dly**2 + dlz**2); rm3 = r**(-3)
+              ltx = coil(icoil)%xt(kseg)
+              lty = coil(icoil)%yt(kseg)
+              ltz = coil(icoil)%zt(kseg)
+              dAxx(1,kseg) = - (dly*lty + dlz*ltz) * rm3 * coil(icoil)%dd(kseg) !Ax/x
+              dAxy(1,kseg) =    dly*ltx            * rm3 * coil(icoil)%dd(kseg) !Ax/y
+              dAxz(1,kseg) =    dlz*ltx            * rm3 * coil(icoil)%dd(kseg) !Ax/z
+              dAyx(1,kseg) =    dlx*lty            * rm3 * coil(icoil)%dd(kseg) !Ay/x
+              dAyy(1,kseg) = - (dlx*ltx + dlz*ltz) * rm3 * coil(icoil)%dd(kseg) !Ay/y
+              dAyz(1,kseg) =    dlz*lty            * rm3 * coil(icoil)%dd(kseg) !Ay/z
+              dAzx(1,kseg) =    dlx*ltz            * rm3 * coil(icoil)%dd(kseg) !Az/x
+              dAzy(1,kseg) =    dly*ltz            * rm3 * coil(icoil)%dd(kseg) !Az/y
+              dAzz(1,kseg) = - (dlx*ltx + dly*lty) * rm3 * coil(icoil)%dd(kseg) !Az/z
+           enddo    ! enddo kseg
+           Ax(1:1, 1:ND) = matmul(dAxx, DoF(icoil)%xof) + matmul(dAxy, DoF(icoil)%yof) + matmul(dAxz, DoF(icoil)%zof)
+           Ay(1:1, 1:ND) = matmul(dAyx, DoF(icoil)%xof) + matmul(dAyy, DoF(icoil)%yof) + matmul(dAyz, DoF(icoil)%zof)
+           Az(1:1, 1:ND) = matmul(dAzx, DoF(icoil)%xof) + matmul(dAzy, DoF(icoil)%yof) + matmul(dAzz, DoF(icoil)%zof)
+        case default
+           FATAL(bpotential1, .true., not supported coil types)
+        end select
+        ! sum all the contributions
+        tAx = tAx + (Ax*cosnfp(ip) - Ay*sinnfp(ip))*(-1)**is
+        tAy = tAy + (Ay*cosnfp(ip) + Ax*sinnfp(ip))
+        tAz = tAz +  Az
+     enddo
+  enddo
   return
 
 end subroutine bpotential1

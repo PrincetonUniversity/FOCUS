@@ -224,8 +224,8 @@ subroutine saving
      do icoil = 1, Ncoils
 
         write(wunit, *) "#-----------------", icoil, "---------------------------" 
-        write(wunit, *) "#coil_type     coil_name"
-        write(wunit,'(3X,I3,4X, A10)') coil(icoil)%type, coil(icoil)%name
+        write(wunit, *) "#coil_type   coil_symm  coil_name"
+        write(wunit,'(3X,I3,4X,I3,4X,A10)') coil(icoil)%type, coil(icoil)%symm, coil(icoil)%name
 
         select case (coil(icoil)%type)
         case (1)
