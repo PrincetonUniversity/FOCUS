@@ -71,8 +71,8 @@
 !latex  \item \inputvar{case\_init = 0} \\
 !latex    \textit{Specify the initializing method for coils, seen in \link{rdcoils}} \\
 !latex    \bi \vspace{-5mm}
-!latex    \item[-1:] read the standard MAKEGRID format coils from \inputvar{input_coils};
-!latex    \item[0:] read FOCUS format data from \inputvar{input_coils};
+!latex    \item[-1:] read the standard MAKEGRID format coils from \inputvar{input\_coils};
+!latex    \item[0:] read FOCUS format data from \inputvar{input\_coils};
 !latex    \item[1:] toroidally spaced \inputvar{Ncoils} circular coils with radius of \inputvar{init\_radius};
 !latex    \item[2:] toroidally spaced \inputvar{Ncoils}-1 magnetic dipoles pointing poloidallly on the toroidal surface 
 !latex               with radius of \inputvar{init\_radius} and a central infinitely long current. 
