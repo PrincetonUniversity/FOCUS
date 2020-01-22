@@ -26,7 +26,7 @@ subroutine saving
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 
-  INTEGER            :: ii, jj, icoil, NF
+  INTEGER            :: ii, jj, icoil, NF, ip, is, cs, Npc
 
   ! the following are used by the macros HWRITEXX below; do not alter/remove;
   INTEGER            :: hdfier, rank
@@ -267,12 +267,32 @@ subroutine saving
      write(funit,'("begin filament")')
      write(funit,'("mirror NIL")')
      do icoil = 1, Ncoils
-        do ii = 0, coil(icoil)%NS-1
-           write(funit,1010) coil(icoil)%xx(ii), coil(icoil)%yy(ii), coil(icoil)%zz(ii), coil(icoil)%I
+        ! check if the coil is stellarator symmetric
+        select case (coil(icoil)%symm) 
+        case ( 0 )
+           cs  = 0
+           Npc = 1
+        case ( 1 )
+           cs  = 0
+           Npc = Nfp
+        case ( 2) 
+           cs  = 1
+           Npc = Nfp
+        end select
+        ! periodicity and stellarator symmetry
+        do ip = 1, Npc
+           do is = 0, cs
+              do ii = 0, coil(icoil)%NS-1
+                 write(funit,1010) coil(icoil)%xx(ii)*cosnfp(ip)-coil(icoil)%yy(ii)*sinnfp(ip), &
+                      &  (-1)**is*(coil(icoil)%xx(ii)*sinnfp(ip)+coil(icoil)%yy(ii)*cosnfp(ip)), &
+                      &  (-1)**is*coil(icoil)%zz(ii), coil(icoil)%I
+              enddo
+              ii =  0
+              write(funit,1010) coil(icoil)%xx(ii)*cosnfp(ip)-coil(icoil)%yy(ii)*sinnfp(ip), &
+                   &  (-1)**is*(coil(icoil)%xx(ii)*sinnfp(ip)+coil(icoil)%yy(ii)*cosnfp(ip)),& 
+                   &  (-1)**is*coil(icoil)%zz(ii), zero, icoil, coil(icoil)%name
+           enddo
         enddo
-        ii =  0
-        write(funit,1010) coil(icoil)%xx(ii), coil(icoil)%yy(ii), coil(icoil)%zz(ii), &
-             zero, icoil, coil(icoil)%name
      enddo
      write(funit,'("end")')
      close(funit)

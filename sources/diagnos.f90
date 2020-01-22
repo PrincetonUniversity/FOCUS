@@ -98,13 +98,19 @@ SUBROUTINE diagnos
         if (itmp == icoil .or. coil(icoil)%type /= 1) cycle
         SALLOCATE(Btmp, (1:3,0:coil(itmp )%NS-1), zero)
         ! check if the coil is stellarator symmetric
-        if (coil(icoil)%symm == 2) then
-           cs = 1
-        else
-           cs = 0
-        endif
-        ! load data
-        do ip = 1, Nfp
+        select case (coil(icoil)%symm) 
+        case ( 0 )
+           cs  = 0
+           Npc = 1
+        case ( 1 )
+           cs  = 0
+           Npc = Nfp
+        case ( 2) 
+           cs  = 1
+           Npc = Nfp
+        end select
+        ! periodicity and stellarator symmetry
+        do ip = 1, Npc
            do is = 0, cs
               Btmp(1, 0:coil(itmp)%NS-1) =            (coil(itmp)%xx(0:coil(itmp)%NS-1)*cosnfp(ip) &
                                                    & - coil(itmp)%yy(0:coil(itmp)%NS-1)*sinnfp(ip) )
