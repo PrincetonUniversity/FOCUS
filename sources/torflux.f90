@@ -334,7 +334,7 @@ subroutine bpotential1(icoil, iteta, jzeta, tAx, tAy, tAz, ND)
   REAL, dimension(1:1, 0:coil(icoil)%NS-1)   :: dAxx, dAxy, dAxz, dAyx, dAyy, dAyz, dAzx, dAzy, dAzz
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
+  isurf = plasma 
   FATAL( bpotential1, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
   FATAL( bpotential1, iteta .lt. 0 .or. iteta .gt. Nteta , iteta not in right range )
   FATAL( bpotential1, jzeta .lt. 0 .or. jzeta .gt. Nzeta , jzeta not in right range )
