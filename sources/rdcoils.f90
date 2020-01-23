@@ -204,7 +204,7 @@ subroutine rdcoils
            read( runit,*)
            read( runit,*) coil(icoil)%type, coil(icoil)%symm, coil(icoil)%name
            FATAL( rdcoils04, coil(icoil)%type < 1 .or. coil(icoil)%type > 3, illegal )
-           FATAL( rdcoils05, coil(icoil)%symm < 0 .or. coil(icoil)%type > 2, illegal )
+           FATAL( rdcoils05, coil(icoil)%symm < 0 .or. coil(icoil)%symm > 2, illegal )
            if(coil(icoil)%type == 1) then  ! Fourier representation
               read( runit,*)
               read( runit,*) coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, &
