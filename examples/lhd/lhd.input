@@ -1,14 +1,15 @@
 &focusin
  IsQuiet        =       -1              ! -2 verbose and including unconstrained cost functions; -1: verbose; 0: normal; 1: concise
- IsSymmetric    =        0              ! 0: no stellarator symmetry enforced; 1: plasma periodicity enforced; 2: coil periodicity enforced
+ IsSymmetric    =        1              ! 0: no stellarator symmetry enforced; 1: plasma periodicity enforced; 2: coil periodicity enforced
+ input_coils = 'lhd_helical.focus'
 
  case_surface   =        0              ! 0: general VMEC-like format (Rbc, Rbs, Zbc, Zbs); 1: read axis for knots
  knotsurf       =        0.200D-00      ! minor plasma radius for knototrans, only valid for case surface = 1
  ellipticity    =        0.000D+00      ! ellipticity of plasma for knototrans, only valid for case surface = 1
  Nteta          =       64              ! poloidal number for discretizing the surface
- Nzeta          =      360              ! toroidal number for discretizing the surface
+ Nzeta          =      120              ! toroidal number for discretizing the surface
 
- case_init      =       -1              ! -1: read coils.ext file; 0: read ext.focus file; 1: initialize with circular coils
+ case_init      =        0              ! -1: read coils.ext file; 0: read ext.focus file; 1: initialize with circular coils
  case_coils     =        1              ! 0: using piecewise linear representation; (not ready); 1: using Fourier series representation
  Ncoils         =        16             ! number of coils; only valid when case_init = 1
  init_current   =        1.000D+06      ! initial coil currents (Amper); only valid when case_init = 1
@@ -41,7 +42,7 @@
  DF_tausta      =        0.000D+00      ! starting value of τ. Usually 0.0 is a good idea
  DF_tauend      =        1.000D-04      ! ending value of τ. The larger value of τend − τsta, the more optimized
 
- CG_maxiter     =        100            ! maximum iterations allowed for using Conjugate Gradient (CG)
+ CG_maxiter     =       200             ! maximum iterations allowed for using Conjugate Gradient (CG)
  CG_xtol        =        1.000D-08      ! the stopping criteria of finding minimum; if |dχ2/dX| < CG xtol, exit the optimization
  CG_wolfe_c1    =        1.000D-04      ! c1 value in the strong wolfe condition for line search; 
  CG_wolfe_c2    =        0.9            ! c2 value in the strong wolfe condition for line search; if one CG step takes too long, try to increase c2, but remember 0 < c1 < c2 < 1
@@ -60,4 +61,9 @@
  save_coils     =        1              ! flag for indicating whether write example.focus and example.coils
  save_harmonics =        0              ! flag for indicating whether write example.harmonics
  save_filaments =        0              ! flag for indicating whether write .example.filaments.xxxxxx
+ pp_ns = 20
+ pp_raxis = 3.65
+ pp_zaxis = 0.0
+ pp_rmax = 4.2
+ pp_zmax = 0.0
 /

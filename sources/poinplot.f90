@@ -7,7 +7,7 @@ SUBROUTINE poinplot
                       pp_phi, pp_raxis, pp_zaxis, pp_xtol, pp_rmax, pp_zmax, ppr, ppz, pp_ns, iota,  &
                       XYZB, lboozmn, booz_mnc, booz_mns, booz_mn, total_num, &
                       master, nmaster, nworker, masterid, color, myworkid, MPI_COMM_MASTERS, &
-                      MPI_COMM_MYWORLD, MPI_COMM_WORKERS, plasma, surf
+                      MPI_COMM_MYWORLD, MPI_COMM_WORKERS, plasma, surf, Nfp
   USE mpi
   IMPLICIT NONE
 
@@ -19,7 +19,7 @@ SUBROUTINE poinplot
   REAL                 :: B(3), start, finish
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  
+
   FATAL( poinplot, pp_ns < 1    , not enough starting points )
   FATAL( poinplot, pp_maxiter<1 , not enough max. iterations )
 
@@ -108,7 +108,7 @@ SUBROUTINE poinplot
      if (niter==0) then
         iota(is) = zero
      else 
-        iota(is) = rzrzt(5) / (niter*pi2/surf(Plasma)%Nfp)
+        iota(is) = rzrzt(5) / (niter*pi2/Nfp)
      endif
 
      if (myworkid == 0) write(ounit, '(8X": order="I6" ; masterid="I6" ; (R,Z)=("ES12.5","ES12.5 & 
@@ -201,7 +201,7 @@ END SUBROUTINE find_axis
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE axis_fcn(n,x,fvec,iflag)
-  USE globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, surf, pp_xtol, plasma
+  USE globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, surf, pp_xtol, plasma, Nfp
   USE mpi
   IMPLICIT NONE
 
@@ -211,12 +211,12 @@ SUBROUTINE axis_fcn(n,x,fvec,iflag)
   INTEGER  :: iwork(5), ierr, ifail
   REAL     :: rz_end(n), phi_init, phi_stop, relerr, abserr, work(100+21*N)
   EXTERNAL :: BRpZ
-  
+
   ifail = 1
   relerr = pp_xtol
   abserr = sqrtmachprec
   phi_init = pp_phi
-  phi_stop = pp_phi + pi2/surf(plasma)%Nfp
+  phi_stop = pp_phi + pi2/Nfp
   rz_end = x
 
   call ode( BRpZ, n, rz_end, phi_init, phi_stop, relerr, abserr, ifail, work, iwork )
@@ -246,7 +246,7 @@ END SUBROUTINE axis_fcn
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE ppiota(rzrzt,iflag)
-  USE globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, surf, pp_xtol, plasma
+  USE globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, surf, pp_xtol, plasma, Nfp
   USE mpi
   IMPLICIT NONE
 
@@ -262,7 +262,7 @@ SUBROUTINE ppiota(rzrzt,iflag)
   relerr = pp_xtol
   abserr = sqrtmachprec
   phi_init = pp_phi
-  phi_stop = pp_phi + pi2/surf(plasma)%Nfp
+  phi_stop = pp_phi + pi2/Nfp
 
   call ode( BRpZ_iota, n, rzrzt, phi_init, phi_stop, relerr, abserr, ifail, work, iwork )
   if ( ifail /= 2 ) then     

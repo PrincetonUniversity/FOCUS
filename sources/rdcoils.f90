@@ -26,7 +26,7 @@
 !latex     \red{This is the most flexible way, and  each coil can be different.}            
 !latex  \begin{raw}
 !latex   # Total number of coils
-!latex              16
+!latex              4
 !latex   #------------1--------------------------------
 !latex   #coil_type  symm   coil_name
 !latex       1   0  Mod_001   
@@ -51,6 +51,11 @@
 !latex       3  0  bg_BtBz_01
 !latex   # Ic     I    Lc  Bz  (Ic control I; Lc control Bz)
 !latex     1    1.0E6  0  0.0
+!latex   #-----------4--helical coils -----------------
+!latex   #coil_type  symm   coil_name
+!latex       4  0  helix_01  
+!latex   # Ic  I     Lc  Nseg  N  R0    eR    aR    eZ    aZ    
+!latex     1  1.0E6  1   360   4  1.0  0.0   0.0   0.0   0.0  
 !latex      .
 !latex      .
 !latex      .
@@ -203,8 +208,8 @@ subroutine rdcoils
            read( runit,*)
            read( runit,*)
            read( runit,*) coil(icoil)%type, coil(icoil)%symm, coil(icoil)%name
-           FATAL( rdcoils04, coil(icoil)%type < 1 .or. coil(icoil)%type > 3, illegal )
-           FATAL( rdcoils05, coil(icoil)%symm < 0 .or. coil(icoil)%type > 2, illegal )
+           FATAL( rdcoils04, coil(icoil)%type < 1 .or. coil(icoil)%type > 4, illegal )
+           FATAL( rdcoils05, coil(icoil)%symm < 0 .or. coil(icoil)%symm > 2, illegal )
            if(coil(icoil)%type == 1) then  ! Fourier representation
               read( runit,*)
               read( runit,*) coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, &
@@ -237,6 +242,11 @@ subroutine rdcoils
            else if (coil(icoil)%type == 3) then  ! backgroud toroidal/vertical field
               read( runit,*)
               read( runit,*) coil(icoil)%Ic, coil(icoil)%I, coil(icoil)%Lc, coil(icoil)%Bz 
+              coil(icoil)%symm = 0 ! automatic reset to 0; might not be necessary; 2020/01/17
+           else if (coil(icoil)%type == 4) then  ! helical coil
+              read( runit,*)
+              read( runit,*) coil(icoil)%Ic, coil(icoil)%I, coil(icoil)%Lc, coil(icoil)%NS, coil(icoil)%N, &
+                   & coil(icoil)%R0, coil(icoil)%eR, coil(icoil)%aR, coil(icoil)%eZ, coil(icoil)%aZ 
               coil(icoil)%symm = 0 ! automatic reset to 0; might not be necessary; 2020/01/17
            else
               STOP " wrong coil type in rdcoils"
@@ -290,6 +300,19 @@ subroutine rdcoils
            RlBCAST( coil(icoil)%I , 1 , 0 )
            IlBCAST( coil(icoil)%Lc, 1 , 0 )
            RlBCAST( coil(icoil)%Bz, 1 , 0 )             
+           if(coil(icoil)%Ic == 0) Nfixcur = Nfixcur + 1
+           if(coil(icoil)%Lc == 0) Nfixgeo = Nfixgeo + 1
+        else if (coil(icoil)%type == 4) then  ! helical coil
+           IlBCAST( coil(icoil)%Ic, 1 , 0 )
+           RlBCAST( coil(icoil)%I , 1 , 0 )
+           IlBCAST( coil(icoil)%Lc, 1 , 0 )
+           IlBCAST( coil(icoil)%NS, 1 , 0 )
+           IlBCAST( coil(icoil)%N , 1 , 0 )
+           RlBCAST( coil(icoil)%R0, 1 , 0 )
+           RlBCAST( coil(icoil)%eR, 1 , 0 )
+           RlBCAST( coil(icoil)%aR, 1 , 0 )
+           RlBCAST( coil(icoil)%eZ, 1 , 0 )
+           RlBCAST( coil(icoil)%aZ, 1 , 0 )
            if(coil(icoil)%Ic == 0) Nfixcur = Nfixcur + 1
            if(coil(icoil)%Lc == 0) Nfixgeo = Nfixgeo + 1
         else
@@ -476,7 +499,7 @@ subroutine discoil(ifirst)
   INTEGER, intent(in) :: ifirst
 
   INTEGER          :: icoil, iseg, mm, NS, NF, ierr, astat, ip
-  REAL             :: tt
+  REAL             :: phi, Nphi, RR, Rt, angR, angZ
   !-------------------------------------------------------------------------------------------
   do icoil = 1, Ncoils
      ! first time or if Lc/=0, then need discretize;
@@ -526,6 +549,42 @@ subroutine discoil(ifirst)
 
         case(3)
 
+        case(4)
+           ! helical coils
+           NS = coil(icoil)%NS 
+           do iseg = 0, NS-1             
+              phi = iseg * pi2 / NS
+              Nphi = coil(icoil)%N*phi
+              angR = Nphi + coil(icoil)%aR*sin(Nphi)
+              angZ = Nphi + coil(icoil)%aZ*sin(Nphi)
+              RR   = coil(icoil)%R0*(1 + coil(icoil)%eR*cos(angR))
+              Rt   = coil(icoil)%R0*(  - coil(icoil)%eR*sin(angR))*(coil(icoil)%N+coil(icoil)%N*coil(icoil)%aR*cos(Nphi))
+              ! x,y,z data and its derivatives
+              coil(icoil)%xx(iseg) = RR * cos(phi)              
+              coil(icoil)%yy(iseg) = RR * sin(phi)
+              coil(icoil)%zz(iseg) = coil(icoil)%R0*coil(icoil)%eZ*sin(angZ)
+              coil(icoil)%xt(iseg) = Rt * cos(phi) - RR * sin(phi)
+              coil(icoil)%yt(iseg) = Rt * sin(phi) + RR * cos(phi)
+              coil(icoil)%zt(iseg) = coil(icoil)%R0*coil(icoil)%eZ*cos(angZ)*(coil(icoil)%N+coil(icoil)%N*coil(icoil)%aZ*cos(Nphi))
+              ! DoF derivatives
+              if (coil(icoil)%Lc /= 0) then
+                 DoF(icoil)%xof(iseg, 1) = (1+coil(icoil)%eR*cos(angR))*cos(phi) ! dx / dR0
+                 DoF(icoil)%yof(iseg, 1) = (1+coil(icoil)%eR*cos(angR))*sin(phi) ! dy / dR0
+                 DoF(icoil)%zof(iseg, 1) = (  coil(icoil)%eZ*sin(angZ))          ! dz / dR0
+                 DoF(icoil)%xof(iseg, 2) = coil(icoil)%R0*cos(angR)*cos(phi)     ! dx / deR
+                 DoF(icoil)%yof(iseg, 2) = coil(icoil)%R0*cos(angR)*sin(phi)     ! dy / deR
+                 DoF(icoil)%zof(iseg, 2) = 0                                     ! dz / deR
+                 DoF(icoil)%xof(iseg, 3) = -coil(icoil)%R0*coil(icoil)%eR*sin(angR)*sin(Nphi)*cos(phi)   ! dx / daR
+                 DoF(icoil)%yof(iseg, 3) = -coil(icoil)%R0*coil(icoil)%eR*sin(angR)*sin(Nphi)*sin(phi)   ! dy / daR
+                 DoF(icoil)%zof(iseg, 3) = 0                                                             ! dz / daR
+                 DoF(icoil)%xof(iseg, 4) = 0                         ! dx / deZ
+                 DoF(icoil)%yof(iseg, 4) = 0                         ! dy / deZ
+                 DoF(icoil)%zof(iseg, 4) = coil(icoil)%R0*sin(angZ)  ! dz / deZ
+                 DoF(icoil)%xof(iseg, 5) = 0                                                  ! dx / daZ
+                 DoF(icoil)%yof(iseg, 5) = 0                                                  ! dy / daZ
+                 DoF(icoil)%zof(iseg, 5) =  coil(icoil)%R0*coil(icoil)%eZ*cos(angZ)*sin(Nphi) ! dz / daZ
+              endif
+           enddo
         case default
            FATAL(discoil, .true., not supported coil types)
         end select

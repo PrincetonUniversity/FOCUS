@@ -71,8 +71,8 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
         zz =  z * (-1)**is
         Bx = zero; By = zero; Bz = zero
         select case (coil(icoil)%type)
-        ! Fourier coils
-        case(1)
+        ! Cartesian coils 
+        case(1, 4)
            ! Biot-Savart law
            do kseg = 0, coil(icoil)%NS-1
               dlx = xx - coil(icoil)%xx(kseg)
@@ -189,8 +189,8 @@ subroutine bfield1(icoil, x, y, z, tBx, tBy, tBz, ND)
         Bx = zero; By = zero; Bz = zero
 
         select case (coil(icoil)%type)
-        case(1)
-           ! Fourier coils
+        case(1, 4)
+           ! Cartesian coils
            NS = coil(icoil)%NS
            do kseg = 0, NS-1
               dlx = xx - coil(icoil)%xx(kseg)
