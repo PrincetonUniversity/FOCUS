@@ -284,14 +284,16 @@ subroutine rdcoils
            RlBCAST( coil(icoil)%mt, 1 , 0 )
            RlBCAST( coil(icoil)%mp, 1 , 0 )
            if(coil(icoil)%Ic == 0) Nfixcur = Nfixcur + 1
-           if(coil(icoil)%Lc == 0) Nfixgeo = Nfixgeo + 1
+           ! if(coil(icoil)%Lc == 0) Nfixgeo = Nfixgeo + 1
+           Nfixgeo = Nfixgeo + 1 ! always treat as a fixed geometry
         else if (coil(icoil)%type == 3) then  ! backgroud toroidal/vertical field
            IlBCAST( coil(icoil)%Ic, 1 , 0 )
            RlBCAST( coil(icoil)%I , 1 , 0 )
            IlBCAST( coil(icoil)%Lc, 1 , 0 )
            RlBCAST( coil(icoil)%Bz, 1 , 0 )             
            if(coil(icoil)%Ic == 0) Nfixcur = Nfixcur + 1
-           if(coil(icoil)%Lc == 0) Nfixgeo = Nfixgeo + 1
+           ! if(coil(icoil)%Lc == 0) Nfixgeo = Nfixgeo + 1
+           Nfixgeo = Nfixgeo + 1 ! always treat as a fixed geometry
         else
            STOP " wrong coil type in rdcoils"
            call MPI_ABORT(MPI_COMM_WORLD, 1, ierr)

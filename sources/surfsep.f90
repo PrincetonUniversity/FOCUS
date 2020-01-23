@@ -96,6 +96,7 @@ SUBROUTINE surfsep(ideriv)
   if( ideriv >= 0 ) then
      ivec = 1
      do icoil = 1, Ncoils
+        if (coil(icoil)%type /= 1) cycle ! skip for other coils
         coilsum = zero
         if ( coil(icoil)%Lc /= 0 ) then 
            do jzeta = 0, Nzeta - 1
@@ -139,21 +140,23 @@ SUBROUTINE surfsep(ideriv)
         endif
 
         if ( coil(icoil)%Lc /= 0 ) then ! if geometry is free;
-           do jzeta = 0, Nzeta - 1
-              do iteta = 0, Nteta - 1
-                 if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;
-                 call CSPotential1(icoil, iteta, jzeta, d1S(idof+1:idof+ND), ND)
-                 l1S(idof+1:idof+ND) = l1S(idof+1:idof+ND) + d1S(idof+1:idof+ND) * surf(psurf)%ds(iteta, jzeta)
-              enddo ! end do iteta
-           enddo ! end do jzeta
-           call MPI_BARRIER( MPI_COMM_WORLD, ierr )
-           call MPI_REDUCE( l1S, jac(icoil, 1:Ndof), Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
-           RlBCAST( jac(icoil, 1:Ndof), Ndof, 0 )
-           ! L-M format of targets
-           if (mcssep > 0)  LM_fjac(ivec, 1:Ndof) = weight_cssep * jac(icoil, 1:Ndof)
-           idof = idof + ND
-           ivec = ivec + 1        
-        endif
+           if (coil(icoil)%type /= 1) then  ! skip for other coils
+              do jzeta = 0, Nzeta - 1
+                 do iteta = 0, Nteta - 1
+                    if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;
+                    call CSPotential1(icoil, iteta, jzeta, d1S(idof+1:idof+ND), ND)
+                    l1S(idof+1:idof+ND) = l1S(idof+1:idof+ND) + d1S(idof+1:idof+ND) * surf(psurf)%ds(iteta, jzeta)
+                 enddo ! end do iteta
+              enddo ! end do jzeta
+              call MPI_BARRIER( MPI_COMM_WORLD, ierr )
+              call MPI_REDUCE( l1S, jac(icoil, 1:Ndof), Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
+              RlBCAST( jac(icoil, 1:Ndof), Ndof, 0 )
+              ! L-M format of targets
+              if (mcssep > 0)  LM_fjac(ivec, 1:Ndof) = weight_cssep * jac(icoil, 1:Ndof)           
+              ivec = ivec + 1  
+           endif
+           idof = idof + ND ! ND should be zero if Lc==0
+        endif        
                    
      enddo ! end do icoil
      FATAL( surfsep , idof .ne. Ndof, counting error in packing )
