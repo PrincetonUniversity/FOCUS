@@ -73,69 +73,49 @@ subroutine length(ideriv)
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   ttlen = zero
+  ivec = 1
 
   if( ideriv >= 0 ) then
-
      do icoil = 1, Ncoils     !only care about unique coils;
-
-        if(coil(icoil)%type .ne. 1) exit ! only for Fourier
-        !if( myid.ne.modulo(icoil-1,ncpu) ) cycle ! parallelization loop;
-        call LenDeriv0(icoil, coil(icoil)%L)
-        !RlBCAST( coil(icoil)%L, 1, modulo(icoil-1,ncpu) ) !broadcast each coil's length        
-
+        if(coil(icoil)%type == 1) then  ! only for Fourier
+           !if( myid.ne.modulo(icoil-1,ncpu) ) cycle ! parallelization loop;
+           call LenDeriv0(icoil, coil(icoil)%L)
+           !RlBCAST( coil(icoil)%L, 1, modulo(icoil-1,ncpu) ) !broadcast each coil's length
+           if ( coil(icoil)%Lc /= 0 ) then
+              if (case_length == 1) then ! quadratic;
+                 ttlen = ttlen +  half * (coil(icoil)%L - coil(icoil)%Lo)**2 / coil(icoil)%Lo**2
+                 if (mttlen > 0) then ! L-M format of targets
+                    LM_fvec(ittlen+ivec) = weight_ttlen * (coil(icoil)%L - coil(icoil)%Lo)
+                    ivec = ivec + 1
+                 endif
+              elseif (case_length == 2) then ! exponential;
+                 ttlen = ttlen + exp(coil(icoil)%L) / exp(coil(icoil)%Lo)
+                 if (mttlen > 0) then ! L-M format of targets
+                    LM_fvec(ittlen+ivec) = weight_ttlen * exp(coil(icoil)%L) / exp(coil(icoil)%Lo)
+                    ivec = ivec + 1
+                 endif
+              else
+                 FATAL( length, .true. , invalid case_length option )
+              end if
+           endif
+        endif
      enddo
-
-     ivec = 1
-
-     if (case_length == 1) then ! quadratic;
-        do icoil = 1, Ncoils
-           if(coil(icoil)%type .ne. 1) exit ! only for Fourier
-           if ( coil(icoil)%Lc /= 0 ) then
-              ttlen = ttlen +  half * (coil(icoil)%L - coil(icoil)%Lo)**2 / coil(icoil)%Lo**2
-              if (mttlen > 0) then ! L-M format of targets
-                 LM_fvec(ittlen+ivec) = weight_ttlen * (coil(icoil)%L - coil(icoil)%Lo)
-                 ivec = ivec + 1
-              endif
-           endif           
-        enddo
-     elseif (case_length == 2) then ! exponential;
-        do icoil = 1, Ncoils
-           if(coil(icoil)%type .ne. 1) exit ! only for Fourier
-           if ( coil(icoil)%Lc /= 0 ) then
-              ttlen = ttlen + exp(coil(icoil)%L) / exp(coil(icoil)%Lo)
-              if (mttlen > 0) then ! L-M format of targets
-                 LM_fvec(ittlen+ivec) = weight_ttlen * exp(coil(icoil)%L) / exp(coil(icoil)%Lo)
-                 ivec = ivec + 1
-              endif
-           endif 
-        enddo
-     else
-        FATAL( length, .true. , invalid case_length option )
-     end if
-
      if (mttlen > 0) then ! L-M format of targets
         FATAL( length, ivec == mttlen, Errors in counting ivec for L-M )
      endif
-
      ttlen = ttlen / (Ncoils - Nfixgeo + machprec)
-
   endif
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   if ( ideriv >= 1 ) then
-
      t1L = zero ; d1L = zero ; norm = zero
-
      idof = 0 ; ivec = 1
      do icoil = 1, Ncoils
-
         ND = DoF(icoil)%ND
-
         if ( coil(icoil)%Ic /= 0 ) then !if current is free;
            idof = idof +1
         endif
-
         if ( coil(icoil)%Lc /= 0 ) then !if geometry is free;
            if(coil(icoil)%type .eq. 1) then ! only for Fourier
               ! calculate normalization

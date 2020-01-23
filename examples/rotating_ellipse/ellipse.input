@@ -13,21 +13,21 @@
  Ncoils         =        4              ! number of coils; only valid when case_init = 1
  init_current   =        1.000D+06      ! initial coil currents (Amper); only valid when case_init = 1
  init_radius    =        0.500D+00      ! initial coil radius   (meter); only valid when case_init = 1
- IsVaryCurrent  =        1              ! 0: all the currents   fixed; 1: currents   can be changed; overwritten by ext.focus
+ IsVaryCurrent  =        0              ! 0: all the currents   fixed; 1: currents   can be changed; overwritten by ext.focus
  IsVaryGeometry =        1              ! 0: all the geometries fixed; 1: geometries can be changed; overwritten by ext.focus
  NFcoil         =        4              ! number of Fourier harmonics representing the coils; overwritten by ext.focus
  Nseg           =      128              ! number of coil segments for discretizing; overwritten by ext.focus
 
  IsNormalize    =        1              ! 0: do not normalize coil parameters; 1: normalize; I = I/I0, x = x/R0; I0 & R0 are quadrtic mean values.
  IsNormWeight   =        1              ! 0: do not normalize the weights; 1: normalize the weights
- case_bnormal   =        1              ! 0: keep raw Bn error; 1: Bn residue normalized to local |B|
+ case_bnormal   =        0              ! 0: keep raw Bn error; 1: Bn residue normalized to local |B|
  case_length    =        1              ! 1: quadratic format, converging the target length; 2: exponential format, as short as possible
  weight_bnorm   =        1.000D+02      ! weight for real space Bn errors
  weight_bharm   =        0.000D+00      ! weight for Bnm harmonic errors
  weight_tflux   =        0.000D+00      ! weight for toroidal flux error
  target_tflux   =        0.000D+00      ! target for the toroidal flux
- weight_ttlen   =        0.100D-02      ! weight for coil length error
- target_length  =        5.000D+00      ! target value (or for normalization) of the coils length, if zero, automatically set to initial actual length
+ weight_ttlen   =        1.000D+01      ! weight for coil length error
+ target_length  =        7.000D+00      ! target value (or for normalization) of the coils length, if zero, automatically set to initial actual length
  weight_specw   =        0.000D+00      ! weight for spectral condensation error
  weight_cssep   =        0.010D+00      ! weight for coil-surface separation constraint
  weight_inorm   =        1.000D+00	! weight for normalization of current. Larger weight makes the derivatives more important.
@@ -41,12 +41,12 @@
  DF_tausta      =        0.000D+00      ! starting value of τ. Usually 0.0 is a good idea
  DF_tauend      =        1.000D-00      ! ending value of τ. The larger value of τend − τsta, the more optimized
 
- CG_maxiter     =       20              ! maximum iterations allowed for using Conjugate Gradient (CG)
+ CG_maxiter     =       10              ! maximum iterations allowed for using Conjugate Gradient (CG)
  CG_xtol        =        1.000D-08      ! the stopping criteria of finding minimum; if |dχ2/dX| < CG xtol, exit the optimization
  CG_wolfe_c1    =        0.1            ! c1 value in the strong wolfe condition for line search, (0.0, 0.5) 
  CG_wolfe_c2    =        0.9            ! c2 value in the strong wolfe condition for line search; 0 < c1 < c2 < 1
 
- LM_maxiter     =        0             ! maximum iterations allowed for using Levenberg-Marquard (LM)
+ LM_maxiter     =        5             ! maximum iterations allowed for using Levenberg-Marquard (LM)
  LM_xtol        =        1.000D-08      ! if the relative error between two consecutivec iterates is at most xtol, the optimization terminates
  LM_ftol        =        1.000D-08      ! if both the actual and predicted relative reductions in the sum of squares are at most ftol, the optimization terminates;
  LM_factor      =      100.0            ! the initial step bound, which is set to the product of factor and the euclidean norm of diag*x if nonzero

@@ -266,15 +266,16 @@ subroutine fousurf(filename, index)
         surf(index)%nz(ii,jj) = ds(3) / dd
         surf(index)%ds(ii,jj) =         dd
         ! using Gauss theorom; V = \int_S x \cdot n dt dz
-        surf(index)%vol = surf(index)%vol + surf(index)%xx(ii,jj) * ds(1)
+        surf(index)%vol = surf(index)%vol + surf(index)%xx(ii,jj) * ds(1) &
+             & + surf(index)%yy(ii,jj) * ds(2) + surf(index)%zz(ii,jj) * ds(3)
         ! surface area 
         surf(index)%area = surf(index)%area + surf(index)%ds(ii,jj)
      enddo ! end of do jj; 14 Apr 16;
   enddo ! end of do ii; 14 Apr 16;
 
   ! print volume and area
-  surf(index)%vol  = abs(surf(index)%vol ) * (pi2/surf(index)%Nteta) * (pi2/surf(index)%Nzeta)
-  surf(index)%area = abs(surf(index)%area) * (pi2/surf(index)%Nteta) * (pi2/surf(index)%Nzeta)
+  surf(index)%vol  = abs(surf(index)%vol)/3 * (pi2/surf(index)%Nteta) * (pi2/surf(index)%Nzeta)
+  surf(index)%area = abs(surf(index)%area)  * (pi2/surf(index)%Nteta) * (pi2/surf(index)%Nzeta)
   if (index == plasma) then
      surf(index)%vol  = surf(index)%vol  * Nfp * 2**symmetry
      surf(index)%area = surf(index)%area * Nfp * 2**symmetry
