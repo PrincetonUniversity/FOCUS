@@ -273,7 +273,7 @@ subroutine saving
      write(funit,'("mirror NIL")')
      do icoil = 1, Ncoils
         ! will only write x,y,z in cartesian coordinates
-        if (coil(icoil)%type /= 1) cycle
+        if (coil(icoil)%type /= 1 .and. coil(icoil)%type /= 4) cycle
         ! check if the coil is stellarator symmetric
         select case (coil(icoil)%symm) 
         case ( 0 )
