@@ -280,22 +280,7 @@ subroutine fousurf(filename, index)
      surf(index)%vol  = surf(index)%vol  * Nfp * 2**symmetry
      surf(index)%area = surf(index)%area * Nfp * 2**symmetry
   endif    
-
-  if (index == plasma) then 
-     theta0 = 0.1_dp ; zeta0 = zero
-     call surfcoord(index, theta0, zeta0, r0, z0 )
-     if (z0 > 0) then
-        ! counter-clockwise
-        if( myid == 0) write(ounit, '(8X": The theta angle used is counter-clockwise.")')
-        tflux_sign = -1
-     else
-        ! clockwise
-        if( myid == 0) write(ounit, '(8X": The theta angle used is clockwise.")')
-        tflux_sign =  1 
-     endif
-  endif
      
->>>>>>> origin/develop
   if( myid == 0 .and. IsQuiet <= 0) then
      write(ounit, '(8X": Enclosed total surface volume ="ES12.5" m^3 ; area ="ES12.5" m^2." )') &
           surf(index)%vol, surf(index)%area
