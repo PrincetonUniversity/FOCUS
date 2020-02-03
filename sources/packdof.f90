@@ -170,9 +170,9 @@ SUBROUTINE packcoil
      case(4)
         idof = 0
         if(coil(icoil)%Lc /= 0) then
-           DoF(icoil)%xdof(idof+1:idof+5) = (/ coil(icoil)%R0, coil(icoil)%eR, coil(icoil)%aR, &
-                &                                              coil(icoil)%eZ, coil(icoil)%aZ /) 
-           idof = idof + 5
+           DoF(icoil)%xdof(idof+1:idof+6) = (/ coil(icoil)%R0, coil(icoil)%eR, coil(icoil)%aR, &
+                &                              coil(icoil)%eZ, coil(icoil)%aZ, coil(icoil)%dphi /) 
+           idof = idof + 6
         endif
         FATAL( packcoil05 , idof .ne. DoF(icoil)%ND, counting error in packing )
      !---------------------------------------------------------------------------------------------
@@ -246,14 +246,14 @@ SUBROUTINE unpackcoil
 
      !---------------------------------------------------------------------------------------------
      case(4)
-        idof = 0        
-        
+        idof = 0                
         if(coil(icoil)%Lc /= 0) then
            coil(icoil)%R0 =  DoF(icoil)%xdof(idof+1) ; idof = idof + 1
            coil(icoil)%eR =  DoF(icoil)%xdof(idof+1) ; idof = idof + 1
            coil(icoil)%aR =  DoF(icoil)%xdof(idof+1) ; idof = idof + 1
            coil(icoil)%eZ =  DoF(icoil)%xdof(idof+1) ; idof = idof + 1
            coil(icoil)%aZ =  DoF(icoil)%xdof(idof+1) ; idof = idof + 1
+           coil(icoil)%dphi =  DoF(icoil)%xdof(idof+1) ; idof = idof + 1
         endif      
         FATAL( unpackcoil05 , idof .ne. DoF(icoil)%ND, counting error in packing )
 

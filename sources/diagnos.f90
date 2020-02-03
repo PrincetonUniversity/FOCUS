@@ -57,7 +57,7 @@ SUBROUTINE diagnos
   !-------------------------------coil maximum curvature----------------------------------------------------  
   MaxCurv = zero
   do icoil = 1, Ncoils
-     if(coil(icoil)%type .ne. 1) exit ! only for Fourier
+     if (coil(icoil)%type /= 1 .and. coil(icoil)%type /= 4) cycle
      call curvature(icoil)
      if (coil(icoil)%maxcurv .ge. MaxCurv) then
         MaxCurv = coil(icoil)%maxcurv
@@ -76,7 +76,7 @@ SUBROUTINE diagnos
   if ( (case_length == 1) .and. (sum(coil(1:Ncoils)%Lo) < sqrtmachprec) ) coil(1:Ncoils)%Lo = one
   call length(0)
   do icoil = 1, Ncoils
-     if(coil(icoil)%type .ne. 1) exit ! only for Fourier
+     if (coil(icoil)%type /= 1 .and. coil(icoil)%type /= 4) cycle
      AvgLength = AvgLength + coil(icoil)%L
   enddo
   AvgLength = AvgLength / Ncoils
@@ -86,7 +86,7 @@ SUBROUTINE diagnos
   ! coils are supposed to be placed in order
   minCCdist = infmax
   do icoil = 1, Ncoils
-     if(coil(icoil)%type .ne. 1) exit ! only for Fourier
+     if (coil(icoil)%type /= 1 .and. coil(icoil)%type /= 4) cycle
      if(Ncoils .eq. 1) exit ! if only one coil
      ! Data for the first coil
      SALLOCATE(Atmp, (1:3,0:coil(icoil)%NS-1), zero)
@@ -95,7 +95,7 @@ SUBROUTINE diagnos
      Atmp(3, 0:coil(icoil)%NS-1) = coil(icoil)%zz(0:coil(icoil)%NS-1)
      do itmp = 1, Ncoils
         ! skip self and non-Fourier coils
-        if (itmp == icoil .or. coil(icoil)%type /= 1) cycle
+        if (itmp == icoil .or. (coil(icoil)%type /= 1 .and. coil(icoil)%type /= 4)) cycle
         SALLOCATE(Btmp, (1:3,0:coil(itmp )%NS-1), zero)
         ! check if the coil is stellarator symmetric
         select case (coil(icoil)%symm) 
@@ -135,30 +135,22 @@ SUBROUTINE diagnos
   !--------------------------------minimum coil plasma separation-------------------------------  
   minCPdist = infmax
   do icoil = 1, Ncoils
-
-     if(coil(icoil)%type .ne. 1) exit ! only for Fourier
-
+     if (coil(icoil)%type /= 1 .and. coil(icoil)%type /= 4) cycle
      SALLOCATE(Atmp, (1:3,0:coil(icoil)%NS-1), zero)
      SALLOCATE(Btmp, (1:3,1:(Nteta*Nzeta)), zero)
-
      Atmp(1, 0:coil(icoil)%NS-1) = coil(icoil)%xx(0:coil(icoil)%NS-1)
      Atmp(2, 0:coil(icoil)%NS-1) = coil(icoil)%yy(0:coil(icoil)%NS-1)
      Atmp(3, 0:coil(icoil)%NS-1) = coil(icoil)%zz(0:coil(icoil)%NS-1)
-
      Btmp(1, 1:(Nteta*Nzeta)) = reshape(surf(isurf)%xx(0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))
      Btmp(2, 1:(Nteta*Nzeta)) = reshape(surf(isurf)%yy(0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))
      Btmp(3, 1:(Nteta*Nzeta)) = reshape(surf(isurf)%zz(0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))
-
      call mindist(Atmp, coil(icoil)%NS, Btmp, Nteta*Nzeta, tmp_dist)
-
      if (minCPdist .ge. tmp_dist) then 
         minCPdist=tmp_dist
         itmp = icoil
      endif
-
      DALLOCATE(Atmp)
      DALLOCATE(Btmp)
-
   enddo
   if(myid .eq. 0) then
      write(ounit, '(8X": The minimum coil-plasma distance is    :" ES23.15 &

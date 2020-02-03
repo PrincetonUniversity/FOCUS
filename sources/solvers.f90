@@ -188,7 +188,7 @@ subroutine costfun(ideriv)
 
      call torflux(0)
 
-     if ( (case_length == 1) .and. (sum(coil(1:Ncoils)%Lo) < machprec) ) then
+     if ( (case_length == 1) .and. (minval(coil(1:Ncoils)%Lo) < machprec) ) then
         coil(1:Ncoils)%Lo = one
         call length(0)
         coil(1:Ncoils)%Lo = coil(1:Ncoils)%L
@@ -262,7 +262,7 @@ subroutine costfun(ideriv)
   ! coil length;
   if (weight_ttlen > machprec) then
 
-     if ( (case_length == 1) .and. (sum(coil(1:Ncoils)%Lo) < machprec) ) then
+     if ( (case_length == 1) .and. (minval(coil(1:Ncoils)%Lo) < machprec) ) then
         coil(1:Ncoils)%Lo = one
         call length(0)
         coil(1:Ncoils)%Lo = coil(1:Ncoils)%L

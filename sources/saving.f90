@@ -251,10 +251,10 @@ subroutine saving
            write(wunit,'(I3, ES23.15, I3, ES23.15)') coil(icoil)%Ic, coil(icoil)%I, &
                                                      coil(icoil)%Lc, coil(icoil)%Bz
         case (4) 
-           write(wunit, *) "#  Ic  I     Lc  Nseg  N  R0    eR    aR    eZ    aZ  "
+           write(wunit, *) "#  Ic  I     Lc  Nseg  N  R0    eR    aR    eZ    aZ  dphi"
             write(wunit,'(I3, ES23.15, I3, I5, I3, 5ES23.15)') coil(icoil)%Ic, coil(icoil)%I, coil(icoil)%Lc, &
                   & coil(icoil)%NS, coil(icoil)%N, coil(icoil)%R0, coil(icoil)%eR, coil(icoil)%aR, &
-                  & coil(icoil)%eZ, coil(icoil)%aZ
+                  & coil(icoil)%eZ, coil(icoil)%aZ, coil(icoil)%dphi
         case default
            FATAL(restart, .true., not supported coil types)
         end select

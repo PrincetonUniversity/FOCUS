@@ -74,9 +74,9 @@ subroutine AllocData(type)
            DoF(icoil)%ND = coil(icoil)%Lc * 1 ! number of DoF for background Bt, Bz
            SALLOCATE(DoF(icoil)%xdof, (1:DoF(icoil)%ND), zero)
         case(4)
-           ND = 5
+           ND = 6
            ! initialize DoF related arrays
-           DoF(icoil)%ND = coil(icoil)%Lc * 5 ! number of DoF for helical coils
+           DoF(icoil)%ND = coil(icoil)%Lc * ND ! number of DoF for helical coils
            SALLOCATE(DoF(icoil)%xdof, (1:DoF(icoil)%ND), zero)
            SALLOCATE(DoF(icoil)%xof , (0:coil(icoil)%NS-1, 1:ND), zero)
            SALLOCATE(DoF(icoil)%yof , (0:coil(icoil)%NS-1, 1:ND), zero)
@@ -212,7 +212,7 @@ subroutine AllocData(type)
 
               if(coil(icoil)%Lc /= 0) then
                  dofnorm(idof+1) = Gnorm ! only R0 is normalized                 
-                 idof = idof + 5
+                 idof = idof + DoF(icoil)%ND
               endif
            else
               STOP " wrong coil type in rdcoils"
