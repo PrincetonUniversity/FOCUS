@@ -236,7 +236,7 @@ subroutine bpotential0(icoil, iteta, jzeta, tAx, tAy, tAz)
 ! Discretizing factor is includeed; coil(icoil)%dd(kseg) 
 !------------------------------------------------------------------------------------------------------   
   use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta,  &
-                     zero, myid, ounit, plasma, Nfp, cosnfp, sinnfp
+                     zero, myid, ounit, plasma, Nfp, cosnfp, sinnfp, two, bsconstant
   use mpi
   implicit none
 
@@ -247,7 +247,7 @@ subroutine bpotential0(icoil, iteta, jzeta, tAx, tAy, tAz)
 
   INTEGER              :: ierr, astat, kseg, isurf, ip, is, cs, Npc
   REAL                 :: dlx, dly, dlz, rm, ltx, lty, ltz, &
-       &                  Ax, Ay, Az, xx, yy, zz
+       &                  Ax, Ay, Az, xx, yy, zz, rr
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   isurf = plasma
@@ -295,6 +295,11 @@ subroutine bpotential0(icoil, iteta, jzeta, tAx, tAy, tAz)
               Ay = Ay + lty * rm * coil(icoil)%dd(kseg)
               Az = Az + ltz * rm * coil(icoil)%dd(kseg)
            enddo    ! enddo kseg
+        case(3)
+           ! central current and vertical field (zero contribution)
+           rr = sqrt( xx**2 + yy**2 )
+           ! \vec A=-\frac{\mu_0I}{2\pi} \ln(r) \hat e_z
+           Az = -two*bsconstant*log(rr) 
         case default
            FATAL(bpotential0, .true., not supported coil types)
         end select 
@@ -391,6 +396,8 @@ subroutine bpotential1(icoil, iteta, jzeta, tAx, tAy, tAz, ND)
            Ax(1:1, 1:ND) = matmul(dAxx, DoF(icoil)%xof) + matmul(dAxy, DoF(icoil)%yof) + matmul(dAxz, DoF(icoil)%zof)
            Ay(1:1, 1:ND) = matmul(dAyx, DoF(icoil)%xof) + matmul(dAyy, DoF(icoil)%yof) + matmul(dAyz, DoF(icoil)%zof)
            Az(1:1, 1:ND) = matmul(dAzx, DoF(icoil)%xof) + matmul(dAzy, DoF(icoil)%yof) + matmul(dAzz, DoF(icoil)%zof)
+        case(3) 
+           continue
         case default
            FATAL(bpotential1, .true., not supported coil types)
         end select
