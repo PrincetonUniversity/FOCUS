@@ -7,17 +7,21 @@ SUBROUTINE diagnos
 !------------------------------------------------------------------------------------------------------   
   use globals, only: dp, zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
        Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
-       cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, Npc, weight_bnorm, overlap
-                     
+       cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, Nfp, weight_bnorm, overlap, plasma, &
+       cosnfp, sinnfp, symmetry, discretefactor
+  use mpi
   implicit none
-  include "mpif.h"
 
-  INTEGER           :: icoil, itmp=0, astat, ierr, NF, idof, i, j
-  LOGICAL           :: lwbnorm = .True. , l_raw = .False.!if use raw coils data
+  INTEGER           :: icoil, itmp, astat, ierr, NF, idof, i, j, isurf, cs, ip, is, Npc
+  LOGICAL           :: lwbnorm, l_raw
   REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist, ReDot, ImDot
   REAL, parameter   :: infmax = 1.0E6
   REAL, allocatable :: Atmp(:,:), Btmp(:,:)
 
+  isurf = plasma
+  itmp = 0
+  lwbnorm = .True. 
+  l_raw = .False. ! if use raw coils data
   if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "-----------COIL DIAGNOSTICS----------------------------------"
 
   !--------------------------------cost functions-------------------------------------------------------  
@@ -34,7 +38,7 @@ SUBROUTINE diagnos
      do icoil = 1, Ncoils
         coilspace(iout, idof+1 ) = coil(icoil)%I ;  idof = idof + 1
 
-        select case (coil(icoil)%itype)
+        select case (coil(icoil)%type)
         case (1)
            NF = FouCoil(icoil)%NF
            coilspace(iout, idof+1:idof+NF+1) = FouCoil(icoil)%xc(0:NF) ; idof = idof + NF +1
@@ -53,7 +57,7 @@ SUBROUTINE diagnos
   !-------------------------------coil maximum curvature----------------------------------------------------  
   MaxCurv = zero
   do icoil = 1, Ncoils
-     if(coil(icoil)%itype .ne. 1) exit ! only for Fourier
+     if(coil(icoil)%type .ne. 1) exit ! only for Fourier
      call curvature(icoil)
      if (coil(icoil)%maxcurv .ge. MaxCurv) then
         MaxCurv = coil(icoil)%maxcurv
@@ -72,7 +76,7 @@ SUBROUTINE diagnos
   if ( (case_length == 1) .and. (sum(coil(1:Ncoils)%Lo) < sqrtmachprec) ) coil(1:Ncoils)%Lo = one
   call length(0)
   do icoil = 1, Ncoils
-     if(coil(icoil)%itype .ne. 1) exit ! only for Fourier
+     if(coil(icoil)%type .ne. 1) exit ! only for Fourier
      AvgLength = AvgLength + coil(icoil)%L
   enddo
   AvgLength = AvgLength / Ncoils
@@ -82,37 +86,48 @@ SUBROUTINE diagnos
   ! coils are supposed to be placed in order
   minCCdist = infmax
   do icoil = 1, Ncoils
-
-     if(coil(icoil)%itype .ne. 1) exit ! only for Fourier
-
-     if(Ncoils .eq. 1) exit !if only one coil
-     itmp = icoil + 1 ! the guessed adjacent coil
-     if(icoil .eq. Ncoils .and. npc==1) itmp = 1
-     ! only when if npc==1, the last coil would be compared with the first one
-
+     if(coil(icoil)%type .ne. 1) exit ! only for Fourier
+     if(Ncoils .eq. 1) exit ! if only one coil
+     ! Data for the first coil
      SALLOCATE(Atmp, (1:3,0:coil(icoil)%NS-1), zero)
-     SALLOCATE(Btmp, (1:3,0:coil(itmp )%NS-1), zero)
-
      Atmp(1, 0:coil(icoil)%NS-1) = coil(icoil)%xx(0:coil(icoil)%NS-1)
      Atmp(2, 0:coil(icoil)%NS-1) = coil(icoil)%yy(0:coil(icoil)%NS-1)
      Atmp(3, 0:coil(icoil)%NS-1) = coil(icoil)%zz(0:coil(icoil)%NS-1)
-
-     Btmp(1, 0:coil(itmp )%NS-1) = coil(itmp)%xx(0:coil(itmp )%NS-1)
-     Btmp(2, 0:coil(itmp )%NS-1) = coil(itmp)%yy(0:coil(itmp )%NS-1)
-     Btmp(3, 0:coil(itmp )%NS-1) = coil(itmp)%zz(0:coil(itmp )%NS-1)
-     
-     call mindist(Atmp, coil(icoil)%NS, Btmp, coil(itmp)%NS, tmp_dist)
-
+     do itmp = 1, Ncoils
+        ! skip self and non-Fourier coils
+        if (itmp == icoil .or. coil(icoil)%type /= 1) cycle
+        SALLOCATE(Btmp, (1:3,0:coil(itmp )%NS-1), zero)
+        ! check if the coil is stellarator symmetric
+        select case (coil(icoil)%symm) 
+        case ( 0 )
+           cs  = 0
+           Npc = 1
+        case ( 1 )
+           cs  = 0
+           Npc = Nfp
+        case ( 2) 
+           cs  = 1
+           Npc = Nfp
+        end select
+        ! periodicity and stellarator symmetry
+        do ip = 1, Npc
+           do is = 0, cs
+              Btmp(1, 0:coil(itmp)%NS-1) =            (coil(itmp)%xx(0:coil(itmp)%NS-1)*cosnfp(ip) &
+                                                   & - coil(itmp)%yy(0:coil(itmp)%NS-1)*sinnfp(ip) )
+              Btmp(2, 0:coil(itmp)%NS-1) = (-1)**is * (coil(itmp)%xx(0:coil(itmp)%NS-1)*sinnfp(ip) &
+                                                   & + coil(itmp)%yy(0:coil(itmp)%NS-1)*cosnfp(ip) )
+              Btmp(3, 0:coil(itmp)%NS-1) = (-1)**is * (coil(itmp)%zz(0:coil(itmp)%NS-1))
+              call mindist(Atmp, coil(icoil)%NS, Btmp, coil(itmp)%NS, tmp_dist)
 #ifdef DEBUG
-     if(myid .eq. 0) write(ounit, '(8X": distance between  "I3 "-th and "I3"-th coil is : " ES23.15)') &
-          icoil, itmp, tmp_dist
+              if(myid .eq. 0) write(ounit, '(8X": distance between  "I3.3"-th and "I3.3"-th coil (ip="I2.2 & 
+                   ", is="I1") is : " ES23.15)') icoil, itmp, ip, is, tmp_dist
 #endif
-
-     if (minCCdist .ge. tmp_dist) minCCdist=tmp_dist
-
+              if (minCCdist .ge. tmp_dist) minCCdist=tmp_dist
+           enddo
+        enddo
+        DALLOCATE(Btmp)
+     enddo
      DALLOCATE(Atmp)
-     DALLOCATE(Btmp)
-
   enddo
 
   if(myid .eq. 0) write(ounit, '(8X": The minimum coil-coil distance is "4X" :" ES23.15)') minCCdist
@@ -121,7 +136,7 @@ SUBROUTINE diagnos
   minCPdist = infmax
   do icoil = 1, Ncoils
 
-     if(coil(icoil)%itype .ne. 1) exit ! only for Fourier
+     if(coil(icoil)%type .ne. 1) exit ! only for Fourier
 
      SALLOCATE(Atmp, (1:3,0:coil(icoil)%NS-1), zero)
      SALLOCATE(Btmp, (1:3,1:(Nteta*Nzeta)), zero)
@@ -130,9 +145,9 @@ SUBROUTINE diagnos
      Atmp(2, 0:coil(icoil)%NS-1) = coil(icoil)%yy(0:coil(icoil)%NS-1)
      Atmp(3, 0:coil(icoil)%NS-1) = coil(icoil)%zz(0:coil(icoil)%NS-1)
 
-     Btmp(1, 1:(Nteta*Nzeta)) = reshape(surf(1)%xx(0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))
-     Btmp(2, 1:(Nteta*Nzeta)) = reshape(surf(1)%yy(0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))
-     Btmp(3, 1:(Nteta*Nzeta)) = reshape(surf(1)%zz(0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))
+     Btmp(1, 1:(Nteta*Nzeta)) = reshape(surf(isurf)%xx(0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))
+     Btmp(2, 1:(Nteta*Nzeta)) = reshape(surf(isurf)%yy(0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))
+     Btmp(3, 1:(Nteta*Nzeta)) = reshape(surf(isurf)%zz(0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))
 
      call mindist(Atmp, coil(icoil)%NS, Btmp, Nteta*Nzeta, tmp_dist)
 
@@ -166,21 +181,27 @@ SUBROUTINE diagnos
   endif
 
   !--------------------------------calculate the average Bn error-------------------------------
-  if (allocated(surf(1)%bn)) then
+  if (allocated(surf(isurf)%bn)) then
      ! \sum{ |Bn| / |B| }/ (Nt*Nz)
-     if(myid .eq. 0) write(ounit, '(8X": Average relative absolute Bn error is  :" ES23.15)') &
-          sum(abs(surf(1)%bn/sqrt(surf(1)%Bx**2 + surf(1)%By**2 + surf(1)%Bz**2))) / (Nteta*Nzeta)
+     if(myid .eq. 0) then
+        write(ounit, '(8X": Ave. relative absolute Bn error |Bn|/B : " ES12.5"; max(|Bn|)="ES12.5)') &
+             sum(abs(surf(plasma)%bn/sqrt(surf(plasma)%Bx**2+surf(plasma)%By**2+surf(plasma)%Bz**2))) &
+             / (Nteta*Nzeta), maxval(abs(surf(plasma)%bn))
+        write(ounit, '(8X": Surface area normalized Bn error int(|Bn|/B*ds)/A : "ES23.15)') &
+             sum(abs(surf(plasma)%bn)/sqrt(surf(plasma)%Bx**2+surf(plasma)%By**2+surf(plasma)%Bz**2) &
+             *surf(plasma)%ds)*discretefactor/(surf(plasma)%area/(Nfp*2**symmetry))
+     endif
   endif
 
   return
 
   !--------------------------------calculate coil importance------------------------------------  
   if (.not. allocated(coil_importance)) then
-     SALLOCATE( coil_importance, (1:Ncoils*Npc), zero )
+     SALLOCATE( coil_importance, (1:Ncoils), zero )
   endif
 
   if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec) then  ! make sure data_allocated
-     do icoil = 1, Ncoils*Npc
+     do icoil = 1, Ncoils
         call importance(icoil)
      enddo
   
@@ -258,18 +279,19 @@ end subroutine mindist
 
 subroutine importance(icoil)
   use globals, only: dp,  zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils, &
-                     surf, Nteta, Nzeta, bsconstant, coil_importance
+                     surf, Nteta, Nzeta, bsconstant, coil_importance, plasma
   implicit none
   include "mpif.h"
 
   INTEGER, INTENT(in) :: icoil  
 
-  INTEGER                               :: iteta, jzeta, NumGrid
+  INTEGER                               :: iteta, jzeta, NumGrid, isurf
   REAL                                  :: dBx, dBy, dBz
   REAL, dimension(0:Nteta-1, 0:Nzeta-1) :: tbx, tby, tbz        ! summed Bx, By and Bz
 
   !--------------------------initialize and allocate arrays------------------------------------- 
 
+  isurf = plasma
   NumGrid = Nteta*Nzeta
   tbx = zero; tby = zero; tbz = zero        !already allocted; reset to zero;
 
@@ -277,8 +299,8 @@ subroutine importance(icoil)
      do iteta = 0, Nteta - 1
 
         if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;
-        call bfield0(icoil, surf(1)%xx(iteta, jzeta), surf(1)%yy(iteta, jzeta), &
-                   & surf(1)%zz(iteta, jzeta), tbx(iteta, jzeta), tby(iteta, jzeta), tbz(iteta, jzeta))
+        call bfield0(icoil, surf(isurf)%xx(iteta, jzeta), surf(isurf)%yy(iteta, jzeta), &
+                   & surf(isurf)%zz(iteta, jzeta), tbx(iteta, jzeta), tby(iteta, jzeta), tbz(iteta, jzeta))
 
      enddo ! end do iteta
   enddo ! end do jzeta
@@ -288,8 +310,8 @@ subroutine importance(icoil)
   call MPI_ALLREDUCE( MPI_IN_PLACE, tby, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
   call MPI_ALLREDUCE( MPI_IN_PLACE, tbz, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
 
-  coil_importance(icoil) = sum( (tbx*surf(1)%Bx + tby*surf(1)%By + tbz*surf(1)%Bz) / &
-                                (surf(1)%Bx**2 + surf(1)%By**2 + surf(1)%Bz**2) ) / NumGrid
+  coil_importance(icoil) = sum( (tbx*surf(isurf)%Bx + tby*surf(isurf)%By + tbz*surf(isurf)%Bz) / &
+                                (surf(isurf)%Bx**2 + surf(isurf)%By**2 + surf(isurf)%Bz**2) ) / NumGrid
 
   return
 

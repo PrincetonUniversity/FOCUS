@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='v0.9.01' ! version number
+  CHARACTER(LEN=10), parameter :: version='v0.11.00' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -108,14 +108,14 @@ module globals
   REAL                 :: weight_ttlen   =   0.000D+00
   REAL                 :: target_length  =   0.000D+00
   REAL                 :: weight_cssep   =   0.000D+00
-  REAL                 :: cssep_factor   =   1.000D+00 
+  REAL                 :: cssep_factor   =   4.000D+00 
   REAL                 :: weight_specw   =   0.000D+00
   REAL                 :: weight_ccsep   =   0.000D+00
   REAL                 :: weight_inorm   =   1.000D+00
   REAL                 :: weight_gnorm   =   1.000D+00
   REAL                 :: weight_mnorm   =   1.000D+00
 
-  INTEGER              :: case_optimize  =   1
+  INTEGER              :: case_optimize  =   0
   REAL                 :: exit_tol       =   1.000D-04
   INTEGER              :: DF_maxiter     =   0
   REAL                 :: DF_xtol        =   1.000D-08     
@@ -160,10 +160,12 @@ module globals
   CHARACTER(LEN=100)   :: input_surf     = 'plasma.boundary'  ! surface file
   CHARACTER(LEN=100)   :: input_coils    = 'none'             ! input file for coils
   CHARACTER(LEN=100)   :: input_harm     = 'target.harmonics' ! input target harmonics file
+  CHARACTER(LEN=100)   :: limiter_surf   = 'none'             ! limiter surface
                                                          
   namelist / focusin /  IsQuiet        , &
                         IsSymmetric    , &
-                        input_surf     , & 
+                        input_surf     , &
+                        limiter_surf   , &
                         input_harm     , &
                         input_coils    , & 
                         case_surface   , &
@@ -248,16 +250,18 @@ module globals
 
 !latex \subsection{surface and coils data}
   type toroidalsurface
-     INTEGER              :: Nteta, Nzeta
+     INTEGER              :: Nteta, Nzeta, Nfou=0, Nfp=0, NBnf=0
+     REAL   , allocatable :: Rbc(:), Zbs(:), Rbs(:), Zbc(:), Bnc(:), Bns(:)
      REAL   , allocatable :: xx(:,:), yy(:,:), zz(:,:), nx(:,:), ny(:,:), nz(:,:), &
                              xt(:,:), yt(:,:), zt(:,:), xp(:,:), yp(:,:), zp(:,:), &
                              ds(:,:), bn(:,:), pb(:,:), &
                              Bx(:,:), By(:,:), Bz(:,:)
+     INTEGER, allocatable :: bim(:), bin(:), Bnim(:), Bnin(:)
      REAL                 :: vol, area
   end type toroidalsurface
 
   type arbitrarycoil
-     INTEGER              :: NS, Ic=0, Lc=0, itype
+     INTEGER              :: NS, Ic=0, Lc=0, type=0, symm=0
      REAL                 :: I=zero,  L=zero, Lo, maxcurv, ox, oy, oz, mt, mp, Bt, Bz
      REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), &
                              dl(:), dd(:)
@@ -266,7 +270,7 @@ module globals
 
   type FourierCoil
      INTEGER              :: NF
-     REAL   , allocatable :: xc(:), xs(:), yc(:), ys(:), zc(:), zs(:)
+     REAL   , allocatable :: xc(:), xs(:), yc(:), ys(:), zc(:), zs(:), cmt(:,:), smt(:,:)
   end type FourierCoil
 
   type DegreeOfFreedom
@@ -279,9 +283,9 @@ module globals
   type(FourierCoil)    , allocatable :: FouCoil(:)
   type(DegreeOfFreedom), allocatable :: DoF(:)
 
-  INTEGER              :: Nfou=0, Nfp=0, NBnf=0, Npc = 1, Nfp_raw = 1
-  INTEGER, allocatable :: bim(:), bin(:), Bnim(:), Bnin(:)
-  REAL   , allocatable :: Rbc(:), Zbs(:), Rbs(:), Zbc(:), Bnc(:), Bns(:), cosip(:), sinip(:)
+  INTEGER              :: Nfp = 1, symmetry = 0
+  INTEGER              :: plasma = 1, limiter = 1
+  REAL   , allocatable :: cosnfp(:), sinnfp(:)
     
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

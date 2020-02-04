@@ -23,9 +23,9 @@
 !latex  \item \inputvar{IsSymmetric = 0} \\
 !latex    \textit{Enforce stellarator symmetry or not} \\
 !latex    \bi \vspace{-5mm}
-!latex    \item[0:] no stellarator symmetry enforced;
-!latex    \item[1:] plasma periodicty enforced;
-!latex    \item[2:] coil and plasma periodicity enforced. 
+!latex    \item[0:] no symmetry or periodicity enforced;
+!latex    \item[1:] periodicty of the plasma boundary enforced;
+!latex    \item[2:] periodicity and stellartor symmetry of the plasma boundary enforced. 
 !latex    \ei
 !latex 
 !latex  \par \begin{tikzpicture} \draw[dashed] (0,1) -- (10,1); \end{tikzpicture}
@@ -40,6 +40,9 @@
 !latex 
 !latex  \item \inputvar{input\_harm = `target.harmonics'} \\
 !latex    \textit{Input file containing the target harmonics for Bmn optimization.} 
+!latex 
+!latex  \item \inputvar{limiter\_surf = `none'} \\
+!latex    \textit{Input file containing the limiter surface for coil-surface separation.} 
 !latex 
 !latex  \par \begin{tikzpicture} \draw[dashed] (0,1) -- (10,1); \end{tikzpicture}
 !latex 
@@ -68,8 +71,8 @@
 !latex  \item \inputvar{case\_init = 0} \\
 !latex    \textit{Specify the initializing method for coils, seen in \link{rdcoils}} \\
 !latex    \bi \vspace{-5mm}
-!latex    \item[-1:] read the standard MAKEGRID format coils from \inputvar{input_coils};
-!latex    \item[0:] read FOCUS format data from \inputvar{input_coils};
+!latex    \item[-1:] read the standard MAKEGRID format coils from \inputvar{input\_coils};
+!latex    \item[0:] read FOCUS format data from \inputvar{input\_coils};
 !latex    \item[1:] toroidally spaced \inputvar{Ncoils} circular coils with radius of \inputvar{init\_radius};
 !latex    \item[2:] toroidally spaced \inputvar{Ncoils}-1 magnetic dipoles pointing poloidallly on the toroidal surface 
 !latex               with radius of \inputvar{init\_radius} and a central infinitely long current. 
@@ -168,8 +171,11 @@
 !latex  \item \inputvar{weight\_specw = 0.0} \\
 !latex    \textit{weight for spectral condensation error, if zero, turned off; seen in \link{specwid}}; (not ready) 
 !latex 
-!latex  \item \inputvar{weight\_ccsep = 0.0} \\
-!latex    \textit{weight for coil-coil separation constraint, if zero, turned off; seen in \link{coilsep}}; (not ready) 
+!latex  \item \inputvar{weight\_cssep = 0.0} \\
+!latex    \textit{weight for coil-surface separation constraint, if zero, turned off; seen in \link{surfsep}}; 
+!latex
+!latex  \item \inputvar{cssep\_factor = 4.0} \\
+!latex    \textit{exponential index for coil-surface separation; the higher, the steeper; seen in \link{surfsep}}; 
 !latex
 !latex  \item \inputvar{weight\_Inorm = 1.0} \\
 !latex    \textit{additional factor for normalizing currents; the larger, the more optimized for currents;
@@ -187,7 +193,7 @@
 !latex    \item[-2:] check the 2nd derivatives; seen in\link{fdcheck}; (not ready)
 !latex    \item[-1:] check the 1st derivatives; seen in\link{fdcheck};
 !latex    \item[ 0:] no optimizations performed; 
-!latex    \item[ 1:] optimizing with algorithms using the gradient (DF and/or CG); seen in \link{solvers};
+!latex    \item[ 1:] optimizing with algorithms using the gradient (DF, CG and/or LM); seen in \link{solvers};
 !latex    \item[ 2:] optimizing with algorithms using the Hessian (HT and/or NT); seen in \link{solvers}; (not ready)
 !latex    \ei
 !latex 
@@ -241,6 +247,7 @@
 !latex    \item[ 2:] diagnos; write SPEC input file;
 !latex    \item[ 3:] diagnos; Field-line tracing, axis locating and iota calculating;
 !latex    \item[ 4:] diagnos; Field-line tracing; Calculates Bmn coefficients in Boozer coordinates;
+!latex    \item[ 5:] diagnos; write mgrid file (input variables in the namelist \&mgrid);
 !latex    \ei
 !latex 
 !latex  \item \inputvar{update\_plasma = 0} \\
@@ -289,8 +296,8 @@
 subroutine initial
 
   use globals
+  use mpi
   implicit none
-  include "mpif.h"
 
   LOGICAL :: exist
   INTEGER :: icpu, index_dot
@@ -361,6 +368,12 @@ subroutine initial
      write(ounit, *) "-----------INPUT NAMELIST------------------------------------"
      write(ounit, '("initial : Read namelist focusin from : ", A)') trim(inputfile)
      write(ounit, '("        : Read plasma boundary  from : ", A)') trim(input_surf)
+     if ( weight_cssep > machprec ) then
+        if (trim(limiter_surf) == 'none') then ! by default, use the plasma surface
+           limiter_surf = input_surf
+        endif
+        write(ounit, '("        : Read limiter surface  from : ", A)') trim(limiter_surf)
+     endif
      if (weight_bharm > machprec) then
         write(ounit, '("        : Read Bmn harmonics    from : ", A)') trim(input_harm)
      endif
@@ -418,11 +431,10 @@ subroutine initial
              &  'No stellarator symmetry or periodicity enforced.'
      case (1)
         if (IsQuiet < 0) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
-             &  'Plasma boundary periodicity is enforced.'
-        FATAL( initial, .true., This would cause unbalanced coils please use IsSymmetric=0 instead)
+             &  'Periodicity is enforced.'
      case (2)
         if (IsQuiet < 0) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
-             &  'Plasma boundary and coil periodicity are both enforced.'
+             &  'Periodicity and stellarator symmetry are both enforced.'
      case default
         FATAL( initial, .true., IsSymmetric /= 0 or 2 unspported option)
      end select
@@ -606,6 +618,9 @@ subroutine initial
      endif
 
   endif
+  
+  ClBCAST( limiter_surf,  100,  0 )
+  ClBCAST( input_coils ,  100,  0 )
 
   FATAL( initial, ncpu >= 1000 , too macy cpus, modify nodelabel)
   write(nodelabel,'(i3.3)') myid ! nodelabel is global; 30 Oct 15;

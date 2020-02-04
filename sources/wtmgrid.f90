@@ -9,7 +9,7 @@ end module mgrid_mod
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine wtmgrid
-  use globals, only : dp, zero, half, pi2, ext, ncpu, myid, ounit, wunit, runit, nfp_raw,  &
+  use globals, only : dp, zero, half, pi2, ext, ncpu, myid, ounit, wunit, runit, surf, plasma, &
        sqrtmachprec, master, nmaster, nworker, masterid, color, myworkid, &
        MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS
   use mgrid_mod
@@ -36,7 +36,7 @@ subroutine wtmgrid
   enddo
   
   mgrid_name = "mgrid.focus_"//trim(ext) ! filename, could be user input
-  if (Mfp <= 0) Mfp = nfp_raw ! overrid to nfp_raw if not specified
+  if (Mfp <= 0) Mfp = surf(plasma)%Nfp   ! overrid to nfp_raw if not specified
   B = zero  ; dx = 1E-4 ; dy = 1E-4 ; dz = 1E-4
 
   FATAL( wrmgrid, abs(Rmin)+abs(Rmax)<sqrtmachprec, please provide effective dimensions in mgrid nml )
