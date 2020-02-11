@@ -27,7 +27,7 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
 ! Biot-Savart constant and currents are not included for later simplication. 
 ! Be careful if coils have different resolutions.
 !------------------------------------------------------------------------------------------------------   
-  use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, cosnfp, sinnfp, Npc, &
+  use focus_globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, cosnfp, sinnfp, Npc, &
                      zero, myid, ounit, Npc, Nfp, pi2, half, two, one, bsconstant, momentq, machprec
   implicit none
   include "mpif.h"
@@ -149,7 +149,7 @@ subroutine bfield1(icoil, x, y, z, tBx, tBy, tBz, ND)
 ! Biot-Savart constant and currents are not included for later simplication;
 ! Discretizing factor is includeed; coil(icoil)%dd(kseg)
 !------------------------------------------------------------------------------------------------------   
-  use globals, only: dp, coil, DoF, surf, NFcoil, Ncoils, Nteta, Nzeta, &
+  use focus_globals, only: dp, coil, DoF, surf, NFcoil, Ncoils, Nteta, Nzeta, &
                      zero, myid, ounit, Npc, one, bsconstant, cosnfp, sinnfp, Npc, momentq
   implicit none
   include "mpif.h"
@@ -320,7 +320,7 @@ end subroutine bfield1
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine coils_bfield(B,x,y,z)
-  use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, &
+  use focus_globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, &
        zero, myid, ounit, Npc, bsconstant, one, two, ncpu, Npc, cosnfp, sinnfp, &
        master, nworker, myworkid, MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS
   use mpi
@@ -357,7 +357,7 @@ end subroutine coils_bfield
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE mag_torque
-  use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, ext, wunit, &
+  use focus_globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, ext, wunit, &
        zero, myid, ounit, Npc, bsconstant, one, Ncoils_total, magtau, Ncpu
   use mpi
   implicit none

@@ -1,7 +1,7 @@
 !!$module minvol_mod
 !!$  ! contains some common variables used in subroutine minvol
 !!$  ! allocating once and re-using them will save allocation time
-!!$  use globals, only : dp
+!!$  use focus_globals, only : dp
 !!$  implicit none
 !!$
 !!$  ! 0-order
@@ -17,7 +17,7 @@ SUBROUTINE minvol(ideriv)
   ! minimize the volume of PM (summation of dipole manitude)
   ! pmsum = \sum M = \sum sin(pho)^momentq
   ! Here momentq is even to make sure M>0
-  use globals, only: dp, zero, ncpu, myid, ounit, Nfp, &
+  use focus_globals, only: dp, zero, ncpu, myid, ounit, Nfp, &
        pmsum, t1V, coil, Ndof, Ncoils, DoF, total_moment, dof_offset, ldof, momentq
   implicit none
   include "mpif.h"

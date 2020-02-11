@@ -3,7 +3,7 @@
 
 !latex \briefly{Reads input files broadcasts, and allocates/initializes global variables.}
 
-!latex \calledby{\link{focus}, \link{globals}}
+!latex \calledby{\link{focus}, \link{focus_globals}}
 !latex \calls{\link{}}
 
 !latex \section{Input namelist}
@@ -288,7 +288,7 @@
 
 subroutine initial
 
-  use globals
+  use focus_globals
   use ncsx_ports_mod, only: ncsx_ports, ncsx_ports_on
   implicit none
   include "mpif.h"
@@ -309,7 +309,7 @@ subroutine initial
 !!$  small = 1E-10
   
   !-------------read input namelist----------------------------------------------------------------------
-  if( myid == 0 ) then ! only the master node reads the input; 25 Mar 15;
+  if( myid == 0 .and. not(called_from_stellopt) ) then ! only the master node reads the input; 25 Mar 15;
      call getarg(1,ext) ! get argument from command line
 
      select case(trim(ext))
@@ -332,6 +332,11 @@ subroutine initial
         write(ounit, '("DEBUG info: extension from command line is "A)') trim(ext)
 #endif
      end select
+  elseif ( myid == 0 .and. (called_from_stellopt) ) then 
+    index_dot = INDEX(focusin_filename_from_stellopt,'.input')
+    IF (index_dot .gt. 0)  ext = focusin_filename_from_stellopt(1:index_dot-1)
+    write(ounit, '("initial : machine_prec   = ", ES12.5, " ; sqrtmachprec   = ", ES12.5   &
+         & )') machprec, sqrtmachprec
   endif
 
   IlBCAST( error, 1, 0)
@@ -373,6 +378,8 @@ subroutine initial
 
   !-------------show the namelist for checking----------------------------------------------------------
 
+  write(ounit,*) '<----focus initial, myid=',myid
+  write(ounit,*) '<----focus initial, ext=',ext
   if (myid == 0) then ! Not quiet to output more informations;
 
      write(ounit, *) "-----------INPUT NAMELIST------------------------------------"
@@ -623,7 +630,7 @@ end subroutine initial
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE write_focus_namelist
-  use globals
+  use focus_globals
   implicit none
   include "mpif.h"
 

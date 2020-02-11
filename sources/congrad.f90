@@ -33,7 +33,7 @@
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 #ifdef oldcg
 SUBROUTINE congrad
-  use globals, only: dp, sqrtmachprec, myid, ounit, Ncoils, Ndof, t1E, iout, CG_maxiter, CG_xtol, xdof, &
+  use focus_globals, only: dp, sqrtmachprec, myid, ounit, Ncoils, Ndof, t1E, iout, CG_maxiter, CG_xtol, xdof, &
        exit_signal, tstart, tfinish
   use mpi
   implicit none
@@ -101,7 +101,7 @@ END SUBROUTINE congrad
 
 SUBROUTINE wolfe( x0, p, alpha, iflag )
 
-  use globals, only: dp, zero, sqrtmachprec, ounit, myid, Ndof, CG_wolfe_c1, CG_wolfe_c2
+  use focus_globals, only: dp, zero, sqrtmachprec, ounit, myid, Ndof, CG_wolfe_c1, CG_wolfe_c2
 
   implicit none
   include "mpif.h"
@@ -188,7 +188,7 @@ END SUBROUTINE wolfe
 
 REAL FUNCTION zoom( x0, p, alo, ahi )
 
-  use globals, only : dp, zero, ounit, myid, Ndof, CG_wolfe_c1, CG_wolfe_c2
+  use focus_globals, only : dp, zero, ounit, myid, Ndof, CG_wolfe_c1, CG_wolfe_c2
 
   implicit none
   include "mpif.h"
@@ -249,7 +249,7 @@ END FUNCTION zoom
 
 
 SUBROUTINE getdf(lxdof, f, g)
-  use globals, only: dp, myid, ounit, ierr, Ndof, chi, t1E
+  use focus_globals, only: dp, myid, ounit, ierr, Ndof, chi, t1E
   implicit none
   include "mpif.h"
 
@@ -271,7 +271,7 @@ END SUBROUTINE getdf
 #ifndef oldcg
 
 SUBROUTINE congrad
-  use globals, only: dp, sqrtmachprec, myid, ounit, Ncoils, Ndof, t1E, iout, CG_maxiter, CG_xtol, xdof, &
+  use focus_globals, only: dp, sqrtmachprec, myid, ounit, Ncoils, Ndof, t1E, iout, CG_maxiter, CG_xtol, xdof, &
        exit_signal, tstart, tfinish
   use mpi
   implicit none
@@ -318,7 +318,7 @@ SUBROUTINE congrad
 END SUBROUTINE congrad
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 SUBROUTINE myvalue(f, x, n)
-  use globals, only: dp, myid, ounit, ierr, chi
+  use focus_globals, only: dp, myid, ounit, ierr, chi
   implicit none
   include "mpif.h"
 
@@ -335,7 +335,7 @@ SUBROUTINE myvalue(f, x, n)
 END SUBROUTINE myvalue
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 SUBROUTINE mygrad(g, x, n)
-  use globals, only: dp, myid, ounit, ierr, t1E
+  use focus_globals, only: dp, myid, ounit, ierr, t1E
   implicit none
   include "mpif.h"
 

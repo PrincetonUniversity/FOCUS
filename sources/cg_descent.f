@@ -96,7 +96,8 @@ c
      &                       status, gnorm, f, iter, nfunc, ngrad,
      &                       d, g, xtemp, gtemp)
 
-       use globals, only: dp, myid, ounit, IsQuiet, tstart, tfinish
+       use focus_globals, only: dp, myid, ounit, IsQuiet, tstart,
+     &                          tfinish
        use mpi
 
       double precision x (*), d (*), g (*), xtemp (*), gtemp (*),
@@ -601,8 +602,8 @@ c      (double) grad_tol-- used in stopping rule
 c      (int)    dim     --problem dimension (also denoted n)
 
       subroutine cg_init (grad_tol, dim)
-      use globals, only : cg_maxiter, CG_wolfe_c1, CG_wolfe_c2, cg_xtol,
-     &     IsQuiet
+      use focus_globals, only : cg_maxiter, CG_wolfe_c1, CG_wolfe_c2,
+     &                          cg_xtol, IsQuiet
       double precision delta, sigma, eps,
      &                 gamma, rho, tol, eta, fpert, f0, Ck, Qdecay,
      &                 wolfe_hi, wolfe_lo, awolfe_hi,

@@ -11,10 +11,10 @@
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-module bnorm_mod
+module focus_bnorm_mod
   ! contains some common variables used in subroutine bnormal
   ! allocating once and re-using them will save allocation time
-  use globals, only : dp
+  use focus_globals, only : dp
   implicit none
 
   ! 0-order
@@ -23,7 +23,7 @@ module bnorm_mod
   ! 1st-order
   REAL, allocatable :: dBn(:), dBm(:), d1B(:,:,:)
 
-end module bnorm_mod
+end module focus_bnorm_mod
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine bnormal_old( ideriv )
@@ -34,12 +34,12 @@ subroutine bnormal_old( ideriv )
 ! ideriv = 1 -> calculate the Bn surface integral and its first derivatives;
 ! ideriv = 2 -> calculate the Bn surface integral and its first & second derivatives;
 !------------------------------------------------------------------------------------------------------   
-  use globals, only: dp, zero, half, one, pi2, sqrtmachprec, bsconstant, ncpu, myid, ounit, &
+  use focus_globals, only: dp, zero, half, one, pi2, sqrtmachprec, bsconstant, ncpu, myid, ounit, &
        coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, &
        bnorm, t1B, t2B, bn, Ndof, Npc, Cdof, weight_bharm, case_bnormal, &
        weight_bnorm, ibnorm, mbnorm, ibharm, mbharm, LM_fvec, LM_fjac, &
        bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn, dof_offset, ldof, momentq
-  use bnorm_mod
+  use focus_bnorm_mod
   use bharm_mod
   implicit none
   include "mpif.h"
@@ -263,19 +263,19 @@ end subroutine bnormal_old
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-subroutine bnormal( ideriv )
+subroutine focus_bnormal( ideriv )
 !------------------------------------------------------------------------------------------------------ 
 ! DATE:  10/28/2019;
 ! Calculate the Bn surface integral and its derivatives;
 ! ideriv = 0 -> only calculate the Bn surface integral;
 ! ideriv = 1 -> calculate the Bn surface integral and its first derivatives;
 !------------------------------------------------------------------------------------------------------   
-  use globals, only: dp, zero, half, one, pi2, sqrtmachprec, bsconstant, ncpu, myid, ounit, &
+  use focus_globals, only: dp, zero, half, one, pi2, sqrtmachprec, bsconstant, ncpu, myid, ounit, &
        coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, symmetry, npc, cosnfp, sinnfp, &
        bnorm, t1B, t2B, bn, Ndof, Npc, Cdof, weight_bharm, case_bnormal, &
        weight_bnorm, ibnorm, mbnorm, ibharm, mbharm, LM_fvec, LM_fjac, &
        bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn, dof_offset, ldof, momentq
-  use bnorm_mod
+  use focus_bnorm_mod
   use bharm_mod
   use mpi
   implicit none
@@ -401,14 +401,14 @@ subroutine bnormal( ideriv )
 
   return
   
-end subroutine bnormal
+end subroutine focus_bnormal
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine prepare_inductance()
-  use globals, only: dp, ierr, iout, myid, ounit, zero, Ncpu, Ncoils_total, Npc, symmetry, &
+  use focus_globals, only: dp, ierr, iout, myid, ounit, zero, Ncpu, Ncoils_total, Npc, symmetry, &
        coil, surf, bsconstant, cosnfp, sinnfp, Ncoils, Nzeta, Nteta, one, three
-  use bnorm_mod
+  use focus_bnorm_mod
   use mpi
   implicit none
 

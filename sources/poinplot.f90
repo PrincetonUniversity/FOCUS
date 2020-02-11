@@ -3,7 +3,7 @@ SUBROUTINE poinplot
   ! DATE:  12/12/2018
   ! Poincare plots of the vacuum flux surfaces and calculate the rotational transform
   !------------------------------------------------------------------------------------------------------ 
-  USE globals, only : dp, myid, ncpu, zero, half, pi, pi2, ounit, pi, sqrtmachprec, pp_maxiter, &
+  USE focus_globals, only : dp, myid, ncpu, zero, half, pi, pi2, ounit, pi, sqrtmachprec, pp_maxiter, &
                       pp_phi, pp_raxis, pp_zaxis, pp_xtol, pp_rmax, pp_zmax, ppr, ppz, pp_ns, iota, nfp_raw, &
                       XYZB, lboozmn, booz_mnc, booz_mns, booz_mn, total_num, &
                       master, nmaster, nworker, masterid, color, myworkid, MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS
@@ -97,7 +97,7 @@ END SUBROUTINE poinplot
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE find_axis(RZ, MAXFEV, XTOL)
-  USE globals, only : dp, myid, ounit, zero, pp_phi, Nfp_raw
+  USE focus_globals, only : dp, myid, ounit, zero, pp_phi, Nfp_raw
   USE mpi
   IMPLICIT NONE
 
@@ -155,7 +155,7 @@ END SUBROUTINE find_axis
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE axis_fcn(n,x,fvec,iflag)
-  USE globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, Nfp_raw, pp_xtol
+  USE focus_globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, Nfp_raw, pp_xtol
   USE mpi
   IMPLICIT NONE
 
@@ -200,7 +200,7 @@ END SUBROUTINE axis_fcn
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE ppiota(rzrzt,iflag)
-  USE globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, Nfp_raw, pp_xtol
+  USE focus_globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, Nfp_raw, pp_xtol
   USE mpi
   IMPLICIT NONE
 
@@ -247,7 +247,7 @@ SUBROUTINE BRpZ( t, x, dx )
   ! dR/dphi = BR / Bphi
   ! dZ/dphi = BZ / Bphi
   !----------------------
-  use globals, only : dp, zero, ounit, myid, ierr, myworkid, nworker, MPI_COMM_MYWORLD
+  use focus_globals, only : dp, zero, ounit, myid, ierr, myworkid, nworker, MPI_COMM_MYWORLD
   USE MPI
   implicit none
 
@@ -283,7 +283,7 @@ SUBROUTINE BRpZ_iota( t, x, dx )
   ! dR/dphi = BR / Bphi
   ! dZ/dphi = BZ / Bphi
   !----------------------
-  use globals, only : dp, zero, ounit, myid, ierr
+  use focus_globals, only : dp, zero, ounit, myid, ierr
   USE MPI
   implicit none
 

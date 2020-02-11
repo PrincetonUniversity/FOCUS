@@ -51,7 +51,7 @@
 !!$  !----------------------------------------------------------------------------------------
 !!$  ! calculate the bharm cost function
 !!$  !----------------------------------------------------------------------------------------
-!!$  use globals, only: zero, half, myid, Ndof, Nteta, Nzeta, surf, &
+!!$  use focus_globals, only: zero, half, myid, Ndof, Nteta, Nzeta, surf, &
 !!$                     bn, dB, bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn
 !!$  implicit none
 !!$  include "mpif.h"
@@ -108,7 +108,7 @@
 module bharm_mod
   ! contains some common variables used in subroutine bnormal
   ! allocating once and re-using them will save allocation time
-  use globals, only : dp
+  use focus_globals, only : dp
   implicit none
 
   ! 0-order
@@ -124,7 +124,7 @@ SUBROUTINE readBmn
   ! read Bmn harmonics related arrays;
   ! allocate trig functions;
   !----------------------------------------------------------------------------------------
-  use globals, only: dp, zero, half, pi2, myid, ounit, runit, ext, IsQuiet, Nteta, Nzeta, Nfp, &
+  use focus_globals, only: dp, zero, half, pi2, myid, ounit, runit, ext, IsQuiet, Nteta, Nzeta, Nfp, &
                      NBmn, Bmnin, Bmnim, wBmn, tBmnc, tBmns, carg, sarg, Nfp_raw, case_bnormal, &
                      input_harm
   use bharm_mod
@@ -215,7 +215,7 @@ SUBROUTINE twodft(func, hs, hc, im, in, mn)
   ! carg and sarg stored the trig functions.
   ! Right now, it's using normal Fourier transforming, later FFT will be enabled.
   !-------------------------------------------------------------------------------!
-  use globals, only: dp, zero, half, two, pi2, myid, ounit, Nteta, Nzeta, carg, sarg
+  use focus_globals, only: dp, zero, half, two, pi2, myid, ounit, Nteta, Nzeta, carg, sarg
   implicit none
   include "mpif.h"
   !-------------------------------------------------------------------------------
@@ -262,7 +262,7 @@ SUBROUTINE twoift(func, hs, hc, im, in, mn)
   ! carg and sarg stored the trig functions.
   ! Right now, it's using normal Fourier transforming, later FFT will be enabled.
   !-------------------------------------------------------------------------------!
-  use globals, only: dp, zero, half, two, pi2, myid, ounit, Nteta, Nzeta, carg, sarg
+  use focus_globals, only: dp, zero, half, two, pi2, myid, ounit, Nteta, Nzeta, carg, sarg
   implicit none
   include "mpif.h"
   !-------------------------------------------------------------------------------
@@ -288,7 +288,7 @@ SUBROUTINE saveBmn
   !----------------------------------------------------------------------------------------
   ! save the present Bmn harmonics in iBmnc and iBmns;
   !----------------------------------------------------------------------------------------
-  use globals, only: dp, zero, ierr, astat, myid, machprec, weight_Bharm, NBmn, Bmnc, Bmns, iBmnc, iBmns
+  use focus_globals, only: dp, zero, ierr, astat, myid, machprec, weight_Bharm, NBmn, Bmnc, Bmns, iBmnc, iBmns
   implicit none
   include "mpif.h"
 

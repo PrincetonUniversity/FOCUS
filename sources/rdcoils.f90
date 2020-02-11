@@ -93,7 +93,7 @@
 
 subroutine rdcoils
 
-  use globals
+  use focus_globals
   use ncsx_ports_eval, only: in_ncsx_port
 
   implicit none
@@ -298,7 +298,7 @@ subroutine discoil(ifirst)
 ! if ifirst = 1, it will update all the coils; otherwise, only update free coils;
 ! date: 20170314
 !---------------------------------------------------------------------------------------------
-  use globals, only: dp, zero, pi2, myid, ounit, coil, FouCoil, Ncoils, DoF
+  use focus_globals, only: dp, zero, pi2, myid, ounit, coil, FouCoil, Ncoils, DoF
   implicit none
   include "mpif.h"
 
@@ -407,7 +407,7 @@ SUBROUTINE discfou2
   ! calling fouriermatrix for single set
   ! DATE: 2017/03/18
   !---------------------------------------------------------------------------------------------  
-  use globals, only: dp, zero, pi2, myid, ncpu, ounit, coil, FouCoil, Ncoils
+  use focus_globals, only: dp, zero, pi2, myid, ncpu, ounit, coil, FouCoil, Ncoils
   implicit none
   include "mpif.h"
 
@@ -471,7 +471,7 @@ subroutine fouriermatrix( xc, xs, xx, NF, ND, order )
   ! It's supposed to be the fastest method.
   ! DATE: 2017/03/18
   !---------------------------------------------------------------------------------------------
-  use globals, only: dp, zero, pi2
+  use focus_globals, only: dp, zero, pi2
   implicit none
   
   INTEGER, intent(in ) :: NF, ND, order
@@ -524,7 +524,7 @@ END subroutine fouriermatrix
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE readcoils(filename, maxnseg)
-  use globals, only: dp, zero, coilsX, coilsY, coilsZ, coilsI, coilseg, coilname, Ncoils, ounit, myid
+  use focus_globals, only: dp, zero, coilsX, coilsY, coilsZ, coilsI, coilseg, coilname, Ncoils, ounit, myid
   implicit none
   include "mpif.h"
 
@@ -599,7 +599,7 @@ end SUBROUTINE READCOILS
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE Fourier( X, XFC, XFS, Nsegs, NFcoil)
-  use globals, only: dp, ounit, zero, pi2, half, myid
+  use focus_globals, only: dp, ounit, zero, pi2, half, myid
   implicit none
   include "mpif.h"
 

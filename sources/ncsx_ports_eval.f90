@@ -8,7 +8,7 @@
 
 module ncsx_ports_eval
 
-use globals, only: dp
+use focus_globals, only: dp
 
 implicit none
 

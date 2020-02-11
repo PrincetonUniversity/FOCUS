@@ -35,7 +35,7 @@
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine solvers
-  use globals, only: dp, ierr, iout, myid, ounit, zero, IsQuiet, IsNormWeight, Ndof, Nouts, xdof, &
+  use focus_globals, only: dp, ierr, iout, myid, ounit, zero, IsQuiet, IsNormWeight, Ndof, Nouts, xdof, &
        case_optimize, DF_maxiter, LM_maxiter, CG_maxiter, coil, DoF, &
        weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_pmsum, &
        target_tflux, target_length, cssep_factor, QN_maxiter, SA_maxiter, HY_maxiter
@@ -163,7 +163,7 @@ end subroutine solvers
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine costfun(ideriv)
-  use globals, only: dp, zero, one, machprec, myid, ounit, astat, ierr, IsQuiet, &
+  use focus_globals, only: dp, zero, one, machprec, myid, ounit, astat, ierr, IsQuiet, &
        Ncoils, deriv, Ndof, xdof, dofnorm, coil, &
        chi, t1E, t2E, LM_maxiter, LM_fjac, LM_mfvec, sumdE, LM_output, LM_fvec, &
        bnorm      , t1B, t2B, weight_bnorm,  &
@@ -196,7 +196,7 @@ subroutine costfun(ideriv)
 
   if (IsQuiet <= -2) then
 
-     call bnormal(0)
+     call focus_bnormal(0)
 
      if ( abs(target_tflux) < machprec ) then
         call torflux(0)
@@ -239,7 +239,7 @@ subroutine costfun(ideriv)
 !!$     finish = MPI_WTIME()
 !!$     TMPOUT(finish-start)
 !!$     do ivec = 1, 100
-        call bnormal(ideriv)
+        call focus_bnormal(ideriv)
 !!$     enddo
 !!$     call MPI_BARRIER(MPI_COMM_WORLD, ierr ) ! wait all cpus;
 !!$     start = MPI_WTIME()
@@ -417,7 +417,7 @@ end subroutine costfun
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine normweight
-  use globals, only: dp, zero, one, machprec, ounit, myid, xdof, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
+  use focus_globals, only: dp, zero, one, machprec, ounit, myid, xdof, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
        weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_specw, weight_ccsep, &
        target_tflux, psi_avg, coil, Ncoils, case_length, Bmnc, Bmns, tBmnc, tBmns, pmsum, weight_pmsum
 
@@ -458,7 +458,7 @@ subroutine normweight
 
   if( weight_bharm >= machprec .or. weight_bnorm >= machprec ) then
 
-     call bnormal(0)
+     call focus_bnormal(0)
 
      if ( weight_bharm >= machprec ) then 
         modBn = sqrt(sum(Bmnc**2 + Bmns**2))
@@ -468,7 +468,7 @@ subroutine normweight
 !!$        enddo
         if(myid .eq. 0) write(ounit,'(8X,": Please rescale coil currents with a factor of "ES12.5)') &
              modtBn / modBn
-        call bnormal(0)
+        call focus_bnormal(0)
         if (abs(bharm) > machprec) weight_bharm = weight_bharm / bharm
         if( myid == 0 ) write(ounit, 1000) "weight_bharm", weight_bharm
         if( myid .eq. 0 .and. weight_bharm < machprec) write(ounit, '("warning : weight_bharm < machine_precision, bharm will not be used.")')
@@ -556,7 +556,7 @@ end subroutine normweight
 
 subroutine output (mark)
 
-  use globals, only: dp, zero, ounit, myid, ierr, astat, iout, Nouts, Ncoils, save_freq, Tdof, &
+  use focus_globals, only: dp, zero, ounit, myid, ierr, astat, iout, Nouts, Ncoils, save_freq, Tdof, &
        coil, coilspace, FouCoil, chi, t1E, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
        evolution, xdof, DoF, exit_tol, exit_signal, sumDE, pmsum
 

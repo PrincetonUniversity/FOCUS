@@ -2,8 +2,8 @@
 
 ############################################################################################################
 
- ALLFILES= globals ncsx_ports_mod ncsx_ports_load ncsx_ports_eval initial rdsurf rdknot rdcoils packdof \
-           bfield bmnharm bnormal fdcheck \
+ ALLFILES= focus_globals ncsx_ports_mod ncsx_ports_load ncsx_ports_eval initial rdsurf rdknot rdcoils packdof \
+           bfield bmnharm focus_bnormal fdcheck \
            torflux length surfsep minvol datalloc solvers descent congrad qnewton lmalg saving diagnos \
            specinp poinplot boozer wtmgrid focus            
  HFILES= $(ALLFILES:=.f90)   # raw source files
@@ -61,10 +61,11 @@ endif
 
 ############################################################################################################
 
-xfocus: $(ROBJS) $(NUMOBJ)
+xfocus: libfocus.a $(ROBJS) $(NUMOBJ)
 	$(FC) -o xfocus $(ROBJS) $(NUMOBJ) $(HDF5)
 	@echo "Compiling xfocus finished."
 	mkdir -p ../bin ; mv xfocus ../bin/
+	cp libfocus.a ../bin/
 
 dfocus: $(DOBJS) $(NUMOBJ)
 	$(FC) -o dfocus $(DOBJS) $(NUMOBJ) $(HDF5)
@@ -98,6 +99,11 @@ $(DOBJS): %_d.o: %_m.F90
 
 $(FFILES): %_m.F90: %.f90
 	m4 -P $(MACROS) $< > $@
+
+libfocus.a: $(ROBJS) $(NUMOBJ)
+	ar rcs libfocus.a $(ROBJS) $(NUMOBJ)
+
+#
 
 ############################################################################################################
 

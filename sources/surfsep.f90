@@ -71,7 +71,7 @@ SUBROUTINE surfsep(ideriv)
 ! DATE: 04/05/2018
 ! calculate the potential energy (and derivatives) between coils and the "prevent" surface
 !------------------------------------------------------------------------------------------------------  
-  use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, &
+  use focus_globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, &
        coil, DoF, Ncoils, Nfixgeo, Ndof, cssep, t1S, t2S, psurf, surf, &
        icssep, mcssep, LM_fvec, LM_fjac, weight_cssep
 
@@ -180,7 +180,7 @@ SUBROUTINE CSPotential0(icoil, iteta, jzeta, dcssep)
 ! DATE: 04/05/2018
 ! calculate the potential energy between the i-th coil and the (iteta, jzeta) point on the surface
 !------------------------------------------------------------------------------------------------------  
-  use globals, only: dp, zero, coil, myid, ounit, Ncoils, surf, psurf, cssep_factor
+  use focus_globals, only: dp, zero, coil, myid, ounit, Ncoils, surf, psurf, cssep_factor
   implicit none
   include "mpif.h"
 
@@ -224,7 +224,7 @@ SUBROUTINE CSPotential1(icoil, iteta, jzeta, d1S, ND)
 ! calculate the derivatives of the potential energy 
 ! between the i-th coil and the (iteta, jzeta) point on the surface
 !------------------------------------------------------------------------------------------------------  
-  use globals, only: dp, zero, coil, myid, ounit, Ncoils, surf, psurf, cssep_factor, DoF
+  use focus_globals, only: dp, zero, coil, myid, ounit, Ncoils, surf, psurf, cssep_factor, DoF
   implicit none
   include "mpif.h"
 

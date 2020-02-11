@@ -20,7 +20,7 @@ SUBROUTINE fdcheck( ideriv )
 ! ideriv = 2 -> check the second derivatives with finite difference;
 !------------------------------------------------------------------------------------------------------
 
-  use globals, only: dp, zero, half, machprec, sqrtmachprec, ncpu, myid, ounit, &
+  use focus_globals, only: dp, zero, half, machprec, sqrtmachprec, ncpu, myid, ounit, &
                      coil, xdof, Ndof, t1E, t2E, chi, LM_maxiter, LM_fvec, LM_fjac
                      
   implicit none

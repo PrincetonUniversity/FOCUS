@@ -64,7 +64,7 @@
 
 subroutine fousurf
   
-  use globals, only : dp, zero, half, pi2, myid, ounit, runit, input_surf, IsQuiet, IsSymmetric, &
+  use focus_globals, only : dp, zero, half, pi2, myid, ounit, runit, input_surf, IsQuiet, IsSymmetric, &
                       Nfou, Nfp, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
                       Nteta, Nzeta, surf, Npc, discretefactor, Nfp_raw, cosnfp, sinnfp, &
                       symmetry, half_shift
@@ -323,7 +323,7 @@ end subroutine fousurf
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine surfcoord( theta, zeta, r, z)
-  use globals, only: dp, zero, Nfou, bim, bin, Rbc, Rbs, Zbc, Zbs
+  use focus_globals, only: dp, zero, Nfou, bim, bin, Rbc, Rbs, Zbc, Zbs
   implicit none
   include "mpif.h"
 

@@ -6,7 +6,7 @@ SUBROUTINE specinp
   ! 2. Calculate the poloidal and toroidal closed currents (Itor and Gpol)
   ! 3. Write down a xxx.Vns file with all the information for SPEC
   !-------------------------------------------------------------------------------!
-  use globals, only: dp, zero, half, two, pi2, mu0,  myid, wunit, ounit,  surf, bn, ext, &
+  use focus_globals, only: dp, zero, half, two, pi2, mu0,  myid, wunit, ounit,  surf, bn, ext, &
                      Nfou, Nfp_raw, bim, bin, Rbc, Rbs, Zbc, Zbs, Nteta, Nzeta
   implicit none
   include "mpif.h"
@@ -19,7 +19,7 @@ SUBROUTINE specinp
 
   mf = 24 ; nf = 12
   ! compute Bn
-  call bnormal(0) ! calculate Bn
+  call focus_bnormal(0) ! calculate Bn
 
   if (myid .ne. 0) return
 

@@ -6,8 +6,8 @@ subroutine AllocData(itype)
   ! Allocate data before using them, especially for those used several times;
   ! part can be : -1('dof'), 0('costfun0'), 1('costfun1')
   !------------------------------------------------------------------------------------------------------
-  use globals
-  use bnorm_mod
+  use focus_globals
+  use focus_bnorm_mod
   implicit none
   include "mpif.h"
 

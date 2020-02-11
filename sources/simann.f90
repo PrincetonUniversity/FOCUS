@@ -80,7 +80,7 @@ MODULE simulated_anneal
 ! URL   :  http://users.bigpond.net.au/amiller
 
 ! Latest revision of Fortran 90 version - 2 October 2013
-USE globals, only : dp_global => dp, tstart, tfinish, SA_maxiter, myid, ounit
+USE focus_globals, only : dp_global => dp, tstart, tfinish, SA_maxiter, myid, ounit
 USE MPI
 IMPLICIT NONE
 
@@ -887,7 +887,7 @@ END MODULE simulated_anneal
 
 
 SUBROUTINE simann
-  use globals, only: zero, sqrtmachprec, myid, ounit, Ncoils, Ndof, t1E, iout, &
+  use focus_globals, only: zero, sqrtmachprec, myid, ounit, Ncoils, Ndof, t1E, iout, &
        exit_signal, tstart, tfinish, lowbound, upbound, nbounds, SA_maxiter, SA_XTOL
   use mpi
   USE simulated_anneal
@@ -942,7 +942,7 @@ END SUBROUTINE simann
 
 
 SUBROUTINE fcn(n, theta, h)
-  USE globals, ONLY: dp, myid, ounit, ierr, chi
+  USE focus_globals, ONLY: dp, myid, ounit, ierr, chi
   USE MPI
   IMPLICIT NONE
   INTEGER, INTENT(IN)    :: n

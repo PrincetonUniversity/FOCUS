@@ -9,7 +9,7 @@
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-module globals
+module focus_globals
   
   implicit none
   
@@ -73,10 +73,12 @@ module globals
   CHARACTER(LEN=100)   :: out_focus ! output ext.focus file
   CHARACTER(LEN=100)   :: out_harm  ! output harmonics file
   CHARACTER(LEN=100)   :: out_plasma  ! updated plasma boundary
+  CHARACTER(LEN=200)   :: bnorm_filename=""  ! updated plasma boundary
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
 !latex \subsection{Input namelist: \type{focusin}}
+  LOGICAL              :: load_bnorm     =  .false.
   INTEGER              :: IsQuiet        =  -1        
   INTEGER              :: IsSymmetric    =   0 
         
@@ -172,7 +174,8 @@ module globals
   CHARACTER(LEN=100)   :: fixed_coils    = 'none'             ! fixed coils
   CHARACTER(LEN=100)   :: input_harm     = 'target.harmonics' ! input target harmonics file
                                                          
-  namelist / focusin /  IsQuiet        , &
+  namelist / focusin /  load_bnorm     , &
+                        IsQuiet        , &
                         IsSymmetric    , &
                         input_surf     , & 
                         input_harm     , &
@@ -385,6 +388,9 @@ module globals
                           !tmp weight for saving to restart file
   REAL, allocatable    :: mincc(:,:), coil_importance(:)
   INTEGER              :: ierr, astat
+  LOGICAL              :: verbose = .true.
+  LOGICAL              :: called_from_stellopt = .false.
+  character(LEN=100)   :: focusin_filename_from_stellopt
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
@@ -397,4 +403,4 @@ module globals
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-end module globals
+end module focus_globals

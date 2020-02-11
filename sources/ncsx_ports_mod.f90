@@ -6,7 +6,7 @@
 !-------------------------------------------------------------------------------
 module ncsx_ports_mod
 
-    use globals, only: dp
+    use focus_globals, only: dp
 
     implicit none
 
