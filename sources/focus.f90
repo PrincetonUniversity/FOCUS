@@ -36,7 +36,7 @@
 PROGRAM focus
   use globals, only: dp, ncpu, myid, ounit, ierr, astat, eunit, case_surface, case_coils, case_optimize, &
        case_postproc, xdof, time_initialize, time_optimize, time_postproc, &
-       version
+       version, MPI_COMM_FOCUS
   use mpi  !to enable gfortran mpi_wtime bugs; 07/20/2017
   implicit none
 

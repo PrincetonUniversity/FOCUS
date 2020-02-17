@@ -19,8 +19,8 @@
 #### Default Intel+OpenMPI+HDF5###############
 # available env: /p/focus/modules/focus/basis
  CC=intel # if want to use gfortran; make CC=gfortran or other options
- FC=mpif90
- PFLAGS= # for pre-processing compiler flags, like -D dposition
+ FC=/usr/local/bin/mpif90
+ PFLAGS= -fPIC # for pre-processing compiler flags, like -D dposition
  RFLAGS=-mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback  $(PFLAGS) #-vec_report0 #-ipo -xhost
  DFLAGS=-O0 -g -traceback $(PFLAGS) -check all -check bounds -check noarg_temp_created -check uninit \
      -ftrapuv -init=snan,arrays -debug all -D DEBUG
@@ -52,6 +52,13 @@ endif
 
 ############################################################################################################
 
+focuspy: focuspy.f90 libfocus.a
+	f2py --f90exec=${FC} --f90flags="-O3 -w -ffree-line-length-none -march=native -ffast-math" -m $@ -c $< libfocus.a
+
+libfocus.a: $(ROBJS) $(NUMOBJ)
+	ar -ruv $@ $(ROBJS) $(NUMOBJ)
+	ranlib $@
+	
 xfocus: $(ROBJS) $(NUMOBJ)
 	$(FC) -o xfocus $(ROBJS) $(NUMOBJ) $(HDF5)
 	@echo "Compiling xfocus finished."
