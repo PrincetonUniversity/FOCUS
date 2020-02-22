@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='dp_v1.1.03' ! version number
+  CHARACTER(LEN=10), parameter :: version='dp_v1.1.04' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -302,7 +302,7 @@ module globals
   type(FourierCoil)    , allocatable :: FouCoil(:)
   type(DegreeOfFreedom), allocatable :: DoF(:)
 
-  INTEGER              :: Nfou=0, Nfp=0, NBnf=0, Npc = 1, Nfp_raw = 1, symmetry=0
+  INTEGER              :: Nfou=0, Nfp=0, NBnf=0, Npc = 1, Nfp_raw = 1
   REAL   , allocatable :: cosnfp(:), sinnfp(:)
   INTEGER, allocatable :: bim(:), bin(:), Bnim(:), Bnin(:)
   REAL   , allocatable :: Rbc(:), Zbs(:), Rbs(:), Zbc(:), Bnc(:), Bns(:), cosip(:), sinip(:)

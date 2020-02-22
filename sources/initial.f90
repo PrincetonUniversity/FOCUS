@@ -440,11 +440,7 @@ subroutine initial
      case (1)
         if (IsQuiet < 0) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
              &  'Plasma boundary periodicity is enforced.'
-        !FATAL( initial, .true., This would cause unbalanced coils please use IsSymmetric=0 instead)
      case (2)
-        if (IsQuiet < 0) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
-             &  'Plasma boundary and coil periodicity are both enforced.'
-     case (3)
         if (IsQuiet < 0) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
              &  'Stellarator symmetry for magnetic dipoles are enforced.' 
      case default

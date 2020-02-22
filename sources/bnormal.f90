@@ -271,7 +271,7 @@ subroutine bnormal( ideriv )
 ! ideriv = 1 -> calculate the Bn surface integral and its first derivatives;
 !------------------------------------------------------------------------------------------------------   
   use globals, only: dp, zero, half, one, pi2, sqrtmachprec, bsconstant, ncpu, myid, ounit, &
-       coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, symmetry, npc, cosnfp, sinnfp, &
+       coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, npc, cosnfp, sinnfp, &
        bnorm, t1B, t2B, bn, Ndof, Npc, Cdof, weight_bharm, case_bnormal, &
        weight_bnorm, ibnorm, mbnorm, ibharm, mbharm, LM_fvec, LM_fjac, &
        bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn, dof_offset, ldof, momentq
@@ -406,14 +406,14 @@ end subroutine bnormal
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine prepare_inductance()
-  use globals, only: dp, ierr, iout, myid, ounit, zero, Ncpu, Ncoils_total, Npc, symmetry, &
+  use globals, only: dp, ierr, iout, myid, ounit, zero, Ncpu, Ncoils_total, Npc, &
        coil, surf, bsconstant, cosnfp, sinnfp, Ncoils, Nzeta, Nteta, one, three
   use bnorm_mod
   use mpi
   implicit none
 
   ! local variables
-  INTEGER :: is, ip, iteta, jzeta, icoil, astat
+  INTEGER :: is, ip, iteta, jzeta, icoil, astat, symmetry
   REAL :: ox, oy, oz, rx, ry, rz, rr, rm3, rm5, rdotN
 
   ! return if allocated
@@ -438,6 +438,12 @@ subroutine prepare_inductance()
      enddo
   else ! each slave cpu calculates their contribution (0:Ntheta-1, 0:Nzeta-1, 1:Ncoils*Npc*Symmetry).     
      do icoil = 1, Ncoils
+        ! check if stellarator symmetric
+        if (coil(icoil)%symmetry == 2) then
+           symmetry = 1
+        else
+           symmetry = 0
+        endif
         do jzeta = 0, Nzeta-1
            do iteta = 0, Nteta-1
               do ip = 1, Npc

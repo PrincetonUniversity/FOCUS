@@ -67,7 +67,7 @@ subroutine fousurf
   use globals, only : dp, zero, half, pi2, myid, ounit, runit, input_surf, IsQuiet, IsSymmetric, &
                       Nfou, Nfp, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
                       Nteta, Nzeta, surf, Npc, discretefactor, Nfp_raw, cosnfp, sinnfp, &
-                      symmetry, half_shift
+                      half_shift
   
   implicit none
   
@@ -76,7 +76,7 @@ subroutine fousurf
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   LOGICAL :: exist
-  INTEGER :: iosta, astat, ierr, ii, jj, imn, ip
+  INTEGER :: iosta, astat, ierr, ii, jj, imn, ip, symmetry
   REAL    :: RR(0:2), ZZ(0:2), szeta, czeta, xx(1:3), xt(1:3), xz(1:3), ds(1:3), &
              teta, zeta, arg, dd, shift
   
@@ -184,15 +184,12 @@ subroutine fousurf
   select case (IsSymmetric)
   case ( 0 )
      Nfp = 1                          !reset Nfp to 1;
-     Npc = 1                          !number of coils periodicity
+     Npc = Nfp_raw                    !number of coils periodicity
      symmetry = 0
-  case ( 1 )                          !plasma periodicity enabled;
-     Npc = 1
-     symmetry = 0
-  case ( 2 )                          !plasma and coil periodicity enabled;
+  case ( 1 )                          !plasma and coil periodicity enabled;
      Npc = Nfp
      symmetry = 0
-  case ( 3 )                          ! stellarator symmetry enforced;
+  case ( 2 )                          ! stellarator symmetry enforced;
      Npc = Nfp
      symmetry = 1     
   end select
@@ -210,7 +207,7 @@ subroutine fousurf
                         ! if multiple currents are allowed; 14 Apr 16;
   
   surf(1)%Nteta = Nteta ! not used yet; used for multiple surfaces; 20170307;
-  surf(1)%Nzeta = Nzeta*Nfp ! not used yet; used for multiple surfaces; 20170307;
+  surf(1)%Nzeta = Nzeta * Nfp * 2**symmetry ! the total number from [0, 2pi]
   
   SALLOCATE( surf(1)%xx, (0:surf(1)%Nteta-1,0:surf(1)%Nzeta-1), zero ) !x coordinates;
   SALLOCATE( surf(1)%yy, (0:surf(1)%Nteta-1,0:surf(1)%Nzeta-1), zero ) !y coordinates
