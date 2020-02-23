@@ -317,9 +317,10 @@ SUBROUTINE write_plasma
 ! write down the unpdated plasma boundary information;                          !
 ! CZHU; first version: 2017/01/11; last revised: 2017/01/11                     !
 !-------------------------------------------------------------------------------!
-  use globals, only : dp, zero, half, two, pi2, myid, ncpu, ounit, wunit, ext, &
+  use globals, only : dp, zero, half, two, pi, pi2, myid, ncpu, ounit, wunit, ext, &
                       Nfou, Nfp, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
-                      Nteta, Nzeta, surf, Nfp_raw, bnorm, sqrtmachprec, out_plasma
+                      Nteta, Nzeta, surf, Nfp_raw, bnorm, sqrtmachprec, out_plasma, &
+                      discretefactor, shift, IsSymmetric
   
   implicit none  
   include "mpif.h"
@@ -343,6 +344,8 @@ SUBROUTINE write_plasma
 
   if(myid .ne. 0) return
 
+  FATAL( write_plasma, IsSymmetric==2, option not supported for now)
+
   if(Nbnf .gt. 0) then  ! if there is input Bn target
      DALLOCATE(bnim)
      DALLOCATE(bnin)
@@ -359,38 +362,31 @@ SUBROUTINE write_plasma
   
   imn = 0
   do in = -nf, nf
-     do im = 0, mf
-
+     do im = 0, mf       
         tmpc = zero ; tmps = zero
-        do ii = 0, Nteta-1 
-           teta = ( ii + half ) * pi2 / Nteta
-           do jj = 0, Nzeta-1
-              zeta = ( jj + half ) * pi2 / Nzeta
-
-              arg = im*teta - in*(Nfp_raw/Nfp)*zeta
+        do jj = 0, Nzeta-1
+           zeta = ( jj + shift ) * pi2 / surf(1)%Nzeta
+           do ii = 0, Nteta-1
+              teta = ( ii + shift ) * pi2 / surf(1)%Nteta
+              arg = im*teta - in*Nfp_raw*zeta
               tmpc = tmpc + surf(1)%bn(ii,jj)*cos(arg)
               tmps = tmps + surf(1)%bn(ii,jj)*sin(arg)
-
-           enddo ! end jj
-        enddo ! end ii
-
+           enddo ! end ii
+        enddo ! end jj
         if ( (abs(tmpc) + abs(tmps)) .lt. tol ) cycle
-
         imn = imn + 1
-        bnin(imn) = in * (Nfp_raw/Nfp) ; bnim(imn) = im
-
+        bnin(imn) = in*Nfp_raw ; bnim(imn) = im
         if (im .eq. 0  ) then
            tmpc = tmpc*half
            tmps = tmps*half
         endif
         bnc(imn) = tmpc
         bns(imn) = tmps
-
      enddo ! end im
   enddo ! end in
-
   Nbnf = imn
-
+  ! bnc = bnc * discretefactor / (pi2*pi)
+  ! bns = bns * discretefactor / (pi2*pi)
   bnc = bnc * two / (Nteta*Nzeta)
   bns = bns * two / (Nteta*Nzeta)
   !----------------------------------------------

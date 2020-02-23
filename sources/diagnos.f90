@@ -7,7 +7,7 @@ SUBROUTINE diagnos
 !------------------------------------------------------------------------------------------------------   
   use globals, only: dp, zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
        Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
-       cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, Npc, weight_bnorm, overlap, &
+       cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, weight_bnorm, overlap, &
        pmsum, total_moment, magtorque, ext
                      
   implicit none
@@ -190,11 +190,11 @@ SUBROUTINE diagnos
 
   !--------------------------------calculate coil importance------------------------------------  
   if (.not. allocated(coil_importance)) then
-     SALLOCATE( coil_importance, (1:Ncoils*Npc), zero )
+     SALLOCATE( coil_importance, (1:Ncoils), zero )
   endif
 
   if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec) then  ! make sure data_allocated
-     do icoil = 1, Ncoils*Npc
+     do icoil = 1, Ncoils
         call importance(icoil)
      enddo
   

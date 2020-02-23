@@ -66,8 +66,8 @@ subroutine fousurf
   
   use globals, only : dp, zero, half, pi2, myid, ounit, runit, input_surf, IsQuiet, IsSymmetric, &
                       Nfou, Nfp, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
-                      Nteta, Nzeta, surf, Npc, discretefactor, Nfp_raw, cosnfp, sinnfp, &
-                      half_shift
+                      Nteta, Nzeta, surf, discretefactor, Nfp_raw, cosnfp, sinnfp, &
+                      half_shift, shift
   
   implicit none
   
@@ -78,7 +78,7 @@ subroutine fousurf
   LOGICAL :: exist
   INTEGER :: iosta, astat, ierr, ii, jj, imn, ip, symmetry
   REAL    :: RR(0:2), ZZ(0:2), szeta, czeta, xx(1:3), xt(1:3), xz(1:3), ds(1:3), &
-             teta, zeta, arg, dd, shift
+             teta, zeta, arg, dd
   
   !-------------read plasma.boundary---------------------------------------------------------------------  
   inquire( file=trim(input_surf), exist=exist)  
@@ -184,23 +184,20 @@ subroutine fousurf
   select case (IsSymmetric)
   case ( 0 )
      Nfp = 1                          !reset Nfp to 1;
-     Npc = Nfp_raw                    !number of coils periodicity
      symmetry = 0
   case ( 1 )                          !plasma and coil periodicity enabled;
-     Npc = Nfp
      symmetry = 0
   case ( 2 )                          ! stellarator symmetry enforced;
-     Npc = Nfp
      symmetry = 1     
   end select
   ! discretefactor = discretefactor/Nfp
 
-  SALLOCATE( cosnfp, (1:Npc), zero )
-  SALLOCATE( sinnfp, (1:Npc), zero )  
+  SALLOCATE( cosnfp, (1:Nfp_raw), zero )
+  SALLOCATE( sinnfp, (1:Nfp_raw), zero )  
   
-  do ip = 1, Npc
-     cosnfp(ip) = cos((ip-1)*pi2/Npc)
-     sinnfp(ip) = sin((ip-1)*pi2/Npc)
+  do ip = 1, Nfp_raw
+     cosnfp(ip) = cos((ip-1)*pi2/Nfp_raw)
+     sinnfp(ip) = sin((ip-1)*pi2/Nfp_raw)
   enddo
 
   allocate( surf(1:1) ) ! can allow for myltiple plasma boundaries 
@@ -209,20 +206,20 @@ subroutine fousurf
   surf(1)%Nteta = Nteta ! not used yet; used for multiple surfaces; 20170307;
   surf(1)%Nzeta = Nzeta * Nfp * 2**symmetry ! the total number from [0, 2pi]
   
-  SALLOCATE( surf(1)%xx, (0:surf(1)%Nteta-1,0:surf(1)%Nzeta-1), zero ) !x coordinates;
-  SALLOCATE( surf(1)%yy, (0:surf(1)%Nteta-1,0:surf(1)%Nzeta-1), zero ) !y coordinates
-  SALLOCATE( surf(1)%zz, (0:surf(1)%Nteta-1,0:surf(1)%Nzeta-1), zero ) !z coordinates
-  SALLOCATE( surf(1)%nx, (0:surf(1)%Nteta-1,0:surf(1)%Nzeta-1), zero ) !unit nx;
-  SALLOCATE( surf(1)%ny, (0:surf(1)%Nteta-1,0:surf(1)%Nzeta-1), zero ) !unit ny;
-  SALLOCATE( surf(1)%nz, (0:surf(1)%Nteta-1,0:surf(1)%Nzeta-1), zero ) !unit nz;
-  SALLOCATE( surf(1)%ds, (0:surf(1)%Nteta-1,0:surf(1)%Nzeta-1), zero ) !jacobian;
-  SALLOCATE( surf(1)%xt, (0:surf(1)%Nteta-1,0:surf(1)%Nzeta-1), zero ) !dx/dtheta;
-  SALLOCATE( surf(1)%yt, (0:surf(1)%Nteta-1,0:surf(1)%Nzeta-1), zero ) !dy/dtheta;
-  SALLOCATE( surf(1)%zt, (0:surf(1)%Nteta-1,0:surf(1)%Nzeta-1), zero ) !dz/dtheta;
-  SALLOCATE( surf(1)%pb, (0:        Nteta-1,0:        Nzeta-1), zero ) !target Bn;
-  SALLOCATE( surf(1)%xp, (0:surf(1)%Nteta-1,0:surf(1)%Nzeta-1), zero ) !dx/dzeta;
-  SALLOCATE( surf(1)%yp, (0:surf(1)%Nteta-1,0:surf(1)%Nzeta-1), zero ) !dy/dzeta;
-  SALLOCATE( surf(1)%zp, (0:surf(1)%Nteta-1,0:surf(1)%Nzeta-1), zero ) !dz/dzeta;
+  SALLOCATE( surf(1)%xx, (0:Nteta-1,0:Nzeta-1), zero ) !x coordinates;
+  SALLOCATE( surf(1)%yy, (0:Nteta-1,0:Nzeta-1), zero ) !y coordinates
+  SALLOCATE( surf(1)%zz, (0:Nteta-1,0:Nzeta-1), zero ) !z coordinates
+  SALLOCATE( surf(1)%nx, (0:Nteta-1,0:Nzeta-1), zero ) !unit nx;
+  SALLOCATE( surf(1)%ny, (0:Nteta-1,0:Nzeta-1), zero ) !unit ny;
+  SALLOCATE( surf(1)%nz, (0:Nteta-1,0:Nzeta-1), zero ) !unit nz;
+  SALLOCATE( surf(1)%ds, (0:Nteta-1,0:Nzeta-1), zero ) !jacobian;
+  SALLOCATE( surf(1)%xt, (0:Nteta-1,0:Nzeta-1), zero ) !dx/dtheta;
+  SALLOCATE( surf(1)%yt, (0:Nteta-1,0:Nzeta-1), zero ) !dy/dtheta;
+  SALLOCATE( surf(1)%zt, (0:Nteta-1,0:Nzeta-1), zero ) !dz/dtheta;
+  SALLOCATE( surf(1)%pb, (0:Nteta-1,0:Nzeta-1), zero ) !target Bn;
+  SALLOCATE( surf(1)%xp, (0:Nteta-1,0:Nzeta-1), zero ) !dx/dzeta;
+  SALLOCATE( surf(1)%yp, (0:Nteta-1,0:Nzeta-1), zero ) !dy/dzeta;
+  SALLOCATE( surf(1)%zp, (0:Nteta-1,0:Nzeta-1), zero ) !dz/dzeta;
   
   surf(1)%vol = zero  ! volume enclosed by plasma boundary
  
@@ -236,9 +233,9 @@ subroutine fousurf
   endif
     
 ! The center point value was used to discretize grid;
-  do ii = 0, surf(1)%Nteta-1
+  do ii = 0, Nteta-1
      teta = ( ii + shift ) * pi2 / surf(1)%Nteta
-     do jj = 0, surf(1)%Nzeta-1
+     do jj = 0, Nzeta-1
         zeta = ( jj + shift ) * pi2 / surf(1)%Nzeta
         RR(0:2) = zero ; ZZ(0:2) = zero
 
@@ -290,19 +287,20 @@ subroutine fousurf
         surf(1)%ds(ii,jj) =         dd
 
         ! using Gauss theorom; V = \int_S x \cdot n dt dz
-        surf(1)%vol = surf(1)%vol + surf(1)%xx(ii,jj) * ds(1)
+        surf(1)%vol = surf(1)%vol + surf(1)%xx(ii,jj) * ds(1) + surf(1)%yy(ii,jj) * ds(2) + surf(1)%zz(ii,jj) * ds(3)
 
      enddo ! end of do jj; 14 Apr 16;
   enddo ! end of do ii; 14 Apr 16;
 
-  surf(1)%vol = abs(surf(1)%vol) * discretefactor
+  surf(1)%vol = abs(surf(1)%vol) * discretefactor * Nfp * 2**symmetry 
   if( myid == 0 .and. IsQuiet <= 0) write(ounit, '(8X": Enclosed volume ="ES12.5" m^3 ;" )') surf(1)%vol
 
   !calculate target Bn with input harmonics; 05 Jan 17;
   if(NBnf >  0) then
-
-     do jj = 0, Nzeta-1 ; zeta = ( jj + shift ) * pi2 / (Nzeta*Nfp)
-        do ii = 0, Nteta-1 ; teta = ( ii + shift ) * pi2 / Nteta
+     do jj = 0, Nzeta-1
+        zeta = ( jj + shift ) * pi2 / surf(1)%Nzeta
+        do ii = 0, Nteta-1
+           teta = ( ii + shift ) * pi2 / surf(1)%Nteta
            do imn = 1, NBnf
               arg = Bnim(imn) * teta - Bnin(imn) * zeta
               surf(1)%pb(ii,jj) = surf(1)%pb(ii,jj) + Bnc(imn)*cos(arg) + Bns(imn)*sin(arg)
@@ -311,7 +309,6 @@ subroutine fousurf
      enddo
 
   endif
-  
   
   return
   
