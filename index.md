@@ -163,8 +163,20 @@ If you want to view other output files, please turn on the flags in the namelist
   
 * save_filaments
 
-Intermediate coil data (XYZ points in space) are store in binary file *.example.filaments.000001*. 
+Intermediate coil data (XYZ points in space) are stored in binary file *.example.filaments.000001*. 
   So you can use them to plot coil evolution movie. (Better way is to use the data in hdf5 file.)
+
+Various post-processing options are available and they are controlled by `post_proc`.
+Here is a list of available functions.
+
+| post_proc | actions                                                              |
+|:---------:|----------------------------------------------------------------------|
+|     0     | None                                                                 |
+|     1     | Basic post-processing                                                |
+|     2     | Basic post-processing + SPEC input preparation                       |
+|     3     | Basic post-processing + Poincare plots                               |
+|     4     | Basic post-processing + Poincare plots + Boozer spectrum calculation |
+|     5     | Basic post-processing + Write MGRID file                             |
 
 &nbsp;
 
