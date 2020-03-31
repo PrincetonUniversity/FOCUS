@@ -33,15 +33,16 @@
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-SUBROUTINE focus(comm)
+SUBROUTINE focus(focus_ext, comm)
   use globals, only: dp, ncpu, myid, ounit, ierr, astat, eunit, case_surface, case_coils, case_optimize, &
-       case_postproc, xdof, time_initialize, time_optimize, time_postproc, &
+       case_postproc, xdof, time_initialize, time_optimize, time_postproc, ext, &
        version, MPI_COMM_FOCUS
   use mpi  !to enable gfortran mpi_wtime bugs; 07/20/2017
   implicit none
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   INTEGER, INTENT(IN) :: comm
+  CHARACTER*100, INTENT(IN) :: focus_ext
   INTEGER :: secs, mins, hrs
   REAL    :: tstart, tfinish ! local variables
 
@@ -54,6 +55,9 @@ SUBROUTINE focus(comm)
   ! call MPI_INIT( ierr )
   call MPI_COMM_RANK( MPI_COMM_FOCUS, myid, ierr )
   call MPI_COMM_SIZE( MPI_COMM_FOCUS, ncpu, ierr )
+
+  ! get extension
+  ext = focus_ext
 
   tstart =  MPI_WTIME()
   if(myid == 0) write(ounit, *) "---------------------  FOCUS ", version, "------------------------------"

@@ -69,7 +69,7 @@ subroutine fousurf(filename, index)
   use mpi
   implicit none
 
-  CHARACTER(LEN=100), INTENT(IN) :: filename
+  CHARACTER*100, INTENT(IN) :: filename
   INTEGER, INTENT(IN) :: index
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!

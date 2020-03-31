@@ -29,9 +29,9 @@ except:
     print('Got errors!')
     pass
 '''
-
-if rank == 0:
+path = '../examples/rotating_ellipse/ellipse'
+if color == 0:
     scomm = sub_comm.py2f()
-    focus(scomm)
+    focus(path, scomm)
 
 exit

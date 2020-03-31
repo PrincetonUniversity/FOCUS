@@ -309,33 +309,33 @@ subroutine initial
   vsmall = ten * machprec        ! very small number
   small = thousand * machprec    ! small number
 
-  !-------------read input namelist----------------------------------------------------------------------
-  if( myid == 0 ) then ! only the master node reads the input; 25 Mar 15;
-     call getarg(1,ext) ! get argument from command line
-
-     select case(trim(ext))
-     case ( '-h', '--help' )
-        write(ounit,*)'-------HELP INFORMATION--------------------------'
-        write(ounit,*)' Usage: xfocus <options> input_file'
-        write(ounit,*)'    <options>'
-        write(ounit,*)'     --init / -i  :  Write an example input file'
-        write(ounit,*)'     --help / -h  :  Output help message'
-        write(ounit,*)'-------------------------------------------------'
-        call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
-     case ( '-i', '--init' )
-        call write_focus_namelist ! in initial.h
-     case default
-        index_dot = INDEX(ext,'.input')
-        IF (index_dot .gt. 0)  ext = ext(1:index_dot-1)
-        write(ounit, '("initial : machine_prec   = ", ES12.5, " ; sqrtmachprec   = ", ES12.5   &
-             & )') machprec, sqrtmachprec
-#ifdef DEBUG
-        write(ounit, '("DEBUG info: extension from command line is "A)') trim(ext)
-#endif
-     end select
-  endif
-
-  ClBCAST( ext,  100,  0 )
+!!$  !-------------read input namelist----------------------------------------------------------------------
+!!$  if( myid == 0 ) then ! only the master node reads the input; 25 Mar 15;
+!!$     call getarg(1,ext) ! get argument from command line
+!!$
+!!$     select case(trim(ext))
+!!$     case ( '-h', '--help' )
+!!$        write(ounit,*)'-------HELP INFORMATION--------------------------'
+!!$        write(ounit,*)' Usage: xfocus <options> input_file'
+!!$        write(ounit,*)'    <options>'
+!!$        write(ounit,*)'     --init / -i  :  Write an example input file'
+!!$        write(ounit,*)'     --help / -h  :  Output help message'
+!!$        write(ounit,*)'-------------------------------------------------'
+!!$        call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+!!$     case ( '-i', '--init' )
+!!$        call write_focus_namelist ! in initial.h
+!!$     case default
+!!$        index_dot = INDEX(ext,'.input')
+!!$        IF (index_dot .gt. 0)  ext = ext(1:index_dot-1)
+!!$        write(ounit, '("initial : machine_prec   = ", ES12.5, " ; sqrtmachprec   = ", ES12.5   &
+!!$             & )') machprec, sqrtmachprec
+!!$#ifdef DEBUG
+!!$        write(ounit, '("DEBUG info: extension from command line is "A)') trim(ext)
+!!$#endif
+!!$     end select
+!!$  endif
+!!$
+!!$  ClBCAST( ext,  100,  0 )
   inputfile = trim(ext)//".input"
 
   !-------------read the namelist-----------------------------------------------------------------------
@@ -345,7 +345,9 @@ subroutine initial
   endif
 
   do icpu = 1, ncpu
-     call MPI_BARRIER( MPI_COMM_WORLD, ierr )
+     print *, myid, "I am waiting here"
+     call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
+     print *, myid, "We are moving"
      if (myid == icpu-1) then                              ! each cpu read the namelist in turn;
         open(runit, file=trim(inputfile), status="old", action='read')
         read(runit, focusin)

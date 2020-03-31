@@ -19,7 +19,7 @@
 #### Default Intel+OpenMPI+HDF5###############
 # available env: /p/focus/modules/focus/basis
  CC=intel # if want to use gfortran; make CC=gfortran or other options
- FC=/usr/local/bin/mpif90
+ FC=mpif90
  PFLAGS= -fPIC # for pre-processing compiler flags, like -D dposition
  RFLAGS=-mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback  $(PFLAGS) #-vec_report0 #-ipo -xhost
  DFLAGS=-O0 -g -traceback $(PFLAGS) -check all -check bounds -check noarg_temp_created -check uninit \
@@ -52,12 +52,12 @@ endif
 
 ############################################################################################################
 
-focuspy: focuspy.f90 libfocus.a
-	f2py --f90exec=${FC} --f90flags="-O3 -w -ffree-line-length-none -march=native -ffast-math" -m $@ -c $< libfocus.a
+# focuspy: focuspy.f90 libfocus.a
+# 	f2py --f90exec=${FC} --f90flags="-O3 -w -ffree-line-length-none -march=native -ffast-math" -m $@ -c $< fun.f90 libfocus.a
 
-libfocus.a: $(ROBJS) $(NUMOBJ)
-	ar -ruv $@ $(ROBJS) $(NUMOBJ)
-	ranlib $@
+# libfocus.a: $(ROBJS) $(NUMOBJ)
+# 	ar -ruv $@ $(ROBJS) $(NUMOBJ)
+# 	ranlib $@
 	
 xfocus: $(ROBJS) $(NUMOBJ)
 	$(FC) -o xfocus $(ROBJS) $(NUMOBJ) $(HDF5)
