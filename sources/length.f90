@@ -61,7 +61,7 @@
 subroutine length(ideriv)
   use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, &
        coil, DoF, Ncoils, Nfixgeo, Ndof, ttlen, t1L, t2L, case_length, &
-       ittlen, mttlen, LM_fvec, LM_fjac, weight_ttlen
+       ittlen, mttlen, LM_fvec, LM_fjac, weight_ttlen, MPI_COMM_FOCUS
 
   implicit none
   include "mpif.h"
@@ -160,7 +160,7 @@ end subroutine length
 
 subroutine LenDeriv0(icoil, length)
 
-  use globals, only: dp, zero, coil, myid, ounit, Ncoils
+  use globals, only: dp, zero, coil, myid, ounit, Ncoils, MPI_COMM_FOCUS
   implicit none
   include "mpif.h"
 
@@ -191,7 +191,7 @@ end subroutine LenDeriv0
 
 subroutine LenDeriv1(icoil, derivs, ND)
 
-  use globals, only: dp, zero, pi2, coil, DoF, myid, ounit, Ncoils
+  use globals, only: dp, zero, pi2, coil, DoF, myid, ounit, Ncoils, MPI_COMM_FOCUS
   implicit none
   include "mpif.h"
 

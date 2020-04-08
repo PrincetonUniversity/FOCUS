@@ -34,6 +34,7 @@
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 PROGRAM focus
+
   use globals, only: dp, ncpu, myid, ounit, ierr, astat, eunit, case_surface, case_coils, case_optimize, &
        case_postproc, xdof, time_initialize, time_optimize, time_postproc, &
        version, MPI_COMM_FOCUS
@@ -46,21 +47,13 @@ PROGRAM focus
   REAL    :: tstart, tfinish ! local variables
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  
-  myid = 0 ; ncpu = 1
 
-  ! MPI initialize
-  call MPI_INIT( ierr )
-  call MPI_COMM_RANK( MPI_COMM_WORLD, myid, ierr )
-  call MPI_COMM_SIZE( MPI_COMM_WORLD, ncpu, ierr )
+  call initial
 
   tstart =  MPI_WTIME()
-  if(myid == 0) write(ounit, *) "---------------------  FOCUS ", version, "------------------------------"
-  if(myid == 0) write(ounit,'("focus   : Begin execution with ncpu =",i5)') ncpu
-  
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  
-  call initial ! read input namelist and broadcast;
+
+  ! check input namelist 
+  call check_input
   
   select case( case_surface )
 
@@ -79,7 +72,7 @@ PROGRAM focus
 
   call packdof(xdof)  ! packdof in xdof array;
 
-  call MPI_BARRIER( MPI_COMM_WORLD, ierr )
+  call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
 
   tfinish = MPI_Wtime()
   time_initialize = tfinish - tstart
@@ -89,7 +82,7 @@ PROGRAM focus
 
   if (case_optimize /= 0) call solvers       ! call different solvers;
 
-  call MPI_BARRIER( MPI_COMM_WORLD, ierr )
+  call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
 
   tstart = MPI_Wtime()
   time_optimize = tstart - tfinish
@@ -129,7 +122,7 @@ PROGRAM focus
 
   call saving ! save all the outputs
 
-  call MPI_BARRIER( MPI_COMM_WORLD, ierr )
+  call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
 
   tfinish = MPI_Wtime()
   time_postproc = tfinish - tstart
@@ -150,10 +143,6 @@ PROGRAM focus
   if(myid == 0) write(ounit, *) "-------------------------------------------------------------"
 
   call MPI_FINALIZE( ierr )
-
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-  !call cleanup
   
 END PROGRAM focus
 

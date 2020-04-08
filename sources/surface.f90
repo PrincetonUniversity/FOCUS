@@ -1,7 +1,7 @@
 ! This is the overall function to handle surfaces
 SUBROUTINE surface
   use globals, only : dp, myid, ounit, machprec, surf, plasma, limiter, input_surf, limiter_surf, &
-       psurf, weight_cssep
+       psurf, weight_cssep, MPI_COMM_FOCUS
   use mpi
   implicit none
 

@@ -354,7 +354,7 @@ SUBROUTINE write_plasma
 ! CZHU; first version: 2017/01/11; last revised: 2017/01/11                     !
 !-------------------------------------------------------------------------------!
   use globals, only : dp, zero, half, two, pi2, myid, ncpu, ounit, wunit, ext, &
-                      plasma, &
+                      plasma, MPI_COMM_FOCUS, &
                       Nteta, Nzeta, surf, bnorm, sqrtmachprec, out_plasma
   
   implicit none  

@@ -24,7 +24,7 @@ SUBROUTINE packdof(lxdof)
   ! Pack all DOF into one vector;
   ! DATE: 2017/03/19
   !--------------------------------------------------------------------------------------------- 
-  use globals, only : dp, zero, myid, ounit, &
+  use globals, only : dp, zero, myid, ounit, MPI_COMM_FOCUS, &
                     & case_coils, Ncoils, coil, DoF, Ndof, DoFnorm
   implicit none
   include "mpif.h"
@@ -89,7 +89,7 @@ SUBROUTINE packdof(lxdof)
 
   !write(ounit, *) "pack ", lxdof(1)
   lxdof = lxdof / DoFnorm
-  call mpi_barrier(MPI_COMM_WORLD, ierr)
+  call mpi_barrier(MPI_COMM_FOCUS, ierr)
 
   return
 END SUBROUTINE packdof
@@ -101,7 +101,7 @@ SUBROUTINE unpacking(lxdof)
   ! UnPack all DOF from one vector;
   ! DATE: 2017/04/03
   !--------------------------------------------------------------------------------------------- 
-  use globals, only: dp, zero, myid, ounit, &
+  use globals, only: dp, zero, myid, ounit, MPI_COMM_FOCUS, &
        & case_coils, Ncoils, coil, DoF, Ndof, DoFnorm
   implicit none
   include "mpif.h"
@@ -164,7 +164,7 @@ SUBROUTINE unpacking(lxdof)
   call unpackcoil !unpack DoF to coil parameters;
   call discoil(ifirst)
 
-  call mpi_barrier(MPI_COMM_WORLD, ierr)
+  call mpi_barrier(MPI_COMM_FOCUS, ierr)
 
   return
 END SUBROUTINE unpacking
@@ -176,7 +176,7 @@ SUBROUTINE packcoil
   ! pack coil representation variables into DoF (only geometries without currents);
   ! DATE: 2017/03/25
   !--------------------------------------------------------------------------------------------- 
-  use globals, only: dp, zero, myid, ounit, case_coils, Ncoils, coil, FouCoil, DoF
+  use globals, only: dp, zero, myid, ounit, case_coils, Ncoils, coil, FouCoil, DoF, MPI_COMM_FOCUS
   implicit none
   include "mpif.h"
 
@@ -245,7 +245,7 @@ SUBROUTINE unpackcoil
   ! pack coil representation variables into DoF (only geometries without currents);
   ! DATE: 2017/03/25
   !--------------------------------------------------------------------------------------------- 
-  use globals, only: dp, zero, myid, ounit, case_coils, Ncoils, coil, FouCoil, DoF
+  use globals, only: dp, zero, myid, ounit, case_coils, Ncoils, coil, FouCoil, DoF, MPI_COMM_FOCUS
   implicit none
   include "mpif.h"
 

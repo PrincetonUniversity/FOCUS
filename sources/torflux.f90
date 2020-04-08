@@ -98,7 +98,7 @@ subroutine torflux( ideriv )
   use globals, only: dp, zero, half, one, pi2, sqrtmachprec, bsconstant, ncpu, myid, ounit, &
        coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, Cdof, &
        tflux, t1F, t2F, Ndof, psi_avg, target_tflux, tflux_sign, &
-       itflux, mtflux, LM_fvec, LM_fjac, weight_tflux, plasma
+       itflux, mtflux, LM_fvec, LM_fjac, weight_tflux, plasma, MPI_COMM_FOCUS
   use mpi
   implicit none
 
@@ -141,10 +141,10 @@ subroutine torflux( ideriv )
         dflux = dflux + ldiff(jzeta)**2
      enddo ! end do jzeta
 
-     call MPI_BARRIER( MPI_COMM_WORLD, ierr )
-     call MPI_REDUCE( dflux, tflux  , 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
-     call MPI_REDUCE( lsum , psi_avg, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
-     call MPI_REDUCE( ldiff, psi_diff, Nzeta, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
+     call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
+     call MPI_REDUCE( dflux, tflux  , 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_FOCUS, ierr )
+     call MPI_REDUCE( lsum , psi_avg, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_FOCUS, ierr )
+     call MPI_REDUCE( ldiff, psi_diff, Nzeta, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_FOCUS, ierr )
                
      RlBCAST( psi_avg, 1, 0)
      RlBCAST( tflux, 1, 0)
@@ -202,8 +202,8 @@ subroutine torflux( ideriv )
 
      ldF = ldF * pi2/Nteta * tflux_sign
 
-     call MPI_BARRIER( MPI_COMM_WORLD, ierr )
-     call MPI_REDUCE(ldF, dF, Ndof*Nzeta, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
+     call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
+     call MPI_REDUCE(ldF, dF, Ndof*Nzeta, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_FOCUS, ierr )
      RlBCAST( dF, Ndof*Nzeta, 0 )
 
      do idof = 1, Ndof
@@ -221,7 +221,7 @@ subroutine torflux( ideriv )
 
   !--------------------------------------------------------------------------------------------
 
-  call MPI_barrier( MPI_COMM_WORLD, ierr )
+  call MPI_barrier( MPI_COMM_FOCUS, ierr )
 
   return
 end subroutine torflux
@@ -235,7 +235,7 @@ subroutine bpotential0(icoil, iteta, jzeta, tAx, tAy, tAz)
 ! Biot-Savart constant and currents are not included for later simplication.
 ! Discretizing factor is includeed; coil(icoil)%dd(kseg) 
 !------------------------------------------------------------------------------------------------------   
-  use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta,  &
+  use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, MPI_COMM_FOCUS,  &
                      zero, myid, ounit, plasma, Nfp, cosnfp, sinnfp, two, bsconstant
   use mpi
   implicit none
@@ -324,7 +324,7 @@ subroutine bpotential1(icoil, iteta, jzeta, tAx, tAy, tAz, ND)
 ! Discretizing factor is includeed; coil(icoil)%dd(kseg) 
 !------------------------------------------------------------------------------------------------------    
   use globals, only: dp, coil, DoF, surf, NFcoil, Ncoils, Nteta, Nzeta, &
-                     zero, myid, ounit, plasma, Nfp, cosnfp, sinnfp
+                     zero, myid, ounit, plasma, Nfp, cosnfp, sinnfp, MPI_COMM_FOCUS
   use mpi
   implicit none
 

@@ -28,7 +28,7 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
 ! Be careful if coils have different resolutions.
 !------------------------------------------------------------------------------------------------------   
   use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, cosnfp, sinnfp, &
-                     zero, myid, ounit, Nfp, pi2, half, two, one, bsconstant
+                     zero, myid, ounit, Nfp, pi2, half, two, one, bsconstant, MPI_COMM_FOCUS
   use mpi
   implicit none
 
@@ -140,7 +140,7 @@ subroutine bfield1(icoil, x, y, z, tBx, tBy, tBz, ND)
 ! Discretizing factor is includeed; coil(icoil)%dd(kseg)
 !------------------------------------------------------------------------------------------------------   
   use globals, only: dp, coil, DoF, surf, NFcoil, Ncoils, Nteta, Nzeta, &
-                     zero, myid, ounit, Nfp, one, bsconstant, cosnfp, sinnfp
+                     zero, myid, ounit, Nfp, one, bsconstant, cosnfp, sinnfp, MPI_COMM_FOCUS
   use mpi
   implicit none
 
@@ -286,7 +286,7 @@ end subroutine bfield1
 subroutine coils_bfield(B,x,y,z)
   use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, &
        zero, myid, ounit, Nfp, bsconstant, one, two, ncpu, &
-       master, nworker, myworkid, MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS
+       master, nworker, myworkid, MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS, MPI_COMM_FOCUS
   use mpi
   implicit none
 
