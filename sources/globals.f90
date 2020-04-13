@@ -102,7 +102,7 @@ module globals
   INTEGER              :: case_length    =   1
   INTEGER              :: case_curv      =   1 
   REAL                 :: curv_alpha     =   2
-  REAL                 :: k0             =   10 
+  REAL                 :: k0             =   0.000D+00
   REAL                 :: weight_bnorm   =   1.000D+00
   REAL                 :: weight_bharm   =   0.000D+00
   REAL                 :: weight_tflux   =   0.000D+00
@@ -264,7 +264,7 @@ module globals
 
   type arbitrarycoil
      INTEGER              :: NS, Ic=0, Lc=0, itype
-     REAL                 :: I=zero,  L=zero, Lo, maxcurv, ox, oy, oz, mt, mp, Bt, Bz
+     REAL                 :: I=zero,  L=zero, Lo, maxcurv, ox, oy, oz, mt, mp, Bt, Bz!, k0
      REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), &
                              dl(:), dd(:)
      character(LEN=10)    :: name
@@ -358,7 +358,7 @@ module globals
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 !latex \subsection{Miscellaneous}
-  REAL                 :: tmpw_bnorm, tmpw_tflux ,tmpt_tflux, tmpw_ttlen, tmpw_specw, tmpw_ccsep, tmpw_bharm !Need to add curv?
+  REAL                 :: tmpw_bnorm, tmpw_tflux ,tmpt_tflux, tmpw_ttlen, tmpw_specw, tmpw_ccsep, tmpw_bharm, tmpw_curv
   REAL                 :: overlap = 0.0
                           !tmp weight for saving to restart file
   REAL, allocatable    :: mincc(:,:), coil_importance(:)

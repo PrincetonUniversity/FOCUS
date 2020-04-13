@@ -38,7 +38,7 @@ subroutine solvers
   use globals, only: dp, ierr, iout, myid, ounit, zero, IsQuiet, IsNormWeight, Ndof, Nouts, xdof, &
        case_optimize, DF_maxiter, LM_maxiter, CG_maxiter, HN_maxiter, TN_maxiter, coil, DoF, &
        weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, &
-       target_tflux, target_length, cssep_factor, weight_curv
+       target_tflux, target_length, cssep_factor, k0, weight_curv
   implicit none
   include "mpif.h"
 
@@ -52,8 +52,8 @@ subroutine solvers
          "ttlen", "cssep", "curv"
      write(ounit, '(8X,": "21X,6(ES12.5, ","))') weight_bnorm, weight_bharm, weight_tflux, &
           weight_ttlen, weight_cssep, weight_curv
-     write(ounit, '(8X,": target_tflux = "ES12.5" ; target_length = "ES12.5" ; cssep_factor = "ES12.5)') &
-          target_tflux, target_length, cssep_factor
+     write(ounit, '(8X,": target_tflux = "ES12.5" ; target_length = "ES12.5" ; k0 = "ES12.5" ; cssep_factor = "ES12.5)') &
+          target_tflux, target_length, k0, cssep_factor
   endif
 
   if (abs(case_optimize) >= 1) call AllocData(1)
@@ -148,7 +148,7 @@ end subroutine solvers
 subroutine costfun(ideriv)
   use globals, only: dp, zero, one, machprec, myid, ounit, astat, ierr, IsQuiet, &
        Ncoils, deriv, Ndof, xdof, dofnorm, coil, &
-       chi, t1E, t2E, LM_maxiter, LM_fjac, LM_mfvec, sumdE, LM_output, LM_fvec, &
+       chi, t1E, t2E, LM_maxiter, LM_fjac, LM_mfvec, sumdE, LM_output, LM_fvec, k0, &
        bnorm      , t1B, t2B, weight_bnorm,  &
        bharm      , t1H, t2H, weight_bharm,  &
        tflux      , t1F, t2F, weight_tflux, target_tflux, psi_avg, &

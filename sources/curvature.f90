@@ -1,9 +1,8 @@
-!title (curvature) ! Calculate total curvature cost functon and its derivatives. (tkruger)
+!title (curvature) ! Calculate curvature objective functon and its derivatives. (tkruger)
 
 !latex \briefly{The constraint on curvature prevents the coil from becoming too complex and
 !latex         is an important engineering constraint for the realization of feasible coils.
-!latex         This function is still under development by Thomas Kruger and once the function
-!latex         is ready and approved by Caoxiang Zhu, it will be pushed \emph{targt\_length}.}
+!latex         This function is still under development. emph{targt\_length}.}
 
 !latex \calledby{\link{solvers}}
 
@@ -14,10 +13,8 @@
 ! curv is total penalty 
 ! chi = chi + weight_curv*curv
 ! t1CU is total derivative of penalty
-
 ! Not doing any L-M work
-
-! not parallelized; still in development;
+! not parallelized, at some point check to see how long takes to run
 subroutine curvature(ideriv)
   use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, &
        coil, DoF, Ncoils, Nfixgeo, Ndof, curv, t1CU, t2CU, weight_curv, FouCoil
@@ -27,7 +24,7 @@ subroutine curvature(ideriv)
   INTEGER, INTENT(in) :: ideriv
 
   INTEGER             :: astat, ierr, icoil, idof, ND, NF
-  REAL                :: curvAdd 
+  REAL                :: curvAdd
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
@@ -37,9 +34,11 @@ subroutine curvature(ideriv)
   if( ideriv >= 0 ) then
 
      do icoil = 1, Ncoils
-        if(coil(icoil)%itype .ne. 1) exit ! only for Fourier
-        call CurvDeriv0(icoil,curvAdd)
-        curv = curv + curvAdd; 
+        if( coil(icoil)%itype .ne. 1 ) exit ! only for Fourier
+        if( coil(icoil)%Lc     /=  0 ) then ! if geometry is free
+           call CurvDeriv0(icoil,curvAdd)
+           curv = curv + curvAdd
+        endif 
      enddo
 
      curv = curv / (Ncoils - Nfixgeo + machprec)
@@ -69,7 +68,7 @@ subroutine curvature(ideriv)
            idof = idof + ND
         endif
 
-     enddo !end icoil;
+     enddo
      FATAL( curvature , idof .ne. Ndof, counting error in packing )
 
      t1CU = t1CU / (Ncoils - Nfixgeo + machprec)
@@ -85,7 +84,7 @@ end subroutine curvature
 
 subroutine CurvDeriv0(icoil,curvRet)
 
-  use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils, case_curv, k0, curv_alpha 
+  use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils, case_curv, curv_alpha, k0 
 
   implicit none
   include "mpif.h"
@@ -96,7 +95,8 @@ subroutine CurvDeriv0(icoil,curvRet)
   INTEGER              :: kseg, NS
   REAL,allocatable     :: curvv(:)
 
-  SALLOCATE(curvv, (0:coil(icoil)%NS),zero)
+  NS = coil(icoil)%NS 
+  SALLOCATE(curvv, (0:NS),zero)
 
   FATAL( CurvDeriv0, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
  
@@ -108,24 +108,23 @@ subroutine CurvDeriv0(icoil,curvRet)
              + (coil(icoil)%ya*coil(icoil)%xt-coil(icoil)%yt*coil(icoil)%xa)**2 )& 
              / ((coil(icoil)%xt)**2+(coil(icoil)%yt)**2+(coil(icoil)%zt)**2)**(1.5)
   coil(icoil)%maxcurv = maxval(curvv)
-  if( case_curv == 1 ) then ! linear 
-     curvRet = sum(curvv)
-     curvRet = curvRet/coil(icoil)%NS
+  if( case_curv == 1 ) then ! linear
+     curvRet = sum(curvv)-curvv(0)
+     curvRet = curvRet/(NS-1)
   elseif( case_curv == 2 ) then ! quadratic
      curvv = curvv*curvv
-     curvRet = sum(curvv) 
-     curvRet = curvRet/coil(icoil)%NS
+     curvRet = sum(curvv)-curvv(0)
+     curvRet = curvRet/(NS-1)
   elseif( case_curv == 3 ) then ! penalty method 
      if( curv_alpha < 2.0 ) then
           FATAL( CurvDeriv0, .true. , curv_alpha needs to be 2 or greater )
      end if
-     NS = coil(icoil)%NS
-     do kseg = 0,NS
+     do kseg = 0,NS-1
         if( curvv(kseg) > k0 ) then
            curvRet = curvRet + ( curvv(kseg) - k0  )**curv_alpha
         end if
      enddo
-     curvRet = curvRet/NS 
+     curvRet = curvRet/(NS-1) 
   else   
      FATAL( CurvDeriv0, .true. , invalid case_curv option ) 
   end if
@@ -142,7 +141,7 @@ subroutine CurvDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a co
   implicit none
   include "mpif.h"
 
-  INTEGER, intent(in)  :: icoil, ND, NF
+  INTEGER, intent(in)  :: icoil, ND , NF
   REAL   , intent(out) :: derivs(1:1, 1:ND)
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   INTEGER              :: kseg, astat, ierr, doff, nff, NS
@@ -153,14 +152,12 @@ subroutine CurvDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a co
   
   derivs = zero
 
-  ! NF=0  
   derivs(1,1) = 0.0
   derivs(1,2*NF+2) = 0.0
   derivs(1,4*NF+3) = 0.0
   NS = coil(icoil)%NS
 
-  ! NEED TO MAKE SURE CURV_ALPHA > 2
-  do kseg = 0,NS
+  do kseg = 0,NS-1
 
      xt = coil(icoil)%xt(kseg) ; yt = coil(icoil)%yt(kseg) ; zt = coil(icoil)%zt(kseg)
      xa = coil(icoil)%xa(kseg) ; ya = coil(icoil)%ya(kseg) ; za = coil(icoil)%za(kseg)
@@ -217,7 +214,9 @@ subroutine CurvDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a co
 
         else if( case_curv == 3 ) then
            curvHold = sqrt( (za*yt-zt*ya)**2 + (xa*zt-xt*za)**2 + (ya*xt-yt*xa)**2 ) / ((xt)**2+(yt)**2+(zt)**2)**(1.5);
+           !penCurv = curv_alpha*((curvHold-coil(icoil)%k0)**(curv_alpha-1.0));
            penCurv = curv_alpha*((curvHold-k0)**(curv_alpha-1.0));
+           !if( curvHold > coil(icoil)%k0 ) then
            if( curvHold > k0 ) then
               ! Xc 
               derivs(1,1+nff)      = derivs(1,1+nff)      + (-1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*ncc) \
@@ -252,7 +251,7 @@ subroutine CurvDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a co
      enddo
   enddo
 
-  derivs = derivs/NS
+  derivs = derivs/(NS-1)
   
   return
 

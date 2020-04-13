@@ -157,6 +157,7 @@ subroutine rdcoils
         coil(icoil)%I  =  coilsI(icoil)
         coil(icoil)%Ic =  IsVaryCurrent
         coil(icoil)%L  =  target_length ! irrelevant until re-computed;
+        !coil(icoil)%k0 =  k0
         coil(icoil)%Lc =  IsVaryGeometry
         coil(icoil)%Lo =  target_length
         coil(icoil)%name = trim(coilname(icoil))
@@ -164,6 +165,7 @@ subroutine rdcoils
         FATAL( rdcoils, coil(icoil)%Ic < 0 .or. coil(icoil)%Ic > 1, illegal )
         FATAL( rdcoils, coil(icoil)%Lc < 0 .or. coil(icoil)%Lc > 1, illegal )
         FATAL( rdcoils, coil(icoil)%Lo < zero                     , illegal )
+        !FATAL( rdcoils, coil(icoil)%k0 < zero                     , illegal )
         if(coil(icoil)%Ic == 0) Nfixcur = Nfixcur + 1
         if(coil(icoil)%Lc == 0) Nfixgeo = Nfixgeo + 1
 
@@ -217,13 +219,14 @@ subroutine rdcoils
            if(coil(icoil)%itype == 1) then  ! Fourier representation
               read( runit,*)
               read( runit,*) coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, &
-                   & coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo
+                   & coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo!, coil(icoil)%k0
               FATAL( rdcoils, coil(icoil)%NS < 0                        , illegal )
               FATAL( rdcoils, coil(icoil)%Ic < 0 .or. coil(icoil)%Ic > 1, illegal )
               FATAL( rdcoils, coil(icoil)%Lc < 0 .or. coil(icoil)%Lc > 2, illegal )
               FATAL( rdcoils, coil(icoil)%L  < zero                     , illegal )
               FATAL( rdcoils, coil(icoil)%Lc < zero                     , illegal )
               FATAL( rdcoils, coil(icoil)%Lo < zero                     , illegal )
+              !FATAL( rdcoils, coil(icoil)%k0 < zero                     , illegal )
               read( runit,*)
               read( runit,*) FouCoil(icoil)%NF
               FATAL( rdcoils, Foucoil(icoil)%NF  < 0                    , illegal )
@@ -271,6 +274,7 @@ subroutine rdcoils
            IlBCAST( coil(icoil)%Lc           , 1        ,  0 )
            RlBCAST( coil(icoil)%Lo           , 1        ,  0 )
            IlBCAST( FouCoil(icoil)%NF        , 1        ,  0 )
+           !RlBCAST( coil(icoil)%k0           , 1        ,  0 )
 
            if (.not. allocated(FouCoil(icoil)%xc) ) then
               SALLOCATE( FouCoil(icoil)%xc, (0:FouCoil(icoil)%NF), zero )
@@ -339,6 +343,7 @@ subroutine rdcoils
         coil(icoil)%L  =  pi2*init_radius
         coil(icoil)%Lc =  IsVaryGeometry
         coil(icoil)%Lo =  target_length
+        !coil(icoil)%k0 =  k0
         write(coil(icoil)%name,'("Mod_"I3.3)') icoil
         FATAL( rdcoils, coil(icoil)%Ic < 0 .or. coil(icoil)%Ic > 1, illegal )
         FATAL( rdcoils, coil(icoil)%Lc < 0 .or. coil(icoil)%Lc > 1, illegal )
@@ -401,6 +406,7 @@ subroutine rdcoils
      coil(icoil)%L  =  pi2*init_radius
      coil(icoil)%Lc =  0               ! IsVaryGeometry ! ignore Bz first; 20190102
      coil(icoil)%Lo =  target_length
+     !coil(icoil)%k0 =  k0
      coil(icoil)%Bz =  zero
      coil(icoil)%name = 'bg_BtBz_01'
      coil(icoil)%itype = 3
@@ -425,6 +431,7 @@ subroutine rdcoils
            coil(icoil)%L  =  pi2*init_radius
            coil(icoil)%Lc =  IsVaryGeometry
            coil(icoil)%Lo =  target_length
+           !coil(icoil)%k0 =  k0
            write(coil(icoil)%name,'("pm_"I6)') icoil
            FATAL( rdcoils, coil(icoil)%Ic < 0 .or. coil(icoil)%Ic > 1, illegal )
            FATAL( rdcoils, coil(icoil)%Lc < 0 .or. coil(icoil)%Lc > 1, illegal )
