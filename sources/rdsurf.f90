@@ -65,11 +65,11 @@
 subroutine fousurf(filename, index)
   use globals, only : dp, zero, half, pi2, myid, ounit, runit, IsQuiet, IsSymmetric,  &
                       Nteta, Nzeta, surf, discretefactor, Nfp, plasma, symmetry,      &
-                      tflux_sign, cosnfp, sinnfp
+                      tflux_sign, cosnfp, sinnfp, MPI_COMM_FOCUS
   use mpi
   implicit none
 
-  CHARACTER(LEN=100), INTENT(IN) :: filename
+  CHARACTER*100, INTENT(IN) :: filename
   INTEGER, INTENT(IN) :: index
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!

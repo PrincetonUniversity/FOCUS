@@ -7,7 +7,7 @@ SUBROUTINE poinplot
                       pp_phi, pp_raxis, pp_zaxis, pp_xtol, pp_rmax, pp_zmax, ppr, ppz, pp_ns, iota,  &
                       XYZB, lboozmn, booz_mnc, booz_mns, booz_mn, total_num, &
                       master, nmaster, nworker, masterid, color, myworkid, MPI_COMM_MASTERS, &
-                      MPI_COMM_MYWORLD, MPI_COMM_WORKERS, plasma, surf
+                      MPI_COMM_MYWORLD, MPI_COMM_WORKERS, plasma, surf, MPI_COMM_FOCUS
   USE mpi
   IMPLICIT NONE
 
@@ -39,7 +39,7 @@ SUBROUTINE poinplot
   ! split cores for calculating axis
   color = 0
   !CALL MPI_COMM_FREE(MPI_COMM_MYWORLD, ierr)
-  CALL MPI_COMM_SPLIT(MPI_COMM_WORLD, color, myid, MPI_COMM_MYWORLD, ierr)
+  CALL MPI_COMM_SPLIT(MPI_COMM_FOCUS, color, myid, MPI_COMM_MYWORLD, ierr)
   CALL MPI_COMM_RANK(MPI_COMM_MYWORLD, myworkid, ierr)
   CALL MPI_COMM_SIZE(MPI_COMM_MYWORLD, nworker, ierr)
   
@@ -55,7 +55,7 @@ SUBROUTINE poinplot
 
   ! split cores
   color = modulo(myid, pp_ns)
-  CALL MPI_COMM_SPLIT(MPI_COMM_WORLD, color, myid, MPI_COMM_MYWORLD, ierr)
+  CALL MPI_COMM_SPLIT(MPI_COMM_FOCUS, color, myid, MPI_COMM_MYWORLD, ierr)
   CALL MPI_COMM_RANK(MPI_COMM_MYWORLD, myworkid, ierr)
   CALL MPI_COMM_SIZE(MPI_COMM_MYWORLD, nworker, ierr)
 
@@ -66,7 +66,7 @@ SUBROUTINE poinplot
      color = 0
   endif
   !CALL MPI_COMM_FREE(MPI_COMM_MASTERS, ierr)
-  CALL MPI_COMM_SPLIT(MPI_COMM_WORLD, color, myid, MPI_COMM_MASTERS, ierr)
+  CALL MPI_COMM_SPLIT(MPI_COMM_FOCUS, color, myid, MPI_COMM_MASTERS, ierr)
   if (myworkid==0) then
      CALL MPI_COMM_RANK(MPI_COMM_MASTERS, masterid, ierr)
      CALL MPI_COMM_SIZE(MPI_COMM_MASTERS, nmaster, ierr)
@@ -235,7 +235,7 @@ SUBROUTINE axis_fcn(n,x,fvec,iflag)
         end select
      end if
      iflag = -1
-     ! call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+     ! call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
   end if
 
   fvec = rz_end - x
@@ -280,7 +280,7 @@ SUBROUTINE ppiota(rzrzt,iflag)
         end select
      end if
      iflag = -1
-     ! call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+     ! call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
   end if
 
   return
@@ -329,7 +329,7 @@ SUBROUTINE BRpZ_iota( t, x, dx )
   ! dR/dphi = BR / Bphi
   ! dZ/dphi = BZ / Bphi
   !----------------------
-  use globals, only : dp, zero, ounit, myid, ierr, machprec
+  use globals, only : dp, zero, ounit, myid, ierr, machprec, MPI_COMM_FOCUS
   USE MPI
   implicit none
 

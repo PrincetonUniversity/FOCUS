@@ -202,7 +202,7 @@ subroutine AllocData(type)
               endif
            else
               STOP " wrong coil type in rdcoils"
-              call MPI_ABORT(MPI_COMM_WORLD, 1, ierr)
+              call MPI_ABORT(MPI_COMM_FOCUS, 1, ierr)
            endif
 
         enddo !end do icoil;
