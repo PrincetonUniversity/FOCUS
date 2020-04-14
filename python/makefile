@@ -1,5 +1,7 @@
+SOURCES = ../sources
+
 # include the original Makefile
-include Makefile
+include ${SOURCES}/Makefile
 
 #=======================================================================
 #                   define the compiler names
@@ -98,23 +100,24 @@ f90wrap_clean:
 	-rm -rf src.*/ .f2py_f2cmap .libs/ __pycache__/
 	-rm -rf $(LIB_NAME)
 
-$(LIBSRC_WRAP_FPP_FILES): %.fpp: %_m.F90
+$(LIBSRC_WRAP_FPP_FILES): %.fpp: ${SOURCES}/%_m.F90
 	${FPP} ${FPP_F90FLAGS} $<  -o $@
 
-$(LIB_NAME): $(HFILES) focuspy.f90
-	make -f Makefile xfocus CC=gfortran PFLAGS=${CFLAGS} ALLFILES="${ALLFILES} focuspy"
-	${LIBTOOL} $@ $(ROBJS) $(NUMOBJ) focuspy_r.o
+$(LIB_NAME): $(addprefix, ${SOURCES}/, $(HFILES)) focuspy.f90
+	cp focuspy.f90 ${SOURCES}/
+	make -C ${SOURCES} xfocus CC=gfortran PFLAGS=${CFLAGS} ALLFILES="${ALLFILES} focuspy"
+	cd ${SOURCES}; ${LIBTOOL} ../python/$@ $(ROBJS) $(NUMOBJ) focuspy_r.o
 	ranlib $@
 
 
 _${PYTHON_MODN}.so: $(LIB_NAME) ${LIBSRC_WRAP_FPP_FILES} 
 	f90wrap -m ${PYTHON_MODN} ${LIBSRC_WRAP_FPP_FILES} -k ${KIND_MAP} -v
-	f2py-f90wrap --f90exec=${FC} --build-dir . -c -m _${PYTHON_MODN} -L. -l$(PYTHON_MODN) $(HDF5) f90wrap*.f90
+	f2py-f90wrap --f90exec=${FC} --build-dir . -c -m _${PYTHON_MODN} -L. -l$(PYTHON_MODN) -I${SOURCES} $(HDF5) f90wrap*.f90
 
 
 _${PYTHON_MODN}_pkg.so: $(LIB_NAME) ${LIBSRC_WRAP_FPP_FILES}
 	f90wrap -m ${PYTHON_MODN}_pkg ${LIBSRC_WRAP_FPP_FILES} -k ${KIND_MAP} -v -P
-	f2py-f90wrap --f90exec=${FC} --build-dir . -c -m _${PYTHON_MODN}_pkg -L. -l$(PYTHON_MODN) $(HDF5) f90wrap*.f90
+	f2py-f90wrap --f90exec=${FC} --build-dir . -c -m _${PYTHON_MODN}_pkg -L. -l$(PYTHON_MODN) -I${SOURCES} $(HDF5) f90wrap*.f90
 
 test:
 	@cd ../examples/rotating_ellipse; mpirun -np 2 python3 test.py

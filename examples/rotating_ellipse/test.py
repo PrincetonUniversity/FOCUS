@@ -1,5 +1,5 @@
 import sys
-sys.path.append('/Users/czhu/Documents/Code/FOCUS/sources')
+sys.path.append('/Users/czhu/Documents/Code/FOCUS/python')
 from mpi4py import MPI
 from focuspy import FOCUSpy
 
