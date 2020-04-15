@@ -30,8 +30,8 @@ focus.globals.cg_maxiter = maxiter
 test.prepare() 
 x0 = focus.globals.xdof
 x_copy = np.copy(x0)
-if master:
-    print(np.min(x0), np.mean(x0), np.max(x0))
+# if master:
+#     print(np.min(x0), np.mean(x0), np.max(x0))
 
 collections = ('newton-cg', 'cg', 'bfgs', 'l-bfgs-b', 'tnc', 'SLSQP', 'nelder-mead', 'powell') #'dogleg', 'trust-ncg', 'trust-constr', 'trust-krylov', 'trust-exact',
 #collections = ('cg', 'bfgs', 'l-bfgs-b')
