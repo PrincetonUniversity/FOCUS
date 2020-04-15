@@ -14,7 +14,7 @@ SUBROUTINE diagnos
 
   INTEGER           :: icoil, itmp, astat, ierr, NF, idof, i, j, isurf, cs, ip, is, Npc
   LOGICAL           :: lwbnorm, l_raw
-  REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist, ReDot, ImDot
+  REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist, ReDot, ImDot, dum
   REAL, parameter   :: infmax = 1.0E6
   REAL, allocatable :: Atmp(:,:), Btmp(:,:)
 
@@ -57,7 +57,7 @@ SUBROUTINE diagnos
   MaxCurv = zero
   do icoil = 1, Ncoils
      if(coil(icoil)%type .ne. 1) exit ! only for Fourier
-     call CurvDeriv0(icoil,dumb) !Might have to put a dummy return
+     call CurvDeriv0(icoil,dum) !Might have to put a dummy return
      if (coil(icoil)%maxcurv .ge. MaxCurv) then
         MaxCurv = coil(icoil)%maxcurv
         itmp = icoil !record the number

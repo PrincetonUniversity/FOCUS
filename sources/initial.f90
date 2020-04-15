@@ -694,7 +694,7 @@ subroutine check_input
  !tmpw_specw = weight_specw
   tmpw_ccsep = weight_ccsep
   tmpw_curv  = weight_curv
-  tmpw_cssep = weight_cssep
+ !tmpw_cssep = weight_cssep
 
   call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
 

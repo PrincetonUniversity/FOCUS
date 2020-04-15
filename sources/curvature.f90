@@ -16,7 +16,7 @@
 ! Not doing any L-M work
 ! not parallelized, at some point check to see how long takes to run
 subroutine curvature(ideriv)
-  use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, &
+  use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, MPI_COMM_FOCUS, &
        coil, DoF, Ncoils, Nfixgeo, Ndof, curv, t1CU, t2CU, weight_curv, FouCoil
 
   implicit none
@@ -34,7 +34,7 @@ subroutine curvature(ideriv)
   if( ideriv >= 0 ) then
 
      do icoil = 1, Ncoils
-        if( coil(icoil)%itype .ne. 1 ) exit ! only for Fourier
+        if( coil(icoil)%type .ne. 1 ) exit ! only for Fourier
         if( coil(icoil)%Lc     /=  0 ) then ! if geometry is free
            call CurvDeriv0(icoil,curvAdd)
            curv = curv + curvAdd
@@ -54,7 +54,7 @@ subroutine curvature(ideriv)
      idof = 0
      do icoil = 1, Ncoils
 
-        if(coil(icoil)%itype .ne. 1) exit ! only for Fourier
+        if(coil(icoil)%type .ne. 1) exit ! only for Fourier
 
         ND = DoF(icoil)%ND
         NF = FouCoil(icoil)%NF
@@ -84,7 +84,8 @@ end subroutine curvature
 
 subroutine CurvDeriv0(icoil,curvRet)
 
-  use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils, case_curv, curv_alpha, k0 
+  use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils, &
+          case_curv, curv_alpha, k0, MPI_COMM_FOCUS
 
   implicit none
   include "mpif.h"
@@ -137,7 +138,8 @@ end subroutine CurvDeriv0
 
 subroutine CurvDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a coil
 
-        use globals, only: dp, zero, pi2, coil, DoF, myid, ounit, Ncoils, case_curv, curv_alpha, k0
+        use globals, only: dp, zero, pi2, coil, DoF, myid, ounit, Ncoils, &
+                case_curv, curv_alpha, k0, MPI_COMM_FOCUS
   implicit none
   include "mpif.h"
 
