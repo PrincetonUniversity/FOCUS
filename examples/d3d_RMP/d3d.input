@@ -28,6 +28,7 @@
  case_length    =        2              ! 1: quadratic format, converging the target length; 2: exponential format, as short as possible
  weight_bnorm   =        0.000D+00      ! weight for real space Bn errors
  weight_bharm   =        1.000D+00      ! weight for Bmn harmonic errors
+ bharm_jsurf    =        0              ! 0: no weightes;  1: weighted with area square; 2: weighted with area
  weight_tflux   =        0.000D+00      ! weight for toroidal flux error, specified by target_tflux
  target_tflux   =        0.000D+00      ! target for the toroidal flux, 0: the present value
  weight_ttlen   =        0.000D+00      ! weight for coil length error
@@ -49,8 +50,8 @@
 
  CG_maxiter     =        0              ! maximum iterations allowed for using Conjugate Gradient (CG)
  CG_xtol        =        1.000D-08      ! the stopping criteria of finding minimum; if |dχ2/dX| < CG xtol, exit the optimization
- CG_wolfe_c1    =        1.000D-04      ! c1 value in the strong wolfe condition for line search; 
- CG_wolfe_c2    =        0.1            ! c2 value in the strong wolfe condition for line search; if one CG step takes too long, try to increase c2, but remember 0 < c1 < c2 < 1
+ CG_wolfe_c1    =        0.1            ! c1 value in the strong wolfe condition for line search, (0.0, 0.5) 
+ CG_wolfe_c2    =        0.9            ! c2 value in the strong wolfe condition for line search; 0 < c1 < c2 < 1
 
  LM_MAXITER      =           0          ! maximum iterations for levenberg-marquardt (LM) method
  LM_XTOL         =  1.0000E-008         ! relative tolerance desired in approximated solution 

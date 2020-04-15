@@ -62,259 +62,283 @@
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-subroutine fousurf
-  
-  use globals, only : dp, zero, half, pi2, myid, ounit, runit, input_surf, IsQuiet, IsSymmetric, &
-                      Nfou, Nfp, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
-                      Nteta, Nzeta, surf, Npc, discretefactor, Nfp_raw
-  
+subroutine fousurf(filename, index)
+  use globals, only : dp, zero, half, pi2, myid, ounit, runit, IsQuiet, IsSymmetric,  &
+                      Nteta, Nzeta, surf, discretefactor, Nfp, plasma, symmetry,      &
+                      tflux_sign, cosnfp, sinnfp, MPI_COMM_FOCUS
+  use mpi
   implicit none
-  
-  include "mpif.h"
+
+  CHARACTER*100, INTENT(IN) :: filename
+  INTEGER, INTENT(IN) :: index
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-  LOGICAL :: exist
-  INTEGER :: iosta, astat, ierr, ii, jj, imn
+  INTEGER :: iosta, astat, ierr, ii, jj, imn, Nfou, Nbnf, ip
   REAL    :: RR(0:2), ZZ(0:2), szeta, czeta, xx(1:3), xt(1:3), xz(1:3), ds(1:3), &
-             teta, zeta, arg, dd
+             teta, zeta, arg, dd, dz
   
-  !-------------read plasma.boundary---------------------------------------------------------------------  
-  inquire( file=trim(input_surf), exist=exist)  
-  FATAL( surface, .not.exist, plasma.boundary does not exist ) 
+  ! read the header
   if( myid == 0 ) then
-     open(runit, file=trim(input_surf), status='old', action='read')
+     open(runit, file=trim(filename), status='old', action='read')
      read(runit,*) !empty line
-     read(runit,*) Nfou, Nfp, NBnf !read dimensions
+     read(runit,*) surf(index)%Nfou, surf(index)%Nfp, surf(index)%NBnf !read dimensions
   endif
   
   !Broadcast the values
-  IlBCAST( Nfou , 1, 0 )
-  IlBCAST( Nfp  , 1, 0 )
-  IlBCAST( NBnf , 1, 0 )  
-  FATAL( surface, Nfou <= 0, invalid )
-  FATAL( surface, Nfp  <= 0, invalid )
-  FATAL( surface, NBnf <  0, invalid )
+  IlBCAST( surf(index)%Nfou , 1, 0 )
+  IlBCAST( surf(index)%Nfp  , 1, 0 )
+  IlBCAST( surf(index)%NBnf , 1, 0 )  
+  FATAL( rdsurf, surf(index)%Nfou <= 0, invalid )
+  FATAL( rdsurf, surf(index)%Nfp  <= 0, invalid )
+  FATAL( rdsurf, surf(index)%NBnf <  0, invalid )
+  Nfou = surf(index)%Nfou
+  NBnf = surf(index)%NBnf
 
   !allocate arrays
-  SALLOCATE( bim, (1:Nfou), 0 )
-  SALLOCATE( bin, (1:Nfou), 0 )  
-  SALLOCATE( Rbc, (1:Nfou), zero )
-  SALLOCATE( Rbs, (1:Nfou), zero )
-  SALLOCATE( Zbc, (1:Nfou), zero )
-  SALLOCATE( Zbs, (1:Nfou), zero )
+  SALLOCATE( surf(index)%bim, (1:Nfou), 0 )
+  SALLOCATE( surf(index)%bin, (1:Nfou), 0 )  
+  SALLOCATE( surf(index)%Rbc, (1:Nfou), zero )
+  SALLOCATE( surf(index)%Rbs, (1:Nfou), zero )
+  SALLOCATE( surf(index)%Zbc, (1:Nfou), zero )
+  SALLOCATE( surf(index)%Zbs, (1:Nfou), zero )
 
   if( myid == 0 ) then
    read(runit,*) !empty line
    read(runit,*) !empty line
-   do imn = 1, Nfou
-      read(runit,*) bin(imn), bim(imn), Rbc(imn), Rbs(imn), Zbc(imn), Zbs(imn)
+   do imn = 1, surf(index)%Nfou
+      read(runit,*) surf(index)%bin(imn), surf(index)%bim(imn), surf(index)%Rbc(imn), &
+           & surf(index)%Rbs(imn), surf(index)%Zbc(imn), surf(index)%Zbs(imn)
    enddo
   endif  
 
-  IlBCAST( bim(1:Nfou), Nfou, 0 )
-  IlBCAST( bin(1:Nfou), Nfou, 0 )
+  IlBCAST( surf(index)%bim(1:Nfou), surf(index)%Nfou, 0 )
+  IlBCAST( surf(index)%bin(1:Nfou), surf(index)%Nfou, 0 )
  
-  bin(1:Nfou) = bin(1:Nfou) * Nfp  !The full plasma;
+  surf(index)%bin(1:Nfou) = surf(index)%bin(1:Nfou) * surf(index)%Nfp  !The full plasma;
      
-  RlBCAST( Rbc(1:Nfou), Nfou, 0 )
-  RlBCAST( Rbs(1:Nfou), Nfou, 0 )
-  RlBCAST( Zbc(1:Nfou), Nfou, 0 )
-  RlBCAST( Zbs(1:Nfou), Nfou, 0 )
+  RlBCAST( surf(index)%Rbc(1:Nfou), surf(index)%Nfou, 0 )
+  RlBCAST( surf(index)%Rbs(1:Nfou), surf(index)%Nfou, 0 )
+  RlBCAST( surf(index)%Zbc(1:Nfou), surf(index)%Nfou, 0 )
+  RlBCAST( surf(index)%Zbs(1:Nfou), surf(index)%Nfou, 0 )
 
   !read Bnormal ditributions
-  if( NBnf  >   0) then
-     SALLOCATE( Bnim, (1:NBnf), 0    )
-     SALLOCATE( Bnin, (1:NBnf), 0    )
-     SALLOCATE( Bnc , (1:NBnf), zero )
-     SALLOCATE( Bns , (1:NBnf), zero )
+  if( surf(index)%NBnf > 0) then
+     SALLOCATE( surf(index)%Bnim, (1:NBnf), 0    )
+     SALLOCATE( surf(index)%Bnin, (1:NBnf), 0    )
+     SALLOCATE( surf(index)%Bnc , (1:NBnf), zero )
+     SALLOCATE( surf(index)%Bns , (1:NBnf), zero )
 
      if( myid == 0 ) then
         read(runit,*) !empty line
         read(runit,*) !empty line
-        do imn = 1, NBnf 
-           read(runit,*) Bnin(imn), Bnim(imn), Bnc(imn), Bns(imn)
+        do imn = 1, surf(index)%NBnf 
+           read(runit,*) surf(index)%Bnin(imn), surf(index)%Bnim(imn), surf(index)%Bnc(imn), surf(index)%Bns(imn)
         enddo
      endif
 
-     IlBCAST( Bnim(1:NBnf), NBnf, 0 )
-     IlBCAST( Bnin(1:NBnf), NBnf, 0 )
+     IlBCAST( surf(index)%Bnim(1:NBnf), surf(index)%NBnf, 0 )
+     IlBCAST( surf(index)%Bnin(1:NBnf), surf(index)%NBnf, 0 )
 
      !if (IsSymmetric  ==  0)
-     Bnin(1:NBnf) = Bnin(1:NBnf) * Nfp ! Disarde periodicity;
+     surf(index)%Bnin(1:NBnf) = surf(index)%Bnin(1:NBnf) * surf(index)%Nfp ! periodicity;
      ! This should be consistent with bnftran; Before fully constructed the stellarator symmetry,
      ! it's turned off;
      
-     RlBCAST( Bnc(1:NBnf) , NBnf, 0 )
-     RlBCAST( Bns(1:NBnf) , NBnf, 0 )
+     RlBCAST( surf(index)%Bnc(1:NBnf) , surf(index)%NBnf, 0 )
+     RlBCAST( surf(index)%Bns(1:NBnf) , surf(index)%NBnf, 0 )
   endif
 
   if( myid == 0 ) close(runit,iostat=iosta)
   
   IlBCAST( iosta, 1, 0 )
   
-  FATAL( surface, iosta.ne.0, error closing plasma.boundary )
+  FATAL( surface, iosta.ne.0, error closing the surface )
   
   !-------------output for check-------------------------------------------------------------------------
   if( myid == 0 .and. IsQuiet <= 0) then
      write(ounit, *) "-----------Reading surface-----------------------------------"
-     write(ounit, '("surface : Plasma boundary will be discretized in "I6" X "I6" elements.")') Nteta, Nzeta
-     write(ounit, '(8X": Nfou = " I06 " ; Nfp = " I06 " ; NBnf = " I06 " ;" )') Nfou, Nfp, NBnf
+     write(ounit, '("surface : The surface ", A," will be discretized in "I6" X "I6" elements.")') trim(filename), Nteta, Nzeta
+     write(ounit, '(8X": Nfou = " I06 " ; Nfp = " I06 " ; NBnf = " I06 " ;" )') surf(index)%Nfou, surf(index)%Nfp, surf(index)%NBnf
   endif
 
-  if( myid == 0 .and. IsQuiet <= -2) then !very detailed output;
-     write(ounit,'("        : " 10x " : bim ="10i13   )') bim(1:Nfou)
-     write(ounit,'("        : " 10x " : bin ="10i13   )') bin(1:Nfou)
-     write(ounit,'("        : " 10x " : Rbc ="10es13.5)') Rbc(1:Nfou)
-     write(ounit,'("        : " 10x " : Rbs ="10es13.5)') Rbs(1:Nfou)
-     write(ounit,'("        : " 10x " : Zbc ="10es13.5)') Zbc(1:Nfou)
-     write(ounit,'("        : " 10x " : Zbs ="10es13.5)') Zbs(1:Nfou)
+  if( myid == 0 .and. IsQuiet <= -2) then ! very detailed output;
+     write(ounit,'("        : " 10x " : bim ="10i13   )') surf(index)%bim(1:Nfou)
+     write(ounit,'("        : " 10x " : bin ="10i13   )') surf(index)%bin(1:Nfou)
+     write(ounit,'("        : " 10x " : Rbc ="10es13.5)') surf(index)%Rbc(1:Nfou)
+     write(ounit,'("        : " 10x " : Rbs ="10es13.5)') surf(index)%Rbs(1:Nfou)
+     write(ounit,'("        : " 10x " : Zbc ="10es13.5)') surf(index)%Zbc(1:Nfou)
+     write(ounit,'("        : " 10x " : Zbs ="10es13.5)') surf(index)%Zbs(1:Nfou)
      if(Nbnf > 0) then
-        write(ounit,'("        : " 10x " : Bnim ="10i13  )') Bnim(1:NBnf)
-        write(ounit,'("        : " 10x " : Bnin ="10i13  )') Bnin(1:NBnf)
-        write(ounit,'("        : " 10x " : Bnc ="10es13.5)') Bnc (1:NBnf)
-        write(ounit,'("        : " 10x " : Bns ="10es13.5)') Bns (1:NBnf)
+        write(ounit,'("        : " 10x " : Bnim ="10i13  )') surf(index)%Bnim(1:NBnf)
+        write(ounit,'("        : " 10x " : Bnin ="10i13  )') surf(index)%Bnin(1:NBnf)
+        write(ounit,'("        : " 10x " : Bnc ="10es13.5)') surf(index)%Bnc (1:NBnf)
+        write(ounit,'("        : " 10x " : Bns ="10es13.5)') surf(index)%Bns (1:NBnf)
      endif
   endif
 
-  !-------------discretize surface data------------------------------------------------------------------  
-  
-  Nfp_raw = Nfp ! save the raw value of Nfp
-  select case (IsSymmetric)
-  case ( 0 )
-     Nfp = 1                          !reset Nfp to 1;
-     Npc = 1                          !number of coils periodicity 
-  case ( 1 )                          !plasma periodicity enabled;
-     Npc = 1
-  case ( 2 )                          !plasma and coil periodicity enabled;
-     Npc = Nfp
-  end select
-  discretefactor = discretefactor/Nfp
+  surf(index)%Nteta = Nteta 
+  surf(index)%Nzeta = Nzeta
 
-  allocate( surf(1:1) ) ! can allow for myltiple plasma boundaries 
-                        ! if multiple currents are allowed; 14 Apr 16;
+  if (index == plasma) then    
+     select case (IsSymmetric)
+     case ( 0 )
+        Nfp = 1                    ! reset Nfp to 1;
+        symmetry = 0
+     case ( 1 )                    ! plasma and coil periodicity enabled;
+        Nfp = surf(plasma)%Nfp     ! use the raw Nfp
+        symmetry = 0
+     case ( 2 )                    ! stellarator symmetry enforced;
+        Nfp = surf(plasma)%Nfp     ! use the raw Nfp
+        symmetry = 1     
+     end select
+
+     SALLOCATE( cosnfp, (1:Nfp), zero )
+     SALLOCATE( sinnfp, (1:Nfp), zero )  
+     do ip = 1, Nfp
+        cosnfp(ip) = cos((ip-1)*pi2/Nfp)
+        sinnfp(ip) = sin((ip-1)*pi2/Nfp)
+     enddo
+     ! discretefactor = discretefactor/Nfp
+     surf(index)%Nzeta = Nzeta * Nfp * 2**symmetry ! the total number from [0, 2pi]
+     discretefactor = (pi2/surf(plasma)%Nteta) * (pi2/surf(plasma)%Nzeta)
+  endif
   
-  surf(1)%Nteta = Nteta ! not used yet; used for multiple surfaces; 20170307;
-  surf(1)%Nzeta = Nzeta ! not used yet; used for multiple surfaces; 20170307;
+  SALLOCATE( surf(index)%xx, (0:Nteta-1,0:Nzeta-1), zero ) !x coordinates;
+  SALLOCATE( surf(index)%yy, (0:Nteta-1,0:Nzeta-1), zero ) !y coordinates
+  SALLOCATE( surf(index)%zz, (0:Nteta-1,0:Nzeta-1), zero ) !z coordinates
+  SALLOCATE( surf(index)%nx, (0:Nteta-1,0:Nzeta-1), zero ) !unit nx;
+  SALLOCATE( surf(index)%ny, (0:Nteta-1,0:Nzeta-1), zero ) !unit ny;
+  SALLOCATE( surf(index)%nz, (0:Nteta-1,0:Nzeta-1), zero ) !unit nz;
+  SALLOCATE( surf(index)%ds, (0:Nteta-1,0:Nzeta-1), zero ) !jacobian;
+  SALLOCATE( surf(index)%xt, (0:Nteta-1,0:Nzeta-1), zero ) !dx/dtheta;
+  SALLOCATE( surf(index)%yt, (0:Nteta-1,0:Nzeta-1), zero ) !dy/dtheta;
+  SALLOCATE( surf(index)%zt, (0:Nteta-1,0:Nzeta-1), zero ) !dz/dtheta;
+  SALLOCATE( surf(index)%pb, (0:Nteta-1,0:Nzeta-1), zero ) !target Bn;
+  SALLOCATE( surf(index)%xp, (0:Nteta-1,0:Nzeta-1), zero ) !dx/dzeta;
+  SALLOCATE( surf(index)%yp, (0:Nteta-1,0:Nzeta-1), zero ) !dy/dzeta;
+  SALLOCATE( surf(index)%zp, (0:Nteta-1,0:Nzeta-1), zero ) !dz/dzeta;
   
-  SALLOCATE( surf(1)%xx, (0:Nteta-1,0:Nzeta-1), zero ) !x coordinates;
-  SALLOCATE( surf(1)%yy, (0:Nteta-1,0:Nzeta-1), zero ) !y coordinates
-  SALLOCATE( surf(1)%zz, (0:Nteta-1,0:Nzeta-1), zero ) !z coordinates
-  SALLOCATE( surf(1)%nx, (0:Nteta-1,0:Nzeta-1), zero ) !unit nx;
-  SALLOCATE( surf(1)%ny, (0:Nteta-1,0:Nzeta-1), zero ) !unit ny;
-  SALLOCATE( surf(1)%nz, (0:Nteta-1,0:Nzeta-1), zero ) !unit nz;
-  SALLOCATE( surf(1)%ds, (0:Nteta-1,0:Nzeta-1), zero ) !jacobian;
-  SALLOCATE( surf(1)%xt, (0:Nteta-1,0:Nzeta-1), zero ) !dx/dtheta;
-  SALLOCATE( surf(1)%yt, (0:Nteta-1,0:Nzeta-1), zero ) !dy/dtheta;
-  SALLOCATE( surf(1)%zt, (0:Nteta-1,0:Nzeta-1), zero ) !dz/dtheta;
-  SALLOCATE( surf(1)%pb, (0:Nteta-1,0:Nzeta-1), zero ) !target Bn;
-  SALLOCATE( surf(1)%xp, (0:Nteta-1,0:Nzeta-1), zero ) !dx/dzeta;
-  SALLOCATE( surf(1)%yp, (0:Nteta-1,0:Nzeta-1), zero ) !dy/dzeta;
-  SALLOCATE( surf(1)%zp, (0:Nteta-1,0:Nzeta-1), zero ) !dz/dzeta;
-  
-  surf(1)%vol = zero  ! volume enclosed by plasma boundary
+  surf(index)%vol = zero  ! volume enclosed by plasma boundary
+  surf(index)%area = zero ! surface area
  
-! The center point value was used to discretize grid;
-  do ii = 0, Nteta-1; teta = ( ii + half ) * pi2 / Nteta
-   do jj = 0, Nzeta-1; zeta = ( jj + half ) * pi2 / ( Nzeta*Nfp )
-    
-    RR(0:2) = zero ; ZZ(0:2) = zero
-    
-    do imn = 1, Nfou ; arg = bim(imn) * teta - bin(imn) * zeta
-     
-     RR(0) =  RR(0) +     Rbc(imn) * cos(arg) + Rbs(imn) * sin(arg)
-     ZZ(0) =  ZZ(0) +     Zbc(imn) * cos(arg) + Zbs(imn) * sin(arg)
-     
-     RR(1) =  RR(1) + ( - Rbc(imn) * sin(arg) + Rbs(imn) * cos(arg) ) * bim(imn)
-     ZZ(1) =  ZZ(1) + ( - Zbc(imn) * sin(arg) + Zbs(imn) * cos(arg) ) * bim(imn)
-     
-     RR(2) =  RR(2) - ( - Rbc(imn) * sin(arg) + Rbs(imn) * cos(arg) ) * bin(imn)
-     ZZ(2) =  ZZ(2) - ( - Zbc(imn) * sin(arg) + Zbs(imn) * cos(arg) ) * bin(imn)
-     
-    enddo ! end of do imn; 30 Oct 15;
-    
-    szeta = sin(zeta)
-    czeta = cos(zeta)
-    
-    xx(1:3) = (/   RR(0) * czeta,   RR(0) * szeta, ZZ(0) /)
-    xt(1:3) = (/   RR(1) * czeta,   RR(1) * szeta, ZZ(1) /)
-    xz(1:3) = (/   RR(2) * czeta,   RR(2) * szeta, ZZ(2) /) + (/ - RR(0) * szeta,   RR(0) * czeta, zero  /)
-
-    ds(1:3) = -(/ xt(2) * xz(3) - xt(3) * xz(2), & ! minus sign for theta counterclockwise direction;
-                  xt(3) * xz(1) - xt(1) * xz(3), &
-                  xt(1) * xz(2) - xt(2) * xz(1) /)
-
-    dd = sqrt( sum( ds(1:3)*ds(1:3) ) )
-
-    ! x, y, z coordinates for the surface;
-    surf(1)%xx(ii,jj) = xx(1)
-    surf(1)%yy(ii,jj) = xx(2)
-    surf(1)%zz(ii,jj) = xx(3)
-
-    ! dx/dt, dy/dt, dz/dt (dt for d theta)
-    surf(1)%xt(ii,jj) = xt(1)
-    surf(1)%yt(ii,jj) = xt(2)
-    surf(1)%zt(ii,jj) = xt(3)
-
-    ! dx/dp, dy/dp, dz/dp (dp for d zeta(phi))
-    surf(1)%xp(ii,jj) = xz(1)
-    surf(1)%yp(ii,jj) = xz(2)
-    surf(1)%zp(ii,jj) = xz(3)
-
-    ! surface normal vectors and ds for the jacobian;
-    surf(1)%nx(ii,jj) = ds(1) / dd
-    surf(1)%ny(ii,jj) = ds(2) / dd
-    surf(1)%nz(ii,jj) = ds(3) / dd
-    surf(1)%ds(ii,jj) =         dd
-    
-    ! using Gauss theorom; V = \int_S x \cdot n dt dz
-    surf(1)%vol = surf(1)%vol + surf(1)%xx(ii,jj) * ds(1)
-
-   enddo ! end of do jj; 14 Apr 16;
+  ! The center point value was used to discretize grid;
+  do ii = 0, Nteta-1
+     teta = ( ii + half ) * pi2 / surf(index)%Nteta
+     do jj = 0, Nzeta-1
+        zeta = ( jj + half ) * pi2 / surf(index)%Nzeta
+        RR(0:2) = zero ; ZZ(0:2) = zero
+        do imn = 1, surf(index)%Nfou
+           arg = surf(index)%bim(imn) * teta - surf(index)%bin(imn) * zeta
+           RR(0) =  RR(0) +     surf(index)%Rbc(imn) * cos(arg) + surf(index)%Rbs(imn) * sin(arg)
+           ZZ(0) =  ZZ(0) +     surf(index)%Zbc(imn) * cos(arg) + surf(index)%Zbs(imn) * sin(arg)
+           RR(1) =  RR(1) + ( - surf(index)%Rbc(imn) * sin(arg) + surf(index)%Rbs(imn) * cos(arg) ) * surf(index)%bim(imn)
+           ZZ(1) =  ZZ(1) + ( - surf(index)%Zbc(imn) * sin(arg) + surf(index)%Zbs(imn) * cos(arg) ) * surf(index)%bim(imn)
+           RR(2) =  RR(2) - ( - surf(index)%Rbc(imn) * sin(arg) + surf(index)%Rbs(imn) * cos(arg) ) * surf(index)%bin(imn)
+           ZZ(2) =  ZZ(2) - ( - surf(index)%Zbc(imn) * sin(arg) + surf(index)%Zbs(imn) * cos(arg) ) * surf(index)%bin(imn)
+        enddo ! end of do imn; 30 Oct 15;
+        szeta = sin(zeta)
+        czeta = cos(zeta)
+        xx(1:3) = (/   RR(0) * czeta,   RR(0) * szeta, ZZ(0) /)
+        xt(1:3) = (/   RR(1) * czeta,   RR(1) * szeta, ZZ(1) /)
+        xz(1:3) = (/   RR(2) * czeta,   RR(2) * szeta, ZZ(2) /) &
+                + (/ - RR(0) * szeta,   RR(0) * czeta, zero  /)
+        ! minus sign for theta counterclockwise direction;
+        ds(1:3) = -(/ xt(2) * xz(3) - xt(3) * xz(2), & 
+                      xt(3) * xz(1) - xt(1) * xz(3), &
+                      xt(1) * xz(2) - xt(2) * xz(1) /)
+        dd = sqrt( sum( ds(1:3)*ds(1:3) ) )
+        ! x, y, z coordinates for the surface;
+        surf(index)%xx(ii,jj) = xx(1)
+        surf(index)%yy(ii,jj) = xx(2)
+        surf(index)%zz(ii,jj) = xx(3)
+        ! dx/dt, dy/dt, dz/dt (dt for d theta)
+        surf(index)%xt(ii,jj) = xt(1)
+        surf(index)%yt(ii,jj) = xt(2)
+        surf(index)%zt(ii,jj) = xt(3)
+        ! dx/dp, dy/dp, dz/dp (dp for d zeta(phi))
+        surf(index)%xp(ii,jj) = xz(1)
+        surf(index)%yp(ii,jj) = xz(2)
+        surf(index)%zp(ii,jj) = xz(3)
+        ! surface normal vectors and ds for the jacobian;
+        surf(index)%nx(ii,jj) = ds(1) / dd
+        surf(index)%ny(ii,jj) = ds(2) / dd
+        surf(index)%nz(ii,jj) = ds(3) / dd
+        surf(index)%ds(ii,jj) =         dd
+        ! using Gauss theorom; V = \int_S x \cdot n dt dz
+        surf(index)%vol = surf(index)%vol + surf(index)%xx(ii,jj) * ds(1) &
+             & + surf(index)%yy(ii,jj) * ds(2) + surf(index)%zz(ii,jj) * ds(3)
+        ! surface area 
+        surf(index)%area = surf(index)%area + surf(index)%ds(ii,jj)
+     enddo ! end of do jj; 14 Apr 16;
   enddo ! end of do ii; 14 Apr 16;
 
-  surf(1)%vol = abs(surf(1)%vol) * discretefactor
-  if( myid == 0 .and. IsQuiet <= 0) write(ounit, '(8X": Enclosed volume ="ES12.5" m^3 ;" )') surf(1)%vol
+  ! print volume and area
+  surf(index)%vol  = abs(surf(index)%vol)/3 * (pi2/surf(index)%Nteta) * (pi2/surf(index)%Nzeta)
+  surf(index)%area = abs(surf(index)%area)  * (pi2/surf(index)%Nteta) * (pi2/surf(index)%Nzeta)
+  if (index == plasma) then
+     surf(index)%vol  = surf(index)%vol  * Nfp * 2**symmetry
+     surf(index)%area = surf(index)%area * Nfp * 2**symmetry
+  endif    
+     
+  if( myid == 0 .and. IsQuiet <= 0) then
+     write(ounit, '(8X": Enclosed total surface volume ="ES12.5" m^3 ; area ="ES12.5" m^2." )') &
+          surf(index)%vol, surf(index)%area
+  endif
+
+  ! check theta direction for the plasma surface and determine the toroidal flux sign
+  if (index == plasma) then
+     dz = surf(plasma)%zz(1,0) - surf(plasma)%zz(0,0)
+     if (dz > 0) then
+        ! counter-clockwise
+        if( myid == 0) write(ounit, '(8X": The theta angle used is counter-clockwise.")')
+        tflux_sign = -1
+     else
+        ! clockwise
+        if( myid == 0) write(ounit, '(8X": The theta angle used is clockwise.")')
+        tflux_sign =  1 
+     endif
+  endif
 
   !calculate target Bn with input harmonics; 05 Jan 17;
-  if(NBnf >  0) then
-
-     do jj = 0, Nzeta-1 ; zeta = ( jj + half ) * pi2 / (Nzeta*Nfp)
-        do ii = 0, Nteta-1 ; teta = ( ii + half ) * pi2 / Nteta
-           do imn = 1, NBnf
-              arg = Bnim(imn) * teta - Bnin(imn) * zeta
-              surf(1)%pb(ii,jj) = surf(1)%pb(ii,jj) + Bnc(imn)*cos(arg) + Bns(imn)*sin(arg)
+  if(surf(index)%NBnf >  0) then
+     do jj = 0, Nzeta-1
+        zeta = ( jj + half ) * pi2 / surf(index)%Nzeta
+        do ii = 0, Nteta-1
+           teta = ( ii + half ) * pi2 / surf(index)%Nteta
+           do imn = 1, surf(index)%NBnf
+              arg = surf(index)%Bnim(imn) * teta - surf(index)%Bnin(imn) * zeta
+              surf(index)%pb(ii,jj) = surf(index)%pb(ii,jj) + surf(index)%Bnc(imn)*cos(arg) + surf(index)%Bns(imn)*sin(arg)
            enddo
         enddo
      enddo
-
   endif
-  
-  
+
   return
   
 end subroutine fousurf
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-subroutine surfcoord( theta, zeta, r, z)
-  use globals, only: dp, zero, Nfou, bim, bin, Rbc, Rbs, Zbc, Zbs
+subroutine surfcoord( index, theta, zeta, r, z)
+  use globals, only: dp, zero, surf
+  use mpi
   implicit none
-  include "mpif.h"
 
+  INTEGER, INTENT(in) :: index
   REAL, INTENT(in ) :: theta, zeta
   REAL, INTENT(out) :: r, z
 
   INTEGER           :: imn
   REAL              :: arg
   !-------------calculate r, z coodinates for theta, zeta------------------------------------------------  
-  if( .not. allocated(bim) ) STOP  "please allocate surface data first!"
+  if( .not. allocated(surf(index)%bim) ) STOP  "please allocate surface data first!"
 
   r = zero; z = zero  
-  do imn = 1, Nfou
-     arg = bim(imn) * theta - bin(imn) * zeta
-     R =  R + Rbc(imn) * cos(arg) + Rbs(imn) * sin(arg)
-     Z =  Z + Zbc(imn) * cos(arg) + Zbs(imn) * sin(arg)
+  do imn = 1, surf(index)%Nfou
+     arg = surf(index)%bim(imn) * theta - surf(index)%bin(imn) * zeta
+     R =  R + surf(index)%Rbc(imn) * cos(arg) + surf(index)%Rbs(imn) * sin(arg)
+     Z =  Z + surf(index)%Zbc(imn) * cos(arg) + surf(index)%Zbs(imn) * sin(arg)
   enddo
 
   return

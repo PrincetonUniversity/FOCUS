@@ -1,6 +1,6 @@
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-subroutine AllocData(itype)
+subroutine AllocData(type)
 !------------------------------------------------------------------------------------------------------ 
 ! DATE:  04/05/2017
 ! Allocate data before using them, especially for those used several times;
@@ -11,21 +11,21 @@ subroutine AllocData(itype)
   implicit none
   include "mpif.h"
 
-  INTEGER, intent(in) :: itype
+  INTEGER, intent(in) :: type
 
-  INTEGER             :: icoil, idof, ND, NF, icur, imag
-  REAL                :: xtmp, mtmp
+  INTEGER             :: icoil, idof, ND, NF, icur, imag, isurf, NS, mm, iseg
+  REAL                :: xtmp, mtmp, tt
+
+  isurf = plasma
 
   !-------------------------------------------------------------------------------------------
-  if (itype == -1) then ! dof related data;
-
+  if (type == -1) then ! dof related data;
      Cdof = 0; Ndof = 0; Tdof = 0
-
-     do icoil = 1, Ncoils*Npc
-        
-        select case (coil(icoil)%itype)       
+     do icoil = 1, Ncoils 
+        select case (coil(icoil)%type)       
         case(1)
            ! get number of DoF for each coil and allocate arrays;
+           NS = coil(icoil)%NS
            NF = FouCoil(icoil)%NF
            ND = (6*NF + 3) ! total variables for geometry
            DoF(icoil)%ND = coil(icoil)%Lc * ND !# of DoF for icoil;
@@ -33,6 +33,53 @@ subroutine AllocData(itype)
            SALLOCATE(DoF(icoil)%xof , (0:coil(icoil)%NS-1, 1:ND), zero)
            SALLOCATE(DoF(icoil)%yof , (0:coil(icoil)%NS-1, 1:ND), zero)
            SALLOCATE(DoF(icoil)%zof , (0:coil(icoil)%NS-1, 1:ND), zero)
+           ! allocate and calculate trignometric functions for re-use           
+           SALLOCATE( FouCoil(icoil)%cmt, (0:NS, 0:NF), zero )
+           SALLOCATE( FouCoil(icoil)%smt, (0:NS, 0:NF), zero )           
+           do iseg = 0, NS
+              tt = iseg * pi2 / NS
+              do mm = 0, NF
+                 FouCoil(icoil)%cmt(iseg,mm) = cos( mm * tt )
+                 FouCoil(icoil)%smt(iseg,mm) = sin( mm * tt )
+              enddo
+           enddo
+
+!!$           ip = (icoil-1)/Ncoils  ! the integer is the period number;
+!!$           DoF(icoil)%xof(0:NS-1,      1:  NF+1) =  cosip(ip) * cmt(0:NS-1, 0:NF)  !x/xc
+!!$           DoF(icoil)%xof(0:NS-1,   NF+2:2*NF+1) =  cosip(ip) * smt(0:NS-1, 1:NF)  !x/xs
+!!$           DoF(icoil)%xof(0:NS-1, 2*NF+2:3*NF+2) = -sinip(ip) * cmt(0:NS-1, 0:NF)  !x/yc ; valid for ip>0 ;
+!!$           DoF(icoil)%xof(0:NS-1, 3*NF+3:4*NF+2) = -sinip(ip) * smt(0:NS-1, 1:NF)  !x/ys ; valid for ip>0 ;
+!!$           DoF(icoil)%yof(0:NS-1,      1:  NF+1) =  sinip(ip) * cmt(0:NS-1, 0:NF)  !y/xc ; valid for ip>0 ;
+!!$           DoF(icoil)%yof(0:NS-1,   NF+2:2*NF+1) =  sinip(ip) * smt(0:NS-1, 1:NF)  !y/xs ; valid for ip>0 ;
+!!$           DoF(icoil)%yof(0:NS-1, 2*NF+2:3*NF+2) =  cosip(ip) * cmt(0:NS-1, 0:NF)  !y/yc
+!!$           DoF(icoil)%yof(0:NS-1, 3*NF+3:4*NF+2) =  cosip(ip) * smt(0:NS-1, 1:NF)  !y/ys
+!!$           DoF(icoil)%zof(0:NS-1, 4*NF+3:5*NF+3) =              cmt(0:NS-1, 0:NF)  !z/zc
+!!$           DoF(icoil)%zof(0:NS-1, 5*NF+4:6*NF+3) =              smt(0:NS-1, 1:NF)  !z/zs
+
+           ! the derivatives of dx/dv 
+           DoF(icoil)%xof(0:NS-1,      1:  NF+1) = FouCoil(icoil)%cmt(0:NS-1, 0:NF)  !x/xc
+           DoF(icoil)%xof(0:NS-1,   NF+2:2*NF+1) = FouCoil(icoil)%smt(0:NS-1, 1:NF)  !x/xs
+           !DoF(icoil)%xof(0:NS-1, 2*NF+2:3*NF+2) = FouCoil(icoil)%cmt(0:NS-1, 0:NF)  !x/yc 
+           !DoF(icoil)%xof(0:NS-1, 3*NF+3:4*NF+2) = FouCoil(icoil)%smt(0:NS-1, 1:NF)  !x/ys 
+           !DoF(icoil)%yof(0:NS-1,      1:  NF+1) = FouCoil(icoil)%cmt(0:NS-1, 0:NF)  !y/xc 
+           !DoF(icoil)%yof(0:NS-1,   NF+2:2*NF+1) = FouCoil(icoil)%smt(0:NS-1, 1:NF)  !y/xs 
+           DoF(icoil)%yof(0:NS-1, 2*NF+2:3*NF+2) = FouCoil(icoil)%cmt(0:NS-1, 0:NF)  !y/yc
+           DoF(icoil)%yof(0:NS-1, 3*NF+3:4*NF+2) = FouCoil(icoil)%smt(0:NS-1, 1:NF)  !y/ys
+           DoF(icoil)%zof(0:NS-1, 4*NF+3:5*NF+3) = FouCoil(icoil)%cmt(0:NS-1, 0:NF)  !z/zc
+           DoF(icoil)%zof(0:NS-1, 5*NF+4:6*NF+3) = FouCoil(icoil)%smt(0:NS-1, 1:NF)  !z/zs
+           ! allocate xyz data
+           SALLOCATE( coil(icoil)%xx, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%yy, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%zz, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%xt, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%yt, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%zt, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%xa, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%ya, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%za, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%dl, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%dd, (0:coil(icoil)%NS), zero )
+           coil(icoil)%dd = pi2 / NS  ! discretizing factor;
         case(2)
 #ifdef dposition
            DoF(icoil)%ND = coil(icoil)%Lc * 5 ! number of DoF for permanent magnet
@@ -77,17 +124,17 @@ subroutine AllocData(itype)
         Inorm = zero ; Mnorm = zero
         icur = 0 ; imag = 0 ! icur for coil current count, imag for dipole count
         do icoil = 1, Ncoils
-           if(coil(icoil)%itype == 1 .or. coil(icoil)%itype == 3 ) then  
+           if(coil(icoil)%type == 1 .or. coil(icoil)%type == 3 ) then  
               ! Fourier representation or central currents
               Inorm = Inorm + coil(icoil)%I**2
               icur = icur + 1
-           else if (coil(icoil)%itype == 2) then
+           else if (coil(icoil)%type == 2) then
               ! permanent dipole
               Mnorm = Mnorm + coil(icoil)%I**2
               imag = imag + 1
            endif
         enddo
-        Gnorm = (surf(1)%vol/(pi*pi2))**(one/three)  ! Gnorm is a hybrid of major and minor radius
+        Gnorm = (surf(plasma)%vol/(pi*pi2))**(one/three)  ! Gnorm is a hybrid of major and minor radius
         Gnorm = Gnorm * weight_gnorm 
         
         icur = max(1, icur) ; imag = max(1, imag)    ! avoid dividing zero
@@ -109,7 +156,7 @@ subroutine AllocData(itype)
         idof = 0
         do icoil = 1, Ncoils
 
-           if(coil(icoil)%itype == 1) then  ! Fourier representation
+           if(coil(icoil)%type == 1) then  ! Fourier representation
               if(coil(icoil)%Ic /= 0) then
                  dofnorm(idof+1) = Inorm
                  idof = idof + 1
@@ -120,7 +167,7 @@ subroutine AllocData(itype)
                  dofnorm(idof+1:idof+ND) = Gnorm
                  idof = idof + ND
               endif
-           else if (coil(icoil)%itype == 2) then  ! permanent magnets
+           else if (coil(icoil)%type == 2) then  ! permanent magnets
               if(coil(icoil)%Ic /= 0) then
                  dofnorm(idof+1) = Mnorm
                  idof = idof + 1
@@ -139,7 +186,7 @@ subroutine AllocData(itype)
                  idof = idof + 2
 #endif
               endif
-           else if (coil(icoil)%itype == 3) then  ! backgroud toroidal/vertical field
+           else if (coil(icoil)%type == 3) then  ! backgroud toroidal/vertical field
               if(coil(icoil)%Ic /= 0) then
                  dofnorm(idof+1) = Inorm
                  idof = idof + 1
@@ -155,7 +202,7 @@ subroutine AllocData(itype)
               endif
            else
               STOP " wrong coil type in rdcoils"
-              call MPI_ABORT(MPI_COMM_WORLD, 1, ierr)
+              call MPI_ABORT(MPI_COMM_FOCUS, 1, ierr)
            endif
 
         enddo !end do icoil;
@@ -166,15 +213,15 @@ subroutine AllocData(itype)
   endif
 
   !--------------------------------------------------------------------------------------------- 
-  if (itype == 0 .or. itype == 1) then  ! 0-order cost functions related arrays;
+  if (type == 0 .or. type == 1) then  ! 0-order cost functions related arrays;
 
      ! Bnorm and Bharm needed;
      if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec .or. IsQuiet <= -2) then
         SALLOCATE(         bn, (0:Nteta-1,0:Nzeta-1), zero ) ! Bn from coils;        
-        SALLOCATE( surf(1)%bn, (0:Nteta-1,0:Nzeta-1), zero ) ! total Bn;
-        SALLOCATE( surf(1)%Bx, (0:Nteta-1,0:Nzeta-1), zero ) ! Bx on the surface;
-        SALLOCATE( surf(1)%By, (0:Nteta-1,0:Nzeta-1), zero ) ! By on the surface;
-        SALLOCATE( surf(1)%Bz, (0:Nteta-1,0:Nzeta-1), zero ) ! Bz on the surface;
+        SALLOCATE( surf(isurf)%bn, (0:Nteta-1,0:Nzeta-1), zero ) ! total Bn;
+        SALLOCATE( surf(isurf)%Bx, (0:Nteta-1,0:Nzeta-1), zero ) ! Bx on the surface;
+        SALLOCATE( surf(isurf)%By, (0:Nteta-1,0:Nzeta-1), zero ) ! By on the surface;
+        SALLOCATE( surf(isurf)%Bz, (0:Nteta-1,0:Nzeta-1), zero ) ! Bz on the surface;
         SALLOCATE(         Bm, (0:Nteta-1,0:Nzeta-1), zero ) ! |B| on the surface;       
         SALLOCATE( dBx, (0:Cdof,0:Cdof), zero ) ! d^2Bx/(dx1,dx2) on each coil; Cdof is the max coil dof
         SALLOCATE( dBy, (0:Cdof,0:Cdof), zero ) ! d^2By/(dx1,dx2) on each coil;
@@ -193,7 +240,7 @@ subroutine AllocData(itype)
   endif
 
   !---------------------------------------------------------------------------------------------
-  if (itype == 1) then ! 1st-order cost functions related arrays;
+  if (type == 1) then ! 1st-order cost functions related arrays;
      
      FATAL( AllocData, Ndof < 1, INVALID Ndof value )
      SALLOCATE( t1E, (1:Ndof), zero )

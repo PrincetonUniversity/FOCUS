@@ -33,11 +33,11 @@
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-PROGRAM focus
+subroutine focus()
 
   use globals, only: dp, ncpu, myid, ounit, ierr, astat, eunit, case_surface, case_coils, case_optimize, &
        case_postproc, xdof, time_initialize, time_optimize, time_postproc, &
-       version, MPI_COMM_FOCUS
+       version, MPI_COMM_FOCUS, pi, machprec, sqrtmachprec, vsmall, small, ten, thousand
   use mpi  !to enable gfortran mpi_wtime bugs; 07/20/2017
   implicit none
 
@@ -48,7 +48,11 @@ PROGRAM focus
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  call initial
+  !call MPI_COMM_RANK( MPI_COMM_FOCUS, myid, ierr )
+  !call MPI_COMM_SIZE( MPI_COMM_FOCUS, ncpu, ierr )
+
+  if(myid == 0) write(ounit, *) "---------------------  FOCUS ", version, "------------------------------"
+  if(myid == 0) write(ounit,'("focus   : Begin execution with ncpu =",i5)') ncpu
 
   tstart =  MPI_WTIME()
 
@@ -121,7 +125,6 @@ PROGRAM focus
   end select
 
   call saving ! save all the outputs
-
   call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
 
   tfinish = MPI_Wtime()
@@ -142,8 +145,29 @@ PROGRAM focus
 
   if(myid == 0) write(ounit, *) "-------------------------------------------------------------"
 
-  call MPI_FINALIZE( ierr )
-  
-END PROGRAM focus
+  return 
+
+end subroutine focus
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+subroutine mute(action)
+  use globals, only: ounit
+  implicit none 
+
+  INTEGER,intent(in) :: action
+  INTEGER, parameter :: iopen = 1, iclose = 0
+  INTEGER            :: ios
+  CHARACTER(LEN=*), parameter  :: tmp_out = 'tmp.focus_output' 
+
+  ! open a tmp file for screen output
+  if (action == iopen) then
+    ounit = 37 ! something not used
+    open(ounit, file=tmp_out, status="unknown", action="write", iostat=ios) ! create a scratch file?
+    if (ios.ne.0) print *, "something wrong with open a tmp file in focuspy.mute. IOSTAT=", ios 
+  else
+    close(ounit)
+    ounit = 6 ! recover to screen output
+  endif
+  return
+end subroutine mute

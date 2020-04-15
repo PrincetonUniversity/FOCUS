@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='v0.7.11' ! version number
+  CHARACTER(10), parameter :: version='v0.12.00' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -66,13 +66,13 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=100)   :: ext       ! extention
-  CHARACTER(LEN=100)   :: inputfile ! input namelist
-  CHARACTER(LEN=100)   :: hdf5file  ! hdf5 file
-  CHARACTER(LEN=100)   :: out_coils ! output ext.coils file
-  CHARACTER(LEN=100)   :: out_focus ! output ext.focus file
-  CHARACTER(LEN=100)   :: out_harm  ! output harmonics file
-  CHARACTER(LEN=100)   :: out_plasma  ! updated plasma boundary
+  CHARACTER(100)   :: ext       ! extention
+  CHARACTER(100)   :: inputfile ! input namelist
+  CHARACTER(100)   :: hdf5file  ! hdf5 file
+  CHARACTER(100)   :: out_coils ! output ext.coils file
+  CHARACTER(100)   :: out_focus ! output ext.focus file
+  CHARACTER(100)   :: out_harm  ! output harmonics file
+  CHARACTER(100)   :: out_plasma  ! updated plasma boundary
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
@@ -104,13 +104,14 @@ module globals
   REAL                 :: curv_alpha     =   2
   REAL                 :: k0             =   0.000D+00
   REAL                 :: weight_bnorm   =   1.000D+00
+  INTEGER              :: bharm_jsurf    =   0
   REAL                 :: weight_bharm   =   0.000D+00
   REAL                 :: weight_tflux   =   0.000D+00
   REAL                 :: target_tflux   =   0.000D+00
   REAL                 :: weight_ttlen   =   0.000D+00
   REAL                 :: target_length  =   0.000D+00
   REAL                 :: weight_cssep   =   0.000D+00
-  REAL                 :: cssep_factor   =   1.000D+00 
+  REAL                 :: cssep_factor   =   4.000D+00 
   REAL                 :: weight_specw   =   0.000D+00
   REAL                 :: weight_ccsep   =   0.000D+00
   REAL                 :: weight_inorm   =   1.000D+00
@@ -118,7 +119,7 @@ module globals
   REAL                 :: weight_mnorm   =   1.000D+00
   REAL                 :: weight_curv    =   0.000D+00
 
-  INTEGER              :: case_optimize  =   1
+  INTEGER              :: case_optimize  =   0
   REAL                 :: exit_tol       =   1.000D-04
   INTEGER              :: DF_maxiter     =   0
   REAL                 :: DF_xtol        =   1.000D-08     
@@ -127,8 +128,8 @@ module globals
  
   INTEGER              :: CG_maxiter     =   0
   REAL                 :: CG_xtol        =   1.000D-08
-  REAL                 :: CG_wolfe_c1    =   1.000D-04
-  REAL                 :: CG_wolfe_c2    =   0.1
+  REAL                 :: CG_wolfe_c1    =   0.1
+  REAL                 :: CG_wolfe_c2    =   0.9
 
   INTEGER              :: LM_maxiter     =   0
   REAL                 :: LM_xtol        =   1.000D-08
@@ -160,13 +161,15 @@ module globals
   INTEGER              :: pp_maxiter     =  1000
   REAL                 :: pp_xtol        =  1.000D-06
 
-  CHARACTER(LEN=100)   :: input_surf     = 'plasma.boundary'  ! surface file
-  CHARACTER(LEN=100)   :: input_coils    = 'none'             ! input file for coils
-  CHARACTER(LEN=100)   :: input_harm     = 'target.harmonics' ! input target harmonics file
+  CHARACTER(100)   :: input_surf     = 'plasma.boundary'  ! surface file
+  CHARACTER(100)   :: input_coils    = 'none'             ! input file for coils
+  CHARACTER(100)   :: input_harm     = 'target.harmonics' ! input target harmonics file
+  CHARACTER(100)   :: limiter_surf   = 'none'             ! limiter surface
                                                          
   namelist / focusin /  IsQuiet        , &
                         IsSymmetric    , &
-                        input_surf     , & 
+                        input_surf     , &
+                        limiter_surf   , &
                         input_harm     , &
                         input_coils    , & 
                         case_surface   , &
@@ -191,6 +194,7 @@ module globals
                         curv_alpha     , &
                         k0             , &
                         weight_bnorm   , &
+                        bharm_jsurf    , &
                         weight_bharm   , &
                         weight_tflux   , &
                         target_tflux   , &
@@ -246,33 +250,35 @@ module globals
 !latex  \subsection{MPI stuffs}
   INTEGER, PARAMETER   :: master=0
   INTEGER              :: myid, ncpu, myworkid, color, masterid, nmaster, nworker
-  INTEGER              :: MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS 
+  INTEGER              :: MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS, MPI_COMM_FOCUS
   REAL                 :: machprec, vsmall, small, sqrtmachprec
-  CHARACTER            :: nodelabel*3
+  CHARACTER(3)         :: nodelabel
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 !latex \subsection{surface and coils data}
   type toroidalsurface
-     INTEGER              :: Nteta, Nzeta
+     INTEGER              :: Nteta, Nzeta, Nfou=0, Nfp=0, NBnf=0
+     REAL   , allocatable :: Rbc(:), Zbs(:), Rbs(:), Zbc(:), Bnc(:), Bns(:)
      REAL   , allocatable :: xx(:,:), yy(:,:), zz(:,:), nx(:,:), ny(:,:), nz(:,:), &
                              xt(:,:), yt(:,:), zt(:,:), xp(:,:), yp(:,:), zp(:,:), &
                              ds(:,:), bn(:,:), pb(:,:), &
                              Bx(:,:), By(:,:), Bz(:,:)
-     REAL                 :: vol
+     INTEGER, allocatable :: bim(:), bin(:), Bnim(:), Bnin(:)
+     REAL                 :: vol, area
   end type toroidalsurface
 
   type arbitrarycoil
-     INTEGER              :: NS, Ic=0, Lc=0, itype
-     REAL                 :: I=zero,  L=zero, Lo, maxcurv, ox, oy, oz, mt, mp, Bt, Bz!, k0
+     INTEGER              :: NS, Ic=0, Lc=0, type=0, symm=0
+     REAL                 :: I=zero,  L=zero, Lo, maxcurv, ox, oy, oz, mt, mp, Bt, Bz
      REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), &
                              dl(:), dd(:)
-     character(LEN=10)    :: name
+     character(10)        :: name
   end type arbitrarycoil
 
   type FourierCoil
      INTEGER              :: NF
-     REAL   , allocatable :: xc(:), xs(:), yc(:), ys(:), zc(:), zs(:)
+     REAL   , allocatable :: xc(:), xs(:), yc(:), ys(:), zc(:), zs(:), cmt(:,:), smt(:,:)
   end type FourierCoil
 
   type DegreeOfFreedom
@@ -285,9 +291,9 @@ module globals
   type(FourierCoil)    , allocatable :: FouCoil(:)
   type(DegreeOfFreedom), allocatable :: DoF(:)
 
-  INTEGER              :: Nfou=0, Nfp=0, NBnf=0, Npc = 1, Nfp_raw = 1
-  INTEGER, allocatable :: bim(:), bin(:), Bnim(:), Bnin(:)
-  REAL   , allocatable :: Rbc(:), Zbs(:), Rbs(:), Zbc(:), Bnc(:), Bns(:), cosip(:), sinip(:)
+  INTEGER              :: Nfp = 1, symmetry = 0
+  INTEGER              :: plasma = 1, limiter = 1
+  REAL   , allocatable :: cosnfp(:), sinnfp(:)
     
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -317,6 +323,7 @@ module globals
   REAL   , allocatable :: t1H(:), t2H(:,:), Bmnc(:),Bmns(:), wBmn(:), tBmnc(:), tBmns(:), &
                           carg(:,:), sarg(:,:), iBmnc(:), iBmns(:)
   ! Tflux error;
+  INTEGER              :: tflux_sign = -1 ! default theta : counter-clockwise
   REAL                 :: tflux, psi_avg
   REAL   , allocatable :: t1F(:), t2F(:,:)
   ! Length constraint

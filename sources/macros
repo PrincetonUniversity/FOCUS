@@ -4,19 +4,20 @@
 
 m4_changequote({,})m4_dnl
 m4_changecom(!)m4_dnl
-!m4_define(INTEGER,integer)m4_dnl
+m4_define(INTEGER,integer)m4_dnl
 !m4_define(REAL,real)m4_dnl
 !m4_define(CHARACTER,character)m4_dnl
 m4_define(REAL,real(dp))m4_dnl
 !m4_define(REAL,double precision)m4_dnl
 m4_define(SALLOCATE,{ ! macro expansion of sallocate = set allocate;
 
-#ifdef DEBUG
    if( allocated( $1 ) ) then
+    deallocate( $1 )
+#ifdef DEBUG
     write(0,'("macros  : 0123456789 : $1 already allocated ;")') 
     stop      'macros  : 0123456789 : $1 already allocated ;'
-   endif
 #endif
+   endif
 
    allocate( $1$2, stat=astat )
 
@@ -56,7 +57,7 @@ m4_define(FATAL,
    if( $2 ) then
      write(0, '("-------------- ERROR ------------------------")')
      write(0,'("$1 :      fatal : myid=",i3," ; $2 ; $3 ;")') myid
-     call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+     call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
      stop      "$1 : $2 : $3 ;"
     endif
 
@@ -68,13 +69,13 @@ m4_define(LlBCAST,{
 #ifdef DEBUG 
    if( $2.le.0 ) then
     write(0,'("       : ",10x," ; myid=",i3," ; error broadcasting $1 ; length="i15" ;")') myid, $2
-    call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
     stop
    endif
   !write(0,'("       :            ; myid=",i3," ; broadcasting $1 ; length="i15" ;")') myid, $2
 #endif
 
-   call MPI_BCAST( $1, $2, MPI_LOGICAL, $3, MPI_COMM_WORLD, ierr )
+   call MPI_BCAST( $1, $2, MPI_LOGICAL, $3, MPI_COMM_FOCUS, ierr )
  
 #ifdef DEBUG 
   !write(0,'("       :            ; myid=",i3," ; broadcasted  $1 ;")') myid
@@ -88,13 +89,13 @@ m4_define(IlBCAST,{
 #ifdef DEBUG   
    if( $2.le.0 ) then
     write(0,'("       :      fatal ; myid=",i3," ; error broadcasting $1 ; length="i15" ;")') myid, $2
-    call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
     stop
    endif
   !write(0,'("       :            ; myid=",i3," ; broadcasting $1 ; length="i15" ;")') myid, $2
 #endif
   
-   call MPI_BCAST( $1, $2, MPI_INTEGER, $3, MPI_COMM_WORLD, ierr )
+   call MPI_BCAST( $1, $2, MPI_INTEGER, $3, MPI_COMM_FOCUS, ierr )
  
 #ifdef DEBUG 
   !write(0,'("       :            ; myid=",i3," ; broadcasted  $1 ;")') myid
@@ -109,13 +110,13 @@ m4_define(RlBCAST,{
 #ifdef DEBUG
    if( $2.le.0 ) then
     write(0,'("       :      fatal ; myid=",i3," ; error broadcasting $1 ; length="i15" ;")') myid, $2
-    call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
     stop
    endif
   !write(0,'("       :            ; myid=",i3," ; broadcasting $1 ; length="i15" ;")') myid, $2
 #endif
   
-   call MPI_BCAST( $1, $2, MPI_DOUBLE_PRECISION, $3, MPI_COMM_WORLD, ierr )
+   call MPI_BCAST( $1, $2, MPI_DOUBLE_PRECISION, $3, MPI_COMM_FOCUS, ierr )
  
 #ifdef DEBUG 
   !write(0,'("       :            ; myid=",i3," ; broadcasted  $1 ;")') myid
@@ -129,13 +130,13 @@ m4_define(ClBCAST,{
 #ifdef DEBUG
    if( $2.le.0 ) then
     write(0,'("       :      fatal ; myid=",i3," ; error broadcasting $1 ; length="i15" ;")') myid, $2
-    call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
     stop
    endif
   !write(0,'("       :            ; myid=",i3," ; broadcasting $1 ; length="i15" ;")') myid, $2
 #endif
   
-   call MPI_BCAST( $1, $2, MPI_CHARACTER, $3, MPI_COMM_WORLD, ierr )
+   call MPI_BCAST( $1, $2, MPI_CHARACTER, $3, MPI_COMM_FOCUS, ierr )
  
 #ifdef DEBUG 
   !write(0,'("       :            ; myid=",i3," ; broadcasted  $1 ;")') myid
@@ -157,21 +158,21 @@ m4_define(HWRITEIV,{
    call h5screate_simple_f( rank , onedims , space_id , hdfier )
    if( hdfier.ne.0 ) then
     write(0,'("macros  :      fatal : error calling h5screate_simple_f ;")')
-    call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
     stop "macros  : error calling h5screate_simple_f;"
    endif
 
    call h5dcreate_f( file_id , "$2" , H5T_NATIVE_INTEGER , space_id , dset_id , hdfier )
    if( hdfier.ne.0 ) then
     write(0,'("macros  :      fatal : error calling h5dcreate_f ;")')
-    call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
     stop "macros  : error calling h5dcreate_f;"
    endif
 
    call h5dwrite_f( dset_id , H5T_NATIVE_INTEGER , $3 , onedims , hdfier )
    if( hdfier.ne.0 ) then
     write(0,'("macros  :      fatal : error calling h5dwrite_f ;")')
-    call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
     stop "macros  : error calling h5dwrite_f;"
    endif
 
@@ -195,21 +196,21 @@ m4_define(HWRITERV,{
    call h5screate_simple_f( rank , onedims , space_id , hdfier )
    if( hdfier.ne.0 ) then
     write(0,'("macros  :      fatal : error calling h5screate_simple_f ;")')
-    call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
     stop "macros  : error calling h5screate_simple_f;"
    endif
 
    call h5dcreate_f( file_id , "$2" , H5T_NATIVE_DOUBLE , space_id , dset_id , hdfier )
    if( hdfier.ne.0 ) then
     write(0,'("macros  :      fatal : error calling h5dcreate_f ;")')
-    call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
     stop "macros  : error calling h5dcreate_f;"
    endif
 
    call h5dwrite_f( dset_id , H5T_NATIVE_DOUBLE , $3 , onedims , hdfier )
    if( hdfier.ne.0 ) then
     write(0,'("macros  :      fatal : error calling h5dwrite_f ;")')
-    call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
     stop "macros  : error calling h5dwrite_f;"
    endif
 
@@ -233,21 +234,21 @@ m4_define(HWRITERA,{
    call h5screate_simple_f( rank , twodims(1:2) , space_id , hdfier )
    if( hdfier.ne.0 ) then
     write(0,'("macros  :      fatal : error calling h5screate_simple_f ;")')
-    call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
     stop "macros  : error calling h5screate_simple_f;"
    endif
 
    call h5dcreate_f( file_id , "$3" , H5T_NATIVE_DOUBLE , space_id , dset_id , hdfier )
    if( hdfier.ne.0 ) then
     write(0,'("macros  :      fatal : error calling h5dcreate_f ;")')
-    call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
     stop "macros  : error calling h5dcreate_f;"
    endif
 
    call h5dwrite_f( dset_id , H5T_NATIVE_DOUBLE , $4 , twodims(1:2) , hdfier )
    if( hdfier.ne.0 ) then
     write(0,'("macros  :      fatal : error calling h5dwrite_f ;")')
-    call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
     stop "macros  : error calling h5dwrite_f;"
    endif
 
@@ -271,21 +272,21 @@ m4_define(HWRITERC,{
    call h5screate_simple_f( rank , threedims , space_id , hdfier )
    if( hdfier.ne.0 ) then
     write(0,'("macros  :      fatal : error calling h5screate_simple_f ;")')
-    call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
     stop "macros  : error calling h5screate_simple_f;"
    endif
 
    call h5dcreate_f( file_id , "$4" , H5T_NATIVE_DOUBLE , space_id , dset_id , hdfier )
    if( hdfier.ne.0 ) then
     write(0,'("macros  :      fatal : error calling h5dcreate_f ;")')
-    call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
     stop "macros  : error calling h5dcreate_f;"
    endif
 
    call h5dwrite_f( dset_id , H5T_NATIVE_DOUBLE , $5 , threedims , hdfier )
    if( hdfier.ne.0 ) then
     write(0,'("macros  :      fatal : error calling h5dwrite_f ;")')
-    call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
     stop "macros  : error calling h5dwrite_f;"
    endif
 
@@ -310,21 +311,21 @@ m4_define(HWRITECH,{
    call h5screate_simple_f( rank , onedims , space_id , hdfier )
    if( hdfier.ne.0 ) then
     write(0,'("macros  :      fatal : error calling h5screate_simple_f ;")')
-    call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
     stop "macros  : error calling h5screate_simple_f;"
    endif
 
    call h5dcreate_f( file_id , "$2" , H5T_NATIVE_CHARACTER , space_id , dset_id , hdfier )
    if( hdfier.ne.0 ) then
     write(0,'("macros  :      fatal : error calling h5dcreate_f ;")')
-    call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
     stop "macros  : error calling h5dcreate_f;"
    endif
 
    call h5dwrite_f( dset_id , H5T_NATIVE_CHARACTER , $3 , onedims , hdfier )
    if( hdfier.ne.0 ) then
     write(0,'("macros  :      fatal : error calling h5dwrite_f ;")')
-    call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
     stop "macros  : error calling h5dwrite_f;"
    endif
 

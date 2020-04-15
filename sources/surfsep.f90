@@ -73,7 +73,7 @@ SUBROUTINE surfsep(ideriv)
 !------------------------------------------------------------------------------------------------------  
   use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, &
        coil, DoF, Ncoils, Nfixgeo, Ndof, cssep, t1S, t2S, psurf, surf, &
-       icssep, mcssep, LM_fvec, LM_fjac, weight_cssep
+       icssep, mcssep, LM_fvec, LM_fjac, weight_cssep, MPI_COMM_FOCUS
 
   implicit none
   include "mpif.h"
@@ -96,6 +96,7 @@ SUBROUTINE surfsep(ideriv)
   if( ideriv >= 0 ) then
      ivec = 1
      do icoil = 1, Ncoils
+        if (coil(icoil)%type /= 1) cycle ! skip for other coils
         coilsum = zero
         if ( coil(icoil)%Lc /= 0 ) then 
            do jzeta = 0, Nzeta - 1
@@ -105,8 +106,8 @@ SUBROUTINE surfsep(ideriv)
                  coilsum = coilsum + dcssep*surf(psurf)%ds(iteta, jzeta)  ! local cssep
               enddo ! end do iteta
            enddo ! end do jzeta
-           call MPI_BARRIER( MPI_COMM_WORLD, ierr )
-           call MPI_REDUCE( coilsum, lcssep(icoil), 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
+           call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
+           call MPI_REDUCE( coilsum, lcssep(icoil), 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_FOCUS, ierr )
            RlBCAST(lcssep(icoil), 1, 0 )
            ! L-M format of targets
            if (mcssep > 0) LM_fvec(ivec) = weight_cssep * lcssep(icoil)
@@ -139,21 +140,23 @@ SUBROUTINE surfsep(ideriv)
         endif
 
         if ( coil(icoil)%Lc /= 0 ) then ! if geometry is free;
-           do jzeta = 0, Nzeta - 1
-              do iteta = 0, Nteta - 1
-                 if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;
-                 call CSPotential1(icoil, iteta, jzeta, d1S(idof+1:idof+ND), ND)
-                 l1S(idof+1:idof+ND) = l1S(idof+1:idof+ND) + d1S(idof+1:idof+ND) * surf(psurf)%ds(iteta, jzeta)
-              enddo ! end do iteta
-           enddo ! end do jzeta
-           call MPI_BARRIER( MPI_COMM_WORLD, ierr )
-           call MPI_REDUCE( l1S, jac(icoil, 1:Ndof), Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
-           RlBCAST( jac(icoil, 1:Ndof), Ndof, 0 )
-           ! L-M format of targets
-           if (mcssep > 0)  LM_fjac(ivec, 1:Ndof) = weight_cssep * jac(icoil, 1:Ndof)
-           idof = idof + ND
-           ivec = ivec + 1        
-        endif
+           if (coil(icoil)%type /= 1) then  ! skip for other coils
+              do jzeta = 0, Nzeta - 1
+                 do iteta = 0, Nteta - 1
+                    if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;
+                    call CSPotential1(icoil, iteta, jzeta, d1S(idof+1:idof+ND), ND)
+                    l1S(idof+1:idof+ND) = l1S(idof+1:idof+ND) + d1S(idof+1:idof+ND) * surf(psurf)%ds(iteta, jzeta)
+                 enddo ! end do iteta
+              enddo ! end do jzeta
+              call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
+              call MPI_REDUCE( l1S, jac(icoil, 1:Ndof), Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_FOCUS, ierr )
+              RlBCAST( jac(icoil, 1:Ndof), Ndof, 0 )
+              ! L-M format of targets
+              if (mcssep > 0)  LM_fjac(ivec, 1:Ndof) = weight_cssep * jac(icoil, 1:Ndof)           
+              ivec = ivec + 1  
+           endif
+           idof = idof + ND ! ND should be zero if Lc==0
+        endif        
                    
      enddo ! end do icoil
      FATAL( surfsep , idof .ne. Ndof, counting error in packing )
@@ -180,7 +183,7 @@ SUBROUTINE CSPotential0(icoil, iteta, jzeta, dcssep)
 ! DATE: 04/05/2018
 ! calculate the potential energy between the i-th coil and the (iteta, jzeta) point on the surface
 !------------------------------------------------------------------------------------------------------  
-  use globals, only: dp, zero, coil, myid, ounit, Ncoils, surf, psurf, cssep_factor
+  use globals, only: dp, zero, coil, myid, ounit, Ncoils, surf, psurf, cssep_factor, MPI_COMM_FOCUS
   implicit none
   include "mpif.h"
 
@@ -224,7 +227,7 @@ SUBROUTINE CSPotential1(icoil, iteta, jzeta, d1S, ND)
 ! calculate the derivatives of the potential energy 
 ! between the i-th coil and the (iteta, jzeta) point on the surface
 !------------------------------------------------------------------------------------------------------  
-  use globals, only: dp, zero, coil, myid, ounit, Ncoils, surf, psurf, cssep_factor, DoF
+  use globals, only: dp, zero, coil, myid, ounit, Ncoils, surf, psurf, cssep_factor, DoF, MPI_COMM_FOCUS
   implicit none
   include "mpif.h"
 

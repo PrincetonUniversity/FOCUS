@@ -4,9 +4,10 @@ SUBROUTINE poinplot
   ! Poincare plots of the vacuum flux surfaces and calculate the rotational transform
   !------------------------------------------------------------------------------------------------------ 
   USE globals, only : dp, myid, ncpu, zero, half, pi, pi2, ounit, pi, sqrtmachprec, pp_maxiter, &
-                      pp_phi, pp_raxis, pp_zaxis, pp_xtol, pp_rmax, pp_zmax, ppr, ppz, pp_ns, iota, nfp_raw, &
+                      pp_phi, pp_raxis, pp_zaxis, pp_xtol, pp_rmax, pp_zmax, ppr, ppz, pp_ns, iota,  &
                       XYZB, lboozmn, booz_mnc, booz_mns, booz_mn, total_num, &
-                      master, nmaster, nworker, masterid, color, myworkid, MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS
+                      master, nmaster, nworker, masterid, color, myworkid, MPI_COMM_MASTERS, &
+                      MPI_COMM_MYWORLD, MPI_COMM_WORKERS, plasma, surf, MPI_COMM_FOCUS
   USE mpi
   IMPLICIT NONE
 
@@ -28,8 +29,8 @@ SUBROUTINE poinplot
   ! if raxis, zaxis not provided
   if ( (abs(pp_raxis) + abs(pp_zaxis)) < sqrtmachprec) then
      zeta = pp_phi
-     theta = zero ; call surfcoord( theta, zeta, r , z )
-     theta = pi   ; call surfcoord( theta, zeta, r1, z1)
+     theta = zero ; call surfcoord( plasma, theta, zeta, r , z )
+     theta = pi   ; call surfcoord( plasma, theta, zeta, r1, z1)
      
      pp_raxis = (r+r1)*half
      pp_zaxis = (z+z1)*half
@@ -38,7 +39,7 @@ SUBROUTINE poinplot
   ! split cores for calculating axis
   color = 0
   !CALL MPI_COMM_FREE(MPI_COMM_MYWORLD, ierr)
-  CALL MPI_COMM_SPLIT(MPI_COMM_WORLD, color, myid, MPI_COMM_MYWORLD, ierr)
+  CALL MPI_COMM_SPLIT(MPI_COMM_FOCUS, color, myid, MPI_COMM_MYWORLD, ierr)
   CALL MPI_COMM_RANK(MPI_COMM_MYWORLD, myworkid, ierr)
   CALL MPI_COMM_SIZE(MPI_COMM_MYWORLD, nworker, ierr)
   
@@ -54,7 +55,7 @@ SUBROUTINE poinplot
 
   ! split cores
   color = modulo(myid, pp_ns)
-  CALL MPI_COMM_SPLIT(MPI_COMM_WORLD, color, myid, MPI_COMM_MYWORLD, ierr)
+  CALL MPI_COMM_SPLIT(MPI_COMM_FOCUS, color, myid, MPI_COMM_MYWORLD, ierr)
   CALL MPI_COMM_RANK(MPI_COMM_MYWORLD, myworkid, ierr)
   CALL MPI_COMM_SIZE(MPI_COMM_MYWORLD, nworker, ierr)
 
@@ -65,7 +66,7 @@ SUBROUTINE poinplot
      color = 0
   endif
   !CALL MPI_COMM_FREE(MPI_COMM_MASTERS, ierr)
-  CALL MPI_COMM_SPLIT(MPI_COMM_WORLD, color, myid, MPI_COMM_MASTERS, ierr)
+  CALL MPI_COMM_SPLIT(MPI_COMM_FOCUS, color, myid, MPI_COMM_MASTERS, ierr)
   if (myworkid==0) then
      CALL MPI_COMM_RANK(MPI_COMM_MASTERS, masterid, ierr)
      CALL MPI_COMM_SIZE(MPI_COMM_MASTERS, nmaster, ierr)
@@ -80,7 +81,7 @@ SUBROUTINE poinplot
   ! if pp_rmax and pp_zmax not provied 
   if ( (abs(pp_rmax) + abs(pp_zmax)) < sqrtmachprec) then
      zeta = pp_phi
-     theta = zero ; call surfcoord( theta, zeta, r , z )
+     theta = zero ; call surfcoord( plasma, theta, zeta, r , z )
      pp_rmax = r*1.0 ; pp_zmax = z*1.0
   endif
 
@@ -107,7 +108,7 @@ SUBROUTINE poinplot
      if (niter==0) then
         iota(is) = zero
      else 
-        iota(is) = rzrzt(5) / (niter*pi2/Nfp_raw)
+        iota(is) = rzrzt(5) / (niter*pi2/surf(Plasma)%Nfp)
      endif
 
      if (myworkid == 0) write(ounit, '(8X": order="I6" ; masterid="I6" ; (R,Z)=("ES12.5","ES12.5 & 
@@ -142,7 +143,7 @@ END SUBROUTINE poinplot
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE find_axis(RZ, MAXFEV, XTOL)
-  USE globals, only : dp, myid, ounit, zero, pp_phi, Nfp_raw
+  USE globals, only : dp, myid, ounit, zero, pp_phi
   USE mpi
   IMPLICIT NONE
 
@@ -200,7 +201,7 @@ END SUBROUTINE find_axis
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE axis_fcn(n,x,fvec,iflag)
-  USE globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, Nfp_raw, pp_xtol
+  USE globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, surf, pp_xtol, plasma
   USE mpi
   IMPLICIT NONE
 
@@ -215,7 +216,7 @@ SUBROUTINE axis_fcn(n,x,fvec,iflag)
   relerr = pp_xtol
   abserr = sqrtmachprec
   phi_init = pp_phi
-  phi_stop = pp_phi + pi2/Nfp_raw
+  phi_stop = pp_phi + pi2/surf(plasma)%Nfp
   rz_end = x
 
   call ode( BRpZ, n, rz_end, phi_init, phi_stop, relerr, abserr, ifail, work, iwork )
@@ -234,7 +235,7 @@ SUBROUTINE axis_fcn(n,x,fvec,iflag)
         end select
      end if
      iflag = -1
-     ! call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+     ! call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
   end if
 
   fvec = rz_end - x
@@ -245,7 +246,7 @@ END SUBROUTINE axis_fcn
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE ppiota(rzrzt,iflag)
-  USE globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, Nfp_raw, pp_xtol
+  USE globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, surf, pp_xtol, plasma
   USE mpi
   IMPLICIT NONE
 
@@ -261,7 +262,7 @@ SUBROUTINE ppiota(rzrzt,iflag)
   relerr = pp_xtol
   abserr = sqrtmachprec
   phi_init = pp_phi
-  phi_stop = pp_phi + pi2/Nfp_raw
+  phi_stop = pp_phi + pi2/surf(plasma)%Nfp
 
   call ode( BRpZ_iota, n, rzrzt, phi_init, phi_stop, relerr, abserr, ifail, work, iwork )
   if ( ifail /= 2 ) then     
@@ -279,7 +280,7 @@ SUBROUTINE ppiota(rzrzt,iflag)
         end select
      end if
      iflag = -1
-     ! call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+     ! call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
   end if
 
   return
@@ -328,7 +329,7 @@ SUBROUTINE BRpZ_iota( t, x, dx )
   ! dR/dphi = BR / Bphi
   ! dZ/dphi = BZ / Bphi
   !----------------------
-  use globals, only : dp, zero, ounit, myid, ierr
+  use globals, only : dp, zero, ounit, myid, ierr, machprec, MPI_COMM_FOCUS
   USE MPI
   implicit none
 
@@ -371,6 +372,7 @@ SUBROUTINE BRpZ_iota( t, x, dx )
 
   ! integrate theta
   length = (x(1) - x(3))**2 + (x(2)-x(4))**2  ! delta R^2 + delta Z^2
+  FATAL( poinplot, length < machprec, the field line is too close to the axis )
   dx(5) = ( (x(1) - x(3))*(dx(2)-dx(4)) - (x(2)-x(4))*(dx(1)-dx(3)) ) / length
 
   return

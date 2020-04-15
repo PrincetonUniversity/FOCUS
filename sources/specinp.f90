@@ -6,17 +6,21 @@ SUBROUTINE specinp
   ! 2. Calculate the poloidal and toroidal closed currents (Itor and Gpol)
   ! 3. Write down a xxx.Vns file with all the information for SPEC
   !-------------------------------------------------------------------------------!
-  use globals, only: dp, zero, half, two, pi2, mu0,  myid, wunit, ounit,  surf, bn, ext, &
-                     Nfou, Nfp_raw, bim, bin, Rbc, Rbs, Zbc, Zbs, Nteta, Nzeta
+  use globals, only: dp, zero, half, two, pi2, mu0, myid, wunit, ounit,  surf, bn, ext, &
+                     Nteta, Nzeta, plasma
   implicit none
   include "mpif.h"
   !-------------------------------------------------------------------------------
-  INTEGER             :: mf, nf  ! Fourier modes size
-  INTEGER             :: imn=0, ii, jj, im, in, astat, ierr, Nbf, iteta, jzeta
+  INTEGER             :: mf, nf, Nfp_raw  ! Fourier modes size
+  INTEGER             :: imn=0, ii, jj, im, in, astat, ierr, Nbf, iteta, jzeta, isurf
   REAL                :: teta, zeta, arg, tol, tmpc, tmps, curtor, curpol
   INTEGER, allocatable:: bnim(:), bnin(:)
   REAL   , allocatable:: bnc(:), bns(:)
 
+  ! use the plasma for now; could be the limiter surface; 2019/12/15
+  isurf = plasma
+  Nfp_raw = surf(isurf)%Nfp
+  ! default Fourier resolution; could be customized
   mf = 24 ; nf = 12
   ! compute Bn
   call bnormal(0) ! calculate Bn
@@ -37,9 +41,9 @@ SUBROUTINE specinp
            teta = ( ii + half ) * pi2 / Nteta
            do jj = 0, Nzeta-1
               zeta = ( jj + half ) * pi2 / Nzeta
-              arg = im*teta - in*Nfp_raw*zeta
-              tmpc = tmpc + (-bn(ii, jj)*surf(1)%ds(ii,jj))*cos(arg)  ! minus sign is required because
-              tmps = tmps + (-bn(ii, jj)*surf(1)%ds(ii,jj))*sin(arg)  ! the normal vector in SPEC is e_t x e_z
+              arg = im*teta - in*surf(isurf)%Nfp*zeta
+              tmpc = tmpc + (-bn(ii, jj)*surf(isurf)%ds(ii,jj))*cos(arg)  ! minus sign is required because
+              tmps = tmps + (-bn(ii, jj)*surf(isurf)%ds(ii,jj))*sin(arg)  ! the normal vector in SPEC is e_t x e_z
            enddo ! end jj
         enddo ! end ii
 
@@ -71,17 +75,17 @@ SUBROUTINE specinp
 
   jzeta = 0
   do iteta = 0, Nteta-1
-     curtor = curtor + surf(1)%Bx(iteta,jzeta)*surf(1)%xt(iteta,jzeta) &
-                   & + surf(1)%By(iteta,jzeta)*surf(1)%yt(iteta,jzeta) &
-                   & + surf(1)%Bz(iteta,jzeta)*surf(1)%zt(iteta,jzeta) 
+     curtor = curtor + surf(isurf)%Bx(iteta,jzeta)*surf(isurf)%xt(iteta,jzeta) &
+                   & + surf(isurf)%By(iteta,jzeta)*surf(isurf)%yt(iteta,jzeta) &
+                   & + surf(isurf)%Bz(iteta,jzeta)*surf(isurf)%zt(iteta,jzeta) 
   enddo
   curtor = curtor * pi2/Nteta ! / mu0  ! SPEC currents are normalized with mu0
 
   iteta = 0
   do jzeta = 0, Nzeta-1
-     curpol = curpol + surf(1)%Bx(iteta,jzeta)*surf(1)%xp(iteta,jzeta) &
-                   & + surf(1)%By(iteta,jzeta)*surf(1)%yp(iteta,jzeta) &
-                   & + surf(1)%Bz(iteta,jzeta)*surf(1)%zp(iteta,jzeta) 
+     curpol = curpol + surf(isurf)%Bx(iteta,jzeta)*surf(isurf)%xp(iteta,jzeta) &
+                   & + surf(isurf)%By(iteta,jzeta)*surf(isurf)%yp(iteta,jzeta) &
+                   & + surf(isurf)%Bz(iteta,jzeta)*surf(isurf)%zp(iteta,jzeta) 
   enddo
   curpol = curpol * pi2/Nzeta 
 
@@ -102,9 +106,11 @@ SUBROUTINE specinp
   write(wunit,'(" curtor      = ",es23.15   )') curtor
   write(wunit,'(" curpol      = ",es23.15   )') curpol
   write(wunit,'(" Nfp         = ",i9        )') Nfp_raw
-  do imn = 1, Nfou
-     write(wunit,1010) bin(imn)/Nfp_raw, bim(imn), Rbc(imn), bin(imn)/Nfp_raw, bim(imn), Zbs(imn), &
-                       bin(imn/Nfp_raw), bim(imn), Rbs(imn), bin(imn)/Nfp_raw, bim(imn), Zbc(imn)  ! wall is read as plasma boundary
+  do imn = 1, surf(isurf)%Nfou
+     write(wunit,1010) surf(isurf)%bin(imn)/Nfp_raw, surf(isurf)%bim(imn), surf(isurf)%Rbc(imn), &
+                       surf(isurf)%bin(imn)/Nfp_raw, surf(isurf)%bim(imn), surf(isurf)%Zbs(imn), &
+                       surf(isurf)%bin(imn/Nfp_raw), surf(isurf)%bim(imn), surf(isurf)%Rbs(imn), &
+                       surf(isurf)%bin(imn)/Nfp_raw, surf(isurf)%bim(imn), surf(isurf)%Zbc(imn)  ! wall is read as plasma boundary
   enddo
   do imn = 1, Nbf
      write(wunit,1020) bnin(imn), bnim(imn), bns(imn), bnin(imn), bnim(imn), zero, &

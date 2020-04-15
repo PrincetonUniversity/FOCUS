@@ -1,6 +1,6 @@
 subroutine boozmn
   USE globals, only : dp, myid, ncpu, zero, ounit, total_num, pp_maxiter, pp_ns, &
-       XYZB, lboozmn, bmin, bmim, booz_mnc, booz_mns, booz_mpol, booz_ntor, booz_mn, nfp_raw
+       XYZB, lboozmn, bmin, bmim, booz_mnc, booz_mns, booz_mpol, booz_ntor, booz_mn, MPI_COMM_FOCUS
   USE mpi
   IMPLICIT NONE
 
@@ -11,7 +11,7 @@ subroutine boozmn
   INTEGER              :: tor_num, in, im, imn
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
+  call MPI_BARRIER( MPI_COMM_FOCUS, ierr ) ! wait all cpus;
 
   FATAL( boozmn_01, booz_mpol < 0, invalid poloidal mode resolution )
   FATAL( boozmn_02, booz_ntor < 0, invalid toroidal mode resolution )
@@ -48,7 +48,7 @@ end subroutine boozmn
 subroutine boozsurf(XYZB, x, y, z, iota, isurf)
   USE globals, only : dp, myid, ncpu, zero, half, two, pi, pi2, ounit, total_num, pp_maxiter, &
                       bmin, bmim, booz_mnc, booz_mns, booz_mn, machprec, &
-                      masterid
+                      masterid, myworkid, MPI_COMM_FOCUS
   USE mpi
   IMPLICIT NONE
 
@@ -172,8 +172,9 @@ subroutine boozsurf(XYZB, x, y, z, iota, isurf)
 
   ! finish decomposition
 
-  write(ounit, '("boozmn  : myid="I6" ; Gpol="ES12.5" ; iota="ES12.5" ; Booz_mnc(1)="ES12.5 &
-       " ; Booz_mns(1)="ES12.5)') masterid, Gpol, iota, booz_mnc(1, isurf), booz_mns(1, isurf)
+  if (myworkid == 0) write(ounit, '("boozmn  : order="I6" ; Gpol="ES12.5" ; iota="ES12.5 &
+       " ; Booz_mnc(1)="ES12.5" ; Booz_mns(1)="ES12.5)') isurf, Gpol, iota, &
+       booz_mnc(1, isurf), booz_mns(1, isurf)
   
   return
 end subroutine boozsurf
