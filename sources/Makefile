@@ -29,9 +29,9 @@
 # available env: /p/focus/modules/focus/gfortran
 ifeq ($(CC),gfortran)
 # RFLAGS=-O3 -w -fdefault-real-8 -ffree-line-length-none -march=native -ffast-math
- RFLAGS=-O3 -w -ffree-line-length-none -march=native -ffast-math $(PFLAGS)
- DFLAGS=-Og $(PFLAGS) -w -ffree-line-length-none -Wextra -Wtarget-lifetime -fbacktrace -fbounds-check  \
-     -ffpe-trap=zero -fcheck=all -DDEBUG
+ RFLAGS=-O3 -w -ffree-line-length-none -ffast-math $(PFLAGS)
+ DFLAGS=-O0 -g $(PFLAGS) -w -ffree-line-length-none -Wextra -Wtarget-lifetime -fbacktrace -fbounds-check  \
+     -ffpe-trap=zero -fcheck=all -finit-real=snan -DDEBUG
 endif
 
 #### EDDY Intel+IntelMPI+HDF5###############
@@ -77,7 +77,7 @@ lmder1.o : lmder1.f
 	$(FC) -c $(RFLAGS) -o $@ $<
 
 hybrj.o: hybrj.f
-	$(FC) -c $(FLAGS) -o $@ $<
+	$(FC) -c $(RFLAGS) -o $@ $<
 
 cg_descent.o : cg_descent.f
 	$(FC) -c $(RFLAGS) -o $@ $<

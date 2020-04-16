@@ -32,6 +32,32 @@
 !latex \ei
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+! module test_mod
+!   use globals, only : dp, zero
+!   implicit none
+
+!   type testsurface
+!   INTEGER              :: Nteta, Nzeta, Nfou=0, Nfp=0, NBnf=0
+!   REAL   , allocatable :: Rbc(:), Zbs(:), Rbs(:), Zbc(:), Bnc(:), Bns(:)
+!   REAL   , allocatable :: xx(:,:), yy(:,:), zz(:,:), nx(:,:), ny(:,:), nz(:,:), &
+!                           xt(:,:), yt(:,:), zt(:,:), xp(:,:), yp(:,:), zp(:,:), &
+!                           ds(:,:), bn(:,:), pb(:,:), &
+!                           Bx(:,:), By(:,:), Bz(:,:)
+!   INTEGER, allocatable :: bim(:), bin(:), Bnim(:), Bnin(:)
+!   REAL                 :: vol, area
+! end type testsurface
+
+
+! type testFreedom
+!   INTEGER              :: ND
+!   REAL   , allocatable :: xdof(:), xof(:,:), yof(:,:), zof(:,:)
+! end type testFreedom
+
+!   type(testsurface), target :: test_surf(10)
+!   type(testFreedom), target :: test_DoF(10)
+  
+
+! end module test_mod
 
 subroutine focus()
 

@@ -65,7 +65,7 @@
 subroutine fousurf(filename, index)
   use globals, only : dp, zero, half, pi2, myid, ounit, runit, IsQuiet, IsSymmetric,  &
                       Nteta, Nzeta, surf, discretefactor, Nfp, plasma, symmetry,      &
-                      tflux_sign, cosnfp, sinnfp, MPI_COMM_FOCUS
+                      tflux_sign, cosnfp, sinnfp, MPI_COMM_FOCUS, surf_Nfp
   use mpi
   implicit none
 
@@ -180,16 +180,16 @@ subroutine fousurf(filename, index)
   surf(index)%Nteta = Nteta 
   surf(index)%Nzeta = Nzeta
 
-  if (index == plasma) then    
+  if (index == plasma) then
+     Nfp = surf(plasma)%Nfp 
+     surf_Nfp = Nfp ! local surface Nfp
      select case (IsSymmetric)
      case ( 0 )
-        Nfp = 1                    ! reset Nfp to 1;
+        surf_Nfp = 1                    ! reset Nfp to 1;
         symmetry = 0
      case ( 1 )                    ! plasma and coil periodicity enabled;
-        Nfp = surf(plasma)%Nfp     ! use the raw Nfp
         symmetry = 0
      case ( 2 )                    ! stellarator symmetry enforced;
-        Nfp = surf(plasma)%Nfp     ! use the raw Nfp
         symmetry = 1     
      end select
 
@@ -200,7 +200,7 @@ subroutine fousurf(filename, index)
         sinnfp(ip) = sin((ip-1)*pi2/Nfp)
      enddo
      ! discretefactor = discretefactor/Nfp
-     surf(index)%Nzeta = Nzeta * Nfp * 2**symmetry ! the total number from [0, 2pi]
+     surf(index)%Nzeta = Nzeta * surf_Nfp * 2**symmetry ! the total number from [0, 2pi]
      discretefactor = (pi2/surf(plasma)%Nteta) * (pi2/surf(plasma)%Nzeta)
   endif
   
@@ -277,8 +277,8 @@ subroutine fousurf(filename, index)
   surf(index)%vol  = abs(surf(index)%vol)/3 * (pi2/surf(index)%Nteta) * (pi2/surf(index)%Nzeta)
   surf(index)%area = abs(surf(index)%area)  * (pi2/surf(index)%Nteta) * (pi2/surf(index)%Nzeta)
   if (index == plasma) then
-     surf(index)%vol  = surf(index)%vol  * Nfp * 2**symmetry
-     surf(index)%area = surf(index)%area * Nfp * 2**symmetry
+     surf(index)%vol  = surf(index)%vol  * surf_Nfp * 2**symmetry
+     surf(index)%area = surf(index)%area * surf_Nfp * 2**symmetry
   endif    
      
   if( myid == 0 .and. IsQuiet <= 0) then
