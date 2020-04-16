@@ -8,7 +8,7 @@ SUBROUTINE diagnos
   use globals, only: dp, zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
        Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
        cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, Nfp, weight_bnorm, overlap, plasma, &
-       cosnfp, sinnfp, symmetry, discretefactor, MPI_COMM_FOCUS
+       cosnfp, sinnfp, symmetry, discretefactor, MPI_COMM_FOCUS, surf_Nfp
   use mpi
   implicit none
 
@@ -189,7 +189,7 @@ SUBROUTINE diagnos
              / (Nteta*Nzeta), maxval(abs(surf(plasma)%bn))
         write(ounit, '(8X": Surface area normalized Bn error int(|Bn|/B*ds)/A : "ES23.15)') &
              sum(abs(surf(plasma)%bn)/sqrt(surf(plasma)%Bx**2+surf(plasma)%By**2+surf(plasma)%Bz**2) &
-             *surf(plasma)%ds)*discretefactor/(surf(plasma)%area/(Nfp*2**symmetry))
+             *surf(plasma)%ds)*discretefactor/(surf(plasma)%area/(surf_Nfp*2**symmetry))
      endif
   endif
 

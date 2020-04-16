@@ -338,7 +338,7 @@ subroutine rdcoils
         SALLOCATE( FouCoil(icoil)%zc, (0:NFcoil), zero )
         SALLOCATE( FouCoil(icoil)%zs, (0:NFcoil), zero )
         ! get the geometry center
-        zeta = (icoil-1+half) * pi2 / (Ncoils*Nfp*2**symmetry)  ! put a half for a shift;       
+        zeta = (icoil-1+half) * pi2 / (Ncoils*surf_Nfp*2**symmetry)  ! put a half for a shift;       
         call surfcoord( plasma, zero, zeta, r1, z1)
         call surfcoord( plasma,   pi, zeta, r2, z2)
         Rmaj = half * (r1 + r2)

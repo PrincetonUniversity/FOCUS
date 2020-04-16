@@ -283,7 +283,7 @@ module globals
   type(FourierCoil)    , allocatable :: FouCoil(:)
   type(DegreeOfFreedom), allocatable :: DoF(:)
 
-  INTEGER              :: Nfp = 1, symmetry = 0
+  INTEGER              :: Nfp = 1, symmetry = 0, surf_Nfp = 1
   INTEGER              :: plasma = 1, limiter = 1
   REAL   , allocatable :: cosnfp(:), sinnfp(:)
     
