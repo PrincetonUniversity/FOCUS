@@ -90,11 +90,11 @@ LIBSRC_WRAP_FPP_FILES = $(addsuffix .fpp,${LIBSRC_WRAP_SOURCES})
 .PHONY: all f90wrap_clean
 
 
-all: _${PYTHON_MODN}.so  _${PYTHON_MODN}_pkg.so
+all: _${PYTHON_MODN}.so  _${PYTHON_MODN}_pkg.so test
 
 
 f90wrap_clean:
-	-rm -f ${LIBSRC_OBJECTS} ${LIBSRC_FPP_FILES} libsrc.a _${PYTHON_MODN}*.so \
+	-rm -f ${LIBSRC_OBJECTS} ${LIBSRC_FPP_FILES} $(LIB_NAME) _${PYTHON_MODN}*.so \
 	_${PYTHON_MODN}_pkg.so *.mod *.fpp f90wrap*.f90 f90wrap*.o *.o ${PYTHON_MODN}.py
 	-rm -rf ${PYTHON_MODN}_pkg
 	-rm -rf src.*/ .f2py_f2cmap .libs/ __pycache__/
@@ -120,4 +120,4 @@ _${PYTHON_MODN}_pkg.so: $(LIB_NAME) ${LIBSRC_WRAP_FPP_FILES}
 	f2py-f90wrap --f90exec=${FC} --build-dir . -c -m _${PYTHON_MODN}_pkg -L. -l$(PYTHON_MODN) -I${SOURCES} $(HDF5) f90wrap*.f90
 
 test:
-	@cd ../examples/rotating_ellipse; mpirun -np 2 python3 test.py
+	@python -c "import focus; print('FOCUS version: {:}'.format(focus.globals.version))"

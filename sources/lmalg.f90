@@ -243,7 +243,7 @@ use globals, only: dp, sqrtmachprec, zero, myid, ounit, Ncoils, Ndof, t1E, iout,
   nprint = 1
 
   LM_iter = 0 
-  LM_output = .True.
+  ! LM_output = .True.
 
   SALLOCATE(fvec, (1:m), zero)
   SALLOCATE(fjac, (1:ldfjac, 1:Ndof), zero)

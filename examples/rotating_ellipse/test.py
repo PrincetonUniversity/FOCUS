@@ -1,5 +1,5 @@
 import sys
-sys.path.append('/Users/czhu/Documents/Code/FOCUS/python')
+sys.path.append('../../python')
 from mpi4py import MPI
 from focuspy import FOCUSpy
 import focus
@@ -25,6 +25,7 @@ maxiter = 100
 focus.globals.cg_maxiter = maxiter
 # standard execution
 #test.run(verbose=True)
+#sys.exit()
 
 # customize optimizers
 test.prepare() 
@@ -42,8 +43,6 @@ for method in collections:
         print('----------------------{:}-----------------------'.format(method))
     focus.globals.iout = 0
     x0 = np.copy(x_copy)
-    if master:
-        print(np.min(x0), np.mean(x0), np.max(x0))
     test.time = time.time()
     test.callback(x0)
     res = minimize(test.func, x0, method=method, jac=test.grad, callback=test.callback, options={'maxiter':maxiter})
