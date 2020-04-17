@@ -2,6 +2,8 @@ import sys
 import os.path
 from mpi4py import MPI
 import focus
+import numpy as np
+import time
 
 class FOCUSpy(object):
     def __init__(self, comm=MPI.COMM_WORLD, extension=None, verbose=True):
@@ -31,10 +33,26 @@ class FOCUSpy(object):
         # check verbose status
         self.verbose = verbose
         self.dumb = False
+        self.time = time.time()
         if not self.verbose:
             focus.mute(1)
             self.dumb = True
         return
+
+    def prepare(self, **kwargs):
+        """prepare runs;
+
+        """
+        focus.check_input()
+        focus.surface()
+        focus.rdcoils()
+        focus.packdof(focus.globals.xdof)
+        focus.allocdata(abs(focus.globals.case_optimize))
+        focus.diagnos()
+        if focus.globals.isnormweight:
+            focus.normweight()
+        return
+
     def run(self, verbose=False, **kwargs):
         """standard run
         Args:
@@ -56,6 +74,26 @@ class FOCUSpy(object):
         # standard run
         focus.focus()
         return
+
+    def func(self, x):
+        """FOCUS basic optimization functions
+        """
+        n = len(x)
+        return focus.myvalue(x, n)
+    
+    def grad(self, x):
+        """Gradient
+        """
+        n = len(x)
+        g = np.zeros(n)
+        focus.mygrad(g, x, n)
+        return g
+    
+    def callback(self, x):
+        focus.unpacking(x)
+        focus.costfun(0)
+        focus.output(time.time() - self.time)
+        return focus.globals.chi
 
 if __name__== "__main__":
    main()

@@ -46,7 +46,7 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
 
   FATAL( bfield0, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
   ! initialization
-  Npc = 1 ; cs = 0
+  Npc = 1 ; cs = 0 ; ip = 1
   tBx = zero ; tBy = zero ; tBz = zero
   dlx = zero ; dly = zero ; dlz = zero
   ltx = zero ; lty = zero ; ltz = zero
@@ -120,7 +120,8 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
            FATAL(bfield0, .true., not supported coil types)
         end select     
         ! sum all the contributions
-        tBx = tBx + (Bx*cosnfp(ip) - By*sinnfp(ip))*(-1)**is
+        Bx = Bx*(-1)**is
+        tBx = tBx + (Bx*cosnfp(ip) - By*sinnfp(ip))
         tBy = tBy + (By*cosnfp(ip) + Bx*sinnfp(ip))
         tBz = tBz +  Bz
      enddo
@@ -162,7 +163,7 @@ subroutine bfield1(icoil, x, y, z, tBx, tBy, tBz, ND)
   FATAL( bfield1, ND <= 0, wrong inout dimension of ND )
 
   ! initialization
-  Npc = 1 ; cs = 0
+  Npc = 1 ; cs = 0 ; ip = 1
   tBx = zero ; tBy = zero ; tBz = zero
   dlx = zero ; dly = zero ; dlz = zero
   ltx = zero ; lty = zero ; ltz = zero

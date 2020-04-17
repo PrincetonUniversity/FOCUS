@@ -32,7 +32,7 @@ SUBROUTINE fdcheck( ideriv )
   INTEGER              :: astat, ierr, idof, ivec
   REAL                 :: tmp_xdof(1:Ndof), fd, negvalue, posvalue, diff, rdiff
   REAL                 :: start, finish
-  REAL, parameter      :: small=1.0E-3
+  REAL, parameter      :: small=1.0E-4
   !--------------------------------------------------------------------------------------------
 
   if(myid == 0) write(ounit, *) "-----------Checking derivatives------------------------------"
@@ -80,7 +80,7 @@ SUBROUTINE fdcheck( ideriv )
 
      if( myid.eq.0 ) then 
          write(ounit,'("fdcheck : ", I6, "/", I6, 4(" ; "ES23.15))') idof, Ndof, t1E(idof), fd, diff, rdiff
-         if (diff >= sqrtmachprec) write(ounit, *) "----------suspicious unmatching-----------------------"
+         if (diff >= small**2) write(ounit, *) "----------suspicious unmatching-----------------------"
       endif
       
   enddo
@@ -119,7 +119,7 @@ SUBROUTINE fdcheck( ideriv )
 
         if( myid.eq.0 ) then 
            write(ounit,'("fdcheck : ", I6, "/", I6, 4(" ; "ES23.15))') idof, Ndof, LM_fjac(ivec, idof), fd, diff, rdiff
-           if (diff >= sqrtmachprec) write(ounit, *) "----------suspicious unmatching-----------------------"
+           if (diff >= small**2) write(ounit, *) "----------suspicious unmatching-----------------------"
         endif
 
      enddo
