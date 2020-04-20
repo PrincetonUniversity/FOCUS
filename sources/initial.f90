@@ -721,9 +721,7 @@ SUBROUTINE write_focus_namelist
      close(wunit)
   endif
 
-  call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
-  call MPI_FINALIZE( ierr )
-  stop
+  call MPI_ABORT( MPI_COMM_FOCUS, 0, ierr )
 
   return
 END SUBROUTINE write_focus_namelist
