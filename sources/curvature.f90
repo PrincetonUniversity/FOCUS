@@ -13,23 +13,25 @@
 ! curv is total penalty 
 ! chi = chi + weight_curv*curv
 ! t1CU is total derivative of penalty
-! Not doing any L-M work
+! LM implemented
 ! not parallelized, at some point check to see how long takes to run
 subroutine curvature(ideriv)
   use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, MPI_COMM_FOCUS, &
-       coil, DoF, Ncoils, Nfixgeo, Ndof, curv, t1CU, t2CU, weight_curv, FouCoil
+       coil, DoF, Ncoils, Nfixgeo, Ndof, curv, t1CU, t2CU, weight_curv, FouCoil, &
+       mcurv, icurv, LM_fvec, LM_fjac
 
   implicit none
   include "mpif.h"
   INTEGER, INTENT(in) :: ideriv
 
-  INTEGER             :: astat, ierr, icoil, idof, ND, NF
+  INTEGER             :: astat, ierr, icoil, idof, ND, NF, ivec
   REAL                :: curvAdd
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   curv = zero
   curvAdd = zero
+  ivec = 1
 
   if( ideriv >= 0 ) then
 
@@ -38,6 +40,10 @@ subroutine curvature(ideriv)
         if( coil(icoil)%Lc     /=  0 ) then ! if geometry is free
            call CurvDeriv0(icoil,curvAdd)
            curv = curv + curvAdd
+           if (mcurv > 0) then ! L-M format of targets
+              LM_fvec(icurv+ivec) = weight_curv*curvAdd
+              ivec = ivec + 1
+           endif
         endif 
      enddo
 
@@ -50,7 +56,7 @@ subroutine curvature(ideriv)
   if ( ideriv >= 1 ) then
 
      t1CU = zero
-
+     ivec = 1
      idof = 0
      do icoil = 1, Ncoils
 
@@ -65,6 +71,10 @@ subroutine curvature(ideriv)
 
         if ( coil(icoil)%Lc /= 0 ) then !if geometry is free;
            call CurvDeriv1( icoil, t1CU(idof+1:idof+ND), ND, NF )
+           if (mcurv > 0) then ! L-M format of targets
+              LM_fjac(icurv+ivec, idof+1:idof+ND) = weight_curv * t1CU(idof+1:idof+ND)
+              ivec = ivec + 1
+           endif
            idof = idof + ND
         endif
 
@@ -138,7 +148,7 @@ end subroutine CurvDeriv0
 
 subroutine CurvDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a coil
 
-        use globals, only: dp, zero, pi2, coil, DoF, myid, ounit, Ncoils, &
+  use globals, only: dp, zero, pi2, coil, DoF, myid, ounit, Ncoils, &
                 case_curv, curv_alpha, k0, MPI_COMM_FOCUS
   implicit none
   include "mpif.h"
