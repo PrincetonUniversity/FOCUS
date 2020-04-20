@@ -354,11 +354,10 @@ SUBROUTINE write_plasma
 ! CZHU; first version: 2017/01/11; last revised: 2017/01/11                     !
 !-------------------------------------------------------------------------------!
   use globals, only : dp, zero, half, two, pi2, myid, ncpu, ounit, wunit, ext, &
-                      plasma, MPI_COMM_FOCUS, &
+                      plasma, MPI_COMM_FOCUS, IsSymmetric, &
                       Nteta, Nzeta, surf, bnorm, sqrtmachprec, out_plasma
-  
+  use mpi
   implicit none  
-  include "mpif.h"
 
   !-------------------------------------------------------------------------------
   INTEGER             :: mf, nf  ! predefined Fourier modes size
@@ -380,6 +379,7 @@ SUBROUTINE write_plasma
   endif
 
   if(myid .ne. 0) return
+  FATAL( write_plasma, IsSymmetric==2, option not supported for now)
 
   if(surf(isurf)%Nbnf .gt. 0) then  ! if there is input Bn target
      DALLOCATE(surf(isurf)%bnim)
@@ -398,13 +398,11 @@ SUBROUTINE write_plasma
   imn = 0
   do in = -nf, nf
      do im = 0, mf
-
         tmpc = zero ; tmps = zero
-        do ii = 0, Nteta-1 
-           teta = ( ii + half ) * pi2 / Nteta
-           do jj = 0, Nzeta-1
-              zeta = ( jj + half ) * pi2 / Nzeta
-
+        do jj = 0, Nzeta-1
+           zeta = ( jj + half ) * pi2 / surf(isurf)%Nzeta
+           do ii = 0, Nteta-1
+              teta = ( ii + half ) * pi2 / surf(isurf)%Nteta
               arg = im*teta - in*surf(isurf)%Nfp*zeta
               tmpc = tmpc + surf(isurf)%bn(ii,jj)*cos(arg)
               tmps = tmps + surf(isurf)%bn(ii,jj)*sin(arg)
