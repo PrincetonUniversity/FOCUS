@@ -74,7 +74,7 @@ For instance, you want to run the code with a case name of "example".
   A detailed description for these variables can be found in [initial.pdf](https://princetonuniversity.github.io/FOCUS/initial.pdf).
   These files should be placed in the same directory as the
   executable.
-  To obtain an template of the input namelist, you can just run
+  To obtain an template of the latest input namelist, you can just run
   `xfocus -i`.
   
 * target plasma boundary
@@ -86,7 +86,7 @@ For instance, you want to run the code with a case name of "example".
   
     This is for general unknotted cases, like stellarator and tokamaks. It takes VMEC-like format. 
     Detalis about the format can be seen in [rdsurf.pdf](https://princetonuniversity.github.io/FOCUS/rdsurf.pdf)
-    Here is an example for the rotating ellipse case [plasma.boundary](https://github.com/PrincetonUniversity/FOCUS/tree/master/examples/rotating_ellipse/plasma.boundary)
+    Here is an example for the rotating ellipse case [plasma.boundary](misc/plasma.boundary)
     
     For more information about preparing FOCUS boundary from VMEC and BNORM, please view [here](notes/Coil_design_codes_benchmark.html).
     
@@ -98,12 +98,12 @@ For instance, you want to run the code with a case name of "example".
   
     Read the coils data from **coils.example** and fit the coils with Fourier coefficients. 
     The format ofcoils.\* file can be seen in [VMECwiki](https://princetonuniversity.github.io/STELLOPT/MAKEGRID).
-	Here is an example for the rotating ellipse case [coils.ellipse](https://github.com/PrincetonUniversity/FOCUS/tree/master/examples/rotating_ellipse/coils.ellipse)
+	Here is an example for the rotating ellipse case [coils.ellipse](misc/ellipse.coils)
     
   - *case_init =  0* : **input_coils** (default: 'example.focus')
   
     Read the coils data from **example.focus**. This file contains all the Fourier harmonics and control labels for the coils.
-	Here is an example for the rotating ellipse case [ellipse.focus](https://github.com/PrincetonUniversity/FOCUS/tree/master/examples/rotating_ellipse/ellipse.focus)
+	Here is an example for the rotating ellipse case [ellipse.focus](misc/ellipse.focus)
     
   - *case_init =  1*
   
@@ -114,8 +114,8 @@ For instance, you want to run the code with a case name of "example".
     Initialize *Ncoils-1* magnetic dipoles (r=*init_radius*, I=*init_current*) surrounding the plasma boundary plus one central current.
 
 If you want to optimize individual Bn spectrum (*weight_bharm>0* in the namelist), you may also need to provide an input file named by **input_harm** (default: 'target.harmonics').
-Detalis about the format can be seen in [bmnharm.pdf](https://princetonuniversity.github.io/FOCUS/bmnharm.pdf)
-Here is an example for the DIIID RMP coils case [target.harmonics](https://github.com/PrincetonUniversity/FOCUS/tree/master/examples/d3d_RMP/target.harmonics)
+Detalis about the format can be seen in [bmnharm.pdf](bmnharm.pdf)
+Here is an example for the DIIID RMP coils case [target.harmonics](misc/target.harmonics)
 
 &nbsp;
 
@@ -125,7 +125,7 @@ Once you finish preparing the input files and successfully compile the code, mov
 ```
 mpirun -np 32 xfocus example
 ```
-You may need to allocate computating cores first, e.g. try `salloc -p dawson -n 32 -t 24:00:00` at PPPL, or use a *sbatch* command.
+You may need to allocate computating cores first, e.g. try `srun -n 32 -t 12:00:00 --mem 2Gb xfocus example` at PPPL, or use a *sbatch* command.
 
 The code should print some information on the screen (or in stdout file for *sbatch*).
 
