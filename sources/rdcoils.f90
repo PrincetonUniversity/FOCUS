@@ -149,6 +149,7 @@ subroutine rdcoils
         coil(icoil)%I  =  coilsI(icoil)
         coil(icoil)%Ic =  IsVaryCurrent
         coil(icoil)%L  =  target_length ! irrelevant until re-computed;
+        !coil(icoil)%k0 =  k0
         coil(icoil)%Lc =  IsVaryGeometry
         coil(icoil)%Lo =  target_length
         coil(icoil)%name = trim(coilname(icoil))
@@ -323,6 +324,7 @@ subroutine rdcoils
         coil(icoil)%L  =  pi2*init_radius
         coil(icoil)%Lc =  IsVaryGeometry
         coil(icoil)%Lo =  target_length
+        !coil(icoil)%k0 =  k0
         write(coil(icoil)%name,'("Mod_"I3.3)') icoil
         FATAL( rdcoils, coil(icoil)%Ic < 0 .or. coil(icoil)%Ic > 1, illegal )
         FATAL( rdcoils, coil(icoil)%Lc < 0 .or. coil(icoil)%Lc > 1, illegal )
@@ -372,6 +374,7 @@ subroutine rdcoils
      coil(icoil)%L  =  pi2*init_radius
      coil(icoil)%Lc =  0               ! IsVaryGeometry ! ignore Bz first; 20190102
      coil(icoil)%Lo =  target_length
+     !coil(icoil)%k0 =  k0
      coil(icoil)%Bz =  zero
      coil(icoil)%name = 'bg_BtBz_01'
      coil(icoil)%type = 3
@@ -391,6 +394,7 @@ subroutine rdcoils
            coil(icoil)%L  =  pi2*init_radius
            coil(icoil)%Lc =  IsVaryGeometry
            coil(icoil)%Lo =  target_length
+           !coil(icoil)%k0 =  k0
            write(coil(icoil)%name,'("pm_"I6)') icoil
            FATAL( rdcoils, coil(icoil)%Ic < 0 .or. coil(icoil)%Ic > 1, illegal )
            FATAL( rdcoils, coil(icoil)%Lc < 0 .or. coil(icoil)%Lc > 1, illegal )

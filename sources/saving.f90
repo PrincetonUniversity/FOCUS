@@ -52,6 +52,7 @@ subroutine saving
      if(allocated(t1S)) deriv(1:Ndof,4) = t1S(1:Ndof)
      if(allocated(t1C)) deriv(1:Ndof,5) = t1C(1:Ndof)
      if(allocated(t1H)) deriv(1:Ndof,6) = t1H(1:Ndof)
+     if(allocated(t1CU)) deriv(1:Ndof,7)=t1CU(1:Ndof)
   endif
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -89,17 +90,21 @@ subroutine saving
   HWRITEIV( 1                ,   ISNormWeight  ,   IsNormWeight                  )
   HWRITEIV( 1                ,   case_bnormal  ,   case_bnormal                  )
   HWRITEIV( 1                ,   case_length   ,   case_length                   )
+  HWRITEIV( 1                ,   case_curv     ,   case_curv                     )
+  HWRITEIV( 1                ,   curv_alpha    ,   curv_alpha                    )
   HWRITERV( 1                ,   weight_bnorm  ,   weight_bnorm                  )
   HWRITERV( 1                ,   weight_bharm  ,   weight_bharm                  )
   HWRITERV( 1                ,   weight_tflux  ,   weight_tflux                  )
   HWRITERV( 1                ,   target_tflux  ,   target_tflux                  )
   HWRITERV( 1                ,   weight_ttlen  ,   weight_ttlen                  )
   HWRITERV( 1                ,   target_length ,   target_length                 )
+  HWRITERV( 1                ,   k0            ,   k0                            ) !Might need to fix this 
   HWRITERV( 1                ,   weight_specw  ,   weight_specw                  )
   HWRITERV( 1                ,   weight_cssep  ,   weight_cssep                  )
   HWRITERV( 1                ,   weight_gnorm  ,   weight_gnorm                  )
   HWRITERV( 1                ,   weight_inorm  ,   weight_inorm                  )
   HWRITERV( 1                ,   weight_mnorm  ,   weight_mnorm                  )
+  HWRITERV( 1                ,   weight_curv   ,   weight_curv                   )
   HWRITERV( 1                ,   DF_tausta     ,   DF_tausta                     )
   HWRITERV( 1                ,   DF_tauend     ,   DF_tauend                     )
   HWRITERV( 1                ,   DF_xtol       ,   DF_xtol                       )
@@ -153,7 +158,7 @@ subroutine saving
   HWRITERV( 1                ,   Gnorm         ,   Gnorm                         )
   HWRITERV( 1                ,   Mnorm         ,   Mnorm                         )
   HWRITERV( 1                ,   overlap       ,   overlap                       )
-  HWRITERA( iout, 8          ,   evolution     ,   evolution(1:iout, 0:7)        )
+  HWRITERA( iout, 9          ,   evolution     ,   evolution(1:iout, 0:8)        )
   HWRITERA( iout, Tdof       ,   coilspace     ,   coilspace(1:iout, 1:Tdof)     )
 
   if (allocated(deriv)) then
@@ -186,6 +191,8 @@ subroutine saving
      HWRITEIV( 1                ,   mttlen        ,   mttlen                     )     
      HWRITEIV( 1                ,   icssep        ,   icssep                     )
      HWRITEIV( 1                ,   mcssep        ,   mcssep                     )
+     HWRITEIV( 1                ,   icurv         ,   icurv                      )
+     HWRITEIV( 1                ,   mcurv         ,   mcurv                      )
      HWRITERV( LM_mfvec         ,   LM_fvec       ,   LM_fvec                    )
      HWRITERA( LM_mfvec, Ndof   ,   LM_fjac       ,   LM_fjac                    )     
   endif
@@ -229,9 +236,11 @@ subroutine saving
 
         select case (coil(icoil)%type)
         case (1)
-           write(wunit, '(3(A6, A15, 8X))') " #Nseg", "current",  "Ifree", "Length", "Lfree", "target_length"
+           write(wunit, '(4(A6, A15, 8X))') " #Nseg", "current",  "Ifree", "Length", "Lfree", "target_length"!, "k0"
+           !write(wunit,'(2X, I4, ES23.15, 3X, I3, ES23.15, 3X, I3, ES23.15, ES23.15)') &
+                !coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo, coil(icoil)%k0
            write(wunit,'(2X, I4, ES23.15, 3X, I3, ES23.15, 3X, I3, ES23.15)') &
-                coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo
+                coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo !,coil(icoil)%k0  
            NF = FouCoil(icoil)%NF ! shorthand;
            write(wunit, *) "#NFcoil"
            write(wunit, '(I3)') NF
@@ -354,11 +363,10 @@ SUBROUTINE write_plasma
 ! CZHU; first version: 2017/01/11; last revised: 2017/01/11                     !
 !-------------------------------------------------------------------------------!
   use globals, only : dp, zero, half, two, pi2, myid, ncpu, ounit, wunit, ext, &
-                      plasma, MPI_COMM_FOCUS, &
+                      plasma, MPI_COMM_FOCUS, IsSymmetric, &
                       Nteta, Nzeta, surf, bnorm, sqrtmachprec, out_plasma
-  
+  use mpi
   implicit none  
-  include "mpif.h"
 
   !-------------------------------------------------------------------------------
   INTEGER             :: mf, nf  ! predefined Fourier modes size
@@ -380,6 +388,7 @@ SUBROUTINE write_plasma
   endif
 
   if(myid .ne. 0) return
+  FATAL( write_plasma, IsSymmetric==2, option not supported for now)
 
   if(surf(isurf)%Nbnf .gt. 0) then  ! if there is input Bn target
      DALLOCATE(surf(isurf)%bnim)
@@ -398,13 +407,11 @@ SUBROUTINE write_plasma
   imn = 0
   do in = -nf, nf
      do im = 0, mf
-
         tmpc = zero ; tmps = zero
-        do ii = 0, Nteta-1 
-           teta = ( ii + half ) * pi2 / Nteta
-           do jj = 0, Nzeta-1
-              zeta = ( jj + half ) * pi2 / Nzeta
-
+        do jj = 0, Nzeta-1
+           zeta = ( jj + half ) * pi2 / surf(isurf)%Nzeta
+           do ii = 0, Nteta-1
+              teta = ( ii + half ) * pi2 / surf(isurf)%Nteta
               arg = im*teta - in*surf(isurf)%Nfp*zeta
               tmpc = tmpc + surf(isurf)%bn(ii,jj)*cos(arg)
               tmps = tmps + surf(isurf)%bn(ii,jj)*sin(arg)

@@ -140,7 +140,7 @@ SUBROUTINE surfsep(ideriv)
         endif
 
         if ( coil(icoil)%Lc /= 0 ) then ! if geometry is free;
-           if (coil(icoil)%type /= 1) then  ! skip for other coils
+           if (coil(icoil)%type == 1) then  ! skip for other coils
               do jzeta = 0, Nzeta - 1
                  do iteta = 0, Nteta - 1
                     if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;
