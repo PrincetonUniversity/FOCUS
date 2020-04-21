@@ -23,24 +23,24 @@
  IsNormWeight   =        0
  case_bnormal   =        1
  case_length    =        1 
- case_curv      =        3
- k0             =        1.000D+01
- curv_alpha     =        2.000D+00        
- weight_bnorm   =        1.000D+05
+ case_curv      =        3             ! Penalty function for curvature
+ k0             =        1.000D+01     ! Maximum curvature constraint 
+ curv_alpha     =        2.000D+00     ! Exponent for curvature constraint violations 
+ weight_bnorm   =        1.000D+04
  weight_bharm   =        0.000D+00
  weight_tflux   =        0.000D-05
  target_tflux   =        -0.039418D+00
- weight_ttlen   =        1.000D+01
+ weight_ttlen   =        1.000D+03
  target_length  =        2.400D+00 
  weight_specw   =        0.000D+00
- weight_curv    =        1.000D+02
+ weight_curv    =        5.000D+00
 
  DF_tausta      =        0.000D+00
  DF_tauend      =        1.000D-00
  DF_maxiter     =        0
  DF_xtol        =        1.000D-10                    
 
- CG_maxiter     =        20
+ CG_maxiter     =        200
  CG_xtol        =        1.000D-10
  CG_wolfe_c1    =        1.000D-04
  CG_wolfe_c2    =        0.9
