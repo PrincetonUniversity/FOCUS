@@ -130,7 +130,7 @@ subroutine length(ideriv)
               call lenDeriv1( icoil, d1L(idof+1:idof+ND), ND )
               t1L(idof+1:idof+ND) = d1L(idof+1:idof+ND) * norm(icoil)
               if (mttlen > 0) then ! L-M format of targets
-                 LM_fjac(ivec, idof+1:idof+ND) = weight_ttlen * d1L(idof+1:idof+ND)
+                 LM_fjac(ittlen+ivec, idof+1:idof+ND) = weight_ttlen * d1L(idof+1:idof+ND)
                  if (case_length == 2) &
                       & LM_fjac(ivec, idof+1:idof+ND) = LM_fjac(ivec, idof+1:idof+ND) &
                       & * exp(coil(icoil)%L) / exp(coil(icoil)%Lo)

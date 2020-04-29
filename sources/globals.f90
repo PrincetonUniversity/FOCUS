@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(10), parameter :: version='v0.12.03' ! version number
+  CHARACTER(10), parameter :: version='v0.13.01' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -99,7 +99,10 @@ module globals
   INTEGER              :: IsNormalize    =   1
   INTEGER              :: IsNormWeight   =   1
   INTEGER              :: case_bnormal   =   0
-  INTEGER              :: case_length    =   1         
+  INTEGER              :: case_length    =   1
+  INTEGER              :: case_curv      =   1 
+  REAL                 :: curv_alpha     =   2
+  REAL                 :: k0             =   0.000D+00
   REAL                 :: weight_bnorm   =   1.000D+00
   INTEGER              :: bharm_jsurf    =   0
   REAL                 :: weight_bharm   =   0.000D+00
@@ -114,6 +117,7 @@ module globals
   REAL                 :: weight_inorm   =   1.000D+00
   REAL                 :: weight_gnorm   =   1.000D+00
   REAL                 :: weight_mnorm   =   1.000D+00
+  REAL                 :: weight_curv    =   0.000D+00
 
   INTEGER              :: case_optimize  =   0
   REAL                 :: exit_tol       =   1.000D-04
@@ -186,6 +190,9 @@ module globals
                         IsNormWeight   , &
                         case_bnormal   , &
                         case_length    , &
+                        case_curv      , &
+                        curv_alpha     , &
+                        k0             , &
                         weight_bnorm   , &
                         bharm_jsurf    , &
                         weight_bharm   , &
@@ -200,6 +207,7 @@ module globals
                         weight_inorm   , &
                         weight_gnorm   , &
                         weight_mnorm   , &
+                        weight_curv    , &
                         case_optimize  , &
                         exit_tol       , &
                         DF_maxiter     , & 
@@ -299,8 +307,8 @@ module globals
 !latex \subsection{Optimization}
   ! General target functions;
   INTEGER              :: iout, Nouts, LM_iter, LM_mfvec
-  INTEGER              :: ibnorm = 0, ibharm = 0, itflux = 0, ittlen = 0, icssep = 0 ! starting number
-  INTEGER              :: mbnorm = 0, mbharm = 0, mtflux = 0, mttlen = 0, mcssep = 0 ! numbers of targets
+  INTEGER              :: ibnorm = 0, ibharm = 0, itflux = 0, ittlen = 0, icssep = 0, icurv = 0 ! starting number
+  INTEGER              :: mbnorm = 0, mbharm = 0, mtflux = 0, mttlen = 0, mcssep = 0, mcurv = 0 ! numbers of targets
   REAL                 :: chi, discretefactor, sumDE
   REAL   , allocatable :: t1E(:), t2E(:,:), evolution(:,:), coilspace(:,:), deriv(:,:)
   REAL   , allocatable :: LM_fvec(:), LM_fjac(:,:)
@@ -321,6 +329,9 @@ module globals
   ! Length constraint
   REAL                 :: ttlen
   REAL   , allocatable :: t1L(:), t2L(:,:)
+  ! Curvature constraint
+  REAL                 :: curv
+  REAL   , allocatable :: t1CU(:), t2CU(:,:)
   ! Coil-surface spearation
   INTEGER              :: psurf = 1 ! the prevent surface label; default 1 is the plasma boundary
   REAL                 :: cssep
@@ -354,7 +365,7 @@ module globals
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 !latex \subsection{Miscellaneous}
-  REAL                 :: tmpw_bnorm, tmpw_tflux ,tmpt_tflux, tmpw_ttlen, tmpw_specw, tmpw_cssep, tmpw_bharm
+  REAL                 :: tmpw_bnorm, tmpw_tflux ,tmpt_tflux, tmpw_ttlen, tmpw_specw, tmpw_ccsep, tmpw_bharm, tmpw_curv
   REAL                 :: overlap = 0.0
                           !tmp weight for saving to restart file
   REAL, allocatable    :: mincc(:,:), coil_importance(:)
