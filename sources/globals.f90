@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(10), parameter :: version='v0.13.01' ! version number
+  CHARACTER(10), parameter :: version='v0.13.02' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -319,7 +319,7 @@ module globals
   ! Bn reasonant harmoics;
   INTEGER              :: NBmn
   INTEGER, allocatable :: Bmnin(:), Bmnim(:)
-  REAL                 :: bharm
+  REAL                 :: bharm, bharm_factor
   REAL   , allocatable :: t1H(:), t2H(:,:), Bmnc(:),Bmns(:), wBmn(:), tBmnc(:), tBmns(:), &
                           carg(:,:), sarg(:,:), iBmnc(:), iBmns(:)
   ! Tflux error;

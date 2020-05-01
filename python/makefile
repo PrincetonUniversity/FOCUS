@@ -87,11 +87,14 @@ LIBSRC_WRAP_FPP_FILES = $(addsuffix .fpp,${LIBSRC_WRAP_SOURCES})
 #
 #=======================================================================
 
-.PHONY: all f90wrap_clean
+.PHONY: all all_clean
 
 
 all: _${PYTHON_MODN}.so  _${PYTHON_MODN}_pkg.so test
 
+all_clean: f90wrap_clean
+	make -C ${SOURCES} clean ALLFILES="${ALLFILES} focuspy"
+	rm -f ${SOURCES}/focuspy.f90
 
 f90wrap_clean:
 	-rm -f ${LIBSRC_OBJECTS} ${LIBSRC_FPP_FILES} $(LIB_NAME) _${PYTHON_MODN}*.so \
