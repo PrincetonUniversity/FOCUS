@@ -126,7 +126,8 @@ SUBROUTINE readBmn
   !----------------------------------------------------------------------------------------
   use globals, only: dp, zero, half, pi2, myid, ounit, runit, ext, IsQuiet, Nteta, Nzeta, Nfp, &
                      NBmn, Bmnin, Bmnim, wBmn, tBmnc, tBmns, carg, sarg, case_bnormal, &
-                     input_harm, bharm_jsurf, surf, plasma, MPI_COMM_FOCUS
+                     input_harm, bharm_jsurf, surf, plasma, MPI_COMM_FOCUS, bharm_factor, &
+                     two, weight_bnorm, machprec
   use bharm_mod
   implicit none
   include "mpif.h"
@@ -215,6 +216,21 @@ SUBROUTINE readBmn
    SALLOCATE( dBc, (1:NBmn), zero )  ! dB_mn_cos
    SALLOCATE( dBs, (1:NBmn), zero )  ! dB_mn_sin
 
+   ! calculate the additional normalized factor
+   bharm_factor = two
+   if (bharm_jsurf == 0) then
+      continue
+   else if (bharm_jsurf == 1) then 
+      bharm_factor = two * pi2**2 / surf(isurf)%area 
+   else if (bharm_jsurf == 2) then
+      bharm_factor = two * pi2 / sqrt(surf(isurf)%area )
+   end if
+
+   ! assign plasma Bn if bnorm is optimized
+   if (weight_bnorm > machprec) then
+      if (myid==0) write(ounit, '(8X,": Plasma Bn is replaced by the target harmonics.")') 
+      call twoift(surf(plasma)%pb(0:Nteta-1, 0:Nzeta-1), tBmns, tBmnc, Bmnim, Bmnin, NBmn )
+   end if 
   return
 END SUBROUTINE readBmn
 
@@ -229,7 +245,7 @@ SUBROUTINE twodft(func, hs, hc, im, in, mn)
   ! carg and sarg stored the trig functions.
   ! Right now, it's using normal Fourier transforming, later FFT will be enabled.
   !-------------------------------------------------------------------------------!
-  use globals, only: dp, zero, half, two, pi2, myid, ounit, &
+  use globals, only: dp, zero, half, two, pi2, myid, ounit, bharm_factor, &
        Nteta, Nzeta, carg, sarg, bharm_jsurf, surf, plasma, MPI_COMM_FOCUS 
   implicit none
   include "mpif.h"
@@ -267,17 +283,8 @@ SUBROUTINE twodft(func, hs, hc, im, in, mn)
   hs = hs * two/(Nteta*Nzeta)  ! Discretizing factor;
 
   ! Additional weighting
-  if (bharm_jsurf == 0) then
-     ! continue
-     hc = hc * two
-     hs = hs * two
-  else if (bharm_jsurf == 1) then ! divide by A
-     hc = hc / surf(isurf)%area * two * pi2**2
-     hs = hs / surf(isurf)%area * two * pi2**2
-  else if (bharm_jsurf == 2) then ! divide by sqrt(A)
-     hc = hc / sqrt(surf(isurf)%area) * two * pi2
-     hs = hs / sqrt(surf(isurf)%area) * two * pi2
-  end if
+  hc = hc * bharm_factor
+  hs = hs * bharm_factor
 
   return
 END SUBROUTINE twodft
@@ -292,7 +299,8 @@ SUBROUTINE twoift(func, hs, hc, im, in, mn)
   ! carg and sarg stored the trig functions.
   ! Right now, it's using normal Fourier transforming, later FFT will be enabled.
   !-------------------------------------------------------------------------------!
-  use globals, only: dp, zero, half, two, pi2, myid, ounit, Nteta, Nzeta, carg, sarg, MPI_COMM_FOCUS
+  use globals, only: dp, zero, half, two, pi2, myid, ounit, Nteta, Nzeta, &
+   carg, sarg, MPI_COMM_FOCUS, bharm_factor, bharm_jsurf, plasma, surf
   implicit none
   include "mpif.h"
   !-------------------------------------------------------------------------------
@@ -308,6 +316,18 @@ SUBROUTINE twoift(func, hs, hc, im, in, mn)
   do itz = 1, Nteta*Nzeta
      func(itz) = sum(hc(1:mn)*carg(itz, 1:mn)) + sum(hs(1:mn)*sarg(itz, 1:mn))
   enddo
+
+  ! divide by the jacobians
+  if (bharm_jsurf==0) then
+      continue
+  else if (bharm_jsurf==1) then
+      func = func / reshape(surf(plasma)%ds*surf(plasma)%ds, (/Nteta*Nzeta/))
+  else if (bharm_jsurf==2) then
+      func = func / reshape(surf(plasma)%ds, (/Nteta*Nzeta/))
+  end if 
+
+  ! Additional weighting
+  func = func / bharm_factor
 
   return
 END SUBROUTINE twoift
