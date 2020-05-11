@@ -96,6 +96,9 @@ subroutine length(ideriv)
                     ivec = ivec + 1
                  endif
               elseif (case_length == 3) then ! Delta quadratic 
+                 if (length_delta < 0.0) then
+                    FATAL( length, .true. , length_delta cannot be negative )
+                 endif
                  if (abs(coil(icoil)%L - coil(icoil)%Lo) .ge.  length_delta) then
                     ttlen = ttlen + half * (abs(coil(icoil)%L - coil(icoil)%Lo) - length_delta)**2 / coil(icoil)%Lo**2
                  endif
