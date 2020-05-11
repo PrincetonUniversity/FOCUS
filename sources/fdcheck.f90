@@ -80,7 +80,8 @@ SUBROUTINE fdcheck( ideriv )
 
      if( myid.eq.0 ) then 
          write(ounit,'("fdcheck : ", I6, "/", I6, 4(" ; "ES23.15))') idof, Ndof, t1E(idof), fd, diff, rdiff
-         if (diff >= small**2) write(ounit, *) "----------suspicious unmatching-----------------------"
+         !if (diff >= small**2) write(ounit, *) "----------suspicious unmatching-----------------------"
+         if (rdiff >= small*10.0) write(ounit, *) "----------suspicious unmatching-----------------------"
       endif
       
   enddo

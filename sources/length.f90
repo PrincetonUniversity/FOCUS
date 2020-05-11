@@ -96,14 +96,12 @@ subroutine length(ideriv)
                     ivec = ivec + 1
                  endif
               elseif (case_length == 3) then ! Delta quadratic 
-                 if (abs(coil(icoil)%L - coil(icoil)%Lo) <  length_delta) then
-                    ttlen = ttlen ! Dont need
-                 else
+                 if (abs(coil(icoil)%L - coil(icoil)%Lo) .ge.  length_delta) then
                     ttlen = ttlen + half * (abs(coil(icoil)%L - coil(icoil)%Lo) - length_delta)**2 / coil(icoil)%Lo**2
                  endif
               else
                  FATAL( length, .true. , invalid case_length option )
-              endif ! Deleted space 
+              endif  
            endif
         endif
      enddo
@@ -131,18 +129,14 @@ subroutine length(ideriv)
               elseif (case_length == 2) then
                  norm(icoil) = exp(coil(icoil)%L) / exp(coil(icoil)%Lo)       ! exponential;
               elseif (case_length == 3) then
-                 if (coil(icoil)%L < coil(icoil)%Lo - length_delta) then
+                 if (coil(icoil)%L < coil(icoil)%Lo - length_delta) then      ! Delta quadratic
                     norm(icoil) = (coil(icoil)%L - coil(icoil)%Lo + length_delta) / coil(icoil)%Lo**2
-                 elseif (coil(icoil)%L .ge. coil(icoil)%Lo - length_delta .AND. coil(icoil)%L .le. coil(icoil)%Lo + length_delta) then
-                    norm(icoil) = zero
                  elseif (coil(icoil)%L > coil(icoil)%Lo + length_delta) then 
-                    norm(icoil) = (coil(icoil)%L - coil(icoil)%Lo - length_delta) / coil(icoil)%Lo**2 
-                 else
-                    FATAL( length, .true. , something went wrong )
+                    norm(icoil) = (coil(icoil)%L - coil(icoil)%Lo - length_delta) / coil(icoil)%Lo**2
                  endif
               else
                  FATAL( length, .true. , invalid case_length option )
-              endif ! Deleted space 
+              endif  
               ! call lederiv1 to calculate the 1st derivatives
               call lenDeriv1( icoil, d1L(idof+1:idof+ND), ND )
               t1L(idof+1:idof+ND) = d1L(idof+1:idof+ND) * norm(icoil)
