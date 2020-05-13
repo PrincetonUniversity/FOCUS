@@ -614,6 +614,8 @@ subroutine check_input
         if (IsQuiet < 1) write(ounit, 1000) 'case_length', case_length, 'Quadratic format of length penalty.'
      case ( 2 )
         if (IsQuiet < 1) write(ounit, 1000) 'case_length', case_length, 'Exponential format of length penalty.'
+     case ( 3 )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_length', case_length, 'Delta quadratic length penalty.'
      case default
         FATAL( initial, .true., selected case_length is not supported )
      end select
