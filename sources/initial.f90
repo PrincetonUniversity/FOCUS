@@ -299,62 +299,104 @@ subroutine initial
   use mpi
   implicit none
 
-  LOGICAL :: exist
-  INTEGER :: icpu, index_dot
+  INTEGER :: index_dot
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
+  myid = 0 ; ncpu = 1
+
+  ! MPI initialize
+  call MPI_init( ierr )
+  MPI_COMM_FOCUS = MPI_COMM_WORLD
+  call MPI_COMM_RANK( MPI_COMM_FOCUS, myid, ierr )
+  call MPI_COMM_SIZE( MPI_COMM_FOCUS, ncpu, ierr )
+
+  if(myid == 0) write(ounit, *) "---------------------  FOCUS ", version, "------------------------------"
+  if(myid == 0) write(ounit,'("focus   : Begin execution with ncpu =",i5)') ncpu
+
+  !-------------read input namelist----------------------------------------------------------------------
+  if(myid == 0) then ! only the master node reads the input; 25 Mar 15;
+      call getarg(1,ext) ! get argument from command line
+      select case(trim(ext))
+      case ( '-h', '--help' )
+          write(ounit,*)'-------HELP INFORMATION--------------------------'
+          write(ounit,*)' Usage: xfocus <options> input_file'
+          write(ounit,*)'    <options>'
+          write(ounit,*)'     --init / -i  :  Write an example input file'
+          write(ounit,*)'     --help / -h  :  Output help message'
+          write(ounit,*)'-------------------------------------------------'
+          call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
+      case ( '-i', '--init' )
+          call write_focus_namelist ! in initial.h
+      case default
+          index_dot = INDEX(ext,'.input')
+          IF (index_dot .gt. 0)  ext = ext(1:index_dot-1)
+          write(ounit, '("initial : machine_prec   = ", ES12.5, " ; sqrtmachprec   = ", ES12.5)') machprec, sqrtmachprec
+#ifdef DEBUG
+          write(ounit, '("DEBUG info: extension from command line is "A)') trim(ext)
+#endif
+      end select
+  endif
+
+  ClBCAST( ext,  100,  0 )
+  inputfile = trim(ext)//".input"
+  
+  call read_namelist(inputfile)
+
+  return
+
+end subroutine initial
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+subroutine read_namelist(filename)
+  use globals, only : myid, ncpu, focusin, ounit, runit, MPI_COMM_FOCUS
+  use mpi
+  implicit none
+
+  CHARACTER(100), INTENT(IN) :: filename
+
+  LOGICAL :: exist
+  INTEGER :: icpu, ierr
+   
+  !-------------read the namelist-----------------------------------------------------------------------
+  if( myid == 0 ) then
+   inquire(file=trim(filename), EXIST=exist) ! inquire if inputfile existed;
+   FATAL( initial, .not.exist, input file ext.input not provided )
+#ifdef DEBUG
+   write(ounit, '("        : read namelist from ", A)') trim(filename)
+#endif
+  endif
+
+  do icpu = 1, ncpu
+     call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
+     if (myid == icpu-1) then                              ! each cpu read the namelist in turn;
+       open(runit, file=trim(filename), status="old", action='read')
+       read(runit, focusin)
+       close(runit)
+     endif ! end of if( myid == 0 )
+  enddo
+
+  return
+end subroutine read_namelist
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+subroutine check_input
+
+  use globals
+  use mpi
+  implicit none
+   
+  LOGICAL :: exist
+  
+  !-------------machine constants -----------------------------------------------------------------------
   machprec = epsilon(pi)         ! get the machine precision
   sqrtmachprec = sqrt(machprec)  ! sqrt of machine precision
   vsmall = ten * machprec        ! very small number
   small = thousand * machprec    ! small number
 
-  !-------------read input namelist----------------------------------------------------------------------
-  if( myid == 0 ) then ! only the master node reads the input; 25 Mar 15;
-     call getarg(1,ext) ! get argument from command line
-
-     select case(trim(ext))
-     case ( '-h', '--help' )
-        write(ounit,*)'-------HELP INFORMATION--------------------------'
-        write(ounit,*)' Usage: xfocus <options> input_file'
-        write(ounit,*)'    <options>'
-        write(ounit,*)'     --init / -i  :  Write an example input file'
-        write(ounit,*)'     --help / -h  :  Output help message'
-        write(ounit,*)'-------------------------------------------------'
-        call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
-     case ( '-i', '--init' )
-        call write_focus_namelist ! in initial.h
-     case default
-        index_dot = INDEX(ext,'.input')
-        IF (index_dot .gt. 0)  ext = ext(1:index_dot-1)
-        write(ounit, '("initial : machine_prec   = ", ES12.5, " ; sqrtmachprec   = ", ES12.5   &
-             & )') machprec, sqrtmachprec
-#ifdef DEBUG
-        write(ounit, '("DEBUG info: extension from command line is "A)') trim(ext)
-#endif
-     end select
-  endif
-
-  ClBCAST( ext,  100,  0 )
-  inputfile = trim(ext)//".input"
-
-  !-------------read the namelist-----------------------------------------------------------------------
-  if( myid == 0 ) then
-     inquire(file=trim(inputfile), EXIST=exist) ! inquire if inputfile existed;
-     FATAL( initial, .not.exist, input file ext.input not provided )
-  endif
-
-  do icpu = 1, ncpu
-     call MPI_BARRIER( MPI_COMM_WORLD, ierr )
-     if (myid == icpu-1) then                              ! each cpu read the namelist in turn;
-        open(runit, file=trim(inputfile), status="old", action='read')
-        read(runit, focusin)
-        close(runit)
-     endif ! end of if( myid == 0 )
-  enddo
-
   !-------------output files name ---------------------------------------------------------------------------
-
   hdf5file   = "focus_"//trim(ext)//".h5"
   out_focus  = trim(ext)//".focus"
   out_coils  = trim(ext)//".coils"
@@ -362,9 +404,7 @@ subroutine initial
   out_plasma = trim(ext)//".plasma"
 
   !-------------show the namelist for checking----------------------------------------------------------
-
   if (myid == 0) then ! Not quiet to output more informations;
-
      write(ounit, *) "-----------INPUT NAMELIST------------------------------------"
      write(ounit, '("initial : Read namelist focusin from : ", A)') trim(inputfile)
      write(ounit, '("        : Read plasma boundary  from : ", A)') trim(input_surf)
@@ -640,21 +680,21 @@ subroutine initial
  !tmpw_specw = weight_specw
   tmpw_cssep = weight_cssep
 
-  call MPI_BARRIER( MPI_COMM_WORLD, ierr )
+  call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
 
   return
 
-end subroutine initial
+end subroutine check_input
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE write_focus_namelist
   use globals
+  use mpi
   implicit none
-  include "mpif.h"
 
   LOGICAL :: exist
-  CHARACTER(LEN=100) :: example = 'example.input'
+  CHARACTER(LEN=100), PARAMETER :: example = 'example.input'
 
   if( myid == 0 ) then
      inquire(file=trim(example), EXIST=exist) ! inquire if inputfile existed;
@@ -665,9 +705,7 @@ SUBROUTINE write_focus_namelist
      close(wunit)
   endif
 
-  call MPI_BARRIER( MPI_COMM_WORLD, ierr )
-  call MPI_FINALIZE( ierr )
-  stop
+  call MPI_ABORT( MPI_COMM_FOCUS, 0, ierr )
 
   return
 END SUBROUTINE write_focus_namelist

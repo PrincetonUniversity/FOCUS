@@ -38,7 +38,7 @@ subroutine solvers
   use globals, only: dp, ierr, iout, myid, ounit, zero, IsQuiet, IsNormWeight, Ndof, Nouts, xdof, &
        case_optimize, DF_maxiter, LM_maxiter, CG_maxiter, HN_maxiter, TN_maxiter, coil, DoF, &
        weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, &
-       target_tflux, target_length, cssep_factor
+       target_tflux, target_length, cssep_factor, MPI_COMM_FOCUS
   implicit none
   include "mpif.h"
 
@@ -80,7 +80,7 @@ subroutine solvers
   !--------------------------------DF--------------------------------------------------------------------
   if (DF_maxiter > 0)  then
      if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "------------- Differential Flow (DF) ----------------"
-     call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
+     call MPI_BARRIER( MPI_COMM_FOCUS, ierr ) ! wait all cpus;
      start = MPI_Wtime()
      call unpacking(xdof)
      call descent
@@ -92,7 +92,7 @@ subroutine solvers
   !--------------------------------CG--------------------------------------------------------------------
   if (CG_maxiter > 0)  then
      if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "------------- Nonlinear Conjugate Gradient (CG) -----"
-     call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
+     call MPI_BARRIER( MPI_COMM_FOCUS, ierr ) ! wait all cpus;
      start = MPI_Wtime()
      call unpacking(xdof)
      call congrad
@@ -104,7 +104,7 @@ subroutine solvers
   !--------------------------------LM--------------------------------------------------------------------
   if (LM_maxiter > 0)  then
      if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "----------- Levenberg-Marquardt algorithm (L-M) -----"
-     call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
+     call MPI_BARRIER( MPI_COMM_FOCUS, ierr ) ! wait all cpus;
      start = MPI_Wtime()
      call unpacking(xdof)
      call lmalg
@@ -117,7 +117,7 @@ subroutine solvers
   if (HN_maxiter > 0)  then
      if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "---------------------------------------------------"
      if (myid == 0 .and. IsQuiet < 0) write(ounit, *) " Optimizing with Hybrid Newton Method (HN) "
-     call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
+     call MPI_BARRIER( MPI_COMM_FOCUS, ierr ) ! wait all cpus;
      start = MPI_Wtime()
      call unpacking(xdof)
      !call hybridnt
@@ -129,7 +129,7 @@ subroutine solvers
   if (TN_maxiter > 0)  then
      if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "---------------------------------------------------"
      if (myid == 0 .and. IsQuiet < 0) write(ounit, *) " Optimizing with Truncated Newton Method (TN) "
-     call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
+     call MPI_BARRIER( MPI_COMM_FOCUS, ierr ) ! wait all cpus;
      start = MPI_Wtime()
      call unpacking(xdof)
      !call truncnt
@@ -155,7 +155,7 @@ subroutine costfun(ideriv)
        ttlen      , t1L, t2L, weight_ttlen, case_length, &
        cssep      , t1S, t2S, weight_cssep, &
        specw      , t1P, t2P, weight_specw, &
-       ccsep      , t1C, t2C, weight_ccsep
+       ccsep      , t1C, t2C, weight_ccsep, MPI_COMM_FOCUS
 
   implicit none
   include "mpif.h"
@@ -166,7 +166,7 @@ subroutine costfun(ideriv)
   REAL                :: start, finish
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  call mpi_barrier(MPI_COMM_WORLD, ierr)
+  call mpi_barrier(MPI_COMM_FOCUS, ierr)
   
   bnorm = zero 
   bharm = zero
@@ -365,7 +365,7 @@ subroutine costfun(ideriv)
      if ( ideriv == 1 ) sumDE = sqrt(sum(LM_fjac**2))
   endif  
   
-  call mpi_barrier(MPI_COMM_WORLD, ierr)
+  call mpi_barrier(MPI_COMM_FOCUS, ierr)
 
   return
 end subroutine costfun
@@ -375,7 +375,7 @@ end subroutine costfun
 subroutine normweight
   use globals, only: dp, zero, one, machprec, ounit, myid, xdof, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
        weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_specw, weight_ccsep, &
-       target_tflux, psi_avg, coil, Ncoils, case_length, Bmnc, Bmns, tBmnc, tBmns
+       target_tflux, psi_avg, coil, Ncoils, case_length, Bmnc, Bmns, tBmnc, tBmns, MPI_COMM_FOCUS
 
   implicit none  
   include "mpif.h"
@@ -503,7 +503,7 @@ subroutine output (mark)
 
   use globals, only: dp, zero, ounit, myid, ierr, astat, iout, Nouts, Ncoils, save_freq, Tdof, &
        coil, coilspace, FouCoil, chi, t1E, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
-       evolution, xdof, DoF, exit_tol, exit_signal, sumDE
+       evolution, xdof, DoF, exit_tol, exit_signal, sumDE, MPI_COMM_FOCUS
 
   implicit none  
   include "mpif.h"
@@ -563,7 +563,7 @@ subroutine output (mark)
 
   if(mod(iout,save_freq) .eq. 0) call saving
 
-  call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
+  call MPI_BARRIER( MPI_COMM_FOCUS, ierr ) ! wait all cpus;
 
   return  
 

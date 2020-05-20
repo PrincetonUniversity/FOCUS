@@ -251,7 +251,7 @@ subroutine rdcoils
               coil(icoil)%symm = 0 ! automatic reset to 0; might not be necessary; 2020/01/17
            else
               STOP " wrong coil type in rdcoils"
-              call MPI_ABORT(MPI_COMM_WORLD, 1, ierr)
+              call MPI_ABORT(MPI_COMM_FOCUS, 1, ierr)
            endif              
         enddo !end do icoil;
         close( runit )
@@ -321,7 +321,7 @@ subroutine rdcoils
            if(coil(icoil)%Lc == 0) Nfixgeo = Nfixgeo + 1
         else
            STOP " wrong coil type in rdcoils"
-           call MPI_ABORT(MPI_COMM_WORLD, 1, ierr)
+           call MPI_ABORT(MPI_COMM_FOCUS, 1, ierr)
         endif
      enddo
   !-------------toroidally placed circular coils---------------------------------------------------------
@@ -363,7 +363,7 @@ subroutine rdcoils
         SALLOCATE( FouCoil(icoil)%zc, (0:NFcoil), zero )
         SALLOCATE( FouCoil(icoil)%zs, (0:NFcoil), zero )
         ! get the geometry center
-        zeta = (icoil-1+half) * pi2 / (Ncoils*Nfp*2**symmetry)  ! put a half for a shift;       
+        zeta = (icoil-1+half) * pi2 / (Ncoils*surf_Nfp*2**symmetry)  ! put a half for a shift;       
         call surfcoord( plasma, zero, zeta, r1, z1)
         call surfcoord( plasma,   pi, zeta, r2, z2)
         Rmaj = half * (r1 + r2)
@@ -496,7 +496,7 @@ subroutine discoil(ifirst)
 ! if ifirst = 1, it will update all the coils; otherwise, only update free coils;
 ! date: 20170314
 !---------------------------------------------------------------------------------------------
-  use globals, only: dp, zero, pi2, myid, ounit, coil, FouCoil, Ncoils, DoF
+  use globals, only: dp, zero, pi2, myid, ounit, coil, FouCoil, Ncoils, DoF, MPI_COMM_FOCUS
   use mpi
   implicit none
 
@@ -615,7 +615,7 @@ SUBROUTINE discfou2
   ! calling fouriermatrix for single set
   ! DATE: 2017/03/18
   !---------------------------------------------------------------------------------------------  
-  use globals, only: dp, zero, pi2, myid, ncpu, ounit, coil, FouCoil, Ncoils
+  use globals, only: dp, zero, pi2, myid, ncpu, ounit, coil, FouCoil, Ncoils, MPI_COMM_FOCUS
   implicit none
   include "mpif.h"
 
@@ -732,7 +732,7 @@ END subroutine fouriermatrix
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE readcoils(filename, maxnseg)
-  use globals, only: dp, zero, coilsX, coilsY, coilsZ, coilsI, coilseg, coilname, Ncoils, ounit, myid
+  use globals, only: dp, zero, coilsX, coilsY, coilsZ, coilsI, coilseg, coilname, Ncoils, ounit, myid, MPI_COMM_FOCUS
   implicit none
   include "mpif.h"
 
@@ -749,7 +749,7 @@ SUBROUTINE readcoils(filename, maxnseg)
   open(cunit,FILE=trim(filename),STATUS='old',IOSTAT=istat)
   if ( istat .ne. 0 ) then
      write(ounit,'("rdcoils : Reading coils data error in "A)') trim(filename)
-     call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+     call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
   endif
      
   ! read coils and segments data
@@ -807,7 +807,7 @@ end SUBROUTINE READCOILS
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE Fourier( X, XFC, XFS, Nsegs, NFcoil)
-  use globals, only: dp, ounit, zero, pi2, half, myid
+  use globals, only: dp, ounit, zero, pi2, half, myid, MPI_COMM_FOCUS
   implicit none
   include "mpif.h"
 

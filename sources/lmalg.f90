@@ -209,7 +209,7 @@
 
 subroutine lmalg
 use globals, only: dp, sqrtmachprec, zero, myid, ounit, Ncoils, Ndof, t1E, iout, xdof, &
-     tstart, tfinish, NBmn, Nzeta, Nteta, tstart, tfinish, &
+     tstart, tfinish, NBmn, Nzeta, Nteta, tstart, tfinish, MPI_COMM_FOCUS, &
      LM_maxiter, LM_xtol, LM_ftol, LM_iter, LM_factor, LM_mfvec, LM_output
   use mpi
   implicit none
@@ -294,7 +294,7 @@ end subroutine lmalg
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine focus_fcn(m,n,x,fvec,fjac,ldfjac,iflag)
-  use globals, only: dp, zero, myid, ounit, LM_iter, LM_maxiter, &
+  use globals, only: dp, zero, myid, ounit, LM_iter, LM_maxiter, MPI_COMM_FOCUS, &
        &             exit_signal, LM_fvec, LM_fjac, tstart, tfinish
   use mpi
   implicit none

@@ -22,6 +22,14 @@
 bin/
 docs/
 
-examples/d3d_RMPx/
+examples/d3d_RMP/
 examples/rotating_ellipse/
 examples/lhd/
+examples/w7x_high_mirror/
+examples/limiter_surface/
+
+# python wrapper related
+*.fpp
+f90wrap_*.f90
+_*.so
+focus_pkg/

@@ -37,7 +37,7 @@ subroutine bnormal( ideriv )
        coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, plasma, &
        bnorm, t1B, t2B, bn, Ndof, Cdof, weight_bharm, case_bnormal, &
        weight_bnorm, ibnorm, mbnorm, ibharm, mbharm, LM_fvec, LM_fjac, &
-       bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn
+       bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn, MPI_COMM_FOCUS
   use bnorm_mod
   use bharm_mod
   use mpi
@@ -86,19 +86,19 @@ subroutine bnormal( ideriv )
         enddo ! end do iteta
      enddo ! end do jzeta
      ! gather data
-     call MPI_BARRIER( MPI_COMM_WORLD, ierr )     
-     call MPI_ALLREDUCE( MPI_IN_PLACE, surf(isurf)%Bx, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
-     call MPI_ALLREDUCE( MPI_IN_PLACE, surf(isurf)%By, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
-     call MPI_ALLREDUCE( MPI_IN_PLACE, surf(isurf)%Bz, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
-     call MPI_ALLREDUCE( MPI_IN_PLACE, surf(isurf)%Bn, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
-     call MPI_ALLREDUCE( MPI_IN_PLACE, bnorm, 1  , MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+     call MPI_BARRIER( MPI_COMM_FOCUS, ierr )     
+     call MPI_ALLREDUCE( MPI_IN_PLACE, surf(isurf)%Bx, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+     call MPI_ALLREDUCE( MPI_IN_PLACE, surf(isurf)%By, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+     call MPI_ALLREDUCE( MPI_IN_PLACE, surf(isurf)%Bz, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+     call MPI_ALLREDUCE( MPI_IN_PLACE, surf(isurf)%Bn, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+     call MPI_ALLREDUCE( MPI_IN_PLACE, bnorm, 1  , MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
      bnorm = bnorm * half * discretefactor
      bn = surf(isurf)%Bn +  surf(isurf)%pb  ! bn is B.n from coils
      ! bn = surf(isurf)%Bx * surf(isurf)%nx + surf(isurf)%By * surf(isurf)%ny + surf(isurf)%Bz * surf(isurf)%nz
      !! if (case_bnormal == 0) bnorm = bnorm * bsconstant * bsconstant ! take bsconst back
      ! collect |B|
      if (case_bnormal == 1) then 
-        call MPI_ALLREDUCE( MPI_IN_PLACE, Bm, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+        call MPI_ALLREDUCE( MPI_IN_PLACE, Bm, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
         !! bm = bm * bsconstant * bsconstant 
      endif     
      ! LM required discrete cost functions
@@ -187,9 +187,9 @@ subroutine bnormal( ideriv )
         enddo  !end iteta;
      enddo  !end jzeta;
      ! gather data
-     call MPI_BARRIER( MPI_COMM_WORLD, ierr )
-     call MPI_ALLREDUCE( MPI_IN_PLACE, t1B, Ndof        , MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
-     call MPI_ALLREDUCE( MPI_IN_PLACE, d1B, Ndof*NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+     call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
+     call MPI_ALLREDUCE( MPI_IN_PLACE, t1B, Ndof        , MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+     call MPI_ALLREDUCE( MPI_IN_PLACE, d1B, Ndof*NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
      t1B = t1B * discretefactor
      ! LM discrete derivatives
      if (mbnorm > 0) then
@@ -212,6 +212,6 @@ subroutine bnormal( ideriv )
      endif
   endif
   !--------------------------------------------------------------------------------------------
-  call MPI_barrier( MPI_COMM_WORLD, ierr )
+  call MPI_barrier( MPI_COMM_FOCUS, ierr )
   return
 end subroutine bnormal

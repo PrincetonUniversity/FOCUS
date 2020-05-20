@@ -20,7 +20,7 @@ SUBROUTINE fdcheck( ideriv )
 ! ideriv = 2 -> check the second derivatives with finite difference;
 !------------------------------------------------------------------------------------------------------
 
-  use globals, only: dp, zero, half, machprec, sqrtmachprec, ncpu, myid, ounit, &
+  use globals, only: dp, zero, half, machprec, sqrtmachprec, ncpu, myid, ounit, MPI_COMM_FOCUS, &
                      coil, xdof, Ndof, t1E, t2E, chi, LM_maxiter, LM_fvec, LM_fjac
                      
   implicit none
@@ -80,7 +80,7 @@ SUBROUTINE fdcheck( ideriv )
 
      if( myid.eq.0 ) then 
          write(ounit,'("fdcheck : ", I6, "/", I6, 4(" ; "ES23.15))') idof, Ndof, t1E(idof), fd, diff, rdiff
-         if (diff >= sqrtmachprec) write(ounit, *) "----------suspicious unmatching-----------------------"
+         if (diff >= small**2) write(ounit, *) "----------suspicious unmatching-----------------------"
       endif
       
   enddo
@@ -119,7 +119,7 @@ SUBROUTINE fdcheck( ideriv )
 
         if( myid.eq.0 ) then 
            write(ounit,'("fdcheck : ", I6, "/", I6, 4(" ; "ES23.15))') idof, Ndof, LM_fjac(ivec, idof), fd, diff, rdiff
-           if (diff >= sqrtmachprec) write(ounit, *) "----------suspicious unmatching-----------------------"
+           if (diff >= small**2) write(ounit, *) "----------suspicious unmatching-----------------------"
         endif
 
      enddo

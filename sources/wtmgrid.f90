@@ -11,7 +11,7 @@ end module mgrid_mod
 subroutine wtmgrid
   use globals, only : dp, zero, half, pi2, ext, ncpu, myid, ounit, wunit, runit, surf, plasma, &
        sqrtmachprec, master, nmaster, nworker, masterid, color, myworkid, &
-       MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS
+       MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS, MPI_COMM_FOCUS
   use mgrid_mod
   implicit none
   include "mpif.h"
@@ -27,7 +27,7 @@ subroutine wtmgrid
   CHARACTER(LEN=30)    :: curlabel(1:1)
 
   do icpu = 1, ncpu
-     call MPI_BARRIER( MPI_COMM_WORLD, ierr )
+     call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
      if (myid == icpu-1) then                              ! each cpu read the namelist in turn;
         open(runit, file=trim(trim(ext)//".input"), status="old", action='read')
         read(runit, mgrid)
@@ -50,7 +50,7 @@ subroutine wtmgrid
 
   ! split cores
   color = modulo(myid, np)
-  CALL MPI_COMM_SPLIT(MPI_COMM_WORLD, color, myid, MPI_COMM_MYWORLD, ierr)
+  CALL MPI_COMM_SPLIT(MPI_COMM_FOCUS, color, myid, MPI_COMM_MYWORLD, ierr)
   CALL MPI_COMM_RANK(MPI_COMM_MYWORLD, myworkid, ierr)
   CALL MPI_COMM_SIZE(MPI_COMM_MYWORLD, nworker, ierr)
 
@@ -60,7 +60,7 @@ subroutine wtmgrid
   else 
      color = 0
   endif
-  CALL MPI_COMM_SPLIT(MPI_COMM_WORLD, color, myid, MPI_COMM_MASTERS, ierr)
+  CALL MPI_COMM_SPLIT(MPI_COMM_FOCUS, color, myid, MPI_COMM_MASTERS, ierr)
   if ( myworkid == 0 ) then
      CALL MPI_COMM_RANK(MPI_COMM_MASTERS, masterid, ierr)
      CALL MPI_COMM_SIZE(MPI_COMM_MASTERS, nmaster, ierr)

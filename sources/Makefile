@@ -20,7 +20,7 @@
 # available env: /p/focus/modules/focus/basis
  CC=intel # if want to use gfortran; make CC=gfortran or other options
  FC=mpif90
- PFLAGS= # for pre-processing compiler flags, like -D dposition
+ PFLAGS=  # for pre-processing compiler flags, like -D dposition
  RFLAGS=-mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback  $(PFLAGS) #-vec_report0 #-ipo -xhost
  DFLAGS=-O0 -g -traceback $(PFLAGS) -check all -check bounds -check noarg_temp_created -check uninit \
      -ftrapuv -init=snan,arrays -debug all -D DEBUG
@@ -29,9 +29,9 @@
 # available env: /p/focus/modules/focus/gfortran
 ifeq ($(CC),gfortran)
 # RFLAGS=-O3 -w -fdefault-real-8 -ffree-line-length-none -march=native -ffast-math
- RFLAGS=-O3 -w -ffree-line-length-none -march=native -ffast-math $(PFLAGS)
- DFLAGS=-Og $(PFLAGS) -w -ffree-line-length-none -Wextra -Wtarget-lifetime -fbacktrace -fbounds-check  \
-     -ffpe-trap=zero -fcheck=all -DDEBUG
+ RFLAGS=-O3 -w -ffree-line-length-none -ffast-math $(PFLAGS)
+ DFLAGS=-O0 -g $(PFLAGS) -w -ffree-line-length-none -Wextra -Wtarget-lifetime -fbacktrace -fbounds-check  \
+     -ffpe-trap=zero -fcheck=all -finit-real=snan -DDEBUG
 endif
 
 #### EDDY Intel+IntelMPI+HDF5###############
@@ -52,6 +52,13 @@ endif
 
 ############################################################################################################
 
+# focuspy: focuspy.f90 libfocus.a
+# 	f2py --f90exec=${FC} --f90flags="-O3 -w -ffree-line-length-none -march=native -ffast-math" -m $@ -c $< fun.f90 libfocus.a
+
+# libfocus.a: $(ROBJS) $(NUMOBJ)
+# 	ar -ruv $@ $(ROBJS) $(NUMOBJ)
+# 	ranlib $@
+	
 xfocus: $(ROBJS) $(NUMOBJ)
 	$(FC) -o xfocus $(ROBJS) $(NUMOBJ) $(HDF5)
 	@echo "Compiling xfocus finished."
@@ -70,7 +77,7 @@ lmder1.o : lmder1.f
 	$(FC) -c $(RFLAGS) -o $@ $<
 
 hybrj.o: hybrj.f
-	$(FC) -c $(FLAGS) -o $@ $<
+	$(FC) -c $(RFLAGS) -o $@ $<
 
 cg_descent.o : cg_descent.f
 	$(FC) -c $(RFLAGS) -o $@ $<

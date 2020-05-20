@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='v0.11.00' ! version number
+  CHARACTER(10), parameter :: version='v0.12.04' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -66,13 +66,13 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=100)   :: ext       ! extention
-  CHARACTER(LEN=100)   :: inputfile ! input namelist
-  CHARACTER(LEN=100)   :: hdf5file  ! hdf5 file
-  CHARACTER(LEN=100)   :: out_coils ! output ext.coils file
-  CHARACTER(LEN=100)   :: out_focus ! output ext.focus file
-  CHARACTER(LEN=100)   :: out_harm  ! output harmonics file
-  CHARACTER(LEN=100)   :: out_plasma  ! updated plasma boundary
+  CHARACTER(100)   :: ext       ! extention
+  CHARACTER(100)   :: inputfile ! input namelist
+  CHARACTER(100)   :: hdf5file  ! hdf5 file
+  CHARACTER(100)   :: out_coils ! output ext.coils file
+  CHARACTER(100)   :: out_focus ! output ext.focus file
+  CHARACTER(100)   :: out_harm  ! output harmonics file
+  CHARACTER(100)   :: out_plasma  ! updated plasma boundary
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
@@ -157,10 +157,10 @@ module globals
   INTEGER              :: pp_maxiter     =  1000
   REAL                 :: pp_xtol        =  1.000D-06
 
-  CHARACTER(LEN=100)   :: input_surf     = 'plasma.boundary'  ! surface file
-  CHARACTER(LEN=100)   :: input_coils    = 'none'             ! input file for coils
-  CHARACTER(LEN=100)   :: input_harm     = 'target.harmonics' ! input target harmonics file
-  CHARACTER(LEN=100)   :: limiter_surf   = 'none'             ! limiter surface
+  CHARACTER(100)   :: input_surf     = 'plasma.boundary'  ! surface file
+  CHARACTER(100)   :: input_coils    = 'none'             ! input file for coils
+  CHARACTER(100)   :: input_harm     = 'target.harmonics' ! input target harmonics file
+  CHARACTER(100)   :: limiter_surf   = 'none'             ! limiter surface
                                                          
   namelist / focusin /  IsQuiet        , &
                         IsSymmetric    , &
@@ -242,9 +242,9 @@ module globals
 !latex  \subsection{MPI stuffs}
   INTEGER, PARAMETER   :: master=0
   INTEGER              :: myid, ncpu, myworkid, color, masterid, nmaster, nworker
-  INTEGER              :: MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS 
+  INTEGER              :: MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS, MPI_COMM_FOCUS
   REAL                 :: machprec, vsmall, small, sqrtmachprec
-  CHARACTER            :: nodelabel*3
+  CHARACTER(3)         :: nodelabel
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -266,7 +266,7 @@ module globals
           &                  R0, eR, aR, eZ, aZ, dphi
      REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), &
                              dl(:), dd(:)
-     character(LEN=10)    :: name
+     character(10)        :: name
   end type arbitrarycoil
 
   type FourierCoil
@@ -284,7 +284,7 @@ module globals
   type(FourierCoil)    , allocatable :: FouCoil(:)
   type(DegreeOfFreedom), allocatable :: DoF(:)
 
-  INTEGER              :: Nfp = 1, symmetry = 0
+  INTEGER              :: Nfp = 1, symmetry = 0, surf_Nfp = 1
   INTEGER              :: plasma = 1, limiter = 1
   REAL   , allocatable :: cosnfp(:), sinnfp(:)
     
