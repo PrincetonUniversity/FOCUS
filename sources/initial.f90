@@ -325,7 +325,7 @@ subroutine initial
           write(ounit,*)'     --init / -i  :  Write an example input file'
           write(ounit,*)'     --help / -h  :  Output help message'
           write(ounit,*)'-------------------------------------------------'
-          call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
+          call MPI_ABORT( MPI_COMM_FOCUS, 0, ierr )
       case ( '-i', '--init' )
           call write_focus_namelist ! in initial.h
       case default

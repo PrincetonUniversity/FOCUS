@@ -41,3 +41,4 @@ jobs:
         run: |
           pwd
           mpiexec $GITHUB_WORKSPACE/bin/xfocus -h
+          cd $GITHUB_WORKSPACE/examples/check_deriv && mpiexec ../../bin/xfocus deriv
