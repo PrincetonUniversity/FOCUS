@@ -12,7 +12,7 @@ SUBROUTINE diagnos
   use mpi
   implicit none
 
-  INTEGER           :: icoil, itmp, astat, ierr, NF, idof, i, j, isurf, cs, ip, is, Npc
+  INTEGER           :: icoil, itmp, astat, ierr, NF, idof, i, j, isurf, cs, ip, is, Npc, coilInd0, coilInd1
   LOGICAL           :: lwbnorm, l_raw
   REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist, ReDot, ImDot, dum
   REAL, parameter   :: infmax = 1.0E6
@@ -84,6 +84,8 @@ SUBROUTINE diagnos
   !-----------------------------minimum coil coil separation------------------------------------  
   ! coils are supposed to be placed in order
   minCCdist = infmax
+  coilInd0 = 0
+  coilInd1 = 1
   do icoil = 1, Ncoils
      if(coil(icoil)%type .ne. 1) exit ! only for Fourier
      if(Ncoils .eq. 1) exit ! if only one coil
@@ -121,7 +123,11 @@ SUBROUTINE diagnos
               if(myid .eq. 0) write(ounit, '(8X": distance between  "I3.3"-th and "I3.3"-th coil (ip="I2.2 & 
                    ", is="I1") is : " ES23.15)') icoil, itmp, ip, is, tmp_dist
 #endif
-              if (minCCdist .ge. tmp_dist) minCCdist=tmp_dist
+              if (minCCdist .ge. tmp_dist) then 
+                 minCCdist=tmp_dist
+                 coilInd0 = icoil
+                 coilInd1 = itmp
+              endif
            enddo
         enddo
         DALLOCATE(Btmp)
@@ -129,7 +135,10 @@ SUBROUTINE diagnos
      DALLOCATE(Atmp)
   enddo
 
-  if(myid .eq. 0) write(ounit, '(8X": The minimum coil-coil distance is "4X" :" ES23.15)') minCCdist
+  !if(myid .eq. 0) write(ounit, '(8X": The minimum coil-coil distance is "4X" :" ES23.15)') minCCdist
+  !if(myid .eq. 0) write(ounit, '(8X": The minimum coil-coil distance is between coils "I3.3" and "I3.3" and &
+  !        is "4X" :" ES23.15)') coilInd0, coilInd1, minCCdist
+  if(myid .eq. 0) write(ounit, '(8X": The minimum coil-coil distance is "4X" :" ES23.15" ; at coils"I3" ,"I3)') minCCdist, coilInd0, coilInd1
 
   !--------------------------------minimum coil plasma separation-------------------------------  
   minCPdist = infmax
