@@ -29,12 +29,13 @@ SUBROUTINE fdcheck( ideriv )
   INTEGER, INTENT(in)  :: ideriv
   !--------------------------------------------------------------------------------------------
 
-  INTEGER              :: astat, ierr, idof, ivec
+  INTEGER              :: astat, ierr, idof, ivec, imax
   REAL                 :: tmp_xdof(1:Ndof), fd, negvalue, posvalue, diff, rdiff
-  REAL                 :: start, finish
-  REAL, parameter      :: small=1.0E-4
+  REAL                 :: start, finish, maxdiff, maxrdiff, small
+  REAL, parameter      :: psmall=1.0E-4
   !--------------------------------------------------------------------------------------------
 
+  maxdiff = zero ; maxrdiff = zero ; imax = 0
   if(myid == 0) write(ounit, *) "-----------Checking derivatives------------------------------"
   FATAL( fdcheck, Ndof < 1, No enough DOFs )
   !--------------------------------------------------------------------------------------------
@@ -43,17 +44,27 @@ SUBROUTINE fdcheck( ideriv )
   !--------------------------------------------------------------------------------------------
 
   case( -1 )
-  if(myid == 0) write(ounit,'("fdcheck : Checking the first derivatives using finite-difference method")')
+  if (myid == 0) then 
+     write(ounit,'("fdcheck : Checking the first derivatives using finite-difference method.")')
+     write(ounit,'(8X": Relative perturbation magnitude: delta = "ES12.5)') psmall
+  end if
 
   call cpu_time(start)
   call costfun(1)
   call cpu_time(finish)
   if(myid .eq. 0) write(ounit,'("fdcheck : First order derivatives of energy function takes " &
        ES23.15 " seconds.")') finish - start
-  if( myid.eq.0 ) write(ounit,'("fdcheck : idof  /  Ndof ;   analytical value"5X" ;   fd-method value"6X &
-       " ;   difference"11X" ;   relative diff")')
+  if( myid.eq.0 ) write(ounit,'("fdcheck : idof/Ndof", 5(" ; ", A15))') "magnitude", "analytical",  &
+   &  "fd-method", "abs diff", "relative diff"
 
   do idof = 1, Ndof
+     if (xdof(idof) < psmall) then
+        ! absolute perturbation
+        small = psmall
+     else 
+        ! perturbation will be relative.
+        small = xdof(idof) * psmall
+     endif
      !backward pertubation;
      tmp_xdof = xdof
      tmp_xdof(idof) = tmp_xdof(idof) - half * small
@@ -75,15 +86,25 @@ SUBROUTINE fdcheck( ideriv )
      if( abs(fd) < machprec ) then
          rdiff = 0
      else
-         rdiff = diff / fd
+         rdiff = diff / abs(fd)
      endif
 
      if( myid.eq.0 ) then 
-         write(ounit,'("fdcheck : ", I6, "/", I6, 4(" ; "ES23.15))') idof, Ndof, t1E(idof), fd, diff, rdiff
-         if (diff >= small**2) write(ounit, *) "----------suspicious unmatching-----------------------"
+         write(ounit,'("fdcheck : ", I4, "/", I4, 5(" ; "ES15.7))') idof, Ndof, small, t1E(idof), fd, diff, rdiff
+         if (diff >= psmall**2) write(ounit, *) "----------suspicious unmatching-----------------------"
       endif
       
+      ! get the maximum difference
+      if (diff > maxdiff) then
+         imax = idof
+         maxdiff = diff
+         maxrdiff = rdiff
+      end if
   enddo
+
+  if (myid.eq.0) write(ounit, '(8X": Max. difference: ", ES12.5, "; relative diff: ", ES12.5, "; at i="I6," .")') maxdiff, maxrdiff, imax
+  ! return errorcode 1 
+  if (maxrdiff > psmall) call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
 
   ! L-M format
   if (LM_maxiter > 0) then
@@ -119,7 +140,7 @@ SUBROUTINE fdcheck( ideriv )
 
         if( myid.eq.0 ) then 
            write(ounit,'("fdcheck : ", I6, "/", I6, 4(" ; "ES23.15))') idof, Ndof, LM_fjac(ivec, idof), fd, diff, rdiff
-           if (diff >= small**2) write(ounit, *) "----------suspicious unmatching-----------------------"
+           if (diff >= psmall**2) write(ounit, *) "----------suspicious unmatching-----------------------"
         endif
 
      enddo
@@ -135,6 +156,8 @@ SUBROUTINE fdcheck( ideriv )
 
   end select
   !--------------------------------------------------------------------------------------------
+  call unpacking(xdof)
+
   return
 END SUBROUTINE fdcheck
 

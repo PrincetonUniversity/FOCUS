@@ -2,9 +2,9 @@
 
 ############################################################################################################
 
- ALLFILES= globals initial surface rdsurf rdknot rdcoils packdof bfield bmnharm bnormal fdcheck \
+ ALLFILES= globals curvature initial rdsurf rdknot rdcoils packdof bfield bmnharm bnormal fdcheck \
            torflux length surfsep datalloc solvers descent congrad lmalg saving diagnos \
-           specinp poinplot boozer wtmgrid focus
+           specinp poinplot boozer wtmgrid surface focus 
  HFILES= $(ALLFILES:=.f90)   # raw source files
  FFILES= $(ALLFILES:=_m.F90) # Fortran 90 files 
  PFILES= $(ALLFILES:=.pdf)   # documentations
@@ -20,7 +20,7 @@
 # available env: /p/focus/modules/focus/basis
  CC=intel # if want to use gfortran; make CC=gfortran or other options
  FC=mpif90
- PFLAGS=  # for pre-processing compiler flags, like -D dposition
+ PFLAGS= -D dposition # for pre-processing compiler flags, like -D dposition
  RFLAGS=-mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback  $(PFLAGS) #-vec_report0 #-ipo -xhost
  DFLAGS=-O0 -g -traceback $(PFLAGS) -check all -check bounds -check noarg_temp_created -check uninit \
      -ftrapuv -init=snan,arrays -debug all -D DEBUG

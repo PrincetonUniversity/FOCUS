@@ -272,7 +272,8 @@ subroutine bfield1(icoil, x, y, z, tBx, tBy, tBz, ND)
            Bz = one
         end select
         ! sum all the contributions
-        tBx = tBx + (Bx*cosnfp(ip) - By*sinnfp(ip))*(-1)**is
+        Bx = Bx*(-1)**is
+        tBx = tBx + (Bx*cosnfp(ip) - By*sinnfp(ip))
         tBy = tBy + (By*cosnfp(ip) + Bx*sinnfp(ip))
         tBz = tBz +  Bz
      enddo

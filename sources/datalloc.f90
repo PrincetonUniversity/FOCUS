@@ -119,7 +119,7 @@ subroutine AllocData(type)
 
      SALLOCATE(    xdof, (1:Ndof), zero ) ! dof vector;
      SALLOCATE( dofnorm, (1:Ndof), one ) ! dof normalized value vector;
-     SALLOCATE( evolution, (1:Nouts+1, 0:7), zero ) !evolution array;
+     SALLOCATE( evolution, (1:Nouts+1, 0:8), zero ) !evolution array;
      SALLOCATE( coilspace, (1:Nouts+1, 1:Tdof), zero ) ! all the coil parameters;
      
      ! determine dofnorm
@@ -258,7 +258,7 @@ subroutine AllocData(type)
      
      FATAL( AllocData, Ndof < 1, INVALID Ndof value )
      SALLOCATE( t1E, (1:Ndof), zero )
-     SALLOCATE( deriv, (1:Ndof, 0:6), zero )
+     SALLOCATE( deriv, (1:Ndof, 0:7), zero )
 
      ! Bnorm related;
      if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec) then
@@ -284,10 +284,15 @@ subroutine AllocData(type)
         SALLOCATE( t1L,  (1:Ndof), zero )
      endif
 
+     ! curv needed;
+     if (weight_curv > sqrtmachprec) then
+        SALLOCATE( t1CU,  (1:Ndof), zero )
+     endif
+
      ! cssep needed;
      if (weight_cssep > sqrtmachprec) then
         SALLOCATE( t1S,  (1:Ndof), zero )
-     endif
+     endif 
 
      ! L-M algorithn enabled
      if (LM_maxiter > 0) then
@@ -316,7 +321,13 @@ subroutine AllocData(type)
            mttlen = Ncoils - Nfixgeo
            LM_mfvec = LM_mfvec + mttlen
         endif
-        
+       
+        if (weight_curv > sqrtmachprec) then
+           icurv = LM_mfvec
+           mcurv = Ncoils - Nfixgeo
+           LM_mfvec = LM_mfvec + mcurv
+        endif
+ 
         if (weight_cssep > sqrtmachprec) then
            icssep = LM_mfvec
            mcssep = Ncoils - Nfixgeo

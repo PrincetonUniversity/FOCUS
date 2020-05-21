@@ -8,13 +8,13 @@ SUBROUTINE diagnos
   use globals, only: dp, zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
        Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
        cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, Nfp, weight_bnorm, overlap, plasma, &
-       cosnfp, sinnfp, symmetry, discretefactor, MPI_COMM_FOCUS, surf_Nfp
+       cosnfp, sinnfp, symmetry, discretefactor, MPI_COMM_FOCUS, surf_Nfp, curv, case_curv
   use mpi
   implicit none
 
   INTEGER           :: icoil, itmp, astat, ierr, NF, idof, i, j, isurf, cs, ip, is, Npc
   LOGICAL           :: lwbnorm, l_raw
-  REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist, ReDot, ImDot
+  REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist, ReDot, ImDot, dum
   REAL, parameter   :: infmax = 1.0E6
   REAL, allocatable :: Atmp(:,:), Btmp(:,:)
 
@@ -28,9 +28,9 @@ SUBROUTINE diagnos
   if (case_optimize == 0) call AllocData(0) ! if not allocate data;
   call costfun(0)
 
-  if (myid == 0) write(ounit, '("diagnos : "5(A12," ; "))') , &
-       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." 
-  if (myid == 0) write(ounit, '("        : "6(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep
+  if (myid == 0) write(ounit, '("diagnos : "6(A12," ; "))') , &
+       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." , "curv"
+  if (myid == 0) write(ounit, '("        : "6(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep, curv
 
   !save all the coil parameters;
   if (allocated(coilspace)) then
@@ -53,12 +53,11 @@ SUBROUTINE diagnos
      enddo
 !!$     FATAL( output , idof .ne. Tdof, counting error in restart )
   endif
-
   !-------------------------------coil maximum curvature----------------------------------------------------  
   MaxCurv = zero
   do icoil = 1, Ncoils
      if (coil(icoil)%type /= 1 .and. coil(icoil)%type /= 4) cycle
-     call curvature(icoil)
+     call CurvDeriv0(icoil,dum) !Might have to put a dummy return
      if (coil(icoil)%maxcurv .ge. MaxCurv) then
         MaxCurv = coil(icoil)%maxcurv
         itmp = icoil !record the number
@@ -213,26 +212,27 @@ END SUBROUTINE diagnos
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-subroutine curvature(icoil)
+!subroutine curvature(icoil)
 
-  use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils
-  implicit none
-  include "mpif.h"
+!  use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils
+!  implicit none
+!  include "mpif.h"
 
-  INTEGER, INTENT(in) :: icoil
+!  INTEGER, INTENT(in) :: icoil
 
-  REAL,allocatable    :: curv(:)
+!  REAL,allocatable    :: curv(:)
 
-  SALLOCATE(curv, (0:coil(icoil)%NS), zero)
+!  SALLOCATE(curv, (0:coil(icoil)%NS), zero)
+!  Why does this go from 0 to NS and not 0 to NS-1
 
-  curv = sqrt( (coil(icoil)%za*coil(icoil)%yt-coil(icoil)%zt*coil(icoil)%ya)**2  &
-             + (coil(icoil)%xa*coil(icoil)%zt-coil(icoil)%xt*coil(icoil)%za)**2  & 
-             + (coil(icoil)%ya*coil(icoil)%xt-coil(icoil)%yt*coil(icoil)%xa)**2 )& 
-             / ((coil(icoil)%xt)**2+(coil(icoil)%yt)**2+(coil(icoil)%zt)**2)**(1.5)
-  coil(icoil)%maxcurv = maxval(curv)
+!  curv = sqrt( (coil(icoil)%za*coil(icoil)%yt-coil(icoil)%zt*coil(icoil)%ya)**2  &
+!             + (coil(icoil)%xa*coil(icoil)%zt-coil(icoil)%xt*coil(icoil)%za)**2  & 
+!             + (coil(icoil)%ya*coil(icoil)%xt-coil(icoil)%yt*coil(icoil)%xa)**2 )& 
+!             / ((coil(icoil)%xt)**2+(coil(icoil)%yt)**2+(coil(icoil)%zt)**2)**(1.5)
+!  coil(icoil)%maxcurv = maxval(curv)
 
-  return
-end subroutine curvature
+!  return
+!end subroutine curvature
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

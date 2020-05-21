@@ -325,12 +325,17 @@ subroutine initial
           write(ounit,*)'     --init / -i  :  Write an example input file'
           write(ounit,*)'     --help / -h  :  Output help message'
           write(ounit,*)'-------------------------------------------------'
-          call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
+          call MPI_ABORT( MPI_COMM_FOCUS, 0, ierr )
       case ( '-i', '--init' )
           call write_focus_namelist ! in initial.h
       case default
           index_dot = INDEX(ext,'.input')
           IF (index_dot .gt. 0)  ext = ext(1:index_dot-1)
+          !-------------machine constants ------------------------------------------------
+          machprec = epsilon(pi)         ! get the machine precision
+          sqrtmachprec = sqrt(machprec)  ! sqrt of machine precision
+          vsmall = ten * machprec        ! very small number
+          small = thousand * machprec    ! small number
           write(ounit, '("initial : machine_prec   = ", ES12.5, " ; sqrtmachprec   = ", ES12.5)') machprec, sqrtmachprec
 #ifdef DEBUG
           write(ounit, '("DEBUG info: extension from command line is "A)') trim(ext)
@@ -389,12 +394,6 @@ subroutine check_input
   implicit none
    
   LOGICAL :: exist
-  
-  !-------------machine constants -----------------------------------------------------------------------
-  machprec = epsilon(pi)         ! get the machine precision
-  sqrtmachprec = sqrt(machprec)  ! sqrt of machine precision
-  vsmall = ten * machprec        ! very small number
-  small = thousand * machprec    ! small number
 
   !-------------output files name ---------------------------------------------------------------------------
   hdf5file   = "focus_"//trim(ext)//".h5"
@@ -425,7 +424,8 @@ subroutine check_input
         FATAL( initial, .not.exist, coils file coils.ext not provided )
         FATAL( initial, NFcoil <= 0    , no enough harmonics )
         FATAL( initial, Nseg   <= 0    , no enough segments  )
-        FATAL( initial, target_length  < zero, illegal )        
+        FATAL( initial, target_length < zero, illegal )        
+        FATAL( initial, k0            < zero, illegal )
         write(ounit, '("        : Read initial coils    from : ", A, A)') trim(input_coils), '(MAKEGRID format)'
      case( 0 )
         if (trim(input_coils) == 'none') input_coils = trim(ext)//".focus"
@@ -438,13 +438,15 @@ subroutine check_input
         FATAL( initial, init_radius < zero, invalid coil radius)
         FATAL( initial, NFcoil <= 0    , no enough harmonics )
         FATAL( initial, Nseg   <= 0    , no enough segments  )
-        FATAL( initial, target_length  < zero, illegal )
+        FATAL( initial, target_length < zero, illegal )
+        FATAL( initial, k0            < zero, illegal )
         if (IsQuiet < 1) write(ounit, 1000) 'case_init', case_init, 'Initialize circular coils.'
      case( 2 )
         FATAL( initial, Ncoils < 1, should provide the No. of coils)
         FATAL( initial, init_current == zero, invalid coil current)
         FATAL( initial, init_radius < zero, invalid coil radius)
-        FATAL( initial, target_length  < zero, illegal )
+        FATAL( initial, target_length < zero, illegal )
+        FATAL( initial, k0            < zero, illegal )
         if (IsQuiet < 1) write(ounit, 1000) 'case_init', case_init, 'Initialize magnetic dipoles.'
      case default
         FATAL( initial, .true., selected case_init is not supported )
@@ -611,8 +613,21 @@ subroutine check_input
         if (IsQuiet < 1) write(ounit, 1000) 'case_length', case_length, 'Quadratic format of length penalty.'
      case ( 2 )
         if (IsQuiet < 1) write(ounit, 1000) 'case_length', case_length, 'Exponential format of length penalty.'
+     case ( 3 )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_length', case_length, 'Delta quadratic length penalty.'
      case default
         FATAL( initial, .true., selected case_length is not supported )
+     end select
+
+     select case ( case_curv )
+     case ( 1 )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_curv', case_curv, 'Linear format of curvature penalty.'
+     case ( 2 )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_curv', case_curv, 'Quadratic format of curvature penalty.'
+     case ( 3 )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_curv', case_curv, 'Penalty function of curvature.'
+     case default
+        FATAL( initial, .true., selected case_curv is not supported )
      end select
 
      FATAL( initial, weight_bnorm  < zero, illegal )
@@ -678,7 +693,9 @@ subroutine check_input
   tmpt_tflux = target_tflux
   tmpw_ttlen = weight_ttlen
  !tmpw_specw = weight_specw
-  tmpw_cssep = weight_cssep
+  tmpw_ccsep = weight_ccsep
+  tmpw_curv  = weight_curv
+ !tmpw_cssep = weight_cssep
 
   call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
 
