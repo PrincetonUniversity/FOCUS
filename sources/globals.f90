@@ -286,10 +286,10 @@ module globals
      REAL   , allocatable :: xdof(:), xof(:,:), yof(:,:), zof(:,:)
   end type DegreeOfFreedom
   
-  type(arbitrarycoil)  , allocatable :: coil(:)  
-  type(toroidalsurface), allocatable :: surf(:)
-  type(FourierCoil)    , allocatable :: FouCoil(:)
-  type(DegreeOfFreedom), allocatable :: DoF(:)
+  type(arbitrarycoil)  , target, allocatable :: coil(:)  
+  type(toroidalsurface), target, allocatable :: surf(:)
+  type(FourierCoil)    , target, allocatable :: FouCoil(:)
+  type(DegreeOfFreedom), target, allocatable :: DoF(:)
 
   INTEGER              :: Nfp = 1, symmetry = 0, surf_Nfp = 1
   INTEGER              :: plasma = 1, limiter = 1
