@@ -76,6 +76,10 @@ SUBROUTINE diagnos
        if(coil(icoil)%type .ne. 1) exit ! only for Fourier
        call avgcurvature(icoil)
        AvgCurv = AvgCurv + coil(icoil)%avgcurv
+#ifdef DEBUG
+     if(myid .eq. 0) write(ounit, '(8X": Average curvature of "I3 "-th coil is : " ES23.15)') &
+          icoil, coil(icoil)%avgcurv
+#endif
     enddo
     AvgCurv = AvgCurv / Ncoils
     if(myid .eq. 0) write(ounit, '(8X": Average curvature of the coils is"5X" :" ES23.15)') AvgCurv
@@ -249,7 +253,7 @@ subroutine avgcurvature(icoil)
 
   REAL,allocatable    :: davgcurv(:)
 
-  SALLOCATE(davgcurv, (0:coil(icoil)%NS), zero)
+  SALLOCATE(davgcurv, (0:coil(icoil)%NS-1), zero)
 
   davgcurv = sqrt( (coil(icoil)%za*coil(icoil)%yt-coil(icoil)%zt*coil(icoil)%ya)**2  &
              + (coil(icoil)%xa*coil(icoil)%zt-coil(icoil)%xt*coil(icoil)%za)**2  & 
