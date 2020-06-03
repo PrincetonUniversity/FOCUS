@@ -227,7 +227,7 @@ end subroutine fortran_allocate
 
 subroutine allocate_coils()
   ! allocate the allocatable derived types of coil data
-  use globals, only: Ncoils, coil, DoF, FourCoil
+  use globals, only: Ncoils, coil, DoF, FouCoil, ounit
   implicit none
 
   INTEGER :: ierr
