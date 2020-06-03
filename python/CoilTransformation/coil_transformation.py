@@ -13,7 +13,7 @@ from jax.ops import index, index_add, index_update
 
 import sys
 import os
-from CoilPy import FourSurf, Coil
+from coilpy import FourSurf, Coil
 
 methods = ['nelder-mead', 'powell', 'cg', 'bfgs', 'newton-cg',
            'l-bfgs-b', 'tnc', 'cobyla', 'slsqp', 'trust-constr',
