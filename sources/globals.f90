@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(10), parameter :: version='v0.13.03' ! version number
+  CHARACTER(10), parameter :: version='v0.13.04' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -159,6 +159,7 @@ module globals
   REAL                 :: pp_zmax        =  0.000D+00
   INTEGER              :: pp_ns          =  10
   INTEGER              :: pp_maxiter     =  1000
+  INTEGER              :: pp_nsteps      =  1
   REAL                 :: pp_xtol        =  1.000D-06
 
   CHARACTER(100)   :: input_surf     = 'plasma.boundary'  ! surface file
@@ -242,6 +243,7 @@ module globals
                         pp_zmax        , &
                         pp_ns          , &
                         pp_maxiter     , &
+                        pp_nsteps      , &
                         pp_xtol        
 
 
