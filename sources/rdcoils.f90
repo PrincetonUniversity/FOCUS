@@ -734,7 +734,7 @@ SUBROUTINE readcoils(filename, maxnseg)
    read(cunit,'(a)', IOSTAT = istat) line
    if(istat .ne. 0 .or. line(1:3) == 'end') exit !detect EOF or end
 
-   read(line, *, IOSTAT=lstat) tmp, tmp, tmp, tmp, tmp, name
+   read(line, *, IOSTAT=lstat) tmp, tmp, tmp, tmp, tmp, coilname(icoil)
    if (lstat .ne. 0) then
       iseg = iseg + 1
       read(line, *) coilsX(iseg, icoil), coilsY(iseg, icoil), coilsZ(iseg, icoil), coilsI(icoil)
