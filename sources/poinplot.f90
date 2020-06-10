@@ -108,7 +108,7 @@ SUBROUTINE poinplot
      if (niter==0) then
         iota(is) = zero
      else 
-        iota(is) = rzrzt(5) / (niter*pi2/surf(Plasma)%Nfp)
+        iota(is) = rzrzt(5) / (niter*pi2)
      endif
 
      if (myworkid == 0) write(ounit, '(8X": order="I6" ; masterid="I6" ; (R,Z)=("ES12.5","ES12.5 & 
