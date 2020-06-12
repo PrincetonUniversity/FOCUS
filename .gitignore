@@ -22,12 +22,7 @@
 
 bin/
 docs/
-
-examples/d3d_RMP/
-examples/rotating_ellipse/
-examples/lhd/
-examples/w7x_high_mirror/
-examples/limiter_surface/
+examples/
 
 # python wrapper related
 *.fpp

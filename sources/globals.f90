@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(10), parameter :: version='v0.13.05' ! version number
+  CHARACTER(10), parameter :: version='v0.13.06' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -110,6 +110,7 @@ module globals
   REAL                 :: target_tflux   =   0.000D+00
   REAL                 :: weight_ttlen   =   0.000D+00
   REAL                 :: target_length  =   0.000D+00
+  REAL                 :: length_delta   =   0.000D+00
   REAL                 :: weight_cssep   =   0.000D+00
   REAL                 :: cssep_factor   =   4.000D+00 
   REAL                 :: weight_specw   =   0.000D+00
@@ -201,6 +202,7 @@ module globals
                         target_tflux   , &
                         weight_ttlen   , &
                         target_length  , &
+                        length_delta   , &
                         weight_cssep   , &
                         cssep_factor   , &
                         weight_specw   , &
