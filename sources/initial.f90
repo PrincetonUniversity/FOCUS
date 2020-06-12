@@ -314,6 +314,12 @@ subroutine initial
   if(myid == 0) write(ounit, *) "---------------------  FOCUS ", version, "------------------------------"
   if(myid == 0) write(ounit,'("focus   : Begin execution with ncpu =",i5)') ncpu
 
+  !-------------machine constants -----------------------------------------------------------------------
+  machprec = epsilon(pi)         ! get the machine precision
+  sqrtmachprec = sqrt(machprec)  ! sqrt of machine precision
+  vsmall = ten * machprec        ! very small number
+  small = thousand * machprec    ! small number
+
   !-------------read input namelist----------------------------------------------------------------------
   if(myid == 0) then ! only the master node reads the input; 25 Mar 15;
       call getarg(1,ext) ! get argument from command line
@@ -389,12 +395,6 @@ subroutine check_input
   implicit none
    
   LOGICAL :: exist
-  
-  !-------------machine constants -----------------------------------------------------------------------
-  machprec = epsilon(pi)         ! get the machine precision
-  sqrtmachprec = sqrt(machprec)  ! sqrt of machine precision
-  vsmall = ten * machprec        ! very small number
-  small = thousand * machprec    ! small number
 
   !-------------output files name ---------------------------------------------------------------------------
   hdf5file   = "focus_"//trim(ext)//".h5"
