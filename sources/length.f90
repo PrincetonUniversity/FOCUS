@@ -162,6 +162,7 @@ subroutine length(ideriv)
      endif
 
      t1L = t1L / (Ncoils - Nfixgeo + machprec)
+
   endif
 
   return
@@ -173,7 +174,7 @@ end subroutine length
 
 subroutine LenDeriv0(icoil, length)
 
-  use globals, only: dp, zero, coil, myid, ounit, Ncoils, MPI_COMM_FOCUS 
+  use globals, only: dp, zero, coil, myid, ounit, Ncoils, MPI_COMM_FOCUS
   implicit none
   include "mpif.h"
 
@@ -193,7 +194,7 @@ subroutine LenDeriv0(icoil, length)
      length  = length + dlength * coil(icoil)%dd(kseg)
 
   enddo ! end kseg
- 
+
   return
 
 end subroutine LenDeriv0

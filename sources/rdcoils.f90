@@ -324,6 +324,7 @@ subroutine rdcoils
         coil(icoil)%L  =  pi2*init_radius
         coil(icoil)%Lc =  IsVaryGeometry
         coil(icoil)%Lo =  target_length
+        !coil(icoil)%k0 =  k0
         write(coil(icoil)%name,'("Mod_"I3.3)') icoil
         FATAL( rdcoils, coil(icoil)%Ic < 0 .or. coil(icoil)%Ic > 1, illegal )
         FATAL( rdcoils, coil(icoil)%Lc < 0 .or. coil(icoil)%Lc > 1, illegal )
