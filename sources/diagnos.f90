@@ -12,9 +12,9 @@ SUBROUTINE diagnos
   use mpi
   implicit none
 
-  INTEGER           :: icoil, itmp, astat, ierr, NF, idof, i, j, isurf, cs, ip, is, Npc
+  INTEGER           :: icoil, itmp, astat, ierr, NF, idof, i, j, isurf, cs, ip, is, Npc, coilInd0, coilInd1
   LOGICAL           :: lwbnorm, l_raw
-  REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist, ReDot, ImDot, dum
+  REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist, ReDot, ImDot, dum, AvgCurv
   REAL, parameter   :: infmax = 1.0E6
   REAL, allocatable :: Atmp(:,:), Btmp(:,:)
 
@@ -70,6 +70,20 @@ SUBROUTINE diagnos
   if(myid .eq. 0) write(ounit, '(8X": Maximum curvature of all the coils is  :" ES23.15 &
        " ; at coil " I3)') MaxCurv, itmp
 
+  !-------------------------------average coil curvature-------------------------------------------------------
+    AvgCurv = zero
+    do icoil = 1, Ncoils
+       if(coil(icoil)%type .ne. 1) exit ! only for Fourier
+       call avgcurvature(icoil)
+       AvgCurv = AvgCurv + coil(icoil)%avgcurv
+#ifdef DEBUG
+     if(myid .eq. 0) write(ounit, '(8X": Average curvature of "I3 "-th coil is : " ES23.15)') &
+          icoil, coil(icoil)%avgcurv
+#endif
+    enddo
+    AvgCurv = AvgCurv / Ncoils
+    if(myid .eq. 0) write(ounit, '(8X": Average curvature of the coils is"5X" :" ES23.15)') AvgCurv
+
   !-------------------------------average coil length-------------------------------------------------------  
   AvgLength = zero
   if ( (case_length == 1) .and. (sum(coil(1:Ncoils)%Lo) < sqrtmachprec) ) coil(1:Ncoils)%Lo = one
@@ -84,6 +98,8 @@ SUBROUTINE diagnos
   !-----------------------------minimum coil coil separation------------------------------------  
   ! coils are supposed to be placed in order
   minCCdist = infmax
+  coilInd0 = 0
+  coilInd1 = 1
   do icoil = 1, Ncoils
      if(coil(icoil)%type .ne. 1) exit ! only for Fourier
      if(Ncoils .eq. 1) exit ! if only one coil
@@ -121,7 +137,11 @@ SUBROUTINE diagnos
               if(myid .eq. 0) write(ounit, '(8X": distance between  "I3.3"-th and "I3.3"-th coil (ip="I2.2 & 
                    ", is="I1") is : " ES23.15)') icoil, itmp, ip, is, tmp_dist
 #endif
-              if (minCCdist .ge. tmp_dist) minCCdist=tmp_dist
+              if (minCCdist .ge. tmp_dist) then 
+                 minCCdist=tmp_dist
+                 coilInd0 = icoil
+                 coilInd1 = itmp
+              endif
            enddo
         enddo
         DALLOCATE(Btmp)
@@ -129,7 +149,10 @@ SUBROUTINE diagnos
      DALLOCATE(Atmp)
   enddo
 
-  if(myid .eq. 0) write(ounit, '(8X": The minimum coil-coil distance is "4X" :" ES23.15)') minCCdist
+  !if(myid .eq. 0) write(ounit, '(8X": The minimum coil-coil distance is "4X" :" ES23.15)') minCCdist
+  !if(myid .eq. 0) write(ounit, '(8X": The minimum coil-coil distance is between coils "I3.3" and "I3.3" and &
+  !        is "4X" :" ES23.15)') coilInd0, coilInd1, minCCdist
+  if(myid .eq. 0) write(ounit, '(8X": The minimum coil-coil distance is "4X" :" ES23.15" ; at coils"I3" ,"I3)') minCCdist, coilInd0, coilInd1
 
   !--------------------------------minimum coil plasma separation-------------------------------  
   minCPdist = infmax
@@ -220,27 +243,28 @@ END SUBROUTINE diagnos
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-!subroutine curvature(icoil)
+subroutine avgcurvature(icoil)
 
-!  use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils
-!  implicit none
-!  include "mpif.h"
+  use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils
+  implicit none
+  include "mpif.h"
 
-!  INTEGER, INTENT(in) :: icoil
+  INTEGER, INTENT(in) :: icoil
 
-!  REAL,allocatable    :: curv(:)
+  REAL,allocatable    :: davgcurv(:)
 
-!  SALLOCATE(curv, (0:coil(icoil)%NS), zero)
-!  Why does this go from 0 to NS and not 0 to NS-1
+  SALLOCATE(davgcurv, (0:coil(icoil)%NS-1), zero)
 
-!  curv = sqrt( (coil(icoil)%za*coil(icoil)%yt-coil(icoil)%zt*coil(icoil)%ya)**2  &
-!             + (coil(icoil)%xa*coil(icoil)%zt-coil(icoil)%xt*coil(icoil)%za)**2  & 
-!             + (coil(icoil)%ya*coil(icoil)%xt-coil(icoil)%yt*coil(icoil)%xa)**2 )& 
-!             / ((coil(icoil)%xt)**2+(coil(icoil)%yt)**2+(coil(icoil)%zt)**2)**(1.5)
-!  coil(icoil)%maxcurv = maxval(curv)
+  davgcurv = sqrt( (coil(icoil)%za*coil(icoil)%yt-coil(icoil)%zt*coil(icoil)%ya)**2  &
+             + (coil(icoil)%xa*coil(icoil)%zt-coil(icoil)%xt*coil(icoil)%za)**2  & 
+             + (coil(icoil)%ya*coil(icoil)%xt-coil(icoil)%yt*coil(icoil)%xa)**2 )& 
+             / ((coil(icoil)%xt)**2+(coil(icoil)%yt)**2+(coil(icoil)%zt)**2)**(1.5)
+  davgcurv = davgcurv*sqrt(coil(icoil)%xt**2+coil(icoil)%yt**2+coil(icoil)%zt**2)
+  coil(icoil)%avgcurv = pi2*sum(davgcurv)/size(davgcurv)
+  coil(icoil)%avgcurv = coil(icoil)%avgcurv/coil(icoil)%L
 
-!  return
-!end subroutine curvature
+  return
+end subroutine avgcurvature
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
