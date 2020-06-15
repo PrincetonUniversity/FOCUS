@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(10), parameter :: version='v0.13.04' ! version number
+  CHARACTER(10), parameter :: version='v0.13.06' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -161,6 +161,7 @@ module globals
   REAL                 :: pp_zmax        =  0.000D+00
   INTEGER              :: pp_ns          =  10
   INTEGER              :: pp_maxiter     =  1000
+  INTEGER              :: pp_nsteps      =  1
   REAL                 :: pp_xtol        =  1.000D-06
 
   CHARACTER(100)   :: input_surf     = 'plasma.boundary'  ! surface file
@@ -246,6 +247,7 @@ module globals
                         pp_zmax        , &
                         pp_ns          , &
                         pp_maxiter     , &
+                        pp_nsteps      , &
                         pp_xtol        
 
 
@@ -290,10 +292,10 @@ module globals
      REAL   , allocatable :: xdof(:), xof(:,:), yof(:,:), zof(:,:)
   end type DegreeOfFreedom
   
-  type(arbitrarycoil)  , allocatable :: coil(:)  
-  type(toroidalsurface), allocatable :: surf(:)
-  type(FourierCoil)    , allocatable :: FouCoil(:)
-  type(DegreeOfFreedom), allocatable :: DoF(:)
+  type(arbitrarycoil)  , target, allocatable :: coil(:)  
+  type(toroidalsurface), target, allocatable :: surf(:)
+  type(FourierCoil)    , target, allocatable :: FouCoil(:)
+  type(DegreeOfFreedom), target, allocatable :: DoF(:)
 
   INTEGER              :: Nfp = 1, symmetry = 0, surf_Nfp = 1
   INTEGER              :: plasma = 1, limiter = 1

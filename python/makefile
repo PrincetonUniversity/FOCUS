@@ -90,7 +90,7 @@ LIBSRC_WRAP_FPP_FILES = $(addsuffix .fpp,${LIBSRC_WRAP_SOURCES})
 .PHONY: all all_clean
 
 
-all: _${PYTHON_MODN}.so  _${PYTHON_MODN}_pkg.so test
+all: _${PYTHON_MODN}.so test
 
 all_clean: f90wrap_clean
 	make -C ${SOURCES} clean ALLFILES="${ALLFILES} focuspy"
@@ -116,11 +116,8 @@ $(LIB_NAME): $(addprefix, ${SOURCES}/, $(HFILES)) focuspy.f90
 _${PYTHON_MODN}.so: $(LIB_NAME) ${LIBSRC_WRAP_FPP_FILES} 
 	f90wrap -m ${PYTHON_MODN} ${LIBSRC_WRAP_FPP_FILES} -k ${KIND_MAP} -v
 	f2py-f90wrap --f90exec=${FC} --build-dir . -c -m _${PYTHON_MODN} -L. -l$(PYTHON_MODN) -I${SOURCES} $(HDF5) f90wrap*.f90
+	#sed -i '' 's/""", globals/""", Globals/g' focus.py
 
-
-_${PYTHON_MODN}_pkg.so: $(LIB_NAME) ${LIBSRC_WRAP_FPP_FILES}
-	f90wrap -m ${PYTHON_MODN}_pkg ${LIBSRC_WRAP_FPP_FILES} -k ${KIND_MAP} -v -P
-	f2py-f90wrap --f90exec=${FC} --build-dir . -c -m _${PYTHON_MODN}_pkg -L. -l$(PYTHON_MODN) -I${SOURCES} $(HDF5) f90wrap*.f90
 
 test:
 	@python -c "import focus; print('FOCUS version: {:}'.format(focus.globals.version))"

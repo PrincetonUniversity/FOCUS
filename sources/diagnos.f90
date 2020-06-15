@@ -56,7 +56,7 @@ SUBROUTINE diagnos
   !-------------------------------coil maximum curvature----------------------------------------------------  
   MaxCurv = zero
   do icoil = 1, Ncoils
-     if(coil(icoil)%type .ne. 1) exit ! only for Fourier
+     if(coil(icoil)%type .ne. 1) cycle ! only for Fourier
      call CurvDeriv0(icoil,dum) !Might have to put a dummy return
      if (coil(icoil)%maxcurv .ge. MaxCurv) then
         MaxCurv = coil(icoil)%maxcurv
@@ -89,7 +89,7 @@ SUBROUTINE diagnos
   if ( (case_length == 1) .and. (sum(coil(1:Ncoils)%Lo) < sqrtmachprec) ) coil(1:Ncoils)%Lo = one
   call length(0)
   do icoil = 1, Ncoils
-     if(coil(icoil)%type .ne. 1) exit ! only for Fourier
+     if(coil(icoil)%type .ne. 1) cycle ! only for Fourier
      AvgLength = AvgLength + coil(icoil)%L
   enddo
   AvgLength = AvgLength / Ncoils
@@ -101,7 +101,7 @@ SUBROUTINE diagnos
   coilInd0 = 0
   coilInd1 = 1
   do icoil = 1, Ncoils
-     if(coil(icoil)%type .ne. 1) exit ! only for Fourier
+     if(coil(icoil)%type .ne. 1) cycle ! only for Fourier
      if(Ncoils .eq. 1) exit ! if only one coil
      ! Data for the first coil
      SALLOCATE(Atmp, (1:3,0:coil(icoil)%NS-1), zero)
@@ -158,7 +158,7 @@ SUBROUTINE diagnos
   minCPdist = infmax
   do icoil = 1, Ncoils
 
-     if(coil(icoil)%type .ne. 1) exit ! only for Fourier
+     if(coil(icoil)%type .ne. 1) cycle ! only for Fourier
 
      SALLOCATE(Atmp, (1:3,0:coil(icoil)%NS-1), zero)
      SALLOCATE(Btmp, (1:3,1:(Nteta*Nzeta)), zero)
