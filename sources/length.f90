@@ -148,6 +148,7 @@ subroutine length(ideriv)
                  if (case_length == 2) &
                       & LM_fjac(ivec, idof+1:idof+ND) = LM_fjac(ivec, idof+1:idof+ND) &
                       & * exp(coil(icoil)%L) / exp(coil(icoil)%Lo)
+                 ! Need to add in case_length == 3 
                  ivec = ivec + 1
               endif
            endif 

@@ -333,20 +333,21 @@ subroutine costfun(ideriv)
 !!$   endif
 !!$
 !!$  endif
-!!$
-!!$  if (weight_ccsep .ge. machprec) then
-!!$
-!!$   call coilsep(ideriv)
-!!$   chi = chi + weight_ccsep * ccsep
-!!$   if     ( ideriv == 1 ) then
-!!$    t1E = t1E + weight_ccsep * t1C
-!!$   elseif ( ideriv == 2 ) then
-!!$    t1E = t1E + weight_ccsep * t1C
-!!$    t2E = t2E + weight_ccsep * t2C
-!!$   endif
-!!$
-!!$  endif
-!!$
+
+  ! coil to coil separation 
+  if (weight_ccsep .ge. machprec) then
+
+   call coilsep(ideriv)
+   chi = chi + weight_ccsep * ccsep
+   if     ( ideriv == 1 ) then
+      t1E = t1E + weight_ccsep * t1C
+   elseif ( ideriv == 2 ) then
+      t1E = t1E + weight_ccsep * t1C
+      t2E = t2E + weight_ccsep * t2C
+   endif
+
+  endif
+
 !!$  if (allocated(deriv)) then
 !!$     deriv = zero
 !!$     do ii = 1, Ndof
