@@ -36,7 +36,7 @@ subroutine curvature(ideriv)
   if( ideriv >= 0 ) then
 
      do icoil = 1, Ncoils
-        if( coil(icoil)%type .ne. 1 ) exit ! only for Fourier
+        if( coil(icoil)%type .ne. 1 ) cycle ! only for Fourier
         if( coil(icoil)%Lc     /=  0 ) then ! if geometry is free
            call CurvDeriv0(icoil,curvAdd)
            curv = curv + curvAdd
@@ -60,7 +60,7 @@ subroutine curvature(ideriv)
      idof = 0
      do icoil = 1, Ncoils
 
-        if(coil(icoil)%type .ne. 1) exit ! only for Fourier
+        if(coil(icoil)%type .ne. 1) cycle ! only for Fourier
 
         ND = DoF(icoil)%ND
         NF = FouCoil(icoil)%NF

@@ -311,6 +311,12 @@ subroutine initial
   call MPI_COMM_RANK( MPI_COMM_FOCUS, myid, ierr )
   call MPI_COMM_SIZE( MPI_COMM_FOCUS, ncpu, ierr )
 
+  !-------------machine constants ------------------------------------------------
+  machprec = epsilon(pi)         ! get the machine precision
+  sqrtmachprec = sqrt(machprec)  ! sqrt of machine precision
+  vsmall = ten * machprec        ! very small number
+  small = thousand * machprec    ! small number
+
   if(myid == 0) write(ounit, *) "---------------------  FOCUS ", version, "------------------------------"
   if(myid == 0) write(ounit,'("focus   : Begin execution with ncpu =",i5)') ncpu
 
@@ -331,11 +337,6 @@ subroutine initial
       case default
           index_dot = INDEX(ext,'.input')
           IF (index_dot .gt. 0)  ext = ext(1:index_dot-1)
-          !-------------machine constants ------------------------------------------------
-          machprec = epsilon(pi)         ! get the machine precision
-          sqrtmachprec = sqrt(machprec)  ! sqrt of machine precision
-          vsmall = ten * machprec        ! very small number
-          small = thousand * machprec    ! small number
           write(ounit, '("initial : machine_prec   = ", ES12.5, " ; sqrtmachprec   = ", ES12.5)') machprec, sqrtmachprec
 #ifdef DEBUG
           write(ounit, '("DEBUG info: extension from command line is "A)') trim(ext)

@@ -56,7 +56,7 @@ SUBROUTINE diagnos
   !-------------------------------coil maximum curvature----------------------------------------------------  
   MaxCurv = zero
   do icoil = 1, Ncoils
-     if (coil(icoil)%type /= 1 .and. coil(icoil)%type /= 4) cycle
+     if (coil(icoil)%type /= 1 ) cycle
      call CurvDeriv0(icoil,dum) !Might have to put a dummy return
      if (coil(icoil)%maxcurv .ge. MaxCurv) then
         MaxCurv = coil(icoil)%maxcurv
