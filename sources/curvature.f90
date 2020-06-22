@@ -128,9 +128,9 @@ subroutine CurvDeriv0(icoil,curvRet)
      curvRet = sum(curvv)-curvv(0)
      curvRet = pi2*curvRet/NS
   elseif( case_curv == 3 ) then ! penalty method 
-     if( curv_alpha < 2.0 ) then
-          FATAL( CurvDeriv0, .true. , curv_alpha must be 2 or greater )
-     endif
+     !if( curv_alpha < 2.0 ) then
+     !     FATAL( CurvDeriv0, .true. , curv_alpha must be 2 or greater )
+     !endif
      do kseg = 0,NS-1
         if( curvv(kseg) > k0 ) then
            !curvRet = curvRet + ( curvv(kseg) - k0 )**curv_alpha
@@ -139,9 +139,9 @@ subroutine CurvDeriv0(icoil,curvRet)
      enddo
      curvRet = pi2*curvRet/NS
   elseif( case_curv == 4 ) then ! penalty plus linear 
-     if( curv_alpha < 2.0 ) then 
-          FATAL( CurvDeriv0, .true. , curv_alpha must be 2 or greater )
-     endif
+     !if( curv_alpha < 2.0 ) then 
+     !     FATAL( CurvDeriv0, .true. , curv_alpha must be 2 or greater )
+     !endif
      do kseg = 0,NS-1
         if( curvv(kseg) > k0 ) then
            curvRet = curvRet + sqrt(coil(icoil)%xt(kseg)**2+coil(icoil)%yt(kseg)**2+coil(icoil)%zt(kseg)**2)*( (curvv(kseg) - k0 )**curv_alpha + curv_c*curvv(kseg) )
