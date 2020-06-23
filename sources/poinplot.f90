@@ -25,16 +25,6 @@ SUBROUTINE poinplot
 
   pp_phi = pp_phi * pi  ! pp_phi=0.5 -> pi/2
   x = zero ; y = zero ; z = zero ; B = zero
-
-  ! if raxis, zaxis not provided
-  if ( (abs(pp_raxis) + abs(pp_zaxis)) < sqrtmachprec) then
-     zeta = pp_phi
-     theta = zero ; call surfcoord( plasma, theta, zeta, r , z )
-     theta = pi   ; call surfcoord( plasma, theta, zeta, r1, z1)
-     
-     pp_raxis = (r+r1)*half
-     pp_zaxis = (z+z1)*half
-  endif
   
   ! split cores for calculating axis
   color = 0
@@ -77,13 +67,6 @@ SUBROUTINE poinplot
   SALLOCATE( ppr , (1:pp_ns, 0:pp_maxiter), zero )
   SALLOCATE( ppz , (1:pp_ns, 0:pp_maxiter), zero )
   SALLOCATE( iota, (1:pp_ns)              , zero )
-
-  ! if pp_rmax and pp_zmax not provied 
-  if ( (abs(pp_rmax) + abs(pp_zmax)) < sqrtmachprec) then
-     zeta = pp_phi
-     theta = zero ; call surfcoord( plasma, theta, zeta, r , z )
-     pp_rmax = r*1.0 ; pp_zmax = z*1.0
-  endif
 
   if(myid==0) write(ounit, '("poinplot: following fieldlines between ("ES12.5 &
        ","ES12.5" ) and ("ES12.5","ES12.5" )")') pp_raxis, pp_zaxis, pp_rmax, pp_zmax

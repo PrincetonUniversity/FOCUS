@@ -44,7 +44,7 @@ PROGRAM focus
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   INTEGER :: secs, mins, hrs
-  REAL    :: tstart, tfinish ! local variables
+  REAL    :: tstart, tfinish, x, y, z, B(3)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -54,15 +54,7 @@ PROGRAM focus
 
   ! check input namelist 
   call check_input
-  
-  select case( case_surface )
 
-  case( 0 ) ; call surface   ! general format (VMEC-like) plasma boundary;
-  case( 1 ) ; call rdknot    ! knototran-like plasma boundary;
- !case( 2 ) ; call readwout  ! read vmec output for plasma boundary and Boozer coordinates; for future;
-
-  end select
-    
   select case( case_coils )
 
  !case( 0 )   ; call coilpwl ! piece-wise linear; for future;
@@ -70,53 +62,21 @@ PROGRAM focus
 
   end select
 
-  call packdof(xdof)  ! packdof in xdof array;
-
-  call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
+  x = 5.83444249; y = 0.33921676; z = 0.06219241
+  call bfield(1, x, y, z, B(1), B(2), B(3))
+  if (myid==0) print *,B
 
   tfinish = MPI_Wtime()
   time_initialize = tfinish - tstart
   if( myid  ==  0 ) write(ounit, '(A, ES12.5, A3)') "focus   : Initialization took ", time_initialize," S."
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-  if (case_optimize /= 0) call solvers       ! call different solvers;
-
-  call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
-
-  tstart = MPI_Wtime()
-  time_optimize = tstart - tfinish
-  if( myid  ==  0 ) then
-     secs = int(time_optimize)
-     hrs = secs/(60*60)
-     mins = (secs-hrs*60*60)/60
-     secs = secs-hrs*60*60-mins*60
-     if(hrs>0)then
-         write(ounit, '(A, 3(I6, A3))') "focus   : Optimization took ",hrs," H ", mins," M ",secs," S."
-     elseif(mins>0)then
-         write(ounit, '(A, 2(I6, A3))') "focus   : Optimization took ", mins," M ",secs," S."
-     else
-         write(ounit, '(A, ES12.5, A3)') "focus   : Optimization took ", time_optimize," S."
-     endif
-  endif
-
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  
-  call unpacking(xdof)  ! unpack the optimized xdof array;
-
   if (myid == 0) write(ounit, *) "-----------POST-PROCESSING-----------------------------------"
 
   select case( case_postproc )
 
-  case( 0 ) 
-  case( 1 ) ; call diagnos ; 
-  case( 2 ) ; call diagnos ; call specinp !; call saving 
- !case( 2 ) ; call saving  ; call diagnos ; call wtmgrid  ! write mgrid file;
-  case( 3 ) ; call diagnos ; call poinplot ! Poincare plots; for future; 
- ! case( 3 ) ;  call poinplot ! Poincare plots; for future; 
-  case( 4 ) ; call diagnos ; call boozmn ; call poinplot ! Last closed surface
-  case( 5 ) ; call diagnos ; call wtmgrid  ! write mgrid file
- !case( 4 ) ; call saving  ; call diagnos ; call resonant ! resonant harmonics analysis; for future; 
+  case( 0 ) ; call poinplot
+  case( 1 ) ; call wtmgrid 
+  case( 2 ) ; call boozmn ; call poinplot 
 
   end select
 

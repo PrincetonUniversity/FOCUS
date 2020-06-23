@@ -2,15 +2,14 @@
 
 ############################################################################################################
 
- ALLFILES= globals curvature initial rdsurf rdknot rdcoils packdof bfield bmnharm bnormal fdcheck \
-           torflux length surfsep datalloc solvers descent congrad lmalg saving diagnos \
-           specinp poinplot boozer wtmgrid surface focus 
+ ALLFILES= globals initial  rdcoils bfield saving  \
+         	poinplot boozer wtmgrid focus 
  HFILES= $(ALLFILES:=.f90)   # raw source files
  FFILES= $(ALLFILES:=_m.F90) # Fortran 90 files 
  PFILES= $(ALLFILES:=.pdf)   # documentations
  ROBJS=$(ALLFILES:=_r.o)     # release version objectives
  DOBJS=$(ALLFILES:=_d.o)     # debug version objectives
- NUMOBJ= ode.o lmder1.o hybrj.o cg_descent.o # numerical libraries
+ NUMOBJ= ode.o lmder1.o hybrj.o  # numerical libraries
 
 ############################################################################################################
 
