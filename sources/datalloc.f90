@@ -13,7 +13,7 @@ subroutine AllocData(type)
 
   INTEGER, intent(in) :: type
 
-  INTEGER             :: icoil, idof, ND, NF, NCP, icur, imag, isurf, NS, mm, iseg
+  INTEGER             :: icoil, idof, ND, NF, NCP, icur, imag, isurf, NS, mm, iseg,i
   REAL                :: xtmp, mtmp, tt
 
   isurf = plasma
@@ -109,7 +109,7 @@ subroutine AllocData(type)
            SALLOCATE( CPCoil(icoil)%db_dt_2, (0:NS, 0:NCP),   zero )
 
            do i =0, coil(icoil)%NS-1
-                    CPcoil(icoil)%eval_points(i) = 1.0*i/N
+                    CPcoil(icoil)%eval_points(i) = 1.0*i/(coil(icoil)%NS-1)
            enddo
 
            ! the derivatives of dx/dv 
