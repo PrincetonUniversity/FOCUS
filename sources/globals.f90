@@ -287,6 +287,14 @@ module globals
      REAL   , allocatable :: xc(:), xs(:), yc(:), ys(:), zc(:), zs(:), cmt(:,:), smt(:,:)
   end type FourierCoil
 
+  type SplineCoil
+     INTEGER              :: NCP,NT,lwrk,ier
+     INTEGER,allocatable  :: iwrk(:)
+     REAL                 :: FP
+     REAL   , allocatable :: vect (:),basis_0(:,:),basis_1(:,:),basis_2(:,:),basis_3(:,:),Cpoints_fit(:),eval_points(:),wrk(:),weights(:), &
+                              Data_points(:),Cpoints(:),db_dt(:,:),db_dt_2(:,:),
+  end type SplineCoil
+
   type DegreeOfFreedom
      INTEGER              :: ND
      REAL   , allocatable :: xdof(:), xof(:,:), yof(:,:), zof(:,:)
@@ -296,6 +304,7 @@ module globals
   type(toroidalsurface), target, allocatable :: surf(:)
   type(FourierCoil)    , target, allocatable :: FouCoil(:)
   type(DegreeOfFreedom), target, allocatable :: DoF(:)
+  type(SplineCoil)    , allocatable :: CPCoil(:)
 
   INTEGER              :: Nfp = 1, symmetry = 0, surf_Nfp = 1
   INTEGER              :: plasma = 1, limiter = 1
@@ -362,7 +371,7 @@ module globals
                         !coilsI stores the true currents, coil%I stores scaled current;?
   INTEGER, allocatable :: coilseg(:)
   character(LEN=20), allocatable :: coilname(:)
-
+  INTEGER,parameter    :: coil_type_spline = 5
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 !latex \subsection{Time counting}

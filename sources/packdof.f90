@@ -77,6 +77,20 @@ SUBROUTINE packdof(lxdof)
            lxdof(idof+1) = DoF(icoil)%xdof(1)
            idof = idof + 1
         endif
+      !--------------------------------------------------------------------------------------------- 
+     case(coil_type_spline)
+
+        if(coil(icoil)%Ic /= 0) then 
+           lxdof(idof+1) = coil(icoil)%I
+           idof = idof + 1
+        endif
+
+        ND = DoF(icoil)%ND
+        if(coil(icoil)%Lc /= 0) then
+           lxdof(idof+1:idof+ND) = DoF(icoil)%xdof(1:ND)
+           idof = idof + ND
+        endif
+       
      !---------------------------------------------------------------------------------------------
      case default
         FATAL(packdof01, .true., not supported coil types)
@@ -151,6 +165,21 @@ SUBROUTINE unpacking(lxdof)
            DoF(icoil)%xdof(1) = lxdof(idof+1) * dofnorm(idof+1)
            idof = idof + 1
         endif
+      !--------------------------------------------------------------------------------------------- 
+     case(coil_type_spline)
+
+        if(coil(icoil)%Ic /= 0) then
+           coil(icoil)%I = lxdof(idof+1) * dofnorm(idof+1)
+           idof = idof + 1
+        endif
+
+        ND = DoF(icoil)%ND
+        if(coil(icoil)%Lc /= 0) then
+           DoF(icoil)%xdof(1:ND) = lxdof(idof+1:idof+ND) * dofnorm(idof+1:idof+ND)
+           idof = idof + ND
+        endif
+
+         
      !---------------------------------------------------------------------------------------------
      case default
         FATAL(unpacking01, .true., not supported coil types)
@@ -229,6 +258,21 @@ SUBROUTINE packcoil
            DoF(icoil)%xdof(idof+1) = coil(icoil)%Bz; idof = idof + 1
         endif
         FATAL( packcoil05 , idof .ne. DoF(icoil)%ND, counting error in packing )
+     !--------------------------------------------------------------------------------------------- 
+     case(coil_type_spline)
+        ! get number of DoF for each coil and allocate arrays;
+        NCP = CPCoil(icoil)%NCP
+        DoF(icoil)%xdof = zero
+
+        !pack Fourier series;
+        idof = 0
+        if(coil(icoil)%Lc /= 0) then
+           DoF(icoil)%xdof(idof+1 : idof+NCP*3+1) = CPCoil(icoil)%Cpoints(0:3*NCP-1); idof = idof + NCP*3 +1   
+        endif
+        FATAL( packcoil03 , idof .ne. DoF(icoil)%ND, counting error in packing )
+        
+     
+
      !---------------------------------------------------------------------------------------------
      case default
         FATAL(packcoil06, .true., not supported coil types)
@@ -297,6 +341,17 @@ SUBROUTINE unpackcoil
            coil(icoil)%Bz =  DoF(icoil)%xdof(idof+1) ; idof = idof + 1        
         endif      
         FATAL( unpackcoil05 , idof .ne. DoF(icoil)%ND, counting error in packing )
+     !--------------------------------------------------------------------------------------------- 
+     case(coil_type_spline)
+        ! get number of DoF for each coil and allocate arrays;
+        NCP = CPCoil(icoil)%NCP
+        idof = 0
+        if (coil(icoil)%Lc /= 0) then
+           !unpack Fourier series;
+           CPCoil(icoil)%Cpoints(0:NCP*3-1) = DoF(icoil)%xdof(idof+1 : idof+3*NCP+1) ; idof = idof + NCP + 1
+        endif
+        FATAL( unpackcoil03 , idof .ne. DoF(icoil)%ND, counting error in packing )
+
 
      !---------------------------------------------------------------------------------------------
      case default
