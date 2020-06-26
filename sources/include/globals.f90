@@ -292,7 +292,7 @@ module globals
      INTEGER,allocatable  :: iwrk(:)
      REAL                 :: FP
      REAL   , allocatable :: vect (:),basis_0(:,:),basis_1(:,:),basis_2(:,:),basis_3(:,:),Cpoints_fit(:),eval_points(:),wrk(:),weights(:), &
-                              Data_points(:),Cpoints(:),db_dt(:,:),db_dt_2(:,:)
+                              Data_points(:),Cpoints(:),db_dt(:,:),db_dt_2(:,:),
   end type SplineCoil
 
   type DegreeOfFreedom

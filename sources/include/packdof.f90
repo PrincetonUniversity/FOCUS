@@ -25,7 +25,7 @@ SUBROUTINE packdof(lxdof)
   ! DATE: 2017/03/19
   !--------------------------------------------------------------------------------------------- 
   use globals, only : dp, zero, myid, ounit, MPI_COMM_FOCUS, &
-                    & case_coils, Ncoils, coil, DoF, Ndof, DoFnorm,coil_type_spline, CPCoil
+                    & case_coils, Ncoils, coil, DoF, Ndof, DoFnorm
   implicit none
   include "mpif.h"
 
@@ -116,7 +116,7 @@ SUBROUTINE unpacking(lxdof)
   ! DATE: 2017/04/03
   !--------------------------------------------------------------------------------------------- 
   use globals, only: dp, zero, myid, ounit, MPI_COMM_FOCUS, &
-       & case_coils, Ncoils, coil, DoF, Ndof, DoFnorm,coil_type_spline, CPCoil
+       & case_coils, Ncoils, coil, DoF, Ndof, DoFnorm
   implicit none
   include "mpif.h"
 
@@ -205,11 +205,11 @@ SUBROUTINE packcoil
   ! pack coil representation variables into DoF (only geometries without currents);
   ! DATE: 2017/03/25
   !--------------------------------------------------------------------------------------------- 
-  use globals, only: dp, zero, myid, ounit, case_coils, Ncoils, coil, FouCoil, DoF, MPI_COMM_FOCUS,coil_type_spline, CPCoil
+  use globals, only: dp, zero, myid, ounit, case_coils, Ncoils, coil, FouCoil, DoF, MPI_COMM_FOCUS
   implicit none
   include "mpif.h"
 
-  INTEGER  :: icoil, idof, NF, ierr, astat,NCP
+  INTEGER  :: icoil, idof, NF, ierr, astat
 
   FATAL( packcoil01, .not. allocated(coil)   , illegal )
   ! FATAL( packcoil, .not. allocated(FouCoil), illegal )
@@ -289,11 +289,11 @@ SUBROUTINE unpackcoil
   ! pack coil representation variables into DoF (only geometries without currents);
   ! DATE: 2017/03/25
   !--------------------------------------------------------------------------------------------- 
-  use globals, only: dp, zero, myid, ounit, case_coils, Ncoils, coil, FouCoil, DoF, MPI_COMM_FOCUS,coil_type_spline, CPCoil
+  use globals, only: dp, zero, myid, ounit, case_coils, Ncoils, coil, FouCoil, DoF, MPI_COMM_FOCUS
   implicit none
   include "mpif.h"
 
-  INTEGER  :: icoil, idof, NF, ierr, astat,NCP
+  INTEGER  :: icoil, idof, NF, ierr, astat
 
   FATAL( unpackcoil01, .not. allocated(coil)   , illegal )
   ! FATAL( unpackcoil, .not. allocated(FouCoil), illegal )
