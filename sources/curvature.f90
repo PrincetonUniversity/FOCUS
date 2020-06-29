@@ -18,7 +18,7 @@
 subroutine curvature(ideriv)
   use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, MPI_COMM_FOCUS, &
        coil, DoF, Ncoils, Nfixgeo, Ndof, curv, t1CU, t2CU, weight_curv, FouCoil, &
-       mcurv, icurv, LM_fvec, LM_fjac
+       mcurv, icurv, LM_fvec, LM_fjac,coil_type_spline
 
   implicit none
   include "mpif.h"
@@ -36,7 +36,7 @@ subroutine curvature(ideriv)
   if( ideriv >= 0 ) then
 
      do icoil = 1, Ncoils
-        if( coil(icoil)%type .ne. 1 ) exit ! only for Fourier
+        if( (coil(icoil)%type .ne. 1) .AND. (coil(icoil)%type .ne. coil_type_spline) ) exit ! only for Fourier
         if( coil(icoil)%Lc     /=  0 ) then ! if geometry is free
            call CurvDeriv0(icoil,curvAdd)
            curv = curv + curvAdd
@@ -60,7 +60,7 @@ subroutine curvature(ideriv)
      idof = 0
      do icoil = 1, Ncoils
 
-        if(coil(icoil)%type .ne. 1) exit ! only for Fourier
+	if( (coil(icoil)%type .ne. 1) .AND. (coil(icoil)%type .ne. coil_type_spline) ) exit ! only for Fourier       
 
         ND = DoF(icoil)%ND
         NF = FouCoil(icoil)%NF

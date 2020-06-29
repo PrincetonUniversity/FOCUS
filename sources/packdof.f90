@@ -267,7 +267,7 @@ SUBROUTINE packcoil
         !pack Fourier series;
         idof = 0
         if(coil(icoil)%Lc /= 0) then
-           DoF(icoil)%xdof(idof+1 : idof+NCP*3+1) = CPCoil(icoil)%Cpoints(0:3*NCP-1); idof = idof + NCP*3 +1   
+           DoF(icoil)%xdof(idof+1 : idof+NCP*3) = CPCoil(icoil)%Cpoints(0:3*NCP-1); idof = idof + NCP*3    
         endif
         FATAL( packcoil03 , idof .ne. DoF(icoil)%ND, counting error in packing )
         
@@ -348,7 +348,7 @@ SUBROUTINE unpackcoil
         idof = 0
         if (coil(icoil)%Lc /= 0) then
            !unpack Fourier series;
-           CPCoil(icoil)%Cpoints(0:NCP*3-1) = DoF(icoil)%xdof(idof+1 : idof+3*NCP+1) ; idof = idof + NCP + 1
+           CPCoil(icoil)%Cpoints(0:NCP*3-1) = DoF(icoil)%xdof(idof+1 : idof+3*NCP) ; idof = idof + 3*NCP 
         endif
         FATAL( unpackcoil03 , idof .ne. DoF(icoil)%ND, counting error in packing )
 

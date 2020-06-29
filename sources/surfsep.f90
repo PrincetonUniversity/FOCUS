@@ -73,7 +73,7 @@ SUBROUTINE surfsep(ideriv)
 !------------------------------------------------------------------------------------------------------  
   use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, &
        coil, DoF, Ncoils, Nfixgeo, Ndof, cssep, t1S, t2S, psurf, surf, &
-       icssep, mcssep, LM_fvec, LM_fjac, weight_cssep, MPI_COMM_FOCUS
+       icssep, mcssep, LM_fvec, LM_fjac, weight_cssep, MPI_COMM_FOCUS,coil_type_spline
 
   implicit none
   include "mpif.h"
@@ -96,7 +96,7 @@ SUBROUTINE surfsep(ideriv)
   if( ideriv >= 0 ) then
      ivec = 1
      do icoil = 1, Ncoils
-        if (coil(icoil)%type /= 1) cycle ! skip for other coils
+        if ((coil(icoil)%type /= 1) .AND. (coil(icoil)%type /= coil_type_spline)) cycle ! skip for other coils
         coilsum = zero
         if ( coil(icoil)%Lc /= 0 ) then 
            do jzeta = 0, Nzeta - 1
@@ -140,7 +140,7 @@ SUBROUTINE surfsep(ideriv)
         endif
 
         if ( coil(icoil)%Lc /= 0 ) then ! if geometry is free;
-           if (coil(icoil)%type == 1) then  ! skip for other coils
+           if ((coil(icoil)%type == 1) .OR. (coil(icoil)%type == coil_type_spline)) then  ! skip for other coils
               do jzeta = 0, Nzeta - 1
                  do iteta = 0, Nteta - 1
                     if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;
