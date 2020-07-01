@@ -8,11 +8,11 @@ SUBROUTINE diagnos
   use globals, only: dp, zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
        Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
        cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, Nfp, weight_bnorm, overlap, plasma, &
-       cosnfp, sinnfp, symmetry, discretefactor, MPI_COMM_FOCUS, surf_Nfp, curv, case_curv
+       cosnfp, sinnfp, symmetry, discretefactor, MPI_COMM_FOCUS, surf_Nfp, curv, case_curv,coil_type_spline,CPCoil
   use mpi
   implicit none
 
-  INTEGER           :: icoil, itmp, astat, ierr, NF, idof, i, j, isurf, cs, ip, is, Npc, coilInd0, coilInd1
+  INTEGER           :: icoil, itmp, astat, ierr, NF,NCP, idof, i, j, isurf, cs, ip, is, Npc, coilInd0, coilInd1
   LOGICAL           :: lwbnorm, l_raw
   REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist, ReDot, ImDot, dum, AvgCurv
   REAL, parameter   :: infmax = 1.0E6
@@ -47,7 +47,10 @@ SUBROUTINE diagnos
            coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%ys(1:NF) ; idof = idof + NF
            coilspace(iout, idof+1:idof+NF+1) = FouCoil(icoil)%zc(0:NF) ; idof = idof + NF +1
            coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%zs(1:NF) ; idof = idof + NF
-!!$        case default
+	case (coil_type_spline)
+           NCP = CPCoil(icoil)%NCP
+           coilspace(iout, idof+1:idof+NCP*3) = CPCoil(icoil)%Cpoints(0:3*NCP-1) ; idof = idof + 3*NCP 
+!!$     case default
 !!$           FATAL(descent, .true., not supported coil types)
         end select
      enddo
@@ -56,7 +59,7 @@ SUBROUTINE diagnos
   !-------------------------------coil maximum curvature----------------------------------------------------  
   MaxCurv = zero
   do icoil = 1, Ncoils
-     if(coil(icoil)%type .ne. 1) cycle ! only for Fourier
+     if((coil(icoil)%type .ne. 1) .AND. (coil(icoil)%type .ne. coil_type_spline) ) cycle ! only for Fourier
      call CurvDeriv0(icoil,dum) !Might have to put a dummy return
      if (coil(icoil)%maxcurv .ge. MaxCurv) then
         MaxCurv = coil(icoil)%maxcurv
@@ -73,7 +76,7 @@ SUBROUTINE diagnos
   !-------------------------------average coil curvature-------------------------------------------------------
     AvgCurv = zero
     do icoil = 1, Ncoils
-       if(coil(icoil)%type .ne. 1) exit ! only for Fourier
+       if((coil(icoil)%type .ne. 1) .AND. (coil(icoil)%type .ne. coil_type_spline)) exit ! only for Fourier
        call avgcurvature(icoil)
        AvgCurv = AvgCurv + coil(icoil)%avgcurv
 #ifdef DEBUG
@@ -89,7 +92,7 @@ SUBROUTINE diagnos
   if ( (case_length == 1) .and. (sum(coil(1:Ncoils)%Lo) < sqrtmachprec) ) coil(1:Ncoils)%Lo = one
   call length(0)
   do icoil = 1, Ncoils
-     if(coil(icoil)%type .ne. 1) cycle ! only for Fourier
+     if((coil(icoil)%type .ne. 1) .AND. (coil(icoil)%type .ne. coil_type_spline)) cycle ! only for Fourier
      AvgLength = AvgLength + coil(icoil)%L
   enddo
   AvgLength = AvgLength / Ncoils
@@ -101,7 +104,7 @@ SUBROUTINE diagnos
   coilInd0 = 0
   coilInd1 = 1
   do icoil = 1, Ncoils
-     if(coil(icoil)%type .ne. 1) cycle ! only for Fourier
+     if((coil(icoil)%type .ne. 1) .AND. (coil(icoil)%type .ne. coil_type_spline)) cycle ! only for Fourier
      if(Ncoils .eq. 1) exit ! if only one coil
      ! Data for the first coil
      SALLOCATE(Atmp, (1:3,0:coil(icoil)%NS-1), zero)
@@ -110,7 +113,7 @@ SUBROUTINE diagnos
      Atmp(3, 0:coil(icoil)%NS-1) = coil(icoil)%zz(0:coil(icoil)%NS-1)
      do itmp = 1, Ncoils
         ! skip self and non-Fourier coils
-        if (itmp == icoil .or. coil(icoil)%type /= 1) cycle
+        if (itmp == icoil .or. ((coil(icoil)%type .ne. 1) .AND. (coil(icoil)%type .ne. coil_type_spline))) cycle
         SALLOCATE(Btmp, (1:3,0:coil(itmp )%NS-1), zero)
         ! check if the coil is stellarator symmetric
         select case (coil(icoil)%symm) 
@@ -158,7 +161,7 @@ SUBROUTINE diagnos
   minCPdist = infmax
   do icoil = 1, Ncoils
 
-     if(coil(icoil)%type .ne. 1) cycle ! only for Fourier
+     if((coil(icoil)%type .ne. 1) .AND. (coil(icoil)%type .ne. coil_type_spline)) cycle ! only for Fourier
 
      SALLOCATE(Atmp, (1:3,0:coil(icoil)%NS-1), zero)
      SALLOCATE(Btmp, (1:3,1:(Nteta*Nzeta)), zero)
@@ -340,3 +343,4 @@ subroutine importance(icoil)
   return
 
 end subroutine importance
+

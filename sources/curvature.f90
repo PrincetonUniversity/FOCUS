@@ -18,7 +18,7 @@
 subroutine curvature(ideriv)
   use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, MPI_COMM_FOCUS, &
        coil, DoF, Ncoils, Nfixgeo, Ndof, curv, t1CU, t2CU, weight_curv, FouCoil, &
-       mcurv, icurv, LM_fvec, LM_fjac
+       mcurv, icurv, LM_fvec, LM_fjac,coil_type_spline
 
   implicit none
   include "mpif.h"
@@ -36,7 +36,7 @@ subroutine curvature(ideriv)
   if( ideriv >= 0 ) then
 
      do icoil = 1, Ncoils
-        if( coil(icoil)%type .ne. 1 ) exit ! only for Fourier
+        if( (coil(icoil)%type .ne. 1) .AND. (coil(icoil)%type .ne. coil_type_spline) ) exit ! only for Fourier
         if( coil(icoil)%Lc     /=  0 ) then ! if geometry is free
            call CurvDeriv0(icoil,curvAdd)
            curv = curv + curvAdd
@@ -60,7 +60,8 @@ subroutine curvature(ideriv)
      idof = 0
      do icoil = 1, Ncoils
 
-        if(coil(icoil)%type .ne. 1) exit ! only for Fourier
+        if( (coil(icoil)%type .ne. 1) .AND. (coil(icoil)%type .ne. coil_type_spline) ) exit ! only for Fourier
+       
 
         ND = DoF(icoil)%ND
         NF = FouCoil(icoil)%NF
@@ -107,19 +108,21 @@ subroutine CurvDeriv0(icoil,curvRet)
   REAL,allocatable     :: curvv(:)
 
   NS = coil(icoil)%NS 
-  SALLOCATE(curvv, (0:NS),zero)
-
+  SALLOCATE(curvv, (0:NS-1),zero)
+write(ounit,'("starting deriv")')	
   FATAL( CurvDeriv0, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
  
   curvv = zero
   curvRet = zero
-
   curvv = sqrt( (coil(icoil)%za*coil(icoil)%yt-coil(icoil)%zt*coil(icoil)%ya)**2 &
              + (coil(icoil)%xa*coil(icoil)%zt-coil(icoil)%xt*coil(icoil)%za)**2  & 
              + (coil(icoil)%ya*coil(icoil)%xt-coil(icoil)%yt*coil(icoil)%xa)**2 )& 
              / ((coil(icoil)%xt)**2+(coil(icoil)%yt)**2+(coil(icoil)%zt)**2)**(1.5)
+write(ounit,'(5F20.10)')curvv
+write(ounit,'(5F20.10)')curvv(0)
+write(ounit,'("starting maxcurve")')
   coil(icoil)%maxcurv = maxval(curvv)
-
+write(ounit,'("starting case")')
   if( case_curv == 1 ) then ! linear
      curvRet = sum(curvv)-curvv(0)
      curvRet = pi2*curvRet/NS
@@ -148,6 +151,7 @@ subroutine CurvDeriv0(icoil,curvRet)
            curvRet = curvRet + sqrt(coil(icoil)%xt(kseg)**2+coil(icoil)%yt(kseg)**2+coil(icoil)%zt(kseg)**2)*curv_c*curvv(kseg)
         endif
      enddo
+     write(ounit,'("fine before L")')	
      call lenDeriv0( icoil, coil(icoil)%L )
      curvRet = pi2*curvRet/(NS*coil(icoil)%L)
   else   

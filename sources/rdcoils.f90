@@ -218,7 +218,7 @@ subroutine rdcoils
            read( runit,*)
            read( runit,*)
            read( runit,*) coil(icoil)%type, coil(icoil)%symm, coil(icoil)%name
-           FATAL( (rdcoils04, coil(icoil)%type < 1 .or. coil(icoil)%type > 3) .and. coil(icoil)%type .NE. coil_type_spline, illegal )
+           FATAL( rdcoils04, (coil(icoil)%type < 1 .or. coil(icoil)%type > 3) .and. (coil(icoil)%type .NE. coil_type_spline), illegal )
            FATAL( rdcoils05, coil(icoil)%symm < 0 .or. coil(icoil)%symm > 2, illegal )
            if(coil(icoil)%type == 1) then  ! Fourier representation
               read( runit,*)
@@ -253,7 +253,7 @@ subroutine rdcoils
               read( runit,*)
               read( runit,*) coil(icoil)%Ic, coil(icoil)%I, coil(icoil)%Lc, coil(icoil)%Bz 
               coil(icoil)%symm = 0 ! automatic reset to 0; might not be necessary; 2020/01/17
-           if(coil(icoil)%type == coil_type_spline) then  ! Spline representation
+           else if(coil(icoil)%type == coil_type_spline) then  ! Spline representation
               read( runit,*)
               read( runit,*) coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, &
                    & coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo
@@ -268,8 +268,8 @@ subroutine rdcoils
               FATAL( rdcoils12, CPCoil(icoil)%NT  < 0                     , illegal )
               FATAL( rdcoils12, CPCoil(icoil)%NT .NE. CPCoil(icoil)%NCP +4, illegal )
               SALLOCATE( CPCoil(icoil)%vect, (0:CPCoil(icoil)%NT-1), zero )
-              SALLOCATE( CPCoil(icoil)%eval_points, (0:coil(icoil)%NS), zero )
-              SALLOCATE( CPCoil(icoil)%Cpoints, (0:coil(icoil)%NCP * 3 - 1 ), zero )
+              SALLOCATE( CPCoil(icoil)%eval_points, (0:coil(icoil)%NS-1), zero )
+              SALLOCATE( CPCoil(icoil)%Cpoints, (0:CPCoil(icoil)%NCP * 3 - 1 ), zero )
               read( runit,*)
               read( runit,*) CPCoil(icoil)%vect(0:CPCoil(icoil)%NT-1)
               read( runit,*)
@@ -344,11 +344,11 @@ subroutine rdcoils
            IlBCAST( CPCoil(icoil)%NT         , 1        ,  0 )
            if (.not. allocated(CPCoil(icoil)%vect) ) then
               SALLOCATE( CPCoil(icoil)%vect, (0:CPCoil(icoil)%NT-1), zero )
-              SALLOCATE( CPCoil(icoil)%eval_points, (0:coil(icoil)%NS), zero )
-              SALLOCATE( CPCoil(icoil)%Cpoints, (0:coil(icoil)%NCP * 3 -1 ), zero )
+              SALLOCATE( CPCoil(icoil)%eval_points, (0:coil(icoil)%NS-1), zero )
+              SALLOCATE( CPCoil(icoil)%Cpoints, (0:CPCoil(icoil)%NCP * 3 -1 ), zero )
            endif
            RlBCAST( CPCoil(icoil)%vect(0:CPCoil(icoil)%NT -1) , CPCoil(icoil)%NT ,  0 )
-           RlBCAST( CPCoil(icoil)%eval_points(0:coil(icoil)%NS) , 1+CPCoil(icoil)%NS ,  0 )
+           RlBCAST( CPCoil(icoil)%eval_points(0:coil(icoil)%NS) , 1+coil(icoil)%NS ,  0 )
            RlBCAST( CPCoil(icoil)%Cpoints(0:CPCoil(icoil)%NCP*3 - 1) , CPCoil(icoil)%NCP*3 ,  0 )
            if(coil(icoil)%Ic == 0) Nfixcur = Nfixcur + 1
            if(coil(icoil)%Lc == 0) Nfixgeo = Nfixgeo + 1
@@ -601,7 +601,7 @@ subroutine discoil(ifirst)
            NS = coil(icoil)%NS
            NCP = CPCoil(icoil)%NCP  ! allias variable for simplicity;
            !-------------------------calculate coil data-------------------------------------------------  
-           do iseg=0,NS
+           do iseg=0,NS-1
                     coil(icoil)%xx(iseg) = SUM (CPcoil(icoil)%Cpoints(0:NCP-1)*CPcoil(icoil)%basis_3(iseg,0:NCP-1))
                     coil(icoil)%yy(iseg) = SUM (CPcoil(icoil)%Cpoints(NCP:2*NCP-1)*CPcoil(icoil)%basis_3(iseg,0:NCP-1))
                     coil(icoil)%zz(iseg) = SUM (CPcoil(icoil)%Cpoints(2*NCP:3*NCP-1)*CPcoil(icoil)%basis_3(iseg,0:NCP-1))
@@ -611,6 +611,17 @@ subroutine discoil(ifirst)
                     coil(icoil)%xa(iseg) = SUM (CPcoil(icoil)%Cpoints(0:NCP-1)*CPcoil(icoil)%db_dt_2(iseg,0:NCP-1))
                     coil(icoil)%ya(iseg) = SUM (CPcoil(icoil)%Cpoints(NCP:2*NCP-1)*CPcoil(icoil)%db_dt_2(iseg,0:NCP-1))
                     coil(icoil)%za(iseg) = SUM (CPcoil(icoil)%Cpoints(2*NCP:3*NCP-1)*CPcoil(icoil)%db_dt_2(iseg,0:NCP-1))
+	  	if (coil(icoil)%xt(iseg) > 9999 .OR. coil(icoil)%yt(iseg) >9999 .OR. coil(icoil)%zt(iseg) >9999) then
+			write(ounit, '(10F10.3)') coil(icoil)%xt(0:NS-1)
+        		write(ounit, '(10F10.3)') coil(icoil)%xa(0:NS-1)			
+			FATAL(discoil, .true., infinity in tangent)
+		endif
+		if (coil(icoil)%xa(iseg) > 9999 .OR. coil(icoil)%ya(iseg) >9999 .OR. coil(icoil)%za(iseg) >9999) then
+			write(ounit, '(10F10.3)') coil(icoil)%xt(0:NS-1)
+        		write(ounit, '(10F10.3)') coil(icoil)%xa(0:NS-1)
+			FATAL(discoil, .true., infinity in acc.)
+		endif	
+		enddo	
         case default
            FATAL(discoil, .true., not supported coil types)
         end select
@@ -618,7 +629,9 @@ subroutine discoil(ifirst)
      endif
 
   enddo ! end of do icoil
-
+	!write(ounit, '(10F5.3)') CPcoil(1)%db_dt(10,10)
+	!write(ounit, '(10F10.3)') coil(1)%xt(0:NS-1)
+        !write(ounit, '(10F10.3)') coil(1)%xa(0:NS-1)
   return
 end subroutine discoil
 
@@ -878,3 +891,4 @@ SUBROUTINE Fourier( X, XFC, XFS, Nsegs, NFcoil)
 end SUBROUTINE Fourier
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+

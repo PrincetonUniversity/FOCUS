@@ -26,7 +26,7 @@ subroutine saving
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 
-  INTEGER            :: ii, jj, icoil, NF, ip, is, cs, Npc
+  INTEGER            :: ii, jj, icoil, NF,NCP, ip, is, cs, Npc
 
   ! the following are used by the macros HWRITEXX below; do not alter/remove;
   INTEGER            :: hdfier, rank
@@ -259,6 +259,21 @@ subroutine saving
            write(wunit, *) "# Ic     I    Lc  Bz  (Ic control I; Lc control Bz)"
            write(wunit,'(I3, ES23.15, I3, ES23.15)') coil(icoil)%Ic, coil(icoil)%I, &
                                                      coil(icoil)%Lc, coil(icoil)%Bz
+	case (coil_type_spline)
+           write(wunit, '(4(A6, A15, 8X))') " #Nseg", "current",  "Ifree", "Length", "Lfree", "target_length"!, "k0"
+           !write(wunit,'(2X, I4, ES23.15, 3X, I3, ES23.15, 3X, I3, ES23.15, ES23.15)') &
+                !coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo, coil(icoil)%k0
+           write(wunit,'(2X, I4, ES23.15, 3X, I3, ES23.15, 3X, I3, ES23.15)') &
+                coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo !,coil(icoil)%k0  
+           NCP = CPCoil(icoil)%NCP ! shorthand;
+           write(wunit, *) "#NCP  #NT"
+           write(wunit, '(I3,I3)') NCP , CPCoil(icoil)%NT
+	   write(wunit, *) "#Nvect"
+	   write(wunit, 1000) CPCoil(icoil)%vect(0:CPCoil(icoil)%NT-1)
+           write(wunit, *) "#Control points for coils ( x;y;z) "
+           write(wunit, 1000) CPCoil(icoil)%Cpoints(0:NCP-1)
+           write(wunit, 1000) CPCoil(icoil)%Cpoints(NCP:2*NCP-1)
+           write(wunit, 1000) CPCoil(icoil)%Cpoints(NCP*2:3*NCP-1)
         case default
            FATAL(restart, .true., not supported coil types)
         end select
@@ -277,7 +292,7 @@ subroutine saving
      write(funit,'("mirror NIL")')
      do icoil = 1, Ncoils
         ! will only write x,y,z in cartesian coordinates
-        if (coil(icoil)%type /= 1) cycle
+        if ((coil(icoil)%type /= 1) .AND. (coil(icoil)%type /= coil_type_spline)) cycle
         ! check if the coil is stellarator symmetric
         select case (coil(icoil)%symm) 
         case ( 0 )
@@ -469,3 +484,4 @@ SUBROUTINE write_plasma
 END SUBROUTINE write_plasma
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+

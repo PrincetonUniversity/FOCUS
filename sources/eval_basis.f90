@@ -2,48 +2,46 @@ SUBROUTINE eval_basis(icoil)
     use globals  
     implicit none
     integer :: N,i,j,icoil
-    REAL :: eval_points(0: coil(icoil)%NS)
+    REAL :: eval_points(0: coil(icoil)%NS-1)
     integer :: iter_cp,iter_pos
-    type(SplineCoil) :: Coil_temp
 
     N = coil(icoil)%NS
     eval_points = CPCoil(icoil)%eval_points
-    Coil_temp = CPCoil(icoil)
 
-    do iter_cp=0,Coil_temp%NCP+2
-        do iter_pos=0,N 
-                if(eval_points(iter_pos)>=Coil_temp%vect(iter_cp).AND.eval_points(iter_pos)<Coil_temp%vect(iter_cp+1))&
-                 Coil_temp%basis_0(iter_pos,iter_cp) = 1
+    do iter_cp=0,CPCoil(icoil)%NCP+2
+        do iter_pos=0,N-1 
+                if(eval_points(iter_pos)>=CPCoil(icoil)%vect(iter_cp).AND.eval_points(iter_pos)<CPCoil(icoil)%vect(iter_cp+1))&
+                 CPCoil(icoil)%basis_0(iter_pos,iter_cp) = 1
         enddo
     enddo
 
-    do iter_cp=0,Coil_temp%NCP+1   
-        do iter_pos=0,N 
-                if( Coil_temp%basis_0(iter_pos,iter_cp) /= 0 .OR. Coil_temp%basis_0(iter_pos,iter_cp+1) /= 0)&
-                         Coil_temp%basis_1(iter_pos,iter_cp) = 1.0*(eval_points(iter_pos) - Coil_temp%vect(iter_cp)) / &
-                        (Coil_temp%vect(iter_cp+1) - Coil_temp%vect(iter_cp))*Coil_temp%basis_0(iter_pos,iter_cp) &
-                         + 1.0*( - eval_points(iter_pos) + Coil_temp%vect(iter_cp+2))/ &
-                         (Coil_temp%vect(iter_cp+2) - Coil_temp%vect(iter_cp+1))*Coil_temp%basis_0(iter_pos,iter_cp+1)
+    do iter_cp=0,CPCoil(icoil)%NCP+1   
+        do iter_pos=0,N-1 
+                if( CPCoil(icoil)%basis_0(iter_pos,iter_cp) /= 0 .OR. CPCoil(icoil)%basis_0(iter_pos,iter_cp+1) /= 0)&
+                         CPCoil(icoil)%basis_1(iter_pos,iter_cp) = 1.0*(eval_points(iter_pos) - CPCoil(icoil)%vect(iter_cp)) / &
+                        (CPCoil(icoil)%vect(iter_cp+1) - CPCoil(icoil)%vect(iter_cp))*CPCoil(icoil)%basis_0(iter_pos,iter_cp) &
+                         + 1.0*( - eval_points(iter_pos) + CPCoil(icoil)%vect(iter_cp+2))/ &
+                         (CPCoil(icoil)%vect(iter_cp+2) - CPCoil(icoil)%vect(iter_cp+1))*CPCoil(icoil)%basis_0(iter_pos,iter_cp+1)
                 enddo    
         enddo
 
-    do iter_cp=0,Coil_temp%NCP
-        do iter_pos=0,N 
-                if ( (Coil_temp%basis_1(iter_pos,iter_cp) .NE. 0) .OR. (Coil_temp%basis_1(iter_pos,iter_cp+1) .NE. 0)) &
-                         Coil_temp%basis_2(iter_pos,iter_cp) = 1.0*(eval_points(iter_pos) - Coil_temp%vect(iter_cp))/ & 
-                        (Coil_temp%vect(iter_cp+2) - Coil_temp%vect(iter_cp))*Coil_temp%basis_1(iter_pos,iter_cp) &
-                        + 1.0*( - eval_points(iter_pos) + Coil_temp%vect(iter_cp+3))/ &
-                        (Coil_temp%vect(iter_cp+3) - Coil_temp%vect(iter_cp+1))*Coil_temp%basis_1(iter_pos,iter_cp+1)
+    do iter_cp=0,CPCoil(icoil)%NCP
+        do iter_pos=0,N-1 
+                if ( (CPCoil(icoil)%basis_1(iter_pos,iter_cp) .NE. 0) .OR. (CPCoil(icoil)%basis_1(iter_pos,iter_cp+1) .NE. 0)) &
+                         CPCoil(icoil)%basis_2(iter_pos,iter_cp) = 1.0*(eval_points(iter_pos) - CPCoil(icoil)%vect(iter_cp))/ & 
+                        (CPCoil(icoil)%vect(iter_cp+2) - CPCoil(icoil)%vect(iter_cp))*CPCoil(icoil)%basis_1(iter_pos,iter_cp) &
+                        + 1.0*( - eval_points(iter_pos) + CPCoil(icoil)%vect(iter_cp+3))/ &
+                        (CPCoil(icoil)%vect(iter_cp+3) - CPCoil(icoil)%vect(iter_cp+1))*CPCoil(icoil)%basis_1(iter_pos,iter_cp+1)
                 enddo    
         enddo
     
-    do iter_cp=0,Coil_temp%NCP-1
-        do iter_pos=0,N 
-                if ( (Coil_temp%basis_2(iter_pos,iter_cp) .NE. 0) .OR. (Coil_temp%basis_2(iter_pos,iter_cp+1) .NE. 0))&
-                         Coil_temp%basis_3(iter_pos,iter_cp) = 1.0*(eval_points(iter_pos) - Coil_temp%vect(iter_cp))/ &
-                        (Coil_temp%vect(iter_cp+3) - Coil_temp%vect(iter_cp))*Coil_temp%basis_2(iter_pos,iter_cp) &
-                         + 1.0*( - eval_points(iter_pos) + Coil_temp%vect(iter_cp+4))/ &
-                        (Coil_temp%vect(iter_cp+4) - Coil_temp%vect(iter_cp+1))*Coil_temp%basis_2(iter_pos,iter_cp+1)
+    do iter_cp=0,CPCoil(icoil)%NCP-1
+        do iter_pos=0,N-1 
+                if ( (CPCoil(icoil)%basis_2(iter_pos,iter_cp) .NE. 0) .OR. (CPCoil(icoil)%basis_2(iter_pos,iter_cp+1) .NE. 0))&
+                         CPCoil(icoil)%basis_3(iter_pos,iter_cp) = 1.0*(eval_points(iter_pos) - CPCoil(icoil)%vect(iter_cp))/ &
+                        (CPCoil(icoil)%vect(iter_cp+3) - CPCoil(icoil)%vect(iter_cp))*CPCoil(icoil)%basis_2(iter_pos,iter_cp) &
+                         + 1.0*( - eval_points(iter_pos) + CPCoil(icoil)%vect(iter_cp+4))/ &
+                        (CPCoil(icoil)%vect(iter_cp+4) - CPCoil(icoil)%vect(iter_cp+1))*CPCoil(icoil)%basis_2(iter_pos,iter_cp+1)
                 enddo
         enddo
 
@@ -55,16 +53,16 @@ SUBROUTINE eval_basis1(icoil)
     use globals  
     implicit none
     integer :: N,i,j,icoil
-    REAL :: eval_points(0:N)
+    REAL :: eval_points(0:coil(icoil)%NS-1)
     integer :: iter_cp,iter_pos
-    REAL :: vect(0:CPCoil(icoil)%NT)
+    REAL :: vect(0:CPCoil(icoil)%NT-1)
        
     vect = CPCoil(icoil)%vect
-    N = CPCoil(icoil)%NS
+    N = coil(icoil)%NS
     eval_points = CPCoil(icoil)%eval_points
 
     do iter_cp=0,CPCoil(icoil)%NCP-1
-        do iter_pos=0,N 
+        do iter_pos=0,N-1 
                 if(eval_points(iter_pos)>=vect(iter_cp).AND.eval_points(iter_pos)<vect(iter_cp+1)) then
                                                  CPCoil(icoil)%db_dt(iter_pos,iter_cp) = &
                                                  CPCoil(icoil)%basis_2(iter_pos,iter_cp)/(vect(iter_cp+3)-vect(iter_cp)) &
@@ -121,16 +119,16 @@ SUBROUTINE eval_basis2(icoil)
     use globals  
     implicit none
     integer :: N,i,j,icoil
-    REAL :: eval_points(0:N)
+    REAL :: eval_points(0:coil(icoil)%NS-1)
     integer :: iter_cp,iter_pos
-    REAL :: vect(0:CPCoil(icoil)%NT)
+    REAL :: vect(0:CPCoil(icoil)%NT-1)
 
-    vect = CPCoil(icoil)%vect(iter_cp)
+    vect = CPCoil(icoil)%vect
     N = coil(icoil)%NS
     eval_points = CPCoil(icoil)%eval_points
     
     do iter_cp=0,CPCoil(icoil)%NCP-1
-        do iter_pos=0,N 
+        do iter_pos=0,N-1 
                 if(eval_points(iter_pos)>=vect(iter_cp).AND.eval_points(iter_pos)<vect(iter_cp+1)) then
                                                  CPCoil(icoil)%db_dt_2(iter_pos,iter_cp) = &
                                                  2/(vect(iter_cp+3)-vect(iter_cp))* &
@@ -187,7 +185,7 @@ SUBROUTINE eval_basis2(icoil)
         enddo
     enddo
 
-
     return 
 END SUBROUTINE eval_basis2
+
 

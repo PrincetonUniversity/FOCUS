@@ -236,7 +236,7 @@ subroutine bpotential0(icoil, iteta, jzeta, tAx, tAy, tAz)
 ! Discretizing factor is includeed; coil(icoil)%dd(kseg) 
 !------------------------------------------------------------------------------------------------------   
   use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, MPI_COMM_FOCUS,  &
-                     zero, myid, ounit, plasma, Nfp, cosnfp, sinnfp, two, bsconstant
+                     zero, myid, ounit, plasma, Nfp, cosnfp, sinnfp, two, bsconstant,coil_type_spline
   use mpi
   implicit none
 
@@ -300,6 +300,20 @@ subroutine bpotential0(icoil, iteta, jzeta, tAx, tAy, tAz)
            rr = sqrt( xx**2 + yy**2 )
            ! \vec A=-\frac{\mu_0I}{2\pi} \ln(r) \hat e_z
            Az = -two*bsconstant*log(rr) 
+	case(coil_type_spline)        
+           ! Fourier coils
+           do kseg = 0, coil(icoil)%NS-1
+              dlx = xx - coil(icoil)%xx(kseg)
+              dly = yy - coil(icoil)%yy(kseg)
+              dlz = zz - coil(icoil)%zz(kseg)
+              rm  = 1.0 / sqrt(dlx**2 + dly**2 + dlz**2)
+              ltx = coil(icoil)%xt(kseg)
+              lty = coil(icoil)%yt(kseg)
+              ltz = coil(icoil)%zt(kseg)
+              Ax = Ax + ltx * rm * coil(icoil)%dd(kseg)
+              Ay = Ay + lty * rm * coil(icoil)%dd(kseg)
+              Az = Az + ltz * rm * coil(icoil)%dd(kseg)
+           enddo    ! enddo kseg
         case default
            FATAL(bpotential0, .true., not supported coil types)
         end select 
@@ -324,7 +338,7 @@ subroutine bpotential1(icoil, iteta, jzeta, tAx, tAy, tAz, ND)
 ! Discretizing factor is includeed; coil(icoil)%dd(kseg) 
 !------------------------------------------------------------------------------------------------------    
   use globals, only: dp, coil, DoF, surf, NFcoil, Ncoils, Nteta, Nzeta, &
-                     zero, myid, ounit, plasma, Nfp, cosnfp, sinnfp, MPI_COMM_FOCUS
+                     zero, myid, ounit, plasma, Nfp, cosnfp, sinnfp, MPI_COMM_FOCUS,coil_type_spline
   use mpi
   implicit none
 
@@ -398,6 +412,29 @@ subroutine bpotential1(icoil, iteta, jzeta, tAx, tAy, tAz, ND)
            Az(1:1, 1:ND) = matmul(dAzx, DoF(icoil)%xof) + matmul(dAzy, DoF(icoil)%yof) + matmul(dAzz, DoF(icoil)%zof)
         case(3) 
            continue
+	case(coil_type_spline)        
+           ! Fourier coils
+           do kseg = 0, NS-1
+              dlx = xx - coil(icoil)%xx(kseg)
+              dly = yy - coil(icoil)%yy(kseg)
+              dlz = zz - coil(icoil)%zz(kseg)     
+              r = sqrt(dlx**2 + dly**2 + dlz**2); rm3 = r**(-3)
+              ltx = coil(icoil)%xt(kseg)
+              lty = coil(icoil)%yt(kseg)
+              ltz = coil(icoil)%zt(kseg)
+              dAxx(1,kseg) = - (dly*lty + dlz*ltz) * rm3 * coil(icoil)%dd(kseg) !Ax/x
+              dAxy(1,kseg) =    dly*ltx            * rm3 * coil(icoil)%dd(kseg) !Ax/y
+              dAxz(1,kseg) =    dlz*ltx            * rm3 * coil(icoil)%dd(kseg) !Ax/z
+              dAyx(1,kseg) =    dlx*lty            * rm3 * coil(icoil)%dd(kseg) !Ay/x
+              dAyy(1,kseg) = - (dlx*ltx + dlz*ltz) * rm3 * coil(icoil)%dd(kseg) !Ay/y
+              dAyz(1,kseg) =    dlz*lty            * rm3 * coil(icoil)%dd(kseg) !Ay/z
+              dAzx(1,kseg) =    dlx*ltz            * rm3 * coil(icoil)%dd(kseg) !Az/x
+              dAzy(1,kseg) =    dly*ltz            * rm3 * coil(icoil)%dd(kseg) !Az/y
+              dAzz(1,kseg) = - (dlx*ltx + dly*lty) * rm3 * coil(icoil)%dd(kseg) !Az/z
+           enddo    ! enddo kseg
+           Ax(1:1, 1:ND) = matmul(dAxx, DoF(icoil)%xof) + matmul(dAxy, DoF(icoil)%yof) + matmul(dAxz, DoF(icoil)%zof)
+           Ay(1:1, 1:ND) = matmul(dAyx, DoF(icoil)%xof) + matmul(dAyy, DoF(icoil)%yof) + matmul(dAyz, DoF(icoil)%zof)
+           Az(1:1, 1:ND) = matmul(dAzx, DoF(icoil)%xof) + matmul(dAzy, DoF(icoil)%yof) + matmul(dAzz, DoF(icoil)%zof)
         case default
            FATAL(bpotential1, .true., not supported coil types)
         end select
