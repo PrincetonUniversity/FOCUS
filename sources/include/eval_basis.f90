@@ -55,7 +55,7 @@ SUBROUTINE eval_basis1(icoil)
     use globals  
     implicit none
     integer :: N,i,j,icoil
-    REAL :: eval_points(0:coil(icoil)%NS)
+    REAL :: eval_points(0:N)
     integer :: iter_cp,iter_pos
     REAL :: vect(0:CPCoil(icoil)%NT)
        
@@ -121,7 +121,7 @@ SUBROUTINE eval_basis2(icoil)
     use globals  
     implicit none
     integer :: N,i,j,icoil
-    REAL :: eval_points(0:coil(icoil)%NS)
+    REAL :: eval_points(0:N)
     integer :: iter_cp,iter_pos
     REAL :: vect(0:CPCoil(icoil)%NT)
 

@@ -28,7 +28,7 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
 ! Be careful if coils have different resolutions.
 !------------------------------------------------------------------------------------------------------   
   use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, cosnfp, sinnfp, &
-                     zero, myid, ounit, Nfp, pi2, half, two, one, bsconstant, MPI_COMM_FOCUS,coil_type_spline
+                     zero, myid, ounit, Nfp, pi2, half, two, one, bsconstant, MPI_COMM_FOCUS
   use mpi
   implicit none
 
@@ -116,23 +116,6 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
            Bx = - coil(icoil)%Bt * yy/rr
            By =   coil(icoil)%Bt * xx/rr
            Bz =   coil(icoil)%Bz 
-	case(coil_type_spline)
-           ! Biot-Savart law
-           do kseg = 0, coil(icoil)%NS-1
-              dlx = xx - coil(icoil)%xx(kseg)
-              dly = yy - coil(icoil)%yy(kseg)
-              dlz = zz - coil(icoil)%zz(kseg)
-              rm3 = (sqrt(dlx**2 + dly**2 + dlz**2))**(-3)
-              ltx = coil(icoil)%xt(kseg)
-              lty = coil(icoil)%yt(kseg)
-              ltz = coil(icoil)%zt(kseg)
-              Bx = Bx + ( dlz*lty - dly*ltz ) * rm3 * coil(icoil)%dd(kseg)
-              By = By + ( dlx*ltz - dlz*ltx ) * rm3 * coil(icoil)%dd(kseg)
-              Bz = Bz + ( dly*ltx - dlx*lty ) * rm3 * coil(icoil)%dd(kseg)
-           enddo    ! enddo kseg
-           Bx = Bx * coil(icoil)%I * bsconstant
-           By = By * coil(icoil)%I * bsconstant
-           Bz = Bz * coil(icoil)%I * bsconstant
         case default
            FATAL(bfield0, .true., not supported coil types)
         end select     
@@ -158,7 +141,7 @@ subroutine bfield1(icoil, x, y, z, tBx, tBy, tBz, ND)
 ! Discretizing factor is includeed; coil(icoil)%dd(kseg)
 !------------------------------------------------------------------------------------------------------   
   use globals, only: dp, coil, DoF, surf, NFcoil, Ncoils, Nteta, Nzeta, &
-                     zero, myid, ounit, Nfp, one, bsconstant, cosnfp, sinnfp, MPI_COMM_FOCUS,coil_type_spline
+                     zero, myid, ounit, Nfp, one, bsconstant, cosnfp, sinnfp, MPI_COMM_FOCUS
   use mpi
   implicit none
 
@@ -287,35 +270,6 @@ subroutine bfield1(icoil, x, y, z, tBx, tBy, tBz, ND)
            Bx = zero
            By = zero
            Bz = one
-	case(coil_type_spline)
-           ! Fourier coils
-           NS = coil(icoil)%NS
-           do kseg = 0, NS-1
-              dlx = xx - coil(icoil)%xx(kseg)
-              dly = yy - coil(icoil)%yy(kseg)
-              dlz = zz - coil(icoil)%zz(kseg)
-              r2 = dlx**2 + dly**2 + dlz**2; rm3 = one/(sqrt(r2)*r2); rm5 = rm3/r2;
-              ltx = coil(icoil)%xt(kseg)
-              lty = coil(icoil)%yt(kseg)
-              ltz = coil(icoil)%zt(kseg)
-              rxp = dlx*ltx + dly*lty + dlz*ltz !r dot x'
-              dBxx(1,kseg) = ( 3*(dlz*lty-dly*ltz)*dlx*rm5                             ) * coil(icoil)%dd(kseg) !Bx/x
-              dBxy(1,kseg) = ( 3*(dlz*lty-dly*ltz)*dly*rm5 - 3*dlz*rxp*rm5 + 2*ltz*rm3 ) * coil(icoil)%dd(kseg) !Bx/y
-              dBxz(1,kseg) = ( 3*(dlz*lty-dly*ltz)*dlz*rm5 + 3*dly*rxp*rm5 - 2*lty*rm3 ) * coil(icoil)%dd(kseg) !Bx/z
-              dByx(1,kseg) = ( 3*(dlx*ltz-dlz*ltx)*dlx*rm5 + 3*dlz*rxp*rm5 - 2*ltz*rm3 ) * coil(icoil)%dd(kseg) !By/x
-              dByy(1,kseg) = ( 3*(dlx*ltz-dlz*ltx)*dly*rm5                             ) * coil(icoil)%dd(kseg) !By/y
-              dByz(1,kseg) = ( 3*(dlx*ltz-dlz*ltx)*dlz*rm5 - 3*dlx*rxp*rm5 + 2*ltx*rm3 ) * coil(icoil)%dd(kseg) !By/z
-              dBzx(1,kseg) = ( 3*(dly*ltx-dlx*lty)*dlx*rm5 - 3*dly*rxp*rm5 + 2*lty*rm3 ) * coil(icoil)%dd(kseg) !Bz/x
-              dBzy(1,kseg) = ( 3*(dly*ltx-dlx*lty)*dly*rm5 + 3*dlx*rxp*rm5 - 2*ltx*rm3 ) * coil(icoil)%dd(kseg) !Bz/y
-              dBzz(1,kseg) = ( 3*(dly*ltx-dlx*lty)*dlz*rm5                             ) * coil(icoil)%dd(kseg) !Bz/z
-           enddo    ! enddo kseg
-           ! db/dv = dB/dx * dx/dv  v->variables
-           Bx(1:1, 1:ND) = matmul(dBxx, DoF(icoil)%xof) + matmul(dBxy, DoF(icoil)%yof) + matmul(dBxz, DoF(icoil)%zof)
-           By(1:1, 1:ND) = matmul(dByx, DoF(icoil)%xof) + matmul(dByy, DoF(icoil)%yof) + matmul(dByz, DoF(icoil)%zof)
-           Bz(1:1, 1:ND) = matmul(dBzx, DoF(icoil)%xof) + matmul(dBzy, DoF(icoil)%yof) + matmul(dBzz, DoF(icoil)%zof)
-           Bx = Bx * coil(icoil)%I * bsconstant
-           By = By * coil(icoil)%I * bsconstant
-           Bz = Bz * coil(icoil)%I * bsconstant
         end select
         ! sum all the contributions
         Bx = Bx*(-1)**is
@@ -334,7 +288,7 @@ end subroutine bfield1
 subroutine coils_bfield(B,x,y,z)
   use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, &
        zero, myid, ounit, Nfp, bsconstant, one, two, ncpu, &
-       master, nworker, myworkid, MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS, MPI_COMM_FOCUS,
+       master, nworker, myworkid, MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS, MPI_COMM_FOCUS
   use mpi
   implicit none
 
