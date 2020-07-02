@@ -108,8 +108,7 @@ subroutine CurvDeriv0(icoil,curvRet)
   REAL,allocatable     :: curvv(:)
 
   NS = coil(icoil)%NS 
-  SALLOCATE(curvv, (0:NS-1),zero)
-write(ounit,'("starting deriv")')	
+  SALLOCATE(curvv, (0:NS-1),zero)	
   FATAL( CurvDeriv0, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
  
   curvv = zero
@@ -118,11 +117,8 @@ write(ounit,'("starting deriv")')
              + (coil(icoil)%xa*coil(icoil)%zt-coil(icoil)%xt*coil(icoil)%za)**2  & 
              + (coil(icoil)%ya*coil(icoil)%xt-coil(icoil)%yt*coil(icoil)%xa)**2 )& 
              / ((coil(icoil)%xt)**2+(coil(icoil)%yt)**2+(coil(icoil)%zt)**2)**(1.5)
-write(ounit,'(5F20.10)')curvv
-write(ounit,'(5F20.10)')curvv(0)
-write(ounit,'("starting maxcurve")')
+
   coil(icoil)%maxcurv = maxval(curvv)
-write(ounit,'("starting case")')
   if( case_curv == 1 ) then ! linear
      curvRet = sum(curvv)-curvv(0)
      curvRet = pi2*curvRet/NS
@@ -150,8 +146,7 @@ write(ounit,'("starting case")')
         else
            curvRet = curvRet + sqrt(coil(icoil)%xt(kseg)**2+coil(icoil)%yt(kseg)**2+coil(icoil)%zt(kseg)**2)*curv_c*curvv(kseg)
         endif
-     enddo
-     write(ounit,'("fine before L")')	
+     enddo	
      call lenDeriv0( icoil, coil(icoil)%L )
      curvRet = pi2*curvRet/(NS*coil(icoil)%L)
   else   
