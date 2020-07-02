@@ -134,7 +134,11 @@ subroutine AllocData(type)
            SALLOCATE( coil(icoil)%za, (0:coil(icoil)%NS), zero )
            SALLOCATE( coil(icoil)%dl, (0:coil(icoil)%NS), zero )
            SALLOCATE( coil(icoil)%dd, (0:coil(icoil)%NS), zero )
-           coil(icoil)%dd = pi2 / NS  ! discretizing factor;
+
+
+           coil(icoil)%dd(i) = 1 / NS  ! discretizing factor;
+
+
         case default
            FATAL(AllocData, .true., not supported coil types)
         end select
