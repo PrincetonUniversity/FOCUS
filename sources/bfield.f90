@@ -334,7 +334,7 @@ end subroutine bfield1
 subroutine coils_bfield(B,x,y,z)
   use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, &
        zero, myid, ounit, Nfp, bsconstant, one, two, ncpu, &
-       master, nworker, myworkid, MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS, MPI_COMM_FOCUS,
+       master, nworker, myworkid, MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS, MPI_COMM_FOCUS
   use mpi
   implicit none
 

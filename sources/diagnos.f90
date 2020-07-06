@@ -257,7 +257,6 @@ subroutine avgcurvature(icoil)
   REAL,allocatable    :: davgcurv(:)
 
   SALLOCATE(davgcurv, (0:coil(icoil)%NS-1), zero)
-
   davgcurv = sqrt( (coil(icoil)%za*coil(icoil)%yt-coil(icoil)%zt*coil(icoil)%ya)**2  &
              + (coil(icoil)%xa*coil(icoil)%zt-coil(icoil)%xt*coil(icoil)%za)**2  & 
              + (coil(icoil)%ya*coil(icoil)%xt-coil(icoil)%yt*coil(icoil)%xa)**2 )& 
@@ -273,7 +272,7 @@ end subroutine avgcurvature
 
 subroutine mindist(array_A, dim_A, array_B, dim_B, minimum)
  
-  use globals, only: dp
+  use globals, only: dp,ounit
   implicit none
 
   INTEGER, INTENT(IN ) :: dim_A, dim_B
@@ -297,7 +296,10 @@ subroutine mindist(array_A, dim_A, array_B, dim_B, minimum)
   enddo
 
   minimum = sqrt(minimum)
-  
+  !write (ounit,'("A")')
+  !write(ounit,'(7F20.10)')array_A(1,1:dim_A)
+  !write (ounit,'("B")')	
+  !write(ounit,'(7F20.10)')array_B(1,1:dim_B)	
   return
 
 end subroutine mindist

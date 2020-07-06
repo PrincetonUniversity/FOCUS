@@ -18,7 +18,7 @@
 subroutine curvature(ideriv)
   use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, MPI_COMM_FOCUS, &
        coil, DoF, Ncoils, Nfixgeo, Ndof, curv, t1CU, t2CU, weight_curv, FouCoil, &
-       mcurv, icurv, LM_fvec, LM_fjac,coil_type_spline
+       mcurv, icurv, LM_fvec, LM_fjac,coil_type_spline,CPCoil
 
   implicit none
   include "mpif.h"
@@ -164,14 +164,14 @@ end subroutine CurvDeriv0
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-subroutine CurvDeriv1(icoil, derivs, ND, NF ,NCP) !Calculate all derivatives for a coil
+subroutine CurvDeriv1(icoil, derivs, ND, NF ,N) !Calculate all derivatives for a coil
 
   use globals, only: dp, zero, pi2, coil, DoF, myid, ounit, Ncoils, &
                 case_curv, curv_alpha, k0, curv_c, FouCoil, MPI_COMM_FOCUS,CPCoil,coil_type_spline
   implicit none
   include "mpif.h"
 
-  INTEGER, intent(in)  :: icoil, ND , NF ,NCP
+  INTEGER, intent(in)  :: icoil, ND , NF ,N
   REAL   , intent(out) :: derivs(1:1, 1:ND)
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   INTEGER              :: kseg, astat, ierr, doff, nff, NS
@@ -336,7 +336,7 @@ subroutine CurvDeriv1(icoil, derivs, ND, NF ,NCP) !Calculate all derivatives for
         	endif
        	  enddo
 	case(coil_type_spline)
-	    do nff = 1,NCP
+	    do nff = 1,N
         	ncc = CPCoil(icoil)%db_dt(kseg,nff-1)
         	ncp = CPCoil(icoil)%db_dt_2(kseg,nff-1)
 
@@ -345,10 +345,10 @@ subroutine CurvDeriv1(icoil, derivs, ND, NF ,NCP) !Calculate all derivatives for
            		derivs(1,nff)      = derivs(1,nff)      + -1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*ncc) &
            		+ ((f1**(-1))*((xt*ya-xa*yt)*(ncc*ya-ncp*yt)+(xt*za-xa*zt)*(ncc*za-ncp*zt)) )/f2; 
 			! Y
-           		derivs(1,nff+NCP) = derivs(1,nff+NCP) + -1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*ncc) &
+           		derivs(1,nff+N) = derivs(1,nff+N) + -1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*ncc) &
            		+ ((f1**(-1))*((xt*ya-xa*yt)*(ncp*xt-ncc*xa)+(yt*za-ya*zt)*(ncc*za-ncp*zt)) )/f2;
 			! Z
-           		derivs(1,nff+2*NCP) = derivs(1,nff+2*NCP) + (-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*ncc) &
+           		derivs(1,nff+2*N) = derivs(1,nff+2*N) + (-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*ncc) &
            		+ ((f1**(-1))*((xt*za-xa*zt)*(xt*ncp-xa*ncc)+(yt*za-ya*zt)*(yt*ncp-ya*ncc)) )/f2)*2.0*curvHold;
 	        elseif( case_curv == 2 ) then
         		curvHold = sqrt( (za*yt-zt*ya)**2 + (xa*zt-xt*za)**2 + (ya*xt-yt*xa)**2 ) / ((xt)**2+(yt)**2+(zt)**2)**(1.5);
@@ -356,10 +356,10 @@ subroutine CurvDeriv1(icoil, derivs, ND, NF ,NCP) !Calculate all derivatives for
            		derivs(1,nff)      = derivs(1,nff)      + (-1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*ncc) &
           		 + ((f1**(-1))*((xt*ya-xa*yt)*(ncc*ya-ncp*yt)+(xt*za-xa*zt)*(ncc*za-ncp*zt)) )/f2)*2.0*curvHold; 
 			! Y
-           		derivs(1,nff+NCP) = derivs(1,nff+NCP) + (-1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*ncc) &
+           		derivs(1,nff+N) = derivs(1,nff+N) + (-1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*ncc) &
            		+ ((f1**(-1))*((xt*ya-xa*yt)*(ncp*xt-ncc*xa)+(yt*za-ya*zt)*(ncc*za-ncp*zt)) )/f2)*2.0*curvHold; 
 			! Z
-           		derivs(1,nff+2*NCP) = derivs(1,nff+2*NCP) + (-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*ncc) &
+           		derivs(1,nff+2*N) = derivs(1,nff+2*N) + (-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*ncc) &
            		+ ((f1**(-1))*((xt*za-xa*zt)*(xt*ncp-xa*ncc)+(yt*za-ya*zt)*(yt*ncp-ya*ncc)) )/f2)*2.0*curvHold; 
         	elseif( case_curv == 3 ) then
            		curvHold = sqrt( (za*yt-zt*ya)**2 + (xa*zt-xt*za)**2 + (ya*xt-yt*xa)**2 ) / ((xt)**2+(yt)**2+(zt)**2)**(1.5);
@@ -369,15 +369,15 @@ subroutine CurvDeriv1(icoil, derivs, ND, NF ,NCP) !Calculate all derivatives for
               			derivs(1,nff)      = derivs(1,nff)      + (-1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*ncc) &
               			+ ((f1**(-1))*((xt*ya-xa*yt)*(ncc*ya-ncp*yt)+(xt*za-xa*zt)*(ncc*za-ncp*zt)) )/f2)*penCurv; 
 				! Y
-				derivs(1,nff + NCP) = derivs(1,nff+NCP) + (-1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*ncc) &
+				derivs(1,nff + N) = derivs(1,nff+N) + (-1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*ncc) &
               			+ ((f1**(-1))*((xt*ya-xa*yt)*(ncp*xt-ncc*xa)+(yt*za-ya*zt)*(ncc*za-ncp*zt)) )/f2)*penCurv; 
 				! Z
-              			derivs(1,nff+2*NCP) = derivs(1,nff+2*NCP) + (-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*nss) &
+              			derivs(1,nff+2*N) = derivs(1,nff+2*N) + (-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*nss) &
               			+ ((f1**(-1))*((xt*za-xa*zt)*(xt*nsp-xa*nss)+(yt*za-ya*zt)*(yt*nsp-ya*nss)) )/f2)*penCurv;
            		else
               			derivs(1,nff) = derivs(1,nff);
-				derivs(1,nff + NCP) = derivs(1,nff + NCP);
-				derivs(1,nff + 2*NCP) = derivs(1,nff + 2*NCP);
+				derivs(1,nff + N) = derivs(1,nff + N);
+				derivs(1,nff + 2*N) = derivs(1,nff + 2*N);
            		endif
 
         	elseif( case_curv == 4 ) then
@@ -396,19 +396,19 @@ subroutine CurvDeriv1(icoil, derivs, ND, NF ,NCP) !Calculate all derivatives for
            		*(-1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*ncc) + ((f1**(-1))*((xt*ya-xa*yt)*(ncc*ya-ncp*yt)+(xt*za-xa*zt)*(ncc*za-ncp*zt)) )/f2) &
            		*(curv_alpha*curvH*( curvHold - k0 )**(curv_alpha - 1.0) + curv_c)
            		! Y
-           		derivs(1,nff+NCP) = derivs(1,nff+NCP) + sqrt(xt**2+yt**2+zt**2) &
-           		*(curvH*( curvHold - k0 )**curv_alpha + curv_c*curvHold)*-1.0*d1L(1,nff+NCP)/leng
-           		derivs(1,nff+NCP) = derivs(1,nff+NCP) + yt*ncc*(xt**2+yt**2+zt**2)**(-.5) &
+           		derivs(1,nff+N) = derivs(1,nff+N) + sqrt(xt**2+yt**2+zt**2) &
+           		*(curvH*( curvHold - k0 )**curv_alpha + curv_c*curvHold)*-1.0*d1L(1,nff+N)/leng
+           		derivs(1,nff+N) = derivs(1,nff+N) + yt*ncc*(xt**2+yt**2+zt**2)**(-.5) &
            		*(curvH*( curvHold - k0 )**curv_alpha + curv_c*curvHold)
-           		derivs(1,nff+NCP) = derivs(1,nff+NCP) + sqrt(xt**2+yt**2+zt**2) &
+           		derivs(1,nff+N) = derivs(1,nff+N) + sqrt(xt**2+yt**2+zt**2) &
            		*(-1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*ncc) + ((f1**(-1))*((xt*ya-xa*yt)*(ncp*xt-ncc*xa)+(yt*za-ya*zt)*(ncc*za-ncp*zt)) )/f2) &
            		*(curv_alpha*curvH*( curvHold - k0 )**(curv_alpha - 1.0) + curv_c)
            		! Z
-           		derivs(1,nff+2*NCP) = derivs(1,nff+2*NCP) + sqrt(xt**2+yt**2+zt**2) &
-           		*(curvH*( curvHold - k0 )**curv_alpha + curv_c*curvHold)*-1.0*d1L(1,nff+2*NCP)/leng
-           		derivs(1,nff+2*NCP) = derivs(1,nff+2*NCP) + zt*ncc*(xt**2+yt**2+zt**2)**(-.5) &
+           		derivs(1,nff+2*N) = derivs(1,nff+2*N) + sqrt(xt**2+yt**2+zt**2) &
+           		*(curvH*( curvHold - k0 )**curv_alpha + curv_c*curvHold)*-1.0*d1L(1,nff+2*N)/leng
+           		derivs(1,nff+2*N) = derivs(1,nff+2*N) + zt*ncc*(xt**2+yt**2+zt**2)**(-.5) &
            		*(curvH*( curvHold - k0 )**curv_alpha + curv_c*curvHold)
-           		derivs(1,nff+2*NCP) = derivs(1,nff+2*NCP) + sqrt(xt**2+yt**2+zt**2) &
+           		derivs(1,nff+2*N) = derivs(1,nff+2*N) + sqrt(xt**2+yt**2+zt**2) &
            		*(-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*ncc) + ((f1**(-1))*((xt*za-xa*zt)*(xt*ncp-xa*ncc)+(yt*za-ya*zt)*(yt*ncp-ya*ncc)) )/f2) &
            		*(curv_alpha*curvH*( curvHold - k0 )**(curv_alpha - 1.0) + curv_c)
         	else
@@ -419,8 +419,8 @@ subroutine CurvDeriv1(icoil, derivs, ND, NF ,NCP) !Calculate all derivatives for
 		FATAL( CurvDeriv1, .true. , invalid coil_type option )	
 	end select
   enddo
-  
-  derivs = pi2*derivs/NS
+  if (coil(icoil)%type == 1)  derivs = pi2*derivs/NS
+  if (coil(icoil)%type == coil_type_spline )derivs = derivs/NS
   if( case_curv == 4 ) derivs = derivs/leng
 
   return
