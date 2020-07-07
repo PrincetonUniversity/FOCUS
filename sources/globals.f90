@@ -101,7 +101,7 @@ module globals
   INTEGER              :: case_bnormal   =   0
   INTEGER              :: case_length    =   1
   INTEGER              :: case_curv      =   1 
-  REAL                 :: curv_alpha     =   2.000D+00
+  REAL                 :: curv_alpha     =   1.000D-01
   REAL                 :: curv_c         =   1.000D-04
   REAL                 :: k0             =   0.000D+00
   REAL                 :: weight_bnorm   =   1.000D+00
@@ -116,6 +116,8 @@ module globals
   REAL                 :: cssep_factor   =   4.000D+00 
   REAL                 :: weight_specw   =   0.000D+00
   REAL                 :: weight_ccsep   =   0.000D+00
+  REAL                 :: r_delta        =   1.000D-01
+  REAL                 :: ccsep_alpha    =   1.000D+01
   REAL                 :: weight_inorm   =   1.000D+00
   REAL                 :: weight_gnorm   =   1.000D+00
   REAL                 :: weight_mnorm   =   1.000D+00
@@ -208,6 +210,8 @@ module globals
                         cssep_factor   , &
                         weight_specw   , &
                         weight_ccsep   , &
+                        r_delta        , &
+                        ccsep_alpha    , &
                         weight_inorm   , &
                         weight_gnorm   , &
                         weight_mnorm   , &
