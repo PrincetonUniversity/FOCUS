@@ -26,14 +26,14 @@ subroutine coilsep(ideriv)
   INTEGER, INTENT(in) :: ideriv
 
   INTEGER             :: astat, ierr, icoil, idof, ND, NF, ivec, numCoil
-  REAL                :: d1C(1:Ndof), norm(1:Ncoils), coilsep0
+  REAL                :: d1C(1:Ndof), ccsep0
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   ccsep = zero
   ivec = 1
   numCoil = zero
-  coilsep0 = zero
+  ccsep0 = zero
  
   ! Do calculation for free and fixed coils 
   if( ideriv >= 0 ) then
@@ -41,14 +41,14 @@ subroutine coilsep(ideriv)
      do icoil = 1, Ncoils     !only care about unique coils;
         if ( coil(icoil)%type == 1 ) then  ! only for Fourier, Probably should delete this 
            !if( myid.ne.modulo(icoil-1,ncpu) ) cycle ! parallelization loop;
-           call CoilSepDeriv0(icoil, coilsep0)
+           call CoilSepDeriv0(icoil, ccsep0)
            if ( coil(icoil)%symm == 0 ) numCoil = numCoil + 1
            if ( coil(icoil)%symm == 1 ) numCoil = numCoil + Nfp
            if ( coil(icoil)%symm == 2 ) numCoil = numCoil + 2*Nfp
-           ccsep = ccsep + coilsep0
+           ccsep = ccsep + ccsep0
            if ( coil(icoil)%Lc /= 0 ) then
               if (mccsep > 0) then ! L-M format of targets
-                 LM_fvec(iccsep+ivec) = weight_ccsep * coilsep0
+                 LM_fvec(iccsep+ivec) = weight_ccsep * ccsep0
                  ivec = ivec + 1
               endif
            endif
@@ -121,13 +121,15 @@ subroutine CoilSepDeriv0(icoil, coilsep0)
   REAL   , intent(out) :: coilsep0
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   INTEGER              :: kseg0, kseg1, astat, ierr, i, per0, per1, ss0, ss1, j0, j1, l0, l1
-  REAL                 :: dlength, rdiff, H, hypc, coilsepHold
+  REAL                 :: rdiff, H, hypc, coilsepHold 
   REAL, allocatable    :: x0(:), y0(:), z0(:), x1(:), y1(:), z1(:)
 
-  FATAL( LenDeriv0, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
-  
-  coilsep0 = zero
+  SALLOCATE(x0, (1:coil(icoil)%NS), zero)
+  SALLOCATE(y0, (1:coil(icoil)%NS), zero)
+  SALLOCATE(z0, (1:coil(icoil)%NS), zero)
 
+  FATAL( CoilSepDeriv0, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
+  coilsep0 = zero
   if ( coil(icoil)%symm == 0 ) then 
      per0 = 1
      ss0 = 0
@@ -151,6 +153,9 @@ subroutine CoilSepDeriv0(icoil, coilsep0)
               ! Do nothing
               !if(myid .eq. 0) write(ounit, '(8X": The minimum BLAH distance is "4X" :" I3" ; at coils")') ss0
            else
+              SALLOCATE(x1, (1:coil(i)%NS), zero)
+              SALLOCATE(y1, (1:coil(i)%NS), zero)
+              SALLOCATE(z1, (1:coil(i)%NS), zero)
               if ( coil(i)%symm == 0 ) then
                  per1 = 1
                  ss1 = 0
@@ -211,10 +216,12 @@ subroutine CoilSepDeriv1(icoil, derivs, ND, NF)
   REAL                 :: dl3, xt, yt, zt, H, hypc, hyps, rdiff, int_hold
   REAL, allocatable    :: x0(:), y0(:), z0(:), x1(:), y1(:), z1(:), derivs_hold(:,:)
 
-  FATAL( LenDeriv1, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
+  FATAL( CoilSepDeriv1, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
   
   derivs = zero
-  derivs_hold = derivs
+  !derivs_hold = derivs
+
+  SALLOCATE(derivs_hold, (1:1,1:3+6*NF), zero)
 
   SALLOCATE(x0, (1:coil(icoil)%NS), zero)
   SALLOCATE(y0, (1:coil(icoil)%NS), zero)

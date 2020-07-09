@@ -37,7 +37,7 @@
 subroutine solvers
   use globals, only: dp, ierr, iout, myid, ounit, zero, IsQuiet, IsNormWeight, Ndof, Nouts, xdof, &
        case_optimize, DF_maxiter, LM_maxiter, CG_maxiter, HN_maxiter, TN_maxiter, coil, DoF, &
-       weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, &
+       weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_ccsep, &
        target_tflux, target_length, cssep_factor, MPI_COMM_FOCUS, k0, weight_curv
   implicit none
   include "mpif.h"
@@ -200,6 +200,7 @@ subroutine costfun(ideriv)
      call length(0)
      call surfsep(0)
      call curvature(0)
+     call coilsep(0)
 
   endif
 
@@ -508,14 +509,15 @@ subroutine normweight
 !!$  endif 
 !!$
 !!$!-!-!-!-!-!-!-!-!-!-ccsep-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-!!$
-!!$  if( weight_ccsep .ge. machprec ) then
-!!$
-!!$   call coilsep(0)
-!!$   if (abs(ccsep) .gt. machprec) weight_ccsep = weight_ccsep / ccsep
-!!$   if( myid .eq. 0 ) write(ounit, 1000) "weight_ccsep", weight_ccsep
-!!$   
-!!$  endif
+
+  if( weight_ccsep >= machprec ) then
+
+   call coilsep(0)
+   if (abs(ccsep) > machprec) weight_ccsep = weight_ccsep / ccsep
+   if( myid .eq. 0 ) write(ounit, 1000) "weight_ccsep", weight_ccsep
+   if( myid .eq. 0 .and. weight_curv < machprec) write(ounit, '("warning : weight_ccsep < machine_precision, ccsep will not be used.")')
+   
+  endif
 
 1000 format(8X,": "A12" is normalized to " ES12.5)
 
@@ -545,8 +547,10 @@ subroutine output (mark)
   
   FATAL( output , iout > Nouts+2, maximum iteration reached )
 
-  if (myid == 0) write(ounit, '("output  : "I6" : "9(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, bharm, &
-       tflux, ttlen, cssep, curv
+!  if (myid == 0) write(ounit, '("output  : "I6" : "9(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, bharm, &
+!       tflux, ttlen, cssep, curv
+  if (myid == 0) write(ounit, '("output  : "I6" : "10(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, bharm, & 
+       tflux, ttlen, cssep, curv, ccsep
 
   ! save evolution data;
   if (allocated(evolution)) then
@@ -558,9 +562,8 @@ subroutine output (mark)
      evolution(iout,5) = tflux
      evolution(iout,6) = ttlen
      evolution(iout,7) = cssep
-     !evolution(iout,8) = 0.0
-     !evolution(iout,8) = ccsep
      evolution(iout,8) = curv
+     evolution(iout,9) = ccsep
   endif
 
   ! exit the optimization if no obvious changes in past 5 outputs; 07/20/2017

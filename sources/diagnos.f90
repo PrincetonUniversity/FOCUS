@@ -28,9 +28,12 @@ SUBROUTINE diagnos
   if (case_optimize == 0) call AllocData(0) ! if not allocate data;
   call costfun(0)
 
-  if (myid == 0) write(ounit, '("diagnos : "6(A12," ; "))') , &
-       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." , "curv"
-  if (myid == 0) write(ounit, '("        : "6(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep, curv
+  !if (myid == 0) write(ounit, '("diagnos : "6(A12," ; "))') , &
+  !     "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." , "curv"
+  if (myid == 0) write(ounit, '("diagnos : "7(A12," ; "))') , &
+       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." , "curv", "c-c sep"
+  !if (myid == 0) write(ounit, '("        : "6(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep, curv
+  if (myid == 0) write(ounit, '("        : "7(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep, curv, ccsep
 
   !save all the coil parameters;
   if (allocated(coilspace)) then
