@@ -8,7 +8,7 @@
  Nteta          =       32           
  Nzeta          =       32   
 
- case_init      =        0
+ case_init      =        1
  case_coils     =        1
  Ncoils         =        48
  init_current   =        1.000D+06        
@@ -27,12 +27,12 @@
  k0             =        1.000D+01     ! Maximum curvature constraint 
  curv_alpha     =        2.000D+00     ! Exponent for curvature constraint violations 
  weight_bnorm   =        1.000D+02
- weight_bharm   =        0.000D+00
- weight_tflux   =        1.000D-02
- target_tflux   =        -0.039418D+00
- weight_ttlen   =        1.000D+01
- target_length  =        2.400D+00 
- weight_curv    =        5.000D+00
+ weight_bharm   =        0.000D+01
+ weight_tflux   =        0.000D-02
+ target_tflux   =        0.000D+00
+ weight_ttlen   =        0.000D+01
+ target_length  =        0.000D+00 
+ weight_curv    =        0.000D+00
 
  DF_tausta      =        0.000D+00
  DF_tauend      =        1.000D-00

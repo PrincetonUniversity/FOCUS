@@ -96,7 +96,7 @@ end subroutine curvature
 subroutine CurvDeriv0(icoil,curvRet)
 
   use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils, &
-          case_curv, curv_alpha, curv_c, k0, MPI_COMM_FOCUS
+          case_curv, curv_alpha, curv_c, k0, MPI_COMM_FOCUS,coil_type_spline
 
   implicit none
   include "mpif.h"
@@ -109,10 +109,13 @@ subroutine CurvDeriv0(icoil,curvRet)
 
   NS = coil(icoil)%NS 
 
-  SALLOCATE(curvv, (0:NS-1),zero)	
-
+  if (coil(icoil)%type==coil_type_spline) then
+	SALLOCATE(curvv, (0:NS-1),zero)
+  else if (coil(icoil)%type==1) then
+	SALLOCATE(curvv, (0:NS),zero)	
+  endif	
   FATAL( CurvDeriv0, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
- 
+ !write(ounit,'(7F20.10)')coil(icoil)%xt
   curvv = zero
   curvRet = zero
 
@@ -152,6 +155,7 @@ subroutine CurvDeriv0(icoil,curvRet)
         endif
 
      enddo
+
      call lenDeriv0( icoil, coil(icoil)%L )
      curvRet = pi2*curvRet/(NS*coil(icoil)%L)
   else   
@@ -420,7 +424,7 @@ subroutine CurvDeriv1(icoil, derivs, ND, NF ,N) !Calculate all derivatives for a
 	end select
   enddo
   if (coil(icoil)%type == 1)  derivs = pi2*derivs/NS
-  if (coil(icoil)%type == coil_type_spline )derivs = derivs/NS
+  if (coil(icoil)%type == coil_type_spline )derivs = derivs/(NS-1)*CPcoil(icoil)%NT
   if( case_curv == 4 ) derivs = derivs/leng
 
   return

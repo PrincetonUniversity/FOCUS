@@ -268,6 +268,8 @@ subroutine saving
            NCP = CPCoil(icoil)%NCP ! shorthand;
            write(wunit, *) "#NCP  #NT"
            write(wunit, '(I3,I3)') NCP , CPCoil(icoil)%NT
+           write(wunit, *) "knot vector"
+           write(wunit, 1000) CPCoil(icoil)%vect/CPCoil(icoil)%NT
            write(wunit, *) "#Control points for coils ( x;y;z) "
            write(wunit, 1000) CPCoil(icoil)%Cpoints(0:NCP-1)
            write(wunit, 1000) CPCoil(icoil)%Cpoints(NCP:2*NCP-1)
