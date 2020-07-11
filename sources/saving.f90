@@ -234,6 +234,10 @@ subroutine saving
      HWRITERA( 3,  Ncoils_total     , magtau,   magtau(1:3, 1:Ncoils_total)    )   
   endif
 
+  if (allocated(t1E)) then
+     HWRITEIV( Ndof, grad, t1E(1:Ndof) )
+  endif
+
   HWRITERV( 1                ,  time_initialize,   time_initialize               )
   HWRITERV( 1                ,  time_optimize  ,   time_optimize                 )
   HWRITERV( 1                ,  time_postproc  ,   time_postproc                 )
