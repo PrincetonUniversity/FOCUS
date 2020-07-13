@@ -124,12 +124,18 @@ subroutine CoilSepDeriv0(icoil, coilsep0)
   REAL                 :: rdiff, H, hypc, coilsepHold 
   REAL, allocatable    :: x0(:), y0(:), z0(:), x1(:), y1(:), z1(:)
 
-  SALLOCATE(x0, (1:coil(icoil)%NS), zero)
-  SALLOCATE(y0, (1:coil(icoil)%NS), zero)
-  SALLOCATE(z0, (1:coil(icoil)%NS), zero)
+  !SALLOCATE(x0, (1:coil(icoil)%NS), zero)
+  !SALLOCATE(y0, (1:coil(icoil)%NS), zero)
+  !SALLOCATE(z0, (1:coil(icoil)%NS), zero)
+  SALLOCATE(x0, (0:coil(icoil)%NS-1), zero)
+  SALLOCATE(y0, (0:coil(icoil)%NS-1), zero)
+  SALLOCATE(z0, (0:coil(icoil)%NS-1), zero)
 
   FATAL( CoilSepDeriv0, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
+
   coilsep0 = zero
+  coilsepHold = zero
+
   if ( coil(icoil)%symm == 0 ) then 
      per0 = 1
      ss0 = 0
@@ -144,18 +150,24 @@ subroutine CoilSepDeriv0(icoil, coilsep0)
   endif
   do j0 = 1, per0
      do l0 = 0, ss0
-        x0 = (coil(icoil)%xx)*cos(pi2*(j0-1)/Nfp) - (coil(icoil)%yy)*sin(pi2*(j0-1)/Nfp)
-        y0 = (coil(icoil)%yy)*cos(pi2*(j0-1)/Nfp) + ((-1.0)**ss0)*(coil(icoil)%xx)*sin(pi2*(j0-1)/Nfp)
-        z0 = coil(icoil)%zz*(-1.0)**ss0
+        !x0 = (coil(icoil)%xx)*cos(pi2*(j0-1)/Nfp) - (coil(icoil)%yy)*sin(pi2*(j0-1)/Nfp)
+        !y0 = (coil(icoil)%yy)*cos(pi2*(j0-1)/Nfp) + ((-1.0)**ss0)*(coil(icoil)%xx)*sin(pi2*(j0-1)/Nfp)
+        !z0 = (coil(icoil)%zz)*(-1.0)**ss0
+        x0(0:coil(icoil)%NS-1) = (coil(icoil)%xx(0:coil(icoil)%NS-1))*cos(pi2*(j0-1)/Nfp) - (coil(icoil)%yy(0:coil(icoil)%NS-1))*sin(pi2*(j0-1)/Nfp)
+        y0(0:coil(icoil)%NS-1) = ((-1.0)**l0)*((coil(icoil)%yy(0:coil(icoil)%NS-1))*cos(pi2*(j0-1)/Nfp) + (coil(icoil)%xx(0:coil(icoil)%NS-1))*sin(pi2*(j0-1)/Nfp))
+        z0(0:coil(icoil)%NS-1) = (coil(icoil)%zz(0:coil(icoil)%NS-1))*((-1.0)**l0)
         ! I THINK THIS IS RIGHT
         do i = icoil+1, Ncoils 
            if (coil(icoil)%Lc == 0 .and. coil(i)%Lc == 0) then
               ! Do nothing
               !if(myid .eq. 0) write(ounit, '(8X": The minimum BLAH distance is "4X" :" I3" ; at coils")') ss0
            else
-              SALLOCATE(x1, (1:coil(i)%NS), zero)
-              SALLOCATE(y1, (1:coil(i)%NS), zero)
-              SALLOCATE(z1, (1:coil(i)%NS), zero)
+              !SALLOCATE(x1, (1:coil(i)%NS), zero)
+              !SALLOCATE(y1, (1:coil(i)%NS), zero)
+              !SALLOCATE(z1, (1:coil(i)%NS), zero)
+              SALLOCATE(x1, (0:coil(i)%NS-1), zero)
+              SALLOCATE(y1, (0:coil(i)%NS-1), zero)
+              SALLOCATE(z1, (0:coil(i)%NS-1), zero)
               if ( coil(i)%symm == 0 ) then
                  per1 = 1
                  ss1 = 0
@@ -170,19 +182,16 @@ subroutine CoilSepDeriv0(icoil, coilsep0)
               endif
               do j1 = 1, per1
                  do l1 = 0, ss1
-                    x1 = (coil(i)%xx)*cos(pi2*(j1-1)/Nfp) - (coil(i)%yy)*sin(pi2*(j1-1)/Nfp)
-                    y1 = (coil(i)%yy)*cos(pi2*(j1-1)/Nfp) + ((-1.0)**ss1)*(coil(i)%xx)*sin(pi2*(j1-1)/Nfp)
-                    z1 = coil(i)%zz*(-1.0)**ss1
+                    x1(0:coil(i)%NS-1) = (coil(i)%xx(0:coil(i)%NS-1))*cos(pi2*(j1-1)/Nfp) - (coil(i)%yy(0:coil(i)%NS-1))*sin(pi2*(j1-1)/Nfp)
+                    y1(0:coil(i)%NS-1) = ((-1.0)**l1)*((coil(i)%yy(0:coil(i)%NS-1))*cos(pi2*(j1-1)/Nfp) + (coil(i)%xx(0:coil(i)%NS-1))*sin(pi2*(j1-1)/Nfp))
+                    z1(0:coil(i)%NS-1) = (coil(i)%zz(0:coil(i)%NS-1))*((-1.0)**l1)
                     do kseg0 = 1, coil(icoil)%NS
                        do kseg1 = 1, coil(i)%NS
                           rdiff = sqrt( ( x0(kseg0) - x1(kseg1) )**2 + ( y0(kseg0) - y1(kseg1) )**2 + ( z0(kseg0) - z1(kseg1) )**2 )
-                          if ( rdiff < r_delta ) then
-                             H = 1.0
-                          else
-                             H = 0.0
-                          endif
+                          if ( rdiff < r_delta ) H = 1.0
+                          if ( rdiff .ge. r_delta ) H = 0.0
                           hypc = 0.5*exp(ccsep_alpha*( r_delta - rdiff )) + 0.5*exp(-1.0*ccsep_alpha*( r_delta - rdiff ))
-                          coilsepHold = coilsepHold + H*(hypc - 1.0)**2
+                          coilsepHold = coilsepHold + H*((hypc - 1.0)**2)
                        enddo
                     enddo
                  enddo
@@ -223,9 +232,12 @@ subroutine CoilSepDeriv1(icoil, derivs, ND, NF)
 
   SALLOCATE(derivs_hold, (1:1,1:3+6*NF), zero)
 
-  SALLOCATE(x0, (1:coil(icoil)%NS), zero)
-  SALLOCATE(y0, (1:coil(icoil)%NS), zero)
-  SALLOCATE(z0, (1:coil(icoil)%NS), zero)
+  !SALLOCATE(x0, (1:coil(icoil)%NS), zero)
+  !SALLOCATE(y0, (1:coil(icoil)%NS), zero)
+  !SALLOCATE(z0, (1:coil(icoil)%NS), zero)
+  SALLOCATE(x0, (0:coil(icoil)%NS-1), zero)
+  SALLOCATE(y0, (0:coil(icoil)%NS-1), zero)
+  SALLOCATE(z0, (0:coil(icoil)%NS-1), zero)
 
   if ( coil(icoil)%symm == 0 ) then
      per0 = 1
@@ -242,11 +254,14 @@ subroutine CoilSepDeriv1(icoil, derivs, ND, NF)
   do j0 = 1, per0
      do l0 = 0, ss0
         !x0 = (coil(icoil)%xx)*cos(pi2*(j0-1)/Nfp) - (coil(icoil)%yy)*sin(pi2*(j0-1)/Nfp)
-        x0(1:coil(icoil)%NS) = (coil(icoil)%xx(1:coil(icoil)%NS))*cos(pi2*(j0-1)/Nfp) - (coil(icoil)%yy(1:coil(icoil)%NS))*sin(pi2*(j0-1)/Nfp)
+        !x0(1:coil(icoil)%NS) = (coil(icoil)%xx(1:coil(icoil)%NS))*cos(pi2*(j0-1)/Nfp) - (coil(icoil)%yy(1:coil(icoil)%NS))*sin(pi2*(j0-1)/Nfp)
+        x0(0:coil(icoil)%NS-1) = (coil(icoil)%xx(0:coil(icoil)%NS)-1)*cos(pi2*(j0-1)/Nfp) - (coil(icoil)%yy(0:coil(icoil)%NS-1))*sin(pi2*(j0-1)/Nfp)
         !y0 = (coil(icoil)%yy)*cos(pi2*(j0-1)/Nfp) + ((-1.0)**ss0)*(coil(icoil)%xx)*sin(pi2*(j0-1)/Nfp)
-        y0(1:coil(icoil)%NS) = (coil(icoil)%yy(1:coil(icoil)%NS))*cos(pi2*(j0-1)/Nfp) + ((-1.0)**ss0)*(coil(icoil)%xx(1:coil(icoil)%NS))*sin(pi2*(j0-1)/Nfp)
+        !y0(1:coil(icoil)%NS) = (coil(icoil)%yy(1:coil(icoil)%NS))*cos(pi2*(j0-1)/Nfp) + ((-1.0)**ss0)*(coil(icoil)%xx(1:coil(icoil)%NS))*sin(pi2*(j0-1)/Nfp)
+        y0(0:coil(icoil)%NS-1) = ((-1.0)**l0)*((coil(icoil)%yy(0:coil(icoil)%NS-1))*cos(pi2*(j0-1)/Nfp) + (coil(icoil)%xx(0:coil(icoil)%NS-1))*sin(pi2*(j0-1)/Nfp))
         !z0 = coil(icoil)%zz*(-1.0)**ss0
-        z0(1:coil(icoil)%NS) = coil(icoil)%zz(1:coil(icoil)%NS)*(-1.0)**ss0
+        !z0(1:coil(icoil)%NS) = coil(icoil)%zz(1:coil(icoil)%NS)*(-1.0)**ss0
+        z0(0:coil(icoil)%NS-1) = (coil(icoil)%zz(0:coil(icoil)%NS-1))*((-1.0)**l0)
         ! I THINK THIS IS RIGHT
         do i = 1, Ncoils
            if ( i == icoil ) cycle
@@ -265,17 +280,23 @@ subroutine CoilSepDeriv1(icoil, derivs, ND, NF)
               else
                  FATAL( CoilSepDeriv1, coil(i)%symm == 3, Errors in coil symmetry )
               endif
-              SALLOCATE(x1, (1:coil(i)%NS), zero)
-              SALLOCATE(y1, (1:coil(i)%NS), zero)
-              SALLOCATE(z1, (1:coil(i)%NS), zero)
+              !SALLOCATE(x1, (1:coil(i)%NS), zero)
+              !SALLOCATE(y1, (1:coil(i)%NS), zero)
+              !SALLOCATE(z1, (1:coil(i)%NS), zero)
+              SALLOCATE(x1, (0:coil(i)%NS-1), zero)
+              SALLOCATE(y1, (0:coil(i)%NS-1), zero)
+              SALLOCATE(z1, (0:coil(i)%NS-1), zero)
               do j1 = 1, per1
                  do l1 = 0, ss1
                     !x1 = (coil(i)%xx)*cos(pi2*(j1-1)/Nfp) - (coil(i)%yy)*sin(pi2*(j1-1)/Nfp)
-                    x1(1:coil(i)%NS)=(coil(i)%xx(1:coil(i)%NS))*cos(pi2*(j1-1)/Nfp)-(coil(i)%yy(1:coil(i)%NS))*sin(pi2*(j1-1)/Nfp)
+                    !x1(1:coil(i)%NS)=(coil(i)%xx(1:coil(i)%NS))*cos(pi2*(j1-1)/Nfp)-(coil(i)%yy(1:coil(i)%NS))*sin(pi2*(j1-1)/Nfp)
+                    x1(0:coil(i)%NS-1)=(coil(i)%xx(0:coil(i)%NS-1))*cos(pi2*(j1-1)/Nfp)-(coil(i)%yy(0:coil(i)%NS-1))*sin(pi2*(j1-1)/Nfp)
                     !y1 = (coil(i)%yy)*cos(pi2*(j1-1)/Nfp) + ((-1.0)**ss1)*(coil(i)%xx)*sin(pi2*(j1-1)/Nfp)
-                    y1(1:coil(i)%NS)=(coil(i)%yy(1:coil(i)%NS))*cos(pi2*(j1-1)/Nfp)+((-1.0)**ss1)*(coil(i)%xx(1:coil(i)%NS))*sin(pi2*(j1-1)/Nfp)
+                    !y1(1:coil(i)%NS)=(coil(i)%yy(1:coil(i)%NS))*cos(pi2*(j1-1)/Nfp)+((-1.0)**ss1)*(coil(i)%xx(1:coil(i)%NS))*sin(pi2*(j1-1)/Nfp)
+                    y1(0:coil(i)%NS-1)=((-1.0)**l1)*((coil(i)%yy(0:coil(i)%NS-1))*cos(pi2*(j1-1)/Nfp)+(coil(i)%xx(0:coil(i)%NS-1))*sin(pi2*(j1-1)/Nfp))
                     !z1 = coil(i)%zz*(-1.0)**ss1
-                    z1(1:coil(i)%NS)=coil(i)%zz(1:coil(i)%NS)*(-1.0)**ss1
+                    !z1(1:coil(i)%NS)=coil(i)%zz(1:coil(i)%NS)*(-1.0)**ss1
+                    z1(0:coil(i)%NS-1)=(coil(i)%zz(0:coil(i)%NS-1))*((-1.0)**l1)
                     do kseg0 = 1, coil(icoil)%NS
                        do kseg1 = 1, coil(i)%NS
                           rdiff = sqrt( ( x0(kseg0) - x1(kseg1) )**2 + ( y0(kseg0) - y1(kseg1) )**2 + ( z0(kseg0) - z1(kseg1) )**2 )
