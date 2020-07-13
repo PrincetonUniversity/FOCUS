@@ -188,17 +188,26 @@ subroutine CoilSepDeriv0(icoil, coilsep0)
                     do kseg0 = 1, coil(icoil)%NS
                        do kseg1 = 1, coil(i)%NS
                           rdiff = sqrt( ( x0(kseg0) - x1(kseg1) )**2 + ( y0(kseg0) - y1(kseg1) )**2 + ( z0(kseg0) - z1(kseg1) )**2 )
-                          if ( rdiff < r_delta ) H = 1.0
-                          if ( rdiff .ge. r_delta ) H = 0.0
+                          if ( rdiff < r_delta ) then
+                             H = 1.0
+                             !if(myid .eq. 0) write(ounit, '(8X": The minimum BLAH distance is "4X" :" ES23.15" ; at coils"I3"4X"I3)') rdiff, icoil, i
+                          endif
+                          if ( rdiff .ge. r_delta ) then
+                             H = 0.0
+                          endif
                           hypc = 0.5*exp(ccsep_alpha*( r_delta - rdiff )) + 0.5*exp(-1.0*ccsep_alpha*( r_delta - rdiff ))
                           coilsepHold = coilsepHold + H*((hypc - 1.0)**2)
+                          ! have to fix infinity*0=NaN problem 
+                          !if(myid .eq. 0) write(ounit, '(8X": The minimum BLAH distance is "4X" :" ES23.15" ; at coils")') hypc
                        enddo
                     enddo
                  enddo
               enddo
               !coilsep0 = pi2*pi2*coilsepHold/((coil(icoil)%NS)*(coil(i)%NS)+machprec)
               coilsep0 = coilsep0 + pi2*pi2*coilsepHold/((coil(icoil)%NS)*(coil(i)%NS)+machprec)
+              !if(myid .eq. 0) write(ounit, '(8X": The minimum BLAH distance is "4X" :" ES23.15" ; at coils")') coilsepHold
               coilsepHold = 0.0
+              !if(myid .eq. 0) write(ounit, '(8X": The minimum BLAH distance is "4X" :" ES23.15" ; at coils")') coilsep0
            endif
         enddo
      enddo
@@ -303,7 +312,7 @@ subroutine CoilSepDeriv1(icoil, derivs, ND, NF)
                           !if(myid .eq. 0) write(ounit, '(8X": The minimum BLAH distance is "4X" :" ES23.15" ; at coils")') rdiff
                           if ( rdiff < r_delta ) then
                              H = 1.0
-                             !if(myid .eq. 0) write(ounit, '(8X": The minimum BLAH distance is "4X" :" ES23.15" ; at coils")') rdiff
+                             !if(myid .eq. 0) write(ounit, '(8X": The minimum BLAH distance is "4X" :" ES23.15" ; at coils"I3"4X"I3)') rdiff, icoil, i
                           else
                              H = 0.0
                           endif
