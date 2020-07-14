@@ -189,12 +189,14 @@ subroutine rdcoils
      if( myid==0 ) then  !get file number;
         open( runit, file=trim(input_coils), status="old", action='read')
         read( runit,*)
-        read( runit,*) Ncoils_total
-        write(ounit,'("rdcoils : identified "I10" unique coils in "A" ;")') Ncoils_total, trim(input_coils)
+        read( runit,*) Ncoils_total, momentq
+        write(ounit,'("rdcoils : identified "I10" unique dipoles in "A" ;")') Ncoils_total, trim(input_coils)
+        write(ounit,'("        : penalization coefficient q = "I2" ;")') momentq
         close( runit )
      endif
 
      IlBCAST( Ncoils_total, 1,  0 )
+     IlBCAST( momentq, 1,  0 )
      if (Ncpu == 1) STOP ' At least use two cpus'
      if (myid/=0) Ncoils = Ncoils_total / (Ncpu-1)
      if (myid==Ncpu-1) Ncoils = Ncoils + mod(Ncoils_total, Ncpu-1) ! The last one read more

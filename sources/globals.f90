@@ -188,7 +188,7 @@ module globals
                         IsVaryGeometry , & 
                         NFcoil         , &
                         Nseg           , &
-                        momentq        , &
+!                       momentq        , &
                         allow_inverse  , &
                         magtorque      , &
                         IsNormalize    , &
