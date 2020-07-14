@@ -45,94 +45,12 @@ SUBROUTINE diagnos
   enddo
   
 
-  !save all the coil parameters;
-  if (allocated(coilspace)) then
-     idof = 0
-     do icoil = 1, Ncoils
-        coilspace(iout, idof+1 ) = coil(icoil)%I ;  idof = idof + 1
-
-        select case (coil(icoil)%itype)
-        case (1)
-           NF = FouCoil(icoil)%NF
-           coilspace(iout, idof+1:idof+NF+1) = FouCoil(icoil)%xc(0:NF) ; idof = idof + NF +1
-           coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%xs(1:NF) ; idof = idof + NF
-           coilspace(iout, idof+1:idof+NF+1) = FouCoil(icoil)%yc(0:NF) ; idof = idof + NF +1
-           coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%ys(1:NF) ; idof = idof + NF
-           coilspace(iout, idof+1:idof+NF+1) = FouCoil(icoil)%zc(0:NF) ; idof = idof + NF +1
-           coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%zs(1:NF) ; idof = idof + NF
-!!$        case default
-!!$           FATAL(descent, .true., not supported coil types)
-        end select
-     enddo
-!!$     FATAL( output , idof .ne. Tdof, counting error in restart )
-  endif
-
-  !-------------------------------coil maximum curvature----------------------------------------------------  
-  MaxCurv = zero
-  do icoil = 1, Ncoils
-     if(coil(icoil)%itype .ne. 1) exit ! only for Fourier
-     call curvature(icoil)
-     if (coil(icoil)%maxcurv .ge. MaxCurv) then
-        MaxCurv = coil(icoil)%maxcurv
-        itmp = icoil !record the number
-     endif
-#ifdef DEBUG
-     if(myid .eq. 0) write(ounit, '(8X": Maximum curvature of "I3 "-th coil is : " ES23.15)') &
-          icoil, coil(icoil)%maxcurv
-#endif
-  enddo
-  if(myid .eq. 0) write(ounit, '(8X": Maximum curvature of all the coils is  :" ES23.15 &
-       " ; at coil " I3)') MaxCurv, itmp
-
-  !-------------------------------average coil length-------------------------------------------------------  
-  AvgLength = zero
-  if ( (case_length == 1) .and. (sum(coil(1:Ncoils)%Lo) < sqrtmachprec) ) coil(1:Ncoils)%Lo = one
-  call length(0)
-  do icoil = 1, Ncoils
-     if(coil(icoil)%itype .ne. 1) exit ! only for Fourier
-     AvgLength = AvgLength + coil(icoil)%L
-  enddo
-  AvgLength = AvgLength / Ncoils
-  if(myid .eq. 0) write(ounit, '(8X": Average length of the coils is"8X" :" ES23.15)') AvgLength
-
-  !-----------------------------minimum coil coil separation------------------------------------  
-  ! coils are supposed to be placed in order
-  minCCdist = infmax
-  do icoil = 1, Ncoils
-
-     if(coil(icoil)%itype .ne. 1) exit ! only for Fourier
-
-     if(Ncoils .eq. 1) exit !if only one coil
-     itmp = icoil + 1
-     if(icoil .eq. Ncoils) itmp = 1
-
-     SALLOCATE(Atmp, (1:3,0:coil(icoil)%NS-1), zero)
-     SALLOCATE(Btmp, (1:3,0:coil(itmp )%NS-1), zero)
-
-     Atmp(1, 0:coil(icoil)%NS-1) = coil(icoil)%xx(0:coil(icoil)%NS-1)
-     Atmp(2, 0:coil(icoil)%NS-1) = coil(icoil)%yy(0:coil(icoil)%NS-1)
-     Atmp(3, 0:coil(icoil)%NS-1) = coil(icoil)%zz(0:coil(icoil)%NS-1)
-
-     Btmp(1, 0:coil(itmp )%NS-1) = coil(itmp)%xx(0:coil(itmp )%NS-1)
-     Btmp(2, 0:coil(itmp )%NS-1) = coil(itmp)%yy(0:coil(itmp )%NS-1)
-     Btmp(3, 0:coil(itmp )%NS-1) = coil(itmp)%zz(0:coil(itmp )%NS-1)
-     
-     call mindist(Atmp, coil(icoil)%NS, Btmp, coil(itmp)%NS, tmp_dist)
-
-     if (minCCdist .ge. tmp_dist) minCCdist=tmp_dist
-
-     DALLOCATE(Atmp)
-     DALLOCATE(Btmp)
-
-  enddo
-
-  if(myid .eq. 0) write(ounit, '(8X": The minimum coil-coil distance is "4X" :" ES23.15)') minCCdist
 
   !--------------------------------minimum coil plasma separation-------------------------------  
   minCPdist = infmax
   do icoil = 1, Ncoils
 
-     if(coil(icoil)%itype .ne. 1) exit ! only for Fourier
+     if(coil(icoil)%itype .ne. 1) continue ! only for Fourier
 
      SALLOCATE(Atmp, (1:3,0:coil(icoil)%NS-1), zero)
      SALLOCATE(Btmp, (1:3,1:(Nteta*Nzeta)), zero)
