@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='dp_v1.1.06' ! version number
+  CHARACTER(LEN=10), parameter :: version='dp_v1.1.07' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -96,7 +96,7 @@ module globals
   INTEGER              :: IsVaryGeometry =   1         
   INTEGER              :: NFcoil         =   4         
   INTEGER              :: Nseg           =   128 
-  INTEGER              :: momentq        =   4
+  INTEGER              :: momentq        =   1
   LOGICAL              :: allow_inverse  =  .false. 
   LOGICAL              :: magtorque      =  .false.
               
@@ -161,11 +161,6 @@ module globals
   INTEGER              :: pp_ns          =  10
   INTEGER              :: pp_maxiter     =  1000
   REAL                 :: pp_xtol        =  1.000D-06
-
-  REAL                 :: mgrid_rmax        =  0.000D+00
-  REAL                 :: mgrid_zmax        =  0.000D+00
-  REAL                 :: mgrid_rmin        =  0.000D+00
-  REAL                 :: mgrid_zmin        =  0.000D+00
 
   CHARACTER(LEN=100)   :: input_surf     = 'plasma.boundary'  ! surface file
   CHARACTER(LEN=100)   :: input_coils    = 'none'             ! input file for coils
@@ -248,11 +243,7 @@ module globals
                         pp_zmax        , &
                         pp_ns          , &
                         pp_maxiter     , &
-                        pp_xtol        , &
-                        mgrid_rmax     , &
-                        mgrid_zmax     , &
-                        mgrid_rmin     , &
-                        mgrid_zmin
+                        pp_xtol
 
 
 
