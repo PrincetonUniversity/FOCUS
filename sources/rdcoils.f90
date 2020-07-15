@@ -111,7 +111,7 @@ subroutine rdcoils
 
   LOGICAL   :: exist
   INTEGER   :: icoil, maxnseg, ifirst, NF, itmp, ip, icoef, total_coef, num_pm, num_bg, & 
-               num_per_array, num_tor, ipol, itor
+               num_per_array, num_tor, ipol, itor,iT
   REAL      :: Rmaj, zeta, totalcurrent, z0, r1, r2, z1, z2, rtmp, teta
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -273,7 +273,18 @@ subroutine rdcoils
               SALLOCATE( CPCoil(icoil)%Cpoints, (0:CPCoil(icoil)%NCP * 3 - 1 ), zero )
               read( runit,*)
               read( runit,*) CPCoil(icoil)%vect(0:CPCoil(icoil)%NT-1)
+	      CPCoil(icoil)%vect(CPCoil(icoil)%NT-3) = 1.0 + CPCoil(icoil)%vect(4) - CPCoil(icoil)%vect(3)
+	      CPCoil(icoil)%vect(CPCoil(icoil)%NT-2) = 1.0 + CPCoil(icoil)%vect(5) - CPCoil(icoil)%vect(3)
+	      CPCoil(icoil)%vect(CPCoil(icoil)%NT-1) = 1.0 + CPCoil(icoil)%vect(6) - CPCoil(icoil)%vect(3)
+	      CPCoil(icoil)%vect(0) =  CPCoil(icoil)%vect(CPCoil(icoil)%NT-7) - CPCoil(icoil)%vect(CPCoil(icoil)%NT-4)
+	      CPCoil(icoil)%vect(1) =  CPCoil(icoil)%vect(CPCoil(icoil)%NT-6) - CPCoil(icoil)%vect(CPCoil(icoil)%NT-4)
+	      CPCoil(icoil)%vect(2) =  CPCoil(icoil)%vect(CPCoil(icoil)%NT-5) - CPCoil(icoil)%vect(CPCoil(icoil)%NT-4)	
 	      CPCoil(icoil)%vect = CPCoil(icoil)%vect*CPCoil(icoil)%NT !Avoids large gradients
+
+             ! do iT = 0,CPCoil(icoil)%NT-1		
+	!	CPCoil(icoil)%vect(iT) = 1.0*(iT-3.0)/(CPCoil(icoil)%NT-7)*CPCoil(icoil)%NT
+	 !     enddo
+	  !    write(ounit,'(7F20.10)') CPCoil(icoil)%vect
               read( runit,*)
               read( runit,*) CPCoil(icoil)%Cpoints(0:CPCoil(icoil)%NCP-1)
               read( runit,*) CPCoil(icoil)%Cpoints(CPCoil(icoil)%NCP:CPCoil(icoil)%NCP*2-1)
@@ -585,7 +596,7 @@ subroutine discoil(ifirst)
               coil(icoil)%za(0:NS) = coil(icoil)%za(0:NS) + ( - FouCoil(icoil)%cmt(0:NS,mm) * Foucoil(icoil)%zc(mm) &
                                                               - FouCoil(icoil)%smt(0:NS,mm) * Foucoil(icoil)%zs(mm) ) * mm*mm
            enddo ! end of do mm; 
-	  !if (ifirst == 1) write(ounit,'(7F20.10)') coil(icoil)%xa
+	  !if (ifirst == 1) write(ounit,'(7F20.10)') coil(icoil)%xt
         case(2)
 
         case(3)
@@ -638,11 +649,11 @@ subroutine discoil(ifirst)
 	  enddo	
  	
 	  !if (ifirst == 1) write(ounit,'(7F20.10)') CPcoil(icoil)%Cpoints(0:NCP-1)
-	  !if (icoil == 1) write(ounit,'(7F20.10)') coil(icoil)%xa
-	  !if (icoil == 1) write(ounit,'(7F20.10)') CPcoil(icoil)%basis_1(30,:)
+	  !if (icoil == 1) write(ounit,'(7F20.10)') coil(icoil)%xt
+	  !if (icoil == 1) write(ounit,'(7F20.10)') CPcoil(icoil)%basis_3(10,:)
 	  !if (icoil == 1) write(ounit,'(7F20.10)') CPcoil(icoil)%basis_1(2,:)
-	  !if (icoil == 1) write(ounit,'(7F20.10)') CPcoil(icoil)%basis_1(120,:)
-	  !if (ifirst == 1) write(ounit,'(5F20.10)') CPcoil(icoil)%db_dt(80,:)
+	  !if (ifirst == 1) write(ounit,'(7F20.10)') CPcoil(icoil)%basis_3(1,:)
+	  !if (ifirst == 1) write(ounit,'(7F20.10)') CPcoil(icoil)%db_dt(393:399,0:5)
 	  !if (icoil == 1) write(ounit,'(5F20.10)') CPcoil(icoil)%db_dt_2(90,:)
 	  !if (icoil == 1) write(ounit,'(5F20.10)') CPcoil(icoil)%db_dt_2(94,:)
 	   !write(ounit,'(5F20.10)') CPcoil(icoil)%db_dt(50,:)

@@ -56,24 +56,24 @@ SUBROUTINE fdcheck( ideriv )
        ES23.15 " seconds.")') finish - start
   if( myid.eq.0 ) write(ounit,'("fdcheck : idof/Ndof", 5(" ; ", A15))') "magnitude", "analytical",  &
    &  "fd-method", "abs diff", "relative diff"
+     
 
   do idof = 1, Ndof
      ! perturbation will be relative.
-     small = xdof(idof) * psmall
+     small = xdof(idof) * psmall 
+     if (small == zero) cycle  	
      !backward pertubation;
      tmp_xdof = xdof
      tmp_xdof(idof) = tmp_xdof(idof) - half * small
      call unpacking(tmp_xdof)
      call costfun(0)
      negvalue = chi
-
      !forward pertubation;
      tmp_xdof = xdof
      tmp_xdof(idof) = tmp_xdof(idof) + half * small
      call unpacking(tmp_xdof)
      call costfun(0)
      posvalue = chi
-     
      !finite difference;
      fd = (posvalue - negvalue) / small
      diff = abs(t1E(idof) - fd)
@@ -83,7 +83,6 @@ SUBROUTINE fdcheck( ideriv )
      else
          rdiff = diff / abs(fd)
      endif
-
      if( myid.eq.0 ) then 
          write(ounit,'("fdcheck : ", I4, "/", I4, 5(" ; "ES15.7))') idof, Ndof, small, t1E(idof), fd, diff, rdiff
          if (diff >= psmall**2) write(ounit, *) "----------suspicious unmatching-----------------------"

@@ -231,7 +231,6 @@ subroutine LenDeriv1(icoil, derivs, ND)
      dLz(1,kseg) = ( xt*xa*zt + yt*ya*zt - xt*xt*za - yt*yt*za ) / dl3 * coil(icoil)%dd(kseg)
 
   enddo ! end kseg
-
   derivs(1:1, 1:ND) = matmul(dLx, DoF(icoil)%xof) + matmul(dLy, DoF(icoil)%yof) + matmul(dLz, DoF(icoil)%zof)
 
   return

@@ -248,21 +248,24 @@ END SUBROUTINE diagnos
 
 subroutine avgcurvature(icoil)
 
-  use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils
+  use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils,CPCoil,coil_type_spline
   implicit none
   include "mpif.h"
 
   INTEGER, INTENT(in) :: icoil
 
   REAL,allocatable    :: davgcurv(:)
-
+  call length(0)
   SALLOCATE(davgcurv, (0:coil(icoil)%NS-1), zero)
   davgcurv = sqrt( (coil(icoil)%za*coil(icoil)%yt-coil(icoil)%zt*coil(icoil)%ya)**2  &
              + (coil(icoil)%xa*coil(icoil)%zt-coil(icoil)%xt*coil(icoil)%za)**2  & 
              + (coil(icoil)%ya*coil(icoil)%xt-coil(icoil)%yt*coil(icoil)%xa)**2 )& 
              / ((coil(icoil)%xt)**2+(coil(icoil)%yt)**2+(coil(icoil)%zt)**2)**(1.5)
+
   davgcurv = davgcurv*sqrt(coil(icoil)%xt**2+coil(icoil)%yt**2+coil(icoil)%zt**2)
-  coil(icoil)%avgcurv = pi2*sum(davgcurv)/size(davgcurv)
+  if (coil(icoil)%type == coil_type_spline) coil(icoil)%avgcurv = 1.0*sum(davgcurv) * CPCoil(icoil)%NT/size(davgcurv)
+  if (coil(icoil)%type == 1)coil(icoil)%avgcurv = pi2*sum(davgcurv)/size(davgcurv)
+  
   coil(icoil)%avgcurv = coil(icoil)%avgcurv/coil(icoil)%L
 
   return

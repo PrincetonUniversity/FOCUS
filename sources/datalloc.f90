@@ -109,16 +109,19 @@ subroutine AllocData(type)
            SALLOCATE( CPCoil(icoil)%db_dt_2, (0:NS-1, 0:NCP-1),   zero )
 
 	   do i =0, coil(icoil)%NS-1
-                    CPcoil(icoil)%eval_points(i) = 1.0*i/(coil(icoil)%NS-1)*CPcoil(icoil)%NT
+                    CPcoil(icoil)%eval_points(i) = 1.0*(i)/(coil(icoil)%NS)*CPcoil(icoil)%NT
            enddo
-
+              !write(ounit , '( "vt  " F20.10)') CPCoil(icoil)%vect
+              !write(ounit , '("ev   " F20.10)') CPcoil(icoil)%eval_points
            ! the derivatives of dx/dv 
 
 	   !write(ounit,'(5F10.5)')CPcoil(icoil)%eval_points
            !write(ounit,'(5F10.5)')CPcoil(icoil)%vect			
            call eval_basis(icoil)
-           call eval_basis1(icoil)
-           call eval_basis2(icoil)
+           !call eval_basis1(icoil)
+           !call eval_basis2(icoil)
+	   call eval_deriv1(icoil)
+           call eval_deriv2(icoil)
 	   call enforce_periodicity(icoil)
 
            DoF(icoil)%xof(0:coil(icoil)%NS-1,      1: NCP) = CPCoil(icoil)%basis_3(0:coil(icoil)%NS-1, 0:  NCP-1)  !x/xc
