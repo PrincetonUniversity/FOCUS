@@ -281,9 +281,9 @@ subroutine rdcoils
 	      CPCoil(icoil)%vect(2) =  CPCoil(icoil)%vect(CPCoil(icoil)%NT-5) - CPCoil(icoil)%vect(CPCoil(icoil)%NT-4)	
 	      CPCoil(icoil)%vect = CPCoil(icoil)%vect*CPCoil(icoil)%NT !Avoids large gradients
 
-             ! do iT = 0,CPCoil(icoil)%NT-1		
-	!	CPCoil(icoil)%vect(iT) = 1.0*(iT-3.0)/(CPCoil(icoil)%NT-7)*CPCoil(icoil)%NT
-	 !     enddo
+              do iT = 0,CPCoil(icoil)%NT-1		
+		CPCoil(icoil)%vect(iT) = 1.0*(iT-3.0)/(CPCoil(icoil)%NT-7)*CPCoil(icoil)%NT
+	      enddo
 	  !    write(ounit,'(7F20.10)') CPCoil(icoil)%vect
               read( runit,*)
               read( runit,*) CPCoil(icoil)%Cpoints(0:CPCoil(icoil)%NCP-1)

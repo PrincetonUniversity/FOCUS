@@ -118,10 +118,10 @@ subroutine AllocData(type)
 	   !write(ounit,'(5F10.5)')CPcoil(icoil)%eval_points
            !write(ounit,'(5F10.5)')CPcoil(icoil)%vect			
            call eval_basis(icoil)
-           !call eval_basis1(icoil)
-           !call eval_basis2(icoil)
-	   call eval_deriv1(icoil)
-           call eval_deriv2(icoil)
+           call eval_basis1(icoil)
+           call eval_basis2(icoil)
+	   !call eval_deriv1(icoil)
+           !call eval_deriv2(icoil)
 	   call enforce_periodicity(icoil)
 
            DoF(icoil)%xof(0:coil(icoil)%NS-1,      1: NCP) = CPCoil(icoil)%basis_3(0:coil(icoil)%NS-1, 0:  NCP-1)  !x/xc
