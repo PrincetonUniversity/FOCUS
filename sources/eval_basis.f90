@@ -8,10 +8,20 @@ SUBROUTINE eval_basis(icoil)
     N = coil(icoil)%NS
     eval_points = CPCoil(icoil)%eval_points
 
+
+	CPCoil(icoil)%basis_0 = 0
+	CPCoil(icoil)%basis_1 = 0
+	CPCoil(icoil)%basis_2 = 0
+	CPCoil(icoil)%basis_3 = 0
+
+
     do iter_pos=0,N-1 
     	do iter_cp=0,CPCoil(icoil)%NCP+2
                 if(eval_points(iter_pos)>=CPCoil(icoil)%vect(iter_cp).AND.eval_points(iter_pos)<CPCoil(icoil)%vect(iter_cp+1))then
                  CPCoil(icoil)%basis_0(iter_pos,iter_cp) = 1
+		!if (iter_cp <CPCoil(icoil)%NCP .AND. myid==0 .AND. iter_pos > 7 .AND. iter_pos < 9) &
+		!							write (ounit,'(" 0 pos " I7.3"cp  " I7.3 "x " F15.7 "  "F15.7)')iter_pos,iter_cp,&
+		!									 eval_points(iter_pos),CPCoil(icoil)%basis_0(iter_pos,iter_cp) 
 		endif
         enddo
     enddo
@@ -40,32 +50,45 @@ SUBROUTINE eval_basis(icoil)
 
     do iter_cp=0,CPCoil(icoil)%NCP+1   
         do iter_pos=0,N -1
-                if( CPCoil(icoil)%basis_0(iter_pos,iter_cp) /= 0 .OR. CPCoil(icoil)%basis_0(iter_pos,iter_cp+1) /= 0)then
+                if( (CPCoil(icoil)%basis_0(iter_pos,iter_cp) /= 0 &
+									.OR. CPCoil(icoil)%basis_0(iter_pos,iter_cp+1) /= 0))then
                          CPCoil(icoil)%basis_1(iter_pos,iter_cp) = 1.0*(eval_points(iter_pos) - CPCoil(icoil)%vect(iter_cp)) / &
                         (CPCoil(icoil)%vect(iter_cp+1) - CPCoil(icoil)%vect(iter_cp))*CPCoil(icoil)%basis_0(iter_pos,iter_cp) &
                          + 1.0*( - eval_points(iter_pos) + CPCoil(icoil)%vect(iter_cp+2))/ &
                          (CPCoil(icoil)%vect(iter_cp+2) - CPCoil(icoil)%vect(iter_cp+1))*CPCoil(icoil)%basis_0(iter_pos,iter_cp+1)
+		!if((eval_points(iter_pos) - CPCoil(icoil)%vect(iter_cp+1)) < 0.001) CPCoil(icoil)%basis_1(iter_pos,iter_cp) = 1.0  !algorithm gives problems on knots
+		!if (iter_cp <CPCoil(icoil)%NCP .AND. myid==0 .AND. iter_pos > 7 .AND. iter_pos < 9) &
+		!							write (ounit,'(" 1 pos " I7.3"cp  " I7.3 "x " F15.7 "  "F15.7)')iter_pos,iter_cp,&
+		!									 eval_points(iter_pos),CPCoil(icoil)%basis_1(iter_pos,iter_cp) 
 		endif
                 enddo    
         enddo
 
     do iter_cp=0,CPCoil(icoil)%NCP
         do iter_pos=0,N -1
-                if ( (CPCoil(icoil)%basis_1(iter_pos,iter_cp) .NE. 0) .OR. (CPCoil(icoil)%basis_1(iter_pos,iter_cp+1) .NE. 0)) &
+                if (  ((CPCoil(icoil)%basis_1(iter_pos,iter_cp) .NE. 0) &
+									.OR. (CPCoil(icoil)%basis_1(iter_pos,iter_cp+1) .NE. 0))) &
                          CPCoil(icoil)%basis_2(iter_pos,iter_cp) = 1.0*(eval_points(iter_pos) - CPCoil(icoil)%vect(iter_cp))/ & 
                         (CPCoil(icoil)%vect(iter_cp+2) - CPCoil(icoil)%vect(iter_cp))*CPCoil(icoil)%basis_1(iter_pos,iter_cp) &
                         + 1.0*( - eval_points(iter_pos) + CPCoil(icoil)%vect(iter_cp+3))/ &
                         (CPCoil(icoil)%vect(iter_cp+3) - CPCoil(icoil)%vect(iter_cp+1))*CPCoil(icoil)%basis_1(iter_pos,iter_cp+1)
+		!if (iter_cp <CPCoil(icoil)%NCP .AND. myid==0 .AND. iter_pos > 7 .AND. iter_pos < 9) &
+	!					write (ounit,'(" 2 pos " I7.3"cp  " I7.3 "x " F15.7 "  "F15.7)')iter_pos,iter_cp,&
+	!										 eval_points(iter_pos),CPCoil(icoil)%basis_2(iter_pos,iter_cp) 
                 enddo    
         enddo
     
     do iter_cp=0,CPCoil(icoil)%NCP-1
         do iter_pos=0,N-1 
-                if ( (CPCoil(icoil)%basis_2(iter_pos,iter_cp) .NE. 0) .OR. (CPCoil(icoil)%basis_2(iter_pos,iter_cp+1) .NE. 0))&
+                if (((CPCoil(icoil)%basis_2(iter_pos,iter_cp) .NE. 0) &
+							.OR. (CPCoil(icoil)%basis_2(iter_pos,iter_cp+1) .NE. 0))) then
                          CPCoil(icoil)%basis_3(iter_pos,iter_cp) = 1.0*(eval_points(iter_pos) - CPCoil(icoil)%vect(iter_cp))/ &
                         (CPCoil(icoil)%vect(iter_cp+3) - CPCoil(icoil)%vect(iter_cp))*CPCoil(icoil)%basis_2(iter_pos,iter_cp) &
                          + 1.0*( - eval_points(iter_pos) + CPCoil(icoil)%vect(iter_cp+4))/ &
                         (CPCoil(icoil)%vect(iter_cp+4) - CPCoil(icoil)%vect(iter_cp+1))*CPCoil(icoil)%basis_2(iter_pos,iter_cp+1)
+		!if (myid==0 .AND. iter_pos > 7 .AND. iter_pos < 9)write (ounit,'(" 3 pos " I7.3"cp  " I7.3 "x " F15.7 "  "F15.7)')iter_pos,iter_cp,&
+		!									 eval_points(iter_pos),CPCoil(icoil)%basis_3(iter_pos,iter_cp) 
+		endif
                 enddo
         enddo
 
@@ -86,6 +109,7 @@ SUBROUTINE eval_basis1(icoil)
     vect = CPCoil(icoil)%vect
     N = coil(icoil)%NS
     eval_points = CPCoil(icoil)%eval_points
+	CPCoil(icoil)%db_dt=0
 
     do iter_cp=0,CPCoil(icoil)%NCP-1
         do iter_pos=0,N-1 
@@ -153,6 +177,7 @@ SUBROUTINE eval_basis2(icoil)
     integer :: iter_cp,iter_pos
     REAL :: vect(0:CPCoil(icoil)%NT-1)
 
+    CPCoil(icoil)%db_dt_2 = 0
     vect = CPCoil(icoil)%vect
     N = coil(icoil)%NS
     eval_points = CPCoil(icoil)%eval_points
@@ -230,6 +255,7 @@ SUBROUTINE enforce_periodicity(icoil)
     REAL :: eval_points(0: coil(icoil)%NS-1)
     integer :: iter_cp,iter_pos
 
+
     N = coil(icoil)%NS
     eval_points = CPCoil(icoil)%eval_points
 
@@ -263,6 +289,7 @@ SUBROUTINE eval_deriv1(icoil)
     integer :: iter_cp,iter_pos
     REAL :: vect(0:CPCoil(icoil)%NT-1)
        
+	CPCoil(icoil)%db_dt=0
     vect = CPCoil(icoil)%vect
     N = coil(icoil)%NS
     eval_points = CPCoil(icoil)%eval_points
@@ -333,6 +360,7 @@ SUBROUTINE eval_deriv2(icoil)
     integer :: iter_cp,iter_pos
     REAL :: vect(0:CPCoil(icoil)%NT-1)
 
+	CPCoil(icoil)%db_dt_2=0
     vect = CPCoil(icoil)%vect
     N = coil(icoil)%NS
     eval_points = CPCoil(icoil)%eval_points
@@ -390,3 +418,95 @@ SUBROUTINE eval_deriv2(icoil)
     return 
 END SUBROUTINE eval_deriv2
 
+
+SUBROUTINE check_eval_basis(icoil)
+    use globals  
+    implicit none
+    integer :: N,i,j,icoil
+    REAL :: eval_points(0:coil(icoil)%NS-1)
+    integer :: iter_cp,iter_pos
+    REAL :: vect(0:CPCoil(icoil)%NT-1)
+    REAL :: sigma = 0.0001
+    !REAL :: bas_temp_0(0:coil(icoil)%NS-1,0:CPCoil(icoil)%NCP-1)
+    !REAL :: bas_temp_1(0:coil(icoil)%NS-1,0:CPCoil(icoil)%NCP-1)
+    !REAL :: bas_temp_2(0:coil(icoil)%NS-1,0:CPCoil(icoil)%NCP-1)
+    REAL :: bas_temp_3(0:coil(icoil)%NS-1,0:CPCoil(icoil)%NCP-1)
+    REAL :: db_dt_temp(0:coil(icoil)%NS-1,0:CPCoil(icoil)%NCP-1)	
+       
+    vect = CPCoil(icoil)%vect
+    N = coil(icoil)%NS
+   
+    eval_points = CPCoil(icoil)%eval_points
+    CPCoil(icoil)%eval_points= CPCoil(icoil)%eval_points + eval_points*sigma
+
+    call eval_basis(icoil)	
+    !bas_temp_0 = CPCoil(icoil)%basis_0
+    !bas_temp_1 = CPCoil(icoil)%basis_1
+    !bas_temp_2 = CPCoil(icoil)%basis_2
+    bas_temp_3 = CPCoil(icoil)%basis_3
+
+    CPCoil(icoil)%eval_points = CPCoil(icoil)%eval_points - eval_points*2.0*sigma
+    call eval_basis(icoil)
+
+
+		do iter_pos = 0,coil(icoil)%NS-1
+	do iter_cp = 0,CPCoil(icoil)%NCP-1
+		if (myid == 0) then
+			if (eval_points(iter_pos) >0 .AND. CPCoil(icoil)%db_dt(iter_pos,iter_cp) > 0 .AND. ABS((CPCoil(icoil)%db_dt(iter_pos,iter_cp) - & 
+								(bas_temp_3(iter_pos,iter_cp) - CPCoil(icoil)%basis_3(iter_pos,iter_cp))/2.0/ &
+								eval_points(iter_pos)/sigma ))> 0 ) &
+						 write (ounit,'("first pos " I7.3 " CP " I7.3 " basis 3 der" F15.7 ",rel " F15.7 " " F15.7 " " F15.7)') &
+								iter_pos,iter_cp, &
+								(CPCoil(icoil)%db_dt(iter_pos,iter_cp) - (bas_temp_3(iter_pos,iter_cp) - &
+								CPCoil(icoil)%basis_3(iter_pos,iter_cp))/2.0/ &
+								eval_points(iter_pos)/sigma ), ((CPCoil(icoil)%db_dt &
+								(iter_pos,iter_cp) - (bas_temp_3(iter_pos,iter_cp) - &
+								CPCoil(icoil)%basis_3(iter_pos,iter_cp))/2.0/eval_points(iter_pos)/sigma ))/ &
+								CPCoil(icoil)%db_dt(iter_pos,iter_cp), &
+								CPCoil(icoil)%db_dt(iter_pos,iter_cp), &
+								(bas_temp_3(iter_pos,iter_cp) - &
+								CPCoil(icoil)%basis_3(iter_pos,iter_cp))/2.0/ &
+								eval_points(iter_pos)/sigma
+								!bas_temp_3(iter_pos,iter_cp),CPCoil(icoil)%basis_3(iter_pos,iter_cp)
+			endif 
+		enddo
+	enddo
+
+
+	CPCoil(icoil)%eval_points = eval_points 
+    CPCoil(icoil)%eval_points= CPCoil(icoil)%eval_points + eval_points*sigma
+	call eval_basis(icoil)
+	call eval_basis1(icoil)
+    db_dt_temp = CPCoil(icoil)%db_dt
+   CPCoil(icoil)%eval_points = CPCoil(icoil)%eval_points - eval_points*2.0*sigma
+	call eval_basis(icoil)
+        call eval_basis1(icoil)
+
+
+		do iter_pos = 0,coil(icoil)%NS-1
+	do iter_cp = 0,CPCoil(icoil)%NCP-1
+		if (myid == 0) then
+		if (eval_points(iter_pos) >0 .AND. CPCoil(icoil)%db_dt_2(iter_pos,iter_cp) > 0 .AND. ABS((CPCoil(icoil)%db_dt_2(iter_pos,iter_cp) - & 
+								(db_dt_temp(iter_pos,iter_cp) - CPCoil(icoil)%db_dt(iter_pos,iter_cp))/2.0/ &
+								eval_points(iter_pos)/sigma ))> 0 ) &
+					write (ounit,'("second pos " I7.3 " CP " I7.3 " basis 3 der" F15.13 ",rel " F15.13 " " F15.13 " " F15.13)') &
+								iter_pos,iter_cp, &
+								(CPCoil(icoil)%db_dt_2(iter_pos,iter_cp) - (db_dt_temp(iter_pos,iter_cp) - &
+								CPCoil(icoil)%db_dt(iter_pos,iter_cp))/2.0/ &
+								eval_points(iter_pos)/sigma ), ((CPCoil(icoil)%db_dt_2 &
+								(iter_pos,iter_cp) - (db_dt_temp(iter_pos,iter_cp) - &
+								CPCoil(icoil)%db_dt(iter_pos,iter_cp))/2.0/eval_points(iter_pos)/sigma ))/ &
+								CPCoil(icoil)%db_dt_2(iter_pos,iter_cp), &
+								CPCoil(icoil)%db_dt_2(iter_pos,iter_cp), &
+								(db_dt_temp(iter_pos,iter_cp) - &
+								CPCoil(icoil)%db_dt(iter_pos,iter_cp))/2.0/ &
+								eval_points(iter_pos)/sigma
+								!bas_temp_3(iter_pos,iter_cp),CPCoil(icoil)%basis_3(iter_pos,iter_cp)
+	endif
+		enddo
+	enddo
+
+	CPCoil(icoil)%eval_points = eval_points 
+		call eval_basis(icoil)
+	call eval_basis1(icoil)
+END SUBROUTINE check_eval_basis
