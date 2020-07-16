@@ -397,8 +397,8 @@ subroutine CurvDeriv1(icoil, derivs, ND, NF ) !Calculate all derivatives for a c
 				derivs(1,nff + NF) = derivs(1,nff+NF) + (-1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*ncc) &
               			+ ((f1**(-1))*((xt*ya-xa*yt)*(ncp*xt-ncc*xa)+(yt*za-ya*zt)*(ncc*za-ncp*zt)) )/f2)*penCurv; 
 				! Z
-              			derivs(1,nff+2*NF) = derivs(1,nff+2*NF) + (-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*nss) &
-              			+ ((f1**(-1))*((xt*za-xa*zt)*(xt*nsp-xa*nss)+(yt*za-ya*zt)*(yt*nsp-ya*nss)) )/f2)*penCurv;
+              			derivs(1,nff+2*NF) = derivs(1,nff+2*NF) + (-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*ncc) &
+              			+ ((f1**(-1))*((xt*za-xa*zt)*(xt*ncp-xa*ncc)+(yt*za-ya*zt)*(yt*ncp-ya*ncc)) )/f2)*penCurv;
            		else
               			derivs(1,nff) = derivs(1,nff);
 				derivs(1,nff + NF) = derivs(1,nff + NF);

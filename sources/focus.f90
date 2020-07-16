@@ -70,6 +70,8 @@ PROGRAM focus
 
   end select
 
+
+
   call packdof(xdof)  ! packdof in xdof array;
 
   call MPI_BARRIER( MPI_COMM_FOCUS, ierr )

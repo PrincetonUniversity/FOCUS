@@ -510,3 +510,103 @@ SUBROUTINE check_eval_basis(icoil)
 		call eval_basis(icoil)
 	call eval_basis1(icoil)
 END SUBROUTINE check_eval_basis
+
+SUBROUTINE check_xt_xa(icoil)
+    use globals  
+    implicit none
+    integer :: N,i,j,icoil
+    REAL :: eval_points(0:coil(icoil)%NS-1)
+    integer :: iter_cp,iter_pos
+    REAL :: vect(0:CPCoil(icoil)%NT-1)
+    REAL :: sigma = 1E-6
+    !REAL :: bas_temp_0(0:coil(icoil)%NS-1,0:CPCoil(icoil)%NCP-1)
+    !REAL :: bas_temp_1(0:coil(icoil)%NS-1,0:CPCoil(icoil)%NCP-1)
+    !REAL :: bas_temp_2(0:coil(icoil)%NS-1,0:CPCoil(icoil)%NCP-1)
+    REAL :: x_temp(0:coil(icoil)%NS-1)
+    REAL :: xt_temp(0:coil(icoil)%NS-1)	
+       
+    vect = CPCoil(icoil)%vect
+    N = coil(icoil)%NS
+   
+    eval_points = CPCoil(icoil)%eval_points
+    CPCoil(icoil)%eval_points= CPCoil(icoil)%eval_points + eval_points*sigma
+
+    call eval_basis(icoil)
+
+    call discoil(1) 
+
+    x_temp = coil(icoil)%xx
+ 
+    CPCoil(icoil)%eval_points= CPCoil(icoil)%eval_points - 2.0*eval_points*sigma
+
+    call eval_basis(icoil)
+
+    call discoil(1) 
+
+	do iter_pos = 0,coil(icoil)%NS-1
+
+	if (.true.) then
+		if (eval_points(iter_pos) >0 .AND. coil(icoil)%xx(iter_pos) > 0 ) &
+					write (ounit,'("xt pos " I7.3 " xt der" F15.13 ",rel " F15.13 " " F15.13 " " F15.13)') &
+								iter_pos, &
+								(coil(icoil)%xt(iter_pos) - (x_temp(iter_pos) - &
+								coil(icoil)%xx(iter_pos))/2.0/ &
+								eval_points(iter_pos)/sigma ), ((coil(icoil)%xt &
+								(iter_pos) - (x_temp(iter_pos) - &
+								coil(icoil)%xx(iter_pos))/2.0/eval_points(iter_pos)/sigma ))/ &
+								coil(icoil)%xt(iter_pos), &
+								coil(icoil)%xt(iter_pos), &
+								(x_temp(iter_pos) - &
+								coil(icoil)%xx(iter_pos))/2.0/ &
+								eval_points(iter_pos)/sigma
+								!bas_temp_3(iter_pos,iter_cp),CPCoil(icoil)%basis_3(iter_pos,iter_cp)
+	endif
+
+	enddo
+
+      CPCoil(icoil)%eval_points = eval_points
+
+    call eval_basis(icoil)
+    call discoil(1) 
+
+	CPCoil(icoil)%eval_points= CPCoil(icoil)%eval_points + eval_points*sigma
+    call eval_basis(icoil)
+    call eval_basis1(icoil)
+
+    call discoil(1) 
+
+    xt_temp = coil(icoil)%xt
+ 
+    CPCoil(icoil)%eval_points= CPCoil(icoil)%eval_points - 2.0*eval_points*sigma
+    call eval_basis(icoil)
+    call eval_basis1(icoil)
+
+    call discoil(1) 
+
+	do iter_pos = 0,coil(icoil)%NS-1
+
+	if (myid==0) then
+		if (eval_points(iter_pos) >0 .AND. coil(icoil)%xt(iter_pos) > 0 ) &
+					write (ounit,'("xa pos " I7.3 " xa der" F15.13 ",rel " F15.13 "an " F15.13 "num " F15.13)') &
+								iter_pos, &
+								(coil(icoil)%xa(iter_pos) - (xt_temp(iter_pos) - &
+								coil(icoil)%xt(iter_pos))/2.0/ &
+								eval_points(iter_pos)/sigma ), ((coil(icoil)%xa &
+								(iter_pos) - (xt_temp(iter_pos) - &
+								coil(icoil)%xt(iter_pos))/2.0/eval_points(iter_pos)/sigma ))/ &
+								coil(icoil)%xa(iter_pos), &
+								coil(icoil)%xa(iter_pos), &
+								(xt_temp(iter_pos) - &
+								coil(icoil)%xt(iter_pos))/2.0/ &
+								eval_points(iter_pos)/sigma
+								!bas_temp_3(iter_pos,iter_cp),CPCoil(icoil)%basis_3(iter_pos,iter_cp)
+	endif
+
+	enddo
+
+      CPCoil(icoil)%eval_points = eval_points
+    call eval_basis(icoil)
+    call eval_basis1(icoil)
+    call discoil(1) 
+	
+END SUBROUTINE check_xt_xa	

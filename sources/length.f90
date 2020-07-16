@@ -173,7 +173,7 @@ end subroutine length
 
 subroutine LenDeriv0(icoil, length)
 
-  use globals, only: dp, zero, coil, myid, ounit, Ncoils, MPI_COMM_FOCUS 
+  use globals, only: dp, zero, coil, myid, ounit, Ncoils, MPI_COMM_FOCUS,coil_type_spline 
   implicit none
   include "mpif.h"
 
@@ -193,7 +193,7 @@ subroutine LenDeriv0(icoil, length)
      length  = length + dlength * coil(icoil)%dd(kseg)
 
   enddo ! end kseg
- 
+ !if (coil(icoil)%type==coil_type_spline) length  = length + sqrt(coil(icoil)%xt(0)**2 + coil(icoil)%yt(0)**2 + coil(icoil)%zt(0)**2) * coil(icoil)%dd(0)
   return
 
 end subroutine LenDeriv0
@@ -204,7 +204,7 @@ end subroutine LenDeriv0
 
 subroutine LenDeriv1(icoil, derivs, ND)
 
-  use globals, only: dp, zero, pi2, coil, DoF, myid, ounit, Ncoils, MPI_COMM_FOCUS
+  use globals, only: dp, zero, pi2, coil, DoF, myid, ounit, Ncoils, MPI_COMM_FOCUS,ounit
   implicit none
   include "mpif.h"
 
@@ -231,6 +231,8 @@ subroutine LenDeriv1(icoil, derivs, ND)
      dLz(1,kseg) = ( xt*xa*zt + yt*ya*zt - xt*xt*za - yt*yt*za ) / dl3 * coil(icoil)%dd(kseg)
 
   enddo ! end kseg
+
+!write(ounit,'(7F20.10)')dLx(1,:)
   derivs(1:1, 1:ND) = matmul(dLx, DoF(icoil)%xof) + matmul(dLy, DoF(icoil)%yof) + matmul(dLz, DoF(icoil)%zof)
 
   return

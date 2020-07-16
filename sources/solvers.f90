@@ -38,11 +38,17 @@ subroutine solvers
   use globals, only: dp, ierr, iout, myid, ounit, zero, IsQuiet, IsNormWeight, Ndof, Nouts, xdof, &
        case_optimize, DF_maxiter, LM_maxiter, CG_maxiter, HN_maxiter, TN_maxiter, coil, DoF, &
        weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, &
-       target_tflux, target_length, cssep_factor, MPI_COMM_FOCUS, k0, weight_curv
+       target_tflux, target_length, cssep_factor, MPI_COMM_FOCUS, k0, weight_curv,Ncoils
   implicit none
   include "mpif.h"
 
   REAL :: start, finish
+  INTEGER  :: icoil
+
+
+	!do icoil = 1,Ncoils
+	!	call check_xt_xa(icoil)
+	!enddo
 
 
   if (myid == 0) write(ounit, *) "-----------OPTIMIZATIONS-------------------------------------"
