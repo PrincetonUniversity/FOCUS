@@ -66,7 +66,6 @@ subroutine coilsep(ideriv)
   ! Free coil derivatives summed over fixed and free 
   if ( ideriv >= 1 ) then
      t1C = zero ; d1C = zero !; norm = zero
-     !if(myid .eq. 0) write(ounit, '("HIIIIIIIIII")')
      if ( Ncoils .eq. 1 ) return
      idof = 0 ; ivec = 1
      do icoil = 1, Ncoils
@@ -77,18 +76,10 @@ subroutine coilsep(ideriv)
         if ( coil(icoil)%Lc /= 0 ) then !if geometry is free;
            if(coil(icoil)%type .eq. 1) then ! only for Fourier
               NF = FouCoil(icoil)%NF
-              ! calculate normalization
-              !norm(icoil) = (coil(icoil)%L - coil(icoil)%Lo) / coil(icoil)%Lo**2  ! quadratic;
-              ! call lederiv1 to calculate the 1st derivatives
               call CoilSepDeriv1( icoil, d1C(idof+1:idof+ND), ND , NF )
-              !t1C(idof+1:idof+ND) = d1C(idof+1:idof+ND) * norm(icoil)
-              t1C(idof+1:idof+ND) = d1C(idof+1:idof+ND) * 1.0
-              ! I THINK LINE ABOVE IS WRONG, DO NOT THINK IT IS NEEDED, UNLESS NORM IS COEFFICENT
+              t1C(idof+1:idof+ND) = d1C(idof+1:idof+ND)
               if (mccsep > 0) then ! L-M format of targets
                  LM_fjac(iccsep+ivec, idof+1:idof+ND) = weight_ccsep * d1C(idof+1:idof+ND)
-                 !if (case_length == 2) &
-                 !     & LM_fjac(ivec, idof+1:idof+ND) = LM_fjac(ivec, idof+1:idof+ND) &
-                 !     & * exp(coil(icoil)%L) / exp(coil(icoil)%Lo)
                  ivec = ivec + 1
               endif
            endif 
@@ -96,13 +87,11 @@ subroutine coilsep(ideriv)
         endif
 
      enddo !end icoil;
-     ! Add in DALLOCATE STATEMENTS
      FATAL( coilsep , idof .ne. Ndof, counting error in packing )
 
      if (mccsep > 0) then ! L-M format of targets
         FATAL( coilsep, ivec == mccsep, Errors in counting ivec for L-M )
      endif
-     !t1C = t1C / (Ncoils - Nfixgeo + machprec)
      t1C = 2.0*t1C / ( numCoil * (numCoil - 1) + machprec )
   endif
 
@@ -115,7 +104,7 @@ end subroutine coilsep
 
 subroutine CoilSepDeriv0(icoil, coilsep0)
 
-  use globals, only: dp, zero, pi2, coil, myid, ounit, Ncoils, Nfp, machprec, r_delta, ccsep_alpha, penfun_ccsep, ccsep_beta, MPI_COMM_FOCUS 
+  use globals, only: dp, zero, pi2, coil, myid, ounit, Ncoils, Nfp, machprec, r_delta, ccsep_alpha, penfun_ccsep, ccsep_beta, ccsep_skip, FouCoil, MPI_COMM_FOCUS 
   implicit none
   include "mpif.h"
 
@@ -123,7 +112,7 @@ subroutine CoilSepDeriv0(icoil, coilsep0)
   REAL   , intent(out) :: coilsep0
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   INTEGER              :: kseg0, kseg1, astat, ierr, i, per0, per1, ss0, ss1, j0, j00, j1, l0, l00, l1
-  REAL                 :: rdiff, H, hypc, coilsepHold 
+  REAL                 :: rdiff, H, hypc, coilsepHold, xc0, yc0, zc0, xc1, yc1, zc1 
   REAL, allocatable    :: x0(:), y0(:), z0(:), x1(:), y1(:), z1(:)
 
   SALLOCATE(x0, (0:coil(icoil)%NS-1), zero)
@@ -152,17 +141,29 @@ subroutine CoilSepDeriv0(icoil, coilsep0)
         x0(0:coil(icoil)%NS-1) = (coil(icoil)%xx(0:coil(icoil)%NS-1))*cos(pi2*(j0-1)/Nfp) - (coil(icoil)%yy(0:coil(icoil)%NS-1))*sin(pi2*(j0-1)/Nfp)
         y0(0:coil(icoil)%NS-1) = ((-1.0)**l0)*((coil(icoil)%yy(0:coil(icoil)%NS-1))*cos(pi2*(j0-1)/Nfp) + (coil(icoil)%xx(0:coil(icoil)%NS-1))*sin(pi2*(j0-1)/Nfp))
         z0(0:coil(icoil)%NS-1) = (coil(icoil)%zz(0:coil(icoil)%NS-1))*((-1.0)**l0)
-        ! ADDED SECTION 
+        if ( ccsep_skip .eq. 1 ) then
+           xc0 = FouCoil(icoil)%xc(0)*cos(pi2*(j0-1)/Nfp) - FouCoil(icoil)%yc(0)*sin(pi2*(j0-1)/Nfp)
+           yc0 = ((-1.0)**l0)*(FouCoil(icoil)%yc(0)*cos(pi2*(j0-1)/Nfp) + FouCoil(icoil)%xc(0)*sin(pi2*(j0-1)/Nfp))
+           zc0 = ((-1.0)**l0)*FouCoil(icoil)%zc(0)
+           !if ( abs(xc0-sum(x0)/size(x0)) .ge. .000001 .or. abs(yc0-sum(y0)/size(y0)) .ge. .000001 .or. abs(zc0-sum(z0)/size(z0)) .ge. .000001 ) then
+           !   if(myid .eq. 0) write(ounit, '(8X": Centroid point calculated incorrectly")')           
+           !endif
+        endif
         if ( coil(icoil)%symm /= 0 ) then
            SALLOCATE(x1, (0:coil(icoil)%NS-1), zero)
            SALLOCATE(y1, (0:coil(icoil)%NS-1), zero)
            SALLOCATE(z1, (0:coil(icoil)%NS-1), zero)
            do j00 = j0, per0
-           !do j00 = 1, per0
               do l00 = l0, ss0
-              !do l00 = 0, ss0
-                 !if ( j0 .eq. j00 .and. l0 .eq. l00 ) cycle
                  if ( j0 .ne. j00 .or. l0 .ne. l00 ) then
+                 if ( ccsep_skip .eq. 1 ) then
+                    xc1 = FouCoil(icoil)%xc(0)*cos(pi2*(j00-1)/Nfp)-FouCoil(icoil)%yc(0)*sin(pi2*(j00-1)/Nfp)
+                    yc1 = ((-1.0)**l00)*(FouCoil(icoil)%yc(0)*cos(pi2*(j00-1)/Nfp)+FouCoil(icoil)%xc(0)*sin(pi2*(j00-1)/Nfp))
+                    zc1 = ((-1.0)**l00)*FouCoil(icoil)%zc(0)
+                    if ( sqrt((xc0-xc1 )**2+(yc0-yc1 )**2+(zc0-zc1)**2) .ge. (coil(icoil)%Lo+coil(icoil)%Lo)*.25 ) then
+                       cycle
+                    endif
+                 endif
                  x1(0:coil(icoil)%NS-1) = (coil(icoil)%xx(0:coil(icoil)%NS-1))*cos(pi2*(j00-1)/Nfp) - (coil(icoil)%yy(0:coil(icoil)%NS-1))*sin(pi2*(j00-1)/Nfp)
                  y1(0:coil(icoil)%NS-1) = ((-1.0)**l00)*((coil(icoil)%yy(0:coil(icoil)%NS-1))*cos(pi2*(j00-1)/Nfp) + (coil(icoil)%xx(0:coil(icoil)%NS-1))*sin(pi2*(j00-1)/Nfp))
                  z1(0:coil(icoil)%NS-1) = (coil(icoil)%zz(0:coil(icoil)%NS-1))*((-1.0)**l00)
@@ -187,25 +188,20 @@ subroutine CoilSepDeriv0(icoil, coilsep0)
                  endif
               enddo
            enddo
-           !coilsepHold = coilsepHold*0.5
-           ! COMMENTED OUT 
            coilsep0 = coilsep0 + pi2*pi2*coilsepHold/((coil(icoil)%NS)*(coil(icoil)%NS))
            coilsepHold = 0.0
            DALLOCATE(x1)
            DALLOCATE(y1)
            DALLOCATE(z1) 
         endif
-        !END OF ADDED SECTION 
         do i = icoil+1, Ncoils 
            if (coil(icoil)%Lc == 0 .and. coil(i)%Lc == 0) then
               ! Do nothing
-              !if(myid .eq. 0) write(ounit, '(8X": The minimum BLAH distance is "4X" :" I3" ; at coils")')
            else
               ! Add in cycle statment if coils are too far away 
               SALLOCATE(x1, (0:coil(i)%NS-1), zero)
               SALLOCATE(y1, (0:coil(i)%NS-1), zero)
               SALLOCATE(z1, (0:coil(i)%NS-1), zero)
-              ! DALLOCATE
               if ( coil(i)%symm == 0 ) then
                  per1 = 1
                  ss1 = 0
@@ -220,6 +216,14 @@ subroutine CoilSepDeriv0(icoil, coilsep0)
               endif
               do j1 = 1, per1
                  do l1 = 0, ss1
+                    if ( ccsep_skip .eq. 1 ) then
+                       xc1=FouCoil(i)%xc(0)*cos(pi2*(j1-1)/Nfp)-FouCoil(i)%yc(0)*sin(pi2*(j1-1)/Nfp)
+                       yc1=((-1.0)**l1)*(FouCoil(i)%yc(0)*cos(pi2*(j1-1)/Nfp)+FouCoil(i)%xc(0)*sin(pi2*(j1-1)/Nfp))
+                       zc1=((-1.0)**l1)*FouCoil(i)%zc(0)
+                       if ( sqrt((xc0-xc1)**2+(yc0-yc1)**2+(zc0-zc1)**2 ) .ge. (coil(i)%Lo+coil(icoil)%Lo)*.25 ) then
+                          cycle
+                       endif
+                    endif
                     x1(0:coil(i)%NS-1) = (coil(i)%xx(0:coil(i)%NS-1))*cos(pi2*(j1-1)/Nfp) - (coil(i)%yy(0:coil(i)%NS-1))*sin(pi2*(j1-1)/Nfp)
                     y1(0:coil(i)%NS-1) = ((-1.0)**l1)*((coil(i)%yy(0:coil(i)%NS-1))*cos(pi2*(j1-1)/Nfp) + (coil(i)%xx(0:coil(i)%NS-1))*sin(pi2*(j1-1)/Nfp))
                     z1(0:coil(i)%NS-1) = (coil(i)%zz(0:coil(i)%NS-1))*((-1.0)**l1)
@@ -230,7 +234,6 @@ subroutine CoilSepDeriv0(icoil, coilsep0)
                              if ( penfun_ccsep .eq. 1 ) then
                                 hypc = 0.5*exp(ccsep_alpha*( r_delta - rdiff )) + 0.5*exp(-1.0*ccsep_alpha*( r_delta - rdiff ))
                                 coilsepHold = coilsepHold + (hypc - 1.0)**2
-                                !if(myid .eq. 0) write(ounit, '(8X": The minimum BLAH distance is "4X" :" ES23.15" ; at coils")') rdiff
                              elseif ( penfun_ccsep .eq. 2 ) then
                                 coilsepHold = coilsepHold + (ccsep_alpha*( r_delta - rdiff ))**ccsep_beta
                              else
@@ -246,7 +249,6 @@ subroutine CoilSepDeriv0(icoil, coilsep0)
               enddo
               coilsep0 = coilsep0 + pi2*pi2*coilsepHold/((coil(icoil)%NS)*(coil(i)%NS))
               coilsepHold = 0.0
-              !if(myid .eq. 0) write(ounit, '(8X": The minimum BLAH distance is "4X" :" ES23.15" ; at coils")') coilsep0
               DALLOCATE(x1)
               DALLOCATE(y1)
               DALLOCATE(z1)
@@ -268,7 +270,7 @@ end subroutine CoilSepDeriv0
 
 subroutine CoilSepDeriv1(icoil, derivs, ND, NF)
 
-  use globals, only: dp, zero, pi2, coil, DoF, myid, ounit, machprec, Ncoils, Nfp, r_delta, ccsep_alpha, FouCoil, penfun_ccsep, ccsep_beta, MPI_COMM_FOCUS
+  use globals, only: dp, zero, pi2, coil, DoF, myid, ounit, machprec, Ncoils, Nfp, r_delta, ccsep_alpha, FouCoil, penfun_ccsep, ccsep_beta, ccsep_skip, MPI_COMM_FOCUS
   implicit none
   include "mpif.h"
 
@@ -276,7 +278,7 @@ subroutine CoilSepDeriv1(icoil, derivs, ND, NF)
   REAL   , intent(out) :: derivs(1:1, 1:ND)
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   INTEGER              :: kseg0, kseg1, astat, ierr, per0, per1, ss0, ss1, j0, j00, j1, l0, l00, l1, i, nff, NF
-  REAL                 :: dl3, xt, yt, zt, H, hypc, hyps, rdiff, int_hold
+  REAL                 :: dl3, xt, yt, zt, H, hypc, hyps, rdiff, int_hold, xc0, yc0, zc0, xc1, yc1, zc1
   REAL, allocatable    :: x0(:), y0(:), z0(:), x1(:), y1(:), z1(:), derivs_hold(:,:)
 
   FATAL( CoilSepDeriv1, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
@@ -306,17 +308,26 @@ subroutine CoilSepDeriv1(icoil, derivs, ND, NF)
         x0(0:coil(icoil)%NS-1) = (coil(icoil)%xx(0:coil(icoil)%NS-1))*cos(pi2*(j0-1)/Nfp) - (coil(icoil)%yy(0:coil(icoil)%NS-1))*sin(pi2*(j0-1)/Nfp)
         y0(0:coil(icoil)%NS-1) = ((-1.0)**l0)*((coil(icoil)%yy(0:coil(icoil)%NS-1))*cos(pi2*(j0-1)/Nfp) + (coil(icoil)%xx(0:coil(icoil)%NS-1))*sin(pi2*(j0-1)/Nfp))
         z0(0:coil(icoil)%NS-1) = (coil(icoil)%zz(0:coil(icoil)%NS-1))*((-1.0)**l0)
-        ! ADDED SECTION
+        if ( ccsep_skip .eq. 1 ) then
+           xc0 = FouCoil(icoil)%xc(0)*cos(pi2*(j0-1)/Nfp) - FouCoil(icoil)%yc(0)*sin(pi2*(j0-1)/Nfp)
+           yc0 = ((-1.0)**l0)*(FouCoil(icoil)%yc(0)*cos(pi2*(j0-1)/Nfp) + FouCoil(icoil)%xc(0)*sin(pi2*(j0-1)/Nfp))
+           zc0 = ((-1.0)**l0)*FouCoil(icoil)%zc(0)
+        endif
         if ( coil(icoil)%symm /= 0 ) then
            SALLOCATE(x1, (0:coil(icoil)%NS-1), zero)
            SALLOCATE(y1, (0:coil(icoil)%NS-1), zero)
            SALLOCATE(z1, (0:coil(icoil)%NS-1), zero)
            do j00 = j0, per0
-           !do j00 = 1, per0
               do l00 = l0, ss0
-              !do l00 = 0, ss0
-                 !if ( j0 .eq. j00 .and. l0 .eq. l00 ) cycle
                  if ( j0 .ne. j00 .or. l0 .ne. l00 ) then
+                 if ( ccsep_skip .eq. 1 ) then
+                    xc1 = FouCoil(icoil)%xc(0)*cos(pi2*(j00-1)/Nfp)-FouCoil(icoil)%yc(0)*sin(pi2*(j00-1)/Nfp)
+                    yc1 = ((-1.0)**l00)*(FouCoil(icoil)%yc(0)*cos(pi2*(j00-1)/Nfp)+FouCoil(icoil)%xc(0)*sin(pi2*(j00-1)/Nfp))
+                    zc1 = ((-1.0)**l00)*FouCoil(icoil)%zc(0)
+                    if ( sqrt((xc0-xc1)**2+(yc0-yc1)**2+(zc0-zc1)**2) .ge. (coil(icoil)%Lo+coil(icoil)%Lo)*.25 ) then
+                       cycle
+                    endif
+                 endif
                  x1(0:coil(icoil)%NS-1) = (coil(icoil)%xx(0:coil(icoil)%NS-1))*cos(pi2*(j00-1)/Nfp) - (coil(icoil)%yy(0:coil(icoil)%NS-1))*sin(pi2*(j00-1)/Nfp)
                  y1(0:coil(icoil)%NS-1) = ((-1.0)**l00)*((coil(icoil)%yy(0:coil(icoil)%NS-1))*cos(pi2*(j00-1)/Nfp) + (coil(icoil)%xx(0:coil(icoil)%NS-1))*sin(pi2*(j00-1)/Nfp))
                  z1(0:coil(icoil)%NS-1) = (coil(icoil)%zz(0:coil(icoil)%NS-1))*((-1.0)**l00)
@@ -358,15 +369,12 @@ subroutine CoilSepDeriv1(icoil, derivs, ND, NF)
                  endif
               enddo
            enddo
-           !derivs_hold = derivs_hold*.5
-           ! COMMENTED OUT 
            derivs = derivs + pi2*pi2*derivs_hold/((coil(icoil)%NS)*(coil(icoil)%NS))
            derivs_hold = zero
            DALLOCATE(x1)
            DALLOCATE(y1)
            DALLOCATE(z1)
         endif
-        !END OF ADDED SECTION
         do i = 1, Ncoils
            if ( i == icoil ) cycle
            if (coil(icoil)%Lc == 0 .and. coil(i)%Lc == 0) then
@@ -389,19 +397,25 @@ subroutine CoilSepDeriv1(icoil, derivs, ND, NF)
               SALLOCATE(z1, (0:coil(i)%NS-1), zero)
               do j1 = 1, per1
                  do l1 = 0, ss1
+                    if ( ccsep_skip .eq. 1 ) then
+                       xc1 = FouCoil(i)%xc(0)*cos(pi2*(j1-1)/Nfp)-FouCoil(i)%yc(0)*sin(pi2*(j1-1)/Nfp)
+                       yc1 = ((-1.0)**l1)*(FouCoil(i)%yc(0)*cos(pi2*(j1-1)/Nfp)+FouCoil(i)%xc(0)*sin(pi2*(j1-1)/Nfp))
+                       zc1 = ((-1.0)**l1)*FouCoil(i)%zc(0)
+                       if ( sqrt((xc0-xc1)**2+(yc0-yc1)**2+(zc0-zc1)**2 ) .ge. (coil(i)%Lo+coil(icoil)%Lo)*.25 ) then
+                          cycle
+                       endif
+                    endif
                     x1(0:coil(i)%NS-1)=(coil(i)%xx(0:coil(i)%NS-1))*cos(pi2*(j1-1)/Nfp)-(coil(i)%yy(0:coil(i)%NS-1))*sin(pi2*(j1-1)/Nfp)
                     y1(0:coil(i)%NS-1)=((-1.0)**l1)*((coil(i)%yy(0:coil(i)%NS-1))*cos(pi2*(j1-1)/Nfp)+(coil(i)%xx(0:coil(i)%NS-1))*sin(pi2*(j1-1)/Nfp))
                     z1(0:coil(i)%NS-1)=(coil(i)%zz(0:coil(i)%NS-1))*((-1.0)**l1)
                     do kseg0 = 0, coil(icoil)%NS-1
                        do kseg1 = 0, coil(i)%NS-1
                           rdiff = sqrt( ( x0(kseg0) - x1(kseg1) )**2 + ( y0(kseg0) - y1(kseg1) )**2 + ( z0(kseg0) - z1(kseg1) )**2 )
-                          !if(myid .eq. 0) write(ounit, '(8X": The minimum BLAH distance is "4X" :" ES23.15" ; at coils")') rdiff
                           if ( rdiff < r_delta ) then
                              if ( penfun_ccsep .eq. 1 ) then
                                 hypc = 0.5*exp(ccsep_alpha*( r_delta - rdiff )) + 0.5*exp(-1.0*ccsep_alpha*( r_delta - rdiff ))
                                 hyps = 0.5*exp(ccsep_alpha*( r_delta - rdiff )) - 0.5*exp(-1.0*ccsep_alpha*( r_delta - rdiff ))
                                 int_hold = -2.0*ccsep_alpha*(hypc-1.0)*hyps/rdiff
-                                !if(myid .eq. 0) write(ounit, '(8X": The minimum BLAH distance is "4X" :" ES23.15" ; at coils")') rdiff
                              elseif ( penfun_ccsep .eq. 2 ) then 
                                 int_hold = -1.0*ccsep_beta*ccsep_alpha*(ccsep_alpha*(r_delta-rdiff))**(ccsep_beta-1.0)/rdiff
                              else 

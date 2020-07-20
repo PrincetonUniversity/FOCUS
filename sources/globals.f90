@@ -124,6 +124,7 @@ module globals
   REAL                 :: weight_curv    =   0.000D+00
   INTEGER              :: penfun_ccsep   =   1
   REAL                 :: ccsep_beta     =   2.000D+00
+  INTEGER              :: ccsep_skip     =   0
 
   INTEGER              :: case_optimize  =   0
   REAL                 :: exit_tol       =   1.000D-04
@@ -220,6 +221,7 @@ module globals
                         weight_curv    , &
                         penfun_ccsep   , &
                         ccsep_beta     , &
+                        ccsep_skip     , &
                         case_optimize  , &
                         exit_tol       , &
                         DF_maxiter     , & 

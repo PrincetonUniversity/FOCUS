@@ -31,7 +31,7 @@ SUBROUTINE diagnos
   !if (myid == 0) write(ounit, '("diagnos : "6(A12," ; "))') , &
   !     "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." , "curv"
   if (myid == 0) write(ounit, '("diagnos : "7(A12," ; "))') , &
-       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." , "curv", "c-c sep"
+       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." , "curvature", "c-c sep."
   !if (myid == 0) write(ounit, '("        : "6(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep, curv
   if (myid == 0) write(ounit, '("        : "7(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep, curv, ccsep
 
