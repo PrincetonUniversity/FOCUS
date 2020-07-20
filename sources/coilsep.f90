@@ -38,6 +38,7 @@ subroutine coilsep(ideriv)
   ! Do calculation for free and fixed coils 
   if( ideriv >= 0 ) then
      if ( Ncoils .eq. 1 ) return
+     ! Change Statement to be numCoil
      do icoil = 1, Ncoils     !only care about unique coils;
         if ( coil(icoil)%type == 1 ) then  ! only for Fourier, Probably should delete this 
            !if( myid.ne.modulo(icoil-1,ncpu) ) cycle ! parallelization loop;
@@ -95,6 +96,7 @@ subroutine coilsep(ideriv)
         endif
 
      enddo !end icoil;
+     ! Add in DALLOCATE STATEMENTS
      FATAL( coilsep , idof .ne. Ndof, counting error in packing )
 
      if (mccsep > 0) then ! L-M format of targets
@@ -120,7 +122,7 @@ subroutine CoilSepDeriv0(icoil, coilsep0)
   INTEGER, intent(in)  :: icoil
   REAL   , intent(out) :: coilsep0
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  INTEGER              :: kseg0, kseg1, astat, ierr, i, per0, per1, ss0, ss1, j0, j1, l0, l1
+  INTEGER              :: kseg0, kseg1, astat, ierr, i, per0, per1, ss0, ss1, j0, j00, j1, l0, l00, l1
   REAL                 :: rdiff, H, hypc, coilsepHold 
   REAL, allocatable    :: x0(:), y0(:), z0(:), x1(:), y1(:), z1(:)
 
@@ -150,6 +152,50 @@ subroutine CoilSepDeriv0(icoil, coilsep0)
         x0(0:coil(icoil)%NS-1) = (coil(icoil)%xx(0:coil(icoil)%NS-1))*cos(pi2*(j0-1)/Nfp) - (coil(icoil)%yy(0:coil(icoil)%NS-1))*sin(pi2*(j0-1)/Nfp)
         y0(0:coil(icoil)%NS-1) = ((-1.0)**l0)*((coil(icoil)%yy(0:coil(icoil)%NS-1))*cos(pi2*(j0-1)/Nfp) + (coil(icoil)%xx(0:coil(icoil)%NS-1))*sin(pi2*(j0-1)/Nfp))
         z0(0:coil(icoil)%NS-1) = (coil(icoil)%zz(0:coil(icoil)%NS-1))*((-1.0)**l0)
+        ! ADDED SECTION 
+        if ( coil(icoil)%symm /= 0 ) then
+           SALLOCATE(x1, (0:coil(icoil)%NS-1), zero)
+           SALLOCATE(y1, (0:coil(icoil)%NS-1), zero)
+           SALLOCATE(z1, (0:coil(icoil)%NS-1), zero)
+           do j00 = j0, per0
+           !do j00 = 1, per0
+              do l00 = l0, ss0
+              !do l00 = 0, ss0
+                 !if ( j0 .eq. j00 .and. l0 .eq. l00 ) cycle
+                 if ( j0 .ne. j00 .or. l0 .ne. l00 ) then
+                 x1(0:coil(icoil)%NS-1) = (coil(icoil)%xx(0:coil(icoil)%NS-1))*cos(pi2*(j00-1)/Nfp) - (coil(icoil)%yy(0:coil(icoil)%NS-1))*sin(pi2*(j00-1)/Nfp)
+                 y1(0:coil(icoil)%NS-1) = ((-1.0)**l00)*((coil(icoil)%yy(0:coil(icoil)%NS-1))*cos(pi2*(j00-1)/Nfp) + (coil(icoil)%xx(0:coil(icoil)%NS-1))*sin(pi2*(j00-1)/Nfp))
+                 z1(0:coil(icoil)%NS-1) = (coil(icoil)%zz(0:coil(icoil)%NS-1))*((-1.0)**l00)
+                 do kseg0 = 0, coil(icoil)%NS-1
+                    do kseg1 = 0, coil(icoil)%NS-1
+                       rdiff = sqrt( ( x0(kseg0) - x1(kseg1) )**2 + ( y0(kseg0) - y1(kseg1) )**2 + ( z0(kseg0) - z1(kseg1) )**2 )
+                       if ( rdiff < r_delta ) then
+                          if ( penfun_ccsep .eq. 1 ) then
+                             hypc = 0.5*exp(ccsep_alpha*( r_delta - rdiff )) + 0.5*exp(-1.0*ccsep_alpha*( r_delta - rdiff ))
+                             coilsepHold = coilsepHold + (hypc - 1.0)**2
+                          elseif ( penfun_ccsep .eq. 2 ) then
+                             coilsepHold = coilsepHold + (ccsep_alpha*( r_delta - rdiff ))**ccsep_beta
+                          else
+                             ! Put in error 
+                          endif
+                       endif
+                       if ( rdiff .ge. r_delta ) then
+                          ! H = 0.0
+                       endif
+                    enddo
+                 enddo
+                 endif
+              enddo
+           enddo
+           !coilsepHold = coilsepHold*0.5
+           ! COMMENTED OUT 
+           coilsep0 = coilsep0 + pi2*pi2*coilsepHold/((coil(icoil)%NS)*(coil(icoil)%NS))
+           coilsepHold = 0.0
+           DALLOCATE(x1)
+           DALLOCATE(y1)
+           DALLOCATE(z1) 
+        endif
+        !END OF ADDED SECTION 
         do i = icoil+1, Ncoils 
            if (coil(icoil)%Lc == 0 .and. coil(i)%Lc == 0) then
               ! Do nothing
@@ -159,6 +205,7 @@ subroutine CoilSepDeriv0(icoil, coilsep0)
               SALLOCATE(x1, (0:coil(i)%NS-1), zero)
               SALLOCATE(y1, (0:coil(i)%NS-1), zero)
               SALLOCATE(z1, (0:coil(i)%NS-1), zero)
+              ! DALLOCATE
               if ( coil(i)%symm == 0 ) then
                  per1 = 1
                  ss1 = 0
@@ -200,10 +247,16 @@ subroutine CoilSepDeriv0(icoil, coilsep0)
               coilsep0 = coilsep0 + pi2*pi2*coilsepHold/((coil(icoil)%NS)*(coil(i)%NS))
               coilsepHold = 0.0
               !if(myid .eq. 0) write(ounit, '(8X": The minimum BLAH distance is "4X" :" ES23.15" ; at coils")') coilsep0
+              DALLOCATE(x1)
+              DALLOCATE(y1)
+              DALLOCATE(z1)
            endif
         enddo
      enddo
   enddo
+  DALLOCATE(x0)
+  DALLOCATE(y0)
+  DALLOCATE(z0)
 
   return
 
@@ -222,20 +275,16 @@ subroutine CoilSepDeriv1(icoil, derivs, ND, NF)
   INTEGER, intent(in)  :: icoil, ND
   REAL   , intent(out) :: derivs(1:1, 1:ND)
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  INTEGER              :: kseg0, kseg1, astat, ierr, per0, per1, ss0, ss1, j0, j1, l0, l1, i, nff, NF
+  INTEGER              :: kseg0, kseg1, astat, ierr, per0, per1, ss0, ss1, j0, j00, j1, l0, l00, l1, i, nff, NF
   REAL                 :: dl3, xt, yt, zt, H, hypc, hyps, rdiff, int_hold
   REAL, allocatable    :: x0(:), y0(:), z0(:), x1(:), y1(:), z1(:), derivs_hold(:,:)
 
   FATAL( CoilSepDeriv1, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
   
   derivs = zero
-  !derivs_hold = derivs
 
   SALLOCATE(derivs_hold, (1:1,1:3+6*NF), zero)
 
-  !SALLOCATE(x0, (1:coil(icoil)%NS), zero)
-  !SALLOCATE(y0, (1:coil(icoil)%NS), zero)
-  !SALLOCATE(z0, (1:coil(icoil)%NS), zero)
   SALLOCATE(x0, (0:coil(icoil)%NS-1), zero)
   SALLOCATE(y0, (0:coil(icoil)%NS-1), zero)
   SALLOCATE(z0, (0:coil(icoil)%NS-1), zero)
@@ -257,6 +306,67 @@ subroutine CoilSepDeriv1(icoil, derivs, ND, NF)
         x0(0:coil(icoil)%NS-1) = (coil(icoil)%xx(0:coil(icoil)%NS-1))*cos(pi2*(j0-1)/Nfp) - (coil(icoil)%yy(0:coil(icoil)%NS-1))*sin(pi2*(j0-1)/Nfp)
         y0(0:coil(icoil)%NS-1) = ((-1.0)**l0)*((coil(icoil)%yy(0:coil(icoil)%NS-1))*cos(pi2*(j0-1)/Nfp) + (coil(icoil)%xx(0:coil(icoil)%NS-1))*sin(pi2*(j0-1)/Nfp))
         z0(0:coil(icoil)%NS-1) = (coil(icoil)%zz(0:coil(icoil)%NS-1))*((-1.0)**l0)
+        ! ADDED SECTION
+        if ( coil(icoil)%symm /= 0 ) then
+           SALLOCATE(x1, (0:coil(icoil)%NS-1), zero)
+           SALLOCATE(y1, (0:coil(icoil)%NS-1), zero)
+           SALLOCATE(z1, (0:coil(icoil)%NS-1), zero)
+           do j00 = j0, per0
+           !do j00 = 1, per0
+              do l00 = l0, ss0
+              !do l00 = 0, ss0
+                 !if ( j0 .eq. j00 .and. l0 .eq. l00 ) cycle
+                 if ( j0 .ne. j00 .or. l0 .ne. l00 ) then
+                 x1(0:coil(icoil)%NS-1) = (coil(icoil)%xx(0:coil(icoil)%NS-1))*cos(pi2*(j00-1)/Nfp) - (coil(icoil)%yy(0:coil(icoil)%NS-1))*sin(pi2*(j00-1)/Nfp)
+                 y1(0:coil(icoil)%NS-1) = ((-1.0)**l00)*((coil(icoil)%yy(0:coil(icoil)%NS-1))*cos(pi2*(j00-1)/Nfp) + (coil(icoil)%xx(0:coil(icoil)%NS-1))*sin(pi2*(j00-1)/Nfp))
+                 z1(0:coil(icoil)%NS-1) = (coil(icoil)%zz(0:coil(icoil)%NS-1))*((-1.0)**l00)
+                 do kseg0 = 0, coil(icoil)%NS-1
+                    do kseg1 = 0, coil(icoil)%NS-1
+                       rdiff = sqrt( ( x0(kseg0) - x1(kseg1) )**2 + ( y0(kseg0) - y1(kseg1) )**2 + ( z0(kseg0) - z1(kseg1) )**2 )
+                       if ( rdiff < r_delta ) then
+                          if ( penfun_ccsep .eq. 1 ) then
+                             hypc = 0.5*exp(ccsep_alpha*( r_delta - rdiff )) + 0.5*exp(-1.0*ccsep_alpha*( r_delta - rdiff ))
+                             hyps = 0.5*exp(ccsep_alpha*( r_delta - rdiff )) - 0.5*exp(-1.0*ccsep_alpha*( r_delta - rdiff ))
+                             int_hold = -2.0*ccsep_alpha*(hypc-1.0)*hyps/rdiff
+                          elseif ( penfun_ccsep .eq. 2 ) then
+                             int_hold = -1.0*ccsep_beta*ccsep_alpha*(ccsep_alpha*(r_delta-rdiff))**(ccsep_beta-1.0)/rdiff
+                          else
+                             ! Put in error 
+                          endif
+                       endif
+                       if ( rdiff .ge. r_delta ) then
+                          int_hold = 0.0
+                       endif
+                       do nff = 0, NF
+                          ! Xc
+                          derivs_hold(1,1+nff)=derivs_hold(1,1+nff)+int_hold*((x0(kseg0)-x1(kseg1))*(FouCoil(icoil)%cmt(kseg0,nff)*cos(pi2*(j0-1)/Nfp)-FouCoil(icoil)%cmt(kseg1,nff)*cos(pi2*(j00-1)/Nfp))+(y0(kseg0)-y1(kseg1))*(FouCoil(icoil)%cmt(kseg0,nff)*sin(pi2*(j0-1)/Nfp)*((-1.0)**l0)-FouCoil(icoil)%cmt(kseg1,nff)*sin(pi2*(j00-1)/Nfp)*((-1.0)**l00)))
+                          ! Yc
+                          derivs_hold(1,2+nff+2*NF)=derivs_hold(1,2+nff+2*NF)+int_hold*((y0(kseg0)-y1(kseg1))*(FouCoil(icoil)%cmt(kseg0,nff)*cos(pi2*(j0-1)/Nfp)*((-1.0)**l0)-FouCoil(icoil)%cmt(kseg1,nff)*cos(pi2*(j00-1)/Nfp)*((-1.0)**l00))-(x0(kseg0)-x1(kseg1))*(FouCoil(icoil)%cmt(kseg0,nff)*sin(pi2*(j0-1)/Nfp)-FouCoil(icoil)%cmt(kseg1,nff)*sin(pi2*(j00-1)/Nfp)))
+                          ! Zc
+                          derivs_hold(1,3+nff+4*NF)=derivs_hold(1,3+nff+4*NF)+int_hold*(z0(kseg0)-z1(kseg1))*((FouCoil(icoil)%cmt(kseg0,nff))*((-1.0)**l0)-(FouCoil(icoil)%cmt(kseg1,nff))*((-1.0)**l00))
+                       enddo
+                       do nff = 1, NF
+                          ! Xs
+                          derivs_hold(1,1+nff+NF)=derivs_hold(1,1+nff+NF)+int_hold*((x0(kseg0)-x1(kseg1))*(FouCoil(icoil)%smt(kseg0,nff)*cos(pi2*(j0-1)/Nfp)-FouCoil(icoil)%smt(kseg1,nff)*cos(pi2*(j00-1)/Nfp))+(y0(kseg0)-y1(kseg1))*(FouCoil(icoil)%smt(kseg0,nff)*sin(pi2*(j0-1)/Nfp)*((-1.0)**l0)-FouCoil(icoil)%smt(kseg1,nff)*sin(pi2*(j00-1)/Nfp)*((-1.0)**l00)))
+                          ! Ys
+                          derivs_hold(1,2+nff+3*NF)=derivs_hold(1,2+nff+3*NF)+int_hold*((y0(kseg0)-y1(kseg1))*(FouCoil(icoil)%smt(kseg0,nff)*cos(pi2*(j0-1)/Nfp)*((-1.0)**l0)-FouCoil(icoil)%smt(kseg1,nff)*cos(pi2*(j00-1)/Nfp)*((-1.0)**l00))-(x0(kseg0)-x1(kseg1))*(FouCoil(icoil)%smt(kseg0,nff)*sin(pi2*(j0-1)/Nfp)-FouCoil(icoil)%smt(kseg1,nff)*sin(pi2*(j00-1)/Nfp)))
+                          ! Zs
+                          derivs_hold(1,3+nff+5*NF)=derivs_hold(1,3+nff+5*NF)+int_hold*(z0(kseg0)-z1(kseg1))*((FouCoil(icoil)%smt(kseg0,nff))*((-1.0)**l0)-(FouCoil(icoil)%smt(kseg1,nff))*((-1.0)**l00))
+                       enddo
+                    enddo
+                 enddo
+                 endif
+              enddo
+           enddo
+           !derivs_hold = derivs_hold*.5
+           ! COMMENTED OUT 
+           derivs = derivs + pi2*pi2*derivs_hold/((coil(icoil)%NS)*(coil(icoil)%NS))
+           derivs_hold = zero
+           DALLOCATE(x1)
+           DALLOCATE(y1)
+           DALLOCATE(z1)
+        endif
+        !END OF ADDED SECTION
         do i = 1, Ncoils
            if ( i == icoil ) cycle
            if (coil(icoil)%Lc == 0 .and. coil(i)%Lc == 0) then
@@ -302,16 +412,12 @@ subroutine CoilSepDeriv1(icoil, derivs, ND, NF)
                              !H = 0.0
                              int_hold = 0.0
                           endif
-                          !int_hold = -2.0*ccsep_alpha*H*(hypc-1.0)*hyps/rdiff
                           do nff = 0, NF
                              ! Xc
                              derivs_hold(1,1+nff)=derivs_hold(1,1+nff)+int_hold*((x0(kseg0)-x1(kseg1))*FouCoil(icoil)%cmt(kseg0,nff)*cos(pi2*(j0-1)/Nfp)+(y0(kseg0)-y1(kseg1))*FouCoil(icoil)%cmt(kseg0,nff)*sin(pi2*(j0-1)/Nfp)*((-1.0)**l0))
-                             !derivs_hold(1,1+nff)=derivs_hold(1,1+nff)+int_hold*((x0(kseg0)-x1(kseg1))*cos(kseg0*nff*pi2/coil(icoil)%NS)*cos(pi2*(j0-1)/Nfp)+(y0(kseg0)-y1(kseg1))*cos(kseg0*nff*pi2/coil(icoil)%NS)*sin(pi2*(j0-1)/Nfp)*((-1.0)**l0))
                              ! Yc
                              derivs_hold(1,2+nff+2*NF)=derivs_hold(1,2+nff+2*NF)+int_hold*((y0(kseg0)-y1(kseg1))*FouCoil(icoil)%cmt(kseg0,nff)*cos(pi2*(j0-1)/Nfp)*((-1.0)**l0)-(x0(kseg0)-x1(kseg1))*FouCoil(icoil)%cmt(kseg0,nff)*sin(pi2*(j0-1)/Nfp))
-                             !derivs_hold(1,2+nff+2*NF)=derivs_hold(1,2+nff+2*NF)+int_hold*((y0(kseg0)-y1(kseg1))*cos(kseg0*nff*pi2/coil(icoil)%NS)*cos(pi2*(j0-1)/Nfp)+(x0(kseg0)-x1(kseg1))*cos(kseg0*nff*pi2/coil(icoil)%NS)*sin(pi2*(j0-1)/Nfp))*((-1.0)**l0)
                              ! Zc
-                             !derivs_hold(1,3+nff+4*NF)=derivs_hold(1,3+nff+4*NF)+int_hold*(z0(kseg0)-z1(kseg1))*FouCoil(icoil)%cmt(kseg0,nff)*(-1.0)**l0
                              derivs_hold(1,3+nff+4*NF)=derivs_hold(1,3+nff+4*NF)+int_hold*(z0(kseg0)-z1(kseg1))*cos(kseg0*nff*pi2/coil(icoil)%NS)*(-1.0)**l0
                           enddo
                           do nff = 1, NF
@@ -321,7 +427,6 @@ subroutine CoilSepDeriv1(icoil, derivs, ND, NF)
                              derivs_hold(1,2+nff+3*NF)=derivs_hold(1,2+nff+3*NF)+int_hold*((y0(kseg0)-y1(kseg1))*FouCoil(icoil)%smt(kseg0,nff)*cos(pi2*(j0-1)/Nfp)*((-1.0)**l0)-(x0(kseg0)-x1(kseg1))*FouCoil(icoil)%smt(kseg0,nff)*sin(pi2*(j0-1)/Nfp))
                              ! Zs
                              derivs_hold(1,3+nff+5*NF)=derivs_hold(1,3+nff+5*NF)+int_hold*(z0(kseg0)-z1(kseg1))*FouCoil(icoil)%smt(kseg0,nff)*(-1.0)**l0
-                             ! FIX THESE
                           enddo
                        enddo
                     enddo
@@ -329,10 +434,18 @@ subroutine CoilSepDeriv1(icoil, derivs, ND, NF)
               enddo
               derivs = derivs + pi2*pi2*derivs_hold/((coil(icoil)%NS)*(coil(i)%NS))
               derivs_hold = zero
+              DALLOCATE(x1)
+              DALLOCATE(y1)
+              DALLOCATE(z1)
            endif
         enddo
      enddo
   enddo
+
+  DALLOCATE(derivs_hold)
+  DALLOCATE(x0)
+  DALLOCATE(y0)
+  DALLOCATE(z0)
 
   return
 

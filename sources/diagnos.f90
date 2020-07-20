@@ -111,19 +111,52 @@ SUBROUTINE diagnos
      Atmp(1, 0:coil(icoil)%NS-1) = coil(icoil)%xx(0:coil(icoil)%NS-1)
      Atmp(2, 0:coil(icoil)%NS-1) = coil(icoil)%yy(0:coil(icoil)%NS-1)
      Atmp(3, 0:coil(icoil)%NS-1) = coil(icoil)%zz(0:coil(icoil)%NS-1)
+     ! Check distances for coil and its symmetric coils 
+     if ( coil(icoil)%symm /= 0 ) then
+        SALLOCATE(Btmp, (1:3,0:coil(icoil)%NS-1), zero)
+        if ( coil(icoil)%symm .eq. 1 ) then
+           cs = 0
+           Npc = Nfp
+        elseif ( coil(icoil)%symm .eq. 2 ) then
+           cs = 1
+           Npc = Nfp
+        endif
+        do ip = 1, Npc
+           do is = 0, cs
+              if ( ip .eq. 1 .and. is .eq. 0 ) cycle
+              Btmp(1, 0:coil(icoil)%NS-1) = (coil(icoil)%xx(0:coil(icoil)%NS-1)*cosnfp(ip) &
+                                        & - coil(icoil)%yy(0:coil(icoil)%NS-1)*sinnfp(ip) ) 
+              Btmp(2, 0:coil(icoil)%NS-1) = (-1)**is * (coil(icoil)%xx(0:coil(icoil)%NS-1)*sinnfp(ip) &
+                                                   & + coil(icoil)%yy(0:coil(icoil)%NS-1)*cosnfp(ip) )
+              Btmp(3, 0:coil(icoil)%NS-1) = (-1)**is * (coil(icoil)%zz(0:coil(icoil)%NS-1))
+              call mindist(Atmp, coil(icoil)%NS, Btmp, coil(icoil)%NS, tmp_dist)
+#ifdef DEBUG
+              if(myid .eq. 0) write(ounit, '(8X": distance between  "I3.3"-th and "I3.3"-th coil (ip="I2.2 &
+                   ", is="I1") is : " ES23.15)') icoil, icoil, ip, is, tmp_dist
+#endif
+              if (minCCdist .ge. tmp_dist) then
+                 minCCdist = tmp_dist
+                 coilInd0 = icoil
+                 coilInd1 = icoil
+              endif
+           enddo
+        enddo
+        DALLOCATE(Btmp)
+     endif
      do itmp = 1, Ncoils
         ! skip self and non-Fourier coils
         if (itmp == icoil .or. coil(icoil)%type /= 1) cycle
-        SALLOCATE(Btmp, (1:3,0:coil(itmp )%NS-1), zero)
+        SALLOCATE(Btmp, (1:3,0:coil(itmp)%NS-1), zero)
         ! check if the coil is stellarator symmetric
-        select case (coil(icoil)%symm) 
+        !select case (coil(icoil)%symm)
+        select case (coil(itmp)%symm) 
         case ( 0 )
            cs  = 0
            Npc = 1
         case ( 1 )
            cs  = 0
            Npc = Nfp
-        case ( 2) 
+        case ( 2 ) 
            cs  = 1
            Npc = Nfp
         end select
@@ -141,7 +174,7 @@ SUBROUTINE diagnos
                    ", is="I1") is : " ES23.15)') icoil, itmp, ip, is, tmp_dist
 #endif
               if (minCCdist .ge. tmp_dist) then 
-                 minCCdist=tmp_dist
+                 minCCdist = tmp_dist
                  coilInd0 = icoil
                  coilInd1 = itmp
               endif
