@@ -106,8 +106,8 @@ SUBROUTINE diagnos
 
   !--------------------------------calculate dipole effective volume------------------------------------  
   call minvol(0)
-  if(myid .eq. 0)  write(ounit, '(8X": Total free magnetic moment M           :", ES12.5, &
-       "; Effective ratio=", ES12.5)') total_moment, pmsum
+  if(myid .eq. 0)  write(ounit, '(8X": Total free magnetic moment M (L-2 norm):", ES12.5, &
+       "; Effective ratio=", ES12.5)') sqrt(total_moment), sqrt(pmsum)
   !--------------------------------------------------------------------------------------------- 
 
   if (magtorque) then
