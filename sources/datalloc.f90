@@ -13,8 +13,8 @@ subroutine AllocData(type)
 
   INTEGER, intent(in) :: type
 
-  INTEGER             :: icoil, idof, ND, NF, NCP, icur, imag, isurf, NS, mm, iseg,i
-  REAL                :: xtmp, mtmp, tt
+  INTEGER             :: icoil, idof, ND, NF, NCP, icur, imag, isurf, NS, mm, iseg,i,iter_cp
+  REAL                :: xtmp, mtmp, tt, mean_t_interval 
 
   isurf = plasma
 
@@ -93,7 +93,7 @@ subroutine AllocData(type)
         case(coil_type_spline)
            ! get number of DoF for each coil and allocate arrays;
            NS = coil(icoil)%NS
-           NCP = CPCoil(icoil)%NCP
+           NCP = Splines(icoil)%NCP
            ND = (3*NCP) ! total variables for geometry
            DoF(icoil)%ND = coil(icoil)%Lc * ND !# of DoF for icoil;
            SALLOCATE(DoF(icoil)%xdof, (1:DoF(icoil)%ND), zero)
@@ -101,50 +101,46 @@ subroutine AllocData(type)
            SALLOCATE(DoF(icoil)%yof , (0:coil(icoil)%NS-1, 1:ND), zero)
            SALLOCATE(DoF(icoil)%zof , (0:coil(icoil)%NS-1, 1:ND), zero)
            ! allocate and calculate trignometric functions for re-use           
-           SALLOCATE( CPCoil(icoil)%basis_0, (0:NS-1, 0:NCP+2), zero )
-           SALLOCATE( CPCoil(icoil)%basis_1, (0:NS-1, 0:NCP+1), zero )
-           SALLOCATE( CPCoil(icoil)%basis_2, (0:NS-1, 0:NCP), zero )
-           SALLOCATE( CPCoil(icoil)%basis_3, (0:NS-1, 0:NCP-1),   zero )
-           SALLOCATE( CPCoil(icoil)%db_dt  , (0:NS-1, 0:NCP-1),   zero )
-           SALLOCATE( CPCoil(icoil)%db_dt_2, (0:NS-1, 0:NCP-1),   zero )
+           SALLOCATE( Splines(icoil)%basis_0, (0:NS-1, 0:NCP+2), zero )
+           SALLOCATE( Splines(icoil)%basis_1, (0:NS-1, 0:NCP+1), zero )
+           SALLOCATE( Splines(icoil)%basis_2, (0:NS-1, 0:NCP), zero )
+           SALLOCATE( Splines(icoil)%basis_3, (0:NS-1, 0:NCP-1),   zero )
+           SALLOCATE( Splines(icoil)%db_dt  , (0:NS-1, 0:NCP-1),   zero )
+           SALLOCATE( Splines(icoil)%db_dt_2, (0:NS-1, 0:NCP-1),   zero )
 
 	   do i =0, coil(icoil)%NS-1
-                    CPcoil(icoil)%eval_points(i) = 1.0*(i)/(coil(icoil)%NS)*CPcoil(icoil)%NT
+                    Splines(icoil)%eval_points(i) = 1.0*(i)/(coil(icoil)%NS)
            enddo
-              !write(ounit , '( "vt  " F20.10)') CPCoil(icoil)%vect
-              !write(ounit , '("ev   " F20.10)') CPcoil(icoil)%eval_points
+           
            ! the derivatives of dx/dv 
-
-	   !write(ounit,'(5F10.5)')CPcoil(icoil)%eval_points
-           !write(ounit,'(5F10.5)')CPcoil(icoil)%vect			
-           call eval_basis(icoil)
-           call eval_basis1(icoil)
-           call eval_basis2(icoil)
-	   !call eval_deriv1(icoil)
+	
+           call eval_spline_basis(icoil)           !Compute spline basis and derivatives using analytic derivation
+           call eval_spline_basis1(icoil)
+           call eval_spline_basis2(icoil)
+	   !call eval_deriv1(icoil)         !Expression for the derivatives obtained by Wolfram
            !call eval_deriv2(icoil)
-	   !call check_eval_basis(icoil)	
-	   call enforce_periodicity(icoil)
+	   !call check_eval_basis(icoil)    !Check derivatives of basis functions numerically	
+	   call enforce_spline_periodicity(icoil)  !Forces the derivates in respect to the first three control points to be equal to the last three   
 
-           DoF(icoil)%xof(0:coil(icoil)%NS-1,      1: NCP) = CPCoil(icoil)%basis_3(0:coil(icoil)%NS-1, 0:  NCP-1)  !x/xc
-           DoF(icoil)%yof(0:coil(icoil)%NS-1, NCP+1:2*NCP) = CPCoil(icoil)%basis_3(0:coil(icoil)%NS-1, 0:  NCP-1)  !y/yc
-           DoF(icoil)%zof(0:coil(icoil)%NS-1, 2*NCP+1:3*NCP) = CPCoil(icoil)%basis_3(0:coil(icoil)%NS-1, 0:  NCP-1)  !z/zc
+           DoF(icoil)%xof(0:coil(icoil)%NS-1,      1: NCP) = Splines(icoil)%basis_3(0:coil(icoil)%NS-1, 0:  NCP-1)  !x/xc
+           DoF(icoil)%yof(0:coil(icoil)%NS-1, NCP+1:2*NCP) = Splines(icoil)%basis_3(0:coil(icoil)%NS-1, 0:  NCP-1)  !y/yc
+           DoF(icoil)%zof(0:coil(icoil)%NS-1, 2*NCP+1:3*NCP) = Splines(icoil)%basis_3(0:coil(icoil)%NS-1, 0:  NCP-1)  !z/zc
      
            ! allocate xyz data
-           SALLOCATE( coil(icoil)%xx, (0:coil(icoil)%NS-1), zero )
-           SALLOCATE( coil(icoil)%yy, (0:coil(icoil)%NS-1), zero )
-           SALLOCATE( coil(icoil)%zz, (0:coil(icoil)%NS-1), zero )
-           SALLOCATE( coil(icoil)%xt, (0:coil(icoil)%NS-1), zero )
-           SALLOCATE( coil(icoil)%yt, (0:coil(icoil)%NS-1), zero )
-           SALLOCATE( coil(icoil)%zt, (0:coil(icoil)%NS-1), zero )
-           SALLOCATE( coil(icoil)%xa, (0:coil(icoil)%NS-1), zero )
-           SALLOCATE( coil(icoil)%ya, (0:coil(icoil)%NS-1), zero )
-           SALLOCATE( coil(icoil)%za, (0:coil(icoil)%NS-1), zero )
-           SALLOCATE( coil(icoil)%dl, (0:coil(icoil)%NS-1), zero )
-           SALLOCATE( coil(icoil)%dd, (0:coil(icoil)%NS-1), zero )
+           SALLOCATE( coil(icoil)%xx, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%yy, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%zz, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%xt, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%yt, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%zt, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%xa, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%ya, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%za, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%dl, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%dd, (0:coil(icoil)%NS), zero )
 
-	   
-           coil(icoil)%dd = 1.0/(coil(icoil)%NS)*CPcoil(icoil)%NT  ! discretizing factor;
 
+	   coil(icoil)%dd = 1.0/(coil(icoil)%NS)
 
         case default
            FATAL(AllocData, .true., not supported coil types)
@@ -158,7 +154,7 @@ subroutine AllocData(type)
         if (coil(icoil)%type==1) then
            Tdof = Tdof + 1              + 6*(FouCoil(icoil)%NF)+3
         else if (coil(icoil)%type==coil_type_spline) then
-           Tdof = Tdof + 1              + 3*(CPCoil(icoil)%NCP)
+           Tdof = Tdof + 1              + 3*(Splines(icoil)%NCP)
         else 
            Tdof = Tdof + coil(icoil)%Ic + DoF(icoil)%ND
         end if
@@ -173,7 +169,7 @@ subroutine AllocData(type)
 
      SALLOCATE(    xdof, (1:Ndof), zero ) ! dof vector;
      SALLOCATE( dofnorm, (1:Ndof), one ) ! dof normalized value vector;
-     SALLOCATE( evolution, (1:Nouts+1, 0:8), zero ) !evolution array;
+     SALLOCATE( evolution, (1:Nouts+1, 0:9), zero ) !evolution array;
      SALLOCATE( coilspace, (1:Nouts+1, 1:Tdof), zero ) ! all the coil parameters;
      
      ! determine dofnorm
@@ -302,7 +298,7 @@ subroutine AllocData(type)
      
      FATAL( AllocData, Ndof < 1, INVALID Ndof value )
      SALLOCATE( t1E, (1:Ndof), zero )
-     SALLOCATE( deriv, (1:Ndof, 0:7), zero )
+     SALLOCATE( deriv, (1:Ndof, 0:8), zero )
 
      ! Bnorm related;
      if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec) then
@@ -331,6 +327,11 @@ subroutine AllocData(type)
      ! curv needed;
      if (weight_curv > sqrtmachprec) then
         SALLOCATE( t1CU,  (1:Ndof), zero )
+     endif
+
+     ! straight-out needed;
+     if (weight_straight > sqrtmachprec) then
+        SALLOCATE( t1Str,  (1:Ndof), zero )
      endif
 
      ! cssep needed;
@@ -370,6 +371,12 @@ subroutine AllocData(type)
            icurv = LM_mfvec
            mcurv = Ncoils - Nfixgeo
            LM_mfvec = LM_mfvec + mcurv
+        endif
+
+        if (weight_straight > sqrtmachprec) then
+           istr = LM_mfvec
+           mstr = Ncoils - Nfixgeo
+           LM_mfvec = LM_mfvec + mstr
         endif
  
         if (weight_cssep > sqrtmachprec) then

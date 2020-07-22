@@ -633,6 +633,19 @@ subroutine check_input
         FATAL( initial, .true., selected case_curv is not supported )
      end select
 
+     select case ( case_straight )
+     case ( 1 )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_straight', case_straight, 'Linear format of straight-out coil penalty.'
+     case ( 2 )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_straight', case_straight, 'Quadratic format of straight-out coil penalty.'
+     case ( 3 )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_straight', case_straight, 'Penalty function of straight-out coil.'
+     case ( 4 )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_straight', case_straight, 'Linear and Penalty function.'
+     case default
+        FATAL( initial, .true., selected case_stright is not supported )
+     end select
+
      FATAL( initial, weight_bnorm  < zero, illegal )
      FATAL( initial, weight_bharm  < zero, illegal )
      FATAL( initial, weight_tflux  < zero, illegal )
@@ -698,6 +711,7 @@ subroutine check_input
  !tmpw_specw = weight_specw
   tmpw_ccsep = weight_ccsep
   tmpw_curv  = weight_curv
+  tmpw_str   = weight_straight
  !tmpw_cssep = weight_cssep
 
   call MPI_BARRIER( MPI_COMM_FOCUS, ierr )

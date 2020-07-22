@@ -211,7 +211,7 @@ subroutine rdcoils
      allocate( FouCoil(1:Ncoils) )
      allocate(    coil(1:Ncoils) )
      allocate(     DoF(1:Ncoils) )
-     allocate(  CPCoil(1:Ncoils) )
+     allocate(  Splines(1:Ncoils) )
      ! master CPU read the coils
      if( myid==0 ) then
         do icoil = 1, Ncoils
@@ -263,32 +263,27 @@ subroutine rdcoils
               FATAL( rdcoils09, coil(icoil)%L  < zero                     , illegal )
               FATAL( rdcoils10, coil(icoil)%Lo < zero                     , illegal )
               read( runit,*)
-              read( runit,*) CPCoil(icoil)%NCP,CPCoil(icoil)%NT
-              FATAL( rdcoils12, CPCoil(icoil)%NCP  < 0                    , illegal )
-              FATAL( rdcoils12_2, CPCoil(icoil)%NT  < 0                     , illegal )
-              FATAL( rdcoils12_3, CPCoil(icoil)%NT .NE. CPCoil(icoil)%NCP +4, illegal )
-	      FATAL( rdcoils12_4, CPCoil(icoil)%NT < 10, illegal )
-              SALLOCATE( CPCoil(icoil)%vect, (0:CPCoil(icoil)%NT-1), zero )
-              SALLOCATE( CPCoil(icoil)%eval_points, (0:coil(icoil)%NS-1), zero )
-              SALLOCATE( CPCoil(icoil)%Cpoints, (0:CPCoil(icoil)%NCP * 3 - 1 ), zero )
+              read( runit,*) Splines(icoil)%NCP
+	      Splines(icoil)%NT = Splines(icoil)%NCP + 4
+              FATAL( rdcoils12, Splines(icoil)%NCP  < 0                    , illegal )
+              FATAL( rdcoils12_2, Splines(icoil)%NT  < 0                     , illegal )
+              FATAL( rdcoils12_3, Splines(icoil)%NT .NE. Splines(icoil)%NCP +4, illegal )
+	      FATAL( rdcoils12_4, Splines(icoil)%NT < 10, illegal )
+              SALLOCATE( Splines(icoil)%vect, (0:Splines(icoil)%NT-1), zero )
+              SALLOCATE( Splines(icoil)%eval_points, (0:coil(icoil)%NS-1), zero )
+              SALLOCATE( Splines(icoil)%Cpoints, (0:Splines(icoil)%NCP * 3 - 1 ), zero )
               read( runit,*)
-              read( runit,*) CPCoil(icoil)%vect(0:CPCoil(icoil)%NT-1)
-	      CPCoil(icoil)%vect(CPCoil(icoil)%NT-3) = 1.0 + CPCoil(icoil)%vect(4) - CPCoil(icoil)%vect(3)
-	      CPCoil(icoil)%vect(CPCoil(icoil)%NT-2) = 1.0 + CPCoil(icoil)%vect(5) - CPCoil(icoil)%vect(3)
-	      CPCoil(icoil)%vect(CPCoil(icoil)%NT-1) = 1.0 + CPCoil(icoil)%vect(6) - CPCoil(icoil)%vect(3)
-	      CPCoil(icoil)%vect(0) =  CPCoil(icoil)%vect(CPCoil(icoil)%NT-7) - CPCoil(icoil)%vect(CPCoil(icoil)%NT-4)
-	      CPCoil(icoil)%vect(1) =  CPCoil(icoil)%vect(CPCoil(icoil)%NT-6) - CPCoil(icoil)%vect(CPCoil(icoil)%NT-4)
-	      CPCoil(icoil)%vect(2) =  CPCoil(icoil)%vect(CPCoil(icoil)%NT-5) - CPCoil(icoil)%vect(CPCoil(icoil)%NT-4)	
-	      CPCoil(icoil)%vect = CPCoil(icoil)%vect*CPCoil(icoil)%NT !Avoids large gradients
-
-              do iT = 0,CPCoil(icoil)%NT-1		
-		CPCoil(icoil)%vect(iT) = 1.0*(iT-3.0)/(CPCoil(icoil)%NT-7)*CPCoil(icoil)%NT
-	      enddo
-	  !    write(ounit,'(7F20.10)') CPCoil(icoil)%vect
+              read( runit,*) Splines(icoil)%vect(0:Splines(icoil)%NT-1)
+	      Splines(icoil)%vect(Splines(icoil)%NT-3) = 1.0 + Splines(icoil)%vect(4) - Splines(icoil)%vect(3)
+	      Splines(icoil)%vect(Splines(icoil)%NT-2) = 1.0 + Splines(icoil)%vect(5) - Splines(icoil)%vect(3)
+	      Splines(icoil)%vect(Splines(icoil)%NT-1) = 1.0 + Splines(icoil)%vect(6) - Splines(icoil)%vect(3)
+	      Splines(icoil)%vect(0) =  Splines(icoil)%vect(Splines(icoil)%NT-7) - Splines(icoil)%vect(Splines(icoil)%NT-4)
+	      Splines(icoil)%vect(1) =  Splines(icoil)%vect(Splines(icoil)%NT-6) - Splines(icoil)%vect(Splines(icoil)%NT-4)
+	      Splines(icoil)%vect(2) =  Splines(icoil)%vect(Splines(icoil)%NT-5) - Splines(icoil)%vect(Splines(icoil)%NT-4)	
               read( runit,*)
-              read( runit,*) CPCoil(icoil)%Cpoints(0:CPCoil(icoil)%NCP-1)
-              read( runit,*) CPCoil(icoil)%Cpoints(CPCoil(icoil)%NCP:CPCoil(icoil)%NCP*2-1)
-              read( runit,*) CPCoil(icoil)%Cpoints(CPCoil(icoil)%NCP*2:CPCoil(icoil)%NCP*3-1)
+              read( runit,*) Splines(icoil)%Cpoints(0:Splines(icoil)%NCP-1)
+              read( runit,*) Splines(icoil)%Cpoints(Splines(icoil)%NCP:Splines(icoil)%NCP*2-1)
+              read( runit,*) Splines(icoil)%Cpoints(Splines(icoil)%NCP*2:Splines(icoil)%NCP*3-1)
                           
            else
               STOP " wrong coil type in rdcoils"
@@ -353,16 +348,16 @@ subroutine rdcoils
            RlBCAST( coil(icoil)%L            , 1        ,  0 )
            IlBCAST( coil(icoil)%Lc           , 1        ,  0 )
            RlBCAST( coil(icoil)%Lo           , 1        ,  0 )
-           IlBCAST( CPCoil(icoil)%NCP        , 1        ,  0 )
-           IlBCAST( CPCoil(icoil)%NT         , 1        ,  0 )
-           if (.not. allocated(CPCoil(icoil)%vect) ) then
-              SALLOCATE( CPCoil(icoil)%vect, (0:CPCoil(icoil)%NT-1), zero )
-              SALLOCATE( CPCoil(icoil)%eval_points, (0:coil(icoil)%NS-1), zero )
-              SALLOCATE( CPCoil(icoil)%Cpoints, (0:CPCoil(icoil)%NCP * 3 -1 ), zero )
+           IlBCAST( Splines(icoil)%NCP        , 1        ,  0 )
+           IlBCAST( Splines(icoil)%NT         , 1        ,  0 )
+           if (.not. allocated(Splines(icoil)%vect) ) then
+              SALLOCATE( Splines(icoil)%vect, (0:Splines(icoil)%NT-1), zero )
+              SALLOCATE( Splines(icoil)%eval_points, (0:coil(icoil)%NS-1), zero )
+              SALLOCATE( Splines(icoil)%Cpoints, (0:Splines(icoil)%NCP * 3 -1 ), zero )
            endif
-           RlBCAST( CPCoil(icoil)%vect(0:CPCoil(icoil)%NT -1) , CPCoil(icoil)%NT ,  0 )
-           RlBCAST( CPCoil(icoil)%eval_points(0:coil(icoil)%NS-1) , coil(icoil)%NS ,  0 )
-           RlBCAST( CPCoil(icoil)%Cpoints(0:CPCoil(icoil)%NCP*3 - 1) , CPCoil(icoil)%NCP*3 ,  0 )
+           RlBCAST( Splines(icoil)%vect(0:Splines(icoil)%NT -1) , Splines(icoil)%NT ,  0 )
+           RlBCAST( Splines(icoil)%eval_points(0:coil(icoil)%NS-1) , coil(icoil)%NS ,  0 )
+           RlBCAST( Splines(icoil)%Cpoints(0:Splines(icoil)%NCP*3 - 1) , Splines(icoil)%NCP*3 ,  0 )
            if(coil(icoil)%Ic == 0) Nfixcur = Nfixcur + 1
            if(coil(icoil)%Lc == 0) Nfixgeo = Nfixgeo + 1
         else
@@ -531,7 +526,12 @@ subroutine rdcoils
   ifirst = 1
   call discoil(ifirst)
   ifirst = 0
-
+ !-----------------------find outer part of the coils------------------------------------------
+  if (weight_straight > machprec)  then
+    do icoil = 1,Ncoils
+      call find_ind_straight(icoil) 
+    enddo
+  endif
   return
 
 end subroutine rdcoils
@@ -544,7 +544,7 @@ subroutine discoil(ifirst)
 ! if ifirst = 1, it will update all the coils; otherwise, only update free coils;
 ! date: 20170314
 !---------------------------------------------------------------------------------------------
-  use globals, only: dp, zero, pi2, myid, ounit, coil, FouCoil, Ncoils, DoF, MPI_COMM_FOCUS,CPCoil,coil_type_spline
+  use globals, only: dp, zero, pi2, myid, ounit, coil, FouCoil, Ncoils, DoF, MPI_COMM_FOCUS,Splines,coil_type_spline
   use mpi
   implicit none
 
@@ -596,7 +596,6 @@ subroutine discoil(ifirst)
               coil(icoil)%za(0:NS) = coil(icoil)%za(0:NS) + ( - FouCoil(icoil)%cmt(0:NS,mm) * Foucoil(icoil)%zc(mm) &
                                                               - FouCoil(icoil)%smt(0:NS,mm) * Foucoil(icoil)%zs(mm) ) * mm*mm
            enddo ! end of do mm; 
-	  !if (ifirst == 1) write(ounit,'(7F20.10)') coil(icoil)%xt
         case(2)
 
         case(3)
@@ -612,66 +611,43 @@ subroutine discoil(ifirst)
            coil(icoil)%ya = zero
            coil(icoil)%za = zero
            NS = coil(icoil)%NS
-           NCP = CPCoil(icoil)%NCP  ! allias variable for simplicity;
+           NCP = Splines(icoil)%NCP  ! allias variable for simplicity;
 
 	   !-------------------------enforce periodicity----------------------------------------------
-	   !CPcoil(icoil)%Cpoints(0) = (CPcoil(icoil)%Cpoints(0) + CPcoil(icoil)%Cpoints(NCP-3))/2
-	   !CPcoil(icoil)%Cpoints(NCP) = (CPcoil(icoil)%Cpoints(NCP) + CPcoil(icoil)%Cpoints(2*NCP-3))/2
-	   !CPcoil(icoil)%Cpoints(2*NCP) = (CPcoil(icoil)%Cpoints(2*NCP) + CPcoil(icoil)%Cpoints(3*NCP-3))/2
-	   CPcoil(icoil)%Cpoints(NCP-3) = CPcoil(icoil)%Cpoints(0)
-	   CPcoil(icoil)%Cpoints(2*NCP-3) = CPcoil(icoil)%Cpoints(NCP) 
-	   CPcoil(icoil)%Cpoints(3*NCP-3) = CPcoil(icoil)%Cpoints(2*NCP)  
+	   Splines(icoil)%Cpoints(NCP-3) = Splines(icoil)%Cpoints(0)
+	   Splines(icoil)%Cpoints(2*NCP-3) = Splines(icoil)%Cpoints(NCP) 
+	   Splines(icoil)%Cpoints(3*NCP-3) = Splines(icoil)%Cpoints(2*NCP)  
 
-	   !CPcoil(icoil)%Cpoints(1) = (CPcoil(icoil)%Cpoints(1) + CPcoil(icoil)%Cpoints(NCP-2))/2
-	   !CPcoil(icoil)%Cpoints(NCP+1) = (CPcoil(icoil)%Cpoints(NCP+1) + CPcoil(icoil)%Cpoints(2*NCP-2))/2
-	   !CPcoil(icoil)%Cpoints(2*NCP+1) = (CPcoil(icoil)%Cpoints(2*NCP+1) + CPcoil(icoil)%Cpoints(3*NCP-2))/2
-	   CPcoil(icoil)%Cpoints(NCP-2) = CPcoil(icoil)%Cpoints(1)
-	   CPcoil(icoil)%Cpoints(2*NCP-2) = CPcoil(icoil)%Cpoints(NCP+1) 
-	   CPcoil(icoil)%Cpoints(3*NCP-2) = CPcoil(icoil)%Cpoints(2*NCP+1)  
+	   Splines(icoil)%Cpoints(NCP-2) = Splines(icoil)%Cpoints(1)
+	   Splines(icoil)%Cpoints(2*NCP-2) = Splines(icoil)%Cpoints(NCP+1) 
+	   Splines(icoil)%Cpoints(3*NCP-2) = Splines(icoil)%Cpoints(2*NCP+1)  
 
-	   !CPcoil(icoil)%Cpoints(2) = (CPcoil(icoil)%Cpoints(2) + CPcoil(icoil)%Cpoints(NCP-1))/2
-	   !CPcoil(icoil)%Cpoints(NCP+2) = (CPcoil(icoil)%Cpoints(NCP+2) + CPcoil(icoil)%Cpoints(2*NCP-1))/2
-	   !CPcoil(icoil)%Cpoints(2*NCP+2) = (CPcoil(icoil)%Cpoints(2*NCP+2) + CPcoil(icoil)%Cpoints(3*NCP-1))/2
-	   CPcoil(icoil)%Cpoints(NCP-1) = CPcoil(icoil)%Cpoints(2)
-	   CPcoil(icoil)%Cpoints(2*NCP-1) = CPcoil(icoil)%Cpoints(NCP+2) 
-	   CPcoil(icoil)%Cpoints(3*NCP-1) = CPcoil(icoil)%Cpoints(2*NCP+2)  
+	   Splines(icoil)%Cpoints(NCP-1) = Splines(icoil)%Cpoints(2)
+	   Splines(icoil)%Cpoints(2*NCP-1) = Splines(icoil)%Cpoints(NCP+2) 
+	   Splines(icoil)%Cpoints(3*NCP-1) = Splines(icoil)%Cpoints(2*NCP+2)  
            !-------------------------calculate coil data-------------------------------------------------  
            do iseg=0,NS-1
-                    coil(icoil)%xx(iseg) = SUM (CPcoil(icoil)%Cpoints(0:NCP-1)*CPcoil(icoil)%basis_3(iseg,0:NCP-1))
-                    coil(icoil)%yy(iseg) = SUM (CPcoil(icoil)%Cpoints(NCP:2*NCP-1)*CPcoil(icoil)%basis_3(iseg,0:NCP-1))
-                    coil(icoil)%zz(iseg) = SUM (CPcoil(icoil)%Cpoints(2*NCP:3*NCP-1)*CPcoil(icoil)%basis_3(iseg,0:NCP-1))
-                    coil(icoil)%xt(iseg) = SUM (CPcoil(icoil)%Cpoints(0:NCP-1)*CPcoil(icoil)%db_dt(iseg,0:NCP-1))
-                    coil(icoil)%yt(iseg) = SUM (CPcoil(icoil)%Cpoints(NCP:2*NCP-1)*CPcoil(icoil)%db_dt(iseg,0:NCP-1))
-                    coil(icoil)%zt(iseg) = SUM (CPcoil(icoil)%Cpoints(2*NCP:3*NCP-1)*CPcoil(icoil)%db_dt(iseg,0:NCP-1))
-                    coil(icoil)%xa(iseg) = SUM (CPcoil(icoil)%Cpoints(0:NCP-1)*CPcoil(icoil)%db_dt_2(iseg,0:NCP-1))
-                    coil(icoil)%ya(iseg) = SUM (CPcoil(icoil)%Cpoints(NCP:2*NCP-1)*CPcoil(icoil)%db_dt_2(iseg,0:NCP-1))
-                    coil(icoil)%za(iseg) = SUM (CPcoil(icoil)%Cpoints(2*NCP:3*NCP-1)*CPcoil(icoil)%db_dt_2(iseg,0:NCP-1))
+                    coil(icoil)%xx(iseg) = SUM (Splines(icoil)%Cpoints(0:NCP-1)*Splines(icoil)%basis_3(iseg,0:NCP-1))
+                    coil(icoil)%yy(iseg) = SUM (Splines(icoil)%Cpoints(NCP:2*NCP-1)*Splines(icoil)%basis_3(iseg,0:NCP-1))
+                    coil(icoil)%zz(iseg) = SUM (Splines(icoil)%Cpoints(2*NCP:3*NCP-1)*Splines(icoil)%basis_3(iseg,0:NCP-1))
+                    coil(icoil)%xt(iseg) = SUM (Splines(icoil)%Cpoints(0:NCP-1)*Splines(icoil)%db_dt(iseg,0:NCP-1))
+                    coil(icoil)%yt(iseg) = SUM (Splines(icoil)%Cpoints(NCP:2*NCP-1)*Splines(icoil)%db_dt(iseg,0:NCP-1))
+                    coil(icoil)%zt(iseg) = SUM (Splines(icoil)%Cpoints(2*NCP:3*NCP-1)*Splines(icoil)%db_dt(iseg,0:NCP-1))
+                    coil(icoil)%xa(iseg) = SUM (Splines(icoil)%Cpoints(0:NCP-1)*Splines(icoil)%db_dt_2(iseg,0:NCP-1))
+                    coil(icoil)%ya(iseg) = SUM (Splines(icoil)%Cpoints(NCP:2*NCP-1)*Splines(icoil)%db_dt_2(iseg,0:NCP-1))
+                    coil(icoil)%za(iseg) = SUM (Splines(icoil)%Cpoints(2*NCP:3*NCP-1)*Splines(icoil)%db_dt_2(iseg,0:NCP-1))
 	  enddo	
- 	
-	  !if (ifirst == 1) write(ounit,'(7F20.10)') CPcoil(icoil)%Cpoints(0:NCP-1)
-	  !if (icoil == 1) write(ounit,'(7F20.10)') coil(icoil)%xt
-	  !if (icoil == 1) write(ounit,'(7F20.10)') CPcoil(icoil)%basis_3(10,:)
-	  !if (icoil == 1) write(ounit,'(7F20.10)') CPcoil(icoil)%basis_1(2,:)
-	  !if (ifirst == 1) write(ounit,'(7F20.10)') CPcoil(icoil)%basis_3(1,:)
-	  !if (ifirst == 1) write(ounit,'(7F20.10)') CPcoil(icoil)%db_dt(393:399,0:5)
-	  !if (icoil == 1) write(ounit,'(5F20.10)') CPcoil(icoil)%db_dt_2(90,:)
-	  !if (icoil == 1) write(ounit,'(5F20.10)') CPcoil(icoil)%db_dt_2(94,:)
-	   !write(ounit,'(5F20.10)') CPcoil(icoil)%db_dt(50,:)
-	  !1if (ifirst == 1) write(ounit,'(5F20.10)') coil(icoil)%xt
-	  !if (ifirst == 1) then
-	!	do iseg = 0,NS-1
-			!write(ounit,'(2F20.10)') coil(icoil)%xx(0),coil(icoil)%xx(NS-1)
-			!write(ounit,'(2F20.10)') coil(icoil)%yy(0),coil(icoil)%yy(NS-1)
-			!write(ounit,'(2F20.10)') coil(icoil)%zz(0),coil(icoil)%zz(NS-1)
-			!write(ounit,'(5F20.10)') coil(icoil)%xt(0),coil(icoil)%xt
-			!write(ounit,'(2F20.10)') coil(icoil)%yt(0),coil(icoil)%yt(NS-1)
-			!write(ounit,'(2F20.10)') coil(icoil)%zt(0),coil(icoil)%zt(NS-1)
-			!write(ounit,'(2F20.10)') coil(icoil)%xa(0),coil(icoil)%xa(NS-1)
-			!write(ounit,'(2F20.10)') coil(icoil)%ya(0),coil(icoil)%ya(NS-1)
-			!write(ounit,'(2F20.10)') coil(icoil)%za(0),coil(icoil)%za(NS-1)
 
-	 ! 	enddo
-  	  !endif
+	  coil(icoil)%xx(NS) = coil(icoil)%xx(0)
+ 	  coil(icoil)%yy(NS) = coil(icoil)%yy(0)
+	  coil(icoil)%zz(NS) = coil(icoil)%zz(0)
+	  coil(icoil)%xt(NS) = coil(icoil)%xt(0)
+	  coil(icoil)%yt(NS) = coil(icoil)%yt(0)
+	  coil(icoil)%zt(NS) = coil(icoil)%zt(0)
+	  coil(icoil)%xa(NS) = coil(icoil)%xa(0)
+	  coil(icoil)%ya(NS) = coil(icoil)%ya(0)
+	  coil(icoil)%za(NS) = coil(icoil)%za(0)
+
         case default
            FATAL(discoil, .true., not supported coil types)
         end select

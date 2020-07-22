@@ -32,7 +32,7 @@ SUBROUTINE fdcheck( ideriv )
   INTEGER              :: astat, ierr, idof, ivec, imax
   REAL                 :: tmp_xdof(1:Ndof), fd, negvalue, posvalue, diff, rdiff
   REAL                 :: start, finish, maxdiff, maxrdiff, small
-  REAL, parameter      :: psmall=1.0E-6
+  REAL, parameter      :: psmall=1.0E-4
   !--------------------------------------------------------------------------------------------
 
   maxdiff = zero ; maxrdiff = zero ; imax = 0

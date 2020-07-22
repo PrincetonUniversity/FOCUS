@@ -8,7 +8,7 @@ SUBROUTINE diagnos
   use globals, only: dp, zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
        Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
        cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, Nfp, weight_bnorm, overlap, plasma, &
-       cosnfp, sinnfp, symmetry, discretefactor, MPI_COMM_FOCUS, surf_Nfp, curv, case_curv,coil_type_spline,CPCoil
+       cosnfp, sinnfp, symmetry, discretefactor, MPI_COMM_FOCUS, surf_Nfp, curv, case_curv,coil_type_spline,Splines, str,case_straight
   use mpi
   implicit none
 
@@ -28,9 +28,9 @@ SUBROUTINE diagnos
   if (case_optimize == 0) call AllocData(0) ! if not allocate data;
   call costfun(0)
 
-  if (myid == 0) write(ounit, '("diagnos : "6(A12," ; "))') , &
-       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." , "curv"
-  if (myid == 0) write(ounit, '("        : "6(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep, curv
+  if (myid == 0) write(ounit, '("diagnos : "7(A12," ; "))') , &
+       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." , "curv", "straight-out coil"
+  if (myid == 0) write(ounit, '("        : "7(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep, curv,str
 
   !save all the coil parameters;
   if (allocated(coilspace)) then
@@ -48,8 +48,8 @@ SUBROUTINE diagnos
            coilspace(iout, idof+1:idof+NF+1) = FouCoil(icoil)%zc(0:NF) ; idof = idof + NF +1
            coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%zs(1:NF) ; idof = idof + NF
 	case (coil_type_spline)
-           NCP = CPCoil(icoil)%NCP
-           coilspace(iout, idof+1:idof+NCP*3) = CPCoil(icoil)%Cpoints(0:3*NCP-1) ; idof = idof + 3*NCP 
+           NCP = Splines(icoil)%NCP
+           coilspace(iout, idof+1:idof+NCP*3) = Splines(icoil)%Cpoints(0:3*NCP-1) ; idof = idof + 3*NCP 
 !!$     case default
 !!$           FATAL(descent, .true., not supported coil types)
         end select
@@ -248,7 +248,7 @@ END SUBROUTINE diagnos
 
 subroutine avgcurvature(icoil)
 
-  use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils,CPCoil,coil_type_spline
+  use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils,Splines,coil_type_spline
   implicit none
   include "mpif.h"
 
@@ -263,7 +263,7 @@ subroutine avgcurvature(icoil)
              / ((coil(icoil)%xt)**2+(coil(icoil)%yt)**2+(coil(icoil)%zt)**2)**(1.5)
 
   davgcurv = davgcurv*sqrt(coil(icoil)%xt**2+coil(icoil)%yt**2+coil(icoil)%zt**2)
-  if (coil(icoil)%type == coil_type_spline) coil(icoil)%avgcurv = 1.0*sum(davgcurv) * CPCoil(icoil)%NT/size(davgcurv)
+  if (coil(icoil)%type == coil_type_spline) coil(icoil)%avgcurv = 1.0*sum(davgcurv)/size(davgcurv)
   if (coil(icoil)%type == 1)coil(icoil)%avgcurv = pi2*sum(davgcurv)/size(davgcurv)
   
   coil(icoil)%avgcurv = coil(icoil)%avgcurv/coil(icoil)%L

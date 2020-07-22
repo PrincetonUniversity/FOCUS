@@ -53,6 +53,7 @@ subroutine saving
      if(allocated(t1C)) deriv(1:Ndof,5) = t1C(1:Ndof)
      if(allocated(t1H)) deriv(1:Ndof,6) = t1H(1:Ndof)
      if(allocated(t1CU)) deriv(1:Ndof,7)=t1CU(1:Ndof)
+     if(allocated(t1Str)) deriv(1:Ndof,8)=t1Str(1:Ndof)
   endif
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -91,6 +92,7 @@ subroutine saving
   HWRITEIV( 1                ,   case_bnormal  ,   case_bnormal                  )
   HWRITEIV( 1                ,   case_length   ,   case_length                   )
   HWRITEIV( 1                ,   case_curv     ,   case_curv                     )
+  HWRITEIV( 1                ,   case_straight ,   case_straight                 )
   HWRITEIV( 1                ,   curv_alpha    ,   curv_alpha                    )
   HWRITERV( 1                ,   weight_bnorm  ,   weight_bnorm                  )
   HWRITERV( 1                ,   weight_bharm  ,   weight_bharm                  )
@@ -105,6 +107,7 @@ subroutine saving
   HWRITERV( 1                ,   weight_inorm  ,   weight_inorm                  )
   HWRITERV( 1                ,   weight_mnorm  ,   weight_mnorm                  )
   HWRITERV( 1                ,   weight_curv   ,   weight_curv                   )
+  HWRITERV( 1                ,   weight_straight,   weight_straight              )
   HWRITERV( 1                ,   DF_tausta     ,   DF_tausta                     )
   HWRITERV( 1                ,   DF_tauend     ,   DF_tauend                     )
   HWRITERV( 1                ,   DF_xtol       ,   DF_xtol                       )
@@ -162,7 +165,7 @@ subroutine saving
   HWRITERA( iout, Tdof       ,   coilspace     ,   coilspace(1:iout, 1:Tdof)     )
 
   if (allocated(deriv)) then
-     HWRITERA( Ndof, 6       ,   deriv         ,   deriv(1:Ndof, 0:6)            )
+     HWRITERA( Ndof, 8       ,   deriv         ,   deriv(1:Ndof, 0:8)            )
   endif
 
   if (allocated(Bmnc)) then
@@ -193,6 +196,8 @@ subroutine saving
      HWRITEIV( 1                ,   mcssep        ,   mcssep                     )
      HWRITEIV( 1                ,   icurv         ,   icurv                      )
      HWRITEIV( 1                ,   mcurv         ,   mcurv                      )
+     HWRITEIV( 1                ,   istr          ,   istr                       )
+     HWRITEIV( 1                ,   mstr          ,   mstr                       )
      HWRITERV( LM_mfvec         ,   LM_fvec       ,   LM_fvec                    )
      HWRITERA( LM_mfvec, Ndof   ,   LM_fjac       ,   LM_fjac                    )     
   endif
@@ -265,15 +270,15 @@ subroutine saving
                 !coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo, coil(icoil)%k0
            write(wunit,'(2X, I4, ES23.15, 3X, I3, ES23.15, 3X, I3, ES23.15)') &
                 coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo !,coil(icoil)%k0  
-           NCP = CPCoil(icoil)%NCP ! shorthand;
-           write(wunit, *) "#NCP  #NT"
-           write(wunit, '(I3,I3)') NCP , CPCoil(icoil)%NT
+           NCP = Splines(icoil)%NCP ! shorthand;
+           write(wunit, *) "#NCP "
+           write(wunit, '(I3,I3)') NCP 
            write(wunit, *) "knot vector"
-           write(wunit, 1000) CPCoil(icoil)%vect/CPCoil(icoil)%NT
+           write(wunit, 1000) Splines(icoil)%vect
            write(wunit, *) "#Control points for coils ( x;y;z) "
-           write(wunit, 1000) CPCoil(icoil)%Cpoints(0:NCP-1)
-           write(wunit, 1000) CPCoil(icoil)%Cpoints(NCP:2*NCP-1)
-           write(wunit, 1000) CPCoil(icoil)%Cpoints(NCP*2:3*NCP-1)
+           write(wunit, 1000) Splines(icoil)%Cpoints(0:NCP-1)
+           write(wunit, 1000) Splines(icoil)%Cpoints(NCP:2*NCP-1)
+           write(wunit, 1000) Splines(icoil)%Cpoints(NCP*2:3*NCP-1)
         case default
            FATAL(restart, .true., not supported coil types)
         end select

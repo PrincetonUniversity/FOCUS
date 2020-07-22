@@ -75,7 +75,9 @@ module globals
   CHARACTER(100)   :: out_plasma  ! updated plasma boundary
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  
+  INTEGER              :: test_count_iter    =   0   
+
+
 !latex \subsection{Input namelist: \type{focusin}}
   INTEGER              :: IsQuiet        =  -1        
   INTEGER              :: IsSymmetric    =   0 
@@ -101,9 +103,13 @@ module globals
   INTEGER              :: case_bnormal   =   0
   INTEGER              :: case_length    =   1
   INTEGER              :: case_curv      =   1 
+  INTEGER              :: case_straight  =   3
   REAL                 :: curv_alpha     =   2.000D+00
+  REAL                 :: straight_alpha =   2.000D+00
   REAL                 :: curv_c         =   1.000D-04
   REAL                 :: k0             =   0.000D+00
+  REAL                 :: str_c          =   1.000D-04
+  REAL                 :: str_k0         =   2.000D+00
   REAL                 :: weight_bnorm   =   1.000D+00
   INTEGER              :: bharm_jsurf    =   0
   REAL                 :: weight_bharm   =   0.000D+00
@@ -120,6 +126,11 @@ module globals
   REAL                 :: weight_gnorm   =   1.000D+00
   REAL                 :: weight_mnorm   =   1.000D+00
   REAL                 :: weight_curv    =   0.000D+00
+  REAL                 :: weight_straight    =   0.000D+00
+  REAL                 :: origin_surface_x =   0.000D+00
+  REAL                 :: origin_surface_y  =   0.000D+00
+  REAL                 :: origin_surface_z  =   0.000D+00
+  REAL                 :: straight_curv  =   0.000D+00
 
   INTEGER              :: case_optimize  =   0
   REAL                 :: exit_tol       =   1.000D-04
@@ -275,7 +286,7 @@ module globals
   end type toroidalsurface
 
   type arbitrarycoil
-     INTEGER              :: NS, Ic=0, Lc=0, type=0, symm=0
+     INTEGER              :: NS, Ic=0, Lc=0, type=0, symm=0, index_min = 9999, index_max = 0
      REAL                 :: I=zero,  L=zero, Lo, maxcurv, ox, oy, oz, mt, mp, Bt, Bz, avgcurv
      REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), &
                              dl(:), dd(:)
@@ -304,7 +315,7 @@ module globals
   type(toroidalsurface), target, allocatable :: surf(:)
   type(FourierCoil)    , target, allocatable :: FouCoil(:)
   type(DegreeOfFreedom), target, allocatable :: DoF(:)
-  type(SplineCoil)    , allocatable :: CPCoil(:)
+  type(SplineCoil)    , allocatable :: Splines(:)
 
   INTEGER              :: Nfp = 1, symmetry = 0, surf_Nfp = 1
   INTEGER              :: plasma = 1, limiter = 1
@@ -322,8 +333,8 @@ module globals
 !latex \subsection{Optimization}
   ! General target functions;
   INTEGER              :: iout, Nouts, LM_iter, LM_mfvec
-  INTEGER              :: ibnorm = 0, ibharm = 0, itflux = 0, ittlen = 0, icssep = 0, icurv = 0 ! starting number
-  INTEGER              :: mbnorm = 0, mbharm = 0, mtflux = 0, mttlen = 0, mcssep = 0, mcurv = 0 ! numbers of targets
+  INTEGER              :: ibnorm = 0, ibharm = 0, itflux = 0, ittlen = 0, icssep = 0, icurv = 0,istr = 0 ! starting number
+  INTEGER              :: mbnorm = 0, mbharm = 0, mtflux = 0, mttlen = 0, mcssep = 0, mcurv = 0,mstr = 0 ! numbers of targets
   REAL                 :: chi, discretefactor, sumDE
   REAL   , allocatable :: t1E(:), t2E(:,:), evolution(:,:), coilspace(:,:), deriv(:,:)
   REAL   , allocatable :: LM_fvec(:), LM_fjac(:,:)
@@ -347,6 +358,9 @@ module globals
   ! Curvature constraint
   REAL                 :: curv
   REAL   , allocatable :: t1CU(:), t2CU(:,:)
+  ! Straight out-coil constraint
+  REAL                 :: str
+  REAL   , allocatable :: t1Str(:), t2Str(:,:)
   ! Coil-surface spearation
   INTEGER              :: psurf = 1 ! the prevent surface label; default 1 is the plasma boundary
   REAL                 :: cssep
@@ -380,7 +394,7 @@ module globals
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 !latex \subsection{Miscellaneous}
-  REAL                 :: tmpw_bnorm, tmpw_tflux ,tmpt_tflux, tmpw_ttlen, tmpw_specw, tmpw_ccsep, tmpw_bharm, tmpw_curv
+  REAL                 :: tmpw_bnorm, tmpw_tflux ,tmpt_tflux, tmpw_ttlen, tmpw_specw, tmpw_ccsep, tmpw_bharm, tmpw_curv, tmpw_str
   REAL                 :: overlap = 0.0
                           !tmp weight for saving to restart file
   REAL, allocatable    :: mincc(:,:), coil_importance(:)

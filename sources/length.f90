@@ -186,14 +186,11 @@ subroutine LenDeriv0(icoil, length)
   FATAL( LenDeriv0, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
   
   length = zero
-  
+ 
   do kseg = 0, coil(icoil)%NS-1
-
      dlength = sqrt(coil(icoil)%xt(kseg)**2 + coil(icoil)%yt(kseg)**2 + coil(icoil)%zt(kseg)**2)
      length  = length + dlength * coil(icoil)%dd(kseg)
-
   enddo ! end kseg
- !if (coil(icoil)%type==coil_type_spline) length  = length + sqrt(coil(icoil)%xt(0)**2 + coil(icoil)%yt(0)**2 + coil(icoil)%zt(0)**2) * coil(icoil)%dd(0)
   return
 
 end subroutine LenDeriv0
@@ -232,7 +229,6 @@ subroutine LenDeriv1(icoil, derivs, ND)
 
   enddo ! end kseg
 
-!write(ounit,'(7F20.10)')dLx(1,:)
   derivs(1:1, 1:ND) = matmul(dLx, DoF(icoil)%xof) + matmul(dLy, DoF(icoil)%yof) + matmul(dLz, DoF(icoil)%zof)
 
   return

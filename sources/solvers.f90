@@ -38,26 +38,20 @@ subroutine solvers
   use globals, only: dp, ierr, iout, myid, ounit, zero, IsQuiet, IsNormWeight, Ndof, Nouts, xdof, &
        case_optimize, DF_maxiter, LM_maxiter, CG_maxiter, HN_maxiter, TN_maxiter, coil, DoF, &
        weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, &
-       target_tflux, target_length, cssep_factor, MPI_COMM_FOCUS, k0, weight_curv,Ncoils
+       target_tflux, target_length, cssep_factor, MPI_COMM_FOCUS, k0, weight_curv,weight_straight,Ncoils
   implicit none
   include "mpif.h"
 
   REAL :: start, finish
   INTEGER  :: icoil
 
-
-	!do icoil = 1,Ncoils
-	!	call check_xt_xa(icoil)
-	!enddo
-
-
   if (myid == 0) write(ounit, *) "-----------OPTIMIZATIONS-------------------------------------"
   if (myid == 0) write(ounit, '("solvers : Total number of DOF is " I6)') Ndof
   if (myid == 0 .and. IsQuiet < 1) then
-     write(ounit, '(8X,": Initial weights are: "6(A12, ","))') "bnorm", "bharm", "tflux", &
-         "ttlen", "cssep", "curv"
-     write(ounit, '(8X,": "21X,6(ES12.5, ","))') weight_bnorm, weight_bharm, weight_tflux, &
-          weight_ttlen, weight_cssep, weight_curv
+     write(ounit, '(8X,": Initial weights are: "7(A12, ","))') "bnorm", "bharm", "tflux", &
+         "ttlen", "cssep", "curv","straight-out coil"
+     write(ounit, '(8X,": "21X,7(ES12.5, ","))') weight_bnorm, weight_bharm, weight_tflux, &
+          weight_ttlen, weight_cssep, weight_curv,weight_straight
      write(ounit, '(8X,": target_tflux = "ES12.5" ; target_length = "ES12.5" ; k0 = "ES12.5" ; cssep_factor = "ES12.5)') &
           target_tflux, target_length, k0, cssep_factor
   endif
@@ -77,12 +71,15 @@ subroutine solvers
 
   if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "------------- Initial status ------------------------"
   if (myid == 0) write(ounit, '("output  : "A6" : "10(A12," ; "))') "iout", "mark", "chi", "dE_norm", &
-       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep.", "curv" 
+       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep.", "curv", "straight-out" 
+
   call costfun(1)
+
   call saveBmn    ! in bmnharm.h;
   iout = 0 ! reset output counter;
+
   call output(zero)
-  
+
   !--------------------------------DF--------------------------------------------------------------------
   if (DF_maxiter > 0)  then
      if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "------------- Differential Flow (DF) ----------------"
@@ -162,7 +159,8 @@ subroutine costfun(ideriv)
        cssep      , t1S, t2S, weight_cssep, &
        specw      , t1P, t2P, weight_specw, &
        ccsep      , t1C, t2C, weight_ccsep, &
-       curv       , t1CU,t2CU,weight_curv, MPI_COMM_FOCUS
+       curv       , t1CU,t2CU,weight_curv,&
+       str        , t1Str,t2Str,weight_straight, MPI_COMM_FOCUS
 
   implicit none
   include "mpif.h"
@@ -183,6 +181,7 @@ subroutine costfun(ideriv)
   specw = zero
   ccsep = zero
   curv  = zero
+  str   = zero
 
   if (IsQuiet <= -2) then
 
@@ -206,6 +205,7 @@ subroutine costfun(ideriv)
      call length(0)
      call surfsep(0)
      call curvature(0)
+     call straight(0)
 
   endif
 
@@ -300,6 +300,20 @@ subroutine costfun(ideriv)
      elseif ( ideriv == 2 ) then
         t1E = t1E +  weight_curv * t1CU
         t2E = t2E +  weight_curv * t2CU
+     endif
+  endif 
+ 
+
+  ! straight-out coil
+  if (weight_straight > machprec) then
+
+     call straight(ideriv)
+     chi = chi + weight_straight * str
+     if     ( ideriv == 1 ) then
+        t1E = t1E +  weight_straight * t1Str
+     elseif ( ideriv == 2 ) then
+        t1E = t1E +  weight_straight * t1Str
+        t2E = t2E +  weight_straight * t2Str
      endif
   endif  
 
@@ -397,7 +411,7 @@ end subroutine costfun
 subroutine normweight
   use globals, only: dp, zero, one, machprec, ounit, myid, xdof, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
        weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_specw, weight_ccsep, &
-       target_tflux, psi_avg, coil, Ncoils, case_length, Bmnc, Bmns, tBmnc, tBmns, weight_curv, curv, MPI_COMM_FOCUS
+       target_tflux, psi_avg, coil, Ncoils, case_length, Bmnc, Bmns, tBmnc, tBmns, weight_curv, curv,str,weight_straight, MPI_COMM_FOCUS
 
   implicit none  
   include "mpif.h"
@@ -490,6 +504,17 @@ subroutine normweight
      if( myid .eq. 0 .and. weight_curv < machprec) write(ounit, '("warning : weight_curv < machine_precision, curvature will not be used.")')
 
   endif
+  !-!-!-!-!-!-!-!-!-!-curv-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+  if( weight_straight >= machprec ) then
+
+     call straight(0) 
+     if (abs(str) > machprec) weight_straight = weight_straight / str
+     if( myid == 0 ) write(ounit, 1000) "weight_straight", weight_straight
+     if( myid .eq. 0 .and. weight_straight < machprec) write(ounit, '("warning : weight_straight < machine_precision, straight-out coils&
+									 will not be used.")')
+
+  endif
 
   !-!-!-!-!-!-!-!-!-!-cssep-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -536,7 +561,7 @@ subroutine output (mark)
 
   use globals, only: dp, zero, ounit, myid, ierr, astat, iout, Nouts, Ncoils, save_freq, Tdof, &
        coil, coilspace, FouCoil, chi, t1E, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
-       evolution, xdof, DoF, exit_tol, exit_signal, sumDE, curv, MPI_COMM_FOCUS,coil_type_spline,CPCoil
+       evolution, xdof, DoF, exit_tol, exit_signal, sumDE, curv,str, MPI_COMM_FOCUS,coil_type_spline,Splines
 
   implicit none  
   include "mpif.h"
@@ -551,7 +576,7 @@ subroutine output (mark)
   FATAL( output , iout > Nouts+2, maximum iteration reached )
 
   if (myid == 0) write(ounit, '("output  : "I6" : "9(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, bharm, &
-       tflux, ttlen, cssep, curv
+       tflux, ttlen, cssep, curv,str
 
   ! save evolution data;
   if (allocated(evolution)) then
@@ -566,6 +591,7 @@ subroutine output (mark)
      !evolution(iout,8) = 0.0
      !evolution(iout,8) = ccsep
      evolution(iout,8) = curv
+     evolution(iout,9) = str
   endif
 
   ! exit the optimization if no obvious changes in past 5 outputs; 07/20/2017
@@ -589,8 +615,8 @@ subroutine output (mark)
            coilspace(iout, idof+1:idof+NF+1) = FouCoil(icoil)%zc(0:NF) ; idof = idof + NF +1
            coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%zs(1:NF) ; idof = idof + NF
 	case (coil_type_spline)
-           NCP = CPCoil(icoil)%NCP
-           coilspace(iout, idof+1:idof+3*NCP) = CPCoil(icoil)%Cpoints(0:3*NCP-1) ; idof = idof + 3*NCP
+           NCP = Splines(icoil)%NCP
+           coilspace(iout, idof+1:idof+3*NCP) = Splines(icoil)%Cpoints(0:3*NCP-1) ; idof = idof + 3*NCP
 !!$        case default
 !!$           FATAL(output, .true., not supported coil types)
         end select

@@ -281,7 +281,7 @@ subroutine bpotential0(icoil, iteta, jzeta, tAx, tAy, tAz)
         zz =   surf(isurf)%zz(iteta,jzeta) * (-1)**is
         Ax = zero; Ay = zero; Az = zero
         select case (coil(icoil)%type)        
-        case(1)        
+        case(1,coil_type_spline)        
            ! Fourier coils
            do kseg = 0, coil(icoil)%NS-1
               dlx = xx - coil(icoil)%xx(kseg)
@@ -294,26 +294,14 @@ subroutine bpotential0(icoil, iteta, jzeta, tAx, tAy, tAz)
               Ax = Ax + ltx * rm * coil(icoil)%dd(kseg)
               Ay = Ay + lty * rm * coil(icoil)%dd(kseg)
               Az = Az + ltz * rm * coil(icoil)%dd(kseg)
+		!if (myid==0 .AND. icoil==1 .AND. is==0 .AND. ip==1 .AND. iteta==0 .AND. jzeta == 0) &
+		!							write(ounit,'(I7.3  "seg " F20.10)') kseg ,ltx * rm * coil(icoil)%dd(kseg)
            enddo    ! enddo kseg
         case(3)
            ! central current and vertical field (zero contribution)
            rr = sqrt( xx**2 + yy**2 )
            ! \vec A=-\frac{\mu_0I}{2\pi} \ln(r) \hat e_z
            Az = -two*bsconstant*log(rr) 
-	case(coil_type_spline)        
-           ! Fourier coils
-           do kseg = 0, coil(icoil)%NS-1
-              dlx = xx - coil(icoil)%xx(kseg)
-              dly = yy - coil(icoil)%yy(kseg)
-              dlz = zz - coil(icoil)%zz(kseg)
-              rm  = 1.0 / sqrt(dlx**2 + dly**2 + dlz**2)
-              ltx = coil(icoil)%xt(kseg)
-              lty = coil(icoil)%yt(kseg)
-              ltz = coil(icoil)%zt(kseg)
-              Ax = Ax + ltx * rm * coil(icoil)%dd(kseg)
-              Ay = Ay + lty * rm * coil(icoil)%dd(kseg)
-              Az = Az + ltz * rm * coil(icoil)%dd(kseg)
-           enddo    ! enddo kseg
         case default
            FATAL(bpotential0, .true., not supported coil types)
         end select 
@@ -387,7 +375,7 @@ subroutine bpotential1(icoil, iteta, jzeta, tAx, tAy, tAz, ND)
         zz =   surf(isurf)%zz(iteta,jzeta) * (-1)**is
         Ax = zero; Ay = zero; Az = zero
         select case (coil(icoil)%type)        
-        case(1)        
+        case(1,coil_type_spline)        
            ! Fourier coils
            do kseg = 0, NS-1
               dlx = xx - coil(icoil)%xx(kseg)
@@ -412,29 +400,6 @@ subroutine bpotential1(icoil, iteta, jzeta, tAx, tAy, tAz, ND)
            Az(1:1, 1:ND) = matmul(dAzx, DoF(icoil)%xof) + matmul(dAzy, DoF(icoil)%yof) + matmul(dAzz, DoF(icoil)%zof)
         case(3) 
            continue
-	case(coil_type_spline)        
-           ! Fourier coils
-           do kseg = 0, NS-1
-              dlx = xx - coil(icoil)%xx(kseg)
-              dly = yy - coil(icoil)%yy(kseg)
-              dlz = zz - coil(icoil)%zz(kseg)     
-              r = sqrt(dlx**2 + dly**2 + dlz**2); rm3 = r**(-3)
-              ltx = coil(icoil)%xt(kseg)
-              lty = coil(icoil)%yt(kseg)
-              ltz = coil(icoil)%zt(kseg)
-              dAxx(1,kseg) = - (dly*lty + dlz*ltz) * rm3 * coil(icoil)%dd(kseg) !Ax/x
-              dAxy(1,kseg) =    dly*ltx            * rm3 * coil(icoil)%dd(kseg) !Ax/y
-              dAxz(1,kseg) =    dlz*ltx            * rm3 * coil(icoil)%dd(kseg) !Ax/z
-              dAyx(1,kseg) =    dlx*lty            * rm3 * coil(icoil)%dd(kseg) !Ay/x
-              dAyy(1,kseg) = - (dlx*ltx + dlz*ltz) * rm3 * coil(icoil)%dd(kseg) !Ay/y
-              dAyz(1,kseg) =    dlz*lty            * rm3 * coil(icoil)%dd(kseg) !Ay/z
-              dAzx(1,kseg) =    dlx*ltz            * rm3 * coil(icoil)%dd(kseg) !Az/x
-              dAzy(1,kseg) =    dly*ltz            * rm3 * coil(icoil)%dd(kseg) !Az/y
-              dAzz(1,kseg) = - (dlx*ltx + dly*lty) * rm3 * coil(icoil)%dd(kseg) !Az/z
-           enddo    ! enddo kseg
-           Ax(1:1, 1:ND) = matmul(dAxx, DoF(icoil)%xof) + matmul(dAxy, DoF(icoil)%yof) + matmul(dAxz, DoF(icoil)%zof)
-           Ay(1:1, 1:ND) = matmul(dAyx, DoF(icoil)%xof) + matmul(dAyy, DoF(icoil)%yof) + matmul(dAyz, DoF(icoil)%zof)
-           Az(1:1, 1:ND) = matmul(dAzx, DoF(icoil)%xof) + matmul(dAzy, DoF(icoil)%yof) + matmul(dAzz, DoF(icoil)%zof)
         case default
            FATAL(bpotential1, .true., not supported coil types)
         end select
