@@ -2,6 +2,7 @@
  IsQuiet        =        -1             ! -2 verbose and including unconstrained cost functions; -1: verbose; 0: normal; 1: concise
  IsSymmetric    =        2              ! 0: no stellarator symmetry enforced; 1: plasma periodicity enforced; 2: coil periodicity enforced
 
+ input_surf     =        '../rotating_ellipse/plasma.boundary'
  case_surface   =        0              ! 0: general VMEC-like format (Rbc, Rbs, Zbc, Zbs); 1: read axis for knots
  knotsurf       =        0.200D-00      ! minor plasma radius for knototrans, only valid for case surface = 1
  ellipticity    =        0.000D+00      ! ellipticity of plasma for knototrans, only valid for case surface = 1
