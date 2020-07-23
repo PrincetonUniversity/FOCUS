@@ -18,7 +18,6 @@
     isvarygeometry = 1
     nfcoil = 4
     nseg = 128
-    momentq = 1
     isnormalize = 1
     isnormweight = 1
     case_bnormal = 0

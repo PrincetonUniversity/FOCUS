@@ -11,7 +11,7 @@ end module mgrid_mod
 subroutine wtmgrid
   use globals, only : dp, zero, half, pi2, ext, ncpu, myid, ounit, wunit, runit, nfp_raw,  &
        sqrtmachprec, master, nmaster, nworker, masterid, color, myworkid, &
-       MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS
+       MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS, MPI_COMM_FAMUS
   use mgrid_mod
   implicit none
   include "mpif.h"
@@ -27,7 +27,7 @@ subroutine wtmgrid
   CHARACTER(LEN=30)    :: curlabel(1:1)
 
   do icpu = 1, ncpu
-     call MPI_BARRIER( MPI_COMM_WORLD, ierr )
+     call MPI_BARRIER( MPI_COMM_FAMUS, ierr )
      if (myid == icpu-1) then                              ! each cpu read the namelist in turn;
         open(runit, file=trim(trim(ext)//".input"), status="old", action='read')
         read(runit, mgrid)
@@ -35,7 +35,7 @@ subroutine wtmgrid
      endif ! end of if( myid == 0 )
   enddo
   
-  mgrid_name = "mgrid.focus_"//trim(ext) ! filename, could be user input
+  mgrid_name = "mgrid.FAMUS_"//trim(ext) ! filename, could be user input
   if (Mfp <= 0) Mfp = nfp_raw ! overrid to nfp_raw if not specified
   B = zero  ; dx = 1E-4 ; dy = 1E-4 ; dz = 1E-4
 
@@ -94,7 +94,7 @@ subroutine wtmgrid
 #ifdef DIV_CHECK
      write(ounit, '("wtmgrid : max. div B = "ES23.15 " ; max. div B / |B| = "ES23.15 )') maxval(BRpZ(1,1:Nr,1:Nz,1:Np)),  maxval(BRpZ(2,1:Nr,1:Nz,1:Np))
 #endif
-     nextcur = 1 ; curlabel(1) = "focus-coils"
+     nextcur = 1 ; curlabel(1) = "FAMUS-coils"
 
      write( ounit,'("wtmgrid : writing ",A," ; Mfp="i3" ;")')  trim(mgrid_name), Mfp
 

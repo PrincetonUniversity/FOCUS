@@ -1,358 +1,96 @@
 
-!title (initialize) ! Read input file, initialize global variables.
+! subroutine list
+!
+! initial
+! check_input
+! read_namelist
+! write_namelist
+!
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+subroutine initial
+   use globals
+   use mpi
+   implicit none
+ 
+   INTEGER :: index_dot
+ 
+   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+ 
+   myid = 0 ; ncpu = 1
+ 
+   ! MPI initialize
+   call MPI_init( ierr )
+   MPI_COMM_FAMUS = MPI_COMM_WORLD
+   call MPI_COMM_RANK( MPI_COMM_FAMUS, myid, ierr )
+   call MPI_COMM_SIZE( MPI_COMM_FAMUS, ncpu, ierr )
+ 
+  !-------------machine constants -----------------------------------------------------------------------
+   machprec = epsilon(pi)         ! get the machine precision
+   sqrtmachprec = sqrt(machprec)  ! sqrt of machine precision
+   vsmall = ten * machprec        ! very small number
+   small = thousand * machprec    ! small number
 
-!latex \briefly{Reads input files broadcasts, and allocates/initializes global variables.}
-
-!latex \calledby{\link{focus}, \link{globals}}
-!latex \calls{\link{}}
-
-!latex \section{Input namelist}
-!latex  The \emph{focusin} namelist is the only input namelist needed for FOCUS running. It should be
-!latex  written to the file \emph{example.input}, where `example' is the argument passed by command line. 
-!latex  Here are the details for the variables. \\
-!latex  \bi
-!latex  \item \inputvar{IsQuiet = -1} \\
-!latex    \textit{Information displayed to the user} \\
-!latex    \bi \vspace{-5mm}
-!latex    \item[-2:] more details \& update unconstrained cost functions;
-!latex    \item[-1:] more details;
-!latex    \item[0:]  essential;
-!latex    \item[1:] concise.
-!latex    \ei
-!latex 
-!latex  \item \inputvar{IsSymmetric = 0} \\
-!latex    \textit{Enforce stellarator symmetry or not} \\
-!latex    \bi \vspace{-5mm}
-!latex    \item[0:] no stellarator symmetry enforced;
-!latex    \item[1:] plasma periodicty enforced;
-!latex    \item[2:] coil and plasma periodicity enforced. 
-!latex    \ei
-!latex 
-!latex  \par \begin{tikzpicture} \draw[dashed] (0,1) -- (10,1); \end{tikzpicture}
-!latex 
-!latex  \item \inputvar{input\_surf = `plasma.boundary'} \\
-!latex    \textit{Input file containing plasma boundary information.} 
-!latex 
-!latex  \item \inputvar{input\_coils = `none'} \\
-!latex    \textit{Input file containing initial guess for coils (in either format).}
-!latex    If it is 'none' by default, it will be updated to 'coils.example' (case\_init=-1) 
-!latex       or 'example.focus' (case\_init=0).
-!latex 
-!latex  \item \inputvar{input\_harm = `target.harmonics'} \\
-!latex    \textit{Input file containing the target harmonics for Bmn optimization.} 
-!latex 
-!latex  \par \begin{tikzpicture} \draw[dashed] (0,1) -- (10,1); \end{tikzpicture}
-!latex 
-!latex  \item \inputvar{case\_surface = 0} \\
-!latex    \textit{Specify the input plasma boundary format} \\
-!latex    \bi \vspace{-5mm}
-!latex    \item[0:] general VMEC-like format (Rbc, Rbs, Zbc, Zbs), seen in \link{rdsurf};
-!latex    \item[1:] read axis for knots, seen in \link{rdknot}; (not ready)
-!latex    %\item[2:] read wout file from VMEC outputs, seen in \link{rdvmec}.
-!latex    \ei
-!latex 
-!latex  \item \inputvar{knotsurf = 0.2} \\
-!latex    \textit{Minor plasma radius for knototrans, only valid for \inputvar{case\_surface = 1}} 
-!latex 
-!latex  \item \inputvar{ellipticity = 0.0} \\
-!latex    \textit{Ellipticity of plasma for knototrans, only valid for \inputvar{case\_surface = 1}} 
-!latex 
-!latex  \item \inputvar{Nteta = 64} \\
-!latex    \textit{Poloidal resolution for discretizing the plasma}
-!latex 
-!latex  \item \inputvar{Nzeta = 64} \\
-!latex    \textit{Toroidal resolution for discretizing the plasma}
-!latex 
-!latex  \par \begin{tikzpicture} \draw[dashed] (0,1) -- (10,1); \end{tikzpicture}
-!latex 
-!latex  \item \inputvar{case\_init = 0} \\
-!latex    \textit{Specify the initializing method for coils, seen in \link{rdcoils}} \\
-!latex    \bi \vspace{-5mm}
-!latex    \item[-1:] read the standard MAKEGRID format coils from \inputvar{input_coils};
-!latex    \item[0:] read FOCUS format data from \inputvar{input_coils};
-!latex    \item[1:] toroidally spaced \inputvar{Ncoils} circular coils with radius of \inputvar{init\_radius};
-!latex    \item[2:] toroidally spaced \inputvar{Ncoils}-1 magnetic dipoles pointing poloidallly on the toroidal surface 
-!latex               with radius of \inputvar{init\_radius} and a central infinitely long current. 
-!latex               Dipole magnetizations anc the central current are all set to  \inputvar{init\_current}.
-!latex    \ei
-!latex 
-!latex  \item \inputvar{case\_coils = 1} \\
-!latex    \textit{Specify representation used for the initial coils, seen in \link{rdcoils}} \\
-!latex    \bi \vspace{-5mm}
-!latex    \item[0:] using piecewise linear representation; (not ready)
-!latex    \item[1:] using Fourier series representation;
-!latex    \ei
-!latex 
-!latex  \item \inputvar{Ncoils = 0} \\
-!latex    \textit{Number of coils initilized, only valid for \inputvar{case\_init = 1}}
-!latex 
-!latex  \item \inputvar{init\_current = 1.0E6} \\
-!latex    \textit{Initial coil current (A), only valid for \inputvar{case\_init = 1}} 
-!latex 
-!latex  \item \inputvar{init\_radius = 1.0} \\
-!latex    \textit{Initial coil radius (m), only valid for \inputvar{case\_init = 1}} 
-!latex 
-!latex  \item \inputvar{IsVaryCurrent = 1} \\
-!latex    \textit{Keep coil currents fixed or not, overriden by \emph{example.focus}} \\
-!latex    \bi \vspace{-5mm}
-!latex    \item[0:] coil currents are fixed;
-!latex    \item[1:] coil currents are free;
-!latex    \ei
-!latex 
-!latex  \item \inputvar{IsVaryGeometry = 1} \\
-!latex    \textit{Keep coil geometries fixed or not, overriden by \emph{example.focus}} \\
-!latex    \bi \vspace{-5mm}
-!latex    \item[0:] coil geometries are fixed;
-!latex    \item[1:] coil geometries are free;
-!latex    \ei
-!latex 
-!latex  \item \inputvar{NFcoil = 4} \\
-!latex    \textit{Number of Fourier coefficients for coils, only valid for \inputvar{case\_coils = 1},
-!latex           overriden by \emph{example.focus}} 
-!latex 
-!latex  \item \inputvar{Nseg = 128} \\
-!latex    \textit{Number of segments for discritizing coils, only valid for \inputvar{case\_coils = 1},
-!latex           overriden by \emph{example.focus}} 
-!latex 
-!latex  \par \begin{tikzpicture} \draw[dashed] (0,1) -- (10,1); \end{tikzpicture}
-!latex 
-!latex  \item \inputvar{IsNormalize = 1} \\
-!latex    \textit{Normalizing coil parameters or not} \\
-!latex    \bi \vspace{-5mm}
-!latex    \item[0:] keep raw data (normalized to 1.0);
-!latex    \item[1:] currents being normalized to averaged absolute current,
-!latex              coil geometry parameters being normalized to major radius;
-!latex    \ei
-!latex 
-!latex  \item \inputvar{IsNormWeight = 1} \\
-!latex    \textit{each constraints normalized to initial value or not} \\
-!latex    \bi \vspace{-5mm}
-!latex    \item[0:] keep raw value for constraints;
-!latex    \item[1:] $w = w/f_0$ weights normalized to the initial values of each constraints;
-!latex    \ei
-!latex 
-!latex  \item \inputvar{case\_bnormal = 0} \\
-!latex    \textit{ Bn error normalized to $|B|$ or not} \\
-!latex    \bi \vspace{-5mm}
-!latex    \item[0:] keep raw Bn error;
-!latex    \item[1:] Bn residue normalized to local $|B|$;
-!latex    \ei
-!latex 
-!latex  \item \inputvar{case\_length = 0} \\
-!latex    \textit{ options for constructing coil length constraint, seen in \link{length}} \\
-!latex    \bi \vspace{-5mm}
-!latex    \item[1:] quadratic format, converging the target\_length;
-!latex    \item[2:] exponential format, as short as possible;
-!latex    \ei
-!latex 
-!latex  \item \inputvar{weight\_bnorm = 1.0} \\
-!latex    \textit{weight for Bn error, if zero, turned off; seen in \link{bnormal}} 
-!latex 
-!latex  \item \inputvar{weight\_bharm = 0.0} \\
-!latex    \textit{weight for Bn Fourier harmonics error, if zero, turned off; seen in \link{bmnharm}} 
-!latex 
-!latex  \item \inputvar{weight\_tflux = 0.0} \\
-!latex    \textit{weight for toroidal flux error, if zero, turned off; seen in \link{torflux}} 
-!latex 
-!latex  \item \inputvar{target\_tflux = 0.0} \\
-!latex    \textit{target value for the toroidal flux, if zero, automatically set to initial $\Psi_{ave}$; 
-!latex    seen in \link{solvers}} 
-!latex 
-!latex  \item \inputvar{weight\_ttlen = 0.0} \\
-!latex    \textit{weight for coils length error, if zero, turned off; seen in \link{length}} 
-!latex 
-!latex  \item \inputvar{target\_length = 0.0} \\
-!latex    \textit{target value (or for normalization) of the coils length, if zero, automatically 
-!latex    set to initial actual length; seen in \link{rdcoils}} 
-!latex 
-!latex  \item \inputvar{weight\_specw = 0.0} \\
-!latex    \textit{weight for spectral condensation error, if zero, turned off; seen in \link{specwid}}; (not ready) 
-!latex 
-!latex  \item \inputvar{weight\_ccsep = 0.0} \\
-!latex    \textit{weight for coil-coil separation constraint, if zero, turned off; seen in \link{coilsep}}; (not ready) 
-!latex
-!latex  \item \inputvar{weight\_Inorm = 1.0} \\
-!latex    \textit{additional factor for normalizing currents; the larger, the more optimized for currents;
-!latex     seen in \link{rdcoils}} 
-!latex 
-!latex  \item \inputvar{weight\_Gnorm = 1.0} \\
-!latex    \textit{additional factor for normalizing geometric variables; the larger, the more optimized for
-!latex     coil shapes; seen in \link{rdcoils}} 
-!latex 
-!latex  \par \begin{tikzpicture} \draw[dashed] (0,1) -- (10,1); \end{tikzpicture}
-!latex 
-!latex  \item \inputvar{case\_optimize = 1} \\
-!latex    \textit{specify optimizing options.} \\
-!latex    \bi \vspace{-5mm}
-!latex    \item[-2:] check the 2nd derivatives; seen in\link{fdcheck}; (not ready)
-!latex    \item[-1:] check the 1st derivatives; seen in\link{fdcheck};
-!latex    \item[ 0:] no optimizations performed; 
-!latex    \item[ 1:] optimizing with algorithms using the gradient (DF and/or CG); seen in \link{solvers};
-!latex    \item[ 2:] optimizing with algorithms using the Hessian (HT and/or NT); seen in \link{solvers}; (not ready)
-!latex    \ei
-!latex 
-!latex  \item \inputvar{exit\_tol = 1.000D-04} \\
-!latex    \textit{additional creteria to judge if the cost function decreases significantly; 
-!latex     if $\frac{|\chi^2_i - \chi^2_{i-5}|}{\chi^2_i} < exit\_tol$, send an exit signal; seen in \link{solvers}}
-!latex 
-!latex  \item \inputvar{DF\_maxiter = 0} \\
-!latex    \textit{maximum iterations allowed for using Differential Flow (DF); if zero, turned of; seen in \link{descent}}
-!latex 
-!latex  \item \inputvar{DF\_xtol = 1.000D-08} \\
-!latex    \textit{relative error for ODE solver; seen in \link{descent}}
-!latex 
-!latex  \item \inputvar{DF\_tausta = 0.000D+00} \\
-!latex    \textit{starting value of $\tau$; usually $0.0$ is a good idea; seen in \link{descent}}
-!latex 
-!latex  \item \inputvar{DF\_tauend = 0.000D+00} \\
-!latex    \textit{ending value of $\tau$; the larger value of $\tau_{end} - \tau_{sta}$, the more optimized; seen in \link{descent}}
-!latex 
-!latex  \item \inputvar{CG\_maxiter = 0} \\
-!latex    \textit{maximum iterations allowed for using Conjugate Gradient (CG); if zero, turned of; seen in \link{congrad}}
-!latex 
-!latex  \item \inputvar{CG\_xtol = 1.000D-08} \\
-!latex    \textit{the stopping criteria of finding minimum; if $|\dd{\chi^2} / \dd{\vect{X}}|< CG\_xtol$, exit the optimization; seen in  \link{congrad}};
-!latex 
-!latex  \item \inputvar{CG\_wolfe\_c1 = 1.000D-04} \\
-!latex    \textit{c1 value in the strong wolfe condition for line search; usually $1.0\times 10^{-4}$; seen in  \link{congrad}};
-!latex 
-!latex  \item \inputvar{CG\_wolfe\_c2 = 0.1} \\
-!latex    \textit{c2 value in the strong wolfe condition for line search; if one CG step takes too long, try to increase c2, but remember $0<c1<c2<1$; seen in \link{congrad}};
-!latex 
-!latex  \item \inputvar{LM\_maxiter = 0} \\
-!latex    \textit{maximum iterations allowed for using Levenberg-Marquard (LM); if zero, turned of; seen in \link{lmalg}}
-!latex 
-!latex  \item \inputvar{LM\_xtol = 1.000D-08} \\
-!latex    \textit{the stopping criteria of finding minimum; if the relative error between two consecutivec iterates is at most xtol, the optimization terminates; seen in  \link{lmalg}};
-!latex 
-!latex  \item \inputvar{LM\_ftol = 1.000D-08} \\
-!latex    \textit{the stopping criteria of finding minimum; if both the actual and predicted relative reductions in the sum of squares are at most ftol, the optimization terminates; seen in  \link{lmalg}};
-!latex 
-!latex  \item \inputvar{LM\_factor = 1.000D+02} \\
-!latex    \textit{factor is a positive input variable used in determining the initial step bound. this bound is set to the product of factor and the euclidean norm of diag*x if nonzero, or else to factor itself. in most cases factor should lie in the interval (0.1,100.0). 100 is a generally recommended value. seen in  \link{lmalg}};
-!latex 
-!latex  \par \begin{tikzpicture} \draw[dashed] (0,1) -- (10,1); \end{tikzpicture}
-!latex 
-!latex  \item \inputvar{case\_postproc = 1} \\
-!latex    \textit{specify post-processing options.} \\
-!latex    \bi \vspace{-5mm}
-!latex    \item[ 0:] no extra post-processing;
-!latex    \item[ 1:] evaluate the present coils for each cost functions, coil curvature, coil-coil separation, and coil-plasma separation, Bn harmonics overlap, coil importance;
-!latex    \item[ 2:] diagnos; write SPEC input file;
-!latex    \item[ 3:] diagnos; Field-line tracing, axis locating and iota calculating;
-!latex    \item[ 4:] diagnos; Field-line tracing; Calculates Bmn coefficients in Boozer coordinates;
-!latex    \ei
-!latex 
-!latex  \item \inputvar{update\_plasma = 0} \\
-!latex    \textit{if euqals 1, write example.plasma file with updated Bn coefficients};
-!latex 
-!latex  \item \inputvar{pp\_phi = 0.0} \\
-!latex    \textit{Toroidal angle $\phi = pp\_phi * \pi$ for filed-line tracing, axis locating, etc.}
-!latex 
-!latex  \item \inputvar{pp\_raxis = 0.0} \\
-!latex        \inputvar{pp\_zaxis = 0.0} \\
-!latex    \textit{Initial guess for axis positions (raxis, zaxis). 
-!latex            If both zero, will be overide to ($\frac{r_1+r_2}{2}, \frac{z_1+z_2}{2}$), 
-!latex            where $r_1 = R(0, \phi)$ , $r_2=R(\pi, \phi)$ (likewise for $z_1, z_2$.)}
-!latex 
-!latex  \item \inputvar{pp\_rmax = 0.0} \\
-!latex         \inputvar{pp\_zmax = 0.0} \\
-!latex    \textit{Upper bounds for field-line tracing. 
-!latex            If both zero, will be overide to ($r_1, z_1$).}
-!latex 
-!latex  \item \inputvar{pp\_ns = 10} \\
-!latex    \textit{Number of surfaces for filed-line tracing, axis locating, etc.
-!latex            Starting points on $\phi$ will be interpolated between 
-!latex            ($r_{axis}, z_{axis}$) and ($r_{max}, z_{max}$).}
-!latex 
-!latex  \item \inputvar{pp\_maxiter = 1000} \\
-!latex    \textit{Cycles for tracing the field-line, representing the dots for each field-line in Poincare plots.}
-!latex 
-!latex  \item \inputvar{pp\_tol = 1.0E-6} \\
-!latex    \textit{Tolerance of ODE solver used for tracing field-lines.}
-!latex 
-!latex  \item \inputvar{save\_freq = 1} \\
-!latex    \textit{frequency for writing output files; should be positive; seen in  \link{solvers}};
-!latex 
-!latex  \item \inputvar{save\_coils = 0} \\
-!latex    \textit{flag for indicating whether write \emph{example.focus} and \emph{example.coils}; seen in  \link{saving}};
-!latex 
-!latex  \item \inputvar{save\_harmonics = 0} \\
-!latex    \textit{flag for indicating whether write \emph{example.harmonics}; seen in  \link{saving}};
-!latex 
-!latex  \item \inputvar{save\_filaments = 0} \\
-!latex    \textit{flag for indicating whether write \emph{.example.filaments.xxxxxx}; seen in  \link{saving}};
-!latex  \ei
+   if(myid == 0) write(ounit, *) "---------------------  FAMUS ", version, "------------------------------"
+   if(myid == 0) write(ounit,'("famus   : Begin execution with ncpu =",i5)') ncpu
+ 
+   !-------------read input namelist----------------------------------------------------------------------
+   if(myid == 0) then ! only the master node reads the input; 25 Mar 15;
+       call getarg(1,ext) ! get argument from command line
+       select case(trim(ext))
+       case ( '-h', '--help' )
+           write(ounit,*)'-------HELP INFORMATION--------------------------'
+           write(ounit,*)' Usage: xfocus <options> input_file'
+           write(ounit,*)'    <options>'
+           write(ounit,*)'     --init / -i  :  Write an example input file'
+           write(ounit,*)'     --help / -h  :  Output help message'
+           write(ounit,*)'-------------------------------------------------'
+           call MPI_ABORT( MPI_COMM_FAMUS, 0, ierr )
+       case ( '-i', '--init' )
+           call write_namelist ! in initial.h
+       case default
+           index_dot = INDEX(ext,'.input')
+           IF (index_dot .gt. 0)  ext = ext(1:index_dot-1)
+           write(ounit, '("initial : machine_prec   = ", ES12.5, " ; sqrtmachprec   = ", ES12.5)') machprec, sqrtmachprec
+#ifdef DEBUG
+           write(ounit, '("DEBUG info: extension from command line is "A)') trim(ext)
+#endif
+       end select
+   endif
+ 
+   ClBCAST( ext,  100,  0 )
+   inputfile = trim(ext)//".input"
+   
+   call read_namelist(inputfile)
+ 
+   return
+ 
+end subroutine initial
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-subroutine initial
-
-  use globals
-  use ncsx_ports_mod, only: ncsx_ports, ncsx_ports_on
-  implicit none
-  include "mpif.h"
-
-  LOGICAL :: exist
-  INTEGER :: icpu, index_dot, ports_nml_stat
-
-  !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-  machprec = epsilon(pi)         ! get the machine precision
-  sqrtmachprec = sqrt(machprec)  ! sqrt of machine precision
-  vsmall = ten * machprec        ! very small number
-  small = thousand * machprec    ! small number
-!!$
-!!$  machprec = 1.0E-32
-!!$  sqrtmachprec = 1.0E-32
-!!$  vsmall = 1E-16
-!!$  small = 1E-10
-  
-  !-------------read input namelist----------------------------------------------------------------------
-  if( myid == 0 ) then ! only the master node reads the input; 25 Mar 15;
-     call getarg(1,ext) ! get argument from command line
-
-     select case(trim(ext))
-     case ( '-h', '--help' )
-        write(ounit,*)'-------HELP INFORMATION--------------------------'
-        write(ounit,*)' Usage: xfocus <options> input_file'
-        write(ounit,*)'    <options>'
-        write(ounit,*)'     --init / -i  :  Write an example input file'
-        write(ounit,*)'     --help / -h  :  Output help message'
-        write(ounit,*)'-------------------------------------------------'
-        error = 1
-     case ( '-i', '--init' )
-        call write_focus_namelist ! in initial.h
-     case default
-        index_dot = INDEX(ext,'.input')
-        IF (index_dot .gt. 0)  ext = ext(1:index_dot-1)
-        write(ounit, '("initial : machine_prec   = ", ES12.5, " ; sqrtmachprec   = ", ES12.5   &
-             & )') machprec, sqrtmachprec
+subroutine read_namelist(filename)
+   use globals, only : myid, ncpu, focusin, ounit, runit, MPI_COMM_FAMUS
+   use ncsx_ports_mod, only: ncsx_ports, ncsx_ports_on
+   use mpi
+   implicit none
+ 
+   CHARACTER(100), INTENT(IN) :: filename
+ 
+   LOGICAL :: exist
+   INTEGER :: icpu, ierr, ports_nml_stat
+    
+   if( myid == 0 ) then
+    inquire(file=trim(filename), EXIST=exist) ! inquire if inputfile existed;
+    FATAL( initial, .not.exist, input file ext.input not provided )
 #ifdef DEBUG
-        write(ounit, '("DEBUG info: extension from command line is "A)') trim(ext)
+    write(ounit, '("        : read namelist from ", A)') trim(filename)
 #endif
-     end select
-  endif
-
-  IlBCAST( error, 1, 0)
-  if (error /= 0) then
-     call MPI_FINALIZE(ierr)
-     stop
-  endif
-
-  ClBCAST( ext,  100,  0 )
-  inputfile = trim(ext)//".input"
-
-  !-------------read the namelist-----------------------------------------------------------------------
-  if( myid == 0 ) then
-     inquire(file=trim(inputfile), EXIST=exist) ! inquire if inputfile existed;
-     FATAL( initial, .not.exist, input file ext.input not provided )
-  endif
-
-  do icpu = 1, ncpu
-     call MPI_BARRIER( MPI_COMM_WORLD, ierr )
-     if (myid == icpu-1) then                              ! each cpu read the namelist in turn;
-        open(runit, file=trim(inputfile), status="old", action='read')
+   endif
+ 
+   do icpu = 1, ncpu
+      call MPI_BARRIER( MPI_COMM_FAMUS, ierr )
+      if (myid == icpu-1) then                              ! each cpu read the namelist in turn;
+        open(runit, file=trim(filename), status="old", action='read')
         read(runit, focusin)
 
         ! turn on ncsx_ports functions only if namelist is found:
@@ -360,13 +98,25 @@ subroutine initial
         if (ports_nml_stat == 0) ncsx_ports_on = .true.   
 
         close(runit)
-     endif ! end of if( myid == 0 )
-  enddo
+      endif ! end of if( myid == 0 )
+   enddo
+ 
+   return
+end subroutine read_namelist
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+subroutine check_input
+  use globals
+  use mpi
+  implicit none
+
+  LOGICAL :: exist
 
   !-------------output files name ---------------------------------------------------------------------------
 
   hdf5file   = "focus_"//trim(ext)//".h5"
-  out_focus  = trim(ext)//".focus"
+  out_famus  = trim(ext)//".focus"
   out_coils  = trim(ext)//".coils"
   out_harm   = trim(ext)//".harmonics"
   out_plasma = trim(ext)//".plasma"
@@ -578,7 +328,7 @@ subroutine initial
      write(ounit, '("outputs : HDF5 outputs           are saved in : ", A)') trim(hdf5file)
      if (save_coils /= 0) then
         write(ounit, '("outputs : Optimizated coils      are saved in : ", A, " ; ", A)') &
-             trim(out_focus), trim(out_coils)
+             trim(out_famus), trim(out_coils)
      endif
      if (weight_bharm > machprec) then
         write(ounit, '("outputs : Realized Bn harmonics  are saved in : ", A)') trim(out_harm)
@@ -590,9 +340,6 @@ subroutine initial
   endif
 
   ClBCAST( input_coils, 100, 0 )
-
-  FATAL( initial, ncpu >= 1000 , too macy cpus, modify nodelabel)
-  write(nodelabel,'(i3.3)') myid ! nodelabel is global; 30 Oct 15;
 
   ! initialize iteration and total iterations;
   iout = 1 ; Nouts = 1
@@ -610,18 +357,20 @@ subroutine initial
  !tmpw_specw = weight_specw
   tmpw_cssep = weight_cssep
 
-  call MPI_BARRIER( MPI_COMM_WORLD, ierr )
+  call MPI_BARRIER( MPI_COMM_FAMUS, ierr )
 
   return
 
-end subroutine initial
+end subroutine check_input
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-SUBROUTINE write_focus_namelist
+SUBROUTINE write_namelist
   use globals
+  use ncsx_ports_mod, only: ncsx_ports
+  use mgrid_mod
+  use mpi
   implicit none
-  include "mpif.h"
 
   LOGICAL :: exist
   CHARACTER(LEN=100) :: example = 'example.input'
@@ -631,9 +380,11 @@ SUBROUTINE write_focus_namelist
   write(ounit, *) 'Writing an template input file in ', trim(example)
   open(wunit, file=trim(example), status='unknown', action='write')
   write(wunit, focusin)
+  write(wunit, mgrid)
+  write(wunit, ncsx_ports)
   close(wunit)
 
-  error = 1
+  call MPI_ABORT( MPI_COMM_FAMUS, 0, ierr )
 
   return
-END SUBROUTINE write_focus_namelist
+END SUBROUTINE write_namelist

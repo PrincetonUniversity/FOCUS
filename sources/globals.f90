@@ -4,7 +4,7 @@
 !latex \briefly{Defines input namelists and global variables, details of input namelist can be viwed at 
 !latex \link{initial}.}
 
-!latex \calledby{\link{focus}}
+!latex \calledby{\link{FAMUS}}
 !latex \calls{\link{initial}}
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='dp_v1.1.08' ! version number
+  CHARACTER(LEN=10), parameter :: version='dp_v1.1.09' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -70,13 +70,13 @@ module globals
   CHARACTER(LEN=100)   :: inputfile ! input namelist
   CHARACTER(LEN=100)   :: hdf5file  ! hdf5 file
   CHARACTER(LEN=100)   :: out_coils ! output ext.coils file
-  CHARACTER(LEN=100)   :: out_focus ! output ext.focus file
+  CHARACTER(LEN=100)   :: out_FAMUS ! output ext.FAMUS file
   CHARACTER(LEN=100)   :: out_harm  ! output harmonics file
   CHARACTER(LEN=100)   :: out_plasma  ! updated plasma boundary
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-!latex \subsection{Input namelist: \type{focusin}}
+!latex \subsection{Input namelist: \type{FAMUSin}}
   INTEGER              :: IsQuiet        =  -1        
   INTEGER              :: IsSymmetric    =   0 
         
@@ -252,9 +252,8 @@ module globals
 !latex  \subsection{MPI stuffs}
   INTEGER, PARAMETER   :: master=0
   INTEGER              :: myid, ncpu, myworkid, color, masterid, nmaster, nworker, error=0
-  INTEGER              :: MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS 
+  INTEGER              :: MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS, MPI_COMM_FAMUS
   REAL                 :: machprec, vsmall, small, sqrtmachprec
-  CHARACTER            :: nodelabel*3
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

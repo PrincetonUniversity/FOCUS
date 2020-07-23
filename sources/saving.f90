@@ -40,10 +40,10 @@ subroutine saving
 
 
 
-  !--------------------------write focus coil file-----------------------------------------
+  !--------------------------write FAMUS coil file-----------------------------------------
   if( save_coils == 1 ) then
      if (myid==0) then
-        open( wunit, file=trim(out_focus), status="unknown", form="formatted")
+        open( wunit, file=trim(out_FAMUS), status="unknown", form="formatted")
         write(wunit, '("Total number of dipoles, momentq")') 
         write(wunit, '(2X,I8, 2X, I4)') Ncoils_total, momentq ! note the fixed coils are not written
 #ifdef TOPO
@@ -53,11 +53,11 @@ subroutine saving
         close(wunit)
      endif
 
-     call MPI_barrier( MPI_COMM_WORLD, ierr )
+     call MPI_barrier( MPI_COMM_FAMUS, ierr )
 
      do icpu = 0, ncpu-1
         if (myid/=0 .and. myid == icpu) then                 ! each cpu write the data independently
-           open( wunit, file=trim(out_focus), status="old", position="append", action="write")
+           open( wunit, file=trim(out_FAMUS), status="old", position="append", action="write")
 
            do icoil = 1, Ncoils
 #ifdef TOPO
@@ -102,7 +102,7 @@ subroutine saving
            close(wunit)
 1000       format(9999ES23.15)
         endif
-        call MPI_barrier( MPI_COMM_WORLD, ierr )
+        call MPI_barrier( MPI_COMM_FAMUS, ierr )
      enddo
   endif
 
@@ -324,7 +324,7 @@ SUBROUTINE write_plasma
   use globals, only : dp, zero, half, two, pi, pi2, myid, ncpu, ounit, wunit, ext, &
                       Nfou, Nfp, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
                       Nteta, Nzeta, surf, Nfp_raw, bnorm, sqrtmachprec, out_plasma, &
-                      discretefactor, shift, IsSymmetric
+                      discretefactor, shift, IsSymmetric, MPI_COMM_FAMUS
   
   implicit none  
   include "mpif.h"

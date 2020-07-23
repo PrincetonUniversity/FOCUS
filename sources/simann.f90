@@ -125,7 +125,7 @@ SUBROUTINE sa(n, x, max, rt, eps, ns, nt, neps, maxevl, lb, ub, c, iprint,  &
 !  A very quick (perhaps too quick) overview of SA:
 !     SA tries to find the global optimum of an N dimensional function.
 !  It moves both up and downhill and as the optimization process
-!  proceeds, it focuses on the most promising area.
+!  proceeds, it FAMUSes on the most promising area.
 !     To start, it randomly chooses a trial point within the step length
 !  VM (a vector of length N) of the user selected starting point. The
 !  function is evaluated at this trial point and its value is compared
@@ -144,7 +144,7 @@ SUBROUTINE sa(n, x, max, rt, eps, ns, nt, neps, maxevl, lb, ub, c, iprint,  &
 !  T(i+1) = RT*T(i) where i is the ith iteration. Thus, as T declines,
 !  downhill moves are less likely to be accepted and the percentage of
 !  rejections rise. Given the scheme for the selection for VM, VM falls.
-!  Thus, as T declines, VM falls and SA focuses upon the most promising
+!  Thus, as T declines, VM falls and SA FAMUSes upon the most promising
 !  area for optimization.
 
 !  The importance of the parameter T:
@@ -216,7 +216,7 @@ SUBROUTINE sa(n, x, max, rt, eps, ns, nt, neps, maxevl, lb, ub, c, iprint,  &
 !    UB - The upper bound for the allowable solution variables. (DP(N))
 !         If the algorithm chooses X(I) .LT. LB(I) or X(I) .GT. UB(I),
 !         I = 1, N, a point is from inside is randomly selected. This
-!         This focuses the algorithm on the region inside UB and LB.
+!         This FAMUSes the algorithm on the region inside UB and LB.
 !         Unless the user wishes to concentrate the search to a particular
 !         region, UB and LB should be set to very large positive
 !         and negative values, respectively.  Note that the starting
@@ -942,14 +942,14 @@ END SUBROUTINE simann
 
 
 SUBROUTINE fcn(n, theta, h)
-  USE globals, ONLY: dp, myid, ounit, ierr, chi
+  USE globals, ONLY: dp, myid, ounit, ierr, chi, MPI_COMM_FAMUS
   USE MPI
   IMPLICIT NONE
   INTEGER, INTENT(IN)    :: n
   REAL (dp), INTENT(IN)  :: theta(:)
   REAL (dp), INTENT(OUT) :: h
 
-  call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
+  call MPI_BARRIER( MPI_COMM_FAMUS, ierr ) ! wait all cpus;
   call unpacking(theta(1:n))
   call costfun(0)
   h = chi
