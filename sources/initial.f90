@@ -5,6 +5,7 @@
 ! check_input
 ! read_namelist
 ! write_namelist
+! mute
 !
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 subroutine initial
@@ -24,12 +25,6 @@ subroutine initial
    call MPI_COMM_RANK( MPI_COMM_FAMUS, myid, ierr )
    call MPI_COMM_SIZE( MPI_COMM_FAMUS, ncpu, ierr )
  
-  !-------------machine constants -----------------------------------------------------------------------
-   machprec = epsilon(pi)         ! get the machine precision
-   sqrtmachprec = sqrt(machprec)  ! sqrt of machine precision
-   vsmall = ten * machprec        ! very small number
-   small = thousand * machprec    ! small number
-
    if(myid == 0) write(ounit, *) "---------------------  FAMUS ", version, "------------------------------"
    if(myid == 0) write(ounit,'("famus   : Begin execution with ncpu =",i5)') ncpu
  
@@ -50,7 +45,6 @@ subroutine initial
        case default
            index_dot = INDEX(ext,'.input')
            IF (index_dot .gt. 0)  ext = ext(1:index_dot-1)
-           write(ounit, '("initial : machine_prec   = ", ES12.5, " ; sqrtmachprec   = ", ES12.5)') machprec, sqrtmachprec
 #ifdef DEBUG
            write(ounit, '("DEBUG info: extension from command line is "A)') trim(ext)
 #endif
@@ -113,6 +107,17 @@ subroutine check_input
 
   LOGICAL :: exist
 
+  !-------------machine constants -----------------------------------------------------------------------
+  machprec = epsilon(pi)         ! get the machine precision
+  sqrtmachprec = sqrt(machprec)  ! sqrt of machine precision
+  vsmall = ten * machprec        ! very small number
+  small = thousand * machprec    ! small number
+
+  if (myid == master) then
+   write(ounit, '("initial : machine_prec   = ", ES12.5, " ; sqrtmachprec   = ", ES12.5)') & 
+      machprec, sqrtmachprec
+  endif 
+  
   !-------------output files name ---------------------------------------------------------------------------
 
   hdf5file   = "focus_"//trim(ext)//".h5"
@@ -388,3 +393,26 @@ SUBROUTINE write_namelist
 
   return
 END SUBROUTINE write_namelist
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+subroutine mute(action)
+   use globals, only: ounit
+   implicit none 
+ 
+   INTEGER,intent(in) :: action
+   INTEGER, parameter :: iopen = 1, iclose = 0
+   INTEGER            :: ios
+   CHARACTER(LEN=*), parameter  :: tmp_out = 'tmp.famus_output' 
+ 
+   ! open a tmp file for screen output
+   if (action == iopen) then
+     ounit = 37 ! something not used
+     open(ounit, file=tmp_out, status="unknown", action="write", iostat=ios) ! create a scratch file?
+     if (ios.ne.0) print *, "something wrong with open a tmp file in FAMUS.mute. IOSTAT=", ios 
+   else
+     close(ounit)
+     ounit = 6 ! recover to screen output
+   endif
+   return
+ end subroutine mute
