@@ -101,9 +101,9 @@ module globals
   INTEGER              :: case_bnormal   =   0
   INTEGER              :: case_length    =   1
   INTEGER              :: case_curv      =   1 
-  REAL                 :: curv_alpha     =   1.000D-01
+  REAL                 :: curv_alpha     =   0.000D+00
   REAL                 :: curv_c         =   1.000D-04
-  REAL                 :: k0             =   0.000D+00
+  REAL                 :: k0             =   1.000D+01
   REAL                 :: weight_bnorm   =   1.000D+00
   INTEGER              :: bharm_jsurf    =   0
   REAL                 :: weight_bharm   =   0.000D+00
@@ -125,6 +125,12 @@ module globals
   INTEGER              :: penfun_ccsep   =   1
   REAL                 :: ccsep_beta     =   2.000D+00
   INTEGER              :: ccsep_skip     =   0
+  INTEGER              :: penfun_curv    =   1
+  REAL                 :: k1             =   0.000D+00
+  REAL                 :: curv_beta      =   2.000D+00
+  REAL                 :: curv_gamma     =   2.000D+00
+  REAL                 :: curv_sigma     =   0.000D+00
+  INTEGER              :: k1_len         =   0
 
   INTEGER              :: case_optimize  =   0
   REAL                 :: exit_tol       =   1.000D-04
@@ -215,6 +221,12 @@ module globals
                         weight_ccsep   , &
                         r_delta        , &
                         ccsep_alpha    , &
+                        penfun_curv    , &
+                        k1             , &
+                        curv_beta      , &
+                        curv_gamma     , &
+                        curv_sigma     , &
+                        k1_len         , &
                         weight_inorm   , &
                         weight_gnorm   , &
                         weight_mnorm   , &
