@@ -168,7 +168,11 @@ subroutine CurvDeriv0(icoil,curvRet)
      enddo
      curvRet = pi2*curvRet/NS
   elseif( case_curv == 4 ) then ! penalty plus complexity 
-     if ( k1_len .eq. 1 ) k1_use = pi2/coil(icoil)%Lo
+     if ( k1_len .eq. 1 ) then
+        k1_use = pi2/coil(icoil)%Lo
+     else
+        k1_use = k1
+     endif
      do kseg = 0,NS-1
         curv_hold = 0.0
         if ( curvv(kseg) > k0 ) then
@@ -318,7 +322,11 @@ subroutine CurvDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a co
            curvHold = f1/f2
            penCurv = 0.0
            curv_deriv = 0.0
-           if ( k1_len .eq. 1 ) k1_use = pi2/coil(icoil)%Lo
+           if ( k1_len .eq. 1 ) then
+              k1_use = pi2/coil(icoil)%Lo
+           else
+              k1_use = k1
+           endif
            if ( penfun_curv .eq. 1 ) then
               if ( curvHold > k0 ) then
                  hypc = 0.5*exp( curv_alpha*(curvHold-k0) ) + 0.5*exp( -1.0*curv_alpha*(curvHold-k0) )
