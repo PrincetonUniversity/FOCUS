@@ -530,14 +530,14 @@ subroutine output (mark)
 
   use globals, only: dp, zero, ounit, myid, ierr, astat, iout, Nouts, Ncoils, save_freq, Tdof, &
        coil, coilspace, FouCoil, chi, t1E, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
-       evolution, xdof, DoF, exit_tol, exit_signal, sumDE, curv, MPI_COMM_FOCUS
+       evolution, xdof, DoF, exit_tol, exit_signal, sumDE, curv, MPI_COMM_FOCUS,coil_type_spline,Splines
 
   implicit none  
   include "mpif.h"
 
   REAL, INTENT( IN ) :: mark
 
-  INTEGER            :: idof, NF, icoil
+  INTEGER            :: idof, NF, icoil,NCP
 
 
   iout = iout + 1
@@ -584,6 +584,9 @@ subroutine output (mark)
            coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%zs(1:NF) ; idof = idof + NF
 !!$        case default
 !!$           FATAL(output, .true., not supported coil types)
+        case (coil_type_spline)
+           NCP = Splines(icoil)%NCP
+           coilspace(iout, idof+1:idof+3*NCP) = Splines(icoil)%Cpoints(0:3*NCP-1) ; idof = idof + 3*NCP
         end select
      enddo
 !!$     FATAL( output , idof .ne. Tdof, counting error in restart )

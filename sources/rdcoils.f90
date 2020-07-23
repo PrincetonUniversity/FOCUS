@@ -54,6 +54,19 @@
 !latex      .
 !latex      .
 !latex      .
+!latex#------------coil_type_spline--------------------------------
+!latex   #coil_type  symm   coil_name
+!latex       5   0  Mod_001   
+!latex   #Nseg        current         Ifree         Length         Lfree  target_length
+!latex     128  9.844910899889484E+05     1  5.889288927667147E+00     1  1.000000000000000E+00
+!latex   #NCP 
+!latex    13    
+!latex   #Vector of knots
+!latex   -0.3 -0.2 -0.1 0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3
+!latex   #Control Points Coordinates for coils ( x; y; z)  
+!latex    0.58   0.4354 0.5464 0.242  0.456546 0.1414 0.465 0.23455 0.3636 0.75746 0.58 0.4354 0.5464
+!latex    0.4353 1.3453 2.356  0.3453 0.3453   0.23444 2.454 5.2453 2.5654 0.53453 0.4353 1.3453 2.356 
+!latex    -1.243 2.242  0.234  1.25   2.245    0.68876 1.45  4.4543 1.3445 6.3545  -1.243 2.242  0.234
 !latex  
 !latex  \end{raw}
 !latex  \ei
@@ -198,13 +211,14 @@ subroutine rdcoils
      allocate( FouCoil(1:Ncoils) )
      allocate(    coil(1:Ncoils) )
      allocate(     DoF(1:Ncoils) )
+     allocate(  Splines(1:Ncoils) )
      ! master CPU read the coils
      if( myid==0 ) then
         do icoil = 1, Ncoils
            read( runit,*)
            read( runit,*)
            read( runit,*) coil(icoil)%type, coil(icoil)%symm, coil(icoil)%name
-           FATAL( rdcoils04, coil(icoil)%type < 1 .or. coil(icoil)%type > 3, illegal )
+           FATAL( rdcoils04, (coil(icoil)%type < 1 .or. coil(icoil)%type > 3) .and. (coil(icoil)%type .NE. coil_type_spline), illegal )
            FATAL( rdcoils05, coil(icoil)%symm < 0 .or. coil(icoil)%symm > 2, illegal )
            if(coil(icoil)%type == 1) then  ! Fourier representation
               read( runit,*)
@@ -239,6 +253,37 @@ subroutine rdcoils
               read( runit,*)
               read( runit,*) coil(icoil)%Ic, coil(icoil)%I, coil(icoil)%Lc, coil(icoil)%Bz 
               coil(icoil)%symm = 0 ! automatic reset to 0; might not be necessary; 2020/01/17
+           else if(coil(icoil)%type == coil_type_spline) then  ! Spline representation
+              read( runit,*)
+              read( runit,*) coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, &
+                   & coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo
+              FATAL( rdcoils06, coil(icoil)%NS < 0                        , illegal )
+              FATAL( rdcoils07, coil(icoil)%Ic < 0 .or. coil(icoil)%Ic > 1, illegal )
+              FATAL( rdcoils08, coil(icoil)%Lc < 0 .or. coil(icoil)%Lc > 1, illegal )
+              FATAL( rdcoils09, coil(icoil)%L  < zero                     , illegal )
+              FATAL( rdcoils10, coil(icoil)%Lo < zero                     , illegal )
+              read( runit,*)
+              read( runit,*) Splines(icoil)%NCP
+	      Splines(icoil)%NT = Splines(icoil)%NCP + 4
+              FATAL( rdcoils12, Splines(icoil)%NCP  < 0                    , illegal )
+              FATAL( rdcoils12_2, Splines(icoil)%NT  < 0                     , illegal )
+              FATAL( rdcoils12_3, Splines(icoil)%NT .NE. Splines(icoil)%NCP +4, illegal )
+	      FATAL( rdcoils12_4, Splines(icoil)%NT < 10, illegal )
+              SALLOCATE( Splines(icoil)%vect, (0:Splines(icoil)%NT-1), zero )
+              SALLOCATE( Splines(icoil)%eval_points, (0:coil(icoil)%NS-1), zero )
+              SALLOCATE( Splines(icoil)%Cpoints, (0:Splines(icoil)%NCP * 3 - 1 ), zero )
+              read( runit,*)
+              read( runit,*) Splines(icoil)%vect(0:Splines(icoil)%NT-1)
+	      Splines(icoil)%vect(Splines(icoil)%NT-3) = 1.0 + Splines(icoil)%vect(4) - Splines(icoil)%vect(3)
+	      Splines(icoil)%vect(Splines(icoil)%NT-2) = 1.0 + Splines(icoil)%vect(5) - Splines(icoil)%vect(3)
+	      Splines(icoil)%vect(Splines(icoil)%NT-1) = 1.0 + Splines(icoil)%vect(6) - Splines(icoil)%vect(3)
+	      Splines(icoil)%vect(0) =  Splines(icoil)%vect(Splines(icoil)%NT-7) - Splines(icoil)%vect(Splines(icoil)%NT-4)
+	      Splines(icoil)%vect(1) =  Splines(icoil)%vect(Splines(icoil)%NT-6) - Splines(icoil)%vect(Splines(icoil)%NT-4)
+	      Splines(icoil)%vect(2) =  Splines(icoil)%vect(Splines(icoil)%NT-5) - Splines(icoil)%vect(Splines(icoil)%NT-4)	
+              read( runit,*)
+              read( runit,*) Splines(icoil)%Cpoints(0:Splines(icoil)%NCP-1)
+              read( runit,*) Splines(icoil)%Cpoints(Splines(icoil)%NCP:Splines(icoil)%NCP*2-1)
+              read( runit,*) Splines(icoil)%Cpoints(Splines(icoil)%NCP*2:Splines(icoil)%NCP*3-1)
            else
               STOP " wrong coil type in rdcoils"
               call MPI_ABORT(MPI_COMM_FOCUS, 1, ierr)
@@ -295,6 +340,25 @@ subroutine rdcoils
            if(coil(icoil)%Ic == 0) Nfixcur = Nfixcur + 1
            ! if(coil(icoil)%Lc == 0) Nfixgeo = Nfixgeo + 1
            Nfixgeo = Nfixgeo + 1 ! always treat as a fixed geometry
+        else if (coil(icoil)%type == coil_type_spline) then
+           IlBCAST( coil(icoil)%NS           , 1        ,  0 )
+           RlBCAST( coil(icoil)%I            , 1        ,  0 )
+           IlBCAST( coil(icoil)%Ic           , 1        ,  0 )
+           RlBCAST( coil(icoil)%L            , 1        ,  0 )
+           IlBCAST( coil(icoil)%Lc           , 1        ,  0 )
+           RlBCAST( coil(icoil)%Lo           , 1        ,  0 )
+           IlBCAST( Splines(icoil)%NCP        , 1        ,  0 )
+           IlBCAST( Splines(icoil)%NT         , 1        ,  0 )
+           if (.not. allocated(Splines(icoil)%vect) ) then
+              SALLOCATE( Splines(icoil)%vect, (0:Splines(icoil)%NT-1), zero )
+              SALLOCATE( Splines(icoil)%eval_points, (0:coil(icoil)%NS-1), zero )
+              SALLOCATE( Splines(icoil)%Cpoints, (0:Splines(icoil)%NCP * 3 -1 ), zero )
+           endif
+           RlBCAST( Splines(icoil)%vect(0:Splines(icoil)%NT -1) , Splines(icoil)%NT ,  0 )
+           RlBCAST( Splines(icoil)%eval_points(0:coil(icoil)%NS-1) , coil(icoil)%NS ,  0 )
+           RlBCAST( Splines(icoil)%Cpoints(0:Splines(icoil)%NCP*3 - 1) , Splines(icoil)%NCP*3 ,  0 )
+           if(coil(icoil)%Ic == 0) Nfixcur = Nfixcur + 1
+           if(coil(icoil)%Lc == 0) Nfixgeo = Nfixgeo + 1
         else
            STOP " wrong coil type in rdcoils"
            call MPI_ABORT(MPI_COMM_FOCUS, 1, ierr)
@@ -474,13 +538,13 @@ subroutine discoil(ifirst)
 ! if ifirst = 1, it will update all the coils; otherwise, only update free coils;
 ! date: 20170314
 !---------------------------------------------------------------------------------------------
-  use globals, only: dp, zero, pi2, myid, ounit, coil, FouCoil, Ncoils, DoF, MPI_COMM_FOCUS
+  use globals, only: dp, zero, pi2, myid, ounit, coil, FouCoil, Ncoils, DoF, MPI_COMM_FOCUS,Splines,coil_type_spline
   use mpi
   implicit none
 
   INTEGER, intent(in) :: ifirst
 
-  INTEGER          :: icoil, iseg, mm, NS, NF, ierr, astat, ip
+  INTEGER          :: icoil, iseg, mm, NS, NCP, NF, ierr, astat, ip
   REAL             :: tt
   !-------------------------------------------------------------------------------------------
   do icoil = 1, Ncoils
@@ -531,6 +595,54 @@ subroutine discoil(ifirst)
 
         case(3)
 
+        case( coil_type_spline )
+           ! reset to zero for all the coils;
+           coil(icoil)%xx = zero
+           coil(icoil)%yy = zero
+           coil(icoil)%zz = zero
+           coil(icoil)%xt = zero
+           coil(icoil)%yt = zero
+           coil(icoil)%zt = zero
+           coil(icoil)%xa = zero
+           coil(icoil)%ya = zero
+           coil(icoil)%za = zero
+           NS = coil(icoil)%NS
+           NCP = Splines(icoil)%NCP  ! allias variable for simplicity;
+
+	   !-------------------------enforce periodicity----------------------------------------------
+	   Splines(icoil)%Cpoints(NCP-3) = Splines(icoil)%Cpoints(0)
+	   Splines(icoil)%Cpoints(2*NCP-3) = Splines(icoil)%Cpoints(NCP) 
+	   Splines(icoil)%Cpoints(3*NCP-3) = Splines(icoil)%Cpoints(2*NCP)  
+
+	   Splines(icoil)%Cpoints(NCP-2) = Splines(icoil)%Cpoints(1)
+	   Splines(icoil)%Cpoints(2*NCP-2) = Splines(icoil)%Cpoints(NCP+1) 
+	   Splines(icoil)%Cpoints(3*NCP-2) = Splines(icoil)%Cpoints(2*NCP+1)  
+
+	   Splines(icoil)%Cpoints(NCP-1) = Splines(icoil)%Cpoints(2)
+	   Splines(icoil)%Cpoints(2*NCP-1) = Splines(icoil)%Cpoints(NCP+2) 
+	   Splines(icoil)%Cpoints(3*NCP-1) = Splines(icoil)%Cpoints(2*NCP+2)  
+           !-------------------------calculate coil data-------------------------------------------------  
+           do iseg=0,NS-1
+                    coil(icoil)%xx(iseg) = SUM (Splines(icoil)%Cpoints(0:NCP-1)*Splines(icoil)%basis_3(iseg,0:NCP-1))
+                    coil(icoil)%yy(iseg) = SUM (Splines(icoil)%Cpoints(NCP:2*NCP-1)*Splines(icoil)%basis_3(iseg,0:NCP-1))
+                    coil(icoil)%zz(iseg) = SUM (Splines(icoil)%Cpoints(2*NCP:3*NCP-1)*Splines(icoil)%basis_3(iseg,0:NCP-1))
+                    coil(icoil)%xt(iseg) = SUM (Splines(icoil)%Cpoints(0:NCP-1)*Splines(icoil)%db_dt(iseg,0:NCP-1))
+                    coil(icoil)%yt(iseg) = SUM (Splines(icoil)%Cpoints(NCP:2*NCP-1)*Splines(icoil)%db_dt(iseg,0:NCP-1))
+                    coil(icoil)%zt(iseg) = SUM (Splines(icoil)%Cpoints(2*NCP:3*NCP-1)*Splines(icoil)%db_dt(iseg,0:NCP-1))
+                    coil(icoil)%xa(iseg) = SUM (Splines(icoil)%Cpoints(0:NCP-1)*Splines(icoil)%db_dt_2(iseg,0:NCP-1))
+                    coil(icoil)%ya(iseg) = SUM (Splines(icoil)%Cpoints(NCP:2*NCP-1)*Splines(icoil)%db_dt_2(iseg,0:NCP-1))
+                    coil(icoil)%za(iseg) = SUM (Splines(icoil)%Cpoints(2*NCP:3*NCP-1)*Splines(icoil)%db_dt_2(iseg,0:NCP-1))
+	  enddo	
+
+	  coil(icoil)%xx(NS) = coil(icoil)%xx(0)
+ 	  coil(icoil)%yy(NS) = coil(icoil)%yy(0)
+	  coil(icoil)%zz(NS) = coil(icoil)%zz(0)
+	  coil(icoil)%xt(NS) = coil(icoil)%xt(0)
+	  coil(icoil)%yt(NS) = coil(icoil)%yt(0)
+	  coil(icoil)%zt(NS) = coil(icoil)%zt(0)
+	  coil(icoil)%xa(NS) = coil(icoil)%xa(0)
+	  coil(icoil)%ya(NS) = coil(icoil)%ya(0)
+	  coil(icoil)%za(NS) = coil(icoil)%za(0)
         case default
            FATAL(discoil, .true., not supported coil types)
         end select

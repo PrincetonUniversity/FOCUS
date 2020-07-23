@@ -28,7 +28,7 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
 ! Be careful if coils have different resolutions.
 !------------------------------------------------------------------------------------------------------   
   use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, cosnfp, sinnfp, &
-                     zero, myid, ounit, Nfp, pi2, half, two, one, bsconstant, MPI_COMM_FOCUS
+                     zero, myid, ounit, Nfp, pi2, half, two, one, bsconstant, MPI_COMM_FOCUS,coil_type_spline
   use mpi
   implicit none
 
@@ -72,7 +72,7 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
         Bx = zero; By = zero; Bz = zero
         select case (coil(icoil)%type)
         ! Fourier coils
-        case(1)
+        case(1,coil_type_spline)
            ! Biot-Savart law
            do kseg = 0, coil(icoil)%NS-1
               dlx = xx - coil(icoil)%xx(kseg)
@@ -141,7 +141,7 @@ subroutine bfield1(icoil, x, y, z, tBx, tBy, tBz, ND)
 ! Discretizing factor is includeed; coil(icoil)%dd(kseg)
 !------------------------------------------------------------------------------------------------------   
   use globals, only: dp, coil, DoF, surf, NFcoil, Ncoils, Nteta, Nzeta, &
-                     zero, myid, ounit, Nfp, one, bsconstant, cosnfp, sinnfp, MPI_COMM_FOCUS
+                     zero, myid, ounit, Nfp, one, bsconstant, cosnfp, sinnfp, MPI_COMM_FOCUS,coil_type_spline
   use mpi
   implicit none
 
@@ -190,7 +190,7 @@ subroutine bfield1(icoil, x, y, z, tBx, tBy, tBz, ND)
         Bx = zero; By = zero; Bz = zero
 
         select case (coil(icoil)%type)
-        case(1)
+        case(1,coil_type_spline)
            ! Fourier coils
            NS = coil(icoil)%NS
            do kseg = 0, NS-1

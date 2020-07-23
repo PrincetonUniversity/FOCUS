@@ -13,7 +13,7 @@ subroutine AllocData(type)
 
   INTEGER, intent(in) :: type
 
-  INTEGER             :: icoil, idof, ND, NF, icur, imag, isurf, NS, mm, iseg
+  INTEGER             :: icoil, idof, ND, NF,NCP, icur, imag, isurf, NS, mm, iseg,i,iter_cp
   REAL                :: xtmp, mtmp, tt
 
   isurf = plasma
@@ -90,6 +90,57 @@ subroutine AllocData(type)
         case(3) 
            DoF(icoil)%ND = coil(icoil)%Lc * 1 ! number of DoF for background Bt, Bz
            SALLOCATE(DoF(icoil)%xdof, (1:DoF(icoil)%ND), zero)
+        case(coil_type_spline)
+           ! get number of DoF for each coil and allocate arrays;
+           NS = coil(icoil)%NS
+           NCP = Splines(icoil)%NCP
+           ND = (3*NCP) ! total variables for geometry
+           DoF(icoil)%ND = coil(icoil)%Lc * ND !# of DoF for icoil;
+           SALLOCATE(DoF(icoil)%xdof, (1:DoF(icoil)%ND), zero)
+           SALLOCATE(DoF(icoil)%xof , (0:coil(icoil)%NS-1, 1:ND), zero)
+           SALLOCATE(DoF(icoil)%yof , (0:coil(icoil)%NS-1, 1:ND), zero)
+           SALLOCATE(DoF(icoil)%zof , (0:coil(icoil)%NS-1, 1:ND), zero)
+           ! allocate and calculate trignometric functions for re-use           
+           SALLOCATE( Splines(icoil)%basis_0, (0:NS-1, 0:NCP+2), zero )
+           SALLOCATE( Splines(icoil)%basis_1, (0:NS-1, 0:NCP+1), zero )
+           SALLOCATE( Splines(icoil)%basis_2, (0:NS-1, 0:NCP), zero )
+           SALLOCATE( Splines(icoil)%basis_3, (0:NS-1, 0:NCP-1),   zero )
+           SALLOCATE( Splines(icoil)%db_dt  , (0:NS-1, 0:NCP-1),   zero )
+           SALLOCATE( Splines(icoil)%db_dt_2, (0:NS-1, 0:NCP-1),   zero )
+
+	   do i =0, coil(icoil)%NS-1
+                    Splines(icoil)%eval_points(i) = 1.0*(i)/(coil(icoil)%NS)
+           enddo
+
+           ! the derivatives of dx/dv 
+
+           call eval_spline_basis(icoil)           !Compute spline basis and derivatives using analytic derivation
+           call eval_spline_basis1(icoil)
+           call eval_spline_basis2(icoil)
+	   !call check_eval_basis(icoil)    !Check derivatives of basis functions numerically	
+	   call enforce_spline_periodicity(icoil)  !Forces the derivates in respect to the first three control points to be equal to the last three   
+
+           DoF(icoil)%xof(0:coil(icoil)%NS-1,      1: NCP) = Splines(icoil)%basis_3(0:coil(icoil)%NS-1, 0:  NCP-1)  !x/xc
+           DoF(icoil)%yof(0:coil(icoil)%NS-1, NCP+1:2*NCP) = Splines(icoil)%basis_3(0:coil(icoil)%NS-1, 0:  NCP-1)  !y/yc
+           DoF(icoil)%zof(0:coil(icoil)%NS-1, 2*NCP+1:3*NCP) = Splines(icoil)%basis_3(0:coil(icoil)%NS-1, 0:  NCP-1)  !z/zc
+
+           ! allocate xyz data
+           SALLOCATE( coil(icoil)%xx, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%yy, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%zz, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%xt, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%yt, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%zt, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%xa, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%ya, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%za, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%dl, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%dd, (0:coil(icoil)%NS), zero )
+
+
+	   coil(icoil)%dd = 1.0/(coil(icoil)%NS)
+
+
         case default
            FATAL(AllocData, .true., not supported coil types)
         end select
@@ -99,8 +150,10 @@ subroutine AllocData(type)
      do icoil = 1, Ncoils
 
         Ndof = Ndof + coil(icoil)%Ic + DoF(icoil)%ND
-        if (allocated(FouCoil)) then
+        if (coil(icoil)%type==1) then
            Tdof = Tdof + 1              + 6*(FouCoil(icoil)%NF)+3
+        else if (coil(icoil)%type==coil_type_spline) then
+           Tdof = Tdof + 1              + 3*(Splines(icoil)%NCP)
         else 
            Tdof = Tdof + coil(icoil)%Ic + DoF(icoil)%ND
         end if
@@ -124,7 +177,7 @@ subroutine AllocData(type)
         Inorm = zero ; Mnorm = zero
         icur = 0 ; imag = 0 ! icur for coil current count, imag for dipole count
         do icoil = 1, Ncoils
-           if(coil(icoil)%type == 1 .or. coil(icoil)%type == 3 ) then  
+           if(coil(icoil)%type == 1 .or. coil(icoil)%type == 3 .or. coil(icoil)%type == coil_type_spline ) then  
               ! Fourier representation or central currents
               Inorm = Inorm + coil(icoil)%I**2
               icur = icur + 1
@@ -156,7 +209,7 @@ subroutine AllocData(type)
         idof = 0
         do icoil = 1, Ncoils
 
-           if(coil(icoil)%type == 1) then  ! Fourier representation
+           if(coil(icoil)%type == 1 .or. coil(icoil)%type == coil_type_spline ) then  ! Fourier representation
               if(coil(icoil)%Ic /= 0) then
                  dofnorm(idof+1) = Inorm
                  idof = idof + 1
