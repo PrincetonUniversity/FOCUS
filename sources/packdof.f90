@@ -24,7 +24,7 @@ SUBROUTINE packdof(lxdof)
   ! Pack all DOF into one vector;
   ! DATE: 2017/03/19
   !--------------------------------------------------------------------------------------------- 
-  use globals, only : dp, zero, myid, ounit, &
+  use globals, only : dp, zero, myid, ounit, MPI_COMM_FAMUS, &
                     & case_coils, Ncoils, coil, DoF, Ndof, DoFnorm, dof_offset, ldof
   implicit none
   include "mpif.h"
@@ -88,9 +88,9 @@ SUBROUTINE packdof(lxdof)
   FATAL( packdof02 , idof-dof_offset .ne. ldof, counting error in packing )
 
   !write(ounit, *) "pack ", lxdof(1)
-  call MPI_ALLREDUCE( MPI_IN_PLACE, lxdof, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+  call MPI_ALLREDUCE( MPI_IN_PLACE, lxdof, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FAMUS, ierr )
   lxdof = lxdof / DoFnorm
-  call mpi_barrier(MPI_COMM_WORLD, ierr)
+  call mpi_barrier(MPI_COMM_FAMUS, ierr)
 
   return
 END SUBROUTINE packdof
@@ -102,7 +102,7 @@ SUBROUTINE unpacking(lxdof)
   ! UnPack all DOF from one vector;
   ! DATE: 2017/04/03
   !--------------------------------------------------------------------------------------------- 
-  use globals, only: dp, zero, myid, ounit, &
+  use globals, only: dp, zero, myid, ounit, MPI_COMM_FAMUS, &
        & case_coils, Ncoils, coil, DoF, Ndof, DoFnorm, dof_offset, ldof, momentq
   implicit none
   include "mpif.h"
@@ -167,7 +167,7 @@ SUBROUTINE unpacking(lxdof)
   call unpackcoil !unpack DoF to coil parameters;
   call discoil(ifirst)
 
-  call mpi_barrier(MPI_COMM_WORLD, ierr)
+  call mpi_barrier(MPI_COMM_FAMUS, ierr)
 
   return
 END SUBROUTINE unpacking
@@ -179,7 +179,7 @@ SUBROUTINE packcoil
   ! pack coil representation variables into DoF (only geometries without currents);
   ! DATE: 2017/03/25
   !--------------------------------------------------------------------------------------------- 
-  use globals, only: dp, zero, myid, ounit, case_coils, Ncoils, coil, FouCoil, DoF
+  use globals, only: dp, zero, myid, ounit, case_coils, Ncoils, coil, FouCoil, DoF, MPI_COMM_FAMUS
   implicit none
   include "mpif.h"
 
@@ -248,7 +248,7 @@ SUBROUTINE unpackcoil
   ! pack coil representation variables into DoF (only geometries without currents);
   ! DATE: 2017/03/25
   !--------------------------------------------------------------------------------------------- 
-  use globals, only: dp, zero, myid, ounit, case_coils, Ncoils, coil, FouCoil, DoF
+  use globals, only: dp, zero, myid, ounit, case_coils, Ncoils, coil, FouCoil, DoF, MPI_COMM_FAMUS
   implicit none
   include "mpif.h"
 

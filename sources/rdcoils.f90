@@ -3,7 +3,7 @@
 
 !latex \briefly{Initialize the coils data with Fourier series.}
 
-!latex \calledby{\link{focus}}
+!latex \calledby{\link{FAMUS}}
 !latex \calls{\link{}}
 
 !latex \subsection{overview}
@@ -22,7 +22,7 @@
 !latex  \item[1.] \inputvar{case\_init = 1} : Toroidally placing \inputvar{Ncoils} circular coils with a 
 !latex             radius of \inputvar{init\_radius} and current of \inputvar{init\_current}. The $i$th coil 
 !latex             is placed at $\z = \frac{i-1}{Ncoils} \frac{2\pi}{Nfp}$.
-!latex  \item[2.] \inputvar{case\_init = 0} : Read coils data from {\bf ext.focus} file. The format is as following. \red{This is the most flexible way, and
+!latex  \item[2.] \inputvar{case\_init = 0} : Read coils data from {\bf ext.FAMUS} file. The format is as following. \red{This is the most flexible way, and
 !latex             each coil can be different.}            
 !latex  \begin{raw}
 !latex   # Total number of coils
@@ -169,7 +169,7 @@ subroutine rdcoils
                  read( runit,*) coil(icoil)%Ic, coil(icoil)%I, coil(icoil)%Lc, coil(icoil)%Bz
               else
                  STOP " wrong coil type in rdcoils"
-                 call MPI_ABORT(MPI_COMM_WORLD, 1, ierr)
+                 call MPI_ABORT(MPI_COMM_FAMUS, 1, ierr)
               endif
 
            enddo !end do icoil;
@@ -284,7 +284,7 @@ subroutine rdcoils
   call discoil(ifirst)
   ifirst = 0
 
-  call MPI_BARRIER( MPI_COMM_WORLD, ierr )
+  call MPI_BARRIER( MPI_COMM_FAMUS, ierr )
 
   return
 
@@ -300,7 +300,7 @@ subroutine discoil(ifirst)
 ! if ifirst = 1, it will update all the coils; otherwise, only update free coils;
 ! date: 20170314
 !---------------------------------------------------------------------------------------------
-  use globals, only: dp, zero, pi2, myid, ounit, coil, FouCoil, Ncoils, DoF
+  use globals, only: dp, zero, pi2, myid, ounit, coil, FouCoil, Ncoils, DoF, MPI_COMM_FAMUS
   implicit none
   include "mpif.h"
 
@@ -403,70 +403,6 @@ end subroutine discoil
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-SUBROUTINE discfou2
-  !---------------------------------------------------------------------------------------------
-  ! Discretize coil data from Fourier harmonics to xx, yy, zz
-  ! calling fouriermatrix for single set
-  ! DATE: 2017/03/18
-  !---------------------------------------------------------------------------------------------  
-  use globals, only: dp, zero, pi2, myid, ncpu, ounit, coil, FouCoil, Ncoils
-  implicit none
-  include "mpif.h"
-
-  INTEGER :: icoil, iorder, llmodnp, ierr, NS, NF
-  !-------------------------call fouriermatr----------------------------------------------------  
-  do icoil = 1, Ncoils
-
-     NS = coil(icoil)%NS; NF = FouCoil(icoil)%NF  ! allias variable for simplicity;
-     !reset to zero for all the coils;
-     coil(icoil)%xx = zero
-     coil(icoil)%yy = zero
-     coil(icoil)%zz = zero
-     coil(icoil)%xt = zero
-     coil(icoil)%yt = zero
-     coil(icoil)%zt = zero
-     coil(icoil)%xa = zero
-     coil(icoil)%ya = zero
-     coil(icoil)%za = zero
-
-     coil(icoil)%dd = pi2 / NS
-     
-     if( myid.ne.modulo(icoil-1,ncpu) ) cycle ! parallelization loop;
-
-    iorder = 0
-    call fouriermatrix( Foucoil(icoil)%xc, Foucoil(icoil)%xs, coil(icoil)%xx, NF, NS, iorder)
-    call fouriermatrix( Foucoil(icoil)%yc, Foucoil(icoil)%ys, coil(icoil)%yy, NF, NS, iorder)
-    call fouriermatrix( Foucoil(icoil)%zc, Foucoil(icoil)%zs, coil(icoil)%zz, NF, NS, iorder)
-
-    iorder = 1  
-    call fouriermatrix( Foucoil(icoil)%xc, Foucoil(icoil)%xs, coil(icoil)%xt, NF, NS, iorder)
-    call fouriermatrix( Foucoil(icoil)%yc, Foucoil(icoil)%ys, coil(icoil)%yt, NF, NS, iorder)
-    call fouriermatrix( Foucoil(icoil)%zc, Foucoil(icoil)%zs, coil(icoil)%zt, NF, NS, iorder)
-
-    iorder = 2 
-    call fouriermatrix( Foucoil(icoil)%xc, Foucoil(icoil)%xs, coil(icoil)%xa, NF, NS, iorder)
-    call fouriermatrix( Foucoil(icoil)%yc, Foucoil(icoil)%ys, coil(icoil)%ya, NF, NS, iorder)
-    call fouriermatrix( Foucoil(icoil)%zc, Foucoil(icoil)%zs, coil(icoil)%za, NF, NS, iorder)
-   
-  enddo
-  !-------------------------broadcast coil data-------------------------------------------------  
-  do icoil = 1, Ncoils ; llmodnp = modulo(icoil-1,ncpu)
-     RlBCAST( coil(icoil)%xx(0:coil(icoil)%NS), coil(icoil)%NS+1, llmodnp )
-     RlBCAST( coil(icoil)%yy(0:coil(icoil)%NS), coil(icoil)%NS+1, llmodnp )
-     RlBCAST( coil(icoil)%zz(0:coil(icoil)%NS), coil(icoil)%NS+1, llmodnp )
-     RlBCAST( coil(icoil)%xt(0:coil(icoil)%NS), coil(icoil)%NS+1, llmodnp )
-     RlBCAST( coil(icoil)%yt(0:coil(icoil)%NS), coil(icoil)%NS+1, llmodnp )
-     RlBCAST( coil(icoil)%zt(0:coil(icoil)%NS), coil(icoil)%NS+1, llmodnp )
-     RlBCAST( coil(icoil)%xa(0:coil(icoil)%NS), coil(icoil)%NS+1, llmodnp )
-     RlBCAST( coil(icoil)%ya(0:coil(icoil)%NS), coil(icoil)%NS+1, llmodnp )
-     RlBCAST( coil(icoil)%za(0:coil(icoil)%NS), coil(icoil)%NS+1, llmodnp )
-  enddo
-  
-  return
-END SUBROUTINE discfou2
-
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
 subroutine fouriermatrix( xc, xs, xx, NF, ND, order )
   !---------------------------------------------------------------------------------------------
   ! This subroutine uses matrix operations to discretize data from Fourier harmonics.
@@ -526,7 +462,8 @@ END subroutine fouriermatrix
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE readcoils(filename, maxnseg)
-  use globals, only: dp, zero, coilsX, coilsY, coilsZ, coilsI, coilseg, coilname, Ncoils, ounit, myid
+  use globals, only: dp, zero, coilsX, coilsY, coilsZ, coilsI, coilseg, coilname, Ncoils, ounit, myid, &
+                     MPI_COMM_FAMUS
   implicit none
   include "mpif.h"
 
@@ -543,7 +480,7 @@ SUBROUTINE readcoils(filename, maxnseg)
   open(cunit,FILE=trim(filename),STATUS='old',IOSTAT=istat)
   if ( istat .ne. 0 ) then
      write(ounit,'("rdcoils : Reading coils data error in "A)') trim(filename)
-     call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+     call MPI_ABORT( MPI_COMM_FAMUS, 1, ierr )
   endif
      
   ! read coils and segments data
@@ -601,7 +538,7 @@ end SUBROUTINE READCOILS
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE Fourier( X, XFC, XFS, Nsegs, NFcoil)
-  use globals, only: dp, ounit, zero, pi2, half, myid
+  use globals, only: dp, ounit, zero, pi2, half, myid, MPI_COMM_FAMUS
   implicit none
   include "mpif.h"
 

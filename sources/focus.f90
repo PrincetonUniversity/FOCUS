@@ -11,21 +11,21 @@
 
 !latex  \subsection{Brief introduction}
 !latex  This code is used for designing 3-D coils in stellarators, knotrans and tokamaks. 
-!latex  FOCUS (Finding/Flexible Optimized Coils Using Space curves) gets rid of winding surface 
+!latex  FAMUS (Finding/Flexible Optimized Coils Using Space curves) gets rid of winding surface 
 !latex  by representing 
 !latex  coils using space curves (either Fundamental theorem of space curves or Fourier series or other 
 !latex  representations.). And for the first time, the derivatives (both the first and the second ones)
 !latex  are analytically calculated. \par
-!latex  For more information, please visti \href{https://princetonuniversity.github.io/FOCUS/}
+!latex  For more information, please visti \href{https://princetonuniversity.github.io/FAMUS/}
 !latex  If you have any questions, please send a email to czhu@pppl.gov (or zcxiang@mail.ustc.edu.cn).
 
 !latex  \subsection{How to execute}
-!latex  A brief help message will be printed if you just type `xfocus --help`
+!latex  A brief help message will be printed if you just type `xFAMUS --help`
 
 !latex \subsection{Misc}
 !latex \bi
 !latex \item Details about the macros used are listed in \emph{Macros};
-!latex \item The unit used in FOCUS is the International System of Units (SI);
+!latex \item The unit used in FAMUS is the International System of Units (SI);
 !latex \item All the shared variables are defined in \link{globals};
 !latex \item Variables starting with {\bf case\_xxx} are used for controling the flow direction;
 !latex \item Variables starting with {\bf Isxxx} are used for logical judgement.
@@ -33,17 +33,13 @@
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-PROGRAM focus
+PROGRAM FAMUS
   
   use globals, only: dp, ncpu, myid, ounit, ierr, astat, eunit, case_surface, case_coils, case_optimize, &
        case_postproc, xdof, time_initialize, time_optimize, time_postproc, &
-       version
-
-  use mpi  !to enable gfortran mpi_wtime bugs; 07/20/2017
-  
+       version, MPI_COMM_FAMUS
+  use mpi  
   implicit none
-  
-  !include "mpif.h"
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
@@ -52,20 +48,10 @@ PROGRAM focus
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-  myid = 0 ; ncpu = 1
-
-  ! MPI initialize
-  call MPI_INIT( ierr )
-  call MPI_COMM_RANK( MPI_COMM_WORLD, myid, ierr )
-  call MPI_COMM_SIZE( MPI_COMM_WORLD, ncpu, ierr )
-
-  tstart =  MPI_WTIME()
-  if(myid == 0) write(ounit, *) "---------------------  FOCUS ", version, "------------------------------"
-  if(myid == 0) write(ounit,'("focus   : Begin execution with ncpu =",i5)') ncpu
-  
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   call initial ! read input namelist and broadcast;
+
+  call check_input
 
   select case( case_surface )
 
@@ -85,11 +71,11 @@ PROGRAM focus
 
   call packdof(xdof)  ! packdof in xdof array;
 
-  call MPI_BARRIER( MPI_COMM_WORLD, ierr )
+  call MPI_BARRIER( MPI_COMM_FAMUS, ierr )
 
   tfinish = MPI_Wtime()
   time_initialize = tfinish - tstart
-  if( myid  ==  0 ) write(ounit, '(A, ES12.5, A3)') "focus   : Initialization took ", time_initialize," S."
+  if( myid  ==  0 ) write(ounit, '(A, ES12.5, A3)') "FAMUS   : Initialization took ", time_initialize," S."
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -97,7 +83,7 @@ PROGRAM focus
 
   if (case_optimize /= 0) call solvers       ! call different solvers;
 
-  call MPI_BARRIER( MPI_COMM_WORLD, ierr )
+  call MPI_BARRIER( MPI_COMM_FAMUS, ierr )
 
   tstart = MPI_Wtime()
   time_optimize = tstart - tfinish
@@ -107,11 +93,11 @@ PROGRAM focus
      mins = (secs-hrs*60*60)/60
      secs = secs-hrs*60*60-mins*60
      if(hrs>0)then
-         write(ounit, '(A, 3(I6, A3))') "focus   : Optimization took ",hrs," H ", mins," M ",secs," S."
+         write(ounit, '(A, 3(I6, A3))') "FAMUS   : Optimization took ",hrs," H ", mins," M ",secs," S."
      elseif(mins>0)then
-         write(ounit, '(A, 2(I6, A3))') "focus   : Optimization took ", mins," M ",secs," S."
+         write(ounit, '(A, 2(I6, A3))') "FAMUS   : Optimization took ", mins," M ",secs," S."
      else
-         write(ounit, '(A, ES12.5, A3)') "focus   : Optimization took ", time_optimize," S."
+         write(ounit, '(A, ES12.5, A3)') "FAMUS   : Optimization took ", time_optimize," S."
      endif
   endif
 
@@ -139,7 +125,7 @@ PROGRAM focus
 
   call saving ! save all the outputs
 
-  call MPI_BARRIER( MPI_COMM_WORLD, ierr )
+  call MPI_BARRIER( MPI_COMM_FAMUS, ierr )
 
   tfinish = MPI_Wtime()
   time_postproc = tfinish - tstart
@@ -149,11 +135,11 @@ PROGRAM focus
      mins = (secs-hrs*60*60)/60
      secs = secs-hrs*60*60-mins*60
      if(hrs>0)then
-         write(ounit, '(A, 3(I6, A3))') "focus   : Post-processing took ",hrs," H ", mins," M ",secs," S."
+         write(ounit, '(A, 3(I6, A3))') "FAMUS   : Post-processing took ",hrs," H ", mins," M ",secs," S."
      elseif(mins>0)then
-         write(ounit, '(A, 2(I6, A3))') "focus   : Post-processing took ", mins," M ",secs," S."
+         write(ounit, '(A, 2(I6, A3))') "FAMUS   : Post-processing took ", mins," M ",secs," S."
      else
-         write(ounit, '(A, ES12.5, A3)') "focus   : Post-processing took ", time_postproc," S."
+         write(ounit, '(A, ES12.5, A3)') "FAMUS   : Post-processing took ", time_postproc," S."
      endif
   endif
 
@@ -165,6 +151,6 @@ PROGRAM focus
 
   !call cleanup
   
-END PROGRAM focus
+END PROGRAM FAMUS
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!

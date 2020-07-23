@@ -5,7 +5,7 @@ SUBROUTINE poinplot
   !------------------------------------------------------------------------------------------------------ 
   USE globals, only : dp, myid, ncpu, zero, half, pi, pi2, ounit, pi, sqrtmachprec, pp_maxiter, &
                       pp_phi, pp_raxis, pp_zaxis, pp_xtol, pp_rmax, pp_zmax, ppr, ppz, pp_ns, iota, nfp_raw, &
-                      XYZB, lboozmn, booz_mnc, booz_mns, booz_mn, total_num, &
+                      XYZB, lboozmn, booz_mnc, booz_mns, booz_mn, total_num, MPI_COMM_FAMUS, &
                       master, nmaster, nworker, masterid, color, myworkid, MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS
   USE mpi
   IMPLICIT NONE
@@ -189,7 +189,7 @@ SUBROUTINE axis_fcn(n,x,fvec,iflag)
         end select
      end if
      iflag = -1
-     ! call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+     ! call MPI_ABORT( MPI_COMM_FAMUS, 1, ierr )
   end if
 
   fvec = rz_end - x
@@ -234,7 +234,7 @@ SUBROUTINE ppiota(rzrzt,iflag)
         end select
      end if
      iflag = -1
-     ! call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+     ! call MPI_ABORT( MPI_COMM_FAMUS, 1, ierr )
   end if
 
   return

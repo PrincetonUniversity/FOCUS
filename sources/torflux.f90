@@ -98,7 +98,7 @@ subroutine torflux( ideriv )
   use globals, only: dp, zero, half, one, pi2, sqrtmachprec, bsconstant, ncpu, myid, ounit, &
        coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, Cdof, &
        tflux, t1F, t2F, Ndof, psi_avg, target_tflux, &
-       itflux, mtflux, LM_fvec, LM_fjac, weight_tflux
+       itflux, mtflux, LM_fvec, LM_fjac, weight_tflux, MPI_COMM_FAMUS
 
   implicit none
   include "mpif.h"
@@ -145,10 +145,10 @@ subroutine torflux( ideriv )
         dflux = dflux + ldiff(jzeta)**2
      enddo ! end do jzeta
 
-     call MPI_BARRIER( MPI_COMM_WORLD, ierr )
-     call MPI_REDUCE( dflux, tflux  , 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
-     call MPI_REDUCE( lsum , psi_avg, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
-     call MPI_REDUCE( ldiff, psi_diff, Nzeta, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
+     call MPI_BARRIER( MPI_COMM_FAMUS, ierr )
+     call MPI_REDUCE( dflux, tflux  , 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_FAMUS, ierr )
+     call MPI_REDUCE( lsum , psi_avg, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_FAMUS, ierr )
+     call MPI_REDUCE( ldiff, psi_diff, Nzeta, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_FAMUS, ierr )
                
      RlBCAST( psi_avg, 1, 0)
      RlBCAST( tflux, 1, 0)
@@ -210,8 +210,8 @@ subroutine torflux( ideriv )
 
      ldF = ldF * pi2/Nteta
 
-     call MPI_BARRIER( MPI_COMM_WORLD, ierr )
-     call MPI_REDUCE(ldF, dF, Ndof*Nzeta, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr )
+     call MPI_BARRIER( MPI_COMM_FAMUS, ierr )
+     call MPI_REDUCE(ldF, dF, Ndof*Nzeta, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_FAMUS, ierr )
      RlBCAST( dF, Ndof*Nzeta, 0 )
 
      do idof = 1, Ndof
@@ -229,7 +229,7 @@ subroutine torflux( ideriv )
 
   !--------------------------------------------------------------------------------------------
 
-  call MPI_barrier( MPI_COMM_WORLD, ierr )
+  call MPI_barrier( MPI_COMM_FAMUS, ierr )
 
   return
 end subroutine torflux
@@ -244,7 +244,7 @@ subroutine bpotential0(icoil, iteta, jzeta, Ax, Ay, Az)
 ! Discretizing factor is includeed; coil(icoil)%dd(kseg) 
 !------------------------------------------------------------------------------------------------------   
   use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, &
-                     zero, myid, ounit
+                     zero, myid, ounit, MPI_COMM_FAMUS
   implicit none
   include "mpif.h"
 
@@ -297,7 +297,7 @@ subroutine bpotential1(icoil, iteta, jzeta, Ax, Ay, Az, ND)
 ! Discretizing factor is includeed; coil(icoil)%dd(kseg) 
 !------------------------------------------------------------------------------------------------------    
   use globals, only: dp, coil, DoF, surf, NFcoil, Ncoils, Nteta, Nzeta, &
-                     zero, myid, ounit
+                     zero, myid, ounit, MPI_COMM_FAMUS
   implicit none
   include "mpif.h"
 

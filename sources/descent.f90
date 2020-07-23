@@ -30,7 +30,7 @@ subroutine descent
   ! DATE: 2017/04/05
   !---------------------------------------------------------------------------------------------    
   use globals, only: dp, zero, half, myid, ncpu, ounit, IsQuiet, astat, ierr, sqrtmachprec, &
-        Ndof, iout, DF_tausta, DF_tauend, DF_xtol, DF_maxiter, exit_signal
+        Ndof, iout, DF_tausta, DF_tauend, DF_xtol, DF_maxiter, exit_signal, MPI_COMM_FAMUS
 
   implicit none  
   include "mpif.h"
@@ -58,7 +58,7 @@ subroutine descent
      
      tau = DF_tausta + itau * (DF_tauend - DF_tausta) / DF_maxiter
 
-     call mpi_barrier(MPI_COMM_WORLD, ierr)
+     call mpi_barrier(MPI_COMM_FAMUS, ierr)
      call ode ( denergy, Ndof, lxdof, t0, tau, relerr, abserr, iflag, work, iwork )
 
      if ( iflag /= 2 .and. myid == 0) then
@@ -75,7 +75,7 @@ subroutine descent
               write(ounit, '("descent : INVALID input parameters.")')
            end select
         end if
-        call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+        call MPI_ABORT( MPI_COMM_FAMUS, 1, ierr )
      end if
 
      call unpacking(lxdof)
