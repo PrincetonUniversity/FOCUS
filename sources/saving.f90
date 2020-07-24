@@ -317,8 +317,11 @@ SUBROUTINE write_plasma
 ! write down the unpdated plasma boundary information;                          !
 ! CZHU; first version: 2017/01/11; last revised: 2017/01/11                     !
 !-------------------------------------------------------------------------------!
-  use focus_globals, only : dp, zero, half, two, pi2, myid, ncpu, ounit, wunit, ext, &
-                      Nfou, Nfp, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
+!  use focus_globals, only : dp, zero, half, two, pi2, myid, ncpu, ounit, wunit, ext, &
+!                      Nfou, Nfp, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
+!                      Nteta, Nzeta, surf, Nfp_raw, bnorm, sqrtmachprec, out_plasma
+  use focus_globals, only : dp, zero, half, two, pi2, myid,  wunit,  &
+                      Nfou, Nfp, Nbnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
                       Nteta, Nzeta, surf, Nfp_raw, bnorm, sqrtmachprec, out_plasma
   
   implicit none  
