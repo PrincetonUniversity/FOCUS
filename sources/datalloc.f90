@@ -70,8 +70,8 @@ subroutine AllocData(itype)
         endif
      enddo
 
-     CALL MPI_ALLREDUCE(ldof, Ndof, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr )
-     CALL MPI_ALLREDUCE(MPI_IN_PLACE, dof_array, ncpu, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr )
+     CALL MPI_ALLREDUCE(ldof, Ndof, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_FAMUS, ierr )
+     CALL MPI_ALLREDUCE(MPI_IN_PLACE, dof_array, ncpu, MPI_INTEGER, MPI_SUM, MPI_COMM_FAMUS, ierr )
 
      FATAL( datalloc, sum(dof_array) .ne. Ndof, error in counting dof number)
 
@@ -108,10 +108,10 @@ subroutine AllocData(itype)
 !!$        Gnorm = (surf(1)%vol/(pi*pi2))**(one/three)  ! Gnorm is a hybrid of major and minor radius
 !!$        Gnorm = Gnorm * weight_gnorm 
 !!$        
-!!$        call MPI_ALLREDUCE( MPI_IN_PLACE, icur, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr )
-!!$        call MPI_ALLREDUCE( MPI_IN_PLACE, imag, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr )
-!!$        call MPI_ALLREDUCE( MPI_IN_PLACE, Inorm, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr ) 
-!!$        call MPI_ALLREDUCE( MPI_IN_PLACE, Mnorm, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr ) 
+!!$        call MPI_ALLREDUCE( MPI_IN_PLACE, icur, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_FAMUS, ierr )
+!!$        call MPI_ALLREDUCE( MPI_IN_PLACE, imag, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_FAMUS, ierr )
+!!$        call MPI_ALLREDUCE( MPI_IN_PLACE, Inorm, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FAMUS, ierr ) 
+!!$        call MPI_ALLREDUCE( MPI_IN_PLACE, Mnorm, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FAMUS, ierr ) 
 !!$
 !!$        icur = max(1, icur) ; imag = max(1, imag)    ! avoid dividing zero
 !!$        Inorm = sqrt(Inorm/icur) * weight_inorm      ! quadratic mean
@@ -178,13 +178,13 @@ subroutine AllocData(itype)
 !!$              endif
 !!$           else
 !!$              STOP " wrong coil type in rdcoils"
-!!$              call MPI_ABORT(MPI_COMM_WORLD, 1, ierr)
+!!$              call MPI_ABORT(MPI_COMM_FAMUS, 1, ierr)
 !!$           endif
 !!$
 !!$        enddo !end do icoil;
 !!$        FATAL( AllocData , idof-dof_offset .ne. ldof, counting error in unpacking )
 !!$
-!!$        call MPI_ALLREDUCE( MPI_IN_PLACE, dofnorm, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+!!$        call MPI_ALLREDUCE( MPI_IN_PLACE, dofnorm, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FAMUS, ierr )
 !!$     endif
      
      ! calculate the total moment
@@ -193,18 +193,18 @@ subroutine AllocData(itype)
         if (coil(icoil)%itype == 2) then  ! permanent magnets
            if(coil(icoil)%Ic /= 0) then
               if (coil(icoil)%symmetry == 0) then ! no symmetries
-                 total_moment = total_moment + coil(icoil)%moment
+                 total_moment = total_moment + coil(icoil)%moment**2
               else if (coil(icoil)%symmetry == 1) then ! periodicity
-                 total_moment = total_moment + coil(icoil)%moment*Nfp
+                 total_moment = total_moment + coil(icoil)%moment**2*Nfp
               else if (coil(icoil)%symmetry == 2) then ! stellarator symmetry
-                 total_moment = total_moment + coil(icoil)%moment*Nfp*2
+                 total_moment = total_moment + coil(icoil)%moment**2*Nfp*2
               else
                  FATAL( minvol01, .true., unspoorted symmetry option )
               end if               
            endif
         endif
      enddo
-     call MPI_ALLREDUCE( MPI_IN_PLACE, total_moment, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr ) 
+     call MPI_ALLREDUCE( MPI_IN_PLACE, total_moment, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FAMUS, ierr ) 
 
      ! set bounds for quasi-newton method and SA
      if (QN_maxiter>0 .or. SA_maxiter>0) then
@@ -240,9 +240,9 @@ subroutine AllocData(itype)
            endif
         enddo !end do icoil;
         FATAL( datalloc , idof-dof_offset .ne. ldof, counting error in packing )
-        call MPI_ALLREDUCE( MPI_IN_PLACE, lowbound, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
-        call MPI_ALLREDUCE( MPI_IN_PLACE,  upbound, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
-        call MPI_ALLREDUCE( MPI_IN_PLACE,  nbounds, Ndof, MPI_INTEGER         , MPI_SUM, MPI_COMM_WORLD, ierr )
+        call MPI_ALLREDUCE( MPI_IN_PLACE, lowbound, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FAMUS, ierr )
+        call MPI_ALLREDUCE( MPI_IN_PLACE,  upbound, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FAMUS, ierr )
+        call MPI_ALLREDUCE( MPI_IN_PLACE,  nbounds, Ndof, MPI_INTEGER         , MPI_SUM, MPI_COMM_FAMUS, ierr )
         lowbound = lowbound / dofnorm
         upbound  = upbound  / dofnorm
      endif

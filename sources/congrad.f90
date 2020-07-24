@@ -9,7 +9,7 @@
 !latex \calls{\link{packdof}}
 
 !latex \section{Basic algorithm}
-!latex The basic nonlinear conjugate gradient algorithm used in FOCUS is a hybrid of {\bf Algorithm 5.4} 
+!latex The basic nonlinear conjugate gradient algorithm used in FAMUS is a hybrid of {\bf Algorithm 5.4} 
 !latex and {\bf Equation (5.49)} from \emph{Numerical Optimization} and 
 !latex \doilink{10.1137/S1052623497318992}{Dai \& Yuan}. This version of conjugate gradient method converges 
 !latex globally, provided the line search satisfies the standard Wolfe conditions. 
@@ -249,7 +249,7 @@ END FUNCTION zoom
 
 
 SUBROUTINE getdf(lxdof, f, g)
-  use focus_globals, only: dp, myid, ounit, ierr, Ndof, chi, t1E
+  use focus_globals, only: dp, myid, ounit, ierr, Ndof, chi, t1E, MPI_COMM_FAMUS
   implicit none
   include "mpif.h"
 
@@ -257,7 +257,7 @@ SUBROUTINE getdf(lxdof, f, g)
   REAL, INTENT(out) :: f, g(1:Ndof)
 
   
-  call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
+  call MPI_BARRIER( MPI_COMM_FAMUS, ierr ) ! wait all cpus;
 
   call unpacking(lxdof)
   call costfun(1)
@@ -318,7 +318,7 @@ SUBROUTINE congrad
 END SUBROUTINE congrad
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 SUBROUTINE myvalue(f, x, n)
-  use focus_globals, only: dp, myid, ounit, ierr, chi
+  use focus_globals, only: dp, myid, ounit, ierr, chi, MPI_COMM_FAMUS
   implicit none
   include "mpif.h"
 
@@ -326,7 +326,7 @@ SUBROUTINE myvalue(f, x, n)
   REAL, INTENT(in)    :: x(n) 
   REAL, INTENT(out)   :: f
 
-  call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
+  call MPI_BARRIER( MPI_COMM_FAMUS, ierr ) ! wait all cpus;
   call unpacking(x)
   call costfun(0)
   f = chi
@@ -335,7 +335,7 @@ SUBROUTINE myvalue(f, x, n)
 END SUBROUTINE myvalue
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 SUBROUTINE mygrad(g, x, n)
-  use focus_globals, only: dp, myid, ounit, ierr, t1E
+  use focus_globals, only: dp, myid, ounit, ierr, t1E, MPI_COMM_FAMUS
   implicit none
   include "mpif.h"
 
@@ -343,7 +343,7 @@ SUBROUTINE mygrad(g, x, n)
   REAL, INTENT(in)    :: x(n)
   REAL, INTENT(out)   :: g(n)
 
-  call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
+  call MPI_BARRIER( MPI_COMM_FAMUS, ierr ) ! wait all cpus;
   call unpacking(x)
   call costfun(1)
   g = t1E

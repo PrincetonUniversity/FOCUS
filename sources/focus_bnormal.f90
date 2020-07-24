@@ -26,6 +26,7 @@ module focus_bnorm_mod
 end module focus_bnorm_mod
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
+<<<<<<< HEAD:sources/focus_bnormal.f90
 subroutine bnormal_old( ideriv )
 !------------------------------------------------------------------------------------------------------ 
 ! DATE:  04/02/2017;
@@ -264,18 +265,31 @@ end subroutine bnormal_old
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine focus_bnormal( ideriv )
+=======
+subroutine bnormal( ideriv )
+>>>>>>> origin/dipole:sources/bnormal.f90
 !------------------------------------------------------------------------------------------------------ 
 ! DATE:  10/28/2019;
 ! Calculate the Bn surface integral and its derivatives;
 ! ideriv = 0 -> only calculate the Bn surface integral;
 ! ideriv = 1 -> calculate the Bn surface integral and its first derivatives;
 !------------------------------------------------------------------------------------------------------   
+<<<<<<< HEAD:sources/focus_bnormal.f90
   use focus_globals, only: dp, zero, half, one, pi2, sqrtmachprec, bsconstant, ncpu, myid, ounit, &
        coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, symmetry, npc, cosnfp, sinnfp, &
        bnorm, t1B, t2B, bn, Ndof, Npc, Cdof, weight_bharm, case_bnormal, &
        weight_bnorm, ibnorm, mbnorm, ibharm, mbharm, LM_fvec, LM_fjac, &
        bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn, dof_offset, ldof, momentq
   use focus_bnorm_mod
+=======
+  use globals, only: dp, zero, half, one, pi2, sqrtmachprec, bsconstant, ncpu, myid, ounit, &
+       coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, cosnfp, sinnfp, &
+       bnorm, t1B, t2B, bn, Ndof, Cdof, weight_bharm, case_bnormal, &
+       weight_bnorm, ibnorm, mbnorm, ibharm, mbharm, LM_fvec, LM_fjac, &
+       bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn, dof_offset, ldof, momentq, &
+       MPI_COMM_FAMUS
+  use bnorm_mod
+>>>>>>> origin/dipole:sources/bnormal.f90
   use bharm_mod
   use mpi
   implicit none
@@ -312,7 +326,7 @@ subroutine focus_bnormal( ideriv )
            endif
 
            ! gather all the data
-           call MPI_ALLREDUCE( MPI_IN_PLACE, surf(1)%Bn(iteta, jzeta), 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+           call MPI_ALLREDUCE( MPI_IN_PLACE, surf(1)%Bn(iteta, jzeta), 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FAMUS, ierr )
            
            select case (case_bnormal)
            case (0)     ! no normalization over |B|;
@@ -389,7 +403,7 @@ subroutine focus_bnormal( ideriv )
         enddo  !end iteta;
      enddo  !end jzeta;
 
-     call MPI_ALLREDUCE( MPI_IN_PLACE, t1B, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+     call MPI_ALLREDUCE( MPI_IN_PLACE, t1B, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FAMUS, ierr )
 
      t1B = t1B * discretefactor
 
@@ -397,7 +411,7 @@ subroutine focus_bnormal( ideriv )
 
   !--------------------------------------------------------------------------------------------
 
-  call MPI_barrier( MPI_COMM_WORLD, ierr )
+  call MPI_barrier( MPI_COMM_FAMUS, ierr )
 
   return
   
@@ -406,14 +420,18 @@ end subroutine focus_bnormal
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine prepare_inductance()
+<<<<<<< HEAD:sources/focus_bnormal.f90
   use focus_globals, only: dp, ierr, iout, myid, ounit, zero, Ncpu, Ncoils_total, Npc, symmetry, &
+=======
+  use globals, only: dp, ierr, iout, myid, ounit, zero, Ncpu, Ncoils_total, Nfp_raw, &
+>>>>>>> origin/dipole:sources/bnormal.f90
        coil, surf, bsconstant, cosnfp, sinnfp, Ncoils, Nzeta, Nteta, one, three
   use focus_bnorm_mod
   use mpi
   implicit none
 
   ! local variables
-  INTEGER :: is, ip, iteta, jzeta, icoil, astat
+  INTEGER :: is, ip, iteta, jzeta, icoil, astat, symmetry, npc
   REAL :: ox, oy, oz, rx, ry, rz, rr, rm3, rm5, rdotN
 
   ! return if allocated
@@ -438,6 +456,11 @@ subroutine prepare_inductance()
      enddo
   else ! each slave cpu calculates their contribution (0:Ntheta-1, 0:Nzeta-1, 1:Ncoils*Npc*Symmetry).     
      do icoil = 1, Ncoils
+        ! check if stellarator symmetric
+        npc = Nfp_raw
+        symmetry = 0 
+        if (coil(icoil)%symmetry == 0) Npc = 1
+        if (coil(icoil)%symmetry == 2) symmetry = 1
         do jzeta = 0, Nzeta-1
            do iteta = 0, Nteta-1
               do ip = 1, Npc

@@ -3,7 +3,7 @@
 
 !latex \briefly{Initialize the coils data with Fourier series.}
 
-!latex \calledby{\link{focus}}
+!latex \calledby{\link{FAMUS}}
 !latex \calls{\link{}}
 
 !latex \subsection{overview}
@@ -22,7 +22,7 @@
 !latex  \item[1.] \inputvar{case\_init = 1} : Toroidally placing \inputvar{Ncoils} circular coils with a 
 !latex             radius of \inputvar{init\_radius} and current of \inputvar{init\_current}. The $i$th coil 
 !latex             is placed at $\z = \frac{i-1}{Ncoils} \frac{2\pi}{Nfp}$.
-!latex  \item[2.] \inputvar{case\_init = 0} : Read coils data from {\bf ext.focus} file. The format is as following. \red{This is the most flexible way, and
+!latex  \item[2.] \inputvar{case\_init = 0} : Read coils data from {\bf ext.FAMUS} file. The format is as following. \red{This is the most flexible way, and
 !latex             each coil can be different.}            
 !latex  \begin{raw}
 !latex   # Total number of coils
@@ -169,7 +169,7 @@ subroutine rdcoils
                  read( runit,*) coil(icoil)%Ic, coil(icoil)%I, coil(icoil)%Lc, coil(icoil)%Bz
               else
                  STOP " wrong coil type in rdcoils"
-                 call MPI_ABORT(MPI_COMM_WORLD, 1, ierr)
+                 call MPI_ABORT(MPI_COMM_FAMUS, 1, ierr)
               endif
 
            enddo !end do icoil;
@@ -189,12 +189,14 @@ subroutine rdcoils
      if( myid==0 ) then  !get file number;
         open( runit, file=trim(input_coils), status="old", action='read')
         read( runit,*)
-        read( runit,*) Ncoils_total
-        write(ounit,'("rdcoils : identified "I10" unique coils in "A" ;")') Ncoils_total, trim(input_coils)
+        read( runit,*) Ncoils_total, momentq
+        write(ounit,'("rdcoils : identified "I10" unique dipoles in "A" ;")') Ncoils_total, trim(input_coils)
+        write(ounit,'("        : penalization coefficient q = "I2" ;")') momentq
         close( runit )
      endif
 
      IlBCAST( Ncoils_total, 1,  0 )
+     IlBCAST( momentq, 1,  0 )
      if (Ncpu == 1) STOP ' At least use two cpus'
      if (myid/=0) Ncoils = Ncoils_total / (Ncpu-1)
      if (myid==Ncpu-1) Ncoils = Ncoils + mod(Ncoils_total, Ncpu-1) ! The last one read more
@@ -282,7 +284,7 @@ subroutine rdcoils
   call discoil(ifirst)
   ifirst = 0
 
-  call MPI_BARRIER( MPI_COMM_WORLD, ierr )
+  call MPI_BARRIER( MPI_COMM_FAMUS, ierr )
 
   return
 
@@ -298,7 +300,11 @@ subroutine discoil(ifirst)
 ! if ifirst = 1, it will update all the coils; otherwise, only update free coils;
 ! date: 20170314
 !---------------------------------------------------------------------------------------------
+<<<<<<< HEAD
   use focus_globals, only: dp, zero, pi2, myid, ounit, coil, FouCoil, Ncoils, DoF
+=======
+  use globals, only: dp, zero, pi2, myid, ounit, coil, FouCoil, Ncoils, DoF, MPI_COMM_FAMUS
+>>>>>>> origin/dipole
   implicit none
   include "mpif.h"
 
@@ -401,6 +407,7 @@ end subroutine discoil
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
+<<<<<<< HEAD
 SUBROUTINE discfou2
   !---------------------------------------------------------------------------------------------
   ! Discretize coil data from Fourier harmonics to xx, yy, zz
@@ -465,6 +472,8 @@ END SUBROUTINE discfou2
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
+=======
+>>>>>>> origin/dipole
 subroutine fouriermatrix( xc, xs, xx, NF, ND, order )
   !---------------------------------------------------------------------------------------------
   ! This subroutine uses matrix operations to discretize data from Fourier harmonics.
@@ -524,7 +533,12 @@ END subroutine fouriermatrix
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE readcoils(filename, maxnseg)
+<<<<<<< HEAD
   use focus_globals, only: dp, zero, coilsX, coilsY, coilsZ, coilsI, coilseg, coilname, Ncoils, ounit, myid
+=======
+  use globals, only: dp, zero, coilsX, coilsY, coilsZ, coilsI, coilseg, coilname, Ncoils, ounit, myid, &
+                     MPI_COMM_FAMUS
+>>>>>>> origin/dipole
   implicit none
   include "mpif.h"
 
@@ -541,7 +555,7 @@ SUBROUTINE readcoils(filename, maxnseg)
   open(cunit,FILE=trim(filename),STATUS='old',IOSTAT=istat)
   if ( istat .ne. 0 ) then
      write(ounit,'("rdcoils : Reading coils data error in "A)') trim(filename)
-     call MPI_ABORT( MPI_COMM_WORLD, 1, ierr )
+     call MPI_ABORT( MPI_COMM_FAMUS, 1, ierr )
   endif
      
   ! read coils and segments data
@@ -599,7 +613,11 @@ end SUBROUTINE READCOILS
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE Fourier( X, XFC, XFS, Nsegs, NFcoil)
+<<<<<<< HEAD
   use focus_globals, only: dp, ounit, zero, pi2, half, myid
+=======
+  use globals, only: dp, ounit, zero, pi2, half, myid, MPI_COMM_FAMUS
+>>>>>>> origin/dipole
   implicit none
   include "mpif.h"
 

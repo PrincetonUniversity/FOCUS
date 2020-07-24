@@ -40,10 +40,10 @@ subroutine saving
 
 
 
-  !--------------------------write focus coil file-----------------------------------------
+  !--------------------------write FAMUS coil file-----------------------------------------
   if( save_coils == 1 ) then
      if (myid==0) then
-        open( wunit, file=trim(out_focus), status="unknown", form="formatted")
+        open( wunit, file=trim(out_FAMUS), status="unknown", form="formatted")
         write(wunit, '("Total number of dipoles, momentq")') 
         write(wunit, '(2X,I8, 2X, I4)') Ncoils_total, momentq ! note the fixed coils are not written
 #ifdef TOPO
@@ -53,11 +53,11 @@ subroutine saving
         close(wunit)
      endif
 
-     call MPI_barrier( MPI_COMM_WORLD, ierr )
+     call MPI_barrier( MPI_COMM_FAMUS, ierr )
 
      do icpu = 0, ncpu-1
         if (myid/=0 .and. myid == icpu) then                 ! each cpu write the data independently
-           open( wunit, file=trim(out_focus), status="old", position="append", action="write")
+           open( wunit, file=trim(out_FAMUS), status="old", position="append", action="write")
 
            do icoil = 1, Ncoils
 #ifdef TOPO
@@ -102,7 +102,7 @@ subroutine saving
            close(wunit)
 1000       format(9999ES23.15)
         endif
-        call MPI_barrier( MPI_COMM_WORLD, ierr )
+        call MPI_barrier( MPI_COMM_FAMUS, ierr )
      enddo
   endif
 
@@ -234,6 +234,10 @@ subroutine saving
      HWRITERA( 3,  Ncoils_total     , magtau,   magtau(1:3, 1:Ncoils_total)    )   
   endif
 
+  if (allocated(t1E)) then
+     HWRITEIV( Ndof, grad, t1E(1:Ndof) )
+  endif
+
   HWRITERV( 1                ,  time_initialize,   time_initialize               )
   HWRITERV( 1                ,  time_optimize  ,   time_optimize                 )
   HWRITERV( 1                ,  time_postproc  ,   time_postproc                 )
@@ -317,12 +321,19 @@ SUBROUTINE write_plasma
 ! write down the unpdated plasma boundary information;                          !
 ! CZHU; first version: 2017/01/11; last revised: 2017/01/11                     !
 !-------------------------------------------------------------------------------!
+<<<<<<< HEAD
 !  use focus_globals, only : dp, zero, half, two, pi2, myid, ncpu, ounit, wunit, ext, &
 !                      Nfou, Nfp, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
 !                      Nteta, Nzeta, surf, Nfp_raw, bnorm, sqrtmachprec, out_plasma
   use focus_globals, only : dp, zero, half, two, pi2, myid,  wunit,  &
                       Nfou, Nfp, Nbnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
                       Nteta, Nzeta, surf, Nfp_raw, bnorm, sqrtmachprec, out_plasma
+=======
+  use globals, only : dp, zero, half, two, pi, pi2, myid, ncpu, ounit, wunit, ext, &
+                      Nfou, Nfp, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
+                      Nteta, Nzeta, surf, Nfp_raw, bnorm, sqrtmachprec, out_plasma, &
+                      discretefactor, shift, IsSymmetric, MPI_COMM_FAMUS
+>>>>>>> origin/dipole
   
   implicit none  
   include "mpif.h"
@@ -346,6 +357,8 @@ SUBROUTINE write_plasma
 
   if(myid .ne. 0) return
 
+  FATAL( write_plasma, IsSymmetric==2, option not supported for now)
+
   if(Nbnf .gt. 0) then  ! if there is input Bn target
      DALLOCATE(bnim)
      DALLOCATE(bnin)
@@ -362,38 +375,31 @@ SUBROUTINE write_plasma
   
   imn = 0
   do in = -nf, nf
-     do im = 0, mf
-
+     do im = 0, mf       
         tmpc = zero ; tmps = zero
-        do ii = 0, Nteta-1 
-           teta = ( ii + half ) * pi2 / Nteta
-           do jj = 0, Nzeta-1
-              zeta = ( jj + half ) * pi2 / Nzeta
-
-              arg = im*teta - in*(Nfp_raw/Nfp)*zeta
+        do jj = 0, Nzeta-1
+           zeta = ( jj + shift ) * pi2 / surf(1)%Nzeta
+           do ii = 0, Nteta-1
+              teta = ( ii + shift ) * pi2 / surf(1)%Nteta
+              arg = im*teta - in*Nfp_raw*zeta
               tmpc = tmpc + surf(1)%bn(ii,jj)*cos(arg)
               tmps = tmps + surf(1)%bn(ii,jj)*sin(arg)
-
-           enddo ! end jj
-        enddo ! end ii
-
+           enddo ! end ii
+        enddo ! end jj
         if ( (abs(tmpc) + abs(tmps)) .lt. tol ) cycle
-
         imn = imn + 1
-        bnin(imn) = in * (Nfp_raw/Nfp) ; bnim(imn) = im
-
+        bnin(imn) = in*Nfp_raw ; bnim(imn) = im
         if (im .eq. 0  ) then
            tmpc = tmpc*half
            tmps = tmps*half
         endif
         bnc(imn) = tmpc
         bns(imn) = tmps
-
      enddo ! end im
   enddo ! end in
-
   Nbnf = imn
-
+  ! bnc = bnc * discretefactor / (pi2*pi)
+  ! bns = bns * discretefactor / (pi2*pi)
   bnc = bnc * two / (Nteta*Nzeta)
   bns = bns * two / (Nteta*Nzeta)
   !----------------------------------------------

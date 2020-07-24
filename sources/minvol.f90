@@ -18,7 +18,7 @@ SUBROUTINE minvol(ideriv)
   ! pmsum = \sum M = \sum sin(pho)^momentq
   ! Here momentq is even to make sure M>0
   use focus_globals, only: dp, zero, ncpu, myid, ounit, Nfp, &
-       pmsum, t1V, coil, Ndof, Ncoils, DoF, total_moment, dof_offset, ldof, momentq
+       pmsum, t1V, coil, Ndof, Ncoils, DoF, total_moment, dof_offset, ldof, momentq, MPI_COMM_FAMUS
   implicit none
   include "mpif.h"
   INTEGER, INTENT(in) :: ideriv
@@ -44,7 +44,7 @@ SUBROUTINE minvol(ideriv)
            endif
         endif
      enddo
-     call MPI_ALLREDUCE( MPI_IN_PLACE, pmsum, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+     call MPI_ALLREDUCE( MPI_IN_PLACE, pmsum, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FAMUS, ierr )
      pmsum = pmsum / total_moment
   endif
   !-------------------------------calculate d pmsum / d pho-------------------------------------------------- 
@@ -79,12 +79,12 @@ SUBROUTINE minvol(ideriv)
         endif
      enddo !end icoil;
      FATAL( minvol , idof-dof_offset .ne. ldof, counting error in packing )
-     call MPI_ALLREDUCE( MPI_IN_PLACE, t1V, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+     call MPI_ALLREDUCE( MPI_IN_PLACE, t1V, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FAMUS, ierr )
      t1V = t1V / total_moment
      !TMPOUT(t1V)
   endif
 
-  call MPI_barrier( MPI_COMM_WORLD, ierr )
+  call MPI_barrier( MPI_COMM_FAMUS, ierr )
   
   return
 END SUBROUTINE minvol

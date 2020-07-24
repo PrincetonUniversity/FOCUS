@@ -27,8 +27,8 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
 ! Biot-Savart constant and currents are not included for later simplication. 
 ! Be careful if coils have different resolutions.
 !------------------------------------------------------------------------------------------------------   
-  use focus_globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, cosnfp, sinnfp, Npc, &
-                     zero, myid, ounit, Npc, Nfp, pi2, half, two, one, bsconstant, momentq, machprec
+  use focus)globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, cosnfp, sinnfp, Nfp_raw, MPI_COMM_FAMUS, &
+                     zero, myid, ounit, Nfp, pi2, half, two, one, bsconstant, momentq, machprec
   implicit none
   include "mpif.h"
 
@@ -38,7 +38,7 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  INTEGER              :: ierr, astat, kseg, ip, is, symmetry ! local symmetry
+  INTEGER              :: ierr, astat, kseg, ip, is, symmetry, npc ! local symmetry
   REAL                 :: dlx, dly, dlz, rm3, ltx, lty, ltz, rr, r2, m_dot_r, &
                         & mx, my, mz, xx, yy, zz, Bx, By, Bz, sBx, sBy, sBz
 
@@ -51,11 +51,10 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
   ltx = zero ; lty = zero ; ltz = zero
   
   ! check if stellarator symmetric
-  if (coil(icoil)%symmetry == 2) then
-     symmetry = 1
-  else
-     symmetry = 0
-  endif
+  npc = Nfp_raw
+  symmetry = 0 
+  if (coil(icoil)%symmetry == 0) Npc = 1
+  if (coil(icoil)%symmetry == 2) symmetry = 1
   
   do ip = 1, Npc
      xx =  x*cosnfp(ip) + y*sinnfp(ip) ! find the point on plasma
@@ -149,8 +148,8 @@ subroutine bfield1(icoil, x, y, z, tBx, tBy, tBz, ND)
 ! Biot-Savart constant and currents are not included for later simplication;
 ! Discretizing factor is includeed; coil(icoil)%dd(kseg)
 !------------------------------------------------------------------------------------------------------   
-  use focus_globals, only: dp, coil, DoF, surf, NFcoil, Ncoils, Nteta, Nzeta, &
-                     zero, myid, ounit, Npc, one, bsconstant, cosnfp, sinnfp, Npc, momentq
+  use focus)globals, only: dp, coil, DoF, surf, NFcoil, Ncoils, Nteta, Nzeta, Nfp_raw, &
+                     zero, myid, ounit, Npc, one, bsconstant, cosnfp, sinnfp, momentq, MPI_COMM_FAMUS
   implicit none
   include "mpif.h"
 
@@ -160,7 +159,7 @@ subroutine bfield1(icoil, x, y, z, tBx, tBy, tBz, ND)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  INTEGER              :: ierr, astat, kseg, NS, ip, is, symmetry
+  INTEGER              :: ierr, astat, kseg, NS, ip, is, symmetry, npc
   REAL                 :: dlx, dly, dlz, r2, rm3, rm5, rm7, m_dot_r, ltx, lty, ltz, rxp, &
                           sinp, sint, cosp, cost, mx, my, mz, xx, yy, zz
   REAL, dimension(1:1, 1:ND) :: Bx, By, Bz, sBx, sBy, sBz
@@ -171,12 +170,12 @@ subroutine bfield1(icoil, x, y, z, tBx, tBy, tBz, ND)
   FATAL( bfield1, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
   FATAL( bfield1, ND <= 0, wrong inout dimension of ND )
 
+
   ! check if stellarator symmetric
-  if (coil(icoil)%symmetry == 2) then
-     symmetry = 1
-  else
-     symmetry = 0
-  endif
+  npc = Nfp_raw
+  symmetry = 0 
+  if (coil(icoil)%symmetry == 0) Npc = 1
+  if (coil(icoil)%symmetry == 2) symmetry = 1
 
   tBx = zero ; tBy = zero ; tBz = zero
   dlx = zero ; dly = zero ; dlz = zero
@@ -320,9 +319,9 @@ end subroutine bfield1
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine coils_bfield(B,x,y,z)
-  use focus_globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, &
-       zero, myid, ounit, Npc, bsconstant, one, two, ncpu, Npc, cosnfp, sinnfp, &
-       master, nworker, myworkid, MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS
+  use focus)globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, &
+       zero, myid, ounit, Npc, bsconstant, one, two, ncpu, cosnfp, sinnfp, &
+       master, nworker, myworkid, MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS, MPI_COMM_FAMUS
   use mpi
   implicit none
 
@@ -338,7 +337,7 @@ subroutine coils_bfield(B,x,y,z)
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  call MPI_BARRIER(MPI_COMM_WORLD, ierr ) ! wait all cpus;
+  call MPI_BARRIER(MPI_COMM_FAMUS, ierr ) ! wait all cpus;
   B = zero
   do icoil = 1, Ncoils
      ! if ( myworkid /= modulo(icoil-1, nworker) ) cycle ! MPI
@@ -348,7 +347,7 @@ subroutine coils_bfield(B,x,y,z)
      B(2) = B(2) + By*coil(icoil)%I*bsconstant
      B(3) = B(3) + Bz*coil(icoil)%I*bsconstant
   enddo
-  call MPI_ALLREDUCE(MPI_IN_PLACE, B, 3, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+  call MPI_ALLREDUCE(MPI_IN_PLACE, B, 3, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FAMUS, ierr )
 
   return
 
@@ -358,7 +357,7 @@ end subroutine coils_bfield
 
 SUBROUTINE mag_torque
   use focus_globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, ext, wunit, &
-       zero, myid, ounit, Npc, bsconstant, one, Ncoils_total, magtau, Ncpu
+       zero, myid, ounit, Npc, bsconstant, one, Ncoils_total, magtau, Ncpu, MPI_COMM_FAMUS
   use mpi
   implicit none
 
@@ -375,7 +374,7 @@ SUBROUTINE mag_torque
 
 !!$  SALLOCATE( magtau, (1:3, 1:Ncoils_total), zero )
 
-  call MPI_BARRIER(MPI_COMM_WORLD, ierr ) ! wait all cpus;
+  call MPI_BARRIER(MPI_COMM_FAMUS, ierr ) ! wait all cpus;
   offset = 0
   if (myid/=0) then
      offset = (myid-1) * (Ncoils_total / (Ncpu-1))
@@ -422,7 +421,7 @@ SUBROUTINE mag_torque
         B(3) = B(3) + Bz*coil(icoil)%I*bsconstant
      enddo
 
-     call MPI_ALLREDUCE(MPI_IN_PLACE, B, 3, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+     call MPI_ALLREDUCE(MPI_IN_PLACE, B, 3, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FAMUS, ierr )
 
      ! write out data
      if (myid==0) write(wunit, '(I15, ", ", 9(ES15.8,", "))') index, x, y, z, mx, my, mz, B(1), B(2), B(3)

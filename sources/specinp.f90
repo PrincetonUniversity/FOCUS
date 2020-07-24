@@ -86,8 +86,8 @@ SUBROUTINE specinp
   curpol = curpol * pi2/Nzeta 
 
   ! write SPEC input
-  write(ounit, '("postproc: preparing input information for SPEC. Please view "A)'), 'focus_'//trim(ext)//'.sp'
-  open(wunit, file='focus_'//trim(ext)//'.sp', status='unknown', action='write')
+  write(ounit, '("postproc: preparing input information for SPEC. Please view "A)'), 'FAMUS_'//trim(ext)//'.sp'
+  open(wunit, file='FAMUS_'//trim(ext)//'.sp', status='unknown', action='write')
 
 !  write(wunit, '(2I)') Nfou, Nfp_raw
 !  do imn = 1, Nfou

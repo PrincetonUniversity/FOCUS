@@ -1,4 +1,5 @@
 
+<<<<<<< HEAD
 !title (initialize) ! Read input file, initialize global variables.
 
 !latex \briefly{Reads input files broadcasts, and allocates/initializes global variables.}
@@ -284,9 +285,19 @@
 !latex    \textit{flag for indicating whether write \emph{.example.filaments.xxxxxx}; seen in  \link{saving}};
 !latex  \ei
 
+=======
+! subroutine list
+!
+! initial
+! check_input
+! read_namelist
+! write_namelist
+! mute
+!
+>>>>>>> origin/dipole
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
 subroutine initial
+<<<<<<< HEAD
 
   use focus_globals
   use ncsx_ports_mod, only: ncsx_ports, ncsx_ports_on
@@ -328,9 +339,48 @@ subroutine initial
         IF (index_dot .gt. 0)  ext = ext(1:index_dot-1)
         write(ounit, '("initial : machine_prec   = ", ES12.5, " ; sqrtmachprec   = ", ES12.5   &
              & )') machprec, sqrtmachprec
+=======
+   use globals
+   use mpi
+   implicit none
+ 
+   INTEGER :: index_dot
+ 
+   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+ 
+   myid = 0 ; ncpu = 1
+ 
+   ! MPI initialize
+   call MPI_init( ierr )
+   MPI_COMM_FAMUS = MPI_COMM_WORLD
+   call MPI_COMM_RANK( MPI_COMM_FAMUS, myid, ierr )
+   call MPI_COMM_SIZE( MPI_COMM_FAMUS, ncpu, ierr )
+ 
+   if(myid == 0) write(ounit, *) "---------------------  FAMUS ", version, "------------------------------"
+   if(myid == 0) write(ounit,'("famus   : Begin execution with ncpu =",i5)') ncpu
+ 
+   !-------------read input namelist----------------------------------------------------------------------
+   if(myid == 0) then ! only the master node reads the input; 25 Mar 15;
+       call getarg(1,ext) ! get argument from command line
+       select case(trim(ext))
+       case ( '-h', '--help' )
+           write(ounit,*)'-------HELP INFORMATION--------------------------'
+           write(ounit,*)' Usage: xfocus <options> input_file'
+           write(ounit,*)'    <options>'
+           write(ounit,*)'     --init / -i  :  Write an example input file'
+           write(ounit,*)'     --help / -h  :  Output help message'
+           write(ounit,*)'-------------------------------------------------'
+           call MPI_ABORT( MPI_COMM_FAMUS, 0, ierr )
+       case ( '-i', '--init' )
+           call write_namelist ! in initial.h
+       case default
+           index_dot = INDEX(ext,'.input')
+           IF (index_dot .gt. 0)  ext = ext(1:index_dot-1)
+>>>>>>> origin/dipole
 #ifdef DEBUG
-        write(ounit, '("DEBUG info: extension from command line is "A)') trim(ext)
+           write(ounit, '("DEBUG info: extension from command line is "A)') trim(ext)
 #endif
+<<<<<<< HEAD
      end select
   elseif ( myid == 0 .and. (called_from_stellopt) ) then 
     index_dot = INDEX(focusin_filename_from_stellopt,'.input')
@@ -347,17 +397,45 @@ subroutine initial
 
   ClBCAST( ext,  100,  0 )
   inputfile = trim(ext)//".input"
+=======
+       end select
+   endif
+ 
+   ClBCAST( ext,  100,  0 )
+   inputfile = trim(ext)//".input"
+   
+   call read_namelist(inputfile)
+ 
+   return
+ 
+end subroutine initial
+>>>>>>> origin/dipole
 
-  !-------------read the namelist-----------------------------------------------------------------------
-  if( myid == 0 ) then
-     inquire(file=trim(inputfile), EXIST=exist) ! inquire if inputfile existed;
-     FATAL( initial, .not.exist, input file ext.input not provided )
-  endif
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  do icpu = 1, ncpu
-     call MPI_BARRIER( MPI_COMM_WORLD, ierr )
-     if (myid == icpu-1) then                              ! each cpu read the namelist in turn;
-        open(runit, file=trim(inputfile), status="old", action='read')
+subroutine read_namelist(filename)
+   use globals, only : myid, ncpu, focusin, ounit, runit, MPI_COMM_FAMUS
+   use ncsx_ports_mod, only: ncsx_ports, ncsx_ports_on
+   use mpi
+   implicit none
+ 
+   CHARACTER(100), INTENT(IN) :: filename
+ 
+   LOGICAL :: exist
+   INTEGER :: icpu, ierr, ports_nml_stat
+    
+   if( myid == 0 ) then
+    inquire(file=trim(filename), EXIST=exist) ! inquire if inputfile existed;
+    FATAL( initial, .not.exist, input file ext.input not provided )
+#ifdef DEBUG
+    write(ounit, '("        : read namelist from ", A)') trim(filename)
+#endif
+   endif
+ 
+   do icpu = 1, ncpu
+      call MPI_BARRIER( MPI_COMM_FAMUS, ierr )
+      if (myid == icpu-1) then                              ! each cpu read the namelist in turn;
+        open(runit, file=trim(filename), status="old", action='read')
         read(runit, focusin)
 
         ! turn on ncsx_ports functions only if namelist is found:
@@ -365,13 +443,36 @@ subroutine initial
         if (ports_nml_stat == 0) ncsx_ports_on = .true.   
 
         close(runit)
-     endif ! end of if( myid == 0 )
-  enddo
+      endif ! end of if( myid == 0 )
+   enddo
+ 
+   return
+end subroutine read_namelist
 
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+subroutine check_input
+  use globals
+  use mpi
+  implicit none
+
+  LOGICAL :: exist
+
+  !-------------machine constants -----------------------------------------------------------------------
+  machprec = epsilon(pi)         ! get the machine precision
+  sqrtmachprec = sqrt(machprec)  ! sqrt of machine precision
+  vsmall = ten * machprec        ! very small number
+  small = thousand * machprec    ! small number
+
+  if (myid == master) then
+   write(ounit, '("initial : machine_prec   = ", ES12.5, " ; sqrtmachprec   = ", ES12.5)') & 
+      machprec, sqrtmachprec
+  endif 
+  
   !-------------output files name ---------------------------------------------------------------------------
 
   hdf5file   = "focus_"//trim(ext)//".h5"
-  out_focus  = trim(ext)//".focus"
+  out_famus  = trim(ext)//".focus"
   out_coils  = trim(ext)//".coils"
   out_harm   = trim(ext)//".harmonics"
   out_plasma = trim(ext)//".plasma"
@@ -447,11 +548,7 @@ subroutine initial
      case (1)
         if (IsQuiet < 0) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
              &  'Plasma boundary periodicity is enforced.'
-        !FATAL( initial, .true., This would cause unbalanced coils please use IsSymmetric=0 instead)
      case (2)
-        if (IsQuiet < 0) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
-             &  'Plasma boundary and coil periodicity are both enforced.'
-     case (3)
         if (IsQuiet < 0) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
              &  'Stellarator symmetry for magnetic dipoles are enforced.' 
      case default
@@ -589,7 +686,7 @@ subroutine initial
      write(ounit, '("outputs : HDF5 outputs           are saved in : ", A)') trim(hdf5file)
      if (save_coils /= 0) then
         write(ounit, '("outputs : Optimizated coils      are saved in : ", A, " ; ", A)') &
-             trim(out_focus), trim(out_coils)
+             trim(out_famus), trim(out_coils)
      endif
      if (weight_bharm > machprec) then
         write(ounit, '("outputs : Realized Bn harmonics  are saved in : ", A)') trim(out_harm)
@@ -601,9 +698,6 @@ subroutine initial
   endif
 
   ClBCAST( input_coils, 100, 0 )
-
-  FATAL( initial, ncpu >= 1000 , too macy cpus, modify nodelabel)
-  write(nodelabel,'(i3.3)') myid ! nodelabel is global; 30 Oct 15;
 
   ! initialize iteration and total iterations;
   iout = 1 ; Nouts = 1
@@ -621,18 +715,25 @@ subroutine initial
  !tmpw_specw = weight_specw
   tmpw_cssep = weight_cssep
 
-  call MPI_BARRIER( MPI_COMM_WORLD, ierr )
+  call MPI_BARRIER( MPI_COMM_FAMUS, ierr )
 
   return
 
-end subroutine initial
+end subroutine check_input
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
+<<<<<<< HEAD
 SUBROUTINE write_focus_namelist
   use focus_globals
+=======
+SUBROUTINE write_namelist
+  use globals
+  use ncsx_ports_mod, only: ncsx_ports
+  use mgrid_mod
+  use mpi
+>>>>>>> origin/dipole
   implicit none
-  include "mpif.h"
 
   LOGICAL :: exist
   CHARACTER(LEN=100) :: example = 'example.input'
@@ -642,9 +743,34 @@ SUBROUTINE write_focus_namelist
   write(ounit, *) 'Writing an template input file in ', trim(example)
   open(wunit, file=trim(example), status='unknown', action='write')
   write(wunit, focusin)
+  write(wunit, mgrid)
+  write(wunit, ncsx_ports)
   close(wunit)
 
-  error = 1
+  call MPI_ABORT( MPI_COMM_FAMUS, 0, ierr )
 
   return
-END SUBROUTINE write_focus_namelist
+END SUBROUTINE write_namelist
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+subroutine mute(action)
+   use globals, only: ounit
+   implicit none 
+ 
+   INTEGER,intent(in) :: action
+   INTEGER, parameter :: iopen = 1, iclose = 0
+   INTEGER            :: ios
+   CHARACTER(LEN=*), parameter  :: tmp_out = 'tmp.famus_output' 
+ 
+   ! open a tmp file for screen output
+   if (action == iopen) then
+     ounit = 37 ! something not used
+     open(ounit, file=tmp_out, status="unknown", action="write", iostat=ios) ! create a scratch file?
+     if (ios.ne.0) print *, "something wrong with open a tmp file in FAMUS.mute. IOSTAT=", ios 
+   else
+     close(ounit)
+     ounit = 6 ! recover to screen output
+   endif
+   return
+ end subroutine mute

@@ -1,6 +1,7 @@
 subroutine boozmn
-  USE focus_globals, only : dp, myid, ncpu, zero, ounit, total_num, pp_maxiter, pp_ns, &
-       XYZB, lboozmn, bmin, bmim, booz_mnc, booz_mns, booz_mpol, booz_ntor, booz_mn, nfp_raw
+  USE focus)globals, only : dp, myid, ncpu, zero, ounit, total_num, pp_maxiter, pp_ns, &
+       XYZB, lboozmn, bmin, bmim, booz_mnc, booz_mns, booz_mpol, booz_ntor, booz_mn, nfp_raw, &
+       MPI_COMM_FAMUS
   USE mpi
   IMPLICIT NONE
 
@@ -11,7 +12,7 @@ subroutine boozmn
   INTEGER              :: tor_num, in, im, imn
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  call MPI_BARRIER( MPI_COMM_WORLD, ierr ) ! wait all cpus;
+  call MPI_BARRIER( MPI_COMM_FAMUS, ierr ) ! wait all cpus;
 
   FATAL( boozmn_01, booz_mpol < 0, invalid poloidal mode resolution )
   FATAL( boozmn_02, booz_ntor < 0, invalid toroidal mode resolution )
@@ -48,7 +49,7 @@ end subroutine boozmn
 subroutine boozsurf(XYZB, x, y, z, iota, isurf)
   USE focus_globals, only : dp, myid, ncpu, zero, half, two, pi, pi2, ounit, total_num, pp_maxiter, &
                       bmin, bmim, booz_mnc, booz_mns, booz_mn, machprec, &
-                      masterid
+                      masterid, MPI_COMM_FAMUS
   USE mpi
   IMPLICIT NONE
 

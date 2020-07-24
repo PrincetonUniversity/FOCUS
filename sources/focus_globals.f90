@@ -4,7 +4,7 @@
 !latex \briefly{Defines input namelists and global variables, details of input namelist can be viwed at 
 !latex \link{initial}.}
 
-!latex \calledby{\link{focus}}
+!latex \calledby{\link{FAMUS}}
 !latex \calls{\link{initial}}
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -15,7 +15,7 @@ module focus_globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='dp_v1.1.03' ! version number
+  CHARACTER(LEN=10), parameter :: version='dp_v1.1.10' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -70,14 +70,13 @@ module focus_globals
   CHARACTER(LEN=100)   :: inputfile ! input namelist
   CHARACTER(LEN=100)   :: hdf5file  ! hdf5 file
   CHARACTER(LEN=100)   :: out_coils ! output ext.coils file
-  CHARACTER(LEN=100)   :: out_focus ! output ext.focus file
+  CHARACTER(LEN=100)   :: out_FAMUS ! output ext.FAMUS file
   CHARACTER(LEN=100)   :: out_harm  ! output harmonics file
   CHARACTER(LEN=100)   :: out_plasma  ! updated plasma boundary
   CHARACTER(LEN=200)   :: bnorm_filename=""  ! updated plasma boundary
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-!latex \subsection{Input namelist: \type{focusin}}
   LOGICAL              :: load_bnorm     =  .false.
   INTEGER              :: IsQuiet        =  -1        
   INTEGER              :: IsSymmetric    =   0 
@@ -98,7 +97,7 @@ module focus_globals
   INTEGER              :: IsVaryGeometry =   1         
   INTEGER              :: NFcoil         =   4         
   INTEGER              :: Nseg           =   128 
-  INTEGER              :: momentq        =   4
+  INTEGER              :: momentq        =   1
   LOGICAL              :: allow_inverse  =  .false. 
   LOGICAL              :: magtorque      =  .false.
               
@@ -175,6 +174,7 @@ module focus_globals
   CHARACTER(LEN=100)   :: input_harm     = 'target.harmonics' ! input target harmonics file
                                                          
   namelist / focusin /  load_bnorm     , &
+                        nescin_filename, &
                         IsQuiet        , &
                         IsSymmetric    , &
                         input_surf     , & 
@@ -196,7 +196,7 @@ module focus_globals
                         IsVaryGeometry , & 
                         NFcoil         , &
                         Nseg           , &
-                        momentq        , &
+!                       momentq        , &
                         allow_inverse  , &
                         magtorque      , &
                         IsNormalize    , &
@@ -264,7 +264,7 @@ module focus_globals
 !latex  \subsection{MPI stuffs}
   INTEGER, PARAMETER   :: master=0
   INTEGER              :: myid, ncpu, myworkid, color, masterid, nmaster, nworker, error=0
-  INTEGER              :: MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS 
+  INTEGER              :: MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS, MPI_COMM_FAMUS
   REAL                 :: machprec, vsmall, small, sqrtmachprec
   CHARACTER            :: nodelabel*3
 
@@ -309,6 +309,7 @@ module focus_globals
   REAL   , allocatable :: cosnfp(:), sinnfp(:)
   INTEGER, allocatable :: bim(:), bin(:), Bnim(:), Bnin(:)
   REAL   , allocatable :: Rbc(:), Zbs(:), Rbs(:), Zbc(:), Bnc(:), Bns(:), cosip(:), sinip(:)
+  REAL                 :: shift
     
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
