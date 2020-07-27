@@ -11,12 +11,13 @@ m4_define(REAL,real(dp))m4_dnl
 !m4_define(REAL,double precision)m4_dnl
 m4_define(SALLOCATE,{ ! macro expansion of sallocate = set allocate;
 
-#ifdef DEBUG
    if( allocated( $1 ) ) then
+    deallocate( $1 )
+#ifdef DEBUG
     write(0,'("macros  : 0123456789 : $1 already allocated ;")') 
     stop      'macros  : 0123456789 : $1 already allocated ;'
-   endif
 #endif
+   endif
 
    allocate( $1$2, stat=astat )
 
