@@ -44,7 +44,7 @@ PROGRAM focus
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   INTEGER :: secs, mins, hrs
-  REAL    :: tstart, tfinish, x, y, z, B(3)
+  REAL    :: tstart, tfinish
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -61,10 +61,6 @@ PROGRAM focus
   case( 1 )   ; call rdcoils
 
   end select
-
-  x = 5.83444249; y = 0.33921676; z = 0.06219241
-  call bfield(1, x, y, z, B(1), B(2), B(3))
-  if (myid==0) print *,B
 
   tfinish = MPI_Wtime()
   time_initialize = tfinish - tstart
