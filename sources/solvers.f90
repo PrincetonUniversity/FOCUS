@@ -303,14 +303,15 @@ subroutine costfun(ideriv)
      endif
   endif 
  
-
+!write(ounit,'("first")')
   ! straight-out coil
   if (weight_straight > machprec) then
 
      call straight(ideriv)
-     chi = chi + weight_straight * str
+     chi = chi + weight_straight * curv
      if     ( ideriv == 1 ) then
         t1E = t1E +  weight_straight * t1Str
+       !if (myid==0) write(ounit,'(7F20.10)')t1Str
      elseif ( ideriv == 2 ) then
         t1E = t1E +  weight_straight * t1Str
         t2E = t2E +  weight_straight * t2Str

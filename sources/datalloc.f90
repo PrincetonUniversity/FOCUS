@@ -332,6 +332,10 @@ subroutine AllocData(type)
      ! straight-out needed;
      if (weight_straight > sqrtmachprec) then
         SALLOCATE( t1Str,  (1:Ndof), zero )
+	!do icoil = 1,Ncoils
+        !   SALLOCATE( coil(icoil)%t1Str_weight,  (0:NS-1), zero )
+	!enddo
+	!call find_straight_weight()
      endif
 
      ! cssep needed;

@@ -1,3 +1,4 @@
+
 !title (curvature) ! Calculate objective functon for straight-out coils and its derivatives. (tkruger)
 
 !latex \briefly{The cost function will allow for straight-out coils, improving 
@@ -59,6 +60,10 @@ subroutine straight(ideriv)
      t1Str = zero
      ivec = 1
      idof = 0
+     icoil = 1	
+     !call unpacking(xdof)
+     !if (myid == 0 .AND. icoil==1) write(ounit,'("R**2  " 7F20.10)')(coil(icoil)%xx-origin_surface_x)**2 + &
+     !								(coil(icoil)%yy-origin_surface_y)**2
      do icoil = 1, Ncoils
 
 	if( (coil(icoil)%type .ne. 1) .AND. (coil(icoil)%type .ne. coil_type_spline) ) exit ! only for Fourier       
@@ -90,56 +95,15 @@ subroutine straight(ideriv)
 
   return
 end subroutine straight
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-!calculate min and max indices for straight out function -> Apply it only on outer part of the coil
-
-subroutine find_ind_straight(icoil)
-
-use globals, only : dp, zero, half, pi2, machprec, ncpu, myid, ounit, MPI_COMM_FOCUS, &
-       coil,Splines,origin_surface_x,origin_surface_y,origin_surface_z,Ncoils,astat
-implicit none
-
-INTEGER              :: icoil,iter,min_ind,max_ind,kseg,half_NS
-REAL,allocatable     :: ind(:),distance(:)
-REAL                 :: minimum = 0
-
-  half_NS = FLOOR((coil(icoil)%NS-1)/2.0) 
-
-  SALLOCATE(ind,    (0:half_NS),zero)
-  SALLOCATE(distance,(0:coil(icoil)%NS-1),zero)
-
- 
-  !order points by distance
-
-  do iter = 0,coil(icoil)%NS-1
-    distance(iter) =   (coil(icoil)%xx(iter)-origin_surface_x)**2+(coil(icoil)%yy(iter)-origin_surface_y)**2+(coil(icoil)%zz(iter)-origin_surface_z)**2	 
-  enddo 
-   
-  do iter = 0,half_NS	
-      minimum = 9999 
-      do kseg = 0, coil(icoil)%NS-1
-	  if (distance(kseg) < minimum) then
-	      minimum = distance(kseg)
-	      ind(iter) = kseg
-	  endif
-      enddo
-      distance(ind(iter))=9999
-  enddo ! end kseg
-
-    coil(icoil)%index_min = minval(ind)
-    coil(icoil)%index_max = maxval(ind)
-
-end subroutine
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
 ! calculate coil curvature
 
 subroutine StrDeriv0(icoil,strRet)
 
   use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils, &
-          case_straight, straight_alpha, str_c, str_k0, MPI_COMM_FOCUS,coil_type_spline,Splines 
+          case_straight, straight_alpha, str_c, str_k0, MPI_COMM_FOCUS,coil_type_spline,Splines, &
+	  origin_surface_x, origin_surface_y, origin_surface_z 
 	  
 
   implicit none
@@ -153,19 +117,25 @@ subroutine StrDeriv0(icoil,strRet)
 
   NS = coil(icoil)%NS 
 
-  SALLOCATE(strv,   (0:NS),zero)	
+  SALLOCATE(strv,   (0:NS-1),zero)	
 
   FATAL( StrDeriv0, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
 
   strv = zero
   strRet = zero
 
-  do kseg = coil(icoil)%index_min ,coil(icoil)%index_max
-    strv(kseg) = sqrt( (coil(icoil)%za(kseg)*coil(icoil)%yt(kseg)-coil(icoil)%zt(kseg)*coil(icoil)%ya(kseg))**2 &
-                     + (coil(icoil)%xa(kseg)*coil(icoil)%zt(kseg)-coil(icoil)%xt(kseg)*coil(icoil)%za(kseg))**2  & 
-                     + (coil(icoil)%ya(kseg)*coil(icoil)%xt(kseg)-coil(icoil)%yt(kseg)*coil(icoil)%xa(kseg))**2 )& 
-                     / ((coil(icoil)%xt(kseg))**2+(coil(icoil)%yt(kseg))**2+(coil(icoil)%zt(kseg))**2)**(1.5)
-  enddo
+
+      do kseg = 0,coil(icoil)%NS-1
+	if ((coil(icoil)%xx(kseg)-origin_surface_x)**2 + (coil(icoil)%yy(kseg)-origin_surface_y)**2 > coil(icoil)%straight_radius**2) then
+           strv(kseg) = sqrt( (coil(icoil)%za(kseg)*coil(icoil)%yt(kseg)-coil(icoil)%zt(kseg)*coil(icoil)%ya(kseg))**2 &
+                            + (coil(icoil)%xa(kseg)*coil(icoil)%zt(kseg)-coil(icoil)%xt(kseg)*coil(icoil)%za(kseg))**2  & 
+                            + (coil(icoil)%ya(kseg)*coil(icoil)%xt(kseg)-coil(icoil)%yt(kseg)*coil(icoil)%xa(kseg))**2 )& 
+                            / ((coil(icoil)%xt(kseg))**2+(coil(icoil)%yt(kseg))**2+(coil(icoil)%zt(kseg))**2)**(1.5)
+	else 
+		strv(kseg) = 0
+	endif
+      enddo
+  !if (myid==0 .AND. icoil==1) write(ounit,'("strv "7F20.10)')strv
 
   if( case_straight == 1 ) then ! linear
 
@@ -181,10 +151,12 @@ subroutine StrDeriv0(icoil,strRet)
      if( straight_alpha < 2.0 ) then
           FATAL( StrDeriv0, .true. , straight_alpha must be 2 or greater )
      endif
-     do kseg = coil(icoil)%index_min ,coil(icoil)%index_max
-        if( strv(kseg) > str_k0 ) then
-           strRet = strRet + ( strv(kseg) - str_k0 )**straight_alpha
-        endif
+     do kseg = 0,coil(icoil)%NS-1
+	if ((coil(icoil)%xx(kseg)-origin_surface_x)**2 + (coil(icoil)%yy(kseg)-origin_surface_y)**2 > coil(icoil)%straight_radius**2) then
+           if( strv(kseg) > str_k0 ) then
+              strRet = strRet + ( strv(kseg) - str_k0 )**straight_alpha
+           endif
+	endif
      enddo
      if (coil(icoil)%type==1) strRet = pi2*strRet/NS
      if (coil(icoil)%type==coil_type_spline) strRet = 1.0*strRet/NS	
@@ -192,15 +164,18 @@ subroutine StrDeriv0(icoil,strRet)
      if( straight_alpha < 2.0 ) then 
           FATAL( StrDeriv0, .true. , straight_alpha must be 2 or greater )
      endif
-     do kseg = coil(icoil)%index_min ,coil(icoil)%index_max
-        if( strv(kseg) > str_k0 ) then
-           strRet = strRet + sqrt(coil(icoil)%xt(kseg)**2+coil(icoil)%yt(kseg)**2+coil(icoil)%zt(kseg)**2)*( (strv(kseg) - str_k0 )**straight_alpha &
-		    + str_c*strv(kseg) )
-        else
-           strRet = strRet + sqrt(coil(icoil)%xt(kseg)**2+coil(icoil)%yt(kseg)**2+coil(icoil)%zt(kseg)**2)*str_c*strv(kseg)
-        endif
 
+     do kseg = 0 ,coil(icoil)%NS-1
+	if ((coil(icoil)%xx(kseg)-origin_surface_x)**2 + (coil(icoil)%yy(kseg)-origin_surface_y)**2 > coil(icoil)%straight_radius**2) then
+           if( strv(kseg) > str_k0 ) then
+              strRet = strRet + sqrt(coil(icoil)%xt(kseg)**2+coil(icoil)%yt(kseg)**2+coil(icoil)%zt(kseg)**2)*( (strv(kseg) - str_k0 )**straight_alpha &
+		       + str_c*strv(kseg) )
+           else
+              strRet = strRet + sqrt(coil(icoil)%xt(kseg)**2+coil(icoil)%yt(kseg)**2+coil(icoil)%zt(kseg)**2)*str_c*strv(kseg)
+           endif
+	endif
      enddo
+
      call lenDeriv0( icoil, coil(icoil)%L )
      if (coil(icoil)%type==1) strRet = pi2*strRet/NS
      if (coil(icoil)%type==coil_type_spline) strRet = 1.0*strRet/NS	
@@ -217,7 +192,8 @@ end subroutine StrDeriv0
 subroutine StrDeriv1(icoil, derivs, ND, NC ) !Calculate all derivatives for a coil
 
   use globals, only: dp, zero, pi2, coil, DoF, myid, ounit, Ncoils, &
-                case_straight, straight_alpha, str_k0, str_c, FouCoil, MPI_COMM_FOCUS,Splines,coil_type_spline
+                case_straight, straight_alpha, str_k0, str_c, FouCoil, MPI_COMM_FOCUS,Splines,coil_type_spline, &
+	        origin_surface_x, origin_surface_y, origin_surface_z,xdof
   implicit none
   include "mpif.h"
 
@@ -238,102 +214,102 @@ subroutine StrDeriv1(icoil, derivs, ND, NC ) !Calculate all derivatives for a co
   d1L = zero
   call lenDeriv0( icoil, coil(icoil)%L )
   leng = coil(icoil)%L
-  call lenDeriv1( icoil, d1L(1:1,1:ND), ND )
-  
-  do kseg = coil(icoil)%index_min ,coil(icoil)%index_max
+  call lenDeriv1( icoil, d1L(1:1,1:ND), ND )  
+     do kseg = 0,coil(icoil)%NS-1
 
-     xt = coil(icoil)%xt(kseg) ; yt = coil(icoil)%yt(kseg) ; zt = coil(icoil)%zt(kseg)
-     xa = coil(icoil)%xa(kseg) ; ya = coil(icoil)%ya(kseg) ; za = coil(icoil)%za(kseg)
-     f1 = sqrt( (xt*ya-xa*yt)**2 + (xt*za-xa*zt)**2 + (yt*za-ya*zt)**2 );
-     f2 = (xt**2+yt**2+zt**2)**(1.5);
-     select case (coil(icoil)%type)
-	case(1)
-     	  do nff = 1,NC
-        	ncc = -1.0*nff    *FouCoil(icoil)%smt(kseg,nff)
-        	ncp = -1.0*nff*nff*FouCoil(icoil)%cmt(kseg,nff)
-        	nss =      nff    *FouCoil(icoil)%cmt(kseg,nff)
-        	nsp = -1.0*nff*nff*FouCoil(icoil)%smt(kseg,nff)
+        if (((coil(icoil)%xx(kseg)-origin_surface_x)**2 + (coil(icoil)%yy(kseg)-origin_surface_y)**2) > coil(icoil)%straight_radius**2) then
 
-  	  	if( case_straight == 1 ) then
-			!if (kseg < 10 .or. kseg > 250) write(ounit,'(I7.3 "seg" I7.3 " CP" 6F20.10)')kseg,nff,derivs(1,nff)        	        		
-			! Xc 
-           		derivs(1,1+nff)      = derivs(1,1+nff)      + -1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*ncc) &
-           		+ ((f1**(-1))*((xt*ya-xa*yt)*(ncc*ya-ncp*yt)+(xt*za-xa*zt)*(ncc*za-ncp*zt)) )/f2; 
-           		! Xs
-           		derivs(1,1+nff+NC)   = derivs(1,1+nff+NC)   + -1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*nss) &
-          	 	+ ((f1**(-1))*((xt*ya-xa*yt)*(nss*ya-nsp*yt)+(xt*za-xa*zt)*(nss*za-nsp*zt)) )/f2;
-           		! Yc
-           		derivs(1,2+nff+2*NC) = derivs(1,2+nff+2*NC) + -1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*ncc) &
-           		+ ((f1**(-1))*((xt*ya-xa*yt)*(ncp*xt-ncc*xa)+(yt*za-ya*zt)*(ncc*za-ncp*zt)) )/f2;  
-           		! Ys
-           		derivs(1,2+nff+3*NC) = derivs(1,2+nff+3*NC) + -1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*nss) &
-           		+ ((f1**(-1))*((xt*ya-xa*yt)*(nsp*xt-nss*xa)+(yt*za-ya*zt)*(nss*za-nsp*zt)) )/f2;
-           		! Zc
-           		derivs(1,3+nff+4*NC) = derivs(1,3+nff+4*NC) + -1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*ncc) &
-           		+ ((f1**(-1))*((xt*za-xa*zt)*(xt*ncp-xa*ncc)+(yt*za-ya*zt)*(yt*ncp-ya*ncc)) )/f2;
-           		! Zs
-           		derivs(1,3+nff+5*NC) = derivs(1,3+nff+5*NC) + -1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*nss) &
-           		+ ((f1**(-1))*((xt*za-xa*zt)*(xt*nsp-xa*nss)+(yt*za-ya*zt)*(yt*nsp-ya*nss)) )/f2;
+           xt = coil(icoil)%xt(kseg) ; yt = coil(icoil)%yt(kseg) ; zt = coil(icoil)%zt(kseg)
+           xa = coil(icoil)%xa(kseg) ; ya = coil(icoil)%ya(kseg) ; za = coil(icoil)%za(kseg)
+           f1 = sqrt( (xt*ya-xa*yt)**2 + (xt*za-xa*zt)**2 + (yt*za-ya*zt)**2 );
+           f2 = (xt**2+yt**2+zt**2)**(1.5);
+           select case (coil(icoil)%type)
+	      case(1)
+     	         do nff = 1,NC
+        	    ncc = -1.0*nff    *FouCoil(icoil)%smt(kseg,nff)
+        	    ncp = -1.0*nff*nff*FouCoil(icoil)%cmt(kseg,nff)
+        	    nss =      nff    *FouCoil(icoil)%cmt(kseg,nff)
+        	    nsp = -1.0*nff*nff*FouCoil(icoil)%smt(kseg,nff)
 
-	        elseif( case_straight == 2 ) then
-        		strHold = sqrt( (za*yt-zt*ya)**2 + (xa*zt-xt*za)**2 + (ya*xt-yt*xa)**2 ) / ((xt)**2+(yt)**2+(zt)**2)**(1.5);
-           		! Xc 
-           		derivs(1,1+nff)      = derivs(1,1+nff)      + (-1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*ncc) &
-          		 + ((f1**(-1))*((xt*ya-xa*yt)*(ncc*ya-ncp*yt)+(xt*za-xa*zt)*(ncc*za-ncp*zt)) )/f2)*2.0*strHold; 
-        		! Xs
-           		derivs(1,1+nff+NC)   = derivs(1,1+nff+NC)   + (-1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*nss) &
-           		+ ((f1**(-1))*((xt*ya-xa*yt)*(nss*ya-nsp*yt)+(xt*za-xa*zt)*(nss*za-nsp*zt)) )/f2)*2.0*strHold;
-           		! Yc
-           		derivs(1,2+nff+2*NC) = derivs(1,2+nff+2*NC) + (-1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*ncc) &
-           		+ ((f1**(-1))*((xt*ya-xa*yt)*(ncp*xt-ncc*xa)+(yt*za-ya*zt)*(ncc*za-ncp*zt)) )/f2)*2.0*strHold;  
-           		! Ys
-           		derivs(1,2+nff+3*NC) = derivs(1,2+nff+3*NC) + (-1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*nss) &
-           		+ ((f1**(-1))*((xt*ya-xa*yt)*(nsp*xt-nss*xa)+(yt*za-ya*zt)*(nss*za-nsp*zt)) )/f2)*2.0*strHold;
-           		! Zc
-           		derivs(1,3+nff+4*NC) = derivs(1,3+nff+4*NC) + (-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*ncc) &
-           		+ ((f1**(-1))*((xt*za-xa*zt)*(xt*ncp-xa*ncc)+(yt*za-ya*zt)*(yt*ncp-ya*ncc)) )/f2)*2.0*strHold;
-           		! Zs
-           		derivs(1,3+nff+5*NC) = derivs(1,3+nff+5*NC) + (-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*nss) &
-           		+ ((f1**(-1))*((xt*za-xa*zt)*(xt*nsp-xa*nss)+(yt*za-ya*zt)*(yt*nsp-ya*nss)) )/f2)*2.0*strHold;
+   	     	    if( case_straight == 1 ) then        	        		
+ 			 ! Xc 
+           		 derivs(1,1+nff)      = derivs(1,1+nff)      + -1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*ncc) &
+           		 + ((f1**(-1))*((xt*ya-xa*yt)*(ncc*ya-ncp*yt)+(xt*za-xa*zt)*(ncc*za-ncp*zt)) )/f2; 
+           		 ! Xs
+           		 derivs(1,1+nff+NC)   = derivs(1,1+nff+NC)   + -1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*nss) &
+          	 	 + ((f1**(-1))*((xt*ya-xa*yt)*(nss*ya-nsp*yt)+(xt*za-xa*zt)*(nss*za-nsp*zt)) )/f2;
+           		 ! Yc
+           		 derivs(1,2+nff+2*NC) = derivs(1,2+nff+2*NC) + -1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*ncc) &
+           		 + ((f1**(-1))*((xt*ya-xa*yt)*(ncp*xt-ncc*xa)+(yt*za-ya*zt)*(ncc*za-ncp*zt)) )/f2;  
+           		 ! Ys
+           		 derivs(1,2+nff+3*NC) = derivs(1,2+nff+3*NC) + -1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*nss) &
+           		 + ((f1**(-1))*((xt*ya-xa*yt)*(nsp*xt-nss*xa)+(yt*za-ya*zt)*(nss*za-nsp*zt)) )/f2;
+           		 ! Zc
+           		 derivs(1,3+nff+4*NC) = derivs(1,3+nff+4*NC) + -1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*ncc) &
+           		 + ((f1**(-1))*((xt*za-xa*zt)*(xt*ncp-xa*ncc)+(yt*za-ya*zt)*(yt*ncp-ya*ncc)) )/f2;
+           		 ! Zs
+           		 derivs(1,3+nff+5*NC) = derivs(1,3+nff+5*NC) + -1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*nss) &
+           		 + ((f1**(-1))*((xt*za-xa*zt)*(xt*nsp-xa*nss)+(yt*za-ya*zt)*(yt*nsp-ya*nss)) )/f2;
 
-        	elseif( case_straight == 3 ) then
-           		strHold = sqrt( (za*yt-zt*ya)**2 + (xa*zt-xt*za)**2 + (ya*xt-yt*xa)**2 ) / ((xt)**2+(yt)**2+(zt)**2)**(1.5);
-           		penStr = straight_alpha*((strHold-str_k0)**(straight_alpha-1.0));
-           		if( strHold > str_k0 ) then
-              		! Xc 
-              		derivs(1,1+nff)      = derivs(1,1+nff)      + (-1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*ncc) &
-              		+ ((f1**(-1))*((xt*ya-xa*yt)*(ncc*ya-ncp*yt)+(xt*za-xa*zt)*(ncc*za-ncp*zt)) )/f2)*penStr; 
-              		! Xs
-              		derivs(1,1+nff+NC)   = derivs(1,1+nff+NC)   + (-1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*nss) &
-              		+ ((f1**(-1))*((xt*ya-xa*yt)*(nss*ya-nsp*yt)+(xt*za-xa*zt)*(nss*za-nsp*zt)) )/f2)*penStr;
-              		! Yc
-              		derivs(1,2+nff+2*NC) = derivs(1,2+nff+2*NC) + (-1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*ncc) &
-              		+ ((f1**(-1))*((xt*ya-xa*yt)*(ncp*xt-ncc*xa)+(yt*za-ya*zt)*(ncc*za-ncp*zt)) )/f2)*penStr;  
-              		! Ys
-              		derivs(1,2+nff+3*NC) = derivs(1,2+nff+3*NC) + (-1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*nss) &
-              		+ ((f1**(-1))*((xt*ya-xa*yt)*(nsp*xt-nss*xa)+(yt*za-ya*zt)*(nss*za-nsp*zt)) )/f2)*penStr;
-              		! Zc
-              		derivs(1,3+nff+4*NC) = derivs(1,3+nff+4*NC) + (-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*ncc) &
-              		+ ((f1**(-1))*((xt*za-xa*zt)*(xt*ncp-xa*ncc)+(yt*za-ya*zt)*(yt*ncp-ya*ncc)) )/f2)*penStr;
-              		! Zs
-              		derivs(1,3+nff+5*NC) = derivs(1,3+nff+5*NC) + (-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*nss) &
-              		+ ((f1**(-1))*((xt*za-xa*zt)*(xt*nsp-xa*nss)+(yt*za-ya*zt)*(yt*nsp-ya*nss)) )/f2)*penStr;
-           	else
-              		derivs(1,1+nff) = derivs(1,1+nff);
-              		derivs(1,1+nff+NC) = derivs(1,1+nff+NC);
-              		derivs(1,2+nff+2*NC) = derivs(1,2+nff+2*NC);
-              		derivs(1,2+nff+3*NC) = derivs(1,2+nff+3*NC);
-              		derivs(1,3+nff+4*NC) = derivs(1,3+nff+4*NC);
-              		derivs(1,3+nff+5*NC) = derivs(1,3+nff+5*NC);
-           	endif
+	            elseif( case_straight == 2 ) then
+        		 strHold = sqrt( (za*yt-zt*ya)**2 + (xa*zt-xt*za)**2 + (ya*xt-yt*xa)**2 ) / ((xt)**2+(yt)**2+(zt)**2)**(1.5);
+           		 ! Xc 
+           		 derivs(1,1+nff)      = derivs(1,1+nff)      + (-1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*ncc) &
+          		  + ((f1**(-1))*((xt*ya-xa*yt)*(ncc*ya-ncp*yt)+(xt*za-xa*zt)*(ncc*za-ncp*zt)) )/f2)*2.0*strHold; 
+        		 ! Xs
+           		 derivs(1,1+nff+NC)   = derivs(1,1+nff+NC)   + (-1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*nss) &
+           		 + ((f1**(-1))*((xt*ya-xa*yt)*(nss*ya-nsp*yt)+(xt*za-xa*zt)*(nss*za-nsp*zt)) )/f2)*2.0*strHold;
+           		 ! Yc
+           		 derivs(1,2+nff+2*NC) = derivs(1,2+nff+2*NC) + (-1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*ncc) &
+           		 + ((f1**(-1))*((xt*ya-xa*yt)*(ncp*xt-ncc*xa)+(yt*za-ya*zt)*(ncc*za-ncp*zt)) )/f2)*2.0*strHold;  
+           		 ! Ys
+           		 derivs(1,2+nff+3*NC) = derivs(1,2+nff+3*NC) + (-1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*nss) &
+           		 + ((f1**(-1))*((xt*ya-xa*yt)*(nsp*xt-nss*xa)+(yt*za-ya*zt)*(nss*za-nsp*zt)) )/f2)*2.0*strHold;
+           		 ! Zc
+           		 derivs(1,3+nff+4*NC) = derivs(1,3+nff+4*NC) + (-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*ncc) &
+           		 + ((f1**(-1))*((xt*za-xa*zt)*(xt*ncp-xa*ncc)+(yt*za-ya*zt)*(yt*ncp-ya*ncc)) )/f2)*2.0*strHold;
+           		 ! Zs
+           		 derivs(1,3+nff+5*NC) = derivs(1,3+nff+5*NC) + (-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*nss) &
+           		 + ((f1**(-1))*((xt*za-xa*zt)*(xt*nsp-xa*nss)+(yt*za-ya*zt)*(yt*nsp-ya*nss)) )/f2)*2.0*strHold;
 
-        	elseif( case_straight == 4 ) then
-           		strHold = sqrt( (za*yt-zt*ya)**2 + (xa*zt-xt*za)**2 + (ya*xt-yt*xa)**2 ) / ((xt)**2+(yt)**2+(zt)**2)**(1.5);
-           		if( strHold > str_k0 ) then
+        	    elseif( case_straight == 3 ) then
+           	       strHold = sqrt( (za*yt-zt*ya)**2 + (xa*zt-xt*za)**2 + (ya*xt-yt*xa)**2 ) / ((xt)**2+(yt)**2+(zt)**2)**(1.5);
+           	       penStr = straight_alpha*((strHold-str_k0)**(straight_alpha-1.0));
+                       if( strHold > str_k0 ) then
+              	         ! Xc 
+              		 derivs(1,1+nff)      = derivs(1,1+nff)      + (-1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*ncc) &
+              		 + ((f1**(-1))*((xt*ya-xa*yt)*(ncc*ya-ncp*yt)+(xt*za-xa*zt)*(ncc*za-ncp*zt)) )/f2)*penStr; 
+              		 ! Xs
+              		 derivs(1,1+nff+NC)   = derivs(1,1+nff+NC)   + (-1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*nss) &
+              		 + ((f1**(-1))*((xt*ya-xa*yt)*(nss*ya-nsp*yt)+(xt*za-xa*zt)*(nss*za-nsp*zt)) )/f2)*penStr;
+              		 ! Yc
+              		 derivs(1,2+nff+2*NC) = derivs(1,2+nff+2*NC) + (-1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*ncc) &
+              		 + ((f1**(-1))*((xt*ya-xa*yt)*(ncp*xt-ncc*xa)+(yt*za-ya*zt)*(ncc*za-ncp*zt)) )/f2)*penStr;  
+              		 ! Ys
+              		 derivs(1,2+nff+3*NC) = derivs(1,2+nff+3*NC) + (-1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*nss) &
+              		 + ((f1**(-1))*((xt*ya-xa*yt)*(nsp*xt-nss*xa)+(yt*za-ya*zt)*(nss*za-nsp*zt)) )/f2)*penStr;
+              		 ! Zc
+              		 derivs(1,3+nff+4*NC) = derivs(1,3+nff+4*NC) + (-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*ncc) &
+              		 + ((f1**(-1))*((xt*za-xa*zt)*(xt*ncp-xa*ncc)+(yt*za-ya*zt)*(yt*ncp-ya*ncc)) )/f2)*penStr;
+              		 ! Zs
+              		 derivs(1,3+nff+5*NC) = derivs(1,3+nff+5*NC) + (-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*nss) &
+              		 + ((f1**(-1))*((xt*za-xa*zt)*(xt*nsp-xa*nss)+(yt*za-ya*zt)*(yt*nsp-ya*nss)) )/f2)*penStr;
+           	       else
+              		 derivs(1,1+nff) = derivs(1,1+nff);
+              		 derivs(1,1+nff+NC) = derivs(1,1+nff+NC);
+              		 derivs(1,2+nff+2*NC) = derivs(1,2+nff+2*NC);
+              		 derivs(1,2+nff+3*NC) = derivs(1,2+nff+3*NC);
+              		 derivs(1,3+nff+4*NC) = derivs(1,3+nff+4*NC);
+              		 derivs(1,3+nff+5*NC) = derivs(1,3+nff+5*NC);
+           	       endif
+
+        	    elseif( case_straight == 4 ) then
+           	        strHold = sqrt( (za*yt-zt*ya)**2 + (xa*zt-xt*za)**2 + (ya*xt-yt*xa)**2 ) / ((xt)**2+(yt)**2+(zt)**2)**(1.5);
+           	        if( strHold > str_k0 ) then
               			strH = 1.0
-           		else 
+           	        else 
               			strH = 0.0
-           		endif
+           	        endif
            		! Xc
            		derivs(1,1+nff)     = derivs(1,1+nff)       + sqrt(xt**2+yt**2+zt**2) &
            		*(strH*( strHold - str_k0 )**straight_alpha + str_c*strHold)*-1.0*d1L(   1,1+nff)/leng
@@ -383,17 +359,17 @@ subroutine StrDeriv1(icoil, derivs, ND, NC ) !Calculate all derivatives for a co
            		derivs(1,3+nff+5*NC) = derivs(1,3+nff+5*NC) + sqrt(xt**2+yt**2+zt**2) &
            		*(-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*nss) + ((f1**(-1))*((xt*za-xa*zt)*(xt*nsp-xa*nss)+(yt*za-ya*zt)*(yt*nsp-ya*nss)) )/f2) &
           		 *(straight_alpha*strH*( strHold - str_k0 )**(straight_alpha - 1.0) + str_c)
-        	else
+        	    else
            		FATAL( StrDeriv1, .true. , invalid case_straight option )  
-        	endif
-       	  enddo
-	case(coil_type_spline)
+        	    endif
+       	         enddo
+	      case(coil_type_spline)
 
-	    do nff = 1,NC
-        	ncc = Splines(icoil)%db_dt(kseg,nff-1)
-        	ncp = Splines(icoil)%db_dt_2(kseg,nff-1)
+	         do nff = 1,NC
+        	    ncc = Splines(icoil)%db_dt(kseg,nff-1)
+        	    ncp = Splines(icoil)%db_dt_2(kseg,nff-1)
 
-  	  	if( case_straight == 1 ) then
+  	  	    if( case_straight == 1 ) then
 			! X 
            		derivs(1,nff)      = derivs(1,nff)      + -1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*ncc) &
            		+ ((f1**(-1))*((xt*ya-xa*yt)*(ncc*ya-ncp*yt)+(xt*za-xa*zt)*(ncc*za-ncp*zt)) )/f2; 
@@ -403,9 +379,10 @@ subroutine StrDeriv1(icoil, derivs, ND, NC ) !Calculate all derivatives for a co
 			! Z
            		derivs(1,nff+2*NC) = derivs(1,nff+2*NC) + -1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*ncc) &
            		+ ((f1**(-1))*((xt*za-xa*zt)*(xt*ncp-xa*ncc)+(yt*za-ya*zt)*(yt*ncp-ya*ncc)) )/f2;
-
+  			!if (myid==0 .AND. icoil==1) write(ounit,'("derivs iter " I10 "  " 6F20.10)')kseg,derivs
+			!if (myid==0 .AND. icoil==1) write(ounit,'("derivs iter " I10.3 )')kseg
 			 
-	        elseif( case_straight == 2 ) then
+	            elseif( case_straight == 2 ) then
         		strHold = sqrt( (za*yt-zt*ya)**2 + (xa*zt-xt*za)**2 + (ya*xt-yt*xa)**2 ) / ((xt)**2+(yt)**2+(zt)**2)**(1.5);
            		! X 
            		derivs(1,nff)      = derivs(1,nff)      + (-1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*ncc) &
@@ -416,7 +393,7 @@ subroutine StrDeriv1(icoil, derivs, ND, NC ) !Calculate all derivatives for a co
 			! Z
            		derivs(1,nff+2*NC) = derivs(1,nff+2*NC) + (-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*ncc) &
            		+ ((f1**(-1))*((xt*za-xa*zt)*(xt*ncp-xa*ncc)+(yt*za-ya*zt)*(yt*ncp-ya*ncc)) )/f2)*2.0*strHold; 
-        	elseif( case_straight == 3 ) then
+        	    elseif( case_straight == 3 ) then
            		strHold = sqrt( (za*yt-zt*ya)**2 + (xa*zt-xt*za)**2 + (ya*xt-yt*xa)**2 ) / ((xt)**2+(yt)**2+(zt)**2)**(1.5);
            		penStr = straight_alpha*((strHold-str_k0)**(straight_alpha-1.0));
            		if( strHold > str_k0 ) then
@@ -435,7 +412,7 @@ subroutine StrDeriv1(icoil, derivs, ND, NC ) !Calculate all derivatives for a co
 				derivs(1,nff + 2*NC) = derivs(1,nff + 2*NC);
            		endif
 
-        	elseif( case_straight == 4 ) then
+        	    elseif( case_straight == 4 ) then
            		strHold = sqrt( (za*yt-zt*ya)**2 + (xa*zt-xt*za)**2 + (ya*xt-yt*xa)**2 ) / ((xt)**2+(yt)**2+(zt)**2)**(1.5);
            		if( strHold > str_k0 ) then
               			strH = 1.0
@@ -466,20 +443,25 @@ subroutine StrDeriv1(icoil, derivs, ND, NC ) !Calculate all derivatives for a co
            		derivs(1,nff+2*NC) = derivs(1,nff+2*NC) + sqrt(xt**2+yt**2+zt**2) &
            		*(-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*ncc) + ((f1**(-1))*((xt*za-xa*zt)*(xt*ncp-xa*ncc)+(yt*za-ya*zt)*(yt*ncp-ya*ncc)) )/f2) &
            		*(straight_alpha*strH*( strHold - str_k0 )**(straight_alpha - 1.0) + str_c)
-        	else
+        	    else
            		FATAL( StrDeriv1, .true. , invalid case_straight option )  
-        	endif
-       	  enddo
-	case default 
-		FATAL( StrDeriv1, .true. , invalid coil_type option )	
-	end select
-  enddo
+           	    endif
+       	         enddo
+	      case default 
+		 FATAL( StrDeriv1, .true. , invalid coil_type option )	
+	      end select	 
+	endif
+     enddo
+  
   if (coil(icoil)%type == 1)  derivs = pi2*derivs/NS
   if (coil(icoil)%type == coil_type_spline )derivs = derivs/(NS)
   if( case_straight == 4 ) derivs = derivs/leng
 
+  if (myid==0 .AND. icoil==1) write(ounit,'("derivs " 7F20.10)')derivs
+
   return
 
 end subroutine StrDeriv1
+
 
 

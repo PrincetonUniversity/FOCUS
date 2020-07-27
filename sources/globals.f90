@@ -103,7 +103,7 @@ module globals
   INTEGER              :: case_bnormal   =   0
   INTEGER              :: case_length    =   1
   INTEGER              :: case_curv      =   1 
-  INTEGER              :: case_straight  =   3
+  INTEGER              :: case_straight  =   1
   REAL                 :: curv_alpha     =   2.000D+00
   REAL                 :: straight_alpha =   2.000D+00
   REAL                 :: curv_c         =   1.000D-04
@@ -130,7 +130,6 @@ module globals
   REAL                 :: origin_surface_x =   0.000D+00
   REAL                 :: origin_surface_y  =   0.000D+00
   REAL                 :: origin_surface_z  =   0.000D+00
-  REAL                 :: straight_curv  =   0.000D+00
 
   INTEGER              :: case_optimize  =   0
   REAL                 :: exit_tol       =   1.000D-04
@@ -205,9 +204,13 @@ module globals
                         case_bnormal   , &
                         case_length    , &
                         case_curv      , &
+                        case_straight  , &
                         curv_alpha     , &
+                        straight_alpha , &
                         curv_c         , &
                         k0             , &
+                        str_c          , &
+                        str_k0             , &
                         weight_bnorm   , &
                         bharm_jsurf    , &
                         weight_bharm   , &
@@ -224,6 +227,10 @@ module globals
                         weight_gnorm   , &
                         weight_mnorm   , &
                         weight_curv    , &
+                        weight_straight, &
+                        origin_surface_x, &
+                        origin_surface_y, &
+                        origin_surface_z, &
                         case_optimize  , &
                         exit_tol       , &
                         DF_maxiter     , & 
@@ -286,8 +293,8 @@ module globals
   end type toroidalsurface
 
   type arbitrarycoil
-     INTEGER              :: NS, Ic=0, Lc=0, type=0, symm=0, index_min = 9999, index_max = 0
-     REAL                 :: I=zero,  L=zero, Lo, maxcurv, ox, oy, oz, mt, mp, Bt, Bz, avgcurv
+     INTEGER              :: NS, Ic=0, Lc=0, type=0, symm=0
+     REAL                 :: I=zero,  L=zero, Lo, maxcurv, ox, oy, oz, mt, mp, Bt, Bz, avgcurv,straight_radius=   5.750D+00
      REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), &
                              dl(:), dd(:)
      character(10)        :: name

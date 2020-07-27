@@ -527,11 +527,11 @@ subroutine rdcoils
   call discoil(ifirst)
   ifirst = 0
  !-----------------------find outer part of the coils------------------------------------------
-  if (weight_straight > machprec)  then
-    do icoil = 1,Ncoils
-      call find_ind_straight(icoil) 
-    enddo
-  endif
+ ! if (weight_straight > machprec)  then
+ !   do icoil = 1,Ncoils
+ !     call find_ind_straight(icoil) 
+ !   enddo
+ ! endif
   return
 
 end subroutine rdcoils

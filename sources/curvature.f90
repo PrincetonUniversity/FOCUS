@@ -18,7 +18,7 @@
 subroutine curvature(ideriv)
   use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, MPI_COMM_FOCUS, &
        coil, DoF, Ncoils, Nfixgeo, Ndof, curv, t1CU, t2CU, weight_curv, FouCoil, &
-       mcurv, icurv, LM_fvec, LM_fjac,coil_type_spline,Splines
+       mcurv, icurv, LM_fvec, LM_fjac,coil_type_spline,Splines,origin_surface_x,origin_surface_y,origin_surface_z
 
   implicit none
   include "mpif.h"
@@ -58,6 +58,9 @@ subroutine curvature(ideriv)
      t1CU = zero
      ivec = 1
      idof = 0
+     icoil = 1
+     !if (myid == 0 .AND. icoil==1) write(ounit,'("R**2  " 7F20.10)')(coil(icoil)%xx-origin_surface_x)**2 + &
+     !								(coil(icoil)%yy-origin_surface_y)**2
      do icoil = 1, Ncoils
 
 	if( (coil(icoil)%type .ne. 1) .AND. (coil(icoil)%type .ne. coil_type_spline) ) exit ! only for Fourier       
@@ -123,6 +126,7 @@ subroutine CurvDeriv0(icoil,curvRet)
              / ((coil(icoil)%xt)**2+(coil(icoil)%yt)**2+(coil(icoil)%zt)**2)**(1.5)
 
   coil(icoil)%maxcurv = maxval(curvv)
+  !if (myid==0 .AND. icoil==1) write(ounit,'("curv  "7F20.10)')curvv
 
   if( case_curv == 1 ) then ! linear
      curvRet = sum(curvv)-curvv(0)
@@ -163,6 +167,8 @@ subroutine CurvDeriv0(icoil,curvRet)
   else   
      FATAL( CurvDeriv0, .true. , invalid case_curv option ) 
   endif
+
+
 
   return
 
@@ -432,6 +438,8 @@ subroutine CurvDeriv1(icoil, derivs, ND, NC ) !Calculate all derivatives for a c
   if (coil(icoil)%type == 1)  derivs = pi2*derivs/NS
   if (coil(icoil)%type == coil_type_spline )derivs = derivs/(NS)
   if( case_curv == 4 ) derivs = derivs/leng
+
+  !if (myid==0 .AND. icoil==1) write(ounit,'("deriv curv "7F20.10)')derivs
 
   return
 
