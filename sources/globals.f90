@@ -258,7 +258,6 @@ module globals
   INTEGER              :: myid, ncpu, myworkid, color, masterid, nmaster, nworker
   INTEGER              :: MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS, MPI_COMM_FOCUS
   REAL                 :: machprec, vsmall, small, sqrtmachprec
-  CHARACTER(3)         :: nodelabel
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

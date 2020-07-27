@@ -684,9 +684,6 @@ subroutine check_input
   ClBCAST( limiter_surf,  100,  0 )
   ClBCAST( input_coils ,  100,  0 )
 
-  FATAL( initial, ncpu >= 1000 , too macy cpus, modify nodelabel)
-  write(nodelabel,'(i3.3)') myid ! nodelabel is global; 30 Oct 15;
-
   ! initialize iteration and total iterations;
   iout = 1 ; Nouts = 1
   if (case_optimize >0) Nouts = DF_maxiter + CG_maxiter + LM_maxiter + HN_maxiter + TN_maxiter
