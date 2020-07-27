@@ -314,12 +314,6 @@ subroutine initial
   if(myid == 0) write(ounit, *) "---------------------  FOCUS ", version, "------------------------------"
   if(myid == 0) write(ounit,'("focus   : Begin execution with ncpu =",i5)') ncpu
 
-  !-------------machine constants -----------------------------------------------------------------------
-  machprec = epsilon(pi)         ! get the machine precision
-  sqrtmachprec = sqrt(machprec)  ! sqrt of machine precision
-  vsmall = ten * machprec        ! very small number
-  small = thousand * machprec    ! small number
-
   !-------------read input namelist----------------------------------------------------------------------
   if(myid == 0) then ! only the master node reads the input; 25 Mar 15;
       call getarg(1,ext) ! get argument from command line
@@ -337,7 +331,6 @@ subroutine initial
       case default
           index_dot = INDEX(ext,'.input')
           IF (index_dot .gt. 0)  ext = ext(1:index_dot-1)
-          write(ounit, '("initial : machine_prec   = ", ES12.5, " ; sqrtmachprec   = ", ES12.5)') machprec, sqrtmachprec
 #ifdef DEBUG
           write(ounit, '("DEBUG info: extension from command line is "A)') trim(ext)
 #endif
@@ -396,12 +389,23 @@ subroutine check_input
    
   LOGICAL :: exist
 
+  !-------------machine constants -----------------------------------------------------------------------
+  machprec = epsilon(pi)         ! get the machine precision
+  sqrtmachprec = sqrt(machprec)  ! sqrt of machine precision
+  vsmall = ten * machprec        ! very small number
+  small = thousand * machprec    ! small number
+
   !-------------output files name ---------------------------------------------------------------------------
   hdf5file   = "focus_"//trim(ext)//".h5"
   out_focus  = trim(ext)//".focus"
   out_coils  = trim(ext)//".coils"
   out_harm   = trim(ext)//".harmonics"
   out_plasma = trim(ext)//".plasma"
+
+  if (myid == master) then
+     write(ounit, '("initial : machine_prec   = ", ES12.5, " ; sqrtmachprec   = ", ES12.5)') &
+           machprec, sqrtmachprec
+  endif
 
   !-------------show the namelist for checking----------------------------------------------------------
   if (myid == 0) then ! Not quiet to output more informations;
@@ -679,9 +683,6 @@ subroutine check_input
   
   ClBCAST( limiter_surf,  100,  0 )
   ClBCAST( input_coils ,  100,  0 )
-
-  FATAL( initial, ncpu >= 1000 , too macy cpus, modify nodelabel)
-  write(nodelabel,'(i3.3)') myid ! nodelabel is global; 30 Oct 15;
 
   ! initialize iteration and total iterations;
   iout = 1 ; Nouts = 1

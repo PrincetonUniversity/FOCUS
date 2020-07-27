@@ -34,6 +34,7 @@ class FOCUSpy(object):
         self.verbose = verbose
         self.dumb = False
         self.time = time.time()
+        self.globals = focus.globals
         if not self.verbose:
             focus.mute(1)
             self.dumb = True
@@ -75,6 +76,10 @@ class FOCUSpy(object):
         focus.focus()
         return
 
+    def save(self, **kwargs):
+        famus.saving()
+        return
+
     def func(self, x):
         """FOCUS basic optimization functions
         """
@@ -96,4 +101,11 @@ class FOCUSpy(object):
         return focus.globals.chi
 
 if __name__== "__main__":
-   main()
+    ext = sys.argv[1]
+    if '.input' in ext:
+        ind = ext.index
+        ext = ext[:ind]
+    print('Begin to run FAMUS from python with input file at ', ext+'.input')
+    comm = MPI.COMM_WORLD
+    test = FOCUSpy(comm=comm, extension=ext, verbose=True)
+    test.run(verbose=True)
