@@ -37,7 +37,7 @@
 subroutine solvers
   use globals, only: dp, ierr, iout, myid, ounit, zero, IsQuiet, IsNormWeight, Ndof, Nouts, xdof, &
        case_optimize, DF_maxiter, LM_maxiter, CG_maxiter, coil, DoF, &
-       weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_pmsum, &
+       weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_pmsum, weight_dpbin, &
        target_tflux, target_length, cssep_factor, QN_maxiter, SA_maxiter, HY_maxiter
   use mpi
   implicit none
@@ -174,7 +174,7 @@ subroutine costfun(ideriv)
        specw      , t1P, t2P, weight_specw, &
        ccsep      , t1C, t2C, weight_ccsep, &
        pmsum      , t1V, t2V, weight_pmsum, &
-       dpbin      , weight_dpbin               ! new weight: dipole binary
+       dpbin      , t1D, t2D, weight_dpbin
 
   implicit none
   include "mpif.h"
@@ -339,6 +339,20 @@ subroutine costfun(ideriv)
      endif
   endif
 
+  ! summation of Binary Dipole Penalty
+  if (weight_pmsum > machprec) then
+ 
+     call minvol(ideriv)
+     chi = chi + weight_pmsum * pmsum
+     if     ( ideriv == 1 ) then
+        t1E = t1E +  weight_dpbin * t1D
+     elseif ( ideriv == 2 ) then
+        t1E = t1E +  weight_dpbin * t1D
+        t2E = t2E +  weight_dpbin * t2D
+     endif
+  endif
+
+
 !!$
 !!$  ! if (myid == 0) write(ounit,'("calling tlength used",f10.5,"seconds.")') finish-start
 !!$
@@ -419,8 +433,8 @@ end subroutine costfun
 
 subroutine normweight
   use globals, only: dp, zero, one, machprec, ounit, myid, xdof, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
-       weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_specw, weight_ccsep, &
-       target_tflux, psi_avg, coil, Ncoils, case_length, Bmnc, Bmns, tBmnc, tBmns, pmsum, weight_pmsum
+       weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_specw, weight_ccsep, weight_pmsum, weight_dpbin, &
+       target_tflux, psi_avg, coil, Ncoils, case_length, Bmnc, Bmns, tBmnc, tBmns, pmsum, dpbin
 
   implicit none  
   include "mpif.h"
