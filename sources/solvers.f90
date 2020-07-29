@@ -173,7 +173,8 @@ subroutine costfun(ideriv)
        cssep      , t1S, t2S, weight_cssep, &
        specw      , t1P, t2P, weight_specw, &
        ccsep      , t1C, t2C, weight_ccsep, &
-       pmsum      , t1V, t2V, weight_pmsum
+       pmsum      , t1V, t2V, weight_pmsum, &
+       dpbin      , weight_dpbin               ! new weight: dipole binary
 
   implicit none
   include "mpif.h"
