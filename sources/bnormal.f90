@@ -14,7 +14,7 @@
 module bnorm_mod
   ! contains some common variables used in subroutine bnormal
   ! allocating once and re-using them will save allocation time
-  use globals, only : dp
+  use famus_globals, only : dp
   implicit none
 
   ! 0-order
@@ -33,7 +33,7 @@ subroutine bnormal( ideriv )
 ! ideriv = 0 -> only calculate the Bn surface integral;
 ! ideriv = 1 -> calculate the Bn surface integral and its first derivatives;
 !------------------------------------------------------------------------------------------------------   
-  use globals, only: dp, zero, half, one, pi2, sqrtmachprec, bsconstant, ncpu, myid, ounit, &
+  use famus_globals, only: dp, zero, half, one, pi2, sqrtmachprec, bsconstant, ncpu, myid, ounit, &
        coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, cosnfp, sinnfp, &
        bnorm, t1B, t2B, bn, Ndof, Cdof, weight_bharm, case_bnormal, &
        weight_bnorm, ibnorm, mbnorm, ibharm, mbharm, LM_fvec, LM_fjac, &
@@ -170,7 +170,7 @@ end subroutine bnormal
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine prepare_inductance()
-  use globals, only: dp, ierr, iout, myid, ounit, zero, Ncpu, Ncoils_total, Nfp_raw, &
+  use famus_globals, only: dp, ierr, iout, myid, ounit, zero, Ncpu, Ncoils_total, Nfp_raw, &
        coil, surf, bsconstant, cosnfp, sinnfp, Ncoils, Nzeta, Nteta, one, three
   use bnorm_mod
   use mpi

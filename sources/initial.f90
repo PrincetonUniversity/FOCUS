@@ -9,7 +9,7 @@
 !
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 subroutine initial
-   use globals
+   use famus_globals
    use mpi
    implicit none
  
@@ -63,7 +63,7 @@ end subroutine initial
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine read_namelist(filename)
-   use globals, only : myid, ncpu, focusin, ounit, runit, MPI_COMM_FAMUS
+   use famus_globals, only : myid, ncpu, focusin, ounit, runit, MPI_COMM_FAMUS
    use ncsx_ports_mod, only: ncsx_ports, ncsx_ports_on
    use mpi
    implicit none
@@ -101,7 +101,7 @@ end subroutine read_namelist
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine check_input
-  use globals
+  use famus_globals
   use mpi
   implicit none
 
@@ -371,7 +371,7 @@ end subroutine check_input
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE write_namelist
-  use globals
+  use famus_globals
   use ncsx_ports_mod, only: ncsx_ports
   use mgrid_mod
   use mpi
@@ -397,7 +397,7 @@ END SUBROUTINE write_namelist
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine mute(action)
-   use globals, only: ounit
+   use famus_globals, only: ounit
    implicit none 
  
    INTEGER,intent(in) :: action

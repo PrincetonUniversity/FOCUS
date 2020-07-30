@@ -27,7 +27,7 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
 ! Biot-Savart constant and currents are not included for later simplication. 
 ! Be careful if coils have different resolutions.
 !------------------------------------------------------------------------------------------------------   
-  use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, cosnfp, sinnfp, Nfp_raw, MPI_COMM_FAMUS, &
+  use famus_globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, cosnfp, sinnfp, Nfp_raw, MPI_COMM_FAMUS, &
                      zero, myid, ounit, Nfp, pi2, half, two, one, bsconstant, momentq, machprec
   implicit none
   include "mpif.h"
@@ -148,7 +148,7 @@ subroutine bfield1(icoil, x, y, z, tBx, tBy, tBz, ND)
 ! Biot-Savart constant and currents are not included for later simplication;
 ! Discretizing factor is includeed; coil(icoil)%dd(kseg)
 !------------------------------------------------------------------------------------------------------   
-  use globals, only: dp, coil, DoF, surf, NFcoil, Ncoils, Nteta, Nzeta, Nfp_raw, &
+  use famus_globals, only: dp, coil, DoF, surf, NFcoil, Ncoils, Nteta, Nzeta, Nfp_raw, &
                      zero, myid, ounit, one, bsconstant, cosnfp, sinnfp, momentq, MPI_COMM_FAMUS
   implicit none
   include "mpif.h"
@@ -319,7 +319,7 @@ end subroutine bfield1
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine coils_bfield(B,x,y,z)
-  use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, &
+  use famus_globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, &
        zero, myid, ounit, bsconstant, one, two, ncpu, cosnfp, sinnfp, &
        master, nworker, myworkid, MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS, MPI_COMM_FAMUS
   use mpi
@@ -356,7 +356,7 @@ end subroutine coils_bfield
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE mag_torque
-  use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, ext, wunit, &
+  use famus_globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, ext, wunit, &
        zero, myid, ounit, bsconstant, one, Ncoils_total, magtau, Ncpu, MPI_COMM_FAMUS
   use mpi
   implicit none

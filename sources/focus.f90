@@ -26,7 +26,7 @@
 !latex \bi
 !latex \item Details about the macros used are listed in \emph{Macros};
 !latex \item The unit used in FAMUS is the International System of Units (SI);
-!latex \item All the shared variables are defined in \link{globals};
+!latex \item All the shared variables are defined in \link{famus_globals};
 !latex \item Variables starting with {\bf case\_xxx} are used for controling the flow direction;
 !latex \item Variables starting with {\bf Isxxx} are used for logical judgement.
 !latex \ei
@@ -35,7 +35,7 @@
 
 PROGRAM FAMUS
   
-  use globals, only: dp, ncpu, myid, ounit, ierr, astat, eunit, case_surface, case_coils, case_optimize, &
+  use famus_globals, only: dp, ncpu, myid, ounit, ierr, astat, eunit, case_surface, case_coils, case_optimize, &
        case_postproc, xdof, time_initialize, time_optimize, time_postproc, &
        version, MPI_COMM_FAMUS
   use mpi  

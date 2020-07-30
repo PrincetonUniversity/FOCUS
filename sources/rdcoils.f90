@@ -93,7 +93,7 @@
 
 subroutine rdcoils
 
-  use globals
+  use famus_globals
   use ncsx_ports_eval, only: in_ncsx_port
 
   implicit none
@@ -300,7 +300,7 @@ subroutine discoil(ifirst)
 ! if ifirst = 1, it will update all the coils; otherwise, only update free coils;
 ! date: 20170314
 !---------------------------------------------------------------------------------------------
-  use globals, only: dp, zero, pi2, myid, ounit, coil, FouCoil, Ncoils, DoF, MPI_COMM_FAMUS
+  use famus_globals, only: dp, zero, pi2, myid, ounit, coil, FouCoil, Ncoils, DoF, MPI_COMM_FAMUS
   implicit none
   include "mpif.h"
 
@@ -409,7 +409,7 @@ subroutine fouriermatrix( xc, xs, xx, NF, ND, order )
   ! It's supposed to be the fastest method.
   ! DATE: 2017/03/18
   !---------------------------------------------------------------------------------------------
-  use globals, only: dp, zero, pi2
+  use famus_globals, only: dp, zero, pi2
   implicit none
   
   INTEGER, intent(in ) :: NF, ND, order
@@ -462,7 +462,7 @@ END subroutine fouriermatrix
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE readcoils(filename, maxnseg)
-  use globals, only: dp, zero, coilsX, coilsY, coilsZ, coilsI, coilseg, coilname, Ncoils, ounit, myid, &
+  use famus_globals, only: dp, zero, coilsX, coilsY, coilsZ, coilsI, coilseg, coilname, Ncoils, ounit, myid, &
                      MPI_COMM_FAMUS
   implicit none
   include "mpif.h"
@@ -538,7 +538,7 @@ end SUBROUTINE READCOILS
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE Fourier( X, XFC, XFS, Nsegs, NFcoil)
-  use globals, only: dp, ounit, zero, pi2, half, myid, MPI_COMM_FAMUS
+  use famus_globals, only: dp, ounit, zero, pi2, half, myid, MPI_COMM_FAMUS
   implicit none
   include "mpif.h"
 

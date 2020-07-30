@@ -190,7 +190,7 @@
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE qnewton
-  use globals, only: dp, zero, sqrtmachprec, myid, ounit, Ncoils, Ndof, t1E, iout, xdof, QN_mcorrect, &
+  use famus_globals, only: dp, zero, sqrtmachprec, myid, ounit, Ncoils, Ndof, t1E, iout, xdof, QN_mcorrect, &
        exit_signal, tstart, tfinish, lowbound, upbound, nbounds, QN_maxiter, QN_factor, QN_xtol
   use mpi
   implicit none

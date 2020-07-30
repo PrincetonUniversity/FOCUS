@@ -64,7 +64,7 @@
 
 subroutine fousurf
   
-  use globals, only : dp, zero, half, pi2, myid, ounit, runit, input_surf, IsQuiet, IsSymmetric, &
+  use famus_globals, only : dp, zero, half, pi2, myid, ounit, runit, input_surf, IsQuiet, IsSymmetric, &
                       Nfou, Nfp, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
                       Nteta, Nzeta, surf, discretefactor, Nfp_raw, cosnfp, sinnfp, &
                       half_shift, shift, MPI_COMM_FAMUS
@@ -317,7 +317,7 @@ end subroutine fousurf
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine surfcoord( theta, zeta, r, z)
-  use globals, only: dp, zero, Nfou, bim, bin, Rbc, Rbs, Zbc, Zbs
+  use famus_globals, only: dp, zero, Nfou, bim, bin, Rbc, Rbs, Zbc, Zbs
   implicit none
   include "mpif.h"
 

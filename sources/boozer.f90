@@ -1,5 +1,5 @@
 subroutine boozmn
-  USE globals, only : dp, myid, ncpu, zero, ounit, total_num, pp_maxiter, pp_ns, &
+  USE famus_globals, only : dp, myid, ncpu, zero, ounit, total_num, pp_maxiter, pp_ns, &
        XYZB, lboozmn, bmin, bmim, booz_mnc, booz_mns, booz_mpol, booz_ntor, booz_mn, nfp_raw, &
        MPI_COMM_FAMUS
   USE mpi
@@ -47,7 +47,7 @@ end subroutine boozmn
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine boozsurf(XYZB, x, y, z, iota, isurf)
-  USE globals, only : dp, myid, ncpu, zero, half, two, pi, pi2, ounit, total_num, pp_maxiter, &
+  USE famus_globals, only : dp, myid, ncpu, zero, half, two, pi, pi2, ounit, total_num, pp_maxiter, &
                       bmin, bmim, booz_mnc, booz_mns, booz_mn, machprec, &
                       masterid, MPI_COMM_FAMUS
   USE mpi
@@ -388,7 +388,7 @@ end subroutine fieldline_tracing
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE get_bfield(B,x,y,z)
-  use globals, only: dp
+  use famus_globals, only: dp
   use mpi
   implicit none
 

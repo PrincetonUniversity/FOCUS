@@ -17,7 +17,7 @@
 
 subroutine saving
 
-  use globals
+  use famus_globals
   use mpi
   use hdf5
 
@@ -321,7 +321,7 @@ SUBROUTINE write_plasma
 ! write down the unpdated plasma boundary information;                          !
 ! CZHU; first version: 2017/01/11; last revised: 2017/01/11                     !
 !-------------------------------------------------------------------------------!
-  use globals, only : dp, zero, half, two, pi, pi2, myid, ncpu, ounit, wunit, ext, &
+  use famus_globals, only : dp, zero, half, two, pi, pi2, myid, ncpu, ounit, wunit, ext, &
                       Nfou, Nfp, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
                       Nteta, Nzeta, surf, Nfp_raw, bnorm, sqrtmachprec, out_plasma, &
                       discretefactor, shift, IsSymmetric, MPI_COMM_FAMUS

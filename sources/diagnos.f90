@@ -5,7 +5,7 @@ SUBROUTINE diagnos
 ! DATE: 07/13/2017
 ! diagonose the coil performance
 !------------------------------------------------------------------------------------------------------   
-  use globals, only: dp, zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
+  use famus_globals, only: dp, zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
        Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
        cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, weight_bnorm, overlap, &
        pmsum, total_moment, magtorque, ext, MPI_COMM_FAMUS
@@ -144,7 +144,7 @@ END SUBROUTINE diagnos
 
 subroutine curvature(icoil)
 
-  use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils
+  use famus_globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils
   implicit none
   include "mpif.h"
 
@@ -167,7 +167,7 @@ end subroutine curvature
 
 subroutine mindist(array_A, dim_A, array_B, dim_B, minimum)
  
-  use globals, only: dp
+  use famus_globals, only: dp
   implicit none
 
   INTEGER, INTENT(IN ) :: dim_A, dim_B
@@ -199,7 +199,7 @@ end subroutine mindist
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine importance(icoil)
-  use globals, only: dp,  zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils, &
+  use famus_globals, only: dp,  zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils, &
                      surf, Nteta, Nzeta, bsconstant, coil_importance, MPI_COMM_FAMUS
   implicit none
   include "mpif.h"

@@ -24,7 +24,7 @@ SUBROUTINE packdof(lxdof)
   ! Pack all DOF into one vector;
   ! DATE: 2017/03/19
   !--------------------------------------------------------------------------------------------- 
-  use globals, only : dp, zero, myid, ounit, MPI_COMM_FAMUS, &
+  use famus_globals, only : dp, zero, myid, ounit, MPI_COMM_FAMUS, &
                     & case_coils, Ncoils, coil, DoF, Ndof, DoFnorm, dof_offset, ldof
   implicit none
   include "mpif.h"
@@ -102,7 +102,7 @@ SUBROUTINE unpacking(lxdof)
   ! UnPack all DOF from one vector;
   ! DATE: 2017/04/03
   !--------------------------------------------------------------------------------------------- 
-  use globals, only: dp, zero, myid, ounit, MPI_COMM_FAMUS, &
+  use famus_globals, only: dp, zero, myid, ounit, MPI_COMM_FAMUS, &
        & case_coils, Ncoils, coil, DoF, Ndof, DoFnorm, dof_offset, ldof, momentq
   implicit none
   include "mpif.h"
@@ -179,7 +179,7 @@ SUBROUTINE packcoil
   ! pack coil representation variables into DoF (only geometries without currents);
   ! DATE: 2017/03/25
   !--------------------------------------------------------------------------------------------- 
-  use globals, only: dp, zero, myid, ounit, case_coils, Ncoils, coil, FouCoil, DoF, MPI_COMM_FAMUS
+  use famus_globals, only: dp, zero, myid, ounit, case_coils, Ncoils, coil, FouCoil, DoF, MPI_COMM_FAMUS
   implicit none
   include "mpif.h"
 
@@ -248,7 +248,7 @@ SUBROUTINE unpackcoil
   ! pack coil representation variables into DoF (only geometries without currents);
   ! DATE: 2017/03/25
   !--------------------------------------------------------------------------------------------- 
-  use globals, only: dp, zero, myid, ounit, case_coils, Ncoils, coil, FouCoil, DoF, MPI_COMM_FAMUS
+  use famus_globals, only: dp, zero, myid, ounit, case_coils, Ncoils, coil, FouCoil, DoF, MPI_COMM_FAMUS
   implicit none
   include "mpif.h"
 

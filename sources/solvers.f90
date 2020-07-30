@@ -35,7 +35,7 @@
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine solvers
-  use globals, only: dp, ierr, iout, myid, ounit, zero, IsQuiet, IsNormWeight, Ndof, Nouts, xdof, &
+  use famus_globals, only: dp, ierr, iout, myid, ounit, zero, IsQuiet, IsNormWeight, Ndof, Nouts, xdof, &
        case_optimize, DF_maxiter, LM_maxiter, CG_maxiter, coil, DoF, &
        weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_pmsum, &
        target_tflux, target_length, cssep_factor, QN_maxiter, SA_maxiter, HY_maxiter, MPI_COMM_FAMUS
@@ -163,7 +163,7 @@ end subroutine solvers
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine costfun(ideriv)
-  use globals, only: dp, zero, one, machprec, myid, ounit, astat, ierr, IsQuiet, MPI_COMM_FAMUS, &
+  use famus_globals, only: dp, zero, one, machprec, myid, ounit, astat, ierr, IsQuiet, MPI_COMM_FAMUS, &
        Ncoils, deriv, Ndof, xdof, dofnorm, coil, &
        chi, t1E, t2E, LM_maxiter, LM_fjac, LM_mfvec, sumdE, LM_output, LM_fvec, &
        bnorm      , t1B, t2B, weight_bnorm,  &
@@ -417,7 +417,7 @@ end subroutine costfun
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine normweight
-  use globals, only: dp, zero, one, machprec, ounit, myid, xdof, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
+  use famus_globals, only: dp, zero, one, machprec, ounit, myid, xdof, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
        weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_specw, weight_ccsep, &
        target_tflux, psi_avg, coil, Ncoils, case_length, Bmnc, Bmns, tBmnc, tBmns, pmsum, weight_pmsum, &
        MPI_COMM_FAMUS
@@ -557,7 +557,7 @@ end subroutine normweight
 
 subroutine output (mark)
 
-  use globals, only: dp, zero, ounit, myid, ierr, astat, iout, Nouts, Ncoils, save_freq, Tdof, &
+  use famus_globals, only: dp, zero, ounit, myid, ierr, astat, iout, Nouts, Ncoils, save_freq, Tdof, &
        coil, coilspace, FouCoil, chi, t1E, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
        evolution, xdof, DoF, exit_tol, exit_signal, sumDE, pmsum, MPI_COMM_FAMUS
 
