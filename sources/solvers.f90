@@ -223,6 +223,7 @@ subroutine costfun(ideriv)
      call length(0)
      call surfsep(0)
      call minvol(0)
+     call bindip(0) ! EDIT
 
   endif
 
@@ -346,10 +347,10 @@ subroutine costfun(ideriv)
   endif
 
   ! summation of Binary Dipole Penalty
-  if (weight_pmsum > machprec) then
- 
-     call minvol(ideriv)
-     chi = chi + weight_pmsum * pmsum
+  if (weight_dpbin > machprec) then
+
+     call bindip(ideriv) ! updates dpbin?
+     chi = chi + weight_dpbin * dpbin
      if     ( ideriv == 1 ) then
         t1E = t1E +  weight_dpbin * t1D
      elseif ( ideriv == 2 ) then
@@ -579,7 +580,7 @@ subroutine output (mark)
 
   use globals, only: dp, zero, ounit, myid, ierr, astat, iout, Nouts, Ncoils, save_freq, Tdof, &
        coil, coilspace, FouCoil, chi, t1E, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
-       evolution, xdof, DoF, exit_tol, exit_signal, sumDE, pmsum
+       evolution, xdof, DoF, exit_tol, exit_signal, sumDE, pmsum, dpbin
 
   implicit none  
   include "mpif.h"
@@ -593,7 +594,8 @@ subroutine output (mark)
   
   FATAL( output , iout > Nouts+2, maximum iteration reached )
 
-  if (myid == 0) write(ounit, '("output  : "I6" : "5(ES12.5," ; "))') iout, mark, chi, sumdE, pmsum!, dpbin
+!  if (myid == 0) write(ounit, '("output  : "I6" : "6(ES12.5," ; "))') iout, mark, chi, sumdE, pmsum, dpbin
+  if (myid == 0) write(ounit, '("output  : "I6" : "6(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, pmsum
 !  backward compatibility
 !  if (myid == 0) write(ounit, '("output  : "I6" : "8(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, bharm, &
 !       tflux, ttlen, pmsum

@@ -63,9 +63,6 @@ PROGRAM focus
   if(myid == 0) write(ounit, *) "---------------------  FOCUS ", version, "------------------------------"
   if(myid == 0) write(ounit,'("focus   : Begin execution with ncpu =",i5)') ncpu
 
-  ! test 
-  write(ounit,'("   this is a test banch for MUSE")')
-  
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   call initial ! read input namelist and broadcast;
