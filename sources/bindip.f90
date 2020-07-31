@@ -18,7 +18,7 @@ SUBROUTINE bindip(ideriv)
   ! dpsum = \sum J = \sum |p|( 1 - |p| )
   ! meant to encourage binary values for dipole strength
   use globals, only: dp, zero, ncpu, myid, ounit, Nfp, &
-       pmsum, dpbin, t1V, coil, Ndof, Ncoils, DoF, total_moment, dof_offset, ldof, momentq
+       pmsum, dpbin, t1V, t1D, coil, Ndof, Ncoils, DoF, total_moment, dof_offset, ldof, momentq
   implicit none
   include "mpif.h"
   INTEGER, INTENT(in) :: ideriv
@@ -55,7 +55,7 @@ SUBROUTINE bindip(ideriv)
   endif
   !-------------------------------calculate d dpbin / d pho-------------------------------------------------- 
   if ( ideriv >= 1 ) then
-     t1V = zero
+     t1D = zero
      idof = dof_offset
      do icoil = 1, Ncoils
         ND = DoF(icoil)%ND
@@ -63,31 +63,38 @@ SUBROUTINE bindip(ideriv)
            idof = idof +1
            if (coil(icoil)%itype == 2) then
               if (coil(icoil)%symmetry == 0) then ! no symmetries
-                 t1V(idof) = 2*coil(icoil)%I*coil(icoil)%moment*momentq &
-                      &       *(coil(icoil)%pho)**(momentq-1)
+               !  t1V(idof) = 2*coil(icoil)%I*coil(icoil)%moment*momentq &
+               !       &       *(coil(icoil)%pho)**(momentq-1)
+                 t1D(idof) = 2 * ABS(coil(icoil)%pho) * ( 1 - ABS(coil(icoil)%pho) ) &
+                      &        * ( 1 - 2*ABS(coil(icoil)%pho) )
               else if (coil(icoil)%symmetry == 1) then ! periodicity
-                 t1V(idof) = 2*coil(icoil)%I*coil(icoil)%moment*momentq &
-                      &       *(coil(icoil)%pho)**(momentq-1)*Nfp
+               !  t1V(idof) = 2*coil(icoil)%I*coil(icoil)%moment*momentq &
+               !       &       *(coil(icoil)%pho)**(momentq-1)*Nfp
+                 t1D(idof) = 2 * ABS(coil(icoil)%pho) * ( 1 - ABS(coil(icoil)%pho) ) &
+                      &        * ( 1 - 2*ABS(coil(icoil)%pho) ) * NFP 
               else if (coil(icoil)%symmetry == 2) then ! stellarator symmetry
-                 t1V(idof) = 2*coil(icoil)%I*coil(icoil)%moment*momentq &
-                      &       *(coil(icoil)%pho)**(momentq-1)*Nfp*2
+               !  t1V(idof) = 2*coil(icoil)%I*coil(icoil)%moment*momentq &
+               !       &       *(coil(icoil)%pho)**(momentq-1)*Nfp*2
+                 t1D(idof) = 2 * ABS(coil(icoil)%pho) * ( 1 - ABS(coil(icoil)%pho) ) &
+                      &        * ( 1 - 2*ABS(coil(icoil)%pho) ) * NFP*2
               else
                  FATAL( bindip02, .true., unspoorted symmetry option ) 
                   ! Q: What does this do?
               end if 
+              ! czhu comment
               !t1V(idof) = coil(icoil)%moment*momentq*sin(coil(icoil)%pho)**(momentq-1)*cos(coil(icoil)%pho)
            else 
-              t1V(idof) = zero
+              t1D(idof) = zero
            endif
         endif
         if ( coil(icoil)%Lc /= 0 ) then !if geometry is free;
-           t1V(idof+1:idof+ND) = zero
+           t1D(idof+1:idof+ND) = zero ! EDIT
            idof = idof + ND
         endif
      enddo !end icoil;
      FATAL( bindip , idof-dof_offset .ne. ldof, counting error in packing )
-     call MPI_ALLREDUCE( MPI_IN_PLACE, t1V, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
-     t1V = t1V / total_moment
+     call MPI_ALLREDUCE( MPI_IN_PLACE, t1D, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+     !t1V = t1V / total_moment
      !TMPOUT(t1V)
   endif
 
