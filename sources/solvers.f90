@@ -546,6 +546,17 @@ subroutine normweight
 
   endif
 
+  !-!-!-!-!-!-!-!-!-!-dpbin-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+  if( weight_dpbin >= machprec ) then
+
+     call bindip(0)
+     if (abs(dpbin) > machprec) weight_dpbin = weight_dpbin / dpbin
+     if( myid == 0 ) write(ounit, 1000) "weight_dpbin", weight_dpbin
+     if( myid .eq. 0 .and. weight_dpbin < machprec) write(ounit, '("warning : weight_dpbin < machine_precision, dpbin will not be used.")')
+
+  endif
+
 !!$!-!-!-!-!-!-!-!-!-!-eqarc-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 !!$
 !!$  if( weight_eqarc .ge. machprec ) then
