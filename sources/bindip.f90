@@ -26,7 +26,6 @@ SUBROUTINE bindip(ideriv)
   INTEGER             :: astat, ierr, icoil, idof, ND, ivec
   REAL                :: d1L(1:Ndof), norm(1:Ncoils)
 
-  pmsum = zero !
   dpbin = zero
   !-------------------------------calculate dpbin-------------------------------------------------- 
   if( ideriv >= 0 ) then
@@ -34,19 +33,25 @@ SUBROUTINE bindip(ideriv)
         if ( coil(icoil)%Ic /= 0 ) then !if current is free;
            if (coil(icoil)%itype == 2) then
               if (coil(icoil)%symmetry == 0) then ! no symmetries
-                 pmsum = pmsum + coil(icoil)%I*coil(icoil)%I
+                 !pmsum = pmsum + coil(icoil)%I*coil(icoil)%I
+                 dpbin = dpbin &
+                        + ABS(coil(icoil)%pho) * ( 1 - ABS(coil(icoil)%pho) )
               else if (coil(icoil)%symmetry == 1) then ! periodicity
-                 pmsum = pmsum + coil(icoil)%I*coil(icoil)%I*Nfp
+                 !pmsum = pmsum + coil(icoil)%I*coil(icoil)%I*Nfp
+                 dpbin = dpbin &
+                     + ABS(coil(icoil)%pho) * ( 1 - ABS(coil(icoil)%pho) )*NFP
               else if (coil(icoil)%symmetry == 2) then ! stellarator symmetry
-                 pmsum = pmsum + coil(icoil)%I*coil(icoil)%I*Nfp*2
+                 !pmsum = pmsum + coil(icoil)%I*coil(icoil)%I*Nfp*2
+                 dpbin = dpbin &
+                     + ABS(coil(icoil)%pho) * ( 1 - ABS(coil(icoil)%pho) )*NFP*2
               else
                  FATAL( bindip01, .true., unspoorted symmetry option )
               end if 
            endif
         endif
      enddo
-     call MPI_ALLREDUCE( MPI_IN_PLACE, pmsum, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
-     pmsum = pmsum / total_moment
+     call MPI_ALLREDUCE( MPI_IN_PLACE, dpbin, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+     !pmsum = pmsum / total_moment
   endif
   !-------------------------------calculate d dpbin / d pho-------------------------------------------------- 
   if ( ideriv >= 1 ) then
