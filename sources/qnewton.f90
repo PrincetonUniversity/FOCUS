@@ -222,8 +222,11 @@ SUBROUTINE qnewton
   !TMPOUT( lowbound )
   !TMPOUT( upbound )
   !TMPOUT( nbounds )  
-  if (myid == 0) write(ounit, '("output  : "A6" : "8(A12," ; "))') "iout", "time (s)", "chi", "dE_norm", &
-       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "PM eff. vol."   
+  if (myid == 0) write(ounit, '("output  : "A6" : "6(A12," ; "))') "iout", "mark", "chi", "dE_norm", &
+       "Bnormal", "PM eff. vol.", "Dip. Binary" 
+! EDIT
+!  if (myid == 0) write(ounit, '("output  : "A6" : "8(A12," ; "))') "iout", "time (s)", "chi", "dE_norm", &
+!       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "PM eff. vol."   
   !if (myid==0) iprint = 1
   task = 'START'
   
