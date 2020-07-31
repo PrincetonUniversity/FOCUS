@@ -606,7 +606,7 @@ subroutine output (mark)
   FATAL( output , iout > Nouts+2, maximum iteration reached )
 
 !  if (myid == 0) write(ounit, '("output  : "I6" : "6(ES12.5," ; "))') iout, mark, chi, sumdE, pmsum, dpbin
-  if (myid == 0) write(ounit, '("output  : "I6" : "6(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, pmsum
+  if (myid == 0) write(ounit, '("output  : "I6" : "7(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, pmsum, dpbin
 !  backward compatibility
 !  if (myid == 0) write(ounit, '("output  : "I6" : "8(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, bharm, &
 !       tflux, ttlen, pmsum
