@@ -207,7 +207,7 @@ module globals
                         weight_specw   , &
                         weight_ccsep   , &
                         weight_pmsum   , &
-                        weight_dpbin   , &  ! new for dipole binary
+                        weight_dpbin   , &  ! edit for dpsum
                         weight_inorm   , &
                         weight_gnorm   , &
                         weight_mnorm   , &
