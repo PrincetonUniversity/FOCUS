@@ -3,7 +3,7 @@
 ## Send an email to Caoxiang Zhu
   FOCUS is now reposited in GitHub under PrincetonUniversity's GitHub service. For safety reason, it's still private. 
   If you want to have a copy of the code or collaborate together, please send an email to Caoxiang Zhu 
-  (czhu@pppl.gov or zcxiang@mail.ustc.edu.cn) with your GitHub account name.
+  (czhu[at]pppl.gov or caoxiangzhu[at]gmail.com) with your GitHub account name.
     
   If you are also interested in using PrincetonUniversity's GitHub service, please visit 
   [here](https://www.princeton.edu/researchcomputing/faq/how-do-github-permissions/).
