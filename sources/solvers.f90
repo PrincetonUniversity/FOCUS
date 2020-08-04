@@ -78,7 +78,7 @@ subroutine solvers
   call costfun(1)
   call saveBmn    ! in bmnharm.h;
   iout = 0 ! reset output counter;
-  call output(zero)
+  call famus_output(zero)
 
   !--------------------------------HY--------------------------------------------------------------------
   if (HY_maxiter > 0)  then
@@ -196,7 +196,7 @@ subroutine costfun(ideriv)
 
   if (IsQuiet <= -2) then
 
-     call bnormal(0)
+     call famus_bnormal(0)
 
      if ( abs(target_tflux) < machprec ) then
         call torflux(0)
@@ -239,7 +239,7 @@ subroutine costfun(ideriv)
 !!$     finish = MPI_WTIME()
 !!$     TMPOUT(finish-start)
 !!$     do ivec = 1, 100
-        call bnormal(ideriv)
+        call famus_bnormal(ideriv)
 !!$     enddo
 !!$     call MPI_BARRIER(MPI_COMM_FAMUS, ierr ) ! wait all cpus;
 !!$     start = MPI_WTIME()
@@ -459,7 +459,7 @@ subroutine normweight
 
   if( weight_bharm >= machprec .or. weight_bnorm >= machprec ) then
 
-     call bnormal(0)
+     call famus_bnormal(0)
 
      if ( weight_bharm >= machprec ) then 
         modBn = sqrt(sum(Bmnc**2 + Bmns**2))
@@ -469,7 +469,7 @@ subroutine normweight
 !!$        enddo
         if(myid .eq. 0) write(ounit,'(8X,": Please rescale coil currents with a factor of "ES12.5)') &
              modtBn / modBn
-        call bnormal(0)
+        call famus_bnormal(0)
         if (abs(bharm) > machprec) weight_bharm = weight_bharm / bharm
         if( myid == 0 ) write(ounit, 1000) "weight_bharm", weight_bharm
         if( myid .eq. 0 .and. weight_bharm < machprec) write(ounit, '("warning : weight_bharm < machine_precision, bharm will not be used.")')
@@ -555,7 +555,7 @@ end subroutine normweight
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-subroutine output (mark)
+subroutine famus_output (mark)
 
   use famus_globals, only: dp, zero, ounit, myid, ierr, astat, iout, Nouts, Ncoils, save_freq, Tdof, &
        coil, coilspace, FouCoil, chi, t1E, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
@@ -571,7 +571,7 @@ subroutine output (mark)
 
   iout = iout + 1
   
-  FATAL( output , iout > Nouts+2, maximum iteration reached )
+  FATAL( famus_output , iout > Nouts+2, maximum iteration reached )
 
   if (myid == 0) write(ounit, '("output  : "I6" : "8(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, bharm, &
        tflux, ttlen, pmsum
@@ -623,6 +623,6 @@ subroutine output (mark)
 
   return  
 
-end subroutine output
+end subroutine famus_output
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!

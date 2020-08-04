@@ -242,7 +242,7 @@ SUBROUTINE qnewton
         !call costfun(0)
         iter = iter + 1
         tstart = MPI_Wtime()
-        call output(tstart-tfinish)
+        call famus_output(tstart-tfinish)
      endif
 
      if (iter .ge. QN_maxiter) then

@@ -1,14 +1,14 @@
 
 ! subroutine list
 !
-! initial
+! famus_initialize
 ! check_input
-! read_namelist
+! famus_read_namelist
 ! write_namelist
 ! mute
 !
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-subroutine initial
+subroutine famus_initialize
    use famus_globals
    use mpi
    implicit none
@@ -18,52 +18,67 @@ subroutine initial
    !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
  
    myid = 0 ; ncpu = 1
+   print *, '<----Entered famus_initialize'
  
+   if (called_from_ext_opt) then
+     MPI_COMM_FAMUS = MPI_COMM_MYWORLD
+   else
    ! MPI initialize
    call MPI_init( ierr )
-   MPI_COMM_FAMUS = MPI_COMM_WORLD
+     MPI_COMM_FAMUS = MPI_COMM_WORLD
+   endif
+      
    call MPI_COMM_RANK( MPI_COMM_FAMUS, myid, ierr )
    call MPI_COMM_SIZE( MPI_COMM_FAMUS, ncpu, ierr )
- 
-   if(myid == 0) write(ounit, *) "---------------------  FAMUS ", version, "------------------------------"
-   if(myid == 0) write(ounit,'("famus   : Begin execution with ncpu =",i5)') ncpu
- 
-   !-------------read input namelist----------------------------------------------------------------------
-   if(myid == 0) then ! only the master node reads the input; 25 Mar 15;
-       call getarg(1,ext) ! get argument from command line
-       select case(trim(ext))
-       case ( '-h', '--help' )
-           write(ounit,*)'-------HELP INFORMATION--------------------------'
-           write(ounit,*)' Usage: xfocus <options> input_file'
-           write(ounit,*)'    <options>'
-           write(ounit,*)'     --init / -i  :  Write an example input file'
-           write(ounit,*)'     --help / -h  :  Output help message'
-           write(ounit,*)'-------------------------------------------------'
-           call MPI_ABORT( MPI_COMM_FAMUS, 0, ierr )
-       case ( '-i', '--init' )
-           call write_namelist ! in initial.h
-       case default
-           index_dot = INDEX(ext,'.input')
-           IF (index_dot .gt. 0)  ext = ext(1:index_dot-1)
-#ifdef DEBUG
-           write(ounit, '("DEBUG info: extension from command line is "A)') trim(ext)
-#endif
-       end select
+   print *, '<---myid=',myid,' ncpu=',ncpu
+
+   if (.not. (called_from_ext_opt)) then 
+
+       if(myid == 0) write(ounit, *) "---------------------  FAMUS ", version, "------------------------------"
+       if(myid == 0) write(ounit,'("famus   : Begin execution with ncpu =",i5)') ncpu
+     
+       !-------------read input namelist----------------------------------------------------------------------
+       if(myid == 0) then ! only the master node reads the input; 25 Mar 15;
+           call getarg(1,ext) ! get argument from command line
+           select case(trim(ext))
+           case ( '-h', '--help' )
+               write(ounit,*)'-------HELP INFORMATION--------------------------'
+               write(ounit,*)' Usage: xfocus <options> input_file'
+               write(ounit,*)'    <options>'
+               write(ounit,*)'     --init / -i  :  Write an example input file'
+               write(ounit,*)'     --help / -h  :  Output help message'
+               write(ounit,*)'-------------------------------------------------'
+               call MPI_ABORT( MPI_COMM_FAMUS, 0, ierr )
+           case ( '-i', '--init' )
+               call write_namelist ! in initial.h
+           case default
+               index_dot = INDEX(ext,'.input')
+               IF (index_dot .gt. 0)  ext = ext(1:index_dot-1)
+!DEC$ #ifdef DEBUG
+               write(ounit, '("DEBUG info: extension from command line is "A)') trim(ext)
+!DEC$ #endif
+           end select
+       endif
+   else
+       write(ounit, '("DEBUG info: extension from external optimizer is "A)') trim(ext)
+     
    endif
- 
+
    ClBCAST( ext,  100,  0 )
    inputfile = trim(ext)//".input"
    
-   call read_namelist(inputfile)
+   ! JCS does the namelist need to be ready every time?
+   print *, '<----famus_initialize about to call read_namelist'
+   call famus_read_namelist(inputfile)
  
    return
  
-end subroutine initial
+end subroutine famus_initialize
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-subroutine read_namelist(filename)
-   use famus_globals, only : myid, ncpu, focusin, ounit, runit, MPI_COMM_FAMUS
+subroutine famus_read_namelist(filename)
+   use famus_globals, only : myid, ncpu, focusin, ounit, runit, MPI_COMM_FAMUS, Nteta
    use ncsx_ports_mod, only: ncsx_ports, ncsx_ports_on
    use mpi
    implicit none
@@ -74,12 +89,17 @@ subroutine read_namelist(filename)
    INTEGER :: icpu, ierr, ports_nml_stat
     
    if( myid == 0 ) then
+    print *,'<---Initial Now here! reading ' // trim(filename)
     inquire(file=trim(filename), EXIST=exist) ! inquire if inputfile existed;
     FATAL( initial, .not.exist, input file ext.input not provided )
 #ifdef DEBUG
     write(ounit, '("        : read namelist from ", A)') trim(filename)
 #endif
+   else
+     print *,'<---Initial was here, myid=',myid
    endif
+
+   print *,'<----ncpu ==', ncpu, ' and myid=',myid
  
    do icpu = 1, ncpu
       call MPI_BARRIER( MPI_COMM_FAMUS, ierr )
@@ -87,16 +107,19 @@ subroutine read_namelist(filename)
         open(runit, file=trim(filename), status="old", action='read')
         read(runit, focusin)
 
+
         ! turn on ncsx_ports functions only if namelist is found:
         read(unit=runit, nml=ncsx_ports, iostat=ports_nml_stat)
         if (ports_nml_stat == 0) ncsx_ports_on = .true.   
 
         close(runit)
+        print *,'<---Ntetainloop=',Nteta
       endif ! end of if( myid == 0 )
    enddo
+        print *,'<---Ntetaoutloop=',Nteta
  
    return
-end subroutine read_namelist
+end subroutine famus_read_namelist
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

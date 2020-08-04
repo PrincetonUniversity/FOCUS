@@ -43,12 +43,12 @@ c     cleve moler, university of new mexico, argonne national lab.
 c
 c     subroutines and functions
 c
-c     blas ddot
+c     blas famus_ddot
 c     fortran sqrt
 c
 c     internal variables
 c
-      double precision ddot,t
+      double precision famus_ddot,t
       double precision s
       integer j,jm1,k
 c     begin block with ...exits to 40
@@ -60,7 +60,7 @@ c
             jm1 = j - 1
             if (jm1 .lt. 1) go to 20
             do 10 k = 1, jm1
-               t = a(k,j) - ddot(k-1,a(1,k),1,a(1,j),1)
+               t = a(k,j) - famus_ddot(k-1,a(1,k),1,a(1,j),1)
                t = t/a(k,k)
                a(k,j) = t
                s = s + t*t
@@ -133,12 +133,12 @@ c     g. w. stewart, university of maryland, argonne national lab.
 c
 c     subroutines and functions
 c
-c     blas daxpy,ddot
+c     blas famus_daxpy,famus_ddot
 c     fortran mod
 c
 c     internal variables
 c
-      double precision ddot,temp
+      double precision famus_ddot,temp
       integer case,j,jj
 c
 c     begin block permitting ...exits to 150
@@ -165,7 +165,7 @@ c
             if (n .lt. 2) go to 40
             do 30 j = 2, n
                temp = -b(j-1)
-               call daxpy(n-j+1,temp,t(j,j-1),1,b(j),1)
+               call famus_daxpy(n-j+1,temp,t(j,j-1),1,b(j),1)
                b(j) = b(j)/t(j,j)
    30       continue
    40       continue
@@ -179,7 +179,7 @@ c
             do 60 jj = 2, n
                j = n - jj + 1
                temp = -b(j+1)
-               call daxpy(j,temp,t(1,j+1),1,b(1),1)
+               call famus_daxpy(j,temp,t(1,j+1),1,b(1),1)
                b(j) = b(j)/t(j,j)
    60       continue
    70       continue
@@ -192,7 +192,7 @@ c
             if (n .lt. 2) go to 100
             do 90 jj = 2, n
                j = n - jj + 1
-               b(j) = b(j) - ddot(jj-1,t(j+1,j),1,b(j+1),1)
+               b(j) = b(j) - famus_ddot(jj-1,t(j+1,j),1,b(j+1),1)
                b(j) = b(j)/t(j,j)
    90       continue
   100       continue
@@ -204,7 +204,7 @@ c
             b(1) = b(1)/t(1,1)
             if (n .lt. 2) go to 130
             do 120 j = 2, n
-               b(j) = b(j) - ddot(j-1,t(1,j),1,b(1),1)
+               b(j) = b(j) - famus_ddot(j-1,t(1,j),1,b(1),1)
                b(j) = b(j)/t(j,j)
   120       continue
   130       continue
@@ -279,7 +279,7 @@ c     **********
       
 c====================== The end of dnrm2 ===============================
 
-      subroutine daxpy(n,da,dx,incx,dy,incy)
+      subroutine famus_daxpy(n,da,dx,incx,dy,incy)
 c
 c     constant times a vector plus a vector.
 c     uses unrolled loops for increments equal to one.
@@ -327,9 +327,9 @@ c
       return
       end
       
-c====================== The end of daxpy ===============================
+c====================== The end of famus_daxpy ===============================
 
-      subroutine dcopy(n,dx,incx,dy,incy)
+      subroutine famus_dcopy(n,dx,incx,dy,incy)
 c
 c     copies a vector, x, to a vector, y.
 c     uses unrolled loops for increments equal to one.
@@ -379,9 +379,9 @@ c
       return
       end
       
-c====================== The end of dcopy ===============================
+c====================== The end of famus_dcopy ===============================
 
-      double precision function ddot(n,dx,incx,dy,incy)
+      double precision function famus_ddot(n,dx,incx,dy,incy)
 c
 c     forms the dot product of two vectors.
 c     uses unrolled loops for increments equal to one.
@@ -390,7 +390,7 @@ c
       double precision dx(*),dy(*),dtemp
       integer i,incx,incy,ix,iy,m,mp1,n
 c
-      ddot = 0.0d0
+      famus_ddot = 0.0d0
       dtemp = 0.0d0
       if(n.le.0)return
       if(incx.eq.1.and.incy.eq.1)go to 20
@@ -407,7 +407,7 @@ c
         ix = ix + incx
         iy = iy + incy
    10 continue
-      ddot = dtemp
+      famus_ddot = dtemp
       return
 c
 c        code for both increments equal to 1
@@ -426,13 +426,13 @@ c
         dtemp = dtemp + dx(i)*dy(i) + dx(i + 1)*dy(i + 1) +
      *   dx(i + 2)*dy(i + 2) + dx(i + 3)*dy(i + 3) + dx(i + 4)*dy(i + 4)
    50 continue
-   60 ddot = dtemp
+   60 famus_ddot = dtemp
       return
       end
       
-c====================== The end of ddot ================================
+c====================== The end of famus_ddot ================================
 
-      subroutine  dscal(n,da,dx,incx)
+      subroutine  famus_dscal(n,da,dx,incx)
 c
 c     scales a vector by a constant.
 c     uses unrolled loops for increment equal to one.
@@ -475,7 +475,7 @@ c
       return
       end
       
-c====================== The end of dscal ===============================
+c====================== The end of famus_dscal ===============================
 
 c                                                                                      
 c  L-BFGS-B is released under the “New BSD License” (aka “Modified BSD License”        
@@ -959,7 +959,7 @@ c        freev, cmprlb, matupd, formt.
 c
 c       Minpack2 Library ... timer
 c
-c       Linpack Library ... dcopy, ddot.
+c       Linpack Library ... famus_dcopy, famus_ddot.
 c
 c
 c     References:
@@ -998,7 +998,7 @@ c     ************
      +                 head,col,iter,itail,iupdat,
      +                 nseg,nfgv,info,ifun,
      +                 iword,nfree,nact,ileave,nenter
-      double precision theta,fold,ddot,dr,rr,tol,
+      double precision theta,fold,famus_ddot,dr,rr,tol,
      +                 xstep,sbgnrm,ddum,dnorm,dtd,epsmch,
      +                 cpu1,cpu2,cachyt,sbtime,lnscht,time1,time2,
      +                 gd,gdold,stp,stpmx,time
@@ -1135,8 +1135,8 @@ c        is to resume.
          if (task(1:4) .eq. 'STOP') then
             if (task(7:9) .eq. 'CPU') then
 c                                          restore the previous iterate.
-               call dcopy(n,t,1,x,1)
-               call dcopy(n,r,1,g,1)
+               call famus_dcopy(n,t,1,x,1)
+               call famus_dcopy(n,r,1,g,1)
                f = fold
             endif
             goto 999
@@ -1173,7 +1173,7 @@ c ----------------- the beginning of the loop --------------------------
 c
       if (.not. cnstnd .and. col .gt. 0) then 
 c                                            skip the search for GCP.
-         call dcopy(n,x,1,z,1)
+         call famus_dcopy(n,x,1,z,1)
          wrk = updatd
          nseg = 0
          goto 333
@@ -1300,8 +1300,8 @@ c     Generate the search direction d:=z-x.
      +            boxed,cnstnd,csave,isave(22),dsave(17))
       if (info .ne. 0 .or. iback .ge. 20) then
 c          restore the previous iterate.
-         call dcopy(n,t,1,x,1)
-         call dcopy(n,r,1,g,1)
+         call famus_dcopy(n,t,1,x,1)
+         call famus_dcopy(n,r,1,g,1)
          f = fold
          if (col .eq. 0) then
 c             abnormal termination.
@@ -1373,13 +1373,13 @@ c     Compute d=newx-oldx, r=newg-oldg, rr=y'y and dr=y's.
       do 42 i = 1, n
          r(i) = g(i) - r(i)
   42  continue
-      rr = ddot(n,r,1,r,1)
+      rr = famus_ddot(n,r,1,r,1)
       if (stp .eq. one) then  
          dr = gd - gdold
          ddum = -gdold
       else
          dr = (gd - gdold)*stp
-         call dscal(n,stp,d,1)
+         call famus_dscal(n,stp,d,1)
          ddum = -gdold*stp
       endif
  
@@ -1889,7 +1889,7 @@ c     Subprograms called:
 c 
 c       L-BFGS-B Library ... hpsolb, bmv.
 c
-c       Linpack ... dscal dcopy, daxpy.
+c       Linpack ... famus_dscal famus_dcopy, famus_daxpy.
 c
 c
 c     References:
@@ -1922,7 +1922,7 @@ c     ************
       integer          i,j,col2,nfree,nbreak,pointr,
      +                 ibp,nleft,ibkmin,iter
       double precision f1,f2,dt,dtm,tsum,dibp,zibp,dibp2,bkmin,
-     +                 tu,tl,wmc,wmp,wmw,ddot,tj,tj0,neggi,sbgnrm,
+     +                 tu,tl,wmc,wmp,wmw,famus_ddot,tj,tj0,neggi,sbgnrm,
      +                 f2_org
       double precision one,zero
       parameter        (one=1.0d0,zero=0.0d0)
@@ -1933,7 +1933,7 @@ c       the derivative f1 and the vector p = W'd (for theta = 1).
  
       if (sbgnrm .le. zero) then
          if (iprint .ge. 0) write (6,*) 'Subgnorm = 0.  GCP = X.'
-         call dcopy(n,x,1,xcp,1)
+         call famus_dcopy(n,x,1,xcp,1)
          return
       endif 
       bnded = .true.
@@ -2024,12 +2024,12 @@ c       The smallest of the nbreak breakpoints is in t(ibkmin)=bkmin.
  
       if (theta .ne. one) then
 c                   complete the initialization of p for theta not= one.
-         call dscal(col,theta,p(col+1),1)
+         call famus_dscal(col,theta,p(col+1),1)
       endif
  
 c     Initialize GCP xcp = x.
 
-      call dcopy(n,x,1,xcp,1)
+      call famus_dcopy(n,x,1,xcp,1)
 
       if (nbreak .eq. 0 .and. nfree .eq. n + 1) then
 c                  is a zero vector, return with the initial xcp as GCP.
@@ -2050,7 +2050,7 @@ c     Initialize derivative f2.
       if (col .gt. 0) then
          call bmv(m,sy,wt,col,p,v,info)
          if (info .ne. 0) return
-         f2 = f2 - ddot(col2,v,1,p,1)
+         f2 = f2 - famus_ddot(col2,v,1,p,1)
       endif
       dtm = -f1/f2
       tsum = zero
@@ -2148,7 +2148,7 @@ c        temporarily set f1 and f2 for col=0.
 
       if (col .gt. 0) then
 c                          update c = c + dt*p.
-         call daxpy(col2,dt,p,1,c,1)
+         call famus_daxpy(col2,dt,p,1,c,1)
  
 c           choose wbp,
 c           the row of W corresponding to the breakpoint encountered.
@@ -2162,12 +2162,12 @@ c           the row of W corresponding to the breakpoint encountered.
 c           compute (wbp)Mc, (wbp)Mp, and (wbp)M(wbp)'.
          call bmv(m,sy,wt,col,wbp,v,info)
          if (info .ne. 0) return
-         wmc = ddot(col2,c,1,v,1)
-         wmp = ddot(col2,p,1,v,1) 
-         wmw = ddot(col2,wbp,1,v,1)
+         wmc = famus_ddot(col2,c,1,v,1)
+         wmp = famus_ddot(col2,p,1,v,1) 
+         wmw = famus_ddot(col2,wbp,1,v,1)
  
 c           update p = p - dibp*wbp. 
-         call daxpy(col2,-dibp,wbp,1,p,1)
+         call famus_daxpy(col2,-dibp,wbp,1,p,1)
  
 c           complete updating f1 and f2 while col > 0.
          f1 = f1 + dibp*wmc
@@ -2202,14 +2202,14 @@ c------------------- the end of the loop -------------------------------
 c     Move free variables (i.e., the ones w/o breakpoints) and 
 c       the variables whose breakpoints haven't been reached.
  
-      call daxpy(n,tsum,d,1,xcp,1)
+      call famus_daxpy(n,tsum,d,1,xcp,1)
  
  999  continue
  
 c     Update c = c + dtm*p = W'(x^c - x) 
 c       which will be used in computing r = Z'(B(x^c - x) + g).
  
-      if (col .gt. 0) call daxpy(col2,dtm,p,1,c,1)
+      if (col .gt. 0) call famus_daxpy(col2,dtm,p,1,c,1)
       if (iprint .gt. 100) write (6,1010) (xcp(i),i = 1,n)
       if (iprint .ge. 99) write (6,2010)
 
@@ -2461,7 +2461,7 @@ c                    = -2 when the 2st Cholesky factorization failed.
 c
 c     Subprograms called:
 c
-c       Linpack ... dcopy, dpofa, dtrsl.
+c       Linpack ... famus_dcopy, dpofa, dtrsl.
 c
 c
 c     References:
@@ -2491,7 +2491,7 @@ c     ************
 
       integer          m2,ipntr,jpntr,iy,is,jy,js,is1,js1,k1,i,k,
      +                 col2,pbegin,pend,dbegin,dend,upcl
-      double precision ddot,temp1,temp2,temp3,temp4
+      double precision famus_ddot,temp1,temp2,temp3,temp4
       double precision one,zero
       parameter        (one=1.0d0,zero=0.0d0)
 
@@ -2506,9 +2506,9 @@ c              R_z is the upper triangular part of S'ZZ'Y.
 c                                 shift old part of WN1.
             do 10 jy = 1, m - 1
                js = m + jy
-               call dcopy(m-jy,wn1(jy+1,jy+1),1,wn1(jy,jy),1)
-               call dcopy(m-jy,wn1(js+1,js+1),1,wn1(js,js),1)
-               call dcopy(m-1,wn1(m+2,jy+1),1,wn1(m+1,jy),1)
+               call famus_dcopy(m-jy,wn1(jy+1,jy+1),1,wn1(jy,jy),1)
+               call famus_dcopy(m-jy,wn1(js+1,js+1),1,wn1(js,js),1)
+               call famus_dcopy(m-1,wn1(m+2,jy+1),1,wn1(m+1,jy),1)
   10        continue
          endif
  
@@ -2663,7 +2663,8 @@ c        upper triangle of (2,2) block of wn.
 
       do 72 is = col+1, col2
          do 74 js = is, col2
-               wn(is,js) = wn(is,js) + ddot(col,wn(1,is),1,wn(1,js),1)
+               wn(is,js) = wn(is,js) + 
+     c                     famus_ddot(col,wn(1,is),1,wn(1,js),1)
   74        continue
   72     continue
 
@@ -2985,7 +2986,7 @@ c     Subprograms called:
 c
 c       Minpack2 Library ... dcsrch.
 c
-c       Linpack ... dtrsl, ddot.
+c       Linpack ... dtrsl, famus_ddot.
 c
 c
 c                           *  *  *
@@ -3001,7 +3002,7 @@ c
 c     **********
 
       integer          i
-      double           precision ddot,a1,a2
+      double           precision famus_ddot,a1,a2
       double precision one,zero,big
       parameter        (one=1.0d0,zero=0.0d0,big=1.0d+10)
       double precision ftol,gtol,xtol
@@ -3009,7 +3010,7 @@ c     **********
 
       if (task(1:5) .eq. 'FG_LN') goto 556
 
-      dtd = ddot(n,d,1,d,1)
+      dtd = famus_ddot(n,d,1,d,1)
       dnorm = sqrt(dtd)
 
 c     Determine the maximum step length.
@@ -3048,14 +3049,14 @@ c     Determine the maximum step length.
          stp = one
       endif 
 
-      call dcopy(n,x,1,t,1)
-      call dcopy(n,g,1,r,1)
+      call famus_dcopy(n,x,1,t,1)
+      call famus_dcopy(n,g,1,r,1)
       fold = f
       ifun = 0
       iback = 0
       csave = 'START'
  556  continue
-      gd = ddot(n,g,1,d,1)
+      gd = famus_ddot(n,g,1,d,1)
       if (ifun .eq. 0) then
          gdold=gd
          if (gd .ge. zero) then
@@ -3076,7 +3077,7 @@ c                               Line search is impossible.
          nfgv = nfgv + 1
          iback = ifun - 1 
          if (stp .eq. one) then
-            call dcopy(n,z,1,x,1)
+            call famus_dcopy(n,z,1,x,1)
          else
             do 41 i = 1, n
                x(i) = stp*d(i) + t(i)
@@ -3108,7 +3109,7 @@ c         middle matrix in B.
 c
 c     Subprograms called:
 c
-c       Linpack ... dcopy, ddot.
+c       Linpack ... famus_dcopy, famus_ddot.
 c
 c
 c                           *  *  *
@@ -3124,7 +3125,7 @@ c
 c     ************
  
       integer          j,pointr
-      double precision ddot
+      double precision famus_ddot
       double precision one
       parameter        (one=1.0d0)
 
@@ -3140,8 +3141,8 @@ c     Set pointers for matrices WS and WY.
  
 c     Update matrices WS and WY.
 
-      call dcopy(n,d,1,ws(1,itail),1)
-      call dcopy(n,r,1,wy(1,itail),1)
+      call famus_dcopy(n,d,1,ws(1,itail),1)
+      call famus_dcopy(n,r,1,wy(1,itail),1)
  
 c     Set theta=yy/ys.
  
@@ -3154,16 +3155,16 @@ c                                         and the lower triangle of SY:
       if (iupdat .gt. m) then
 c                              move old information
          do 50 j = 1, col - 1
-            call dcopy(j,ss(2,j+1),1,ss(1,j),1)
-            call dcopy(col-j,sy(j+1,j+1),1,sy(j,j),1)
+            call famus_dcopy(j,ss(2,j+1),1,ss(1,j),1)
+            call famus_dcopy(col-j,sy(j+1,j+1),1,sy(j,j),1)
   50     continue
       endif
 c        add new information: the last row of SY
 c                                             and the last column of SS:
       pointr = head
       do 51 j = 1, col - 1
-         sy(col,j) = ddot(n,d,1,wy(1,pointr),1)
-         ss(j,col) = ddot(n,ws(1,pointr),1,d,1)
+         sy(col,j) = famus_ddot(n,d,1,wy(1,pointr),1)
+         ss(j,col) = famus_ddot(n,ws(1,pointr),1,d,1)
          pointr = mod(pointr,m) + 1
   51  continue
       if (stp .eq. one) then
@@ -3740,14 +3741,14 @@ c     Compute d = (1/theta)d + (1/theta**2)Z'W wv.
          pointr = mod(pointr,m) + 1
   40  continue
 
-      call dscal( nsub, one/theta, d, 1 )
+      call famus_dscal( nsub, one/theta, d, 1 )
 c 
 c-----------------------------------------------------------------
 c     Let us try the projection, d is the Newton direction
 
       iword = 0
 
-      call dcopy ( n, x, 1, xp, 1 )
+      call famus_dcopy ( n, x, 1, xp, 1 )
 c
       do 50 i=1, nsub
          k  = ind(i)
@@ -3789,7 +3790,7 @@ c
          dd_p  = dd_p + (x(i) - xx(i))*gg(i)
  55   continue
       if ( dd_p .gt.zero ) then
-         call dcopy( n, xp, 1, x, 1 )
+         call famus_dcopy( n, xp, 1, x, 1 )
          write(6,*) ' Positive dir derivative in projection '
          write(6,*) ' Using the backtracking step '
       else

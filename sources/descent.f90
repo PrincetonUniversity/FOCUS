@@ -80,7 +80,7 @@ subroutine descent
 
      call unpacking(lxdof)
      call costfun(1)
-     call output(t0)
+     call famus_output(t0)
 
      if ( exit_signal ) then
         if(myid .eq. 0) write(ounit, '("descent : EXITING-------No obvious change in last 5 outputs!")')

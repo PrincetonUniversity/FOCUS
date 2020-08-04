@@ -4,7 +4,7 @@
 !latex \briefly{Main program.}
 
 !latex \calledby{\link{}}
-!latex \calls{\link{initial}, \link{rdsurf}, \link{rdcoils}, 
+!latex \calls{\link{famus_initialize}, \link{rdsurf}, \link{rdcoils}, 
 !latex \link{saving}, \link{solvers}}.
 
 !latex \tableofcontents
@@ -49,7 +49,7 @@ PROGRAM FAMUS
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   
-  call initial ! read input namelist and broadcast;
+  call famus_initialize ! read input namelist and broadcast;
 
   call check_input
 

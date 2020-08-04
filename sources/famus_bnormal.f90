@@ -1,5 +1,5 @@
 
-!title (bnormal) ! Calculate total bnormal and its derivatives.
+!title (famus_bnormal) ! Calculate total bnormal and its derivatives.
 
 !latex \briefly{Calculate the total bnormal of all coils on plasma surface and the derivatives with respect to coil geometry and currents, including the first and second dirivatives. 
 !latex          Calling \emph{bnormal(0), bnormal(1), bnormal(2)} calculates the $0-order$, $1^{st}-order$ and $2^{nd}-order$ derivatives respectively.}
@@ -26,7 +26,7 @@ module bnorm_mod
 end module bnorm_mod
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-subroutine bnormal( ideriv )
+subroutine famus_bnormal( ideriv )
 !------------------------------------------------------------------------------------------------------ 
 ! DATE:  10/28/2019;
 ! Calculate the Bn surface integral and its derivatives;
@@ -142,7 +142,7 @@ subroutine bnormal( ideriv )
                  endif           
               enddo  !end icoil;
            endif
-           FATAL( bnormal , idof-dof_offset .ne. ldof, counting error in packing )             
+           FATAL( famus_bnormal , idof-dof_offset .ne. ldof, counting error in packing )             
            select case (case_bnormal)
            case (0)     ! no normalization over |B|;
               t1B(1:Ndof) = t1B(1:Ndof) + surf(1)%bn(iteta,jzeta) * dBn(1:Ndof) !* surf(1)%ds(iteta,jzeta)
@@ -165,7 +165,7 @@ subroutine bnormal( ideriv )
 
   return
   
-end subroutine bnormal
+end subroutine famus_bnormal
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

@@ -484,7 +484,7 @@ DO m = 1, nt
           fopt = fp
           nnew = nnew + 1
           tstart = MPI_Wtime()
-          call output(tstart-tfinish)  
+          call famus_output(tstart-tfinish)  
           IF (nnew > SA_maxiter) THEN
              IF(myid.eq.0) WRITE(ounit,'("SA--max. iterations reached.")')
              RETURN

@@ -2,10 +2,10 @@
 !title (input) ! Description of global variables.
 
 !latex \briefly{Defines input namelists and global variables, details of input namelist can be viwed at 
-!latex \link{initial}.}
+!latex \link{famus_initialize}.}
 
 !latex \calledby{\link{FAMUS}}
-!latex \calls{\link{initial}}
+!latex \calls{\link{famus_initialize}}
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -310,6 +310,8 @@ module famus_globals
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 !latex \subsection{Optimization}
+!latex \subsubsection{FAMUS Internal Optimizer}
+
   ! General target functions;
   INTEGER              :: iout, Nouts, LM_iter, LM_mfvec
   INTEGER              :: ibnorm = 0, ibharm = 0, itflux = 0, ittlen = 0, icssep = 0 ! starting number
@@ -348,6 +350,10 @@ module famus_globals
   REAL   , allocatable :: t1V(:), t2V(:,:)  
 
   REAL   , allocatable :: magtau(:,:) 
+
+!latex \subsubsection{External Optimizer}
+  LOGICAL              :: called_from_ext_opt = .False.
+
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

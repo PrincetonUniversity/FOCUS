@@ -325,7 +325,7 @@ subroutine FAMUS_fcn(m,n,x,fvec,fjac,ldfjac,iflag)
 
      call costfun(0)
      tfinish = MPI_Wtime()
-     call output(tfinish-tstart)     
+     call famus_output(tfinish-tstart)     
   case ( 1 )
      call costfun(0)
      fvec(1:m) = LM_fvec(1:m)

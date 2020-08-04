@@ -19,7 +19,7 @@ SUBROUTINE specinp
 
   mf = 24 ; nf = 12
   ! compute Bn
-  call bnormal(0) ! calculate Bn
+  call famus_bnormal(0) ! calculate Bn
 
   if (myid .ne. 0) return
 
