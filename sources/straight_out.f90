@@ -33,6 +33,8 @@ subroutine straight(ideriv)
   strAdd = zero
   ivec = 1
 
+
+
   if( ideriv >= 0 ) then
 
      do icoil = 1, Ncoils
@@ -103,7 +105,7 @@ subroutine StrDeriv0(icoil,strRet)
 
   use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils, &
           case_straight, straight_alpha, str_c, str_k0, MPI_COMM_FOCUS,coil_type_spline,Splines, &
-	  origin_surface_x, origin_surface_y, origin_surface_z 
+	  origin_surface_x, origin_surface_y, origin_surface_z
 	  
 
   implicit none
@@ -114,6 +116,7 @@ subroutine StrDeriv0(icoil,strRet)
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   INTEGER              :: kseg, NS
   REAL,allocatable     :: strv(:)
+  REAL                 :: mean_xy_distance, dispersion
 
   NS = coil(icoil)%NS 
 
@@ -123,10 +126,12 @@ subroutine StrDeriv0(icoil,strRet)
 
   strv = zero
   strRet = zero
-
-
+  mean_xy_distance = SUM((coil(icoil)%xx-origin_surface_x)**2 + (coil(icoil)%yy-origin_surface_y)**2)/(coil(icoil)%NS)
+  !dispersion = (MAXVAL((coil(icoil)%xx-origin_surface_x)**2 + (coil(icoil)%yy-origin_surface_y)**2)- &
+!	       MINVAL((coil(icoil)%xx-origin_surface_x)**2 + (coil(icoil)%yy-origin_surface_y)**2))/2
+  dispersion = (MAXVAL((coil(icoil)%xx-origin_surface_x)**2 + (coil(icoil)%yy-origin_surface_y)**2) - mean_xy_distance)/2
       do kseg = 0,coil(icoil)%NS-1
-	if ((coil(icoil)%xx(kseg)-origin_surface_x)**2 + (coil(icoil)%yy(kseg)-origin_surface_y)**2 > coil(icoil)%straight_radius**2) then
+	if ((coil(icoil)%xx(kseg)-origin_surface_x)**2 + (coil(icoil)%yy(kseg)-origin_surface_y)**2 > (mean_xy_distance + 0.125*dispersion)) then
            strv(kseg) = sqrt( (coil(icoil)%za(kseg)*coil(icoil)%yt(kseg)-coil(icoil)%zt(kseg)*coil(icoil)%ya(kseg))**2 &
                             + (coil(icoil)%xa(kseg)*coil(icoil)%zt(kseg)-coil(icoil)%xt(kseg)*coil(icoil)%za(kseg))**2  & 
                             + (coil(icoil)%ya(kseg)*coil(icoil)%xt(kseg)-coil(icoil)%yt(kseg)*coil(icoil)%xa(kseg))**2 )& 
@@ -152,7 +157,7 @@ subroutine StrDeriv0(icoil,strRet)
           FATAL( StrDeriv0, .true. , straight_alpha must be 2 or greater )
      endif
      do kseg = 0,coil(icoil)%NS-1
-	if ((coil(icoil)%xx(kseg)-origin_surface_x)**2 + (coil(icoil)%yy(kseg)-origin_surface_y)**2 > coil(icoil)%straight_radius**2) then
+	if ((coil(icoil)%xx(kseg)-origin_surface_x)**2 + (coil(icoil)%yy(kseg)-origin_surface_y)**2 > (mean_xy_distance + 0.125*dispersion)) then
            if( strv(kseg) > str_k0 ) then
               strRet = strRet + ( strv(kseg) - str_k0 )**straight_alpha
            endif
@@ -166,7 +171,7 @@ subroutine StrDeriv0(icoil,strRet)
      endif
 
      do kseg = 0 ,coil(icoil)%NS-1
-	if ((coil(icoil)%xx(kseg)-origin_surface_x)**2 + (coil(icoil)%yy(kseg)-origin_surface_y)**2 > coil(icoil)%straight_radius**2) then
+	if ((coil(icoil)%xx(kseg)-origin_surface_x)**2 + (coil(icoil)%yy(kseg)-origin_surface_y)**2 > (mean_xy_distance + 0.125*dispersion)) then
            if( strv(kseg) > str_k0 ) then
               strRet = strRet + sqrt(coil(icoil)%xt(kseg)**2+coil(icoil)%yt(kseg)**2+coil(icoil)%zt(kseg)**2)*( (strv(kseg) - str_k0 )**straight_alpha &
 		       + str_c*strv(kseg) )
@@ -201,13 +206,21 @@ subroutine StrDeriv1(icoil, derivs, ND, NC ) !Calculate all derivatives for a co
   REAL   , intent(out) :: derivs(1:1, 1:ND)
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   INTEGER              :: kseg, astat, ierr, doff, nff, NS
-  REAL                 :: dl3, xt, yt, zt, xa, ya, za, f1, f2, ncc, nss, ncp, nsp, strHold, penStr, strH, leng
+  REAL                 :: dl3, xt, yt, zt, xa, ya, za, f1, f2, ncc, nss, ncp, nsp, strHold, penStr, strH, leng,mean_xy_distance,dispersion
   REAL, dimension(1:1, 0:coil(icoil)%NS-1) :: dLx, dLy, dLz
   REAL                 :: d1L(1:1, 1:ND)
 
   FATAL( StrDeriv1, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
   
   derivs = zero
+
+  mean_xy_distance = SUM((coil(icoil)%xx-origin_surface_x)**2 + (coil(icoil)%yy-origin_surface_y)**2)/(coil(icoil)%NS)
+  !dispersion = (MAXVAL((coil(icoil)%xx-origin_surface_x)**2 + (coil(icoil)%yy-origin_surface_y)**2)- &
+!	       MINVAL((coil(icoil)%xx-origin_surface_x)**2 + (coil(icoil)%yy-origin_surface_y)**2))/2
+  dispersion = (MAXVAL((coil(icoil)%xx-origin_surface_x)**2 + (coil(icoil)%yy-origin_surface_y)**2) - mean_xy_distance)/2
+
+ !write(ounit, '( " dist " F20.10 " disp " F20.10)') &
+!						     mean_xy_distance,dispersion
 
   derivs(1,1:ND) = 0.0
   NS = coil(icoil)%NS
@@ -217,7 +230,7 @@ subroutine StrDeriv1(icoil, derivs, ND, NC ) !Calculate all derivatives for a co
   call lenDeriv1( icoil, d1L(1:1,1:ND), ND )  
      do kseg = 0,coil(icoil)%NS-1
 
-        if (((coil(icoil)%xx(kseg)-origin_surface_x)**2 + (coil(icoil)%yy(kseg)-origin_surface_y)**2) > coil(icoil)%straight_radius**2) then
+        if (((coil(icoil)%xx(kseg)-origin_surface_x)**2 + (coil(icoil)%yy(kseg)-origin_surface_y)**2) > (mean_xy_distance + 0.125*dispersion)) then
 
            xt = coil(icoil)%xt(kseg) ; yt = coil(icoil)%yt(kseg) ; zt = coil(icoil)%zt(kseg)
            xa = coil(icoil)%xa(kseg) ; ya = coil(icoil)%ya(kseg) ; za = coil(icoil)%za(kseg)
@@ -457,7 +470,8 @@ subroutine StrDeriv1(icoil, derivs, ND, NC ) !Calculate all derivatives for a co
   if (coil(icoil)%type == coil_type_spline )derivs = derivs/(NS)
   if( case_straight == 4 ) derivs = derivs/leng
 
-  if (myid==0 .AND. icoil==1) write(ounit,'("derivs " 7F20.10)')derivs
+ !if (myid==0 .AND. icoil==1) write(ounit,'(" str derivs " 7F20.10)')derivs
+  !if (myid==0 .AND. icoil==3) write(ounit,'(" 3 derivs " 7F20.10)')derivs
 
   return
 
