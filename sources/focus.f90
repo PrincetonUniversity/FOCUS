@@ -70,6 +70,7 @@ PROGRAM FAMUS
 
 
   call packdof(xdof)  ! packdof in xdof array;
+  TMPOUT(xdof(1:10))
 
   call MPI_BARRIER( MPI_COMM_FAMUS, ierr )
 

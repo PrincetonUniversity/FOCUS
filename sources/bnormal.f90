@@ -56,7 +56,6 @@ subroutine bnormal( ideriv )
   ! reset to zero;
   bnorm = zero 
   surf(1)%Bn = zero     
-  dBx = zero; dBy = zero; dBz = zero; Bm = zero
   bn = zero
 
   !-------------------------------calculate Bn-------------------------------------------------- 
@@ -65,19 +64,12 @@ subroutine bnormal( ideriv )
      do jzeta = 0, Nzeta - 1
         do iteta = 0, Nteta - 1
            
-           if (myid==0) then ! contribution from the master cpu and plasma currents
-              surf(1)%Bn(iteta, jzeta) = surf(1)%Bx(iteta, jzeta)*surf(1)%nx(iteta, jzeta) &
-                   &                   + surf(1)%By(iteta, jzeta)*surf(1)%ny(iteta, jzeta) &
-                   &                   + surf(1)%Bz(iteta, jzeta)*surf(1)%nz(iteta, jzeta) &
-                   &                   + surf(1)%pb(iteta, jzeta)
-           else ! contribution from dipoles
-              surf(1)%Bn(iteta, jzeta) = 1.0/surf(1)%ds(iteta, jzeta)*(sum(gx(iteta, jzeta, 1:Ncoils) * coil(1:Ncoils)%mx) &
-                   & + sum(gy(iteta, jzeta, 1:Ncoils) * coil(1:Ncoils)%my) + sum(gz(iteta, jzeta, 1:Ncoils) * coil(1:Ncoils)%mz))
-           endif
+            surf(1)%Bn(iteta, jzeta) = 1.0/surf(1)%ds(iteta, jzeta)*(sum(gx(iteta, jzeta, 1:Ncoils) * coil(1:Ncoils)%mx) &
+                  & + sum(gy(iteta, jzeta, 1:Ncoils) * coil(1:Ncoils)%my) + sum(gz(iteta, jzeta, 1:Ncoils) * coil(1:Ncoils)%mz))
 
            ! gather all the data
            call MPI_ALLREDUCE( MPI_IN_PLACE, surf(1)%Bn(iteta, jzeta), 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FAMUS, ierr )
-           
+           surf(1)%Bn(iteta, jzeta) = surf(1)%Bn(iteta, jzeta) + surf(1)%pb(iteta, jzeta)
            select case (case_bnormal)
            case (0)     ! no normalization over |B|;
               bnorm = bnorm + surf(1)%Bn(iteta, jzeta) * surf(1)%Bn(iteta, jzeta) * surf(1)%ds(iteta, jzeta)
@@ -95,69 +87,8 @@ subroutine bnormal( ideriv )
   
   !-------------------------------calculate Bn/x------------------------------------------------
   if ( ideriv >= 1 ) then
-
-     t1B = zero 
-     if (mbnorm > 0 .or. weight_bharm > sqrtmachprec)  d1B = zero
-     dBn = zero ; dBm = zero
-
-     do jzeta = 0, Nzeta - 1
-        do iteta = 0, Nteta - 1           
-           idof = dof_offset
-           dBn = zero
-           if (myid==0) then
-              continue
-           else
-              do icoil = 1, Ncoils
-                 cost = cos(coil(icoil)%mt) ; sint = sin(coil(icoil)%mt)
-                 cosp = cos(coil(icoil)%mp) ; sinp = sin(coil(icoil)%mp) 
-                 if ( coil(icoil)%Ic /= 0 ) then !if current is free;
-                    ! dBn/drho
-                    drho = coil(icoil)%moment*momentq*(coil(icoil)%pho)**(momentq-1)
-                    dmx = drho*sint*cosp
-                    dmy = drho*sint*sinp
-                    dmz = drho*cost
-                    dBn(idof+1) = ( gx(iteta, jzeta, icoil) * dmx &
-                         &        + gy(iteta, jzeta, icoil) * dmy &
-                         &        + gz(iteta, jzeta, icoil) * dmz ) !/ surf(1)%ds(iteta, jzeta)                   
-                    idof = idof +1
-                 endif
-                 if ( coil(icoil)%Lc /= 0 ) then !if geometry is free;
-                    drho = coil(icoil)%I
-                    ! dBn/dmt
-                    dmx =  drho*cost*cosp
-                    dmy =  drho*cost*sinp
-                    dmz = -drho*sint
-                    dBn(idof+1) = ( gx(iteta, jzeta, icoil) * dmx &
-                         &        + gy(iteta, jzeta, icoil) * dmy &
-                         &        + gz(iteta, jzeta, icoil) * dmz ) !/ surf(1)%ds(iteta, jzeta)
-                    idof = idof +1
-                    ! dBn/dmp
-                    dmx = -drho*sint*sinp
-                    dmy =  drho*sint*cosp
-                    dmz =  0
-                    dBn(idof+1) = ( gx(iteta, jzeta, icoil) * dmx &
-                         &        + gy(iteta, jzeta, icoil) * dmy &
-                         &        + gz(iteta, jzeta, icoil) * dmz ) !/ surf(1)%ds(iteta, jzeta)
-                    idof = idof +1
-                 endif           
-              enddo  !end icoil;
-           endif
-           FATAL( bnormal , idof-dof_offset .ne. ldof, counting error in packing )             
-           select case (case_bnormal)
-           case (0)     ! no normalization over |B|;
-              t1B(1:Ndof) = t1B(1:Ndof) + surf(1)%bn(iteta,jzeta) * dBn(1:Ndof) !* surf(1)%ds(iteta,jzeta)
-           case default
-              FATAL( bnorm, .true., case_bnormal can only be 0 )
-           end select
-
-        enddo  !end iteta;
-     enddo  !end jzeta;
-
-     call MPI_ALLREDUCE( MPI_IN_PLACE, t1B, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FAMUS, ierr )
-
-     t1B = t1B * discretefactor
-
-  endif
+     return
+  endif 
 
   !--------------------------------------------------------------------------------------------
 
@@ -170,8 +101,8 @@ end subroutine bnormal
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine prepare_inductance()
-  use globals, only: dp, ierr, iout, myid, ounit, zero, Ncpu, Ncoils_total, Nfp_raw, &
-       coil, surf, bsconstant, cosnfp, sinnfp, Ncoils, Nzeta, Nteta, one, three
+  use globals, only: dp, ierr, iout, myid, ounit, zero, Ncpu, Ncoils_total, Nfp_raw, fixed_coil, &
+       coil, surf, bsconstant, cosnfp, sinnfp, Ncoils, Nzeta, Nteta, one, three, fixed_ncoils, MPI_COMM_FAMUS
   use bnorm_mod
   use mpi
   implicit none
@@ -191,56 +122,65 @@ subroutine prepare_inductance()
      surf(1)%Bx = zero; surf(1)%By = zero; surf(1)%Bz = zero
      do jzeta = 0, Nzeta-1
         do iteta = 0, Nteta-1
-           do icoil = 1, Ncoils         
-              call bfield0(icoil, surf(1)%xx(iteta, jzeta), surf(1)%yy(iteta, jzeta), &
+           do icoil = 1, fixed_Ncoils         
+              call fixed_bfield0(icoil, surf(1)%xx(iteta, jzeta), surf(1)%yy(iteta, jzeta), &
                    & surf(1)%zz(iteta, jzeta), dBx(0,0), dBy(0,0), dBz(0,0))
-              surf(1)%Bx(iteta, jzeta) = surf(1)%Bx(iteta, jzeta) + dBx( 0, 0) * coil(icoil)%I * bsconstant
-              surf(1)%By(iteta, jzeta) = surf(1)%By(iteta, jzeta) + dBy( 0, 0) * coil(icoil)%I * bsconstant 
-              surf(1)%Bz(iteta, jzeta) = surf(1)%Bz(iteta, jzeta) + dBz( 0, 0) * coil(icoil)%I * bsconstant 
+              surf(1)%Bx(iteta, jzeta) = surf(1)%Bx(iteta, jzeta) + dBx( 0, 0) * fixed_coil(icoil)%I * bsconstant
+              surf(1)%By(iteta, jzeta) = surf(1)%By(iteta, jzeta) + dBy( 0, 0) * fixed_coil(icoil)%I * bsconstant 
+              surf(1)%Bz(iteta, jzeta) = surf(1)%Bz(iteta, jzeta) + dBz( 0, 0) * fixed_coil(icoil)%I * bsconstant 
            enddo ! end do icoil
+           surf(1)%pb(iteta, jzeta) = surf(1)%Bx(iteta, jzeta)*surf(1)%nx(iteta, jzeta) &
+                &                   + surf(1)%By(iteta, jzeta)*surf(1)%ny(iteta, jzeta) &
+                &                   + surf(1)%Bz(iteta, jzeta)*surf(1)%nz(iteta, jzeta) &
+                &                   + surf(1)%pb(iteta, jzeta)
         enddo
      enddo
-  else ! each slave cpu calculates their contribution (0:Ntheta-1, 0:Nzeta-1, 1:Ncoils*Npc*Symmetry).     
-     do icoil = 1, Ncoils
-        ! check if stellarator symmetric
-        npc = Nfp_raw
-        symmetry = 0 
-        if (coil(icoil)%symmetry == 0) Npc = 1
-        if (coil(icoil)%symmetry == 2) symmetry = 1
-        do jzeta = 0, Nzeta-1
-           do iteta = 0, Nteta-1
-              do ip = 1, Npc
-                 do is = 0, symmetry
-                    ! position vector
-                    ox = coil(icoil)%ox*cosnfp(ip) - coil(icoil)%oy*(-1)**is*sinnfp(ip)
-                    oy = coil(icoil)%ox*sinnfp(ip) + coil(icoil)%oy*(-1)**is*cosnfp(ip)
-                    oz = coil(icoil)%oz*(-1)**is
-                    rx = surf(1)%xx(iteta, jzeta) - ox
-                    ry = surf(1)%yy(iteta, jzeta) - oy
-                    rz = surf(1)%zz(iteta, jzeta) - oz
-                    rr = sqrt(rx*rx+ry*ry+rz*rz)
-                    rm3 = one/(rr**3)
-                    rm5 = one/(rr**5)
-                    rdotN = three*(rx*surf(1)%nx(iteta, jzeta)+ry*surf(1)%ny(iteta, jzeta)+rz*surf(1)%nz(iteta, jzeta))*surf(1)%ds(iteta, jzeta)
-                    ! compute gx, gy, gz
-                    gx(iteta, jzeta, icoil) = gx(iteta, jzeta, icoil) &
-                         & + (rdotN*rm5*rx - rm3*surf(1)%nx(iteta, jzeta)*surf(1)%ds(iteta, jzeta))*(-1)**is*cosnfp(ip) &
-                         & + (rdotN*rm5*ry - rm3*surf(1)%ny(iteta, jzeta)*surf(1)%ds(iteta, jzeta))*(-1)**is*sinnfp(ip)
-                    gy(iteta, jzeta, icoil) = gy(iteta, jzeta, icoil) &
-                         & + (rdotN*rm5*ry - rm3*surf(1)%ny(iteta, jzeta)*surf(1)%ds(iteta, jzeta))*cosnfp(ip) &
-                         & - (rdotN*rm5*rx - rm3*surf(1)%nx(iteta, jzeta)*surf(1)%ds(iteta, jzeta))*sinnfp(ip)                    
-                    gz(iteta, jzeta, icoil) = gz(iteta, jzeta, icoil) + rdotN*rm5*rz - rm3*surf(1)%nz(iteta, jzeta)*surf(1)%ds(iteta, jzeta)
-                 enddo
-              enddo
-           enddo ! end iteta
-        enddo ! end jzeta
-     enddo ! end icoil
-     
-     ! add contant
-     gx = gx*bsconstant
-     gy = gy*bsconstant
-     gz = gz*bsconstant
-  endif
+  endif 
+  RlBCAST(surf(1)%pb, Nteta*Nzeta, 0)
+  RlBCAST(surf(1)%Bx, Nteta*Nzeta, 0)
+  RlBCAST(surf(1)%By, Nteta*Nzeta, 0)
+  RlBCAST(surf(1)%Bz, Nteta*Nzeta, 0)
+
+  ! each cpu calculates their contribution (0:Ntheta-1, 0:Nzeta-1, 1:Ncoils*Npc*Symmetry).     
+   do icoil = 1, Ncoils
+      ! check if stellarator symmetric
+      npc = Nfp_raw
+      symmetry = 0 
+      if (coil(icoil)%symmetry == 0) Npc = 1
+      if (coil(icoil)%symmetry == 2) symmetry = 1
+      do jzeta = 0, Nzeta-1
+         do iteta = 0, Nteta-1
+            do ip = 1, Npc
+               do is = 0, symmetry
+                  ! position vector
+                  ox = coil(icoil)%ox*cosnfp(ip) - coil(icoil)%oy*(-1)**is*sinnfp(ip)
+                  oy = coil(icoil)%ox*sinnfp(ip) + coil(icoil)%oy*(-1)**is*cosnfp(ip)
+                  oz = coil(icoil)%oz*(-1)**is
+                  rx = surf(1)%xx(iteta, jzeta) - ox
+                  ry = surf(1)%yy(iteta, jzeta) - oy
+                  rz = surf(1)%zz(iteta, jzeta) - oz
+                  rr = sqrt(rx*rx+ry*ry+rz*rz)
+                  rm3 = one/(rr**3)
+                  rm5 = one/(rr**5)
+                  rdotN = three*(rx*surf(1)%nx(iteta, jzeta)+ry*surf(1)%ny(iteta, jzeta)+rz*surf(1)%nz(iteta, jzeta))*surf(1)%ds(iteta, jzeta)
+                  ! compute gx, gy, gz
+                  gx(iteta, jzeta, icoil) = gx(iteta, jzeta, icoil) &
+                        & + (rdotN*rm5*rx - rm3*surf(1)%nx(iteta, jzeta)*surf(1)%ds(iteta, jzeta))*(-1)**is*cosnfp(ip) &
+                        & + (rdotN*rm5*ry - rm3*surf(1)%ny(iteta, jzeta)*surf(1)%ds(iteta, jzeta))*(-1)**is*sinnfp(ip)
+                  gy(iteta, jzeta, icoil) = gy(iteta, jzeta, icoil) &
+                        & + (rdotN*rm5*ry - rm3*surf(1)%ny(iteta, jzeta)*surf(1)%ds(iteta, jzeta))*cosnfp(ip) &
+                        & - (rdotN*rm5*rx - rm3*surf(1)%nx(iteta, jzeta)*surf(1)%ds(iteta, jzeta))*sinnfp(ip)                    
+                  gz(iteta, jzeta, icoil) = gz(iteta, jzeta, icoil) + rdotN*rm5*rz - rm3*surf(1)%nz(iteta, jzeta)*surf(1)%ds(iteta, jzeta)
+               enddo
+            enddo
+         enddo ! end iteta
+      enddo ! end jzeta
+   enddo ! end icoil
+
+   ! add contant
+   gx = gx*bsconstant
+   gy = gy*bsconstant
+   gz = gz*bsconstant
 
   return
 end subroutine prepare_inductance

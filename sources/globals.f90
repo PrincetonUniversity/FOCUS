@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='dp_v1.1.10' ! version number
+  CHARACTER(LEN=10), parameter :: version='dp_v1.1.11' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -268,9 +268,9 @@ module globals
   end type toroidalsurface
 
   type arbitrarycoil
-     INTEGER              :: NS, Ic=0, Lc=0, itype, symmetry=0
-     REAL                 :: I=zero,  L=zero, Lo, maxcurv, ox, oy, oz, mt, mp, Bt, Bz, &
-                             mx, my, mz
+     INTEGER              :: NS, Ic=0, Lc=0, itype, symmetry=0, ang=0
+     REAL                 :: I=zero,  L=zero, Lo, maxcurv, ox, oy, oz, Bt, Bz, &
+                             mx, my, mz, v1(1:3), v2(1:3), v3(1:3)
      REAL                 :: pho, moment
      REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), &
                              dl(:), dd(:)
@@ -287,7 +287,7 @@ module globals
      REAL   , allocatable :: xdof(:), xof(:,:), yof(:,:), zof(:,:)
   end type DegreeOfFreedom
   
-  type(arbitrarycoil)  , allocatable :: coil(:)  
+  type(arbitrarycoil)  , allocatable :: coil(:) , fixed_coil(:)
   type(toroidalsurface), allocatable :: surf(:)
   type(FourierCoil)    , allocatable :: FouCoil(:)
   type(DegreeOfFreedom), allocatable :: DoF(:)
@@ -301,10 +301,10 @@ module globals
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 !latex \subsection{Packing and unpacking}
-  INTEGER              :: Cdof, Ndof, nfixcur, nfixgeo, Tdof, Ncoils_total, ldof, dof_offset
+  INTEGER              :: Cdof, Ndof, nfixcur, nfixgeo, Tdof, Ncoils_total, ldof, dof_offset, fixed_ncoils=0
   REAL                 :: Inorm = one, Gnorm = one, Mnorm = one   !current, geometry, and moment normalizations;
-  REAL   , allocatable :: xdof(:), dofnorm(:)
-  INTEGER, allocatable :: nbounds(:)
+  REAL   , allocatable :: dofnorm(:)
+  INTEGER, allocatable :: xdof(:), nbounds(:)
   REAL   , allocatable :: lowbound(:), upbound(:)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -387,5 +387,16 @@ module globals
   REAL, ALLOCATABLE    :: booz_mnc(:,:), booz_mns(:,:)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+  contains
+
+  FUNCTION cross(a, b)
+    REAL, DIMENSION(3) :: cross
+    REAL, DIMENSION(3), INTENT(IN) :: a, b
+  
+    cross(1) = a(2) * b(3) - a(3) * b(2)
+    cross(2) = a(3) * b(1) - a(1) * b(3)
+    cross(3) = a(1) * b(2) - a(2) * b(1)
+  END FUNCTION cross
 
 end module globals

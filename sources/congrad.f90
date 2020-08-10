@@ -323,7 +323,7 @@ SUBROUTINE myvalue(f, x, n)
   include "mpif.h"
 
   INTEGER, INTENT(in) :: n
-  REAL, INTENT(in)    :: x(n) 
+  INTEGER, INTENT(in) :: x(n) 
   REAL, INTENT(out)   :: f
 
   call MPI_BARRIER( MPI_COMM_FAMUS, ierr ) ! wait all cpus;

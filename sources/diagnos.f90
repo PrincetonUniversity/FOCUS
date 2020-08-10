@@ -38,61 +38,12 @@ SUBROUTINE diagnos
         z = surf(1)%zz(iteta, jzeta)
         B = 0
         call coils_bfield(B,x,y,z)
-        surf(1)%Bx(iteta, jzeta) = B(1)
-        surf(1)%By(iteta, jzeta) = B(2)
-        surf(1)%Bz(iteta, jzeta) = B(2)
+        surf(1)%Bx(iteta, jzeta) = surf(1)%Bx(iteta, jzeta) + B(1)
+        surf(1)%By(iteta, jzeta) = surf(1)%By(iteta, jzeta) + B(2)
+        surf(1)%Bz(iteta, jzeta) = surf(1)%Bz(iteta, jzeta) + B(2)
      enddo
   enddo
   
-
-
-  !--------------------------------minimum coil plasma separation-------------------------------  
-  minCPdist = infmax
-  do icoil = 1, Ncoils
-
-     if(coil(icoil)%itype .ne. 1) continue ! only for Fourier
-
-     SALLOCATE(Atmp, (1:3,0:coil(icoil)%NS-1), zero)
-     SALLOCATE(Btmp, (1:3,1:(Nteta*Nzeta)), zero)
-
-     Atmp(1, 0:coil(icoil)%NS-1) = coil(icoil)%xx(0:coil(icoil)%NS-1)
-     Atmp(2, 0:coil(icoil)%NS-1) = coil(icoil)%yy(0:coil(icoil)%NS-1)
-     Atmp(3, 0:coil(icoil)%NS-1) = coil(icoil)%zz(0:coil(icoil)%NS-1)
-
-     Btmp(1, 1:(Nteta*Nzeta)) = reshape(surf(1)%xx(0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))
-     Btmp(2, 1:(Nteta*Nzeta)) = reshape(surf(1)%yy(0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))
-     Btmp(3, 1:(Nteta*Nzeta)) = reshape(surf(1)%zz(0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))
-
-     call mindist(Atmp, coil(icoil)%NS, Btmp, Nteta*Nzeta, tmp_dist)
-
-     if (minCPdist .ge. tmp_dist) then 
-        minCPdist=tmp_dist
-        itmp = icoil
-     endif
-
-     DALLOCATE(Atmp)
-     DALLOCATE(Btmp)
-
-  enddo
-  if(myid .eq. 0) then
-     write(ounit, '(8X": The minimum coil-plasma distance is    :" ES23.15 &
-          " ; at coil " I3)') minCPdist, itmp
-     if (minCPdist < 0.1) then
-        write(ounit, '(8X":-----------WARNING!!!-------------------------")')
-        write(ounit, '(8X": Initial coils might intersect with the plasma")')
-        write(ounit, '(8X":----------------------------------------------")') 
-     endif
-  endif
-  
-  !--------------------------------overlap of Bn_mn harmonics-----------------------------------  
-  ReDot = zero ; ImDot = zero
-  if (weight_bharm > sqrtmachprec) then  ! do not care n,m; use cos - i sin
-     ReDot = sum(Bmnc*tBmnc) + sum(Bmns*tBmns)
-     ImDot = sum(Bmnc*tBmns) - sum(Bmns*tBmnc)
-     overlap = sqrt( (ReDot*ReDot + ImDot*ImDot) &
-                 / ( (sum(Bmnc*Bmnc)+sum(Bmns*Bmns)) * (sum(tBmnc*tBmnc)+sum(tBmns*tBmns)) ) )
-     if(myid .eq. 0) write(ounit, '(8X": Overlap of the realized Bn harmonics is:" F8.3 " %")') 100*overlap
-  endif
 
   !--------------------------------calculate the average Bn error-------------------------------
   if (allocated(surf(1)%bn)) then
@@ -111,8 +62,7 @@ SUBROUTINE diagnos
   !--------------------------------------------------------------------------------------------- 
 
   if (magtorque) then
-     call mag_torque()
-     if (myid==0) write(ounit, '(8X": magnetic field and moment data are saved in "A)') trim(ext)//".mag"
+     if (myid==0) write(ounit, '(8X": Mag. torque removed!")')
   endif
   
   return

@@ -44,63 +44,28 @@ subroutine saving
   if( save_coils == 1 ) then
      if (myid==0) then
         open( wunit, file=trim(out_FAMUS), status="unknown", form="formatted")
-        write(wunit, '("Total number of dipoles, momentq")') 
-        write(wunit, '(2X,I8, 2X, I4)') Ncoils_total, momentq ! note the fixed coils are not written
-#ifdef TOPO
-        write(wunit, '(2(A4,", "), A13, ", ", 3(A15,", "), 2(A2,", ",A15,", ",A15,", "))') &
-             "type", "symm.", "coilname", "ox", "oy", "oz", "Ic", "M_0", "pho", "Lc", "mp", "mt"
-#endif
-        close(wunit)
+        write(wunit, '("# Total number of dipoles")') 
+        write(wunit, '(2X,I8)') Ncoils_total
+        write(wunit, '(A8, ", ", A5, ", ", 4(A15,", "), 2(A3,","), 5(A15,", "), A15)') &
+                     "coilname", "symm.", "ox", "oy", "oz", "M_0", "Lc", "ang", &
+                     "v1_x", "v1_y", "v1_z", "v2_x", "v2_y", "v2_z"
+         close(wunit)
      endif
 
      call MPI_barrier( MPI_COMM_FAMUS, ierr )
 
      do icpu = 0, ncpu-1
-        if (myid/=0 .and. myid == icpu) then                 ! each cpu write the data independently
+        if (myid == icpu) then                 ! each cpu write the data independently
            open( wunit, file=trim(out_FAMUS), status="old", position="append", action="write")
-
            do icoil = 1, Ncoils
-#ifdef TOPO
-              write(wunit, '(2(I4, ", ")A13,", ",3(ES15.8,", "),2(I2,", ",ES15.8,", ",ES15.8,", "))') &
-                   coil(icoil)%itype, coil(icoil)%symmetry, coil(icoil)%name, &
+              write(wunit, '(A13,", ", I1, ", ", 4(ES15.8,", "), 2(I2,", "), 5(ES15.8,", "), ES15.8)') &
+                   coil(icoil)%name, coil(icoil)%symmetry, &
                    coil(icoil)%ox, coil(icoil)%oy, coil(icoil)%oz, &
-                   coil(icoil)%Ic, coil(icoil)%moment, coil(icoil)%pho, &
-                   coil(icoil)%Lc, coil(icoil)%mp, coil(icoil)%mt
-#else
-              write(wunit, *) "#-----------------", icoil, "---------------------------" 
-              write(wunit, *) "#coil_type     coil_name"
-              write(wunit,'(3X,I3,4X,I3,4X,A15)') coil(icoil)%itype, coil(icoil)%symmetry, coil(icoil)%name
-
-              select case (coil(icoil)%itype)
-              case (1)
-                 write(wunit, '(3(A6, A15, 8X))') " #Nseg", "current",  "Ifree", "Length", "Lfree", "target_length"
-                 write(wunit,'(2X, I4, ES23.15, 3X, I3, ES23.15, 3X, I3, ES23.15)') &
-                      coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo
-                 NF = FouCoil(icoil)%NF ! shorthand;
-                 write(wunit, *) "#NFcoil"
-                 write(wunit, '(I3)') NF
-                 write(wunit, *) "#Fourier harmonics for coils ( xc; xs; yc; ys; zc; zs) "
-                 write(wunit, 1000) FouCoil(icoil)%xc(0:NF)
-                 write(wunit, 1000) FouCoil(icoil)%xs(0:NF)
-                 write(wunit, 1000) FouCoil(icoil)%yc(0:NF)
-                 write(wunit, 1000) FouCoil(icoil)%ys(0:NF)
-                 write(wunit, 1000) FouCoil(icoil)%zc(0:NF)
-                 write(wunit, 1000) FouCoil(icoil)%zs(0:NF)
-              case (2) 
-                 write(wunit, *) "#  Lc  ox   oy   oz  Ic  I  mt  mp"
-                 write(wunit,'(2(I3, 3ES23.15))') coil(icoil)%Lc, coil(icoil)%ox, coil(icoil)%oy, coil(icoil)%oz, &
-                      coil(icoil)%Ic, coil(icoil)%I , coil(icoil)%mt, coil(icoil)%mp  
-              case (3)
-                 write(wunit, *) "# Ic     I    Lc  Bz  (Ic control I; Lc control Bz)"
-                 write(wunit,'(I3, ES23.15, I3, ES23.15)') coil(icoil)%Ic, coil(icoil)%I, &
-                      coil(icoil)%Lc, coil(icoil)%Bz
-              case default
-                 FATAL(restart, .true., not supported coil types)
-              end select
-#endif
+                   coil(icoil)%moment, coil(icoil)%Lc, coil(icoil)%ang, &
+                   coil(icoil)%v1(1), coil(icoil)%v1(2), coil(icoil)%v1(3), &
+                   coil(icoil)%v2(1), coil(icoil)%v2(2), coil(icoil)%v2(3)
            enddo
            close(wunit)
-1000       format(9999ES23.15)
         endif
         call MPI_barrier( MPI_COMM_FAMUS, ierr )
      enddo
@@ -247,48 +212,6 @@ subroutine saving
 
   call h5close_f( hdfier ) ! close Fortran interface;
   FATAL( restart, hdfier.ne.0, error calling h5close_f )
-
-
-  !--------------------------write coils.ext file-----------------------------------------------  
-
-  if( save_coils == 1 ) then
-
-     open(funit,file=trim(out_coils), status="unknown", form="formatted" )
-     write(funit,'("periods "I3)') Nfp_raw
-     write(funit,'("begin filament")')
-     write(funit,'("mirror NIL")')
-     do icoil = 1, Ncoils
-        do ii = 0, coil(icoil)%NS-1
-           write(funit,1010) coil(icoil)%xx(ii), coil(icoil)%yy(ii), coil(icoil)%zz(ii), coil(icoil)%I
-        enddo
-        ii =  0
-        write(funit,1010) coil(icoil)%xx(ii), coil(icoil)%yy(ii), coil(icoil)%zz(ii), &
-             zero, icoil, coil(icoil)%name
-     enddo
-     write(funit,'("end")')
-     close(funit)
-
-  endif
-
-1010 format(4es23.15,:,i9,"  ",a10)
-
-  !--------------------------write .ext.fo.filaments.xxx file-----------------------------------
-
-  write(srestart,'(i6.6)') iout
-
-  if( save_filaments == 1 ) then
-
-     open( funit, file="."//trim(ext)//".filaments."//srestart, status="unknown", form="unformatted" )  
-     write(funit) Ncoils, Nseg
-     do icoil = 1, Ncoils
-        write(funit) coil(icoil)%xx(0:coil(icoil)%NS)
-        write(funit) coil(icoil)%yy(0:coil(icoil)%NS)
-        write(funit) coil(icoil)%zz(0:coil(icoil)%NS)
-     enddo
-     close( funit )
-
-  endif
-
 
   !--------------------------write ext.harmonics file-----------------------------------
 
