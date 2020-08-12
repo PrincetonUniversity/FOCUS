@@ -52,10 +52,6 @@ subroutine solvers
      write(ounit, '(8X,": Initial weights are: "3(A12, ","))') "bnorm", "pmsum", "dpbin"
      write(ounit, '(8X,": "21X,3(ES12.5, ","))') weight_bnorm, weight_pmsum, weight_dpbin
 ! for back-compatibility 
-!     write(ounit, '(8X,": Initial weights are: "7(A12, ","))') "bnorm", "bharm", "tflux", &
-!         "ttlen", "cssep", "pmsum", "dpbin" ! EDIT
-!     write(ounit, '(8X,": "21X,7(ES12.5, ","))') weight_bnorm, weight_bharm, weight_tflux, &
-!          weight_ttlen, weight_cssep, weight_pmsum, weight_dpbin
 !     write(ounit, '(8X,": target_tflux = "ES12.5" ; target_length = "ES12.5" ; cssep_factor = "ES12.5)') &
 !          target_tflux, target_length, cssep_factor
   endif
@@ -78,7 +74,7 @@ subroutine solvers
   if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "------------- Initial status ------------------------"
   if (myid == 0) write(ounit, '("output  : "A6" : "6(A12," ; "))') "iout", "mark", "chi", "dE_norm", &
        "Bnormal", "PM eff. vol.", "Dip. Binary" 
-! EDIT
+! TQ-EDIT :: avoid printing FOCUS coil metrics that are not used in FAMUS
 !  if (myid == 0) write(ounit, '("output  : "A6" : "8(A12," ; "))') "iout", "mark", "chi", "dE_norm", &
 !       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "PM eff. vol." 
   call costfun(1)
@@ -223,7 +219,7 @@ subroutine costfun(ideriv)
      call length(0)
      call surfsep(0)
      call minvol(0)
-     call bindip(0) ! EDIT
+     call bindip(0) 
 
   endif
 
