@@ -101,7 +101,13 @@ module globals
   INTEGER              :: case_bnormal   =   0
   INTEGER              :: case_length    =   1
   INTEGER              :: case_curv      =   1 
+  INTEGER              :: case_straight  =   1
   REAL                 :: curv_alpha     =   2.000D+00
+  REAL                 :: straight_alpha =   2.000D+00
+  REAL                 :: curv_c         =   1.000D-04
+  REAL                 :: k0             =   0.000D+00
+  REAL                 :: str_c          =   1.000D-04
+  REAL                 :: str_k0         =   2.000D+00
   REAL                 :: curv_c         =   1.000D-04
   REAL                 :: k0             =   0.000D+00
   REAL                 :: weight_bnorm   =   1.000D+00
@@ -120,6 +126,10 @@ module globals
   REAL                 :: weight_gnorm   =   1.000D+00
   REAL                 :: weight_mnorm   =   1.000D+00
   REAL                 :: weight_curv    =   0.000D+00
+  REAL                 :: weight_straight    =   0.000D+00
+  REAL                 :: origin_surface_x =   0.000D+00
+  REAL                 :: origin_surface_y  =   0.000D+00
+  REAL                 :: origin_surface_z  =   0.000D+00
 
   INTEGER              :: case_optimize  =   0
   REAL                 :: exit_tol       =   1.000D-04
@@ -194,9 +204,13 @@ module globals
                         case_bnormal   , &
                         case_length    , &
                         case_curv      , &
+                        case_straight  , &
                         curv_alpha     , &
+                        straight_alpha , &
                         curv_c         , &
                         k0             , &
+                        str_c          , &
+                        str_k0         , &
                         weight_bnorm   , &
                         bharm_jsurf    , &
                         weight_bharm   , &
@@ -213,6 +227,10 @@ module globals
                         weight_gnorm   , &
                         weight_mnorm   , &
                         weight_curv    , &
+                        weight_straight, &
+                        origin_surface_x, &
+                        origin_surface_y, &
+                        origin_surface_z, &
                         case_optimize  , &
                         exit_tol       , &
                         DF_maxiter     , & 
@@ -322,8 +340,8 @@ module globals
 !latex \subsection{Optimization}
   ! General target functions;
   INTEGER              :: iout, Nouts, LM_iter, LM_mfvec
-  INTEGER              :: ibnorm = 0, ibharm = 0, itflux = 0, ittlen = 0, icssep = 0, icurv = 0 ! starting number
-  INTEGER              :: mbnorm = 0, mbharm = 0, mtflux = 0, mttlen = 0, mcssep = 0, mcurv = 0 ! numbers of targets
+  INTEGER              :: ibnorm = 0, ibharm = 0, itflux = 0, ittlen = 0, icssep = 0, icurv = 0, istr=0 ! starting number
+  INTEGER              :: mbnorm = 0, mbharm = 0, mtflux = 0, mttlen = 0, mcssep = 0, mcurv = 0, mstr=0 ! numbers of targets
   REAL                 :: chi, discretefactor, sumDE
   REAL   , allocatable :: t1E(:), t2E(:,:), evolution(:,:), coilspace(:,:), deriv(:,:)
   REAL   , allocatable :: LM_fvec(:), LM_fjac(:,:)
@@ -347,6 +365,9 @@ module globals
   ! Curvature constraint
   REAL                 :: curv
   REAL   , allocatable :: t1CU(:), t2CU(:,:)
+    ! Straight out-coil constraint
+  REAL                 :: str
+  REAL   , allocatable :: t1Str(:), t2Str(:,:)
   ! Coil-surface spearation
   INTEGER              :: psurf = 1 ! the prevent surface label; default 1 is the plasma boundary
   REAL                 :: cssep
@@ -380,7 +401,7 @@ module globals
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 !latex \subsection{Miscellaneous}
-  REAL                 :: tmpw_bnorm, tmpw_tflux ,tmpt_tflux, tmpw_ttlen, tmpw_specw, tmpw_ccsep, tmpw_bharm, tmpw_curv
+  REAL                 :: tmpw_bnorm, tmpw_tflux ,tmpt_tflux, tmpw_ttlen, tmpw_specw, tmpw_ccsep, tmpw_bharm, tmpw_curv, tmpw_str
   REAL                 :: overlap = 0.0
                           !tmp weight for saving to restart file
   REAL, allocatable    :: mincc(:,:), coil_importance(:)
