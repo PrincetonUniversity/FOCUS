@@ -8,7 +8,7 @@ SUBROUTINE diagnos
   use globals, only: dp, zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
        Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
        cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, Nfp, weight_bnorm, overlap, plasma, &
-       cosnfp, sinnfp, symmetry, discretefactor, MPI_COMM_FOCUS, surf_Nfp, curv, case_curv,coil_type_spline,Splines
+       cosnfp, sinnfp, symmetry, discretefactor, MPI_COMM_FOCUS, surf_Nfp, curv, case_curv,coil_type_spline,Splines,str,case_straight
   use mpi
   implicit none
 
@@ -29,8 +29,8 @@ SUBROUTINE diagnos
   call costfun(0)
 
   if (myid == 0) write(ounit, '("diagnos : "6(A12," ; "))') , &
-       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." , "curv"
-  if (myid == 0) write(ounit, '("        : "6(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep, curv
+       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." , "curv", "straight-out coil"
+  if (myid == 0) write(ounit, '("        : "6(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep, curv,str
 
   !save all the coil parameters;
   if (allocated(coilspace)) then
