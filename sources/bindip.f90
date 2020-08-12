@@ -24,7 +24,7 @@ SUBROUTINE bindip(ideriv)
   INTEGER, INTENT(in) :: ideriv
 
   INTEGER             :: astat, ierr, icoil, idof, ND, ivec
-  REAL                :: d1L(1:Ndof), norm(1:Ncoils), pho, chi_d
+  REAL                :: d1L(1:Ndof), norm(1:Ncoils), rho, chi_d, dchi_d
 
   dpbin = zero
   !-------------------------------calculate dpbin-------------------------------------------------- 
@@ -32,8 +32,10 @@ SUBROUTINE bindip(ideriv)
      do icoil = 1, Ncoils
         if ( coil(icoil)%Ic /= 0 ) then !if current is free;
            if (coil(icoil)%itype == 2) then
-              pho = coil(icoil)%pho
-              chi_d = ABS(pho) * ( 1 - ABS(pho) )
+              rho = coil(icoil)%pho ** momentq
+              !pho = coil(icoil)%pho
+              !chi_d = ABS(pho) * ( 1 - ABS(pho) )
+              chi_d = ABS(rho) * ( 1 - ABS(rho) )
               if (coil(icoil)%symmetry == 0) then ! no symmetries
                  !pmsum = pmsum + coil(icoil)%I*coil(icoil)%I
                  dpbin = dpbin + chi_d**2
@@ -63,20 +65,25 @@ SUBROUTINE bindip(ideriv)
         if ( coil(icoil)%Ic /= 0 ) then !if current is free;
            idof = idof +1
            if (coil(icoil)%itype == 2) then
-              pho = coil(icoil)%pho
+              rho = coil(icoil)%pho ** momentq
+              dchi_d = 2 * rho * (1 - abs(rho) ) * ( 1 - 2*abs(rho) ) &
+                         & * momentq * abs(coil(icoil)%pho) ** (momentq - 1)
+              !pho = coil(icoil)%pho
               if (coil(icoil)%symmetry == 0) then ! no symmetries
                !  t1V(idof) = 2*coil(icoil)%I*coil(icoil)%moment*momentq &
                !       &       *(coil(icAoil)%pho)**(momentq-1)
-                 t1D(idof) = 2 * pho * (1 - abs(pho) ) * ( 1 - 2*abs(pho) )
-               !  t1D(idof) = 2 * ABS(pho) * (1 - ABS(pho) ) * ( 1 - 2*ABS(pho) )
+                 t1D(idof) = dchi_d
+               !  t1D(idof) = 2 * pho * (1 - abs(pho) ) * ( 1 - 2*abs(pho) )
               else if (coil(icoil)%symmetry == 1) then ! periodicity
                !  t1V(idof) = 2*coil(icoil)%I*coil(icoil)%moment*momentq &
                !       &       *(coil(icoil)%pho)**(momentq-1)*Nfp
-                 t1D(idof) = 2 * pho * (1 - abs(pho) ) * ( 1 - 2*abs(pho) )*Nfp
+                 t1D(idof) = dchi_d * Nfp
+               !  t1D(idof) = 2 * pho * (1 - abs(pho) ) * ( 1 - 2*abs(pho) )*Nfp
               else if (coil(icoil)%symmetry == 2) then ! stellarator symmetry
                !  t1V(idof) = 2*coil(icoil)%I*coil(icoil)%moment*momentq &
                !       &       *(coil(icoil)%pho)**(momentq-1)*Nfp*2
-                 t1D(idof) = 2 * pho * (1 - abs(pho) ) * ( 1 - 2*abs(pho) )*Nfp*2
+                 t1D(idof) = dchi_d * Nfp*2
+               !  t1D(idof) = 2 * pho * (1 - abs(pho) ) * ( 1 - 2*abs(pho) )*Nfp*2
               else
                  FATAL( bindip02, .true., unspoorted symmetry option ) 
                   ! Q: What does this do?
