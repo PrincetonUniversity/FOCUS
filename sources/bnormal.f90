@@ -37,7 +37,8 @@ subroutine bnormal( ideriv )
        coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, cosnfp, sinnfp, &
        bnorm, t1B, t2B, bn, Ndof, Cdof, weight_bharm, case_bnormal, &
        weight_bnorm, ibnorm, mbnorm, ibharm, mbharm, LM_fvec, LM_fjac, &
-       bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn, dof_offset, ldof, momentq
+       bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn, dof_offset, ldof, momentq, &
+       MPI_COMM_FAMUS
   use bnorm_mod
   use bharm_mod
   use mpi
@@ -75,7 +76,7 @@ subroutine bnormal( ideriv )
            endif
 
            ! gather all the data
-           call MPI_ALLREDUCE( MPI_IN_PLACE, surf(1)%Bn(iteta, jzeta), 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+           call MPI_ALLREDUCE( MPI_IN_PLACE, surf(1)%Bn(iteta, jzeta), 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FAMUS, ierr )
            
            select case (case_bnormal)
            case (0)     ! no normalization over |B|;
@@ -152,7 +153,7 @@ subroutine bnormal( ideriv )
         enddo  !end iteta;
      enddo  !end jzeta;
 
-     call MPI_ALLREDUCE( MPI_IN_PLACE, t1B, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+     call MPI_ALLREDUCE( MPI_IN_PLACE, t1B, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FAMUS, ierr )
 
      t1B = t1B * discretefactor
 
@@ -160,7 +161,7 @@ subroutine bnormal( ideriv )
 
   !--------------------------------------------------------------------------------------------
 
-  call MPI_barrier( MPI_COMM_WORLD, ierr )
+  call MPI_barrier( MPI_COMM_FAMUS, ierr )
 
   return
   

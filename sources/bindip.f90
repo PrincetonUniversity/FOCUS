@@ -18,7 +18,7 @@ SUBROUTINE bindip(ideriv)
   ! dpsum = \sum J = \sum |p|( 1 - |p| )
   ! purpose to encourage binary values for dipole strength
   use globals, only: dp, zero, ncpu, myid, ounit, Nfp, &
-       pmsum, dpbin, t1V, t1D, coil, Ndof, Ncoils, DoF, total_moment, dof_offset, ldof, momentq
+       pmsum, dpbin, t1V, t1D, coil, Ndof, Ncoils, DoF, total_moment, dof_offset, ldof, momentq, MPI_COMM_FAMUS
   implicit none
   include "mpif.h"
   INTEGER, INTENT(in) :: ideriv
@@ -49,7 +49,7 @@ SUBROUTINE bindip(ideriv)
            endif
         endif
      enddo
-     call MPI_ALLREDUCE( MPI_IN_PLACE, dpbin, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+     call MPI_ALLREDUCE( MPI_IN_PLACE, dpbin, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FAMUS, ierr )
      !pmsum = pmsum / total_moment
      dpbin = dpbin / Ndof ! assumes no other dof
   endif
@@ -90,12 +90,11 @@ SUBROUTINE bindip(ideriv)
         endif
      enddo !end icoil;
      FATAL( bindip , idof-dof_offset .ne. ldof, counting error in packing )
-     call MPI_ALLREDUCE( MPI_IN_PLACE, t1D, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
-     !t1V = t1V / total_moment
+     call MPI_ALLREDUCE( MPI_IN_PLACE, t1D, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FAMUS, ierr )
      t1D = t1D / Ndof
   endif
 
-  call MPI_barrier( MPI_COMM_WORLD, ierr )
+  call MPI_barrier( MPI_COMM_FAMUS, ierr )   
   
   return
 END SUBROUTINE bindip

@@ -9,7 +9,7 @@
 !latex  \section{General}
 !latex  Levenberg-Marquardt algorithm is one of the most famous minimization algorithms.
 !latex  There is a brief introduction on \href{https://en.wikipedia.org/wiki/Levenberg%E2%80%93Marquardt_algorithm}{Wikipedia}.
-!latex  In FOCUS, we use the subroutine {\em{lmder}} from \href{http://www.netlib.org/minpack/}{MINPACK}.
+!latex  In FAMUS, we use the subroutine {\em{lmder}} from \href{http://www.netlib.org/minpack/}{MINPACK}.
 
 !latex  \section{Documentation}
 !latex  The cost functions (targets) are stored in {\bf LM\_fvec(1:LM\_mfvec)}, 
@@ -209,7 +209,7 @@
 
 subroutine lmalg
 use globals, only: dp, sqrtmachprec, zero, myid, ounit, Ncoils, Ndof, t1E, iout, xdof, &
-     tstart, tfinish, NBmn, Nzeta, Nteta, tstart, tfinish, &
+     tstart, tfinish, NBmn, Nzeta, Nteta, tstart, tfinish, MPI_COMM_FAMUS, &
      LM_maxiter, LM_xtol, LM_ftol, LM_iter, LM_factor, LM_mfvec, LM_output
   use mpi
   implicit none
@@ -218,7 +218,7 @@ use globals, only: dp, sqrtmachprec, zero, myid, ounit, Ncoils, Ndof, t1E, iout,
   INTEGER                 :: maxfev, mode, nprint, nfev, njev
   REAL                    :: ftol, xtol, gtol, factor, x(1:Ndof)
   REAL   , allocatable    :: wa(:), fvec(:), fjac(:,:)
-  EXTERNAL                :: focus_fcn
+  EXTERNAL                :: FAMUS_fcn
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   tstart = MPI_Wtime()
@@ -252,8 +252,8 @@ use globals, only: dp, sqrtmachprec, zero, myid, ounit, Ncoils, Ndof, t1E, iout,
   call packdof(x(1:Ndof)) ! initial xdof;
   if (myid == 0) write(ounit, '("output  : "A6" : "8(A12," ; "))') "iout", "time (s)", "chi", "dE_norm", &
        "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." 
-  !call lmder1(focus_fcn,m,Ndof,x,fvec,fjac,ldfjac,tol,info,ipvt,wa,lwa)
-  call lmder(focus_fcn,m,n,x,fvec,fjac,ldfjac,ftol,xtol,gtol,maxfev, &
+  !call lmder1(FAMUS_fcn,m,Ndof,x,fvec,fjac,ldfjac,tol,info,ipvt,wa,lwa)
+  call lmder(FAMUS_fcn,m,n,x,fvec,fjac,ldfjac,ftol,xtol,gtol,maxfev, &
        wa(1),mode,factor,nprint,info,nfev,njev,ipvt,wa(n+1), &
        wa(2*n+1),wa(3*n+1),wa(4*n+1),wa(5*n+1))
 
@@ -293,9 +293,9 @@ end subroutine lmalg
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-subroutine focus_fcn(m,n,x,fvec,fjac,ldfjac,iflag)
+subroutine FAMUS_fcn(m,n,x,fvec,fjac,ldfjac,iflag)
   use globals, only: dp, zero, myid, ounit, LM_iter, LM_maxiter, &
-       &             exit_signal, LM_fvec, LM_fjac, tstart, tfinish
+       &             exit_signal, LM_fvec, LM_fjac, tstart, tfinish, MPI_COMM_FAMUS
   use mpi
   implicit none
   
@@ -337,5 +337,5 @@ subroutine focus_fcn(m,n,x,fvec,fjac,ldfjac,iflag)
   end select
  
   return
-end subroutine focus_fcn
+end subroutine FAMUS_fcn
      

@@ -3,7 +3,7 @@
 
 !latex \briefly{A Fourier representation for the plasma boundary is read from file }
 
-!latex \calledby{\link{xfocus}}
+!latex \calledby{\link{xFAMUS}}
 !latex \calls{\link{}}
 
 !latex \section{General representation (stellarator)}
@@ -67,7 +67,7 @@ subroutine fousurf
   use globals, only : dp, zero, half, pi2, myid, ounit, runit, input_surf, IsQuiet, IsSymmetric, &
                       Nfou, Nfp, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
                       Nteta, Nzeta, surf, discretefactor, Nfp_raw, cosnfp, sinnfp, &
-                      half_shift, shift
+                      half_shift, shift, MPI_COMM_FAMUS
   
   implicit none
   

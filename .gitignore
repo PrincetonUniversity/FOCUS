@@ -13,12 +13,22 @@
 *.h5
 *~
 .DS_Store
-*/.DS_Store
+*.pdf
 
 .cproject
 .idea/
 .project
+.vscode
 
 bin/
 docs/
 examples/
+
+# python wrapper related
+*.fpp
+f90wrap_*.f90
+_*.so
+src.*/
+.f2py_f2cmap 
+.libs/ 
+__pycache__/
