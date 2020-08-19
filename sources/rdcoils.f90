@@ -111,6 +111,7 @@ subroutine rdcoils
   num_pm  = 0 ! number of permanent magnets
   num_bg  = 0 ! number of background field
 
+  print *,' <----famus\rdcoils entered, myid=', myid, ' ncpu=', ncpu
   if(myid == 0) write(ounit, *) "-----------INITIALIZE COILS----------------------------------"
 
   ! Npc = 1
@@ -122,6 +123,7 @@ subroutine rdcoils
      
      ! myid = 0 read all the fixed coils
      if( myid==0 ) then
+        print *, '<-----famus\rdcoils myid=0 is handling fixed coils'
         if (trim(fixed_coils) /= 'none') then  !get file number;
            open( runit, file=trim(fixed_coils), status="old", action='read')
            read( runit,*)
@@ -175,6 +177,7 @@ subroutine rdcoils
            enddo !end do icoil;
            close( runit )
         else ! initialize one fake coil;
+           print *, '<-----rdcoils myid=0 is initializing one fake coil'
            Ncoils = 1
            allocate( coil(1:Ncoils) )
            allocate( dof(1:Ncoils) )
@@ -186,6 +189,8 @@ subroutine rdcoils
         endif
      endif
 
+     print *, '<----famus\rdcoils is moving on to handle dipoles.'
+
      if( myid==0 ) then  !get file number;
         open( runit, file=trim(input_coils), status="old", action='read')
         read( runit,*)
@@ -195,6 +200,7 @@ subroutine rdcoils
         close( runit )
      endif
 
+     print *, '<----famus\rdcoils is broadcasting Ncoils_total and momenq, myid=',myid
      IlBCAST( Ncoils_total, 1,  0 )
      IlBCAST( momentq, 1,  0 )
      if (Ncpu == 1) STOP ' At least use two cpus'
@@ -207,13 +213,18 @@ subroutine rdcoils
      offset = 2+(myid-1)*(Ncoils_total/(Ncpu-1))*5 ! only for dipoles
 #endif
      !MPIOUT( offset )
+     print *, '<----famus myid=',myid,' calculated offset = ', offset
                                
+     print *, '<----famus\rdcoils is allocaing coil & dof, myid=',myid
      if (myid /= 0) then
+        !if (allocated(coil)) deallocate(coil) ! necessary???
         allocate( coil(1:Ncoils) )
+        !if (allocated(dof)) deallocate(dof) ! necessary???
         allocate(  dof(1:Ncoils) )
         ! coil(1:Ncoils)%symmetry = 1
      endif
 
+     print *, '<----famus\rdcoils is taking turns reading input_coils, myid=',myid,' offset=',offset, ' ncoils=', ncoils
      do icpu = 1, ncpu-1
         if (myid == icpu) then                              ! each cpu read the coils at the same time.
            open( runit, file=trim(input_coils), status="old", action='read')
@@ -253,6 +264,7 @@ subroutine rdcoils
   end select
 
   !-----------------------allocate   coil data--------------------------------------------------
+  print *, '<----famus\rdcoils allocating coil data, myid=',myid
   if (myid == 0) then
      do icoil = 1, Ncoils
         SALLOCATE( coil(icoil)%xx, (0:coil(icoil)%NS), zero )
@@ -270,6 +282,7 @@ subroutine rdcoils
   end if
 
   !-----------------------allocate DoF arrays --------------------------------------------------  
+  print *, '<----famus\rdcoils allocating DoF arrays, myid=',myid
 
   itmp = -1
   call AllocData(itmp)
@@ -281,14 +294,103 @@ subroutine rdcoils
   endif
 
   ifirst = 1
+  
+  print *, '<----famus\rdcoils calling discoil, myid=',myid
   call discoil(ifirst)
   ifirst = 0
 
+  print *, '<----famus\rdcoils calling mpi_barrier, myid=',myid
   call MPI_BARRIER( MPI_COMM_FAMUS, ierr )
+  print *, '<----famus\rdcoils is exiting, myid=',myid
 
   return
 
 end subroutine rdcoils
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+subroutine famus_rdcoils_mpi(coil_filename, Ncoils_total, momentq)
+
+  use famus_globals, ONLY: MPI_COMM_FAMUS, arbitrarycoil, &
+            coil_out => export_coil
+  use ncsx_ports_eval, only: in_ncsx_port
+
+  implicit none
+
+  include "mpif.h"
+
+  CHARACTER(100), INTENT(IN) :: coil_filename
+  INTEGER, INTENT(OUT)       :: Ncoils_total
+  INTEGER, INTENT(OUT)       :: momentq
+!  type(arbitrarycoil) dimension(:), allocatable, INTENT(OUT) :: coil_out
+  INTEGER   :: icoil, Ncoils,  & 
+               myid, ncpu, runit, &
+               ipol, offset, icpu, iskip, ierr
+  !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+   call MPI_COMM_RANK( MPI_COMM_FAMUS, myid, ierr )
+   call MPI_COMM_SIZE( MPI_COMM_FAMUS, ncpu, ierr )
+
+print *,'<----famus_rdcoils_mpi myid/rank=',myid,' ncpu/size=',ncpu
+
+!  if(myid == 0) write(6, *) "-----------READING FAMUS COILS (MPI)  -----------------------------"
+!     print *, '<----myid=', myid, ' has entered famus_rdcoils_mpi'
+     !-------------individual coil file---------------------------------------------------------------------
+     
+     if( myid==0 ) then  !get file number;
+        open( runit, file=trim(coil_filename), status="old", action='read')
+        read( runit,*)
+        read( runit,*) Ncoils_total, momentq
+        write(6,'("famus_rdcoils_mpi : identified "I10" unique dipoles in "A" ;")') Ncoils_total, trim(coil_filename)
+        write(6,'("        : penalization coefficient q = "I2" ;")') momentq
+        close( runit )
+     endif
+
+     IlBCAST( Ncoils_total, 1,  0 )
+     IlBCAST( momentq, 1,  0 )
+     if (ncpu == 1) STOP ' At least use two cpus'
+     Ncoils = Ncoils_total
+
+!print *,'<----famus_rdcoils_mpi post broadcast myid/rank=',myid,' ncpu/size=',ncpu
+
+     offset = 3                       
+     if ( allocated(coil_out) ) then
+       deallocate(coil_out)
+     endif
+     allocate( coil_out(Ncoils) )
+!print *,'<----famus_rdcoils_mpi post allocate myid/rank=',myid,' ncpu/size=',ncpu
+
+     do icpu = 0, ncpu-1
+        if (myid == icpu) then                              ! each cpu read the coils at the same time.
+           open( runit, file=trim(coil_filename), status="old", action='read')
+
+           do iskip = 1, offset
+              read( runit,*)
+           enddo
+
+           do icoil = 1, Ncoils
+              read( runit,*) coil_out(icoil)%itype, coil_out(icoil)%symmetry, coil_out(icoil)%name, &
+              coil_out(icoil)%ox, coil_out(icoil)%oy, coil_out(icoil)%oz, &
+              coil_out(icoil)%Ic, coil_out(icoil)%moment , &
+              coil_out(icoil)%pho, coil_out(icoil)%Lc, coil_out(icoil)%mp, coil_out(icoil)%mt      
+              coil_out(icoil)%I = coil_out(icoil)%moment*(coil_out(icoil)%pho)**momentq
+!              print *, '<----coilname: ',trim(coil_out(icoil)%name)
+           enddo !end do icoil;
+
+           close(runit)
+        endif ! end of if( myid == 0 )
+     enddo
+
+
+  !-----------------------allocate   coil data--------------------------------------------------
+!  print *, '<----checkup: coil_out(1)%ox=',coil_out(1)%ox
+  print *, '<----famus_rdcoils_mpi is calling mpi_barrier prior to exit'
+  call MPI_BARRIER( MPI_COMM_FAMUS, ierr )
+  print *, '<----famus_rdcoils_mpi is exiting'
+
+  return
+
+end subroutine famus_rdcoils_mpi
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

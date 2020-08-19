@@ -35,7 +35,7 @@ SUBROUTINE packdof(lxdof)
 
   ! reset xdof;
   lxdof = zero
-
+ print *, '<----entered packdof'
   call packcoil !pack coil parameters into DoF;
   ! packing;
   idof = dof_offset
@@ -87,10 +87,13 @@ SUBROUTINE packdof(lxdof)
   !--------------------------------------------------------------------------------------------- 
   FATAL( packdof02 , idof-dof_offset .ne. ldof, counting error in packing )
 
+  print *,'<----packing about to allreduce'
   !write(ounit, *) "pack ", lxdof(1)
   call MPI_ALLREDUCE( MPI_IN_PLACE, lxdof, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FAMUS, ierr )
   lxdof = lxdof / DoFnorm
+  print *,'<----packing about to mpi_barrier'
   call mpi_barrier(MPI_COMM_FAMUS, ierr)
+  print *,'<----leaving packdof'
 
   return
 END SUBROUTINE packdof
@@ -111,6 +114,8 @@ SUBROUTINE unpacking(lxdof)
   INTEGER :: idof, icoil, ND, astat, ierr, ifirst
   !---------------------------------------------------------------------------------------------
   !FATAL( packdof, .not. allocated(xdof), Please allocate xdof first. )
+
+  print *,'<----famus_unpcaking'
 
   idof = dof_offset ; ifirst = 0
   do icoil = 1, Ncoils
@@ -163,12 +168,14 @@ SUBROUTINE unpacking(lxdof)
 
   !--------------------------------------------------------------------------------------------- 
   FATAL( unpacking02 , idof-dof_offset .ne. ldof, counting error in unpacking )
-
+  print *,'<---unpacking about to unpackcoil'
   call unpackcoil !unpack DoF to coil parameters;
+  print *,'<---unpacking about to discoil'
   call discoil(ifirst)
+  print *,'<---unpacking about to mpi_barrier'
 
   call mpi_barrier(MPI_COMM_FAMUS, ierr)
-
+  print *,'<----leaving unpacking'
   return
 END SUBROUTINE unpacking
 

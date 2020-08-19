@@ -288,6 +288,7 @@ module famus_globals
   end type DegreeOfFreedom
   
   type(arbitrarycoil)  , allocatable :: coil(:)  
+  type(arbitrarycoil) , dimension(:),  allocatable :: export_coil
   type(toroidalsurface), allocatable :: surf(:)
   type(FourierCoil)    , allocatable :: FouCoil(:)
   type(DegreeOfFreedom), allocatable :: DoF(:)
@@ -352,7 +353,8 @@ module famus_globals
   REAL   , allocatable :: magtau(:,:) 
 
 !latex \subsubsection{External Optimizer}
-  LOGICAL              :: called_from_ext_opt = .False.
+  LOGICAL              :: init_from_ext_opt = .False.
+  LOGICAL              :: call_from_ext_opt = .False.
 
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!

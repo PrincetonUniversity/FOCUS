@@ -17,22 +17,34 @@ subroutine AllocData(itype)
   REAL                :: xtmp, mtmp
 
   !-------------------------------------------------------------------------------------------
+  print *, '<----Alloc myid=',myid,' itype = ', itype
   if (itype == -1) then ! dof related data;
 
      Cdof = 0; Ndof = 0; Tdof = 0; ldof=0; dof_offset=0
      dof_array = 0 
+!  print *, '<----Alloc myid=',myid,' Ncoils = ', Ncoils
 
      do icoil = 1, Ncoils
+
+!        print *, '<----Alloc itype -1 loop  1 over icoil: ',icoil,' of ', &
+!                  Ncoils, ' type=', coil(icoil)%itype
 
         select case (coil(icoil)%itype)       
         case(1)
            ! get number of DoF for each coil and allocate arrays;
+!           print *, '>-----ALLOC_001 icoil=',icoil
            NF = FouCoil(icoil)%NF
+!           print *, '>-----ALLOC_002 icoil=',icoil
            ND = (6*NF + 3) ! total variables for geometry
+!           print *, '>-----ALLOC_003 icoil=',icoil
            DoF(icoil)%ND = coil(icoil)%Lc * ND !# of DoF for icoil;
+!           print *, '>-----ALLOC_004 icoil=',icoil
            SALLOCATE(DoF(icoil)%xdof, (1:DoF(icoil)%ND), zero)
+!           print *, '>-----ALLOC_005 icoil=',icoil
            SALLOCATE(DoF(icoil)%xof , (0:coil(icoil)%NS-1, 1:ND), zero)
+!           print *, '>-----ALLOC_006 icoil=',icoil
            SALLOCATE(DoF(icoil)%yof , (0:coil(icoil)%NS-1, 1:ND), zero)
+!           print *, '>-----ALLOC_007 icoil=',icoil
            SALLOCATE(DoF(icoil)%zof , (0:coil(icoil)%NS-1, 1:ND), zero)
         case(2)
 #ifdef dposition
@@ -40,19 +52,27 @@ subroutine AllocData(itype)
 #else
            ND = 2           
 #endif
+!           print *, '>-----ALLOC_008 icoil=',icoil
            DoF(icoil)%ND = coil(icoil)%Lc * ND ! number of DoF for permanent magnet
+!           print *, '>-----ALLOC_009 icoil=',icoil
            SALLOCATE(DoF(icoil)%xdof, (1:ND), zero)
         case(3) 
            ND = 1
+!           print *, '>-----ALLOC_010 icoil=',icoil
            DoF(icoil)%ND = coil(icoil)%Lc * ND ! number of DoF for background Bt, Bz
+!           print *, '>-----ALLOC_011 icoil=',icoil
            SALLOCATE(DoF(icoil)%xdof, (1:ND), zero)
         case default
+!           print *, '>-----ALLOC_012 icoil=',icoil
            FATAL(AllocData, .true., not supported coil types)
         end select
 
      enddo
 
+!  print *, '<----Alloc step 2 myid=',myid
+
      do icoil = 1, Ncoils
+!        print *, '<----Alloc itype -1 loop  2 over icoil: ',icoil,' of ', Ncoils
 
         ldof = ldof + coil(icoil)%Ic + DoF(icoil)%ND
         if (allocated(FouCoil)) then
@@ -64,17 +84,25 @@ subroutine AllocData(itype)
 
      enddo
 
+!  print *, '<----Alloc step 3 myid=',myid
+
      do icpu = 0, ncpu-1
+!        print *, '<----Alloc itype -1 loop  3 over ncpu=',ncpu,' on icpu: ',icpu
         if (myid == icpu) then
            dof_array(icpu) = ldof
         endif
      enddo
 
+!  print *, '<----Alloc step 4a allreduce ndof myid=',myid
+
      CALL MPI_ALLREDUCE(ldof, Ndof, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_FAMUS, ierr )
+!  print *, '<----Alloc step 4b allreduce dof_array myid=',myid
      CALL MPI_ALLREDUCE(MPI_IN_PLACE, dof_array, ncpu, MPI_INTEGER, MPI_SUM, MPI_COMM_FAMUS, ierr )
 
+!  print *, '<----Alloc step 5 checking dof vs Ndof myid=',myid
      FATAL( datalloc, sum(dof_array) .ne. Ndof, error in counting dof number)
 
+!  print *, '<----Alloc step 6 finding dof_offset myid=',myid
      do icpu = 1, ncpu-1   ! calculate the offset in dof arrays
         if (myid == icpu) dof_offset = sum(dof_array(0:icpu-1))
      enddo     
@@ -84,6 +112,7 @@ subroutine AllocData(itype)
         if(myid==0) write(ounit, *) "AllocData : No free variables; no optimization will be performed."
      endif
 
+!  print *, '<----Alloc step 7 SALLOCATEs myid=',myid
      SALLOCATE(    xdof, (1:Ndof), zero ) ! dof vector;
      SALLOCATE( dofnorm, (1:Ndof), one ) ! dof normalized value vector;
      SALLOCATE( evolution, (1:Nouts+1, 0:8), zero ) !evolution array;
@@ -187,6 +216,7 @@ subroutine AllocData(itype)
 !!$        call MPI_ALLREDUCE( MPI_IN_PLACE, dofnorm, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FAMUS, ierr )
 !!$     endif
      
+!  print *, '<----Alloc step 8 calculating total moment myid=',myid
      ! calculate the total moment
      total_moment = machprec
      do icoil = 1, Ncoils
@@ -204,8 +234,10 @@ subroutine AllocData(itype)
            endif
         endif
      enddo
+!  print *, '<----Alloc step 9 mpi_allreduce of total_moment myid=',myid
      call MPI_ALLREDUCE( MPI_IN_PLACE, total_moment, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FAMUS, ierr ) 
 
+!  print *, '<----Alloc step 10 setting QN bounds myid=',myid
      ! set bounds for quasi-newton method and SA
      if (QN_maxiter>0 .or. SA_maxiter>0) then
         SALLOCATE( lowbound, (1:Ndof), zero ) ! lower bounds;
@@ -246,6 +278,7 @@ subroutine AllocData(itype)
         lowbound = lowbound / dofnorm
         upbound  = upbound  / dofnorm
      endif
+!  print *, '<----Alloc step 11 end of itype==1 alloc handler myid=',myid
               
   endif ! end of itype==-1
 

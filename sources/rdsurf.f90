@@ -82,13 +82,16 @@ subroutine fousurf
   
   !-------------read plasma.boundary---------------------------------------------------------------------  
   inquire( file=trim(input_surf), exist=exist)  
+print *,'<----fousurf reading ', trim(input_surf)
   FATAL( surface, .not.exist, plasma.boundary does not exist ) 
   if( myid == 0 ) then
      open(runit, file=trim(input_surf), status='old', action='read')
      read(runit,*) !empty line
      read(runit,*) Nfou, Nfp, NBnf !read dimensions
+      print *, '<----Nfou = ',Nfou, ' Nfp = ', Nfp, ', Nbnf = ', Nbnf
   endif
-  
+
+  call MPI_BARRIER(MPI_COMM_FAMUS, ierr) 
   !Broadcast the values
   IlBCAST( Nfou , 1, 0 )
   IlBCAST( Nfp  , 1, 0 )
@@ -96,6 +99,7 @@ subroutine fousurf
   FATAL( surface, Nfou <= 0, invalid )
   FATAL( surface, Nfp  <= 0, invalid )
   FATAL( surface, NBnf <  0, invalid )
+  call MPI_BARRIER(MPI_COMM_FAMUS, ierr) 
 
   !allocate arrays
   SALLOCATE( bim, (1:Nfou), 0 )
@@ -105,38 +109,51 @@ subroutine fousurf
   SALLOCATE( Zbc, (1:Nfou), zero )
   SALLOCATE( Zbs, (1:Nfou), zero )
 
+  call MPI_BARRIER(MPI_COMM_FAMUS, ierr) 
   if( myid == 0 ) then
    read(runit,*) !empty line
    read(runit,*) !empty line
    do imn = 1, Nfou
       read(runit,*) bin(imn), bim(imn), Rbc(imn), Rbs(imn), Zbc(imn), Zbs(imn)
+!   print *, 'bin(',imn,') = ', bin(imn),'Zbs = ', Zbs(imn) 
    enddo
   endif  
-
+  call MPI_BARRIER(MPI_COMM_FAMUS, ierr) 
+!   print *, '<---IlBCASTs'
   IlBCAST( bim(1:Nfou), Nfou, 0 )
   IlBCAST( bin(1:Nfou), Nfou, 0 )
  
+  call MPI_BARRIER(MPI_COMM_FAMUS, ierr) 
   bin(1:Nfou) = bin(1:Nfou) * Nfp  !The full plasma;
+!   print *, '<---RlBCASTs'
      
+  call MPI_BARRIER(MPI_COMM_FAMUS, ierr) 
   RlBCAST( Rbc(1:Nfou), Nfou, 0 )
+!   print *, '<---RlBCASTs1 Rbc'
   RlBCAST( Rbs(1:Nfou), Nfou, 0 )
+!   print *, '<---RlBCASTs1 Rbs'
   RlBCAST( Zbc(1:Nfou), Nfou, 0 )
+!   print *, '<---RlBCASTs1 Zbc'
   RlBCAST( Zbs(1:Nfou), Nfou, 0 )
-
+!  print *, '<---Nbnf check1 Zbs'
   !read Bnormal ditributions
+  call MPI_BARRIER(MPI_COMM_FAMUS, ierr) 
   if( NBnf  >   0) then
+!   print *, '<---SALLOCATEs'
      SALLOCATE( Bnim, (1:NBnf), 0    )
      SALLOCATE( Bnin, (1:NBnf), 0    )
      SALLOCATE( Bnc , (1:NBnf), zero )
      SALLOCATE( Bns , (1:NBnf), zero )
-
+!   print *, '<----preparing to read the Bc and s'
      if( myid == 0 ) then
         read(runit,*) !empty line
         read(runit,*) !empty line
         do imn = 1, NBnf 
            read(runit,*) Bnin(imn), Bnim(imn), Bnc(imn), Bns(imn)
+!   print *, 'bnin(',imn,') = ', bnin(imn),'bnc = ', Bnc(imn) 
         enddo
      endif
+  call MPI_BARRIER(MPI_COMM_FAMUS, ierr) 
 
      IlBCAST( Bnim(1:NBnf), NBnf, 0 )
      IlBCAST( Bnin(1:NBnf), NBnf, 0 )
@@ -149,10 +166,283 @@ subroutine fousurf
      RlBCAST( Bnc(1:NBnf) , NBnf, 0 )
      RlBCAST( Bns(1:NBnf) , NBnf, 0 )
   endif
-
+print *, '<----rdsurf  Made it to here'
   if( myid == 0 ) close(runit,iostat=iosta)
   
   IlBCAST( iosta, 1, 0 )
+  
+  FATAL( surface, iosta.ne.0, error closing plasma.boundary )
+  
+  !-------------output for check-------------------------------------------------------------------------
+  if( myid == 0 .and. IsQuiet <= 0) then
+     write(ounit, *) "-----------Reading surface-----------------------------------"
+     write(ounit, '("surface : Plasma boundary will be discretized in "I6" X "I6" elements.")') Nteta, Nzeta
+     write(ounit, '(8X": Nfou = " I06 " ; Nfp = " I06 " ; NBnf = " I06 " ;" )') Nfou, Nfp, NBnf
+  endif
+
+  if( myid == 0 .and. IsQuiet <= -2) then !very detailed output;
+     write(ounit,'("        : " 10x " : bim ="10i13   )') bim(1:Nfou)
+     write(ounit,'("        : " 10x " : bin ="10i13   )') bin(1:Nfou)
+     write(ounit,'("        : " 10x " : Rbc ="10es13.5)') Rbc(1:Nfou)
+     write(ounit,'("        : " 10x " : Rbs ="10es13.5)') Rbs(1:Nfou)
+     write(ounit,'("        : " 10x " : Zbc ="10es13.5)') Zbc(1:Nfou)
+     write(ounit,'("        : " 10x " : Zbs ="10es13.5)') Zbs(1:Nfou)
+     if(Nbnf > 0) then
+        write(ounit,'("        : " 10x " : Bnim ="10i13  )') Bnim(1:NBnf)
+        write(ounit,'("        : " 10x " : Bnin ="10i13  )') Bnin(1:NBnf)
+        write(ounit,'("        : " 10x " : Bnc ="10es13.5)') Bnc (1:NBnf)
+        write(ounit,'("        : " 10x " : Bns ="10es13.5)') Bns (1:NBnf)
+     endif
+  endif
+
+  !-------------discretize surface data------------------------------------------------------------------  
+  
+  Nfp_raw = Nfp ! save the raw value of Nfp
+  select case (IsSymmetric)
+  case ( 0 )
+     Nfp = 1                          !reset Nfp to 1;
+     symmetry = 0
+  case ( 1 )                          !plasma and coil periodicity enabled;
+     symmetry = 0
+  case ( 2 )                          ! stellarator symmetry enforced;
+     symmetry = 1     
+  end select
+  ! discretefactor = discretefactor/Nfp
+
+  SALLOCATE( cosnfp, (1:Nfp_raw), zero )
+  SALLOCATE( sinnfp, (1:Nfp_raw), zero )  
+  
+  do ip = 1, Nfp_raw
+     cosnfp(ip) = cos((ip-1)*pi2/Nfp_raw)
+     sinnfp(ip) = sin((ip-1)*pi2/Nfp_raw)
+  enddo
+
+  if (allocated (surf) ) then
+     deallocate(surf)
+  end if
+  allocate( surf(1:1) ) ! can allow for myltiple plasma boundaries 
+                        ! if multiple currents are allowed; 14 Apr 16;
+  
+  surf(1)%Nteta = Nteta ! not used yet; used for multiple surfaces; 20170307;
+  surf(1)%Nzeta = Nzeta * Nfp * 2**symmetry ! the total number from [0, 2pi]
+  
+  SALLOCATE( surf(1)%xx, (0:Nteta-1,0:Nzeta-1), zero ) !x coordinates;
+  SALLOCATE( surf(1)%yy, (0:Nteta-1,0:Nzeta-1), zero ) !y coordinates
+  SALLOCATE( surf(1)%zz, (0:Nteta-1,0:Nzeta-1), zero ) !z coordinates
+  SALLOCATE( surf(1)%nx, (0:Nteta-1,0:Nzeta-1), zero ) !unit nx;
+  SALLOCATE( surf(1)%ny, (0:Nteta-1,0:Nzeta-1), zero ) !unit ny;
+  SALLOCATE( surf(1)%nz, (0:Nteta-1,0:Nzeta-1), zero ) !unit nz;
+  SALLOCATE( surf(1)%ds, (0:Nteta-1,0:Nzeta-1), zero ) !jacobian;
+  SALLOCATE( surf(1)%xt, (0:Nteta-1,0:Nzeta-1), zero ) !dx/dtheta;
+  SALLOCATE( surf(1)%yt, (0:Nteta-1,0:Nzeta-1), zero ) !dy/dtheta;
+  SALLOCATE( surf(1)%zt, (0:Nteta-1,0:Nzeta-1), zero ) !dz/dtheta;
+  SALLOCATE( surf(1)%pb, (0:Nteta-1,0:Nzeta-1), zero ) !target Bn;
+  SALLOCATE( surf(1)%xp, (0:Nteta-1,0:Nzeta-1), zero ) !dx/dzeta;
+  SALLOCATE( surf(1)%yp, (0:Nteta-1,0:Nzeta-1), zero ) !dy/dzeta;
+  SALLOCATE( surf(1)%zp, (0:Nteta-1,0:Nzeta-1), zero ) !dz/dzeta;
+  
+  surf(1)%vol = zero  ! volume enclosed by plasma boundary
+ 
+  discretefactor = (pi2/surf(1)%Nteta) * (pi2/surf(1)%Nzeta)
+
+  if (half_shift) then
+     shift = half
+  else 
+     shift = zero
+     if(myid.eq.0) write(ounit, '(8X": half-shift in surface evaluation is turned off." )')
+  endif
+    
+! The center point value was used to discretize grid;
+  do ii = 0, Nteta-1
+     teta = ( ii + shift ) * pi2 / surf(1)%Nteta
+     do jj = 0, Nzeta-1
+        zeta = ( jj + shift ) * pi2 / surf(1)%Nzeta
+        RR(0:2) = zero ; ZZ(0:2) = zero
+
+        do imn = 1, Nfou ; arg = bim(imn) * teta - bin(imn) * zeta
+
+           RR(0) =  RR(0) +     Rbc(imn) * cos(arg) + Rbs(imn) * sin(arg)
+           ZZ(0) =  ZZ(0) +     Zbc(imn) * cos(arg) + Zbs(imn) * sin(arg)
+
+           RR(1) =  RR(1) + ( - Rbc(imn) * sin(arg) + Rbs(imn) * cos(arg) ) * bim(imn)
+           ZZ(1) =  ZZ(1) + ( - Zbc(imn) * sin(arg) + Zbs(imn) * cos(arg) ) * bim(imn)
+
+           RR(2) =  RR(2) - ( - Rbc(imn) * sin(arg) + Rbs(imn) * cos(arg) ) * bin(imn)
+           ZZ(2) =  ZZ(2) - ( - Zbc(imn) * sin(arg) + Zbs(imn) * cos(arg) ) * bin(imn)
+
+        enddo ! end of do imn; 30 Oct 15;
+
+        szeta = sin(zeta)
+        czeta = cos(zeta)
+
+        xx(1:3) = (/   RR(0) * czeta,   RR(0) * szeta, ZZ(0) /)
+        xt(1:3) = (/   RR(1) * czeta,   RR(1) * szeta, ZZ(1) /)
+        xz(1:3) = (/   RR(2) * czeta,   RR(2) * szeta, ZZ(2) /) + (/ - RR(0) * szeta,   RR(0) * czeta, zero  /)
+
+        ds(1:3) = -(/ xt(2) * xz(3) - xt(3) * xz(2), & ! minus sign for theta counterclockwise direction;
+             xt(3) * xz(1) - xt(1) * xz(3), &
+             xt(1) * xz(2) - xt(2) * xz(1) /)
+
+        dd = sqrt( sum( ds(1:3)*ds(1:3) ) )
+
+        ! x, y, z coordinates for the surface;
+        surf(1)%xx(ii,jj) = xx(1)
+        surf(1)%yy(ii,jj) = xx(2)
+        surf(1)%zz(ii,jj) = xx(3)
+
+        ! dx/dt, dy/dt, dz/dt (dt for d theta)
+        surf(1)%xt(ii,jj) = xt(1)
+        surf(1)%yt(ii,jj) = xt(2)
+        surf(1)%zt(ii,jj) = xt(3)
+
+        ! dx/dp, dy/dp, dz/dp (dp for d zeta(phi))
+        surf(1)%xp(ii,jj) = xz(1)
+        surf(1)%yp(ii,jj) = xz(2)
+        surf(1)%zp(ii,jj) = xz(3)
+
+        ! surface normal vectors and ds for the jacobian;
+        surf(1)%nx(ii,jj) = ds(1) / dd
+        surf(1)%ny(ii,jj) = ds(2) / dd
+        surf(1)%nz(ii,jj) = ds(3) / dd
+        surf(1)%ds(ii,jj) =         dd
+
+        ! using Gauss theorom; V = \int_S x \cdot n dt dz
+        surf(1)%vol = surf(1)%vol + surf(1)%xx(ii,jj) * ds(1) + surf(1)%yy(ii,jj) * ds(2) + surf(1)%zz(ii,jj) * ds(3)
+
+     enddo ! end of do jj; 14 Apr 16;
+  enddo ! end of do ii; 14 Apr 16;
+
+  surf(1)%vol = abs(surf(1)%vol) * discretefactor * Nfp * 2**symmetry 
+  if( myid == 0 .and. IsQuiet <= 0) write(ounit, '(8X": Enclosed volume ="ES12.5" m^3 ;" )') surf(1)%vol
+
+  !calculate target Bn with input harmonics; 05 Jan 17;
+  if(NBnf >  0) then
+     do jj = 0, Nzeta-1
+        zeta = ( jj + shift ) * pi2 / surf(1)%Nzeta
+        do ii = 0, Nteta-1
+           teta = ( ii + shift ) * pi2 / surf(1)%Nteta
+           do imn = 1, NBnf
+              arg = Bnim(imn) * teta - Bnin(imn) * zeta
+              surf(1)%pb(ii,jj) = surf(1)%pb(ii,jj) + Bnc(imn)*cos(arg) + Bns(imn)*sin(arg)
+           enddo
+        enddo
+     enddo
+
+  endif
+  
+  return
+  
+end subroutine fousurf
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+subroutine fousurf2
+  
+  use famus_globals, only : dp, zero, half, pi2, myid, ounit, runit, input_surf, IsQuiet, IsSymmetric, &
+                      Nfou, Nfp, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
+                      Nteta, Nzeta, surf, discretefactor, Nfp_raw, cosnfp, sinnfp, &
+                      half_shift, shift, MPI_COMM_FAMUS
+  
+  implicit none
+  
+  include "mpif.h"
+  
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+  
+  LOGICAL :: exist
+  INTEGER :: iosta, astat, ierr, ii, jj, imn, ip, symmetry, icpu, ncpu
+  REAL    :: RR(0:2), ZZ(0:2), szeta, czeta, xx(1:3), xt(1:3), xz(1:3), ds(1:3), &
+             teta, zeta, arg, dd
+  
+  !-------------read plasma.boundary---------------------------------------------------------------------  
+  inquire( file=trim(input_surf), exist=exist)  
+print *,'<----fousurf2 reading ', trim(input_surf)
+
+!   call MPI_COMM_RANK( MPI_COMM_FAMUS, myid, ierr )
+!   call MPI_COMM_SIZE( MPI_COMM_FAMUS, ncpu, ierr )
+
+  FATAL( surface, .not.exist, plasma.boundary does not exist ) 
+
+  do icpu = 0, ncpu-1
+     if (myid == icpu) then                              ! each cpu read the coils at the same time.
+        open(runit, file=trim(input_surf), status='old', action='read')
+        read(runit,*) !empty line
+        read(runit,*) Nfou, Nfp, NBnf !read dimensions
+!         print *, '<----Nfou = ',Nfou, ' Nfp = ', Nfp, ', Nbnf = ', Nbnf
+!     endif
+   
+     !allocate arrays
+     SALLOCATE( bim, (1:Nfou), 0 )
+     SALLOCATE( bin, (1:Nfou), 0 )  
+     SALLOCATE( Rbc, (1:Nfou), zero )
+     SALLOCATE( Rbs, (1:Nfou), zero )
+     SALLOCATE( Zbc, (1:Nfou), zero )
+     SALLOCATE( Zbs, (1:Nfou), zero )
+   
+!     call MPI_BARRIER(MPI_COMM_FAMUS, ierr) 
+!     if( myid == 0 ) then
+      read(runit,*) !empty line
+      read(runit,*) !empty line
+      do imn = 1, Nfou
+         read(runit,*) bin(imn), bim(imn), Rbc(imn), Rbs(imn), Zbc(imn), Zbs(imn)
+!      print *, 'bin(',imn,') = ', bin(imn),'Zbs = ', Zbs(imn) 
+      enddo
+!     endif  
+!     call MPI_BARRIER(MPI_COMM_FAMUS, ierr) 
+!      print *, '<---IlBCASTs'
+!     IlBCAST( bim(1:Nfou), Nfou, 0 )
+!     IlBCAST( bin(1:Nfou), Nfou, 0 )
+    
+!     call MPI_BARRIER(MPI_COMM_FAMUS, ierr) 
+     bin(1:Nfou) = bin(1:Nfou) * Nfp  !The full plasma;
+!      print *, '<---RlBCASTs'
+        
+!     call MPI_BARRIER(MPI_COMM_FAMUS, ierr) 
+!     RlBCAST( Rbc(1:Nfou), Nfou, 0 )
+!      print *, '<---RlBCASTs1 Rbc'
+!     RlBCAST( Rbs(1:Nfou), Nfou, 0 )
+!      print *, '<---RlBCASTs1 Rbs'
+!     RlBCAST( Zbc(1:Nfou), Nfou, 0 )
+!      print *, '<---RlBCASTs1 Zbc'
+!     RlBCAST( Zbs(1:Nfou), Nfou, 0 )
+!     print *, '<---Nbnf check1 Zbs'
+     !read Bnormal ditributions
+!     call MPI_BARRIER(MPI_COMM_FAMUS, ierr) 
+     if( NBnf  >   0) then
+!      print *, '<---SALLOCATEs'
+        SALLOCATE( Bnim, (1:NBnf), 0    )
+        SALLOCATE( Bnin, (1:NBnf), 0    )
+        SALLOCATE( Bnc , (1:NBnf), zero )
+        SALLOCATE( Bns , (1:NBnf), zero )
+!      print *, '<----preparing to read the Bc and s'
+!        if( myid == 0 ) then
+           read(runit,*) !empty line
+           read(runit,*) !empty line
+           do imn = 1, NBnf 
+              read(runit,*) Bnin(imn), Bnim(imn), Bnc(imn), Bns(imn)
+!      print *, 'bnin(',imn,') = ', bnin(imn),'bnc = ', Bnc(imn) 
+           enddo
+!        endif
+     call MPI_BARRIER(MPI_COMM_FAMUS, ierr) 
+   
+!        IlBCAST( Bnim(1:NBnf), NBnf, 0 )
+!        IlBCAST( Bnin(1:NBnf), NBnf, 0 )
+   
+        !if (IsSymmetric  ==  0)
+        Bnin(1:NBnf) = Bnin(1:NBnf) * Nfp ! Disarde periodicity;
+        ! This should be consistent with bnftran; Before fully constructed the stellarator symmetry,
+        ! it's turned off;
+        
+!        RlBCAST( Bnc(1:NBnf) , NBnf, 0 )
+!        RlBCAST( Bns(1:NBnf) , NBnf, 0 )
+     endif
+   print *, '<----rdsurf  Made it to here'
+!     if( myid == 0 )
+     close(runit,iostat=iosta)
+     call MPI_BARRIER(MPI_COMM_FAMUS, ierr) 
+     end if
+     end do
+!     IlBCAST( iosta, 1, 0 )
   
   FATAL( surface, iosta.ne.0, error closing plasma.boundary )
   
@@ -312,7 +602,7 @@ subroutine fousurf
   
   return
   
-end subroutine fousurf
+end subroutine fousurf2
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

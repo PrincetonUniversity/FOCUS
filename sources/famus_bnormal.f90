@@ -51,7 +51,7 @@ subroutine famus_bnormal( ideriv )
   REAL                                  :: sinp, sint, cosp, cost, drho, dmx, dmy, dmz
 
   !--------------------------initialize and allocate arrays------------------------------------- 
-
+  print *, '<----famus_bnormal just started'
   NumGrid = Nteta*Nzeta
   ! reset to zero;
   bnorm = zero 
@@ -61,10 +61,10 @@ subroutine famus_bnormal( ideriv )
 
   !-------------------------------calculate Bn-------------------------------------------------- 
   if( ideriv >= 0 ) then
+     print *, '<----famus_bnormal, myid = ', myid, ', case_bnormal=', case_bnormal
 
      do jzeta = 0, Nzeta - 1
         do iteta = 0, Nteta - 1
-           
            if (myid==0) then ! contribution from the master cpu and plasma currents
               surf(1)%Bn(iteta, jzeta) = surf(1)%Bx(iteta, jzeta)*surf(1)%nx(iteta, jzeta) &
                    &                   + surf(1)%By(iteta, jzeta)*surf(1)%ny(iteta, jzeta) &
@@ -74,9 +74,10 @@ subroutine famus_bnormal( ideriv )
               surf(1)%Bn(iteta, jzeta) = 1.0/surf(1)%ds(iteta, jzeta)*(sum(gx(iteta, jzeta, 1:Ncoils) * coil(1:Ncoils)%mx) &
                    & + sum(gy(iteta, jzeta, 1:Ncoils) * coil(1:Ncoils)%my) + sum(gz(iteta, jzeta, 1:Ncoils) * coil(1:Ncoils)%mz))
            endif
-
+!  print *,'<-----bnormal mpi_allreduce jzeta=',jzeta,' iteta=',iteta
            ! gather all the data
            call MPI_ALLREDUCE( MPI_IN_PLACE, surf(1)%Bn(iteta, jzeta), 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FAMUS, ierr )
+!  print *,'<-----bnormal case_bnormal=',case_bnormal,', jzeta=',jzeta,' iteta=',iteta
            
            select case (case_bnormal)
            case (0)     ! no normalization over |B|;
@@ -92,6 +93,8 @@ subroutine famus_bnormal( ideriv )
      bn = surf(1)%Bn -  surf(1)%pb  ! bn is B.n from coils
 
   endif
+!  print *,'<-----bnormal post bn'
+  print *,'<-----bnormal ideriv=',ideriv
   
   !-------------------------------calculate Bn/x------------------------------------------------
   if ( ideriv >= 1 ) then
@@ -160,8 +163,10 @@ subroutine famus_bnormal( ideriv )
   endif
 
   !--------------------------------------------------------------------------------------------
+  print *,'<-----bnormal calling mpi_barrier'
 
   call MPI_barrier( MPI_COMM_FAMUS, ierr )
+  print *,'<-----bnormal post mpi_barrier'
 
   return
   

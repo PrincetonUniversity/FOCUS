@@ -57,7 +57,9 @@ subroutine solvers
           target_tflux, target_length, cssep_factor
   endif
 
+  print *,'<----solvers is calling unpacking'
   call unpacking(xdof)  ! unpack the optimized xdof array;
+  print *,'<----solvers is back from unpacking'
 
   if (abs(case_optimize) >= 1) call AllocData(1)
   if (abs(case_optimize) >= 2) call AllocData(2)

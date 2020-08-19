@@ -17,22 +17,22 @@ subroutine famus_initialize
  
    !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
  
-   myid = 0 ; ncpu = 1
-   print *, '<----Entered famus_initialize'
+   !myid = 0 ; ncpu = 1
+   print *, '<----Entered famus_initialize, myid=',myid,' ncpu=',ncpu
  
-   if (called_from_ext_opt) then
-     MPI_COMM_FAMUS = MPI_COMM_MYWORLD
+   if (call_from_ext_opt .or. init_from_ext_opt) then
+     print *, '<----famus_initialized called from external init or opt - no MPI initialization'
    else
-   ! MPI initialize
-   call MPI_init( ierr )
+     ! MPI initialize
+     call MPI_init( ierr )
      MPI_COMM_FAMUS = MPI_COMM_WORLD
    endif
       
-   call MPI_COMM_RANK( MPI_COMM_FAMUS, myid, ierr )
-   call MPI_COMM_SIZE( MPI_COMM_FAMUS, ncpu, ierr )
-   print *, '<---myid=',myid,' ncpu=',ncpu
+     call MPI_COMM_RANK( MPI_COMM_FAMUS, myid, ierr )
+     call MPI_COMM_SIZE( MPI_COMM_FAMUS, ncpu, ierr )
+   print *, '<----famus\inital post mpic_rank/size calls: myid=',myid,' ncpu=',ncpu
 
-   if (.not. (called_from_ext_opt)) then 
+   if ((.not. (init_from_ext_opt)) .and. (.not. (call_from_ext_opt))) then 
 
        if(myid == 0) write(ounit, *) "---------------------  FAMUS ", version, "------------------------------"
        if(myid == 0) write(ounit,'("famus   : Begin execution with ncpu =",i5)') ncpu
@@ -60,7 +60,7 @@ subroutine famus_initialize
            end select
        endif
    else
-       write(ounit, '("DEBUG info: extension from external optimizer is "A)') trim(ext)
+   write(ounit, '("<----famus\initial info: extension from external optimizer is "A)') trim(ext)
      
    endif
 
@@ -68,9 +68,10 @@ subroutine famus_initialize
    inputfile = trim(ext)//".input"
    
    ! JCS does the namelist need to be ready every time?
-   print *, '<----famus_initialize about to call read_namelist'
+   print *, '<----famus_initialize myid=',myid,' about to call read_namelist'
    call famus_read_namelist(inputfile)
  
+   print *, '<----famus_initialize myid=',myid,' is exiting'
    return
  
 end subroutine famus_initialize
@@ -78,7 +79,8 @@ end subroutine famus_initialize
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine famus_read_namelist(filename)
-   use famus_globals, only : myid, ncpu, focusin, ounit, runit, MPI_COMM_FAMUS, Nteta
+   use famus_globals, only : myid, ncpu, focusin, ounit, runit, MPI_COMM_FAMUS, Nteta,  &
+                             init_from_ext_opt, call_from_ext_opt
    use ncsx_ports_mod, only: ncsx_ports, ncsx_ports_on
    use mpi
    implicit none
@@ -89,24 +91,31 @@ subroutine famus_read_namelist(filename)
    INTEGER :: icpu, ierr, ports_nml_stat
     
    if( myid == 0 ) then
-    print *,'<---Initial Now here! reading ' // trim(filename)
+    print *,'<---famus_read_namelist was here,myid=',myid,', reading ' // trim(filename)
     inquire(file=trim(filename), EXIST=exist) ! inquire if inputfile existed;
     FATAL( initial, .not.exist, input file ext.input not provided )
 #ifdef DEBUG
     write(ounit, '("        : read namelist from ", A)') trim(filename)
 #endif
    else
-     print *,'<---Initial was here, myid=',myid
+     print *,'<---famus_read_namelist  was here, myid=',myid
    endif
 
-   print *,'<----ncpu ==', ncpu, ' and myid=',myid
+   print *,'<----famus_read_namelist \ inital ncpu ==', ncpu, ' and myid=',myid
  
    do icpu = 1, ncpu
+      print *, '<----Loop ',icpu, ' of ', ncpu
       call MPI_BARRIER( MPI_COMM_FAMUS, ierr )
+!      if (.not. (init_from_ext_opt)) then 
+!         ! if called from stellopt, then this is skipped because the other procs
+!         ! don't go through this famus_initialize or famus_read_namelist
+!         print *, '<----famus_read_namlelist calling mpi_barrier/mpi_comm_famus'
+!         call MPI_BARRIER( MPI_COMM_FAMUS, ierr )
+!      end if
       if (myid == icpu-1) then                              ! each cpu read the namelist in turn;
+        print *,'<----myid = ', myid, ' is reading focus file and namelist'
         open(runit, file=trim(filename), status="old", action='read')
         read(runit, focusin)
-
 
         ! turn on ncsx_ports functions only if namelist is found:
         read(unit=runit, nml=ncsx_ports, iostat=ports_nml_stat)
@@ -114,9 +123,10 @@ subroutine famus_read_namelist(filename)
 
         close(runit)
         print *,'<---Ntetainloop=',Nteta
-      endif ! end of if( myid == 0 )
+!        mpi_barrier( mpi_comm_famus, ierr )
+      endif ! end of if( myid == icpu-1 )
    enddo
-        print *,'<---Ntetaoutloop=',Nteta
+   print *,'<---Ntetaoutloop=',Nteta
  
    return
 end subroutine famus_read_namelist
