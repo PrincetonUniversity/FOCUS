@@ -129,9 +129,15 @@ subroutine rdcoils
            read( runit,*)
            read( runit,*) Ncoils
            write(ounit,'("rdcoils : identified "I10" normal coils in "A" ;")') Ncoils, trim(fixed_coils)
+           if (allocated(FouCoil)) deallocate(FouCoil)
+           if (allocated(coil)) deallocate(coil)
+           if (allocated(dof)) deallocate(dof)
            allocate( FouCoil(1:Ncoils) )
            allocate(    coil(1:Ncoils) )
            allocate(     dof(1:Ncoils) )
+           !if (.not. allocated(FouCoil)) allocate( FouCoil(1:Ncoils) )
+           !if (.not. allocated(coil)) allocate(    coil(1:Ncoils) )
+           !if (.not. allocated(dof)) allocate(     dof(1:Ncoils) )
            do icoil = 1, Ncoils
               read( runit,*)
               read( runit,*)
@@ -179,8 +185,12 @@ subroutine rdcoils
         else ! initialize one fake coil;
            print *, '<-----rdcoils myid=0 is initializing one fake coil'
            Ncoils = 1
+           if (allocated(coil)) deallocate(coil)
+           if (allocated(dof)) deallocate(dof)
            allocate( coil(1:Ncoils) )
            allocate( dof(1:Ncoils) )
+           !if (.not. allocated(coil)) allocate(    coil(1:Ncoils) )
+           !if (.not. allocated(dof)) allocate(     dof(1:Ncoils) )
            coil(1)%itype = 3
            coil(1)%Ic = 0
            coil(1)%Lc = 0
@@ -217,10 +227,12 @@ subroutine rdcoils
                                
      print *, '<----famus\rdcoils is allocaing coil & dof, myid=',myid
      if (myid /= 0) then
-        !if (allocated(coil)) deallocate(coil) ! necessary???
+        if (allocated(coil)) deallocate(coil) ! necessary???
         allocate( coil(1:Ncoils) )
-        !if (allocated(dof)) deallocate(dof) ! necessary???
+        if (allocated(dof)) deallocate(dof) ! necessary???
         allocate(  dof(1:Ncoils) )
+        !if (.not. allocated(coil)) allocate(coil(1:Ncoils)) ! necessary???
+        !if (.not. allocated(dof)) allocate(dof(1:Ncoils)) ! necessary???
         ! coil(1:Ncoils)%symmetry = 1
      endif
 
@@ -265,7 +277,7 @@ subroutine rdcoils
 
   !-----------------------allocate   coil data--------------------------------------------------
   print *, '<----famus\rdcoils allocating coil data, myid=',myid
-  if (myid == 0) then
+!  if (myid == 0) then
      do icoil = 1, Ncoils
         SALLOCATE( coil(icoil)%xx, (0:coil(icoil)%NS), zero )
         SALLOCATE( coil(icoil)%yy, (0:coil(icoil)%NS), zero )
@@ -279,7 +291,7 @@ subroutine rdcoils
         SALLOCATE( coil(icoil)%dl, (0:coil(icoil)%NS), zero )
         SALLOCATE( coil(icoil)%dd, (0:coil(icoil)%NS), zero )
      enddo
-  end if
+!  end if
 
   !-----------------------allocate DoF arrays --------------------------------------------------  
   print *, '<----famus\rdcoils allocating DoF arrays, myid=',myid
@@ -358,6 +370,9 @@ print *,'<----famus_rdcoils_mpi myid/rank=',myid,' ncpu/size=',ncpu
        deallocate(coil_out)
      endif
      allocate( coil_out(Ncoils) )
+     !if ( .not. allocated(coil_out) ) then
+     !  allocate( coil_out(Ncoils) )
+     !endif
 !print *,'<----famus_rdcoils_mpi post allocate myid/rank=',myid,' ncpu/size=',ncpu
 
      do icpu = 0, ncpu-1
