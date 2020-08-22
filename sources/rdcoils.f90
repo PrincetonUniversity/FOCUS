@@ -129,15 +129,29 @@ subroutine rdcoils
            read( runit,*)
            read( runit,*) Ncoils
            write(ounit,'("rdcoils : identified "I10" normal coils in "A" ;")') Ncoils, trim(fixed_coils)
-           if (allocated(FouCoil)) deallocate(FouCoil)
-           if (allocated(coil)) deallocate(coil)
-           if (allocated(dof)) deallocate(dof)
-           allocate( FouCoil(1:Ncoils) )
-           allocate(    coil(1:Ncoils) )
-           allocate(     dof(1:Ncoils) )
-           !if (.not. allocated(FouCoil)) allocate( FouCoil(1:Ncoils) )
-           !if (.not. allocated(coil)) allocate(    coil(1:Ncoils) )
-           !if (.not. allocated(dof)) allocate(     dof(1:Ncoils) )
+!           if (allocated(FouCoil)) then
+!             deallocate(FouCoil)
+!           end if
+!           if (allocated(coil)) then
+!             deallocate(coil)
+!           end if
+!           if (allocated(dof)) then
+!             deallocate(dof)
+!           end if
+!           allocate( FouCoil(1:Ncoils) )
+!           allocate(    coil(1:Ncoils) )
+!           allocate(     dof(1:Ncoils) )
+
+           if (allocated(FouCoil)) then
+           print *, '<----famus rdcoils myid=',myid,' size(FouCoil)=',size(FouCoil), &
+                    ' size(coil)=',size(coil),' size(dof)=',size(dof), &
+                    ' Ncoils=',Ncoils
+           else
+           print *, '<----famus rdcoils myid=',myid,' Ncoils=',Ncoils
+           end if
+           if (.not. allocated(FouCoil)) allocate( FouCoil(1:Ncoils) )
+           if (.not. allocated(coil)) allocate(    coil(1:Ncoils) )
+           if (.not. allocated(dof)) allocate(     dof(1:Ncoils) )
            do icoil = 1, Ncoils
               read( runit,*)
               read( runit,*)
@@ -185,12 +199,23 @@ subroutine rdcoils
         else ! initialize one fake coil;
            print *, '<-----rdcoils myid=0 is initializing one fake coil'
            Ncoils = 1
-           if (allocated(coil)) deallocate(coil)
-           if (allocated(dof)) deallocate(dof)
-           allocate( coil(1:Ncoils) )
-           allocate( dof(1:Ncoils) )
-           !if (.not. allocated(coil)) allocate(    coil(1:Ncoils) )
-           !if (.not. allocated(dof)) allocate(     dof(1:Ncoils) )
+!           if (allocated(coil)) then
+!             deallocate(coil)
+!           end if
+!           if (allocated(dof)) then
+!             deallocate(dof)
+!           end if
+!           allocate( coil(1:Ncoils) )
+!           allocate( dof(1:Ncoils) )
+           if (allocated(coil)) then
+           print *, '<----famus rdcoils myid=',myid, &
+                    ' size(coil)=',size(coil),' size(dof)=',size(dof), &
+                    ' Ncoils=',Ncoils
+           else
+           print *, '<----famus rdcoils myid=',myid,' Ncoils=',Ncoils
+           end if
+           if (.not. allocated(coil)) allocate(    coil(1:Ncoils) )
+           if (.not. allocated(dof)) allocate(     dof(1:Ncoils) )
            coil(1)%itype = 3
            coil(1)%Ic = 0
            coil(1)%Lc = 0
@@ -225,14 +250,27 @@ subroutine rdcoils
      !MPIOUT( offset )
      print *, '<----famus myid=',myid,' calculated offset = ', offset
                                
-     print *, '<----famus\rdcoils is allocaing coil & dof, myid=',myid
+     print *, '<----famus\rdcoils is allocating coil & dof, myid=',myid
      if (myid /= 0) then
-        if (allocated(coil)) deallocate(coil) ! necessary???
-        allocate( coil(1:Ncoils) )
-        if (allocated(dof)) deallocate(dof) ! necessary???
-        allocate(  dof(1:Ncoils) )
-        !if (.not. allocated(coil)) allocate(coil(1:Ncoils)) ! necessary???
-        !if (.not. allocated(dof)) allocate(dof(1:Ncoils)) ! necessary???
+!           if (allocated(coil)) then
+!             deallocate(coil)
+!           end if
+!           if (allocated(dof)) then
+!             deallocate(dof)
+!           end if
+!!         if (allocated(coil)) deallocate(coil) ! necessary???
+!        allocate( coil(1:Ncoils) )
+!!        if (allocated(dof)) deallocate(dof) ! necessary???
+!        allocate(  dof(1:Ncoils) )
+           if (allocated(coil)) then
+           print *, '<----famus rdcoils myid=',myid, &
+                    ' size(coil)=',size(coil),' size(dof)=',size(dof), &
+                    ' Ncoils=',Ncoils
+           else
+           print *, '<----famus rdcoils myid=',myid,' Ncoils=',Ncoils
+           end if
+        if (.not. allocated(coil)) allocate(coil(1:Ncoils)) ! necessary???
+        if (.not. allocated(dof)) allocate(dof(1:Ncoils)) ! necessary???
         ! coil(1:Ncoils)%symmetry = 1
      endif
 
@@ -271,12 +309,14 @@ subroutine rdcoils
 
            close(runit)
         endif ! end of if( myid == 0 )
+        call MPI_BARRIER( MPI_COMM_FAMUS, ierr )
      enddo
 
   end select
 
   !-----------------------allocate   coil data--------------------------------------------------
-  print *, '<----famus\rdcoils allocating coil data, myid=',myid
+  print *, '<----famus\rdcoils allocating coil data, myid=',myid, ' Ncoils=',Ncoils, &
+                  ' size(coil)=',size(coil)
 !  if (myid == 0) then
      do icoil = 1, Ncoils
         SALLOCATE( coil(icoil)%xx, (0:coil(icoil)%NS), zero )
@@ -366,13 +406,26 @@ print *,'<----famus_rdcoils_mpi myid/rank=',myid,' ncpu/size=',ncpu
 !print *,'<----famus_rdcoils_mpi post broadcast myid/rank=',myid,' ncpu/size=',ncpu
 
      offset = 3                       
-     if ( allocated(coil_out) ) then
-       deallocate(coil_out)
+!     if ( allocated(coil_out) ) then
+!           if (allocated(coil_out))
+!             deallocate(coil_out%xx)
+!             deallocate(coil_out%yy)
+!             deallocate(coil_out%zz)
+!             deallocate(coil_out%xt)
+!             deallocate(coil_out%yt)
+!             deallocate(coil_out%zt)
+!             deallocate(coil_out%xa)
+!             deallocate(coil_out%ya)
+!             deallocate(coil_out%za)
+!             deallocate(coil_out%dl)
+!             deallocate(coil_out%dd)
+!             deallocate(coil_out)
+!!        deallocate(coil_out)
+!     endif
+!    allocate( coil_out(Ncoils) )
+     if ( .not. allocated(coil_out) ) then
+       allocate( coil_out(Ncoils) )
      endif
-     allocate( coil_out(Ncoils) )
-     !if ( .not. allocated(coil_out) ) then
-     !  allocate( coil_out(Ncoils) )
-     !endif
 !print *,'<----famus_rdcoils_mpi post allocate myid/rank=',myid,' ncpu/size=',ncpu
 
      do icpu = 0, ncpu-1

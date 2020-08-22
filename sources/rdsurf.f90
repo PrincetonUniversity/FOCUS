@@ -494,13 +494,13 @@ print *,'<----fousurf2 reading ', trim(input_surf)
      sinnfp(ip) = sin((ip-1)*pi2/Nfp_raw)
   enddo
 
-  !if (.not. allocated(surf) ) then
-  if (allocated(surf) ) then
-    deallocate( surf )
-  !allocate( surf(1:1) ) ! can allow for myltiple plasma boundaries 
+  if (.not. allocated(surf) ) then
+  !if (allocated(surf) ) then
+  !  deallocate( surf )
+  allocate( surf(1:1) ) ! can allow for myltiple plasma boundaries 
   !                      ! if multiple currents are allowed; 14 Apr 16;
   end if
-  allocate( surf(1:1) ) ! can allow for myltiple plasma boundaries 
+  ! allocate( surf(1:1) ) ! can allow for myltiple plasma boundaries 
                         ! if multiple currents are allowed; 14 Apr 16;
 
   surf(1)%Nteta = Nteta ! not used yet; used for multiple surfaces; 20170307;
