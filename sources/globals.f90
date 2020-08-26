@@ -80,7 +80,8 @@ module globals
   INTEGER              :: IsQuiet        =  -1        
   INTEGER              :: IsSymmetric    =   0 
         
-  INTEGER              :: case_surface   =   0         
+  INTEGER              :: case_surface   =   0   
+  INTEGER,parameter    :: plasma_surf_boozer =   5
   REAL                 :: knotsurf       =   0.200D-00
   REAL                 :: ellipticity    =   0.000D+00
   INTEGER              :: Nteta          =   64           
@@ -127,6 +128,7 @@ module globals
   REAL                 :: weight_mnorm   =   1.000D+00
   REAL                 :: weight_curv    =   0.000D+00
   REAL                 :: weight_straight    =   0.000D+00
+   REAL                 :: coeff_disp_straight=   0.250D+00
   REAL                 :: origin_surface_x =   0.000D+00
   REAL                 :: origin_surface_y  =   0.000D+00
   REAL                 :: origin_surface_z  =   0.000D+00
@@ -228,6 +230,7 @@ module globals
                         weight_mnorm   , &
                         weight_curv    , &
                         weight_straight, &
+                        coeff_disp_straight, &
                         origin_surface_x, &
                         origin_surface_y, &
                         origin_surface_z, &
@@ -283,7 +286,7 @@ module globals
 !latex \subsection{surface and coils data}
   type toroidalsurface
      INTEGER              :: Nteta, Nzeta, Nfou=0, Nfp=0, NBnf=0
-     REAL   , allocatable :: Rbc(:), Zbs(:), Rbs(:), Zbc(:), Bnc(:), Bns(:)
+     REAL   , allocatable :: Rbc(:), Zbs(:), Rbs(:), Zbc(:), Bnc(:), Bns(:),Pmnc(:), Pmns(:)
      REAL   , allocatable :: xx(:,:), yy(:,:), zz(:,:), nx(:,:), ny(:,:), nz(:,:), &
                              xt(:,:), yt(:,:), zt(:,:), xp(:,:), yp(:,:), zp(:,:), &
                              ds(:,:), bn(:,:), pb(:,:), &
