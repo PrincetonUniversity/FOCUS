@@ -126,7 +126,11 @@ subroutine CurvDeriv0(icoil,curvRet)
              / ((coil(icoil)%xt)**2+(coil(icoil)%yt)**2+(coil(icoil)%zt)**2)**(1.5)
 
   coil(icoil)%maxcurv = maxval(curvv)
-  !if (myid==0 .AND. icoil==1) write(ounit,'("curv  "7F20.10)')curvv
+  !if (myid==0 .AND. icoil==1) write(ounit,'("1curv  "7F20.10)')curvv
+!if (myid==0 .AND. icoil==2) write(ounit,'("2curv  "7F20.10)')curvv
+!if (myid==0 .AND. icoil==3) write(ounit,'("3curv  "7F20.10)')curvv
+!if (myid==0 .AND. icoil==4) write(ounit,'("4curv  "7F20.10)')curvv
+!if (myid==0 .AND. icoil==5) write(ounit,'("5curv  "7F20.10)')curvv
 
   if( case_curv == 1 ) then ! linear
      curvRet = sum(curvv)-curvv(0)

@@ -2,7 +2,7 @@
 
 ############################################################################################################
 
- ALLFILES= globals curvature initial rdsurf rdknot rdcoils splines packdof bfield bmnharm bnormal fdcheck \
+ ALLFILES= globals curvature initial rdsurf rdbooz rdknot rdcoils splines packdof bfield bmnharm bnormal fdcheck \
            torflux length straight_out surfsep datalloc solvers descent congrad lmalg saving diagnos \
            specinp poinplot boozer wtmgrid surface focus 
  HFILES= $(ALLFILES:=.f90)   # raw source files

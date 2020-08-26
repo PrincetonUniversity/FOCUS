@@ -486,6 +486,7 @@ subroutine check_input
         FATAL( initial, .true., IsSymmetric /= 0 or 2 unspported option)
      end select
 
+     write(ounit,1000) 'case_surface', case_surface, 'print regardless'
      select case (case_surface)
      case (0)
         inquire( file=trim(input_surf), exist=exist )
@@ -498,6 +499,10 @@ subroutine check_input
         write(ounit, 1000) 'case_surface', case_surface, 'Read axis information for expanding plasma boundary.'
         if (IsQuiet < 0)  write(ounit, '(8X,": knotsurf = " ES12.5 &
              &  " ; ellipticity = " ES12.5)') knotsurf, ellipticity
+     case (plasma_surf_boozer)
+        inquire( file=trim(input_surf), exist=exist )
+        FATAL( initial, .not.exist, plasma boundary file not provided )
+        write(ounit, 1000) 'case_surface', case_surface, 'Read Plasma boundary in Boozer coordinates.'
      case default
         FATAL( initial, .true., selected surface type is not supported )
      end select
