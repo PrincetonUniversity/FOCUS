@@ -2,7 +2,7 @@
 <html>
 <head><meta charset="utf-8" />
 
-<title>FOCUS designs coils for a finite-beta equilibrium</title>
+<title>FOCUS_designs_coils_for_a_finite-beta_equilibrium</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
@@ -13129,11 +13129,11 @@ The basic logic is to calculate the normal field from plasma currents and save i
 FOCUS will design coils satisfying the boundary conditions.</p>
 <p>Here we are going to use the <a href="https://princetonuniversity.github.io/STELLOPT/BNORM">BNORM</a> code calculating the required normal field from plasma currents read from a VMEC output.
 The most important part is to make sure you are using the correct sign and normalization.
-There is a detailed discussion about the coodinate systems and normalizations in several different codes, please check <a href="notes/Coil_design_codes_benchmark.html">Coil_design_codes_benchmark</a>.</p>
+There is a detailed discussion about the coodinate systems and normalizations in several different codes, please check <a href="Coil_design_codes_benchmark.html">Coil_design_codes_benchmark</a>.</p>
 <p>We use the NCSX C09R00 configuration as a reference. The files can be found in <code>examples/ncsx_c09r00</code>.</p>
 <ol>
 <li>Prepare FOCUS input
- Here we use the function <code>vmec2focus</code> in the python package <a href="https://github.com/zhucaoxiang/CoilPy">CoilPy</a>.<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">coilpy</span> <span class="kn">import</span> <span class="n">vmec2focus</span>
+ Here we use the function <a href="https://github.com/zhucaoxiang/CoilPy/blob/master/coilpy/misc.py#L231"><code>vmec2focus</code></a> in the python package <a href="https://github.com/zhucaoxiang/CoilPy">CoilPy</a>.<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">coilpy</span> <span class="kn">import</span> <span class="n">vmec2focus</span>
  <span class="n">vmec2focus</span><span class="p">(</span><span class="s1">&#39;wout_c09r00_fb.nc&#39;</span><span class="p">,</span> <span class="n">focus_file</span><span class="o">=</span><span class="s1">&#39;c09r00.boundary&#39;</span><span class="p">,</span> <span class="n">bnorm_file</span><span class="o">=</span><span class="s1">&#39;bnorm.c09r00_fb&#39;</span><span class="p">)</span>
 </pre></div>
 </li>
@@ -13144,7 +13144,11 @@ There is a detailed discussion about the coodinate systems and normalizations in
 <pre><code> mpiexec xvmec2000 input.c09r00_focus</code></pre>
 </li>
 </ol>
-<p>Note: At now, FOCUS cannot constrain the total poloildal current. This might cause trouble when doing equilibrium reconstruction. It is suggested to fix the coil currents.</p>
+<p><strong>Note:</strong></p>
+<ol>
+<li>Right now, FOCUS cannot constrain the total poloildal current. This might cause trouble when doing equilibrium reconstruction. It is suggested to fix the coil currents.</li>
+<li>If you are using FAMUS, you have to specify <code>flipsign=True</code> in the arguments because FAMUS adds the input Bn.</li>
+</ol>
 
 </div>
 </div>
