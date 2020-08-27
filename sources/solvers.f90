@@ -51,7 +51,7 @@ subroutine solvers
      write(ounit, '(8X,": Initial weights are: "7(A12, ","))') "bnorm", "bharm", "tflux", &
          "ttlen", "cssep", "curv","straight-out coil"
      write(ounit, '(8X,": "21X,7(ES12.5, ","))') weight_bnorm, weight_bharm, weight_tflux, &
-          weight_ttlen, weight_cssep, weight_curv,,weight_straight
+          weight_ttlen, weight_cssep, weight_curv,weight_straight
      write(ounit, '(8X,": target_tflux = "ES12.5" ; target_length = "ES12.5" ; k0 = "ES12.5" ; cssep_factor = "ES12.5)') &
           target_tflux, target_length, k0, cssep_factor
   endif
@@ -156,7 +156,7 @@ subroutine costfun(ideriv)
        cssep      , t1S, t2S, weight_cssep, &
        specw      , t1P, t2P, weight_specw, &
        ccsep      , t1C, t2C, weight_ccsep, &
-       curv       , t1CU,t2CU,weight_curv, MPI_COMM_FOCUS
+       curv       , t1CU,t2CU,weight_curv, MPI_COMM_FOCUS, &
        str        , t1Str,t2Str,weight_straight, MPI_COMM_FOCUS
 
   implicit none

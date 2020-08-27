@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(10), parameter :: version='v0.13.07' ! version number
+  CHARACTER(10), parameter :: version='v0.14.03' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -109,8 +109,6 @@ module globals
   REAL                 :: k0             =   0.000D+00
   REAL                 :: str_c          =   1.000D-04
   REAL                 :: str_k0         =   2.000D+00
-  REAL                 :: curv_c         =   1.000D-04
-  REAL                 :: k0             =   0.000D+00
   REAL                 :: weight_bnorm   =   1.000D+00
   INTEGER              :: bharm_jsurf    =   0
   REAL                 :: weight_bharm   =   0.000D+00
@@ -128,7 +126,7 @@ module globals
   REAL                 :: weight_mnorm   =   1.000D+00
   REAL                 :: weight_curv    =   0.000D+00
   REAL                 :: weight_straight    =   0.000D+00
-   REAL                 :: coeff_disp_straight=   0.250D+00
+  REAL                 :: coeff_disp_straight=   0.250D+00
   REAL                 :: origin_surface_x =   0.000D+00
   REAL                 :: origin_surface_y  =   0.000D+00
   REAL                 :: origin_surface_z  =   0.000D+00
