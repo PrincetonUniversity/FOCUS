@@ -147,7 +147,7 @@ subroutine rdbooz(filename, index)
    if (myid .eq. 0) then
       open (runit, file=trim(filename), status='old', action='read')
       read (runit, *) !empty line
-      read (runit, *) surf(index)%Nfou, surf(index)%NBnf, surf(index)%Nfp !read dimensions
+      read (runit, *) surf(index)%Nfou, surf(index)%Nfp, surf(index)%NBnf !read dimensions
    endif
 
    !Broadcast the values
@@ -156,7 +156,7 @@ subroutine rdbooz(filename, index)
    IlBCAST(surf(index)%NBnf, 1, 0)
 
    FATAL(rdbooz, surf(index)%Nfou .le. 0, invalid)
-   FATAL(rdbooz, surf(index)%NBnf .le. 0, invalid)
+   FATAL(rdbooz, surf(index)%Nfp .le. 0, invalid)
    FATAL(rdbooz, surf(index)%NBnf < 0, invalid)
    Nfou = surf(index)%Nfou
    NBnf = surf(index)%NBnf
@@ -239,10 +239,10 @@ subroutine rdbooz(filename, index)
       write (ounit, '("surface : " 10x " : Pmns ="10es13.5)') surf(index)%Pmns(1:Nfou)
 
       if (NBnf > 0) then
-         write (ounit, '("        : " 10x " : Bnim ="10i13  )') surf(index)%Bnim(1:Nfp)
-         write (ounit, '("        : " 10x " : Bnin ="10i13  )') surf(index)%Bnin(1:Nfp)
-         write (ounit, '("        : " 10x " : Bnc ="10es13.5)') surf(index)%Bnc(1:Nfp)
-         write (ounit, '("        : " 10x " : Bns ="10es13.5)') surf(index)%Bns(1:Nfp)
+         write (ounit, '("        : " 10x " : Bnim ="10i13  )') surf(index)%Bnim(1:NBnf)
+         write (ounit, '("        : " 10x " : Bnin ="10i13  )') surf(index)%Bnin(1:NBnf)
+         write (ounit, '("        : " 10x " : Bnc ="10es13.5)') surf(index)%Bnc(1:NBnf)
+         write (ounit, '("        : " 10x " : Bns ="10es13.5)') surf(index)%Bns(1:NBnf)
       endif
    endif
 
@@ -385,12 +385,12 @@ subroutine rdbooz(filename, index)
    endif
 
    !calculate target Bn with input harmonics; 05 Jan 17;
-   if (surf(index)%Nfp > 0) then
+   if (surf(index)%NBnf > 0) then
       do jj = 0, Nzeta - 1
          zeta = (jj + half)*pi2/surf(index)%Nzeta
          do ii = 0, Nteta - 1
             teta = (ii + half)*pi2/surf(index)%Nteta
-            do imn = 1, surf(index)%Nfp
+            do imn = 1, surf(index)%NBnf
                arg = surf(index)%Bnim(imn)*teta - surf(index)%Bnin(imn)*zeta
                surf(index)%pb(ii, jj) = surf(index)%pb(ii, jj) + surf(index)%Bnc(imn)*cos(arg) + surf(index)%Bns(imn)*sin(arg)
             enddo

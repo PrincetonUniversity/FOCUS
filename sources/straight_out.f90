@@ -28,7 +28,6 @@ subroutine straight(ideriv)
   REAL                :: strAdd
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
   str = zero
   strAdd = zero
   ivec = 1
@@ -203,7 +202,7 @@ subroutine StrDeriv1(icoil, derivs, ND, NC ) !Calculate all derivatives for a co
                 case_straight, straight_alpha, str_k0, str_c, FouCoil, MPI_COMM_FOCUS,Splines,coil_type_spline, &
 	        origin_surface_x, origin_surface_y, origin_surface_z,xdof,coeff_disp_straight
   implicit none
-  include "mpif.h"
+  !include "mpif.h"
 
   INTEGER, intent(in)  :: icoil, ND , NC  !NC is actually NCP for spline coils
   REAL   , intent(out) :: derivs(1:1, 1:ND)
@@ -216,10 +215,10 @@ subroutine StrDeriv1(icoil, derivs, ND, NC ) !Calculate all derivatives for a co
   FATAL( StrDeriv1, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
 
   derivs = zero
-
   mean_xy_distance = SUM((coil(icoil)%xx-origin_surface_x)**2 + (coil(icoil)%yy-origin_surface_y)**2)/(coil(icoil)%NS)
   !dispersion = (MAXVAL((coil(icoil)%xx-origin_surface_x)**2 + (coil(icoil)%yy-origin_surface_y)**2)- &
 !	       MINVAL((coil(icoil)%xx-origin_surface_x)**2 + (coil(icoil)%yy-origin_surface_y)**2))/2
+
   dispersion = (MAXVAL((coil(icoil)%xx-origin_surface_x)**2 + (coil(icoil)%yy-origin_surface_y)**2) - mean_xy_distance)/2
 
  !write(ounit, '( " dist " F20.10 " disp " F20.10)') &

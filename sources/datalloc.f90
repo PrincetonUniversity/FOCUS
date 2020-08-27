@@ -328,6 +328,10 @@ subroutine AllocData(type)
         SALLOCATE( t1CU,  (1:Ndof), zero )
      endif
 
+     if (weight_straight > sqrtmachprec) then
+        SALLOCATE( t1Str,  (1:Ndof), zero )
+     endif
+
      ! cssep needed;
      if (weight_cssep > sqrtmachprec) then
         SALLOCATE( t1S,  (1:Ndof), zero )
