@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='dp_v1.1.10' ! version number
+  CHARACTER(LEN=10), parameter :: version='dp_v1.2.00' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -115,6 +115,7 @@ module globals
   REAL                 :: weight_specw   =   0.000D+00
   REAL                 :: weight_ccsep   =   0.000D+00
   REAL                 :: weight_pmsum   =   0.000D+00
+  REAL                 :: weight_dpbin   =   0.000D+00
   REAL                 :: weight_inorm   =   1.000D+00
   REAL                 :: weight_gnorm   =   1.000D+00
   REAL                 :: weight_mnorm   =   1.000D+00
@@ -206,6 +207,7 @@ module globals
                         weight_specw   , &
                         weight_ccsep   , &
                         weight_pmsum   , &
+                        weight_dpbin   , & 
                         weight_inorm   , &
                         weight_gnorm   , &
                         weight_mnorm   , &
@@ -343,6 +345,9 @@ module globals
   ! Spectral condensation;
   REAL                 :: specw
   REAL   , allocatable :: t1P(:), t2P(:,:)
+  ! Dipole Binary
+  REAL                 :: dpbin
+  REAL   , allocatable :: t1D(:), t2D(:,:)  
   ! PM volume
   REAL                 :: pmsum, total_moment
   REAL   , allocatable :: t1V(:), t2V(:,:)  

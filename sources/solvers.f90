@@ -37,7 +37,7 @@
 subroutine solvers
   use globals, only: dp, ierr, iout, myid, ounit, zero, IsQuiet, IsNormWeight, Ndof, Nouts, xdof, &
        case_optimize, DF_maxiter, LM_maxiter, CG_maxiter, coil, DoF, &
-       weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_pmsum, &
+       weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_pmsum, weight_dpbin, &
        target_tflux, target_length, cssep_factor, QN_maxiter, SA_maxiter, HY_maxiter, MPI_COMM_FAMUS
   use mpi
   implicit none
@@ -49,12 +49,11 @@ subroutine solvers
   if (myid == 0) write(ounit, *) "-----------OPTIMIZATIONS-------------------------------------"
   if (myid == 0) write(ounit, '("solvers : Total number of DOF is " I6)') Ndof
   if (myid == 0 .and. IsQuiet < 1) then
-     write(ounit, '(8X,": Initial weights are: "6(A12, ","))') "bnorm", "bharm", "tflux", &
-         "ttlen", "cssep", "pmsum"
-     write(ounit, '(8X,": "21X,6(ES12.5, ","))') weight_bnorm, weight_bharm, weight_tflux, &
-          weight_ttlen, weight_cssep, weight_pmsum
-     write(ounit, '(8X,": target_tflux = "ES12.5" ; target_length = "ES12.5" ; cssep_factor = "ES12.5)') &
-          target_tflux, target_length, cssep_factor
+     write(ounit, '(8X,": Initial weights are: "3(A12, ","))') "bnorm", "pmsum", "dpbin"
+     write(ounit, '(8X,": "21X,3(ES12.5, ","))') weight_bnorm, weight_pmsum, weight_dpbin
+! for back-compatibility 
+!     write(ounit, '(8X,": target_tflux = "ES12.5" ; target_length = "ES12.5" ; cssep_factor = "ES12.5)') &
+!          target_tflux, target_length, cssep_factor
   endif
 
   call unpacking(xdof)  ! unpack the optimized xdof array;
@@ -73,8 +72,11 @@ subroutine solvers
   if (IsNormWeight /= 0) call normweight
 
   if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "------------- Initial status ------------------------"
-  if (myid == 0) write(ounit, '("output  : "A6" : "8(A12," ; "))') "iout", "mark", "chi", "dE_norm", &
-       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "PM eff. vol." 
+  if (myid == 0) write(ounit, '("output  : "A6" : "6(A12," ; "))') "iout", "mark", "chi", "dE_norm", &
+       "Bnormal", "PM eff. vol.", "Dip. Binary" 
+! TQ-EDIT :: avoid printing FOCUS coil metrics that are not used in FAMUS
+!  if (myid == 0) write(ounit, '("output  : "A6" : "8(A12," ; "))') "iout", "mark", "chi", "dE_norm", &
+!       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "PM eff. vol." 
   call costfun(1)
   call saveBmn    ! in bmnharm.h;
   iout = 0 ! reset output counter;
@@ -173,7 +175,8 @@ subroutine costfun(ideriv)
        cssep      , t1S, t2S, weight_cssep, &
        specw      , t1P, t2P, weight_specw, &
        ccsep      , t1C, t2C, weight_ccsep, &
-       pmsum      , t1V, t2V, weight_pmsum
+       pmsum      , t1V, t2V, weight_pmsum, &
+       dpbin      , t1D, t2D, weight_dpbin
 
   implicit none
   include "mpif.h"
@@ -216,6 +219,7 @@ subroutine costfun(ideriv)
      call length(0)
      call surfsep(0)
      call minvol(0)
+     call bindip(0) 
 
   endif
 
@@ -338,6 +342,20 @@ subroutine costfun(ideriv)
      endif
   endif
 
+  ! summation of Binary Dipole Penalty
+  if (weight_dpbin > machprec) then
+
+     call bindip(ideriv) ! updates dpbin?
+     chi = chi + weight_dpbin * dpbin
+     if     ( ideriv == 1 ) then
+        t1E = t1E +  weight_dpbin * t1D
+     elseif ( ideriv == 2 ) then
+        t1E = t1E +  weight_dpbin * t1D
+        t2E = t2E +  weight_dpbin * t2D
+     endif
+  endif
+
+
 !!$
 !!$  ! if (myid == 0) write(ounit,'("calling tlength used",f10.5,"seconds.")') finish-start
 !!$
@@ -420,7 +438,7 @@ subroutine normweight
   use globals, only: dp, zero, one, machprec, ounit, myid, xdof, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
        weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_specw, weight_ccsep, &
        target_tflux, psi_avg, coil, Ncoils, case_length, Bmnc, Bmns, tBmnc, tBmns, pmsum, weight_pmsum, &
-       MPI_COMM_FAMUS
+       dpbin, weight_dpbin, MPI_COMM_FAMUS
 
   implicit none  
   include "mpif.h"
@@ -525,6 +543,17 @@ subroutine normweight
 
   endif
 
+  !-!-!-!-!-!-!-!-!-!-dpbin-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+  if( weight_dpbin >= machprec ) then
+
+     call bindip(0)
+     if (abs(dpbin) > machprec) weight_dpbin = weight_dpbin / dpbin
+     if( myid == 0 ) write(ounit, 1000) "weight_dpbin", weight_dpbin
+     if( myid .eq. 0 .and. weight_dpbin < machprec) write(ounit, '("warning : weight_dpbin < machine_precision, dpbin will not be used.")')
+
+  endif
+
 !!$!-!-!-!-!-!-!-!-!-!-eqarc-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 !!$
 !!$  if( weight_eqarc .ge. machprec ) then
@@ -559,7 +588,7 @@ subroutine output (mark)
 
   use globals, only: dp, zero, ounit, myid, ierr, astat, iout, Nouts, Ncoils, save_freq, Tdof, &
        coil, coilspace, FouCoil, chi, t1E, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
-       evolution, xdof, DoF, exit_tol, exit_signal, sumDE, pmsum, MPI_COMM_FAMUS
+       evolution, xdof, DoF, exit_tol, exit_signal, sumDE, pmsum, dpbin, MPI_COMM_FAMUS
 
   implicit none  
   include "mpif.h"
@@ -573,8 +602,10 @@ subroutine output (mark)
   
   FATAL( output , iout > Nouts+2, maximum iteration reached )
 
-  if (myid == 0) write(ounit, '("output  : "I6" : "8(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, bharm, &
-       tflux, ttlen, pmsum
+  if (myid == 0) write(ounit, '("output  : "I6" : "7(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, pmsum, dpbin
+!  backward compatibility
+!  if (myid == 0) write(ounit, '("output  : "I6" : "8(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, bharm, &
+!       tflux, ttlen, pmsum
 
   ! save evolution data;
   if (allocated(evolution)) then

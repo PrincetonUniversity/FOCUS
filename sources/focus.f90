@@ -48,7 +48,6 @@ PROGRAM FAMUS
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-  
   call initial ! read input namelist and broadcast;
 
   call check_input
