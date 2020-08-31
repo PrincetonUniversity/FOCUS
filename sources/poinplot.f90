@@ -4,8 +4,8 @@ SUBROUTINE poinplot
   ! Poincare plots of the vacuum flux surfaces and calculate the rotational transform
   !------------------------------------------------------------------------------------------------------ 
   USE globals, only : dp, myid, ncpu, zero, half, pi, pi2, ounit, pi, sqrtmachprec, pp_maxiter, &
-                      pp_phi, pp_raxis, pp_zaxis, pp_xtol, pp_rmax, pp_zmax, ppr, ppz, pp_ns, iota, nfp_raw, &
-                      XYZB, lboozmn, booz_mnc, booz_mns, booz_mn, total_num, MPI_COMM_FAMUS, &
+                      pp_phi, pp_raxis, pp_zaxis, pp_xtol, pp_rmax, pp_zmax, ppr, ppz, pp_ns, iota, &
+                      XYZB, lboozmn, booz_mnc, booz_mns, booz_mn, total_num, MPI_COMM_FAMUS, pp_nfp, pp_nsteps, &
                       master, nmaster, nworker, masterid, color, myworkid, MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS
   USE mpi
   IMPLICIT NONE
@@ -57,6 +57,8 @@ SUBROUTINE poinplot
 
   if(myid==0) write(ounit, '("poinplot: following fieldlines between ("ES12.5 &
        ","ES12.5" ) and ("ES12.5","ES12.5" )")') pp_raxis, pp_zaxis, pp_rmax, pp_zmax
+  if(myid==0) write(ounit, '(8X, ": Field-line integrated in [0, 2*pi/", I1, "] with ", I4, " steps.")') &
+                    pp_nfp, pp_nsteps
 
   do is = 1, pp_ns     ! pp_ns is the number of eavaluation surfaces
      niter = 0    ! number of successful iterations
@@ -78,7 +80,7 @@ SUBROUTINE poinplot
      if (niter==0) then
         iota(is) = zero
      else 
-        iota(is) = rzrzt(5) / (niter*pi2/Nfp_raw)
+        iota(is) = rzrzt(5) / (niter*pi2/pp_nfp)
      endif
 
      if (myid == 0) write(ounit, '(8X": order="I6" ; masterid="I6" ; (R,Z)=("ES12.5","ES12.5 & 
@@ -97,7 +99,7 @@ END SUBROUTINE poinplot
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE find_axis(RZ, MAXFEV, XTOL)
-  USE globals, only : dp, myid, ounit, zero, pp_phi, Nfp_raw
+  USE globals, only : dp, myid, ounit, zero, pp_phi, pp_nfp
   USE mpi
   IMPLICIT NONE
 
@@ -155,25 +157,30 @@ END SUBROUTINE find_axis
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE axis_fcn(n,x,fvec,iflag)
-  USE globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, Nfp_raw, pp_xtol
+  USE globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, pp_nfp, pp_xtol, pp_nsteps
   USE mpi
   IMPLICIT NONE
 
-  INTEGER  :: n, iflag
+  INTEGER  :: n, iflag, i
   REAL :: x(n), fvec(n)
 
   INTEGER  :: iwork(5), ierr, ifail
   REAL     :: rz_end(n), phi_init, phi_stop, relerr, abserr, work(100+21*N)
   EXTERNAL :: BRpZ
-  
+
   ifail = 1
   relerr = pp_xtol
   abserr = sqrtmachprec
-  phi_init = pp_phi
-  phi_stop = pp_phi + pi2/Nfp_raw
   rz_end = x
+  phi_stop = pp_phi
 
-  call ode( BRpZ, n, rz_end, phi_init, phi_stop, relerr, abserr, ifail, work, iwork )
+  do i = 1, pp_nsteps
+     ifail = 1
+     phi_init = phi_stop
+     phi_stop = phi_init + pi2/pp_nfp/pp_nsteps
+     call ode( BRpZ, n, rz_end, phi_init, phi_stop, relerr, abserr, ifail, work, iwork )
+  enddo 
+
   if ( ifail /= 2 ) then     
      if ( myid==0 .and. IsQuiet < 0 ) then
         write ( ounit, '(A,I3)' ) 'axis_fcn: ODE solver ERROR; returned IFAIL = ', ifail
@@ -200,12 +207,12 @@ END SUBROUTINE axis_fcn
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE ppiota(rzrzt,iflag)
-  USE globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, Nfp_raw, pp_xtol
+  USE globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, pp_nfp, pp_xtol, pp_nsteps
   USE mpi
   IMPLICIT NONE
 
   INTEGER, parameter  :: n = 5
-  INTEGER  :: iflag
+  INTEGER  :: iflag, i
   REAL     :: rzrzt(n)
 
   INTEGER  :: iwork(5), ierr, ifail
@@ -215,10 +222,15 @@ SUBROUTINE ppiota(rzrzt,iflag)
   ifail = 1
   relerr = pp_xtol
   abserr = sqrtmachprec
-  phi_init = pp_phi
-  phi_stop = pp_phi + pi2/Nfp_raw
+  phi_stop = pp_phi
+  
+  do i = 1, pp_nsteps
+     ifail = 1
+     phi_init = phi_stop
+     phi_stop = phi_init + pi2/pp_nfp/pp_nsteps
+     call ode( BRpZ_iota, n, rzrzt, phi_init, phi_stop, relerr, abserr, ifail, work, iwork )
+  enddo 
 
-  call ode( BRpZ_iota, n, rzrzt, phi_init, phi_stop, relerr, abserr, ifail, work, iwork )
   if ( ifail /= 2 ) then     
      if ( IsQuiet < -1 ) then
         write ( ounit, '(A,I3)' ) 'ppiota  : ODE solver ERROR; returned IFAIL = ', ifail
