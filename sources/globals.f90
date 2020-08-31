@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='dp_v1.1.10' ! version number
+  CHARACTER(LEN=10), parameter :: version='dp_v1.1.15' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -159,6 +159,8 @@ module globals
   REAL                 :: pp_rmax        =  0.000D+00
   REAL                 :: pp_zmax        =  0.000D+00
   INTEGER              :: pp_ns          =  10
+  INTEGER              :: pp_nsteps      =  5
+  INTEGER              :: pp_nfp         =  1
   INTEGER              :: pp_maxiter     =  1000
   REAL                 :: pp_xtol        =  1.000D-06
 
@@ -243,6 +245,8 @@ module globals
                         pp_zmax        , &
                         pp_ns          , &
                         pp_maxiter     , &
+                        pp_nsteps      , &
+                        pp_nfp         , &
                         pp_xtol
 
 
