@@ -23,7 +23,7 @@ It shares similiar I/O with FOCUS, but there are differences.
 - Total magnetic moment
 - Binary Dipoles
   \$$ F_D = \sum |\rho|(1 - |\rho|) $$
-  where \$\rho = p^q \in [-1,1]$. This objective encourages PM cells to be either 0 or $\pm$ 1 instead of intermediary values.
+  where $$\rho = p^q \in [-1,1]$$. This objective encourages PM cells to be either 0 or 1 instead of intermediary values.
 
 
 ## Optimization algorithms
