@@ -27,7 +27,7 @@ It shares similiar I/O with FOCUS, but there are differences.
   
   This function will try to reduce the total amount of used magnets.
 - Binary Dipoles
-  \$$ F_D = \sum |\rho|(1 - |\rho|) \mathrm{where} \rho = p^q \in [-1,1] $$. 
+  \$$ F_D = \sum |\rho|(1 - |\rho|) , \; \mathrm{where} \; \rho = p^q \in [-1,1] $$. 
   
   This objective encourages PM cells to be either 0 or 1 instead of intermediary values.
 
