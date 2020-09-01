@@ -21,6 +21,10 @@ It shares similiar I/O with FOCUS, but there are differences.
 - Normal field error
   \$$ F_B = \iint_{\cal S} \left ( \vec{B}_{M} \cdot \vec{n} - B_n^{tgt} \right )^2 d{a} $$
 - Total magnetic moment
+- Binary Dipoles
+  \$$ F_D = \sum |\rho|(1 - |\rho|) $$
+  where \$\rho = p^q \in [-1,1]$. This objective encourages PM cells to be either 0 or $\pm$ 1 instead of intermediary values.
+
 
 ## Optimization algorithms
 - Quasi-Newton (QN)
