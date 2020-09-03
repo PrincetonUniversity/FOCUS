@@ -115,7 +115,7 @@ subroutine fousurf(filename, index)
    IlBCAST(surf(index)%bim(1:Nfou), surf(index)%Nfou, 0)
    IlBCAST(surf(index)%bin(1:Nfou), surf(index)%Nfou, 0)
 
-   surf(index)%bin(1:Nfou) = surf(index)%bin(1:Nfou)**surf(index)%Nfp  !The full plasma;
+   surf(index)%bin(1:Nfou) = surf(index)%bin(1:Nfou)*surf(index)%Nfp  !The full plasma;
 
    RlBCAST(surf(index)%Rbc(1:Nfou), surf(index)%Nfou, 0)
    RlBCAST(surf(index)%Rbs(1:Nfou), surf(index)%Nfou, 0)
