@@ -561,7 +561,7 @@ subroutine normweight
 
   if( weight_pmvol >= machprec ) then
 
-     call minvol(0)
+     call total_pm(0)
      if (abs(pmvol) > machprec) weight_pmvol = weight_pmvol / pmvol
      if( myid == 0 ) write(ounit, 1000) "weight_pmvol", weight_pmvol
      if( myid .eq. 0 .and. weight_pmvol < machprec) write(ounit, '("warning : weight_pmvol < machine_precision, pmvol will not be used.")')
