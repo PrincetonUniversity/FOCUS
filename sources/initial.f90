@@ -325,6 +325,9 @@ subroutine check_input
      case ( 5 )
         if (IsQuiet < 1) write(ounit, 1000) 'case_postproc', case_postproc, & 
              &  'A binary mgrid file will be saved.'
+     case ( 7 )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_postproc', case_postproc, & 
+             &  'Diagnostics, Write binary mgrid file, Trace poincare plot.'
      case default
         FATAL( initial, .true., selected case_postproc is not supported )
      end select
