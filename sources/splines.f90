@@ -1,3 +1,47 @@
+!title (boundary) ! Spline representation
+
+!latex \briefly{Calculates the basis functions and their derivatives for the spline representation of the coils.}
+
+!latex \calledby{\link{dataalloc}}
+!latex \calls{\link{}}
+
+!latex \subsection{Overview}
+!latex \item[1.] eval_spline_basis computes the basis functions of third order using the Cox-de Boor algorithm.
+
+!latex\[
+!latexB_{i,k}(x) = \frac{x-t_i}{t_{i+k}-t_i}B_{i,k-1}(x) + \frac{t_{i+k+1} - x}{t_{i+k+1}-t_{i+1}}B_{i+1,k-1}(x)
+!latex\]
+!latex\[
+!latexB_{i,0}(x) = \begin{cases} 1, \hspace{2em} t_i < x < t_{i+1} \\ 0, \hspace{2em}  otherwise \end{cases}
+!latex\]
+
+!latex	It also stores the basis functions of first and second order as they are used in the computation of the derivatives	
+!latex \item[2.] eva_spline_basis1 computes the first derivatives of the basis functions obtained analitically as
+
+!latex \begin{equation*}
+!latex \hspace{-4cm} \scalebox{0.6}{ $
+!latex \frac{\partial B_{i,3}(x)}{\partial x} =  \begin{cases} \frac{1}{t_{i+3}-t_i}B_{i,2}(x) + \frac{x-t_i}{t_{i+3}-t_i}\left[\frac{1}{t_{i+2}-t_i}B_{i,1}(x) + \frac{x-t_i}{t_{i+2}-t_i}\frac{1}{t_{i+1}-t_i}   \right], \hspace{56.5em} t_i < x < t_{i+1} \\
+!latex \frac{1}{t_{i+3}-t_i}B_{i,2}(x) + \frac{x-t_i}{t_{i+3}-t_i}\left[\frac{1}{t_{i+2}-t_i}B_{i,1}(x) - \frac{x-t_i}{t_{i+2}-t_i}\frac{1}{t_{i+2}-t_{i+1}} - \frac{1}{t_{i+3}-t_{i+1}}B_{i+1,1}(x) + \frac{t_{i+3}-x}{t_{i+3}-t_{i+1}}\frac{1}{t_{i+2}-t_{i+1}}  \right] - \frac{1}{t_{i+4}-t_{i+1}}B_{i+1,2}(x) + \frac{t_{i+4}-x}{t_{i+4}-t_{i+1}}\left[\frac{1}{t_{i+3}-t_{i+1}}B_{i+1,1}(x) + \frac{x - t_{i+1}}{t_{i+3}-t_{i+1}}\frac{1}{t_{i+2}-t_{i+1}}  \right], \hspace{5.5em} t_{i+1} < x < t_{i+2} \\
+!latex \frac{1}{t_{i+3}-t_i}B_{i,2}(x) + \frac{x-t_i}{t_{i+3}-t_i}\left[-\frac{1}{t_{i+3}-t_{i+1}}B_{i+1,1}(x) - \frac{t_{i+3}-x}{t_{i+3}-t_{i+1}}\frac{1}{t_{i+3}-t_{i+2}}  \right] - \frac{1}{t_{i+4}-t_{i+1}}B_{i+1,2}(x) + \frac{t_{i+4}-x}{t_{i+4}-t_{i+1}}\left[\frac{1}{t_{i+3}-t_{i+1}}B_{i+1,1}(x) - \frac{x-t_{i+1}}{t_{i+3}-t_{i+1}}\frac{1}{t_{i+3}-t_{i+2}} - \frac{1}{t_{i+4}-t_{i+2}}B_{i+2,1}(x) + \frac{t_{i+4}-x}{t_{i+4}-t_{i+2}}\frac{1}{t_{i+3}-t_{i+2}} \right], \hspace{2em} t_{i+2} < x < t_{i+3} \\
+!latex -\frac{1}{t_{i+4}-t_{i+1}}B_{i+1,2}(x) + \frac{t_{i+4}-x}{t_{i+4}-t_{i+1}}\left[-\frac{1}{t_{i+4}-t_{i+2}}B_{i+2,1}(x) - \frac{t_{i+4}-x}{t_{i+4}-t_{i+2}}\frac{1}{t_{i+4}-t_{i+3}}   \right], \hspace{48.5em} t_{i+3} < x < t_{i+4} \\
+!latex \end{cases}$
+!latex }
+!latex \end{equation*}
+
+!latex \item[3.] eva_spline_basis2 computes the second derivatives of the basis functions obtained analitically as
+
+!latex \begin{equation*}
+!latex \hspace{-4cm} \scalebox{0.5}{ $
+!latex \frac{\partial^2 B_{i,3}(x)}{\partial x^2} =  \begin{cases} \frac{2}{t_{i+3}-t_i}\left[\frac{1}{t_{i+2}-t_i}B_{i,1}(x) + \frac{x-t_i}{t_{i+2}-t_i}\frac{1}{t_{i+1}-t_i}   \right] +\frac{x-t_i}{t_{i+3}-t_i}\frac{2}{t_{i+1}-t_i}\frac{1}{t_{i+2}-t_i} , \hspace{71em} t_i < x < t_{i+1} \\
+!latex \frac{2}{t_{i+3}-t_i}\left[\frac{1}{t_{i+2}-t_i}B_{i,1}(x) - \frac{x-t_i}{t_{i+2}-t_i}\frac{1}{t_{i+2}-t_{i+1}} - \frac{1}{t_{i+3}-t_{i+1}}B_{i+1,1}(x) + \frac{t_{i+3}-x}{t_{i+3}-t_{i+1}}\frac{1}{t_{i+2}-t_{i+1}}  \right] - \frac{x-t_i}{t_{i+3}-t_i}\frac{1}{t_{i+2}-t_{i+1}}\left[ \frac{2}{t_{i+2}-t_i} + \frac{2}{t_{i+3}-t_{i+1}}\right] - \frac{2}{t_{i+4}-t_{i+1}}\left[\frac{1}{t_{i+3}-t_{i+1}}B_{i+1,1}(x) + \frac{x-t_{i+1}}{t_{i+3}-t_{i+1}}\frac{1}{t_{i+2}-t_{i+1}}  \right] + \frac{t_{i+4}-x}{t_{i+4}-t_{i+1}}\frac{2}{t_{i+3}-t_{i+1}}\frac{1}{t_{i+2}-t_{i+1}}, \hspace{9.5em} t_{i+1} < x < t_{i+2} \\
+!latex \frac{2}{t_{i+3}-t_i}\left[-\frac{1}{t_{i+3}-t_{i+1}}B_{i+1,1}(x) - \frac{t_{i+3}-x}{t_{i+3}-t_{i+1}}\frac{1}{t_{i+3}-t_{i+2}}  \right] + \frac{x-t_i}{t_{i+3}-t_i}\frac{2}{t_{i+3}-t_{i+1}}\frac{1}{t_{i+3}-t_{i+2}} - \frac{2}{t_{i+4}-t_{i+1}}\left[\frac{1}{t_{i+3}-t_{i+1}}B_{i+1,1}(x) - \frac{x-t_{i+1}}{t_{i+3}-t_{i+1}}\frac{1}{t_{i+3}-t_{i+2}} - \frac{1}{t_{i+4}-t_{i+2}}B_{i+2,1}(x) + \frac{t_{i+4}-x}{t_{i+4}-t_{i+2}}\frac{1}{t_{i+3}-t_{i+2}} \right] - \frac{t_{i+4}-x}{t_{i+4}-t_{i+1}}\frac{1}{t_{i+3}-t_{i+2}}\left[\frac{2}{t_{i+3}-t_{i+1}} + \frac{2}{t_{i+4}-t_{i+2}}  \right], \hspace{5em} t_{i+2} < x < t_{i+3} \\
+!latex -\frac{2}{t_{i+4}-t_{i+1}}\left[-\frac{1}{t_{i+4}-t_{i+2}}B_{i+2,1}(x) - \frac{t_{i+4}-x}{t_{i+4}-t_{i+2}}\frac{1}{t_{i+4}-t_{i+3}}   \right] + \frac{t_{i+4}-x}{t_{i+4}-t_{i+1}}\frac{2}{t_{i+4}-t_{i+2}}\frac{1}{t_{i+4}-t_{i+3}}, \hspace{62.5em} t_{i+3} < x < t_{i+4} \\
+!latex \end{cases}$
+!latex }
+!latex \end{equation*}
+
+!latex \item[4.] enforce_spline_periodicity ensures the periodicity of the spline by making sure the first three control points are used in place of the last three during optimization
+
 SUBROUTINE eval_spline_basis(icoil)
 ! Compute the basis functions of order 0,1,2 and 3 for the values of t contained in eval_points and store the value in Splines
     use globals, only : dp, zero, one, myid, ounit, sqrtmachprec, IsQuiet,coil,Splines,astat  
