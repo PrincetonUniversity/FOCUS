@@ -1,18 +1,43 @@
 
-!title (curvature) ! Calculate objective functon for straight-out coils and its derivatives. (tkruger)
+!title (Straight out) ! Calculate objective functon for straight-out coils and its derivatives. (tkruger)
 
-!latex \briefly{The cost function will allow for straight-out coils, improving 
-!latex         This function is still under development. emph{targt\_length}.}
+!latex \briefly{The cost function will allow for straight-out coils.}
 
 !latex \calledby{\link{solvers}}
 
-!latex  \section{General}
+!latex    \section{General}
+!latex    Computes the straight out penalty in one of three possible forms. It is similar to the curvature penality but only applied to the outer part of the coil.
+!latex    \item[1.]  A linear objective function 
+!latex    \begin{eqnarray}
+!latex    f_{curv} = \frac{1}{N_c}\sum_{i=1}^{N_c} \int_0^{2\pi}W(t)\kappa_i dt
+!latex    \end{eqnarray}
+!latex        \item A quadratic objective function 
+!latex    \begin{eqnarray}
+!latex    f_{curv} = \frac{1}{N_c}\sum_{i=1}^{N_c} \int_0^{2\pi}W(t)\kappa_i^2 dt
+!latex    \end{eqnarray}
+!latex           \item A maximum curvature objective function 
+!latex    \begin{eqnarray}
+!latex    f_{curv} = \frac{1}{N_c}\sum_{i=1}^{N_c} \int_0^{2\pi} W(t) H_{\kappa_o}(\kappa_i) (\kappa_i - \kappa_o)^\alpha dt
+!latex    \end{eqnarray}
+    
+!latex    where $H_{\kappa_o}(\kappa_i)$ is the step function,  $\kappa_o$ and $\alpha$ are user-defined parameters and $\kappa$ is the curvature at a point defined as 
+!latex    \begin{equation}
+!latex    \kappa = \frac{( (z^\prime^\prime y^\prime - y^\prime^\prime z^\prime)^2 + (x^\prime^\prime z^\prime - z^\prime^\prime x^\prime)^2 + (y^\prime^\prime x^\prime - x^\prime^\prime y^\prime)^2)^\frac{1}{2}}{(x^\prime^2 + y^\prime^2 + z^\prime^2 )^\frac{3}{2}}
+!latex    \end{equation}    
+!latex     In particular $\kappa_o$ has the meaning of a maximum allowed curvature and the cost function has no effect on points with a curvature smaller than this parameter.
+
+!latex     W(t) is a weight function to enure the penalty is only applied to the outer part of the coil
+!latex    \begin{eqnarray}
+!latex    W(t) = \begin{cases} 1, \hspace{2em}  ||x|| > R_m + \beta d_R \\ 0, \hspace{2em}  otherwise \end{cases}
+!latex    \end{eqnarray}
+!latex    where $R_m$ is the mean distance of the coil form a user-defined point,$d_R$ is the difference between the distance of the most distant point 
+!latex    and the mean distance and $\beta$ is a user defined parameter.   
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-! curv is total penalty 
-! chi = chi + weight_curv*curv
-! t1CU is total derivative of penalty
+! str is total penalty 
+! chi = chi + weight_straight*str
+! t1Str is total derivative of penalty
 ! LM implemented
 ! not parallelized, at some point check to see how long takes to run
 subroutine straight(ideriv)
