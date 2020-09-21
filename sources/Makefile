@@ -18,8 +18,8 @@
 
 #### Default Intel+OpenMPI+HDF5###############
 # available env: /p/focus/modules/focus/basis
- CC=intel # if want to use gfortran; make CC=gfortran or other options
- FC=mpif90
+ CC?=intel # if want to use gfortran; make CC=gfortran or other options
+ FC?=mpif90
  PFLAGS= -D dposition # for pre-processing compiler flags, like -D dposition
  RFLAGS=-mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback  $(PFLAGS) #-vec_report0 #-ipo -xhost
  DFLAGS=-O0 -g -traceback $(PFLAGS) -check all -check bounds -check noarg_temp_created -check uninit \
@@ -41,9 +41,10 @@ ifeq ($(CC),eddyintel)
 endif
 
 ############################################################################################################
-
+ifneq ($(FC),h5pfc)
  HDF5=-I$(HDF5_HOME)/include -L$(HDF5_HOME)/lib -lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran \
 -lhdf5 -lpthread -lz -lm
+endif
 
  WEBDIR=$(HOME)/w3_html
 
