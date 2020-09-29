@@ -54,7 +54,7 @@ SUBROUTINE total_pm(ideriv)
         if ( coil(icoil)%Ic /= 0 ) then !if current is free;
            idof = idof +1
            if (coil(icoil)%itype == 2) then
-              dVdp = coil(icoil)%moment * SIGN(1.0, coil(icoil)%pho) & 
+              dVdp = coil(icoil)%moment * SIGN(1.0_dp, coil(icoil)%pho) & 
                      & * momentq * abs(coil(icoil)%pho)**(momentq-1) 
               if (coil(icoil)%symmetry == 0) then ! no symmetries
                  t1U(idof) = dVdp
