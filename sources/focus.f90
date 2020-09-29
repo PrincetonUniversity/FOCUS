@@ -119,6 +119,7 @@ PROGRAM FAMUS
   case(6)
      call poinplot ; call wtmgrid 
  !case( 4 ) ; call saving  ; call diagnos ; call resonant ! resonant harmonics analysis; for future; 
+ case( 7 ) ; call diagnos ; call wtmgrid ; call poinplot
 
   end select
 

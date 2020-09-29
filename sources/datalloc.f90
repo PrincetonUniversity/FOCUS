@@ -321,6 +321,11 @@ subroutine AllocData(itype)
         SALLOCATE( t1V,  (1:Ndof), zero )
      endif
 
+     ! pmvol needed;
+     if (weight_pmvol > sqrtmachprec) then
+        SALLOCATE( t1U,  (1:Ndof), zero )
+     endif
+
      ! dpbin needed;
      if (weight_dpbin > sqrtmachprec) then
         SALLOCATE( t1D,  (1:Ndof), zero )

@@ -8,7 +8,7 @@ SUBROUTINE diagnos
   use globals, only: dp, zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
        Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
        cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, weight_bnorm, overlap, &
-       pmsum, total_moment, magtorque, ext, MPI_COMM_FAMUS
+       dpbin, pmvol, pmsum, total_moment, magtorque, ext, MPI_COMM_FAMUS
                      
   implicit none
   include "mpif.h"
@@ -25,9 +25,9 @@ SUBROUTINE diagnos
   if (case_optimize == 0) call AllocData(0) ! if not allocate data;
   call costfun(case_optimize)
 
-  if (myid == 0) write(ounit, '("diagnos : "5(A12," ; "))') , &
-       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." 
-  if (myid == 0) write(ounit, '("        : "6(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep
+  if (myid == 0) write(ounit, '("diagnos : "4(A12," ; "))') , &
+       "Bnormal", "PM eff. vol.", "Dip. Binary", "Total PM Vol"
+  if (myid == 0) write(ounit, '("        : "5(ES12.5," ; "))') bnorm, pmsum, dpbin, pmvol
 
   ! compute Bx, By, Bz for later calculations
   do jzeta = 0, Nzeta - 1
@@ -109,6 +109,12 @@ SUBROUTINE diagnos
   if(myid .eq. 0)  write(ounit, '(8X": Total free magnetic moment M (L-2 norm):", ES12.5, &
        "; Effective ratio=", ES12.5)') sqrt(total_moment), sqrt(pmsum)
   !--------------------------------------------------------------------------------------------- 
+
+  !--------------------------------calculate total dipole volume------------------------------------  
+  call total_pm(0)
+  if(myid .eq. 0)  write(ounit, '(8X": Total free magnetic moment M (L-1 norm):", ES12.5)') pmvol
+  !--------------------------------------------------------------------------------------------- 
+
 
   if (magtorque) then
      call mag_torque()

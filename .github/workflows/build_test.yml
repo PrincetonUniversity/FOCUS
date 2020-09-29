@@ -1,0 +1,35 @@
+name: build-test
+on:
+  pull_request:
+    branches:
+      - dipole
+jobs:
+  focus-build:
+    runs-on: ubuntu-latest
+    name: FOCUS build and test
+    steps:
+      # To use this repository's private action,
+      # you must check out the repository
+      - uses: actions/checkout@v2
+      - name: Install packages
+        run: |
+          apt list --installed gfortran
+          echo $FC
+          sudo apt-get install gfortran
+          sudo apt-get install libopenmpi-dev
+          sudo apt-get install m4
+          sudo apt-get install libhdf5-openmpi-dev
+      - name: Compile
+        run: |
+          cd $GITHUB_WORKSPACE/sources	
+          echo "Checking prerequisites"
+          echo "Present directory: $PWD"
+          echo "MPI Version: " && mpif90 --version
+          echo "HDF5_HOME: $HDF5_HOME"          
+          make clean; make CC=gfortran ; make CC=gfortran dfocus
+          mpiexec $GITHUB_WORKSPACE/bin/xfocus -h
+        env:
+          HDF5_HOME: /usr/lib/x86_64-linux-gnu/hdf5/openmpi
+      - name: Run check_deriv
+        run: |
+          cd $GITHUB_WORKSPACE/examples/check_deriv && mpiexec ../../bin/xfocus deriv
