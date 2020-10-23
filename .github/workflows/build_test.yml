@@ -26,7 +26,7 @@ jobs:
           echo "Present directory: $PWD"
           echo "MPI Version: " && mpif90 --version
           echo "HDF5_HOME: $HDF5_HOME"          
-          make clean; make CC=gfortran ; make CC=gfortran dfocus
+          make clean; make CC=gfortran PFLAGS="-D TOPO"; make CC=gfortran PFLAGS="-D TOPO" dfocus
           mpiexec $GITHUB_WORKSPACE/bin/xfocus -h
         env:
           HDF5_HOME: /usr/lib/x86_64-linux-gnu/hdf5/openmpi
