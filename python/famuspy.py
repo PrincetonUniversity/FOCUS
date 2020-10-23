@@ -104,7 +104,7 @@ class FAMUS(object):
 if __name__== "__main__":
     ext = sys.argv[1]
     if '.input' in ext:
-        ind = ext.index
+        ind = ext.index('.input')
         ext = ext[:ind]
     print('Begin to run FAMUS from python with input file at ', ext+'.input')
     comm = MPI.COMM_WORLD
