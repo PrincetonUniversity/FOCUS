@@ -40,11 +40,13 @@ SUBROUTINE diagnos
         call coils_bfield(B,x,y,z)
         surf(1)%Bx(iteta, jzeta) = B(1)
         surf(1)%By(iteta, jzeta) = B(2)
-        surf(1)%Bz(iteta, jzeta) = B(2)
+        surf(1)%Bz(iteta, jzeta) = B(3)
      enddo
   enddo
   
-
+!   x = one ; y = one ; z = one
+!   call coils_bfield(B,x,y,z)
+!   TMPOUT(B)
 
   !--------------------------------minimum coil plasma separation-------------------------------  
   minCPdist = infmax
