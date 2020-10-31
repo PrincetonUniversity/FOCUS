@@ -23,8 +23,7 @@ SUBROUTINE minvol(ideriv)
   include "mpif.h"
   INTEGER, INTENT(in) :: ideriv
 
-  INTEGER             :: astat, ierr, icoil, idof, ND, ivec
-  REAL                :: d1L(1:Ndof), norm(1:Ncoils)
+  INTEGER             :: astat, ierr, icoil, idof, ND
 
   pmsum = zero
   !-------------------------------calculate pmsum-------------------------------------------------- 
