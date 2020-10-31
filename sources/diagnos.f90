@@ -23,7 +23,7 @@ SUBROUTINE diagnos
 
   !--------------------------------cost functions-------------------------------------------------------  
   if (case_optimize == 0) call AllocData(0) ! if not allocate data;
-  call costfun(case_optimize)
+  call costfun(abs(case_optimize))
 
   if (myid == 0) write(ounit, '("diagnos : "4(A12," ; "))') , &
        "Bnormal", "PM eff. vol.", "Dip. Binary", "Total PM Vol"
@@ -52,7 +52,7 @@ SUBROUTINE diagnos
   minCPdist = infmax
   do icoil = 1, Ncoils
 
-     if(coil(icoil)%itype .ne. 1) continue ! only for Fourier
+     if(coil(icoil)%itype .ne. 1) cycle ! only for Fourier
 
      SALLOCATE(Atmp, (1:3,0:coil(icoil)%NS-1), zero)
      SALLOCATE(Btmp, (1:3,1:(Nteta*Nzeta)), zero)
