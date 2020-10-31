@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='dp_v1.2.03' ! version number
+  CHARACTER(LEN=10), parameter :: version='dp_v1.3.00' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -117,6 +117,7 @@ module globals
   REAL                 :: weight_pmsum   =   0.000D+00
   REAL                 :: weight_pmvol   =   0.000D+00
   REAL                 :: weight_dpbin   =   0.000D+00
+  REAL                 :: weight_disor   =   0.000D+00
   REAL                 :: weight_inorm   =   1.000D+00
   REAL                 :: weight_gnorm   =   1.000D+00
   REAL                 :: weight_mnorm   =   1.000D+00
@@ -212,6 +213,7 @@ module globals
                         weight_pmsum   , &
                         weight_pmvol   , &
                         weight_dpbin   , & 
+                        weight_disor   , &
                         weight_inorm   , &
                         weight_gnorm   , &
                         weight_mnorm   , &
@@ -359,6 +361,9 @@ module globals
   REAL   , allocatable :: t1V(:), t2V(:,:)  
   REAL                 :: pmvol
   REAL   , allocatable :: t1U(:) 
+  ! discrete orientation
+  REAL                 :: disor
+  REAL   , allocatable :: t1O(:)   
 
   REAL   , allocatable :: magtau(:,:) 
 

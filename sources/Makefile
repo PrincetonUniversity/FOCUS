@@ -4,7 +4,8 @@
 
  ALLFILES= globals ncsx_ports_mod ncsx_ports_load ncsx_ports_eval wtmgrid initial  \
            rdsurf rdknot rdcoils packdof bfield bmnharm bnormal fdcheck \
-           torflux length surfsep minvol bindip totalpm datalloc solvers descent congrad qnewton lmalg saving diagnos \
+           torflux length surfsep minvol bindip totalpm discrete datalloc \
+		   solvers descent congrad qnewton lmalg saving diagnos \
            specinp poinplot boozer focus            
  HFILES= $(ALLFILES:=.f90)   # raw source files
  FFILES= $(ALLFILES:=_m.F90) # Fortran 90 files 

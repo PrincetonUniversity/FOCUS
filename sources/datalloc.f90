@@ -335,6 +335,11 @@ subroutine AllocData(itype)
         SALLOCATE( t1D,  (1:Ndof), zero )
      endif
 
+     ! dpbin needed;
+     if (weight_disor > sqrtmachprec) then
+        SALLOCATE( t1O,  (1:Ndof), zero )
+     endif
+
      ! L-M algorithn enabled
      if (LM_maxiter > 0) then
         LM_mfvec = 0 ! number of total cost functions

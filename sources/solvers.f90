@@ -168,16 +168,17 @@ subroutine costfun(ideriv)
   use globals, only: dp, zero, one, machprec, myid, ounit, astat, ierr, IsQuiet, MPI_COMM_FAMUS, &
        Ncoils, deriv, Ndof, xdof, dofnorm, coil, &
        chi, t1E, t2E, LM_maxiter, LM_fjac, LM_mfvec, sumdE, LM_output, LM_fvec, &
-       bnorm      , t1B, t2B, weight_bnorm,  &
-       bharm      , t1H, t2H, weight_bharm,  &
-       tflux      , t1F, t2F, weight_tflux, target_tflux, psi_avg, &
-       ttlen      , t1L, t2L, weight_ttlen, case_length, &
-       cssep      , t1S, t2S, weight_cssep, &
-       specw      , t1P, t2P, weight_specw, &
-       ccsep      , t1C, t2C, weight_ccsep, &
-       pmsum      , t1V, t2V, weight_pmsum, &
-       pmvol      , t1U,      weight_pmvol, &
-       dpbin      , t1D, t2D, weight_dpbin
+       bnorm, t1B, t2B, weight_bnorm,  &
+       bharm, t1H, t2H, weight_bharm,  &
+       tflux, t1F, t2F, weight_tflux, target_tflux, psi_avg, &
+       ttlen, t1L, t2L, weight_ttlen, case_length, &
+       cssep, t1S, t2S, weight_cssep, &
+       specw, t1P, t2P, weight_specw, &
+       ccsep, t1C, t2C, weight_ccsep, &
+       pmsum, t1V, t2V, weight_pmsum, &
+       pmvol, t1U,      weight_pmvol, &
+       dpbin, t1D, t2D, weight_dpbin, &
+       disor, t1O,      weight_disor
 
   implicit none
   include "mpif.h"
@@ -368,6 +369,18 @@ subroutine costfun(ideriv)
         t2E = t2E +  weight_dpbin * t2D
      endif
   endif
+
+  ! discrete orietation
+  if (weight_disor > machprec) then
+      call discrete(ideriv) ! updates dpbin?
+      chi = chi + weight_disor * disor
+      if     ( ideriv == 1 ) then
+         t1E = t1E +  weight_disor * t1O
+      elseif ( ideriv == 2 ) then
+         t1E = t1E +  weight_disor * t1O
+         !t2E = t2E +  weight_disor * t2O
+      endif
+   endif
 
 
 !!$
