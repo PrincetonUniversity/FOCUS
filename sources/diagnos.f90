@@ -8,7 +8,7 @@ SUBROUTINE diagnos
   use globals, only: dp, zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
        Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
        cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, weight_bnorm, overlap, &
-       dpbin, pmvol, pmsum, total_moment, magtorque, ext, MPI_COMM_FAMUS
+       dpbin, pmvol, pmsum, total_moment, magtorque, ext, MPI_COMM_FAMUS, weight_bnorm, machprec
                      
   implicit none
   include "mpif.h"
@@ -30,19 +30,21 @@ SUBROUTINE diagnos
   if (myid == 0) write(ounit, '("        : "5(ES12.5," ; "))') bnorm, pmsum, dpbin, pmvol
 
   ! compute Bx, By, Bz for later calculations
-  do jzeta = 0, Nzeta - 1
-     do iteta = 0, Nteta - 1
-        ! x = 1.49; y = 0 ; z=0; B=0
-        x = surf(1)%xx(iteta, jzeta)
-        y = surf(1)%yy(iteta, jzeta)
-        z = surf(1)%zz(iteta, jzeta)
-        B = 0
-        call coils_bfield(B,x,y,z)
-        surf(1)%Bx(iteta, jzeta) = B(1)
-        surf(1)%By(iteta, jzeta) = B(2)
-        surf(1)%Bz(iteta, jzeta) = B(3)
-     enddo
-  enddo
+  if (weight_bnorm > machprec) then
+      do jzeta = 0, Nzeta - 1
+         do iteta = 0, Nteta - 1
+            ! x = 1.49; y = 0 ; z=0; B=0
+            x = surf(1)%xx(iteta, jzeta)
+            y = surf(1)%yy(iteta, jzeta)
+            z = surf(1)%zz(iteta, jzeta)
+            B = 0
+            call coils_bfield(B,x,y,z)
+            surf(1)%Bx(iteta, jzeta) = B(1)
+            surf(1)%By(iteta, jzeta) = B(2)
+            surf(1)%Bz(iteta, jzeta) = B(3)
+         enddo
+      enddo
+   endif
   
 !   x = one ; y = one ; z = one
 !   call coils_bfield(B,x,y,z)
