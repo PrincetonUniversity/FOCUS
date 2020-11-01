@@ -1,6 +1,7 @@
 subroutine discrete(ideriv)
    use globals, only: dp, zero, pi, ncpu, myid, ounit, Nfp, MPI_COMM_FAMUS, &
-                      disor, t1o, coil, Ndof, Ncoils, DoF, dof_offset, ldof
+                      disor, t1o, coil, Ndof, Ncoils, DoF, dof_offset, ldof, &
+                      momentq
    use mpi
    IMPLICIT NONE
 
@@ -20,6 +21,7 @@ subroutine discrete(ideriv)
                phi2 = pi/2
                ldis = abs(coil(icoil)%mt)*abs(coil(icoil)%mt - theta1) &
                       + abs(coil(icoil)%mt)*(abs(coil(icoil)%mp - phi1)*abs(coil(icoil)%mp - phi2))
+               ldis = ldis * coil(icoil)%pho ** momentq
                if (coil(icoil)%symmetry == 0) then ! no symmetries
                   continue
                else if (coil(icoil)%symmetry == 1) then ! periodicity
@@ -42,8 +44,20 @@ subroutine discrete(ideriv)
       idof = dof_offset
       do icoil = 1, Ncoils
          if (coil(icoil)%Ic /= 0) then !if current is free;
+            ldis = momentq * coil(icoil)%pho ** (momentq-1) &
+                  * (abs(coil(icoil)%mt)*abs(coil(icoil)%mt - theta1) &
+                  + abs(coil(icoil)%mt)*(abs(coil(icoil)%mp - phi1)*abs(coil(icoil)%mp - phi2)))
+            if (coil(icoil)%symmetry == 0) then ! no symmetries
+               continue
+            else if (coil(icoil)%symmetry == 1) then ! periodicity
+               ldis = ldis*Nfp
+            else if (coil(icoil)%symmetry == 2) then ! stellarator symmetry
+               ldis = ldis*Nfp*2
+            else
+               FATAL(discrete01, .true., unspoorted symmetry option)
+            end if
             idof = idof + 1
-            t1o(idof) = zero
+            t1O(idof) = ldis
          endif
          if (coil(icoil)%Lc /= 0) then !if orientation is free;
             ND = DoF(icoil)%ND
@@ -80,8 +94,8 @@ subroutine discrete(ideriv)
                else
                   FATAL(discrete02, .true., unspoorted symmetry option)
                end if
-               idof = idof + 1; t1o(idof) = t1o(idof) + dtheta
-               idof = idof + 1; t1o(idof) = t1o(idof) + dphi
+               idof = idof + 1; t1o(idof) = dtheta * coil(icoil)%pho ** momentq
+               idof = idof + 1; t1o(idof) = dphi * coil(icoil)%pho ** momentq
             endif
          endif
       enddo
