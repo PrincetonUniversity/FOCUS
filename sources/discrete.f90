@@ -17,8 +17,8 @@ subroutine discrete(ideriv)
          if (coil(icoil)%Lc /= 0) then !if orientation is free;
             if (coil(icoil)%itype == 2) then
                theta1 = pi/2
-               phi1 = zero
-               phi2 = pi/2
+               phi1 = atan(coil(icoil)%oy/coil(icoil)%ox)
+               phi2 = phi1 + pi/2
                ldis = abs(coil(icoil)%mt)*abs(coil(icoil)%mt - theta1) &
                       + abs(coil(icoil)%mt)*(abs(coil(icoil)%mp - phi1)*abs(coil(icoil)%mp - phi2))
                ldis = ldis * coil(icoil)%pho ** momentq
@@ -63,7 +63,7 @@ subroutine discrete(ideriv)
             ND = DoF(icoil)%ND
             if (coil(icoil)%itype == 2) then
                theta1 = pi/2
-               phi1 = zero
+               phi1 = atan(coil(icoil)%oy/coil(icoil)%ox)
                phi2 = pi/2
                theta_term = abs(coil(icoil)%mt)*abs(coil(icoil)%mt - theta1)
                theta_deriv = 2*coil(icoil)%mt - theta1
