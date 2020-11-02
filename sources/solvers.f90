@@ -204,25 +204,26 @@ subroutine costfun(ideriv)
 
      call bnormal(0)
 
-     if ( abs(target_tflux) < machprec ) then
-        call torflux(0)
-        target_tflux = psi_avg
-        if (myid == 0) write(ounit,'("costfun : Reset target toroidal flux to "ES23.15)') target_tflux
-     endif
+   !   if ( abs(target_tflux) < machprec ) then
+   !      call torflux(0)
+   !      target_tflux = psi_avg
+   !      if (myid == 0) write(ounit,'("costfun : Reset target toroidal flux to "ES23.15)') target_tflux
+   !   endif
 
-     call torflux(0)
+   !   call torflux(0)
 
-     if ( (case_length == 1) .and. (sum(coil(1:Ncoils)%Lo) < machprec) ) then
-        coil(1:Ncoils)%Lo = one
-        call length(0)
-        coil(1:Ncoils)%Lo = coil(1:Ncoils)%L
-        if(myid .eq. 0) write(ounit,'(8X,": reset target coil length to the current actual length. ")')
-     endif
+   !   if ( (case_length == 1) .and. (sum(coil(1:Ncoils)%Lo) < machprec) ) then
+   !      coil(1:Ncoils)%Lo = one
+   !      call length(0)
+   !      coil(1:Ncoils)%Lo = coil(1:Ncoils)%L
+   !      if(myid .eq. 0) write(ounit,'(8X,": reset target coil length to the current actual length. ")')
+   !   endif
 
-     call length(0)
-     call surfsep(0)
+   !   call length(0)
+   !   call surfsep(0)
      call minvol(0)
      call bindip(0) 
+     call discrete(0) 
 
   endif
 
@@ -373,7 +374,7 @@ subroutine costfun(ideriv)
 
   ! discrete orietation
   if (weight_disor > machprec) then
-      call discrete(ideriv) ! updates dpbin?
+      call discrete(ideriv) 
       chi = chi + weight_disor * disor
       if     ( ideriv == 1 ) then
          t1E = t1E +  weight_disor * t1O
@@ -466,7 +467,7 @@ subroutine normweight
   use globals, only: dp, zero, one, machprec, ounit, myid, xdof, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
        weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_specw, weight_ccsep, &
        target_tflux, psi_avg, coil, Ncoils, case_length, Bmnc, Bmns, tBmnc, tBmns, pmsum, weight_pmsum, &
-       pmvol, weight_pmvol, dpbin, weight_dpbin, MPI_COMM_FAMUS
+       pmvol, weight_pmvol, dpbin, weight_dpbin, disor, weight_disor, MPI_COMM_FAMUS
 
   implicit none  
   include "mpif.h"
@@ -593,6 +594,16 @@ subroutine normweight
 
   endif
 
+  !-!-!-!-!-!-!-!-!-!-disor-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+  if( weight_disor >= machprec ) then
+
+   call discrete(0)
+   if (abs(disor) > machprec) weight_disor = weight_disor / disor
+   if( myid == 0 ) write(ounit, 1000) "weight_disor", weight_disor
+   if( myid .eq. 0 .and. weight_disor < machprec) write(ounit, '("warning : weight_disor < machine_precision, disor will not be used.")')
+
+endif
 !!$!-!-!-!-!-!-!-!-!-!-eqarc-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 !!$
 !!$  if( weight_eqarc .ge. machprec ) then
