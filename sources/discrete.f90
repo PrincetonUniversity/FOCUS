@@ -21,7 +21,7 @@ subroutine discrete(ideriv)
                phi2 = phi1 + pi/2
                ldis = abs(coil(icoil)%mt)*abs(coil(icoil)%mt - theta1) &
                       + abs(coil(icoil)%mt)*(abs(coil(icoil)%mp - phi1)*abs(coil(icoil)%mp - phi2))
-               ldis = ldis * coil(icoil)%pho ** momentq
+               ldis = ldis * abs(coil(icoil)%pho) ** momentq
                if (coil(icoil)%symmetry == 0) then ! no symmetries
                   continue
                else if (coil(icoil)%symmetry == 1) then ! periodicity
@@ -44,7 +44,7 @@ subroutine discrete(ideriv)
       idof = dof_offset
       do icoil = 1, Ncoils
          if (coil(icoil)%Ic /= 0) then !if current is free;
-            ldis = momentq * coil(icoil)%pho ** (momentq-1) &
+            ldis = momentq * abs(coil(icoil)%pho)**(momentq-1) * sign(1.0_dp, coil(icoil)%pho) &
                   * (abs(coil(icoil)%mt)*abs(coil(icoil)%mt - theta1) &
                   + abs(coil(icoil)%mt)*(abs(coil(icoil)%mp - phi1)*abs(coil(icoil)%mp - phi2)))
             if (coil(icoil)%symmetry == 0) then ! no symmetries
@@ -94,8 +94,8 @@ subroutine discrete(ideriv)
                else
                   FATAL(discrete02, .true., unspoorted symmetry option)
                end if
-               idof = idof + 1; t1o(idof) = dtheta * coil(icoil)%pho ** momentq
-               idof = idof + 1; t1o(idof) = dphi * coil(icoil)%pho ** momentq
+               idof = idof + 1; t1o(idof) = dtheta * abs(coil(icoil)%pho) ** momentq
+               idof = idof + 1; t1o(idof) = dphi * abs(coil(icoil)%pho) ** momentq
             endif
          endif
       enddo
