@@ -31,7 +31,8 @@ subroutine discrete(ideriv)
                else
                   FATAL(discrete01, .true., unspoorted symmetry option)
                end if
-               disor = disor + ldis
+               coil(icoil)%disc = ldis
+               disor = disor + log(coil(icoil)%disc+1)
             endif
          endif
       enddo
@@ -60,7 +61,7 @@ subroutine discrete(ideriv)
                else
                   FATAL(discrete01, .true., unspoorted symmetry option)
                end if            
-               t1O(idof+1) = ldis
+               t1O(idof+1) = ldis / (1+coil(icoil)%disc)
             end if
             idof = idof + 1
          endif
@@ -99,8 +100,8 @@ subroutine discrete(ideriv)
                else
                   FATAL(discrete02, .true., unspoorted symmetry option)
                end if
-               t1o(idof+1) = dtheta * abs(coil(icoil)%pho) ** momentq
-               t1o(idof+2) = dphi * abs(coil(icoil)%pho) ** momentq
+               t1o(idof+1) = dtheta * abs(coil(icoil)%pho) ** momentq / (1+coil(icoil)%disc)
+               t1o(idof+2) = dphi * abs(coil(icoil)%pho) ** momentq / (1+coil(icoil)%disc)
             endif
             idof = idof + 2
          endif
