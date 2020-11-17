@@ -44,27 +44,32 @@ subroutine discrete(ideriv)
       idof = dof_offset
       do icoil = 1, Ncoils
          if (coil(icoil)%Ic /= 0) then !if current is free;
-            ldis = momentq * abs(coil(icoil)%pho)**(momentq-1) * sign(1.0_dp, coil(icoil)%pho) &
-                  * (abs(coil(icoil)%mt)*abs(coil(icoil)%mt - theta1) &
-                  + abs(coil(icoil)%mt)*(abs(coil(icoil)%mp - phi1)*abs(coil(icoil)%mp - phi2)))
-            if (coil(icoil)%symmetry == 0) then ! no symmetries
-               continue
-            else if (coil(icoil)%symmetry == 1) then ! periodicity
-               ldis = ldis*Nfp
-            else if (coil(icoil)%symmetry == 2) then ! stellarator symmetry
-               ldis = ldis*Nfp*2
-            else
-               FATAL(discrete01, .true., unspoorted symmetry option)
+            if (coil(icoil)%itype == 2) then
+               theta1 = pi/2
+               phi1 = atan(coil(icoil)%oy/coil(icoil)%ox)
+               phi2 = phi1 + pi/2
+               ldis = momentq * abs(coil(icoil)%pho)**(momentq-1) * sign(1.0_dp, coil(icoil)%pho) &
+                     * (abs(coil(icoil)%mt)*abs(coil(icoil)%mt - theta1) &
+                     + abs(coil(icoil)%mt)*(abs(coil(icoil)%mp - phi1)*abs(coil(icoil)%mp - phi2)))
+               if (coil(icoil)%symmetry == 0) then ! no symmetries
+                  continue
+               else if (coil(icoil)%symmetry == 1) then ! periodicity
+                  ldis = ldis*Nfp
+               else if (coil(icoil)%symmetry == 2) then ! stellarator symmetry
+                  ldis = ldis*Nfp*2
+               else
+                  FATAL(discrete01, .true., unspoorted symmetry option)
+               end if            
+               t1O(idof+1) = ldis
             end if
             idof = idof + 1
-            t1O(idof) = ldis
          endif
          if (coil(icoil)%Lc /= 0) then !if orientation is free;
             ND = DoF(icoil)%ND
             if (coil(icoil)%itype == 2) then
                theta1 = pi/2
                phi1 = atan(coil(icoil)%oy/coil(icoil)%ox)
-               phi2 = pi/2
+               phi2 = phi1 + pi/2
                theta_term = abs(coil(icoil)%mt)*abs(coil(icoil)%mt - theta1)
                theta_deriv = 2*coil(icoil)%mt - theta1
                phi_term = (abs(coil(icoil)%mp - phi1)*abs(coil(icoil)%mp - phi2))
@@ -94,9 +99,10 @@ subroutine discrete(ideriv)
                else
                   FATAL(discrete02, .true., unspoorted symmetry option)
                end if
-               idof = idof + 1; t1o(idof) = dtheta * abs(coil(icoil)%pho) ** momentq
-               idof = idof + 1; t1o(idof) = dphi * abs(coil(icoil)%pho) ** momentq
+               t1o(idof+1) = dtheta * abs(coil(icoil)%pho) ** momentq
+               t1o(idof+2) = dphi * abs(coil(icoil)%pho) ** momentq
             endif
+            idof = idof + 2
          endif
       enddo
       FATAL(discrete03, idof - dof_offset .ne. ldof, counting error in packing)
