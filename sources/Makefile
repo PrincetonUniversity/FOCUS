@@ -56,6 +56,21 @@ endif
 #### IPP draco Intel+IntelMPI+HDF5###############
 ifneq (,$(findstring draco,$(HOSTNAME)))
  FC=mpiifort  # this is optional after recent updates
+ RFLAGS+=-xCORE-AVX2
+ LINKS=-L$(HDF5_HOME)/lib -lhdf5_fortran -lhdf5 -lpthread -lz -lm -Wl,-rpath -Wl,$(HDF5_HOME)/lib
+endif
+
+#### IPP cobra Intel+IntelMPI+HDF5###############
+ifneq (,$(findstring cobra,$(HOSTNAME)))
+ FC=mpiifort  # this is optional after recent updates
+ RFLAGS+=-xCORE-AVX512 -qopt-zmm-usage=high
+ LINKS=-L$(HDF5_HOME)/lib -lhdf5_fortran -lhdf5 -lpthread -lz -lm -Wl,-rpath -Wl,$(HDF5_HOME)/lib
+endif
+
+#### IPP raven Intel+IntelMPI+HDF5###############
+ifneq (,$(findstring raven,$(HOSTNAME)))
+ FC=mpiifort  # this is optional after recent updates
+ RFLAGS+=-xCORE-AVX512 -qopt-zmm-usage=high
  LINKS=-L$(HDF5_HOME)/lib -lhdf5_fortran -lhdf5 -lpthread -lz -lm -Wl,-rpath -Wl,$(HDF5_HOME)/lib
 endif
 
