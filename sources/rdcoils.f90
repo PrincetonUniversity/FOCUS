@@ -227,7 +227,7 @@ subroutine rdcoils
               read( runit,*) coil(icoil)%itype, coil(icoil)%symmetry, coil(icoil)%name, &
                    coil(icoil)%ox, coil(icoil)%oy, coil(icoil)%oz, &
                    coil(icoil)%Ic, coil(icoil)%moment, coil(icoil)%pho, &
-                   coil(icoil)%Lc, coil(icoil)%mp, coil(icoil)%mt
+                   coil(icoil)%Lc, coil(icoil)%mp, coil(icoil)%mt, coil(icoil)%phi1
               call in_ncsx_port(coil(icoil)%ox, coil(icoil)%oy, coil(icoil)%oz,&
                                 in_port)
               if (in_port) then
