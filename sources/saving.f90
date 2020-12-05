@@ -47,8 +47,8 @@ subroutine saving
         write(wunit, '("Total number of dipoles, momentq")') 
         write(wunit, '(2X,I8, 2X, I4)') Ncoils_total, momentq ! note the fixed coils are not written
 #ifdef TOPO
-        write(wunit, '(2(A4,", "), A13, ", ", 3(A15,", "), 2(A2,", ",A15,", ",A15,", "))') &
-             "type", "symm.", "coilname", "ox", "oy", "oz", "Ic", "M_0", "pho", "Lc", "mp", "mt"
+        write(wunit, '(2(A4,", "), A13, ", ", 3(A15,", "), 2(A2,", ",A15,", ",A15,", "), A15)') &
+             "type", "symm.", "coilname", "ox", "oy", "oz", "Ic", "M_0", "pho", "Lc", "mp", "mt", "phi1"
 #endif
         close(wunit)
      endif
@@ -61,11 +61,11 @@ subroutine saving
 
            do icoil = 1, Ncoils
 #ifdef TOPO
-              write(wunit, '(2(I4, ", ")A13,", ",3(ES15.8,", "),2(I2,", ",ES15.8,", ",ES15.8,", "))') &
+              write(wunit, '(2(I4, ", ")A13,", ",3(ES15.8,", "),2(I2,", ",ES15.8,", ",ES15.8,", "), ES15.8)') &
                    coil(icoil)%itype, coil(icoil)%symmetry, coil(icoil)%name, &
                    coil(icoil)%ox, coil(icoil)%oy, coil(icoil)%oz, &
                    coil(icoil)%Ic, coil(icoil)%moment, coil(icoil)%pho, &
-                   coil(icoil)%Lc, coil(icoil)%mp, coil(icoil)%mt
+                   coil(icoil)%Lc, coil(icoil)%mp, coil(icoil)%mt, coil(icoil)%phi1 
 #else
               write(wunit, *) "#-----------------", icoil, "---------------------------" 
               write(wunit, *) "#coil_type     coil_name"
