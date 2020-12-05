@@ -169,7 +169,7 @@ subroutine AllocData(itype)
 !!$              endif
 !!$
 !!$              if(coil(icoil)%Lc /= 0) then
-!!$                 if(abs(coil(icoil)%Bz) > sqrtmachprec) then
+!!$                 if(abs(coil(icoil)%Bz) > machprec) then
 !!$                    dofnorm(idof+1) = coil(icoil)%Bz
 !!$                 else
 !!$                    dofnorm(idof+1) = one
@@ -257,7 +257,7 @@ subroutine AllocData(itype)
   if (itype == 0 .or. itype == 1) then  ! 0-order cost functions related arrays;
 
      ! Bnorm and Bharm needed;
-     if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec .or. IsQuiet <= -2) then
+     if (weight_bnorm > machprec .or. weight_bharm > machprec .or. IsQuiet <= -2) then
         SALLOCATE(         bn, (0:Nteta-1,0:Nzeta-1), zero ) ! Bn from coils;        
         SALLOCATE( surf(1)%bn, (0:Nteta-1,0:Nzeta-1), zero ) ! total Bn;
         SALLOCATE( surf(1)%Bx, (0:Nteta-1,0:Nzeta-1), zero ) ! Bx on the surface;
@@ -271,7 +271,7 @@ subroutine AllocData(itype)
      endif
 
      ! Bharm needed;
-     if (weight_bharm > sqrtmachprec) then
+     if (weight_bharm > machprec) then
         call readbmn
         SALLOCATE(  Bmnc , (1:NBmn), zero )  ! current Bmn cos values;
         SALLOCATE(  Bmns , (1:NBmn), zero )  ! current Bmn sin values;
@@ -289,54 +289,54 @@ subroutine AllocData(itype)
      SALLOCATE( deriv, (1:Ndof, 0:6), zero )
 
      ! Bnorm related;
-     if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec) then
+     if (weight_bnorm > machprec .or. weight_bharm > machprec) then
         SALLOCATE( t1B, (1:Ndof), zero )  !total d bnorm / d x;
         SALLOCATE( dBn, (1:Ndof), zero )  !total d Bn / d x;
         SALLOCATE( dBm, (1:Ndof), zero )  !total d Bm / d x;   
      endif
 
-     if ( weight_bharm > sqrtmachprec .or. LM_maxiter > 0 ) then
+     if ( weight_bharm > machprec .or. LM_maxiter > 0 ) then
         SALLOCATE( d1B, (1:Ndof,0:Nteta-1,0:Nzeta-1), zero ) ! discretized dBn
      endif
 
      ! Bharm related;
-     if (weight_bharm > sqrtmachprec) then
+     if (weight_bharm > machprec) then
         SALLOCATE( t1H, (1:Ndof), zero )
         !       SALLOCATE( dB , (1:Ndof, 0:Nteta-1, 0:Nzeta-1), zero ) !distribution of dB/dx;
      endif
 
      ! tflux needed;
-     if (weight_tflux > sqrtmachprec) then
+     if (weight_tflux > machprec) then
         SALLOCATE( t1F,  (1:Ndof), zero )
      endif
 
      ! ttlen needed;
-     if (weight_ttlen > sqrtmachprec) then
+     if (weight_ttlen > machprec) then
         SALLOCATE( t1L,  (1:Ndof), zero )
      endif
 
      ! cssep needed;
-     if (weight_cssep > sqrtmachprec) then
+     if (weight_cssep > machprec) then
         SALLOCATE( t1S,  (1:Ndof), zero )
      endif
 
      ! pmsum needed;
-     if (weight_pmsum > sqrtmachprec) then
+     if (weight_pmsum > machprec) then
         SALLOCATE( t1V,  (1:Ndof), zero )
      endif
 
      ! pmvol needed;
-     if (weight_pmvol > sqrtmachprec) then
+     if (weight_pmvol > machprec) then
         SALLOCATE( t1U,  (1:Ndof), zero )
      endif
 
      ! dpbin needed;
-     if (weight_dpbin > sqrtmachprec) then
+     if (weight_dpbin > machprec) then
         SALLOCATE( t1D,  (1:Ndof), zero )
      endif
 
      ! dpbin needed;
-     if (weight_disor > sqrtmachprec) then
+     if (weight_disor > machprec) then
         SALLOCATE( t1O,  (1:Ndof), zero )
      endif
 
@@ -344,31 +344,31 @@ subroutine AllocData(itype)
      if (LM_maxiter > 0) then
         LM_mfvec = 0 ! number of total cost functions
 
-        if (weight_bnorm > sqrtmachprec) then
+        if (weight_bnorm > machprec) then
            ibnorm = LM_mfvec
            mbnorm = Nteta*Nzeta
            LM_mfvec = LM_mfvec + mbnorm
         endif
 
-        if (weight_bharm > sqrtmachprec) then 
+        if (weight_bharm > machprec) then 
            ibharm = LM_mfvec
            mbharm = 2*NBmn
            LM_mfvec = LM_mfvec + mbharm
         endif
 
-        if (weight_tflux > sqrtmachprec) then
+        if (weight_tflux > machprec) then
            itflux = LM_mfvec
            mtflux = Nzeta
            LM_mfvec = LM_mfvec + mtflux
         endif
 
-        if (weight_ttlen > sqrtmachprec) then
+        if (weight_ttlen > machprec) then
            ittlen = LM_mfvec
            mttlen = Ncoils - Nfixgeo
            LM_mfvec = LM_mfvec + mttlen
         endif
 
-        if (weight_cssep > sqrtmachprec) then
+        if (weight_cssep > machprec) then
            icssep = LM_mfvec
            mcssep = Ncoils - Nfixgeo
            LM_mfvec = LM_mfvec + mcssep
