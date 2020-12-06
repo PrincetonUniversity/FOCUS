@@ -13,14 +13,14 @@ subroutine AllocData(itype)
 
   INTEGER, intent(in) :: itype
 
-  INTEGER             :: icoil, idof, ND, NF, icur, imag, icpu, dof_array(0:ncpu-1)
+  INTEGER             :: icoil, idof, ND, NF, icur, imag, icpu, dof_array(0:ncpu-1), ldof_array(0:ncpu-1)
   REAL                :: xtmp, mtmp
 
   !-------------------------------------------------------------------------------------------
   if (itype == -1) then ! dof related data;
 
      Cdof = 0; Ndof = 0; Tdof = 0; ldof=0; dof_offset=0
-     dof_array = 0 
+     dof_array = 0 ; ldof_array = 0
 
      do icoil = 1, Ncoils
 
@@ -63,7 +63,9 @@ subroutine AllocData(itype)
      enddo
 
      CALL MPI_ALLREDUCE(ldof, Ndof, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_FAMUS, ierr )
-     CALL MPI_ALLREDUCE(MPI_IN_PLACE, dof_array, ncpu, MPI_INTEGER, MPI_SUM, MPI_COMM_FAMUS, ierr )
+     !CALL MPI_ALLREDUCE(MPI_IN_PLACE, dof_array, ncpu, MPI_INTEGER, MPI_SUM, MPI_COMM_FAMUS, ierr )
+     CALL MPI_ALLREDUCE(dof_array, ldof_array, ncpu, MPI_INTEGER, MPI_SUM, MPI_COMM_FAMUS, ierr )
+     dof_array = ldof_array
 
      FATAL( datalloc, sum(dof_array) .ne. Ndof, error in counting dof number)
 

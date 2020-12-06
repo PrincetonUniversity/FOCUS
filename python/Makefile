@@ -18,20 +18,18 @@ PYTHON   = python
 #=======================================================================
 
 ifeq ($(F90),gfortran)
-	FPP      = $(FC) -E
-	FPP_F90FLAGS = -x f95-cpp-input -fPIC
-	F90FLAGS = $(RFLAGS)
+    FPP      = $(FC) -E
+    FPP_F90FLAGS = -x f95-cpp-input -fPIC
+    F90FLAGS = $(RFLAGS)
     FCOMP    = $(FC) #gfortran
-    LIBS     =
 endif
 
 ifeq ($(F90),ifort)
-
-	FPP      = gfortran -E # gfortran f90wrap temp files only. not compilation
-	FPP_F90FLAGS = -x f95-cpp-input -fPIC
-	F90FLAGS = -fpscomp logicals -fPIC # use 1 and 0 for True and False
+    CC = icc
+    FPP = gfortran -E # gfortran f90wrap temp files only. not compilation
+    FPP_F90FLAGS = -x f95-cpp-input -fPIC
+    F90FLAGS = -fpscomp logicals -fPIC # use 1 and 0 for True and False
     FCOMP    = intelem # for f2py
-    LIBS =
 endif
 
 CFLAGS = -fPIC #     ==> universal for ifort, gfortran, pgi
@@ -92,7 +90,7 @@ LIBSRC_WRAP_FPP_FILES = $(addsuffix .fpp,${LIBSRC_WRAP_SOURCES})
 all: _${PYTHON_MODN}.so test
 
 all_clean: f90wrap_clean
-	make -C ${SOURCES} clean ALLFILES="${ALLFILES}"
+	${MAKE} -C ${SOURCES} clean ALLFILES="${ALLFILES}"
 
 f90wrap_clean:
 	-rm -f ${LIBSRC_OBJECTS} ${LIBSRC_FPP_FILES} $(LIB_NAME) _${PYTHON_MODN}*.so \
@@ -105,13 +103,13 @@ $(LIBSRC_WRAP_FPP_FILES): %.fpp: ${SOURCES}/%_m.F90
 	${FPP} ${FPP_F90FLAGS} $<  -o $@
 
 $(LIB_NAME): $(addprefix, ${SOURCES}/, $(HFILES))
-	make -C ${SOURCES} xfocus CC=gfortran PFLAGS="${PFLAGS} ${CFLAGS}" ALLFILES="${ALLFILES}"
+	${MAKE} -C ${SOURCES} xfocus CC=${F90} PFLAGS="${PFLAGS} ${CFLAGS}" ALLFILES="${ALLFILES}"
 	cd ${SOURCES}; ${LIBTOOL} ../python/$@ $(ROBJS) $(NUMOBJ)
 	ranlib $@
 
 _${PYTHON_MODN}.so: $(LIB_NAME) ${LIBSRC_WRAP_FPP_FILES} 
 	f90wrap -m ${PYTHON_MODN} ${LIBSRC_WRAP_FPP_FILES} -k ${KIND_MAP} -v
-	f2py-f90wrap --f90exec=${FC} --build-dir . -c -m _${PYTHON_MODN} -L. -l$(PYTHON_MODN) -I${SOURCES} $(HDF5) f90wrap*.f90
+	f2py-f90wrap --f90exec=${FC} --build-dir . -c -m _${PYTHON_MODN} -L. -l$(PYTHON_MODN) -I${SOURCES} $(LIBS) f90wrap*.f90
 
 test:
 	@python -c "import famus; print('FAMUS version: {:}'.format(famus.globals.version))"
