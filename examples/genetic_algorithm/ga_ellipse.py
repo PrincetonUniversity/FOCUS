@@ -22,7 +22,7 @@ test = FAMUS(comm=comm, extension='ga_ellipse', verbose=True)
 test.initialize()
 self = test
 
-niter=1000; npop=100; CXPB=0.5; MUTPB=0.2;cross_rate=0.5; mutate_rate=0.2
+niter=1000; npop=50; CXPB=0.5; MUTPB=0.2;cross_rate=0.5; mutate_rate=0.2
 import random
 from deap import base
 from deap import creator
@@ -78,7 +78,8 @@ stats.register("max", np.max)
 pop = toolbox.population(n=npop)
 evaluate2(pop[0])
 if master:
-    pop, logbook = algorithms.eaSimple(pop, toolbox, cxpb=CXPB, mutpb=MUTPB, ngen=niter, stats=stats, verbose=master)
+    # pop, logbook = algorithms.eaSimple(pop, toolbox, cxpb=CXPB, mutpb=MUTPB, ngen=niter, stats=stats, verbose=master)
+    pop, logbook = algorithms.eaMuCommaLambda(pop, toolbox, npop, 100, cxpb=CXPB, mutpb=MUTPB, ngen=niter, stats=stats, verbose=master)
     fits = [abs(np.sum(np.array(ind.fitness.values)*np.array(ind.fitness.weights))) for ind in pop]
     best = np.array(pop[np.argmin(fits)])
     print(evaluate2(best, quit=True))
