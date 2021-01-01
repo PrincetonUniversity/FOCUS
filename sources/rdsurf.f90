@@ -222,6 +222,7 @@ subroutine fousurf
   SALLOCATE( surf(1)%zp, (0:Nteta-1,0:Nzeta-1), zero ) !dz/dzeta;
   
   surf(1)%vol = zero  ! volume enclosed by plasma boundary
+  surf(1)%area = zero ! surface area
  
   discretefactor = (pi2/surf(1)%Nteta) * (pi2/surf(1)%Nzeta)
 
@@ -287,12 +288,16 @@ subroutine fousurf
         surf(1)%ds(ii,jj) =         dd
 
         ! using Gauss theorom; V = \int_S x \cdot n dt dz
-        surf(1)%vol = surf(1)%vol + surf(1)%xx(ii,jj) * ds(1) + surf(1)%yy(ii,jj) * ds(2) + surf(1)%zz(ii,jj) * ds(3)
+        surf(1)%vol = surf(1)%vol + surf(1)%xx(ii,jj) * ds(1) &
+                                  + surf(1)%yy(ii,jj) * ds(2) &
+                                  + surf(1)%zz(ii,jj) * ds(3)
+        surf(1)%area = surf(1)%area + surf(1)%ds(ii, jj)
 
      enddo ! end of do jj; 14 Apr 16;
   enddo ! end of do ii; 14 Apr 16;
 
-  surf(1)%vol = abs(surf(1)%vol) * discretefactor * Nfp * 2**symmetry 
+  surf(1)%vol = abs(surf(1)%vol)/3 * discretefactor * Nfp * 2**symmetry 
+  surf(1)%area = surf(1)%area * discretefactor * Nfp * 2**symmetry 
   if( myid == 0 .and. IsQuiet <= 0) write(ounit, '(8X": Enclosed volume ="ES12.5" m^3 ;" )') surf(1)%vol
 
   !calculate target Bn with input harmonics; 05 Jan 17;
@@ -307,7 +312,6 @@ subroutine fousurf
            enddo
         enddo
      enddo
-
   endif
   
   return
