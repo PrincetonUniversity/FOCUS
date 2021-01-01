@@ -18,7 +18,7 @@
  MACROS=macros
 
 #### Default Intel+OpenMPI+HDF5###############
-# available env: /p/focus/modules/focus/basis
+# available env: /p/focus/modules/focus/intel
  CC=intel # if want to use gfortran; make CC=gfortran or other options
  FC=mpif90
  PFLAGS= -D TOPO # for pre-processing compiler flags, like -D dposition
@@ -48,6 +48,29 @@ ifneq (,$(findstring traverse,$(HOSTNAME)))
  RFLAGS=-O3 -w -ffree-line-length-none -mcpu=power9 -ffast-math $(PFLAGS)
  DFLAGS=-Og $(PFLAGS) -w -ffree-line-length-none -Wextra -Wtarget-lifetime -fbacktrace -fbounds-check  \
      -ffpe-trap=zero -fcheck=all -DDEBUG
+endif
+
+#### IPP draco Intel+IntelMPI+HDF5###############
+ifeq ($(CC),intel)
+ifneq (,$(findstring draco,$(HOSTNAME)))
+ FC=mpiifort  # this is optional after recent updates
+ RFLAGS+=-xCORE-AVX2
+ LINKS=-L$(HDF5_HOME)/lib -lhdf5_fortran -lhdf5 -lpthread -lz -lm -Wl,-rpath -Wl,$(HDF5_HOME)/lib
+endif
+
+#### IPP cobra Intel+IntelMPI+HDF5###############
+ifneq (,$(findstring cobra,$(HOSTNAME)))
+ FC=mpiifort  # this is optional after recent updates
+ RFLAGS+=-xCORE-AVX512 -qopt-zmm-usage=high
+ LINKS=-L$(HDF5_HOME)/lib -lhdf5_fortran -lhdf5 -lpthread -lz -lm -Wl,-rpath -Wl,$(HDF5_HOME)/lib
+endif
+
+#### IPP raven Intel+IntelMPI+HDF5###############
+ifneq (,$(findstring raven,$(HOSTNAME)))
+ FC=mpiifort  # this is optional after recent updates
+ RFLAGS+=-xCORE-AVX512 -qopt-zmm-usage=high
+ LINKS=-L$(HDF5_HOME)/lib -lhdf5_fortran -lhdf5 -lpthread -lz -lm -Wl,-rpath -Wl,$(HDF5_HOME)/lib
+endif
 endif
 
 ############################################################################################################
@@ -91,10 +114,10 @@ cg_descent.o : cg_descent.f
 simann.o : simann.f90
 	$(FC) -c $(RFLAGS) -o $@ $<
 
-$(ROBJS): %_r.o: %_m.F90
+$(ROBJS): %_r.o: %_m.F90 globals_r.o
 	$(FC) -c $(RFLAGS) -o $@ $<  $(HDF5)
 
-$(DOBJS): %_d.o: %_m.F90
+$(DOBJS): %_d.o: %_m.F90 globals_d.o
 	$(FC) -c $(DFLAGS) -o $@ $<  $(HDF5)
 
 $(FFILES): %_m.F90: %.f90
