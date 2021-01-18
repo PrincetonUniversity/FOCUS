@@ -49,12 +49,8 @@ subroutine solvers
   if (myid == 0) write(ounit, *) "-----------OPTIMIZATIONS-------------------------------------"
   if (myid == 0) write(ounit, '("solvers : Total number of DOF is " I6)') Ndof
   if (myid == 0 .and. IsQuiet < 1) then
-     !write(ounit, '(8X,": Initial weights are: "7(A12, ","))') "bnorm", "bharm", "tflux", &
-     !    "ttlen", "cssep", "curv", "ccsep"
      write(ounit, '(8X,": Initial weights are: "8(A12, ","))') "bnorm", "bharm", "tflux", &
          "ttlen", "cssep", "curv", "ccsep", "tors"
-     !write(ounit, '(8X,": "21X,7(ES12.5, ","))') weight_bnorm, weight_bharm, weight_tflux, &
-     !     weight_ttlen, weight_cssep, weight_curv, weight_ccsep
      write(ounit, '(8X,": "21X,8(ES12.5, ","))') weight_bnorm, weight_bharm, weight_tflux, &
           weight_ttlen, weight_cssep, weight_curv, weight_ccsep, weight_tors
      write(ounit, '(8X,": target_tflux = "ES12.5" ; target_length = "ES12.5" ; k0 = "ES12.5" ; r_delta = "ES12.5"  ; cssep_factor = "ES12.5)') &
@@ -75,8 +71,6 @@ subroutine solvers
   if (IsNormWeight /= 0) call normweight
 
   if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "------------- Initial status ------------------------"
-  !if (myid == 0) write(ounit, '("output  : "A6" : "10(A12," ; "))') "iout", "mark", "chi", "dE_norm", &
-  !     "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep.", "curvature", "c-c sep." 
   if (myid == 0) write(ounit, '("output  : "A6" : "11(A12," ; "))') "iout", "mark", "chi", "dE_norm", &
        "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep.", "curvature", "c-c sep.", "torsion"
   call costfun(1)
@@ -581,10 +575,6 @@ subroutine output (mark)
   
   FATAL( output , iout > Nouts+2, maximum iteration reached )
 
-!  if (myid == 0) write(ounit, '("output  : "I6" : "9(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, bharm, &
-!       tflux, ttlen, cssep, curv
-!  if (myid == 0) write(ounit, '("output  : "I6" : "10(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, bharm, & 
-!       tflux, ttlen, cssep, curv, ccsep
   if (myid == 0) write(ounit, '("output  : "I6" : "11(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, bharm, &
        tflux, ttlen, cssep, curv, ccsep, tors
 

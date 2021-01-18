@@ -52,8 +52,7 @@ subroutine torsion(ideriv)
               endif
            else
               FATAL( torsion, tors_alpha < 0 , tors_alpha >= 0 for case_tors == 2 )
-              torsHold = 0
-              if( torsAdd > tors0 ) then 
+              if( torsAdd**2 > tors0**2 ) then 
                  torsHold = ( cosh(tors_alpha*(torsAdd**2 - tors0**2)) - 1 )**2
                  tors = tors + torsHold
               endif

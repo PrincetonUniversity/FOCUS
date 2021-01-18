@@ -28,11 +28,8 @@ SUBROUTINE diagnos
   if (case_optimize == 0) call AllocData(0) ! if not allocate data;
   call costfun(0)
 
-  !if (myid == 0) write(ounit, '("diagnos : "6(A12," ; "))') , &
-  !     "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." , "curv"
   if (myid == 0) write(ounit, '("diagnos : "8(A12," ; "))') , &
        "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." , "curvature", "c-c sep.", "torsion"
-  !if (myid == 0) write(ounit, '("        : "6(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep, curv
   if (myid == 0) write(ounit, '("        : "8(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep, curv, ccsep, tors
 
   !save all the coil parameters;
@@ -199,10 +196,8 @@ SUBROUTINE diagnos
      DALLOCATE(Atmp)
   enddo
 
-  !if(myid .eq. 0) write(ounit, '(8X": The minimum coil-coil distance is "4X" :" ES23.15)') minCCdist
-  !if(myid .eq. 0) write(ounit, '(8X": The minimum coil-coil distance is between coils "I3.3" and "I3.3" and &
-  !        is "4X" :" ES23.15)') coilInd0, coilInd1, minCCdist
-  if(myid .eq. 0) write(ounit, '(8X": The minimum coil-coil distance is "4X" :" ES23.15" ; at coils"I3" ,"I3)') minCCdist, coilInd0, coilInd1
+  if(myid .eq. 0) write(ounit, '(8X": The minimum coil-coil distance is "4X" :" ES23.15" ; at coils"I3" &
+          ,"I3)') minCCdist, coilInd0, coilInd1
 
   !--------------------------------minimum coil plasma separation-------------------------------  
   minCPdist = infmax
