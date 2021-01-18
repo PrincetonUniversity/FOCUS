@@ -133,7 +133,7 @@ module globals
   REAL                 :: curv_sigma     =   0.000D+00
   INTEGER              :: k1_len         =   0
   INTEGER              :: case_tors      =   1
-  REAL                 :: tors_alpha     =   0.000D+00
+  REAL                 :: tors_alpha     =   1.000D+00
   REAL                 :: tors0          =   0.000D+00
 
   INTEGER              :: case_optimize  =   0

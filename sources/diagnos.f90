@@ -74,18 +74,18 @@ SUBROUTINE diagnos
        " ; at coil " I3)') MaxCurv, itmp
 
   !-------------------------------average coil curvature-------------------------------------------------------
-    AvgCurv = zero
-    do icoil = 1, Ncoils
-       if(coil(icoil)%type .ne. 1) exit ! only for Fourier
-       call avgcurvature(icoil)
-       AvgCurv = AvgCurv + coil(icoil)%avgcurv
+  AvgCurv = zero
+  do icoil = 1, Ncoils
+     if(coil(icoil)%type .ne. 1) exit ! only for Fourier
+     call avgcurvature(icoil)
+     AvgCurv = AvgCurv + coil(icoil)%avgcurv
 #ifdef DEBUG
      if(myid .eq. 0) write(ounit, '(8X": Average curvature of "I3 "-th coil is : " ES23.15)') &
           icoil, coil(icoil)%avgcurv
 #endif
-    enddo
-    AvgCurv = AvgCurv / Ncoils
-    if(myid .eq. 0) write(ounit, '(8X": Average curvature of the coils is"5X" :" ES23.15)') AvgCurv
+  enddo
+  AvgCurv = AvgCurv / Ncoils
+  if(myid .eq. 0) write(ounit, '(8X": Average curvature of the coils is"5X" :" ES23.15)') AvgCurv
 
   !-------------------------------average coil torsion-----------------------------------------------------
   AvgTors = zero
@@ -94,12 +94,12 @@ SUBROUTINE diagnos
      call TorsDeriv0(icoil,torsRet)
      AvgTors = AvgTors + abs(torsRet) 
 #ifdef DEBUG
-     if(myid .eq. 0) write(ounit, '(8X": Average torsion of "I3 "-th coil is : " ES23.15)') &
+     if(myid .eq. 0) write(ounit, '(8X": Average torsion of "I3 "-th coil is   : " ES23.15)') &
         icoil, abs(torsRet)
 #endif
   enddo
   AvgTors = AvgTors / Ncoils
-  if(myid .eq. 0) write(ounit, '(8X": Average torsion of the coils is"5X" :" ES23.15)') AvgTors
+  if(myid .eq. 0) write(ounit, '(8X": Average torsion of the coils is"5X"   :" ES23.15)') AvgTors
 
   !-------------------------------average coil length-------------------------------------------------------  
   AvgLength = zero

@@ -43,6 +43,7 @@ subroutine torsion(ideriv)
         if( coil(icoil)%Lc     /=  0 ) then ! if geometry is free
            call TorsDeriv0(icoil,torsAdd)
            if( case_tors .eq. 1 ) then
+              FATAL( torsion, tors_alpha < 1 , tors_alpha >= 1 for case_tors == 1 ) 
               torsHold = (torsAdd**2 + 1)**tors_alpha - 1
               tors = tors + torsHold
               if (mtors > 0) then ! L-M format of targets
@@ -50,6 +51,7 @@ subroutine torsion(ideriv)
                  ivec = ivec + 1
               endif
            else
+              FATAL( torsion, tors_alpha < 0 , tors_alpha >= 0 for case_tors == 2 )
               torsHold = 0
               if( torsAdd > tors0 ) then 
                  torsHold = ( cosh(tors_alpha*(torsAdd**2 - tors0**2)) - 1 )**2
@@ -202,7 +204,7 @@ end subroutine TorsDeriv0
 subroutine TorsDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a coil
 
   use globals, only: dp, zero, pi2, coil, DoF, myid, ounit, Ncoils, &
-                     FouCoil, MPI_COMM_FOCUS
+          case_tors, tors_alpha, tors0, FouCoil, MPI_COMM_FOCUS
   implicit none
   include "mpif.h"
 
@@ -210,7 +212,7 @@ subroutine TorsDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a co
   REAL   , intent(out) :: derivs(1:1, 1:ND)
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   INTEGER              :: kseg, astat, ierr, doff, n, i, NS
-  REAL                 :: L, case_tors, tors_alpha, tors0, tauavg
+  REAL                 :: L, tauavg
   REAL                 :: d1L(1:1, 1:ND)
   REAL,allocatable     :: tau(:), absrt(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), xb(:), yb(:), zb(:), &
      lambdax(:), lambday(:), lambdaz(:), lambdanorm(:), lambdaunitx(:), lambdaunity(:), lambdaunitz(:), &
@@ -321,8 +323,8 @@ subroutine TorsDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a co
   lambdaunitz(0:NS) = lambdaz(0:NS) / lambdanorm(0:NS)
 
   tau(0:NS) = ( lambdaunitx(0:NS)*xb(0:NS) + lambdaunity(0:NS)*yb(0:NS) + lambdaunitz(0:NS)*zb(0:NS) ) / lambdanorm(0:NS)
-  tauavg = ( sum(tau(0:NS)*absrt(0:NS)) - tau(0)*absrt(0) ) / L
   absrt(0:NS) = sqrt( xt(0:NS)**2 + yt(0:NS)**2 + zt(0:NS)**2 )
+  tauavg = pi2*( sum(tau(0:NS)*absrt(0:NS)) - tau(0)*absrt(0) ) / ( L * NS )
 
   do i = 1,ND
      dlambdaxdDof(0:NS,i) = dytdDof(0:NS,i)*za(0:NS) - dztdDof(0:NS,i)*ya(0:NS) &
