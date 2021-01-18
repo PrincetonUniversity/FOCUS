@@ -77,6 +77,9 @@ subroutine AllocData(type)
            SALLOCATE( coil(icoil)%xa, (0:coil(icoil)%NS), zero )
            SALLOCATE( coil(icoil)%ya, (0:coil(icoil)%NS), zero )
            SALLOCATE( coil(icoil)%za, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%xb, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%yb, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%zb, (0:coil(icoil)%NS), zero )
            SALLOCATE( coil(icoil)%dl, (0:coil(icoil)%NS), zero )
            SALLOCATE( coil(icoil)%dd, (0:coil(icoil)%NS), zero )
            coil(icoil)%dd = pi2 / NS  ! discretizing factor;
@@ -283,6 +286,11 @@ subroutine AllocData(type)
      ! cssep needed;
      if (weight_cssep > sqrtmachprec) then
         SALLOCATE( t1S,  (1:Ndof), zero )
+     endif
+
+     ! tors needed;
+     if (weight_tors > sqrtmachprec) then
+        SALLOCATE( t1T,  (1:Ndof), zero )
      endif 
 
      ! L-M algorithn enabled
@@ -323,6 +331,12 @@ subroutine AllocData(type)
            icssep = LM_mfvec
            mcssep = Ncoils - Nfixgeo
            LM_mfvec = LM_mfvec + mcssep
+        endif
+
+        if (weight_tors > sqrtmachprec) then
+           itors = LM_mfvec
+           mtors = Ncoils - Nfixgeo
+           LM_mfvec = LM_mfvec + mtors
         endif
         
         FATAL( AllocData, LM_mfvec <= 0, INVALID number of cost functions )

@@ -219,7 +219,7 @@ subroutine CurvDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a co
   REAL   , intent(out) :: derivs(1:1, 1:ND)
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   INTEGER              :: kseg, astat, ierr, doff, nff, NS
-  REAL                 :: dl3, xt, yt, zt, xa, ya, za, f1, f2, ncc, nss, ncp, nsp, curvHold, penCurv, curvH, H0, H1, leng, hypc, hyps, curv_deriv, k1_use
+  REAL                 :: xt, yt, zt, xa, ya, za, f1, f2, ncc, nss, ncp, nsp, curvHold, penCurv, curvH, H0, H1, leng, hypc, hyps, curv_deriv, k1_use
   REAL                 :: d1L(1:1, 1:ND)
 
   FATAL( CurvDeriv1, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )

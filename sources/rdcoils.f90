@@ -499,6 +499,9 @@ subroutine discoil(ifirst)
            coil(icoil)%xa = zero
            coil(icoil)%ya = zero
            coil(icoil)%za = zero
+           coil(icoil)%xb = zero
+           coil(icoil)%yb = zero
+           coil(icoil)%zb = zero
            NS = coil(icoil)%NS
            NF = FouCoil(icoil)%NF  ! allias variable for simplicity;
            !-------------------------calculate coil data-------------------------------------------------  
@@ -525,6 +528,12 @@ subroutine discoil(ifirst)
                                                               - FouCoil(icoil)%smt(0:NS,mm) * Foucoil(icoil)%ys(mm) ) * mm*mm
               coil(icoil)%za(0:NS) = coil(icoil)%za(0:NS) + ( - FouCoil(icoil)%cmt(0:NS,mm) * Foucoil(icoil)%zc(mm) &
                                                               - FouCoil(icoil)%smt(0:NS,mm) * Foucoil(icoil)%zs(mm) ) * mm*mm
+              coil(icoil)%xb(0:NS) = coil(icoil)%xb(0:NS) + (   FouCoil(icoil)%smt(0:NS,mm) * Foucoil(icoil)%xc(mm) &
+                                                              - FouCoil(icoil)%cmt(0:NS,mm) * Foucoil(icoil)%xs(mm) ) * mm*mm*mm
+              coil(icoil)%yb(0:NS) = coil(icoil)%yb(0:NS) + (   FouCoil(icoil)%smt(0:NS,mm) * Foucoil(icoil)%yc(mm) &
+                                                              - FouCoil(icoil)%cmt(0:NS,mm) * Foucoil(icoil)%ys(mm) ) * mm*mm*mm
+              coil(icoil)%zb(0:NS) = coil(icoil)%zb(0:NS) + (   FouCoil(icoil)%smt(0:NS,mm) * Foucoil(icoil)%zc(mm) &
+                                                              - FouCoil(icoil)%cmt(0:NS,mm) * Foucoil(icoil)%zs(mm) ) * mm*mm*mm
            enddo ! end of do mm; 
 
         case(2)

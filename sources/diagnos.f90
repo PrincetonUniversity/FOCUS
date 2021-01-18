@@ -8,13 +8,13 @@ SUBROUTINE diagnos
   use globals, only: dp, zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
        Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
        cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, Nfp, weight_bnorm, overlap, plasma, &
-       cosnfp, sinnfp, symmetry, discretefactor, MPI_COMM_FOCUS, surf_Nfp, curv, case_curv
+       cosnfp, sinnfp, symmetry, discretefactor, MPI_COMM_FOCUS, surf_Nfp, curv, case_curv, tors
   use mpi
   implicit none
 
   INTEGER           :: icoil, itmp, astat, ierr, NF, idof, i, j, isurf, cs, ip, is, Npc, coilInd0, coilInd1
   LOGICAL           :: lwbnorm, l_raw
-  REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist, ReDot, ImDot, dum, AvgCurv
+  REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist, ReDot, ImDot, dum, AvgCurv, AvgTors, torsRet
   REAL, parameter   :: infmax = 1.0E6
   REAL, allocatable :: Atmp(:,:), Btmp(:,:)
 
@@ -30,10 +30,10 @@ SUBROUTINE diagnos
 
   !if (myid == 0) write(ounit, '("diagnos : "6(A12," ; "))') , &
   !     "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." , "curv"
-  if (myid == 0) write(ounit, '("diagnos : "7(A12," ; "))') , &
-       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." , "curvature", "c-c sep."
+  if (myid == 0) write(ounit, '("diagnos : "8(A12," ; "))') , &
+       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." , "curvature", "c-c sep.", "torsion"
   !if (myid == 0) write(ounit, '("        : "6(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep, curv
-  if (myid == 0) write(ounit, '("        : "7(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep, curv, ccsep
+  if (myid == 0) write(ounit, '("        : "8(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep, curv, ccsep, tors
 
   !save all the coil parameters;
   if (allocated(coilspace)) then
@@ -86,6 +86,20 @@ SUBROUTINE diagnos
     enddo
     AvgCurv = AvgCurv / Ncoils
     if(myid .eq. 0) write(ounit, '(8X": Average curvature of the coils is"5X" :" ES23.15)') AvgCurv
+
+  !-------------------------------average coil torsion-----------------------------------------------------
+  AvgTors = zero
+  do icoil = 1, Ncoils
+     if(coil(icoil)%type .ne. 1) exit ! only for Fourier 
+     call TorsDeriv0(icoil,torsRet)
+     AvgTors = AvgTors + abs(torsRet) 
+#ifdef DEBUG
+     if(myid .eq. 0) write(ounit, '(8X": Average torsion of "I3 "-th coil is : " ES23.15)') &
+        icoil, abs(torsRet)
+#endif
+  enddo
+  AvgTors = AvgTors / Ncoils
+  if(myid .eq. 0) write(ounit, '(8X": Average torsion of the coils is"5X" :" ES23.15)') AvgTors
 
   !-------------------------------average coil length-------------------------------------------------------  
   AvgLength = zero

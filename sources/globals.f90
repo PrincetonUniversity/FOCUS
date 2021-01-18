@@ -116,6 +116,7 @@ module globals
   REAL                 :: cssep_factor   =   4.000D+00 
   REAL                 :: weight_specw   =   0.000D+00
   REAL                 :: weight_ccsep   =   0.000D+00
+  REAL                 :: weight_tors    =   0.000D+00
   REAL                 :: r_delta        =   1.000D-01
   REAL                 :: ccsep_alpha    =   1.000D+01
   REAL                 :: weight_inorm   =   1.000D+00
@@ -131,6 +132,9 @@ module globals
   REAL                 :: curv_gamma     =   2.000D+00
   REAL                 :: curv_sigma     =   0.000D+00
   INTEGER              :: k1_len         =   0
+  INTEGER              :: case_tors      =   1
+  REAL                 :: tors_alpha     =   0.000D+00
+  REAL                 :: tors0          =   0.000D+00
 
   INTEGER              :: case_optimize  =   0
   REAL                 :: exit_tol       =   1.000D-04
@@ -219,6 +223,7 @@ module globals
                         cssep_factor   , &
                         weight_specw   , &
                         weight_ccsep   , &
+                        weight_tors    , &
                         r_delta        , &
                         ccsep_alpha    , &
                         penfun_curv    , &
@@ -227,6 +232,9 @@ module globals
                         curv_gamma     , &
                         curv_sigma     , &
                         k1_len         , &
+                        case_tors      , &
+                        tors_alpha     , &
+                        tors0          , &
                         weight_inorm   , &
                         weight_gnorm   , &
                         weight_mnorm   , &
@@ -298,7 +306,7 @@ module globals
      INTEGER              :: NS, Ic=0, Lc=0, type=0, symm=0
      REAL                 :: I=zero,  L=zero, Lo, maxcurv, ox, oy, oz, mt, mp, Bt, Bz, avgcurv
      REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), &
-                             dl(:), dd(:)
+                             xb(:), yb(:), zb(:), dl(:), dd(:)
      character(10)        :: name
   end type arbitrarycoil
 
@@ -333,8 +341,8 @@ module globals
 !latex \subsection{Optimization}
   ! General target functions;
   INTEGER              :: iout, Nouts, LM_iter, LM_mfvec
-  INTEGER              :: ibnorm = 0, ibharm = 0, itflux = 0, ittlen = 0, icssep = 0, icurv = 0, iccsep = 0 ! starting number
-  INTEGER              :: mbnorm = 0, mbharm = 0, mtflux = 0, mttlen = 0, mcssep = 0, mcurv = 0, mccsep = 0 ! numbers of targets
+  INTEGER              :: ibnorm = 0, ibharm = 0, itflux = 0, ittlen = 0, icssep = 0, icurv = 0, iccsep = 0, itors = 0 ! starting number
+  INTEGER              :: mbnorm = 0, mbharm = 0, mtflux = 0, mttlen = 0, mcssep = 0, mcurv = 0, mccsep = 0, mtors = 0 ! numbers of targets
   REAL                 :: chi, discretefactor, sumDE
   REAL   , allocatable :: t1E(:), t2E(:,:), evolution(:,:), coilspace(:,:), deriv(:,:)
   REAL   , allocatable :: LM_fvec(:), LM_fjac(:,:)
@@ -358,6 +366,9 @@ module globals
   ! Curvature constraint
   REAL                 :: curv
   REAL   , allocatable :: t1CU(:), t2CU(:,:)
+  ! Average Torsion 
+  REAL                 :: tors
+  REAL   , allocatable :: t1T(:), t2T(:,:)
   ! Coil-surface spearation
   INTEGER              :: psurf = 1 ! the prevent surface label; default 1 is the plasma boundary
   REAL                 :: cssep
