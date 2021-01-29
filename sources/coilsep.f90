@@ -12,7 +12,7 @@
 
 ! ccsep is total penalty
 ! chi = chi + weight_ccsep*ccsep
-! t1CU is total derivative of penalty
+! t1C is total derivative of penalty
 ! LM implemented
 ! not parallelized, at some point check to see how long takes to run
 subroutine coilsep(ideriv)

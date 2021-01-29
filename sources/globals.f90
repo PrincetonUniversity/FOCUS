@@ -117,6 +117,7 @@ module globals
   REAL                 :: weight_specw   =   0.000D+00
   REAL                 :: weight_ccsep   =   0.000D+00
   REAL                 :: weight_tors    =   0.000D+00
+  REAL                 :: weight_nis     =   0.000D+00
   REAL                 :: r_delta        =   1.000D-01
   REAL                 :: ccsep_alpha    =   1.000D+01
   REAL                 :: weight_inorm   =   1.000D+00
@@ -135,6 +136,9 @@ module globals
   INTEGER              :: case_tors      =   1
   REAL                 :: tors_alpha     =   1.000D+00
   REAL                 :: tors0          =   0.000D+00
+  INTEGER              :: case_nis       =   1
+  REAL                 :: nis_alpha      =   1.000D+00
+  REAL                 :: nis0           =   0.000D+00
 
   INTEGER              :: case_optimize  =   0
   REAL                 :: exit_tol       =   1.000D-04
@@ -224,6 +228,7 @@ module globals
                         weight_specw   , &
                         weight_ccsep   , &
                         weight_tors    , &
+                        weight_nis     , &
                         r_delta        , &
                         ccsep_alpha    , &
                         penfun_curv    , &
@@ -235,6 +240,9 @@ module globals
                         case_tors      , &
                         tors_alpha     , &
                         tors0          , &
+                        case_nis       , &
+                        nis_alpha      , &
+                        nis0           , &
                         weight_inorm   , &
                         weight_gnorm   , &
                         weight_mnorm   , &
@@ -341,8 +349,8 @@ module globals
 !latex \subsection{Optimization}
   ! General target functions;
   INTEGER              :: iout, Nouts, LM_iter, LM_mfvec
-  INTEGER              :: ibnorm = 0, ibharm = 0, itflux = 0, ittlen = 0, icssep = 0, icurv = 0, iccsep = 0, itors = 0 ! starting number
-  INTEGER              :: mbnorm = 0, mbharm = 0, mtflux = 0, mttlen = 0, mcssep = 0, mcurv = 0, mccsep = 0, mtors = 0 ! numbers of targets
+  INTEGER              :: ibnorm = 0, ibharm = 0, itflux = 0, ittlen = 0, icssep = 0, icurv = 0, iccsep = 0, itors = 0, inis = 0 ! starting number
+  INTEGER              :: mbnorm = 0, mbharm = 0, mtflux = 0, mttlen = 0, mcssep = 0, mcurv = 0, mccsep = 0, mtors = 0, mnis = 0 ! numbers of targets
   REAL                 :: chi, discretefactor, sumDE
   REAL   , allocatable :: t1E(:), t2E(:,:), evolution(:,:), coilspace(:,:), deriv(:,:)
   REAL   , allocatable :: LM_fvec(:), LM_fjac(:,:)
@@ -365,10 +373,13 @@ module globals
   REAL   , allocatable :: t1L(:), t2L(:,:)
   ! Curvature constraint
   REAL                 :: curv
-  REAL   , allocatable :: t1CU(:), t2CU(:,:)
+  REAL   , allocatable :: t1K(:), t2K(:,:)
   ! Average Torsion 
   REAL                 :: tors
   REAL   , allocatable :: t1T(:), t2T(:,:)
+  ! Nissin complexity
+  REAL                 :: nis
+  REAL   , allocatable :: t1N(:), t2N(:,:)
   ! Coil-surface spearation
   INTEGER              :: psurf = 1 ! the prevent surface label; default 1 is the plasma boundary
   REAL                 :: cssep
@@ -402,7 +413,8 @@ module globals
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 !latex \subsection{Miscellaneous}
-  REAL                 :: tmpw_bnorm, tmpw_tflux ,tmpt_tflux, tmpw_ttlen, tmpw_specw, tmpw_ccsep, tmpw_bharm, tmpw_curv
+  REAL                 :: tmpw_bnorm, tmpw_tflux ,tmpt_tflux, tmpw_ttlen, tmpw_specw, tmpw_ccsep, tmpw_bharm, & 
+                          tmpw_curv, tmpw_tors, tmpw_nis
   REAL                 :: overlap = 0.0
                           !tmp weight for saving to restart file
   REAL, allocatable    :: mincc(:,:), coil_importance(:)

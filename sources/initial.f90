@@ -615,7 +615,7 @@ subroutine check_input
      case ( 2 )
         if (IsQuiet < 1) write(ounit, 1000) 'case_length', case_length, 'Exponential format of length penalty.'
      case ( 3 )
-        if (IsQuiet < 1) write(ounit, 1000) 'case_length', case_length, 'Delta quadratic length penalty.'
+        if (IsQuiet < 1) write(ounit, 1000) 'case_length', case_length, 'Modified quadratic length penalty.'
      case default
         FATAL( initial, .true., selected case_length is not supported )
      end select
@@ -633,6 +633,24 @@ subroutine check_input
         FATAL( initial, .true., selected case_curv is not supported )
      end select
 
+     select case ( case_tors )
+     case ( 1 )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_tors', case_tors, 'Optimizing average torsion to 0.'
+     case ( 2 )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_tors', case_tors, 'Optimizing average torsion to tors0.'
+     case default
+        FATAL( initial, .true., selected case_tors is not supported )
+     end select
+
+     select case ( case_nis )
+     case ( 1 )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_nis', case_nis, 'Hyperbolic penalty function.'
+     case ( 2 )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_nis', case_nis, 'Polynomial penalty function.'
+     case default
+        FATAL( initial, .true., selected case_nis is not supported )
+     end select
+
      FATAL( initial, weight_bnorm  < zero, illegal )
      FATAL( initial, weight_bharm  < zero, illegal )
      FATAL( initial, weight_tflux  < zero, illegal )
@@ -640,6 +658,9 @@ subroutine check_input
      FATAL( initial, weight_specw  < zero, illegal )
      FATAL( initial, weight_ccsep  < zero, illegal )
      FATAL( initial, weight_cssep  < zero, illegal )
+     FATAL( initial, weight_curv   < zero, illegal )
+     FATAL( initial, weight_tors   < zero, illegal )
+     FATAL( initial, weight_nis    < zero, illegal )
 
      select case ( case_postproc )
      case ( 0 )
@@ -699,6 +720,8 @@ subroutine check_input
   tmpw_ccsep = weight_ccsep
   tmpw_curv  = weight_curv
  !tmpw_cssep = weight_cssep
+  tmpw_tors  = weight_tors
+  tmpw_nis   = weight_nis
 
   call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
 

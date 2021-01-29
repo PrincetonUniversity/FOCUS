@@ -50,9 +50,11 @@ subroutine saving
      if(allocated(t1F)) deriv(1:Ndof,2) = t1F(1:Ndof)
      if(allocated(t1L)) deriv(1:Ndof,3) = t1L(1:Ndof)
      if(allocated(t1S)) deriv(1:Ndof,4) = t1S(1:Ndof)
-     if(allocated(t1C)) deriv(1:Ndof,5) = t1C(1:Ndof)
-     if(allocated(t1H)) deriv(1:Ndof,6) = t1H(1:Ndof)
-     if(allocated(t1CU)) deriv(1:Ndof,7)=t1CU(1:Ndof)
+     if(allocated(t1H)) deriv(1:Ndof,5) = t1H(1:Ndof)
+     if(allocated(t1K)) deriv(1:Ndof,6) = t1K(1:Ndof)
+     if(allocated(t1C)) deriv(1:Ndof,7) = t1C(1:Ndof)
+     if(allocated(t1T)) deriv(1:Ndof,8) = t1T(1:Ndof)
+     if(allocated(t1N)) deriv(1:Ndof,9) = t1N(1:Ndof)
   endif
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -113,6 +115,9 @@ subroutine saving
   HWRITERV( 1                ,   tors_alpha    ,   tors_alpha                    )
   HWRITERV( 1                ,   case_tors     ,   case_tors                     )
   HWRITERV( 1                ,   tors0         ,   tors0                         )
+  HWRITERV( 1                ,   nis_alpha     ,   nis_alpha                     )
+  HWRITERV( 1                ,   case_nis      ,   case_nis                      )
+  HWRITERV( 1                ,   nis0          ,   nis0                          )
   HWRITERV( 1                ,   DF_tausta     ,   DF_tausta                     )
   HWRITERV( 1                ,   DF_tauend     ,   DF_tauend                     )
   HWRITERV( 1                ,   DF_xtol       ,   DF_xtol                       )
@@ -166,11 +171,13 @@ subroutine saving
   HWRITERV( 1                ,   Gnorm         ,   Gnorm                         )
   HWRITERV( 1                ,   Mnorm         ,   Mnorm                         )
   HWRITERV( 1                ,   overlap       ,   overlap                       )
-  HWRITERA( iout, 10         ,   evolution     ,   evolution(1:iout, 0:10)       )
+  !HWRITERA( iout, 10         ,   evolution     ,   evolution(1:iout, 0:10)       )
+  HWRITERA( iout, 11         ,   evolution     ,   evolution(1:iout, 0:11)       )
   HWRITERA( iout, Tdof       ,   coilspace     ,   coilspace(1:iout, 1:Tdof)     )
 
   if (allocated(deriv)) then
-     HWRITERA( Ndof, 6       ,   deriv         ,   deriv(1:Ndof, 0:6)            )
+     !HWRITERA( Ndof, 6       ,   deriv         ,   deriv(1:Ndof, 0:6)            )
+     HWRITERA( Ndof, 9       ,   deriv         ,   deriv(1:Ndof, 0:9)            )
   endif
 
   if (allocated(Bmnc)) then
@@ -205,6 +212,8 @@ subroutine saving
      HWRITEIV( 1                ,   mccsep        ,   mccsep                     )
      HWRITEIV( 1                ,   itors         ,   itors                      )
      HWRITEIV( 1                ,   mtors         ,   mtors                      )
+     HWRITEIV( 1                ,   inis          ,   inis                       )
+     HWRITEIV( 1                ,   mnis          ,   mnis                       )
      HWRITERV( LM_mfvec         ,   LM_fvec       ,   LM_fvec                    )
      HWRITERA( LM_mfvec, Ndof   ,   LM_fjac       ,   LM_fjac                    )     
   endif
