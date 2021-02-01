@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='dp_v1.2.05' ! version number
+  CHARACTER(LEN=10), parameter :: version='dp_v1.3.00' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -303,7 +303,8 @@ module globals
   INTEGER              :: Nfou=0, Nfp=0, NBnf=0, Nfp_raw = 1
   REAL   , allocatable :: cosnfp(:), sinnfp(:)
   INTEGER, allocatable :: bim(:), bin(:), Bnim(:), Bnin(:)
-  REAL   , allocatable :: Rbc(:), Zbs(:), Rbs(:), Zbc(:), Bnc(:), Bns(:), cosip(:), sinip(:)
+  REAL   , allocatable :: Rbc(:), Zbs(:), Rbs(:), Zbc(:), Pmnc(:), Pmns(:),& 
+                          Bnc(:), Bns(:), cosip(:), sinip(:)
   REAL                 :: shift
     
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!

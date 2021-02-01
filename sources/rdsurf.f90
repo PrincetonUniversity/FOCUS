@@ -298,7 +298,11 @@ subroutine fousurf
 
   surf(1)%vol = abs(surf(1)%vol)/3 * discretefactor * Nfp * 2**symmetry 
   surf(1)%area = surf(1)%area * discretefactor * Nfp * 2**symmetry 
-  if( myid == 0 .and. IsQuiet <= 0) write(ounit, '(8X": Enclosed volume ="ES12.5" m^3 ;" )') surf(1)%vol
+ 
+  if (myid == 0 .and. IsQuiet <= 0) then
+      write (ounit, '(8X": Enclosed total surface volume ="ES12.5" m^3 ; area ="ES12.5" m^2." )') &
+         surf(index)%vol, surf(index)%area
+  endif
 
   !calculate target Bn with input harmonics; 05 Jan 17;
   if(NBnf >  0) then
