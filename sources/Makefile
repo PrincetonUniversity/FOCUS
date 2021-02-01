@@ -25,6 +25,8 @@
  RFLAGS=-mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback  $(PFLAGS) #-vec_report0 #-ipo -xhost
  DFLAGS=-O0 -g -traceback $(PFLAGS) -check all -check bounds -check noarg_temp_created -check uninit \
      -ftrapuv -init=snan,arrays -debug all -D DEBUG
+ LIBS=-I$(HDF5_HOME)/include
+ LINKS=-L$(HDF5_HOME)/lib -lhdf5_fortran -lhdf5 -lpthread -lz -lm
 
 #### GFORTRAN+OpenMPI+HDF5###############
 # available env: /p/focus/modules/focus/gfortran
@@ -50,10 +52,28 @@ ifneq (,$(findstring traverse,$(HOSTNAME)))
      -ffpe-trap=zero -fcheck=all -DDEBUG
 endif
 
-############################################################################################################
+#### IPP draco Intel+IntelMPI+HDF5###############
+ifneq (,$(findstring draco,$(HOSTNAME)))
+ FC=mpiifort  # this is optional after recent updates
+ RFLAGS+=-xCORE-AVX2
+ LINKS=-L$(HDF5_HOME)/lib -lhdf5_fortran -lhdf5 -lpthread -lz -lm -Wl,-rpath -Wl,$(HDF5_HOME)/lib
+endif
 
- HDF5=-I$(HDF5_HOME)/include -L$(HDF5_HOME)/lib -lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran \
--lhdf5 -lpthread -lz -lm
+#### IPP cobra Intel+IntelMPI+HDF5###############
+ifneq (,$(findstring cobra,$(HOSTNAME)))
+ FC=mpiifort  # this is optional after recent updates
+ RFLAGS+=-xCORE-AVX512 -qopt-zmm-usage=high
+ LINKS=-L$(HDF5_HOME)/lib -lhdf5_fortran -lhdf5 -lpthread -lz -lm -Wl,-rpath -Wl,$(HDF5_HOME)/lib
+endif
+
+#### IPP raven Intel+IntelMPI+HDF5###############
+ifneq (,$(findstring raven,$(HOSTNAME)))
+ FC=mpiifort  # this is optional after recent updates
+ RFLAGS+=-xCORE-AVX512 -qopt-zmm-usage=high
+ LINKS=-L$(HDF5_HOME)/lib -lhdf5_fortran -lhdf5 -lpthread -lz -lm -Wl,-rpath -Wl,$(HDF5_HOME)/lib
+endif
+
+############################################################################################################
 
  WEBDIR=$(HOME)/w3_html
 
@@ -63,12 +83,12 @@ endif
 ############################################################################################################
 
 xfocus: $(ROBJS) $(NUMOBJ)
-	$(FC) -o xfocus $(ROBJS) $(NUMOBJ) $(HDF5)
+	$(FC) -o xfocus $(ROBJS) $(NUMOBJ) $(LINKS)
 	@echo "Compiling xfocus finished."
 	mkdir -p ../bin ; mv xfocus ../bin/
 
 dfocus: $(DOBJS) $(NUMOBJ)
-	$(FC) -o dfocus $(DOBJS) $(NUMOBJ) $(HDF5)
+	$(FC) -o dfocus $(DOBJS) $(NUMOBJ) $(LINKS)
 	@echo "Compiling dfocus finished."
 	mkdir -p ../bin ; mv dfocus ../bin/
 
@@ -92,10 +112,10 @@ simann.o : simann.f90
 	$(FC) -c $(RFLAGS) -o $@ $<
 
 $(ROBJS): %_r.o: %_m.F90
-	$(FC) -c $(RFLAGS) -o $@ $<  $(HDF5)
+	$(FC) -c $(RFLAGS) -o $@ $<  $(LIBS)
 
 $(DOBJS): %_d.o: %_m.F90
-	$(FC) -c $(DFLAGS) -o $@ $<  $(HDF5)
+	$(FC) -c $(DFLAGS) -o $@ $<  $(LIBS)
 
 $(FFILES): %_m.F90: %.f90
 	m4 -P $(MACROS) $< > $@
