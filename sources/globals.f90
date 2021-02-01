@@ -136,6 +136,8 @@ module globals
   INTEGER              :: case_tors      =   1
   REAL                 :: tors_alpha     =   1.000D+00
   REAL                 :: tors0          =   0.000D+00
+  REAL                 :: lambda0        =   0.000D+00
+  REAL                 :: lambda_alpha   =   0.000D+00
   INTEGER              :: case_nis       =   1
   REAL                 :: nis_alpha      =   1.000D+00
   REAL                 :: nis0           =   0.000D+00
@@ -240,6 +242,8 @@ module globals
                         case_tors      , &
                         tors_alpha     , &
                         tors0          , &
+                        lambda0        , &
+                        lambda_alpha   , &
                         case_nis       , &
                         nis_alpha      , &
                         nis0           , &
@@ -312,7 +316,8 @@ module globals
 
   type arbitrarycoil
      INTEGER              :: NS, Ic=0, Lc=0, type=0, symm=0
-     REAL                 :: I=zero,  L=zero, Lo, maxcurv, ox, oy, oz, mt, mp, Bt, Bz, avgcurv
+     REAL                 :: I=zero,  L=zero, Lo, maxcurv, ox, oy, oz, mt, mp, Bt, Bz, avgcurv, &
+                                   minlambda, maxs
      REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), &
                              xb(:), yb(:), zb(:), dl(:), dd(:)
      character(10)        :: name

@@ -8,13 +8,15 @@ SUBROUTINE diagnos
   use globals, only: dp, zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
        Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
        cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, Nfp, weight_bnorm, overlap, plasma, &
-       cosnfp, sinnfp, symmetry, discretefactor, MPI_COMM_FOCUS, surf_Nfp, curv, case_curv, tors, nis
+       cosnfp, sinnfp, symmetry, discretefactor, MPI_COMM_FOCUS, surf_Nfp, curv, case_curv, tors, nis, &
+       lambda_alpha, weight_nis
   use mpi
   implicit none
 
   INTEGER           :: icoil, itmp, astat, ierr, NF, idof, i, j, isurf, cs, ip, is, Npc, coilInd0, coilInd1
   LOGICAL           :: lwbnorm, l_raw
-  REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist, ReDot, ImDot, dum, AvgCurv, AvgTors, torsRet
+  REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist, ReDot, ImDot, dum, AvgCurv, AvgTors, &
+                       MinLambda, MaxS, torsRet
   REAL, parameter   :: infmax = 1.0E6
   REAL, allocatable :: Atmp(:,:), Btmp(:,:)
 
@@ -60,7 +62,7 @@ SUBROUTINE diagnos
   MaxCurv = zero
   do icoil = 1, Ncoils
      if(coil(icoil)%type .ne. 1) exit ! only for Fourier
-     call CurvDeriv0(icoil,dum) !Might have to put a dummy return
+     call CurvDeriv0(icoil,dum) !dummy return
      if (coil(icoil)%maxcurv .ge. MaxCurv) then
         MaxCurv = coil(icoil)%maxcurv
         itmp = icoil !record the number
@@ -91,7 +93,7 @@ SUBROUTINE diagnos
   AvgTors = zero
   do icoil = 1, Ncoils
      if(coil(icoil)%type .ne. 1) exit ! only for Fourier 
-     call TorsDeriv0(icoil,torsRet)
+     call TorsDeriv0(icoil,torsRet,dum) !dummy return
      AvgTors = AvgTors + abs(torsRet) 
 #ifdef DEBUG
      if(myid .eq. 0) write(ounit, '(8X": Average torsion of "I3 "-th coil is   : " ES23.15)') &
@@ -101,7 +103,41 @@ SUBROUTINE diagnos
   AvgTors = AvgTors / Ncoils
   if(myid .eq. 0) write(ounit, '(8X": Average torsion of the coils is"5X"   :" ES23.15)') AvgTors
 
-  ! Put in maximum Nissin value 
+  !-------------------------------minimum coil lambda-----------------------------------------------------
+  if( lambda_alpha .ne. 0 ) then
+  call TorsDeriv0(1,dum,dum)
+  MinLambda = coil(1)%minlambda
+  do icoil = 1, Ncoils
+     if(coil(icoil)%type .ne. 1) exit ! only for Fourier
+     call TorsDeriv0(icoil,dum,dum) !dummy return
+     if( coil(icoil)%minlambda .le. MinLambda) then
+        MinLambda = coil(icoil)%minlambda
+     endif
+#ifdef DEBUG
+     if(myid .eq. 0) write(ounit, '(8X": Minimum lambda of "I3 "-th coil is    : " ES23.15)') &
+        icoil, coil(icoil)%minlambda
+#endif
+  enddo
+  if(myid .eq. 0) write(ounit, '(8X": Minimum lambda of the coils is"5X"    :" ES23.15)') MinLambda
+  endif
+
+  !-------------------------------maximum coil S------------------------------------------------------------
+  if( weight_nis .ne. 0 ) then
+  call NisDeriv0(1,dum)
+  MaxS = coil(1)%maxs
+  do icoil = 1, Ncoils
+     if(coil(icoil)%type .ne. 1) exit ! only for Fourier
+     call NisDeriv0(icoil,dum) !dummy return
+     if( coil(icoil)%maxs .ge. MaxS) then
+        MaxS = coil(icoil)%maxs
+     endif
+#ifdef DEBUG
+     if(myid .eq. 0) write(ounit, '(8X": Maximum S of "I3 "-th coil is         : " ES23.15)') &
+        icoil, coil(icoil)%maxs
+#endif
+  enddo
+  if(myid .eq. 0) write(ounit, '(8X": Maximum S of the coils is"5X"         :" ES23.15)') MaxS
+  endif
 
   !-------------------------------average coil length-------------------------------------------------------  
   AvgLength = zero

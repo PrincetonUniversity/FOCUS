@@ -25,7 +25,7 @@ subroutine torsion(ideriv)
   INTEGER, INTENT(in) :: ideriv
 
   INTEGER             :: astat, ierr, icoil, idof, ND, NF, ivec
-  REAL                :: torsAdd, torsHold
+  REAL                :: torsAdd, torsHold, flambda
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
@@ -41,23 +41,23 @@ subroutine torsion(ideriv)
      do icoil = 1, Ncoils
         if( coil(icoil)%type .ne. 1 ) exit ! only for Fourier
         if( coil(icoil)%Lc     /=  0 ) then ! if geometry is free
-           call TorsDeriv0(icoil,torsAdd)
+           call TorsDeriv0(icoil,torsAdd,flambda)
            if( case_tors .eq. 1 ) then
               FATAL( torsion, tors_alpha < 1 , tors_alpha >= 1 for case_tors == 1 ) 
               torsHold = (torsAdd**2 + 1)**tors_alpha - 1
-              tors = tors + torsHold
+              tors = tors + torsHold + flambda
               if (mtors > 0) then ! L-M format of targets
-                 LM_fvec(itors+ivec) = weight_tors*torsHold
+                 LM_fvec(itors+ivec) = weight_tors*(torsHold+flambda)
                  ivec = ivec + 1
               endif
            else
               FATAL( torsion, tors_alpha < 0 , tors_alpha >= 0 for case_tors == 2 )
               if( torsAdd**2 > tors0**2 ) then 
                  torsHold = ( cosh(tors_alpha*(torsAdd**2 - tors0**2)) - 1 )**2
-                 tors = tors + torsHold
+                 tors = tors + torsHold + flambda
               endif
               if (mtors > 0) then ! L-M format of targets
-                 LM_fvec(itors+ivec) = weight_tors*torsHold
+                 LM_fvec(itors+ivec) = weight_tors*(torsHold+flambda)
                  ivec = ivec + 1
               endif
            endif
@@ -109,21 +109,22 @@ end subroutine torsion
 
 ! calculate average coil torsion
 
-subroutine TorsDeriv0(icoil,torsRet)
+subroutine TorsDeriv0(icoil,torsRet,flambda)
 
   use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils, &
-          MPI_COMM_FOCUS
+          lambda0, lambda_alpha, MPI_COMM_FOCUS
 
   implicit none
   include "mpif.h"
 
   INTEGER, intent(in)  :: icoil
-  REAL   , intent(out) :: torsRet 
+  REAL   , intent(out) :: torsRet, flambda
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   INTEGER              :: kseg, NS
   REAL                 :: tors_hold
   REAL,allocatable     :: torss(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), xb(:), yb(:), zb(:), &
-     lambdax(:), lambday(:), lambdaz(:), lambdanorm(:), lambdaunitx(:), lambdaunity(:), lambdaunitz(:)
+     lambdax(:), lambday(:), lambdaz(:), lambdanorm(:), lambdaunitx(:), lambdaunity(:), lambdaunitz(:), &
+     absrp(:)
 
   NS = coil(icoil)%NS 
   SALLOCATE(torss, (0:NS), zero)
@@ -143,6 +144,7 @@ subroutine TorsDeriv0(icoil,torsRet)
   SALLOCATE(xb, (0:NS), zero)
   SALLOCATE(yb, (0:NS), zero)
   SALLOCATE(zb, (0:NS), zero)
+  SALLOCATE(absrp, (0:NS), zero)
   xt(0:coil(icoil)%NS) = coil(icoil)%xt(0:coil(icoil)%NS)
   yt(0:coil(icoil)%NS) = coil(icoil)%yt(0:coil(icoil)%NS)
   zt(0:coil(icoil)%NS) = coil(icoil)%zt(0:coil(icoil)%NS)
@@ -157,6 +159,7 @@ subroutine TorsDeriv0(icoil,torsRet)
 
   torss = zero
   torsRet = zero
+  flambda = zero
 
   lambdax(0:NS) = yt(0:NS)*za(0:NS) - zt(0:NS)*ya(0:NS)
   lambday(0:NS) = zt(0:NS)*xa(0:NS) - xt(0:NS)*za(0:NS)
@@ -168,13 +171,21 @@ subroutine TorsDeriv0(icoil,torsRet)
   
   torss(0:NS) = ( lambdaunitx(0:NS)*xb(0:NS) + lambdaunity(0:NS)*yb(0:NS) + lambdaunitz(0:NS)*zb(0:NS) ) / lambdanorm(0:NS)
   
-  !coil(icoil)%maxcurv = maxval(curvv)
+  coil(icoil)%minlambda = minval(lambdanorm)
 
   torss(0:NS) = torss(0:NS)*sqrt( xt(0:NS)**2 + yt(0:NS)**2 + zt(0:NS)**2 )
 
   torsRet = sum(torss)-torss(0)
   call lenDeriv0( icoil, coil(icoil)%L )
   torsRet = pi2*torsRet/(NS*coil(icoil)%L)
+
+  absrp(0:NS) = sqrt( xt(0:NS)**2 + yt(0:NS)**2 + zt(0:NS)**2 )
+  do kseg = 1, NS
+     if( lambdanorm(kseg) .le. lambda0 ) then
+        flambda = flambda + (cosh(lambda_alpha*(lambda0-lambdanorm(kseg)))-1)**2 * absrp(kseg)
+     endif
+  enddo
+  flambda = pi2*flambda/(NS*coil(icoil)%L)
 
   DALLOCATE(torss)
   DALLOCATE(lambdax)
@@ -193,6 +204,7 @@ subroutine TorsDeriv0(icoil,torsRet)
   DALLOCATE(xb)
   DALLOCATE(yb)
   DALLOCATE(zb)
+  DALLOCATE(absrp)
 
   return
 
@@ -203,7 +215,7 @@ end subroutine TorsDeriv0
 subroutine TorsDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a coil
 
   use globals, only: dp, zero, pi2, coil, DoF, myid, ounit, Ncoils, &
-          case_tors, tors_alpha, tors0, FouCoil, MPI_COMM_FOCUS
+          case_tors, tors_alpha, tors0, FouCoil, lambda0, lambda_alpha, MPI_COMM_FOCUS
   implicit none
   include "mpif.h"
 
@@ -213,11 +225,12 @@ subroutine TorsDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a co
   INTEGER              :: kseg, astat, ierr, doff, n, i, NS
   REAL                 :: L, tauavg
   REAL                 :: d1L(1:1, 1:ND)
-  REAL,allocatable     :: tau(:), absrt(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), xb(:), yb(:), zb(:), &
+  REAL,allocatable     :: tau(:), absrp(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), xb(:), yb(:), zb(:), &
      lambdax(:), lambday(:), lambdaz(:), lambdanorm(:), lambdaunitx(:), lambdaunity(:), lambdaunitz(:), &
      dxdDoF(:,:), dydDoF(:,:), dzdDoF(:,:), dxtdDoF(:,:), dytdDoF(:,:), dztdDoF(:,:), dxadDoF(:,:), &
      dyadDoF(:,:), dzadDoF(:,:), dxbdDoF(:,:), dybdDoF(:,:), dzbdDoF(:,:), dlambdaxdDof(:,:), &
-     dlambdaydDof(:,:), dlambdazdDof(:,:), dtaudDof(:,:), dtauavgdDof(:), dabsrtdDof(:,:)
+     dlambdaydDof(:,:), dlambdazdDof(:,:), dtaudDof(:,:), dtauavgdDof(:), dabsrpdDof(:,:), &
+     dflambdadDof(:), dlambdanormdDof(:,:)
 
   FATAL( TorsDeriv1, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
   FATAL( TorsDeriv1, ND .ne. 3+6*NF, Degrees of freedom are incorrect )
@@ -225,7 +238,7 @@ subroutine TorsDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a co
   NS = coil(icoil)%NS
 
   SALLOCATE(tau, (0:NS), zero)
-  SALLOCATE(absrt, (0:NS), zero)
+  SALLOCATE(absrp, (0:NS), zero)
   SALLOCATE(lambdax, (0:NS), zero)
   SALLOCATE(lambday, (0:NS), zero)
   SALLOCATE(lambdaz, (0:NS), zero)
@@ -269,7 +282,10 @@ subroutine TorsDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a co
   SALLOCATE(dlambdazdDof, (0:NS,1:ND), zero)
   SALLOCATE(dtaudDof, (0:NS,1:ND), zero)
   SALLOCATE(dtauavgdDof, (1:ND), zero)
-  SALLOCATE(dabsrtdDof, (0:NS,1:ND), zero)
+  SALLOCATE(dabsrpdDof, (0:NS,1:ND), zero)
+
+  SALLOCATE(dflambdadDof, (1:ND), zero)
+  SALLOCATE(dlambdanormdDof, (0:NS,1:ND), zero)
   
   !dxdDof(0:NS,1)      = FouCoil(icoil)%cmt(0:NS,0)
   !dydDof(0:NS,2*NF+2) = FouCoil(icoil)%cmt(0:NS,0)
@@ -322,8 +338,8 @@ subroutine TorsDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a co
   lambdaunitz(0:NS) = lambdaz(0:NS) / lambdanorm(0:NS)
 
   tau(0:NS) = ( lambdaunitx(0:NS)*xb(0:NS) + lambdaunity(0:NS)*yb(0:NS) + lambdaunitz(0:NS)*zb(0:NS) ) / lambdanorm(0:NS)
-  absrt(0:NS) = sqrt( xt(0:NS)**2 + yt(0:NS)**2 + zt(0:NS)**2 )
-  tauavg = pi2*( sum(tau(0:NS)*absrt(0:NS)) - tau(0)*absrt(0) ) / ( L * NS )
+  absrp(0:NS) = sqrt( xt(0:NS)**2 + yt(0:NS)**2 + zt(0:NS)**2 )
+  tauavg = pi2*( sum(tau(0:NS)*absrp(0:NS)) - tau(0)*absrp(0) ) / ( L * NS )
 
   do i = 1,ND
      dlambdaxdDof(0:NS,i) = dytdDof(0:NS,i)*za(0:NS) - dztdDof(0:NS,i)*ya(0:NS) &
@@ -339,14 +355,17 @@ subroutine TorsDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a co
      dlambdazdDof(0:NS,i)*zb(0:NS) + lambdax(0:NS)*dxbdDof(0:NS,i) + lambday(0:NS)*dybdDof(0:NS,i) + &
      lambdaz(0:NS)*dzbdDof(0:NS,i)) / lambdanorm(0:NS)**2
 
-     dabsrtdDof(0:NS,i) = ( xt(0:NS)**2 + yt(0:NS)**2 + zt(0:NS)**2 )**(-.5) * ( xt(0:NS)*dxtdDof(0:NS,i) + & 
+     dabsrpdDof(0:NS,i) = ( xt(0:NS)**2 + yt(0:NS)**2 + zt(0:NS)**2 )**(-.5) * ( xt(0:NS)*dxtdDof(0:NS,i) + & 
                           yt(0:NS)*dytdDof(0:NS,i) + zt(0:NS)*dztdDof(0:NS,i) )
+
+     dlambdanormdDof(0:NS,i) = lambdanorm(0:NS)**(-1)*(lambdax(0:NS)*dlambdaxdDof(0:NS,i) + &
+             lambday(0:NS)*dlambdaydDof(0:NS,i) + lambdaz(0:NS)*dlambdazdDof(0:NS,i))
   enddo
 
   do i = 1,ND
-     dtauavgdDof(i) = -1*d1L(1,i)*( sum(tau(0:NS)*absrt(0:NS)) - tau(0)*absrt(0) ) / L + &
-                           sum(dtaudDof(0:NS,i)*absrt(0:NS)) - dtaudDof(0,i)*absrt(0) + &
-                           sum(tau(0:NS)*dabsrtdDof(0:NS,i)) - tau(0)*dabsrtdDof(0,i)
+     dtauavgdDof(i) = -1*d1L(1,i)*( sum(tau(0:NS)*absrp(0:NS)) - tau(0)*absrp(0) ) / L + &
+                           sum(dtaudDof(0:NS,i)*absrp(0:NS)) - dtaudDof(0,i)*absrp(0) + &
+                           sum(tau(0:NS)*dabsrpdDof(0:NS,i)) - tau(0)*dabsrpdDof(0,i)
   enddo
   dtauavgdDof(1:ND) = dtauavgdDof(1:ND)*pi2/(L*NS)
 
@@ -359,8 +378,23 @@ subroutine TorsDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a co
      endif
   endif
 
+  do kseg = 1,NS
+     do i = 1,ND
+        if( lambdanorm(kseg) .le. lambda0 ) then
+           dflambdadDof(i) = dflambdadDof(i) - (d1L(1,i)/L)*(cosh(lambda_alpha*(lambda0-lambdanorm(kseg)))-1)**2*absrp(kseg)
+           dflambdadDof(i) = dflambdadDof(i) - 2*lambda_alpha*(cosh(lambda_alpha*(lambda0-lambdanorm(kseg)))-1) &
+                   * sinh(lambda_alpha*(lambda0-lambdanorm(kseg)))*dlambdanormdDof(kseg,i)*absrp(kseg)
+           dflambdadDof(i) = dflambdadDof(i) + (cosh(lambda_alpha*(lambda0-lambdanorm(kseg)))-1)**2*dabsrpdDof(kseg,i)
+        endif
+     enddo
+  enddo
+
+  dflambdadDof(1:ND) = dflambdadDof(1:ND)*pi2/(L*NS)
+
+  derivs(1,1:ND) = derivs(1,1:ND) + dflambdadDof(1:ND)
+
   DALLOCATE(tau)
-  DALLOCATE(absrt)
+  DALLOCATE(absrp)
   DALLOCATE(lambdax)
   DALLOCATE(lambday)
   DALLOCATE(lambdaz)
@@ -394,7 +428,9 @@ subroutine TorsDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a co
   DALLOCATE(dlambdazdDof)
   DALLOCATE(dtaudDof)
   DALLOCATE(dtauavgdDof)
-  DALLOCATE(dabsrtdDof)
+  DALLOCATE(dabsrpdDof)
+  DALLOCATE(dflambdadDof)
+  DALLOCATE(dlambdanormdDof)
 
   return
 

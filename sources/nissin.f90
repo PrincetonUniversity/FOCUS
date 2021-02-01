@@ -189,6 +189,8 @@ subroutine NisDeriv0(icoil,nisRet)
 
   S(0:NS) = sqrt(S1(0:NS)**2 + S2(0:NS)**2)
 
+  coil(icoil)%maxs = maxval(S)
+
   do kseg = 0, NS
      if( S(kseg) .ge. nis0) then
         !niss(kseg) = (cosh(nis_alpha*(S(kseg)-nis0)) - 1)**2
