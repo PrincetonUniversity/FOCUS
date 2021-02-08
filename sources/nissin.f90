@@ -115,7 +115,7 @@ end subroutine nissin
 subroutine NisDeriv0(icoil,nisRet)
 
   use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils, &
-          nis_alpha, nis0, MPI_COMM_FOCUS
+          nis_alpha, nis0, nis_gamma, nis_sigma, MPI_COMM_FOCUS
 
   implicit none
   include "mpif.h"
@@ -165,6 +165,8 @@ subroutine NisDeriv0(icoil,nisRet)
   zb(0:coil(icoil)%NS) = coil(icoil)%zb(0:coil(icoil)%NS)
 
   FATAL( NisDeriv0, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
+  FATAL( NisDeriv0, nis_gamma .lt. 1, nis_gamma needs to be > 1 )
+  FATAL( NisDeriv0, nis_sigma .lt. 0, nis_sigma needs to be non-negative )
 
   niss = zero
   nisRet = zero
@@ -194,12 +196,11 @@ subroutine NisDeriv0(icoil,nisRet)
   do kseg = 0, NS
      if( S(kseg) .ge. nis0) then
         !niss(kseg) = (cosh(nis_alpha*(S(kseg)-nis0)) - 1)**2
-        niss(kseg) = (nis_alpha*(S(kseg)-nis0))**2
+        !niss(kseg) = (nis_alpha*(S(kseg)-nis0))**2
+        niss(kseg) = (nis_alpha*(S(kseg)-nis0))**2 + nis_sigma*S(kseg)**nis_gamma
      endif
   enddo
   
-  !coil(icoil)%maxcurv = maxval(curvv)
-
   niss(0:NS) = niss(0:NS)*absrp(0:NS)
 
   nisRet = sum(niss)-niss(0)
@@ -240,7 +241,8 @@ end subroutine NisDeriv0
 subroutine NisDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a coil
 
   use globals, only: dp, zero, pi2, coil, DoF, myid, ounit, Ncoils, &
-          case_nis, nis_alpha, nis0, FouCoil, MPI_COMM_FOCUS
+          case_nis, nis_alpha, nis0, nis_gamma, nis_sigma, FouCoil, &
+          MPI_COMM_FOCUS
   implicit none
   include "mpif.h"
 
@@ -404,7 +406,8 @@ subroutine NisDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a coi
   do kseg = 0, NS
      if( S(kseg) .ge. nis0) then
         !niss(kseg) = (cosh(nis_alpha*(S(kseg)-nis0)) - 1)**2
-        niss(kseg) = (nis_alpha*(S(kseg)-nis0))**2
+        !niss(kseg) = (nis_alpha*(S(kseg)-nis0))**2
+        niss(kseg) = (nis_alpha*(S(kseg)-nis0))**2 + nis_sigma*S(kseg)**nis_gamma
      endif
   enddo
 
@@ -429,7 +432,7 @@ subroutine NisDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a coi
              dztdDof(0:NS,i)*za(0:NS) + xt(0:NS)*dxadDof(0:NS,i) + yt(0:NS)*dyadDof(0:NS,i) + zt(0:NS)*dzadDof(0:NS,i))
      
      dS1dDof(0:NS,i) = dS1dDof(0:NS,i) / absrp(0:NS)
-     !dS1dDof(0:NS,i) = dS1dDof(0:NS,i) - S1(0:NS) * absrp(0:NS)**(-3) * (xt(0:NS)*dxtdDof(0:NS,i) + yt(0:NS)*dytdDof(0:NS,i) + zt(0:NS)*dztdDof(0:NS,i))
+    !dS1dDof(0:NS,i) = dS1dDof(0:NS,i) - S1(0:NS) * absrp(0:NS)**(-3) * (xt(0:NS)*dxtdDof(0:NS,i) + yt(0:NS)*dytdDof(0:NS,i) + zt(0:NS)*dztdDof(0:NS,i))
      dS1dDof(0:NS,i) = dS1dDof(0:NS,i) - S1(0:NS) * absrp(0:NS)**(-2) * (xt(0:NS)*dxtdDof(0:NS,i) + yt(0:NS)*dytdDof(0:NS,i) + zt(0:NS)*dztdDof(0:NS,i))
      
      dS2dDof(0:NS,i) = (dlambdaunitxdDof(0:NS,i)*xb(0:NS) + dlambdaunitydDof(0:NS,i)*yb(0:NS) + dlambdaunitzdDof(0:NS,i)*zb(0:NS)) &
@@ -446,8 +449,12 @@ subroutine NisDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a coi
            !dnissdDof(kseg,i) = 2*((cosh(nis_alpha*(S(kseg)-nis0))-1))*sinh(nis_alpha*(S(kseg)-nis0))*nis_alpha*dSdDof(kseg,i)*absrp(kseg)
            !dnissdDof(kseg,i) = dnissdDof(kseg,i) + (cosh(nis_alpha*(S(kseg)-nis0)) - 1)**2 * dabsrpdDof(kseg,i)
 
-           dnissdDof(kseg,i) = 2*nis_alpha*(nis_alpha*(S(kseg)-nis0))*dSdDof(kseg,i)*absrp(kseg)
-           dnissdDof(kseg,i) = dnissdDof(kseg,i) + (nis_alpha*(S(kseg)-nis0))**2 * dabsrpdDof(kseg,i)
+           !dnissdDof(kseg,i) = 2*nis_alpha*(nis_alpha*(S(kseg)-nis0))*dSdDof(kseg,i)*absrp(kseg)
+           !dnissdDof(kseg,i) = dnissdDof(kseg,i) + (nis_alpha*(S(kseg)-nis0))**2 * dabsrpdDof(kseg,i)
+
+           dnissdDof(kseg,i) = (2*nis_alpha*(nis_alpha*(S(kseg)-nis0))*dSdDof(kseg,i) + &
+                   nis_gamma*nis_sigma*S(kseg)**(nis_gamma-1)*dSdDof(kseg,i))*absrp(kseg)
+           dnissdDof(kseg,i) = dnissdDof(kseg,i) + ((nis_alpha*(S(kseg)-nis0))**2 + nis_sigma*S(kseg)**nis_gamma)*dabsrpdDof(kseg,i)
            derivs(1,i) = derivs(1,i) + dnissdDof(kseg,i)
         endif
      enddo

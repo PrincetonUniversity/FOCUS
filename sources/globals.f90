@@ -141,6 +141,8 @@ module globals
   INTEGER              :: case_nis       =   1
   REAL                 :: nis_alpha      =   1.000D+00
   REAL                 :: nis0           =   0.000D+00
+  REAL                 :: nis_gamma      =   2.000D+00
+  REAL                 :: nis_sigma      =   0.000D+00
 
   INTEGER              :: case_optimize  =   0
   REAL                 :: exit_tol       =   1.000D-04
@@ -247,6 +249,8 @@ module globals
                         case_nis       , &
                         nis_alpha      , &
                         nis0           , &
+                        nis_gamma      , &
+                        nis_sigma      , &
                         weight_inorm   , &
                         weight_gnorm   , &
                         weight_mnorm   , &
