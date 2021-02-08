@@ -197,8 +197,9 @@ subroutine NisDeriv0(icoil,nisRet)
      if( S(kseg) .ge. nis0) then
         !niss(kseg) = (cosh(nis_alpha*(S(kseg)-nis0)) - 1)**2
         !niss(kseg) = (nis_alpha*(S(kseg)-nis0))**2
-        niss(kseg) = (nis_alpha*(S(kseg)-nis0))**2 + nis_sigma*S(kseg)**nis_gamma
+        niss(kseg) = (nis_alpha*(S(kseg)-nis0))**2
      endif
+     niss(kseg) = niss(kseg) + nis_sigma*S(kseg)**nis_gamma
   enddo
   
   niss(0:NS) = niss(0:NS)*absrp(0:NS)
@@ -407,8 +408,9 @@ subroutine NisDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a coi
      if( S(kseg) .ge. nis0) then
         !niss(kseg) = (cosh(nis_alpha*(S(kseg)-nis0)) - 1)**2
         !niss(kseg) = (nis_alpha*(S(kseg)-nis0))**2
-        niss(kseg) = (nis_alpha*(S(kseg)-nis0))**2 + nis_sigma*S(kseg)**nis_gamma
+        niss(kseg) = (nis_alpha*(S(kseg)-nis0))**2
      endif
+     niss(kseg) = niss(kseg) + nis_sigma*S(kseg)**nis_gamma
   enddo
 
   niss(0:NS) = niss(0:NS)*absrp(0:NS)
@@ -452,11 +454,13 @@ subroutine NisDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a coi
            !dnissdDof(kseg,i) = 2*nis_alpha*(nis_alpha*(S(kseg)-nis0))*dSdDof(kseg,i)*absrp(kseg)
            !dnissdDof(kseg,i) = dnissdDof(kseg,i) + (nis_alpha*(S(kseg)-nis0))**2 * dabsrpdDof(kseg,i)
 
-           dnissdDof(kseg,i) = (2*nis_alpha*(nis_alpha*(S(kseg)-nis0))*dSdDof(kseg,i) + &
-                   nis_gamma*nis_sigma*S(kseg)**(nis_gamma-1)*dSdDof(kseg,i))*absrp(kseg)
-           dnissdDof(kseg,i) = dnissdDof(kseg,i) + ((nis_alpha*(S(kseg)-nis0))**2 + nis_sigma*S(kseg)**nis_gamma)*dabsrpdDof(kseg,i)
-           derivs(1,i) = derivs(1,i) + dnissdDof(kseg,i)
+           dnissdDof(kseg,i) = 2*nis_alpha*(nis_alpha*(S(kseg)-nis0))*dSdDof(kseg,i) * absrp(kseg)
+           dnissdDof(kseg,i) = dnissdDof(kseg,i) + (nis_alpha*(S(kseg)-nis0))**2 * dabsrpdDof(kseg,i)
+           !derivs(1,i) = derivs(1,i) + dnissdDof(kseg,i)
         endif
+        dnissdDof(kseg,i) = dnissdDof(kseg,i) + nis_gamma*nis_sigma*S(kseg)**(nis_gamma-1)*dSdDof(kseg,i)*absrp(kseg)
+        dnissdDof(kseg,i) = dnissdDof(kseg,i) + nis_sigma*S(kseg)**nis_gamma*dabsrpdDof(kseg,i)
+        derivs(1,i) = derivs(1,i) + dnissdDof(kseg,i)
      enddo
      derivs(1,i) = derivs(1,i) - dnissdDof(0,i)
   enddo
