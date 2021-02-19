@@ -30,11 +30,10 @@
 #### GFORTRAN+OpenMPI+HDF5###############
 # available env: /p/focus/modules/focus/gfortran
 ifeq ($(CC),gfortran)
-# RFLAGS=-O3 -w -fdefault-real-8 -ffree-line-length-none -march=native -ffast-math
- PFLAGS+=-fallow-argument-mismatch # only used for GCC-10
+ # PFLAGS+=-fallow-argument-mismatch # only used for GCC-10
  RFLAGS=-O3 -w -ffree-line-length-none -ffast-math $(PFLAGS)
  DFLAGS=-Og $(PFLAGS) -w -ffree-line-length-none -Wextra -Wtarget-lifetime -fbacktrace -fbounds-check  \
-     -ffpe-trap=zero -fcheck=all -DDEBUG
+     -ffpe-trap=zero -fcheck=all -finit-real=snan -DDEBUG
 endif
 
 #### EDDY Intel+IntelMPI+HDF5###############
