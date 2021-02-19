@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='dp_v1.3.00' ! version number
+  CHARACTER(LEN=10), parameter :: version='dp_v1.3.01' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -47,7 +47,7 @@ module globals
   REAL, parameter      :: fifth      =  one / five
   REAL, parameter      :: sixth      =  one / six
   
-  REAL, parameter      :: pi         =  3.141592653589793238462643383279502884197
+  REAL, parameter      :: pi         =  acos(-1.0_dp)
   REAL, parameter      :: pi2        =  pi * two
   REAL, parameter      :: bsconstant =  1.0E-07   !biot-savart constant
   REAL, parameter      :: antibscont =  1.0E-07 / bsconstant
@@ -106,6 +106,10 @@ module globals
   INTEGER              :: case_length    =   1         
   REAL                 :: weight_bnorm   =   1.000D+00
   REAL                 :: weight_bharm   =   0.000D+00
+  REAL                 :: weight_resbn   =   0.000D+00
+  REAL                 :: target_resbn   =   0.000D+00
+  INTEGER              :: resbn_m        =   1
+  INTEGER              :: resbn_n        =   1
   REAL                 :: weight_tflux   =   0.000D+00
   REAL                 :: target_tflux   =   0.000D+00
   REAL                 :: weight_ttlen   =   0.000D+00
@@ -200,6 +204,10 @@ module globals
                         case_bnormal   , &
                         case_length    , &
                         weight_bnorm   , &
+                        weight_resbn   , &
+                        target_resbn   , &
+                        resbn_m        , &
+                        resbn_n        , &
                         weight_bharm   , &
                         weight_tflux   , &
                         target_tflux   , &
@@ -330,7 +338,10 @@ module globals
   ! Bn surface integration;
   REAL                 :: bnorm
   REAL   , allocatable :: t1B(:), t2B(:,:), bn(:,:)
-  ! Bn reasonant harmoics;
+  ! Bn resonant harmoics in Boozer coordinates
+  REAL                 :: resbn, resbn_bnc, resbn_bns
+  REAL   , allocatable :: t1R(:)
+  ! Bn resonant harmoics;
   INTEGER              :: NBmn
   INTEGER, allocatable :: Bmnin(:), Bmnim(:)
   REAL                 :: bharm

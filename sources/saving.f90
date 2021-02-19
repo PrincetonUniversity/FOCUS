@@ -207,6 +207,10 @@ subroutine saving
      HWRITERA( Nteta,Nzeta      ,   Bx            ,   surf(1)%Bx(0:Nteta-1,0:Nzeta-1) )
      HWRITERA( Nteta,Nzeta      ,   By            ,   surf(1)%By(0:Nteta-1,0:Nzeta-1) )
      HWRITERA( Nteta,Nzeta      ,   Bz            ,   surf(1)%Bz(0:Nteta-1,0:Nzeta-1) )
+     HWRITEIV( 1                ,   chi2b         ,   bnorm                           )
+     HWRITEIV( 1                ,   resbn         ,   resbn                           )
+     HWRITEIV( 1                ,   resbn_bnc     ,   resbn_bnc                       )
+     HWRITEIV( 1                ,   resbn_bns     ,   resbn_bns                       )
   endif
 
   HWRITEIV( 1                ,   iout          ,   iout                          )

@@ -257,7 +257,7 @@ subroutine AllocData(itype)
   if (itype == 0 .or. itype == 1) then  ! 0-order cost functions related arrays;
 
      ! Bnorm and Bharm needed;
-     if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec .or. IsQuiet <= -2) then
+     if (weight_bnorm > sqrtmachprec .or. weight_resbn > sqrtmachprec .or. IsQuiet <= -2) then
         SALLOCATE(         bn, (0:Nteta-1,0:Nzeta-1), zero ) ! Bn from coils;        
         SALLOCATE( surf(1)%bn, (0:Nteta-1,0:Nzeta-1), zero ) ! total Bn;
         SALLOCATE( surf(1)%Bx, (0:Nteta-1,0:Nzeta-1), zero ) ! Bx on the surface;
@@ -289,11 +289,17 @@ subroutine AllocData(itype)
      SALLOCATE( deriv, (1:Ndof, 0:6), zero )
 
      ! Bnorm related;
-     if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec) then
+     if (weight_bnorm > sqrtmachprec .or. weight_resbn > sqrtmachprec) then
         SALLOCATE( t1B, (1:Ndof), zero )  !total d bnorm / d x;
         SALLOCATE( dBn, (1:Ndof), zero )  !total d Bn / d x;
         SALLOCATE( dBm, (1:Ndof), zero )  !total d Bm / d x;   
      endif
+
+      if (weight_resbn > sqrtmachprec) then
+         SALLOCATE( t1R, (1:Ndof), zero ) 
+         SALLOCATE( b1s, (1:Ndof), zero ) ! total d Bn_mn / dx
+         SALLOCATE( b1c, (1:Ndof), zero ) ! total d Bn_mn / dx
+      endif
 
      if ( weight_bharm > sqrtmachprec .or. LM_maxiter > 0 ) then
         SALLOCATE( d1B, (1:Ndof,0:Nteta-1,0:Nzeta-1), zero ) ! discretized dBn

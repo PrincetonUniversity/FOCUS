@@ -8,7 +8,7 @@ SUBROUTINE diagnos
   use globals, only: dp, zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
        Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
        cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, weight_bnorm, overlap, &
-       dpbin, pmvol, pmsum, total_moment, magtorque, ext, MPI_COMM_FAMUS
+       dpbin, pmvol, pmsum, resbn, total_moment, magtorque, ext, MPI_COMM_FAMUS
                      
   implicit none
   include "mpif.h"
@@ -25,9 +25,9 @@ SUBROUTINE diagnos
   if (case_optimize == 0) call AllocData(0) ! if not allocate data;
   call costfun(case_optimize)
 
-  if (myid == 0) write(ounit, '("diagnos : "4(A12," ; "))') , &
-       "Bnormal", "PM eff. vol.", "Dip. Binary", "Total PM Vol"
-  if (myid == 0) write(ounit, '("        : "5(ES12.5," ; "))') bnorm, pmsum, dpbin, pmvol
+  if (myid == 0) write(ounit, '("diagnos : "5(A12," ; "))') , &
+       "Bnormal", "PM eff. vol.", "Dip. Binary", "Total PM Vol", "Res. Bn"
+  if (myid == 0) write(ounit, '("        : "5(ES12.5," ; "))') bnorm, pmsum, dpbin, pmvol, resbn
 
   ! compute Bx, By, Bz for later calculations
   do jzeta = 0, Nzeta - 1
