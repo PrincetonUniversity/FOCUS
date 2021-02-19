@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='dp_v1.3.01' ! version number
+  CHARACTER(LEN=10), parameter :: version='dp_v1.3.02' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -124,6 +124,7 @@ module globals
   REAL                 :: weight_inorm   =   1.000D+00
   REAL                 :: weight_gnorm   =   1.000D+00
   REAL                 :: weight_mnorm   =   1.000D+00
+  REAL                 :: normalized_B   =   0.000D+00
 
   INTEGER              :: case_optimize  =   1
   REAL                 :: exit_tol       =   1.000D-04
@@ -223,6 +224,7 @@ module globals
                         weight_inorm   , &
                         weight_gnorm   , &
                         weight_mnorm   , &
+                        normalized_B   , &
                         case_optimize  , &
                         exit_tol       , &
                         DF_maxiter     , & 
@@ -308,7 +310,7 @@ module globals
   type(FourierCoil)    , allocatable :: FouCoil(:)
   type(DegreeOfFreedom), allocatable :: DoF(:)
 
-  INTEGER              :: Nfou=0, Nfp=0, NBnf=0, Nfp_raw = 1
+  INTEGER              :: Nfou=0, Nfp=0, NBnf=0, Nfp_raw = 1, symm_factor = 1
   REAL   , allocatable :: cosnfp(:), sinnfp(:)
   INTEGER, allocatable :: bim(:), bin(:), Bnim(:), Bnin(:)
   REAL   , allocatable :: Rbc(:), Zbs(:), Rbs(:), Zbc(:), Pmnc(:), Pmns(:),& 
@@ -336,7 +338,7 @@ module globals
   REAL   , allocatable :: LM_fvec(:), LM_fjac(:,:)
   LOGICAL              :: exit_signal = .False., LM_output = .False.
   ! Bn surface integration;
-  REAL                 :: bnorm
+  REAL                 :: bnorm, bn_norm_b
   REAL   , allocatable :: t1B(:), t2B(:,:), bn(:,:)
   ! Bn resonant harmoics in Boozer coordinates
   REAL                 :: resbn, resbn_bnc, resbn_bns

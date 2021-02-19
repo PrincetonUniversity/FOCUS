@@ -67,7 +67,7 @@ subroutine fousurf
   use globals, only : dp, zero, half, pi2, pi, myid, ounit, runit, input_surf, IsQuiet, IsSymmetric, &
                       Nfou, Nfp, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
                       Nteta, Nzeta, surf, discretefactor, Nfp_raw, cosnfp, sinnfp, &
-                      half_shift, shift, MPI_COMM_FAMUS
+                      half_shift, shift, MPI_COMM_FAMUS, symm_factor
   
   implicit none
   
@@ -191,6 +191,7 @@ subroutine fousurf
      symmetry = 1     
   end select
   ! discretefactor = discretefactor/Nfp
+  symm_factor = nfp * 2**symmetry
 
   SALLOCATE( cosnfp, (1:Nfp_raw), zero )
   SALLOCATE( sinnfp, (1:Nfp_raw), zero )  

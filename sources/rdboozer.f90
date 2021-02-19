@@ -128,7 +128,7 @@ subroutine rdbooz
     use globals, only : dp, zero, half, one, pi2, myid, ounit, runit, input_surf, IsQuiet, IsSymmetric, &
     Nfou, Nfp, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns, Pmnc, Pmns, &
     Nteta, Nzeta, surf, discretefactor, Nfp_raw, cosnfp, sinnfp, &
-    half_shift, shift, MPI_COMM_FAMUS
+    half_shift, shift, MPI_COMM_FAMUS, symm_factor
  
     use mpi
  
@@ -258,6 +258,7 @@ subroutine rdbooz
        symmetry = 1     
     end select
     ! discretefactor = discretefactor/Nfp
+    symm_factor = nfp * 2**symmetry
   
     SALLOCATE( cosnfp, (1:Nfp_raw), zero )
     SALLOCATE( sinnfp, (1:Nfp_raw), zero )  

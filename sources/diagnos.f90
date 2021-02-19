@@ -8,7 +8,8 @@ SUBROUTINE diagnos
   use globals, only: dp, zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
        Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
        cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, weight_bnorm, overlap, &
-       dpbin, pmvol, pmsum, resbn, total_moment, magtorque, ext, MPI_COMM_FAMUS
+       dpbin, pmvol, pmsum, resbn, total_moment, magtorque, ext, normalized_B, bn_norm_b, symm_factor, & 
+       discretefactor, MPI_COMM_FAMUS
                      
   implicit none
   include "mpif.h"
@@ -104,6 +105,14 @@ SUBROUTINE diagnos
           sum(abs(surf(1)%bn/sqrt(surf(1)%Bx**2 + surf(1)%By**2 + surf(1)%Bz**2))) / (Nteta*Nzeta), &
           maxval(abs(surf(1)%bn))
      endif
+     if(normalized_B .le. sqrtmachprec) then
+         bn_norm_b = sum(abs(surf(1)%bn/sqrt(surf(1)%Bx**2 + surf(1)%By**2 + surf(1)%Bz**2))*surf(1)%ds) * discretefactor / (surf(1)%area/symm_factor)
+     else
+         bn_norm_b = sum(abs(surf(1)%bn/normalized_B)*surf(1)%ds) * discretefactor / (surf(1)%area/symm_factor)
+     endif
+     if (myid .eq. 0) then
+         write(ounit, '(8X": Surface averaged normalized Bn error  : " ES12.5)') bn_norm_b
+     endif 
   endif
 
   !--------------------------------calculate dipole effective volume------------------------------------  
