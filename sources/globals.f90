@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(10), parameter :: version='v0.13.09' ! version number
+  CHARACTER(10), parameter :: version='v0.13.10' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -47,12 +47,11 @@ module globals
   REAL, parameter      :: fifth      =  one / five
   REAL, parameter      :: sixth      =  one / six
   
-  REAL, parameter      :: pi         =  3.141592653589793238462643383279502884197
+  REAL, parameter      :: pi         =  acos(-1.0_dp)
   REAL, parameter      :: pi2        =  pi * two
   REAL, parameter      :: bsconstant =  1.0E-07   !biot-savart constant
   REAL, parameter      :: antibscont =  1.0E-07 / bsconstant
   REAL, parameter      :: mu0        =  2.0E-07 * pi2
-  REAL, parameter      :: goldenmean =  1.618033988749895 ! golden mean = ( one + sqrt(five) ) / two ;    
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
