@@ -257,15 +257,6 @@ subroutine fousurf
         szeta = sin(zeta)
         czeta = cos(zeta)
 
-        if(ii==0 .and. jj==Nzeta-1) then
-            TMPOUT( jj )
-            TMPOUT( Nzeta )
-            TMPOUT( surf(1)%Nzeta )
-            TMPOUT( pi )
-            TMPOUT( (255.5)*pi2/256 )
-            print *, "debug", zeta, szeta, shift
-        endif
-
         xx(1:3) = (/   RR(0) * czeta,   RR(0) * szeta, ZZ(0) /)
         xt(1:3) = (/   RR(1) * czeta,   RR(1) * szeta, ZZ(1) /)
         xz(1:3) = (/   RR(2) * czeta,   RR(2) * szeta, ZZ(2) /) + (/ - RR(0) * szeta,   RR(0) * czeta, zero  /)
