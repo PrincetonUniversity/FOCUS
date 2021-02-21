@@ -309,7 +309,7 @@ subroutine check_input
      FATAL( initial, weight_resbn  < zero, illegal )
 
      if (weight_resbn > machprec) then
-        write(ounit, '("res. Bn  : resbn_m = ", I2,"resbn_n = ", I2)') resbn_m, resbn_n
+        write(ounit, '("Res. Bn : resbn_m = ", I2," , resbn_n = ", I2)') resbn_m, resbn_n
         write(ounit, '(8X, ": target_resbn = ", ES12.5)') target_resbn
      endif
 
