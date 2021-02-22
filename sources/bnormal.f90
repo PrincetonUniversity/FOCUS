@@ -121,7 +121,7 @@ subroutine bnormal( ideriv )
          bns = sum(surf(1)%Bn * sinarg) * discretefactor
          resbn_bnc = bnc
          resbn_bns = bns
-         resbn = (bnc*bnc + bns*bns - target_resbn)**2
+         resbn = abs(sqrt(bnc*bnc + bns*bns) - target_resbn)
          ! if(myid==0) write(ounit, '("Resonant Bmn spectrum = "ES23.15)'), sqrt(bnc*bnc + bns*bns)
       endif  
 
@@ -203,8 +203,7 @@ subroutine bnormal( ideriv )
      b1s = b1s * discretefactor
 
       if (weight_resbn .gt. sqrtmachprec) then 
-         resbn = (bnc*bnc + bns*bns - target_resbn)**2
-         t1R = two * (bnc*bnc + bns*bns - target_resbn) * ( two * bnc * b1c + two * bns * b1s )
+         t1R = sign(1.0_dp, sqrt(bnc*bnc+bns*bns)-target_resbn) * (bnc*bnc + bns*bns)**(-0.5)*(bnc * b1c + bns * b1s)
          call MPI_ALLREDUCE( MPI_IN_PLACE, t1R, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FAMUS, ierr )
       endif 
 

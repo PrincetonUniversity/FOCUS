@@ -111,7 +111,7 @@ SUBROUTINE diagnos
          bn_norm_b = sum(abs(surf(1)%bn/normalized_B)*surf(1)%ds) * discretefactor / (surf(1)%area/symm_factor)
      endif
      if (myid .eq. 0) then
-         write(ounit, '(8X": Surface averaged normalized Bn error  : " ES12.5)') bn_norm_b
+         write(ounit, '(8X": Surface averaged normalized Bn error   : " ES12.5)') bn_norm_b
      endif 
   endif
 
