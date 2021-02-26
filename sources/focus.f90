@@ -50,6 +50,8 @@ PROGRAM FAMUS
   
   call initial ! read input namelist and broadcast;
 
+  tstart = MPI_Wtime()
+
   call check_input
 
   select case( case_surface )

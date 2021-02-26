@@ -244,6 +244,7 @@ subroutine rdcoils
 #endif
               !coil(icoil)%I = coil(icoil)%moment*sin(coil(icoil)%pho)**momentq
               coil(icoil)%I = coil(icoil)%moment*(coil(icoil)%pho)**momentq
+              coil(icoil)%itype = 2
            enddo !end do icoil;
 
            close(runit)

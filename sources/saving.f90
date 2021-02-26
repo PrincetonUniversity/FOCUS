@@ -172,7 +172,7 @@ subroutine saving
   HWRITERV( 1                ,   weight_gnorm  ,   weight_gnorm                  )
   HWRITERV( 1                ,   weight_inorm  ,   weight_inorm                  )
   HWRITERV( 1                ,   weight_mnorm  ,   weight_mnorm                  )
-  HWRITEIV( 1                ,   normalized_B  ,   normalized_B                    )
+  HWRITERV( 1                ,   normalized_B  ,   normalized_B                    )
   HWRITERV( 1                ,   DF_tausta     ,   DF_tausta                     )
   HWRITERV( 1                ,   DF_tauend     ,   DF_tauend                     )
   HWRITERV( 1                ,   DF_xtol       ,   DF_xtol                       )

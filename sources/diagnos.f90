@@ -53,8 +53,7 @@ SUBROUTINE diagnos
   minCPdist = infmax
   do icoil = 1, Ncoils
 
-     if(coil(icoil)%itype .ne. 1) continue ! only for Fourier
-
+     if(coil(icoil)%itype .ne. 1) cycle ! only for Fourier
      SALLOCATE(Atmp, (1:3,0:coil(icoil)%NS-1), zero)
      SALLOCATE(Btmp, (1:3,1:(Nteta*Nzeta)), zero)
 
@@ -111,7 +110,7 @@ SUBROUTINE diagnos
          bn_norm_b = sum(abs(surf(1)%bn/normalized_B)*surf(1)%ds) * discretefactor / (surf(1)%area/symm_factor)
      endif
      if (myid .eq. 0) then
-         write(ounit, '(8X": Surface averaged normalized Bn error   : " ES12.5, " ; norm_B = ", ES12.5)') bn_norm_b, normalized_B
+         write(ounit, '(8X": Surface averaged normalized Bn error   : " ES12.5, "; norm_B = ", ES12.5)') bn_norm_b, normalized_B
      endif 
   endif
 

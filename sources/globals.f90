@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='dp_v1.3.05' ! version number
+  CHARACTER(LEN=10), parameter :: version='dp_v1.3.06' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -81,8 +81,8 @@ module globals
   INTEGER              :: IsSymmetric    =   0 
         
   INTEGER              :: case_surface   =   0         
-  REAL                 :: knotsurf       =   0.200D-00
-  REAL                 :: ellipticity    =   0.000D+00
+  REAL                 :: knotsurf       =   0.200E-00
+  REAL                 :: ellipticity    =   0.000E+00
   INTEGER              :: Nteta          =   64           
   INTEGER              :: Nzeta          =   64  
   LOGICAL              :: half_shift     =   .true.
@@ -90,8 +90,8 @@ module globals
   INTEGER              :: case_init      =   0
   INTEGER              :: case_coils     =   1
   INTEGER              :: Ncoils         =   0
-  REAL                 :: init_current   =   1.000D+06        
-  REAL                 :: init_radius    =   1.000D+00
+  REAL                 :: init_current   =   1.000E+06        
+  REAL                 :: init_radius    =   1.000E+00
   INTEGER              :: IsVaryCurrent  =   1         
   INTEGER              :: IsVaryGeometry =   1         
   INTEGER              :: NFcoil         =   4         
@@ -104,52 +104,52 @@ module globals
   INTEGER              :: IsNormWeight   =   1
   INTEGER              :: case_bnormal   =   0
   INTEGER              :: case_length    =   1         
-  REAL                 :: weight_bnorm   =   1.000D+00
-  REAL                 :: weight_bharm   =   0.000D+00
-  REAL                 :: weight_resbn   =   0.000D+00
-  REAL                 :: target_resbn   =   0.000D+00
+  REAL                 :: weight_bnorm   =   1.000E+00
+  REAL                 :: weight_bharm   =   0.000E+00
+  REAL                 :: weight_resbn   =   0.000E+00
+  REAL                 :: target_resbn   =   0.000E+00
   INTEGER              :: resbn_m        =   1
   INTEGER              :: resbn_n        =   1
-  REAL                 :: weight_tflux   =   0.000D+00
-  REAL                 :: target_tflux   =   0.000D+00
-  REAL                 :: weight_ttlen   =   0.000D+00
-  REAL                 :: target_length  =   0.000D+00
-  REAL                 :: weight_cssep   =   0.000D+00
-  REAL                 :: cssep_factor   =   1.000D+00 
-  REAL                 :: weight_specw   =   0.000D+00
-  REAL                 :: weight_ccsep   =   0.000D+00
-  REAL                 :: weight_pmsum   =   0.000D+00
-  REAL                 :: weight_pmvol   =   0.000D+00
-  REAL                 :: weight_dpbin   =   0.000D+00
-  REAL                 :: weight_inorm   =   1.000D+00
-  REAL                 :: weight_gnorm   =   1.000D+00
-  REAL                 :: weight_mnorm   =   1.000D+00
-  REAL                 :: normalized_B   =   0.000D+00
+  REAL                 :: weight_tflux   =   0.000E+00
+  REAL                 :: target_tflux   =   0.000E+00
+  REAL                 :: weight_ttlen   =   0.000E+00
+  REAL                 :: target_length  =   0.000E+00
+  REAL                 :: weight_cssep   =   0.000E+00
+  REAL                 :: cssep_factor   =   1.000E+00 
+  REAL                 :: weight_specw   =   0.000E+00
+  REAL                 :: weight_ccsep   =   0.000E+00
+  REAL                 :: weight_pmsum   =   0.000E+00
+  REAL                 :: weight_pmvol   =   0.000E+00
+  REAL                 :: weight_dpbin   =   0.000E+00
+  REAL                 :: weight_inorm   =   1.000E+00
+  REAL                 :: weight_gnorm   =   1.000E+00
+  REAL                 :: weight_mnorm   =   1.000E+00
+  REAL                 :: normalized_B   =   0.000E+00
 
   INTEGER              :: case_optimize  =   1
-  REAL                 :: exit_tol       =   1.000D-04
+  REAL                 :: exit_tol       =   1.000E-04
   INTEGER              :: DF_maxiter     =   0
-  REAL                 :: DF_xtol        =   1.000D-08     
-  REAL                 :: DF_tausta      =   0.000D+00
-  REAL                 :: DF_tauend      =   1.000D+00               
+  REAL                 :: DF_xtol        =   1.000E-08     
+  REAL                 :: DF_tausta      =   0.000E+00
+  REAL                 :: DF_tauend      =   1.000E+00               
  
   INTEGER              :: CG_maxiter     =   0
-  REAL                 :: CG_xtol        =   1.000D-08
+  REAL                 :: CG_xtol        =   1.000E-08
   REAL                 :: CG_wolfe_c1    =   0.1
   REAL                 :: CG_wolfe_c2    =   0.9
 
   INTEGER              :: QN_maxiter     =   0
   INTEGER              :: QN_mcorrect    =   5  
-  REAL                 :: QN_factor      =   1.000D+05
-  REAL                 :: QN_xtol        =   1.000D-08
+  REAL                 :: QN_factor      =   1.000E+05
+  REAL                 :: QN_xtol        =   1.000E-08
 
   INTEGER              :: LM_maxiter     =   0
-  REAL                 :: LM_xtol        =   1.000D-08
-  REAL                 :: LM_ftol        =   1.000D-08
-  REAL                 :: LM_factor      =   1.000D+02
+  REAL                 :: LM_xtol        =   1.000E-08
+  REAL                 :: LM_ftol        =   1.000E-08
+  REAL                 :: LM_factor      =   1.000E+02
 
   INTEGER              :: SA_maxiter     =   0
-  REAL                 :: SA_xtol        =   1.000D-08
+  REAL                 :: SA_xtol        =   1.000E-08
 
   INTEGER              :: HY_maxiter     =   0
 
@@ -160,16 +160,16 @@ module globals
   INTEGER              :: save_filaments =   0
   INTEGER              :: update_plasma  =   0    
 
-  REAL                 :: pp_phi         =  0.000D+00
-  REAL                 :: pp_raxis       =  0.000D+00       
-  REAL                 :: pp_zaxis       =  0.000D+00
-  REAL                 :: pp_rmax        =  0.000D+00
-  REAL                 :: pp_zmax        =  0.000D+00
+  REAL                 :: pp_phi         =  0.000E+00
+  REAL                 :: pp_raxis       =  0.000E+00       
+  REAL                 :: pp_zaxis       =  0.000E+00
+  REAL                 :: pp_rmax        =  0.000E+00
+  REAL                 :: pp_zmax        =  0.000E+00
   INTEGER              :: pp_ns          =  10
   INTEGER              :: pp_nsteps      =  5
   INTEGER              :: pp_nfp         =  1
   INTEGER              :: pp_maxiter     =  1000
-  REAL                 :: pp_xtol        =  1.000D-06
+  REAL                 :: pp_xtol        =  1.000E-06
 
   CHARACTER(LEN=100)   :: input_surf     = 'plasma.boundary'  ! surface file
   CHARACTER(LEN=100)   :: input_coils    = 'none'             ! input file for coils
