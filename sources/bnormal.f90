@@ -199,10 +199,10 @@ subroutine bnormal( ideriv )
      call MPI_ALLREDUCE( MPI_IN_PLACE, t1B, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FAMUS, ierr )
 
      t1B = t1B * discretefactor
-     b1c = b1c * discretefactor
-     b1s = b1s * discretefactor
 
       if (weight_resbn .gt. sqrtmachprec) then 
+         b1c = b1c * discretefactor
+         b1s = b1s * discretefactor
          t1R = sign(1.0_dp, sqrt(bnc*bnc+bns*bns)-target_resbn) * (bnc*bnc + bns*bns)**(-0.5)*(bnc * b1c + bns * b1s)
          call MPI_ALLREDUCE( MPI_IN_PLACE, t1R, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FAMUS, ierr )
       endif 
