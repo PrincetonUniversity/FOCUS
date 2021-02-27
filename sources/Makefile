@@ -40,7 +40,7 @@
 # available env: /p/focus/modules/focus/gfortran
 ifeq ($(CC),gfortran)
 # RFLAGS=-O3 -w -fdefault-real-8 -ffree-line-length-none -march=native -ffast-math
- PFLAGS+=-fallow-argument-mismatch # only used for GCC-10
+ # PFLAGS+=-fallow-argument-mismatch # only used for GCC-10
  RFLAGS=-O3 -w -ffree-line-length-none -ffast-math $(PFLAGS)
  DFLAGS=-Og $(PFLAGS) -w -ffree-line-length-none -Wextra -Wtarget-lifetime -fbacktrace -fbounds-check  \
      -ffpe-trap=zero -fcheck=all -DDEBUG
@@ -101,23 +101,22 @@ dfocus: $(DOBJS) $(NUMOBJ)
 	mkdir -p ../bin ; mv dfocus ../bin/
 
 ############################################################################################################
-ode.o : ode.f90
-	$(FC) -c $(RFLAGS) -o $@ $<
-
+ode.o : ode.f90 
+	$(FC) -c $(RFLAGS) -o $@ $< $(LIBS)
 lmder1.o : lmder1.f
-	$(FC) -c $(RFLAGS) -o $@ $<
+	$(FC) -c $(RFLAGS) -o $@ $< $(LIBS)
 
 hybrj.o: hybrj.f
-	$(FC) -c $(RFLAGS) -o $@ $<
+	$(FC) -c $(RFLAGS) -o $@ $< $(LIBS)
 
 lbfgsb.o: lbfgsb.f
-	$(FC) -c $(RFLAGS) -o $@ $<
+	$(FC) -c $(RFLAGS) -o $@ $< $(LIBS)
 
 cg_descent.o : cg_descent.f
-	$(FC) -c $(RFLAGS) -o $@ $<
+	$(FC) -c $(RFLAGS) -o $@ $< $(LIBS)
 
 simann.o : simann.f90
-	$(FC) -c $(RFLAGS) -o $@ $<
+	$(FC) -c $(RFLAGS) -o $@ $< $(LIBS)
 
 $(ROBJS): %_r.o: %_m.F90 globals_r.o
 	$(FC) -c $(RFLAGS) -o $@ $<  $(LIBS)
