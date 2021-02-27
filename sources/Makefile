@@ -2,11 +2,11 @@
 
 ############################################################################################################
 
- ALLFILES= globals ncsx_ports_mod ncsx_ports_load ncsx_ports_eval wtmgrid initial  \
+ ALLFILES= globals ncsx_ports_mod ncsx_ports_load ncsx_ports_eval wtmgrid poinplot initial  \
            rdsurf rdknot rdboozer rdcoils packdof bfield bmnharm bnormal fdcheck \
            torflux length surfsep minvol bindip totalpm datalloc \
 		   solvers descent congrad qnewton lmalg saving diagnos \
-           specinp poinplot boozer focus            
+           specinp boozer focus            
  HFILES= $(ALLFILES:=.f90)   # raw source files
  FFILES= $(ALLFILES:=_m.F90) # Fortran 90 files 
  PFILES= $(ALLFILES:=.pdf)   # documentations
@@ -28,6 +28,13 @@
      -ftrapuv -init=snan,arrays -debug all -D DEBUG
  LIBS=-I$(HDF5_HOME)/include
  LINKS=-L$(HDF5_HOME)/lib -lhdf5_fortran -lhdf5 -lpthread -lz -lm
+
+ LMGRID = T
+ ifeq ($(LMGRID),T)
+   PFLAGS += -D mgrid_poincare
+   LIBS += -I$(STELLOPT_PATH)/LIBSTELL/Release
+   LINKS += -L$(STELLOPT_PATH)/LIBSTELL/Release -lstell
+ endif
 
 #### GFORTRAN+OpenMPI+HDF5###############
 # available env: /p/focus/modules/focus/gfortran

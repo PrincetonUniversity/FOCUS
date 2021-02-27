@@ -1,24 +1,83 @@
+MODULE poincare_mod
+   use globals, only : dp, zero, pi2
+
+   REAL                 :: pp_phi         =  0.000E+00
+   REAL                 :: pp_raxis       =  0.000E+00       
+   REAL                 :: pp_zaxis       =  0.000E+00
+   REAL                 :: pp_rmax        =  0.000E+00
+   REAL                 :: pp_zmax        =  0.000E+00
+   INTEGER              :: pp_ns          =  10
+   INTEGER              :: pp_nsteps      =  5
+   INTEGER              :: pp_nfp         =  1
+   INTEGER              :: pp_maxiter     =  1000
+   REAL                 :: pp_xtol        =  1.000E-06
+   LOGICAL              :: laxis          =  .true.
+
+   namelist / poincare / pp_phi, pp_raxis, pp_zaxis, pp_rmax, pp_zmax, &
+   pp_ns, pp_maxiter, pp_nsteps, pp_nfp, pp_xtol, laxis
+
+   contains
+
+#ifdef mgrid_poincare
+   subroutine mgrid_bfield(B, x, y, z)
+      ! wrapper of mgrid_bcart in mgrid_field_mod from STELLOPT
+      ! 02/27/2020
+      use globals, only: dp, zero
+      use mpi
+      use mgrid_field_mod, only : mgrid_bcart
+      implicit none
+    
+      REAL  , intent( in)     :: x, y, z
+      REAL  , intent(inout)   :: B(3)
+      REAL                    :: Bx, By, Bz
+      INTEGER                 :: istat
+
+      istat = 0
+      call mgrid_bcart(x, y, z, Bx, By, Bz, istat)
+      B(1) = Bx
+      B(2) = By
+      B(3) = Bz
+      return
+   end subroutine mgrid_bfield
+#endif
+end module poincare_mod
+
 SUBROUTINE poinplot
   !------------------------------------------------------------------------------------------------------ 
   ! DATE:  12/12/2018
   ! Poincare plots of the vacuum flux surfaces and calculate the rotational transform
   !------------------------------------------------------------------------------------------------------ 
-  USE globals, only : dp, myid, ncpu, zero, half, pi, pi2, ounit, pi, sqrtmachprec, pp_maxiter, &
-                      pp_phi, pp_raxis, pp_zaxis, pp_xtol, pp_rmax, pp_zmax, ppr, ppz, pp_ns, iota, &
-                      XYZB, lboozmn, booz_mnc, booz_mns, booz_mn, total_num, MPI_COMM_FAMUS, pp_nfp, pp_nsteps, &
-                      master, nmaster, nworker, masterid, color, myworkid, MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS
+  USE globals, only : dp, myid, ncpu, zero, half, pi, pi2, ounit, pi, sqrtmachprec, ext, runit, &
+                      iota, XYZB, lboozmn, booz_mnc, booz_mns, booz_mn, total_num, ppr, ppz, &
+                      master, nmaster, nworker, masterid, color, myworkid, MPI_COMM_MASTERS, & 
+                      MPI_COMM_MYWORLD, MPI_COMM_WORKERS, MPI_COMM_FAMUS
+  use poincare_mod
+#ifdef mgrid_poincare
+  USE mgrid_field_mod, only : mgrid_load
+  USE mgrid_focus, only: mgrid_name, NP, MFP
+#endif
   USE mpi
   IMPLICIT NONE
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   INTEGER              :: ierr, astat, iflag
-  INTEGER              :: ip, is, niter, icommand
+  INTEGER              :: ip, is, niter, icommand, nextcur, nv_tmp, nfp_tmp, icpu
   REAL                 :: theta, zeta, r, RZ(2), r1, z1, rzrzt(5), x, y, z
-  REAL                 :: B(3), start, finish
+  REAL                 :: B(3), start, finish, extcur(1)
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
+   ! read from namelist
+   do icpu = 1, ncpu
+      call MPI_BARRIER( MPI_COMM_FAMUS, ierr )
+      if (myid == icpu-1) then                              ! each cpu read the namelist in turn;
+         open(runit, file=trim(trim(ext)//".input"), status="old", action='read')
+         read(runit, poincare)
+         close(runit)
+      endif ! end of if( myid == 0 )
+   enddo
+
   FATAL( poinplot, pp_ns < 1    , not enough starting points )
   FATAL( poinplot, pp_maxiter<1 , not enough max. iterations )
 
@@ -34,11 +93,21 @@ SUBROUTINE poinplot
      pp_raxis = (r+r1)*half
      pp_zaxis = (z+z1)*half
   endif
-  
-  
+   
+#ifdef mgrid_poincare
+  if (myid==0) write(ounit, '("poinplot: generating the mgrid first.")')
+  call wtmgrid()
+  nextcur = 1
+  extcur(1) = 1
+  nv_tmp = NP
+  nfp_tmp = MFP
+  call mgrid_load(mgrid_name, extcur, nextcur, nv_tmp, nfp_tmp, astat, icpu)
+#endif
+
   RZ(1) = pp_raxis ; RZ(2) = pp_zaxis
-  start = MPI_Wtime()
-  call find_axis(RZ, pp_maxiter, pp_xtol)
+  if (laxis) then
+      call find_axis(RZ, pp_maxiter, pp_xtol)
+  end if
   pp_raxis = RZ(1) ; pp_zaxis = RZ(2)
   RlBCAST( pp_raxis, 1 , 0 )
   RlBCAST( pp_zaxis, 1 , 0 )
@@ -99,7 +168,8 @@ END SUBROUTINE poinplot
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE find_axis(RZ, MAXFEV, XTOL)
-  USE globals, only : dp, myid, ounit, zero, pp_phi, pp_nfp
+  USE globals, only : dp, myid, ounit, zero
+  use poincare_mod, only: pp_phi, pp_nfp
   USE mpi
   IMPLICIT NONE
 
@@ -157,7 +227,8 @@ END SUBROUTINE find_axis
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE axis_fcn(n,x,fvec,iflag)
-  USE globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, pp_nfp, pp_xtol, pp_nsteps
+  USE globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec
+  use poincare_mod
   USE mpi
   IMPLICIT NONE
 
@@ -207,7 +278,8 @@ END SUBROUTINE axis_fcn
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE ppiota(rzrzt,iflag)
-  USE globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, pp_nfp, pp_xtol, pp_nsteps
+  USE globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec
+  use poincare_mod
   USE mpi
   IMPLICIT NONE
 
@@ -260,6 +332,9 @@ SUBROUTINE BRpZ( t, x, dx )
   ! dZ/dphi = BZ / Bphi
   !----------------------
   use globals, only : dp, zero, ounit, myid, ierr, myworkid, nworker, MPI_COMM_MYWORLD
+#ifdef mgrid_poincare  
+  use poincare_mod, only : mgrid_bfield
+#endif 
   USE MPI
   implicit none
 
@@ -276,8 +351,11 @@ SUBROUTINE BRpZ( t, x, dx )
   XX = RR*cos(t); YY = RR*sin(t) ! cartesian   coordinate
   B = zero
 
+#ifdef mgrid_poincare
+  call mgrid_bfield(B, XX, YY, ZZ)
+#else
   call coils_bfield(B, XX, YY, ZZ)
-  
+#endif  
   BR =     B(1)*cos(t) + B(2)*sin(t)
   BP = ( - B(1)*sin(t) + B(2)*cos(t) ) / RR
   BZ =     B(3)
@@ -296,6 +374,9 @@ SUBROUTINE BRpZ_iota( t, x, dx )
   ! dZ/dphi = BZ / Bphi
   !----------------------
   use globals, only : dp, zero, ounit, myid, ierr
+#ifdef mgrid_poincare  
+  use poincare_mod, only : mgrid_bfield
+#endif 
   USE MPI
   implicit none
 
@@ -313,7 +394,11 @@ SUBROUTINE BRpZ_iota( t, x, dx )
   XX = RR*cos(t); YY = RR*sin(t) ! cartesian   coordinate
   B = zero
 
+#ifdef mgrid_poincare
+  call mgrid_bfield(B, XX, YY, ZZ)
+#else
   call coils_bfield(B, XX, YY, ZZ)
+#endif  
   
   BR =     B(1)*cos(t) + B(2)*sin(t)
   BP = ( - B(1)*sin(t) + B(2)*cos(t) ) / RR
@@ -327,7 +412,11 @@ SUBROUTINE BRpZ_iota( t, x, dx )
   XX = RR*cos(t); YY = RR*sin(t) ! cartesian   coordinate
   B = zero
 
+#ifdef mgrid_poincare
+  call mgrid_bfield(B, XX, YY, ZZ)
+#else
   call coils_bfield(B, XX, YY, ZZ)
+#endif  
   
   BR =     B(1)*cos(t) + B(2)*sin(t)
   BP = ( - B(1)*sin(t) + B(2)*cos(t) ) / RR

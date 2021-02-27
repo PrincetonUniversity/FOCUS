@@ -1,7 +1,8 @@
 subroutine boozmn
-  USE globals, only : dp, myid, ncpu, zero, ounit, total_num, pp_maxiter, pp_ns, &
+  USE globals, only : dp, myid, ncpu, zero, ounit, total_num, &
        XYZB, lboozmn, bmin, bmim, booz_mnc, booz_mns, booz_mpol, booz_ntor, booz_mn, nfp_raw, &
        MPI_COMM_FAMUS
+  USE poincare_mod, only : pp_maxiter, pp_ns 
   USE mpi
   IMPLICIT NONE
 
@@ -47,9 +48,10 @@ end subroutine boozmn
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine boozsurf(XYZB, x, y, z, iota, isurf)
-  USE globals, only : dp, myid, ncpu, zero, half, two, pi, pi2, ounit, total_num, pp_maxiter, &
+  USE globals, only : dp, myid, ncpu, zero, half, two, pi, pi2, ounit, total_num, &
                       bmin, bmim, booz_mnc, booz_mns, booz_mn, machprec, &
                       masterid, MPI_COMM_FAMUS
+  USE poincare_mod, only : pp_maxiter
   USE mpi
   IMPLICIT NONE
 

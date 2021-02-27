@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(LEN=10), parameter :: version='dp_v1.3.06' ! version number
+  CHARACTER(LEN=10), parameter :: version='dp_v1.3.07' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -160,17 +160,6 @@ module globals
   INTEGER              :: save_filaments =   0
   INTEGER              :: update_plasma  =   0    
 
-  REAL                 :: pp_phi         =  0.000E+00
-  REAL                 :: pp_raxis       =  0.000E+00       
-  REAL                 :: pp_zaxis       =  0.000E+00
-  REAL                 :: pp_rmax        =  0.000E+00
-  REAL                 :: pp_zmax        =  0.000E+00
-  INTEGER              :: pp_ns          =  10
-  INTEGER              :: pp_nsteps      =  5
-  INTEGER              :: pp_nfp         =  1
-  INTEGER              :: pp_maxiter     =  1000
-  REAL                 :: pp_xtol        =  1.000E-06
-
   CHARACTER(LEN=100)   :: input_surf     = 'plasma.boundary'  ! surface file
   CHARACTER(LEN=100)   :: input_coils    = 'none'             ! input file for coils
   CHARACTER(LEN=100)   :: fixed_coils    = 'none'             ! fixed coils
@@ -251,17 +240,7 @@ module globals
                         save_coils     , &
                         save_harmonics , &
                         save_filaments , &
-                        update_plasma  , &
-                        pp_phi         , &
-                        pp_raxis       , &
-                        pp_zaxis       , &
-                        pp_rmax        , &
-                        pp_zmax        , &
-                        pp_ns          , &
-                        pp_maxiter     , &
-                        pp_nsteps      , &
-                        pp_nfp         , &
-                        pp_xtol
+                        update_plasma 
 
 
 

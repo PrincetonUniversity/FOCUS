@@ -18,6 +18,7 @@
 subroutine saving
 
   use globals
+  use poincare_mod
   use mpi
   use hdf5
 

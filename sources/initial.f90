@@ -381,7 +381,8 @@ end subroutine check_input
 SUBROUTINE write_namelist
   use globals
   use ncsx_ports_mod, only: ncsx_ports
-  use mgrid_mod
+  use mgrid_focus
+  use poincare_mod
   use mpi
   implicit none
 
@@ -394,6 +395,7 @@ SUBROUTINE write_namelist
   open(wunit, file=trim(example), status='unknown', action='write')
   write(wunit, focusin)
   write(wunit, mgrid)
+  write(wunit, poincare)
   write(wunit, ncsx_ports)
   close(wunit)
 

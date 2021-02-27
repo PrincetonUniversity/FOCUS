@@ -48,9 +48,9 @@ SUBROUTINE fdcheck( ideriv )
      write(ounit,'(8X": Relative perturbation magnitude: delta = "ES12.5)') psmall
   end if
 
-  call cpu_time(start)
+  start = MPI_WTIME()
   call costfun(1)
-  call cpu_time(finish)
+  finish = MPI_WTIME()
   if(myid .eq. 0) write(ounit,'("fdcheck : First order derivatives of energy function takes " &
        ES23.15 " seconds.")') finish - start
   if( myid.eq.0 ) write(ounit,'("fdcheck : idof/Ndof", 5(" ; ", A15))') "magnitude", "analytical",  &
