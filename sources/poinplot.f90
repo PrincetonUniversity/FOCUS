@@ -101,6 +101,7 @@ SUBROUTINE poinplot
   extcur(1) = 1
   nv_tmp = NP
   nfp_tmp = MFP
+  astat = 0
   call mgrid_load(mgrid_name, extcur, nextcur, nv_tmp, nfp_tmp, astat, icpu)
 #endif
 
