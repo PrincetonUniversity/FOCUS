@@ -2,6 +2,8 @@
 
 !latex \briefly{The constraint on curvature prevents the coil from becoming too complex and
 !latex         is an important engineering constraint for the realization of feasible coils.
+!latex         Functional derivatives are not implemented. This function only works for 
+!latex         coils that use the Fourier series parameterization.
 !latex         This function is still under development. emph{targt\_length}.}
 
 !latex \calledby{\link{solvers}}
@@ -10,11 +12,11 @@
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-! curv is total penalty 
+! curv is total curvature penalty 
 ! chi = chi + weight_curv*curv
-! t1K is total derivative of penalty
+! t1K is total derivative of curvature penalty
 ! LM implemented
-! not parallelized, at some point check to see how long takes to run
+! not parallelized, does not take long to calculate 
 subroutine curvature(ideriv)
   use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, MPI_COMM_FOCUS, &
        coil, DoF, Ncoils, Nfixgeo, Ndof, curv, t1K, t2K, weight_curv, FouCoil, &
@@ -95,7 +97,7 @@ end subroutine curvature
 subroutine CurvDeriv0(icoil,curvRet)
 
   use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils, &
-          case_curv, curv_alpha, curv_c, k0, k1, curv_beta, curv_gamma, curv_sigma, penfun_curv, k1_len, MPI_COMM_FOCUS
+          case_curv, curv_alpha, k0, k1, curv_beta, curv_gamma, curv_sigma, penfun_curv, k1_len, MPI_COMM_FOCUS
 
   implicit none
   include "mpif.h"
@@ -127,23 +129,43 @@ subroutine CurvDeriv0(icoil,curvRet)
   if ( penfun_curv .ne. 1 .and. penfun_curv .ne. 2 ) then
      FATAL( CurvDeriv0, .true. , invalid choice of penfun_curv, pick 1 or 2 )
   endif
-  if ( k0 .le. 0.0 ) then
-     FATAL( CurvDeriv0, .true. , k0 needs to be positive )
+  if ( k0 < 0.0 ) then
+     FATAL( CurvDeriv0, .true. , k0 cannot be negative )
   endif
   if ( k1 < 0.0 ) then
-     FATAL( CurvDeriv0, .true. , k1 needs to be greater than or equal to 0 )
+     FATAL( CurvDeriv0, .true. , k1 cannot be negative )
   endif
   if ( curv_alpha < 0.0 ) then
-     FATAL( CurvDeriv0, .true. , curv_alpha needs to be greater than or equal to 0 )
+     FATAL( CurvDeriv0, .true. , curv_alpha cannot be negative )
   endif
-  if ( curv_beta .le. 1.0 ) then
-     FATAL( CurvDeriv0, .true. , curv_beta needs to be greater than 1 )
+  if ( curv_beta < 2.0 ) then
+     FATAL( CurvDeriv0, .true. , curv_beta needs to be >= 2 )
   endif
   if ( curv_gamma < 1.0 ) then
-     FATAL( CurvDeriv0, .true. , curv_gamma needs to be greater than 1 )
+     FATAL( CurvDeriv0, .true. , curv_gamma needs to be >= 1 )
   endif
   if ( curv_sigma < 0.0 ) then
-     FATAL( CurvDeriv0, .true. , curv_sigma needs to be greater than or equal to 0 )
+     FATAL( CurvDeriv0, .true. , curv_sigma cannot be negative )
+  endif
+  if ( curv_gamma .eq. 1.0 .and. k1 .ne. 0.0 ) then
+     FATAL( CurvDeriv0, .true. , if curv_gamma = 1, k1 must = 0 )
+  endif
+
+  ! Set variable based on case_curv
+  if ( case_curv .eq. 1 ) then
+     curv_alpha = 0.0
+     curv_sigma = 1.0
+     curv_gamma = 1.0
+     k1 = 0.0
+  elseif ( case_curv .eq. 2 ) then
+     curv_alpha = 0.0
+     curv_sigma = 1.0
+     curv_gamma = 2.0
+     k1 = 0.0
+  elseif (case_curv .eq. 3 ) then
+     curv_sigma = 0.0
+  else 
+     ! Do nothing 
   endif
  
   curvv = zero
@@ -152,29 +174,15 @@ subroutine CurvDeriv0(icoil,curvRet)
   curvv = sqrt( (za*yt-zt*ya)**2 + (xa*zt-xt*za)**2  + (ya*xt-yt*xa)**2 ) / (xt**2+yt**2+zt**2)**(1.5)
   coil(icoil)%maxcurv = maxval(curvv)
 
-  if( case_curv == 1 ) then ! linear
-     curvRet = sum(curvv)-curvv(0)
-     curvRet = pi2*curvRet/NS
-  elseif( case_curv == 2 ) then ! quadratic
-     curvv = curvv*curvv
-     curvRet = sum(curvv)-curvv(0)
-     curvRet = pi2*curvRet/NS
-  elseif( case_curv == 3 ) then ! penalty method 
-     do kseg = 0,NS-1
-        if( curvv(kseg) > k0 ) then
-            hypc = 0.5*exp( curv_alpha*( curvv(kseg) - k0 ) ) + 0.5*exp( -1.0*curv_alpha*( curvv(kseg) - k0 ) )
-            curvRet = curvRet + (hypc - 1.0)**2
-        endif
-     enddo
-     curvRet = pi2*curvRet/NS
-  elseif( case_curv == 4 ) then ! penalty plus complexity 
-     if ( k1_len .eq. 1 ) then
-        k1_use = pi2/coil(icoil)%Lo
-     else
-        k1_use = k1
-     endif
-     do kseg = 0,NS-1
-        curv_hold = 0.0
+  if ( k1_len .eq. 1 ) then
+     k1_use = pi2/coil(icoil)%Lo
+  else
+     k1_use = k1
+  endif
+
+  do kseg = 0,NS-1
+     curv_hold = 0.0
+     if ( curv_alpha .ne. 0.0 ) then
         if ( curvv(kseg) > k0 ) then
            if ( penfun_curv .eq. 1 ) then
               hypc = 0.5*exp( curv_alpha*( curvv(kseg) - k0 ) ) + 0.5*exp( -1.0*curv_alpha*( curvv(kseg) - k0 ) )
@@ -183,16 +191,17 @@ subroutine CurvDeriv0(icoil,curvRet)
               curv_hold = ( curv_alpha*(curvv(kseg)-k0) )**curv_beta
            endif
         endif
+     endif
+     if ( curv_sigma .ne. 0.0 ) then
         if ( curvv(kseg) > k1_use ) then
            curv_hold = curv_hold + curv_sigma*( ( curvv(kseg) - k1_use )**curv_gamma )
         endif
-        curvRet = curvRet + curv_hold*sqrt(xt(kseg)**2+yt(kseg)**2+zt(kseg)**2)
-     enddo
-     call lenDeriv0( icoil, coil(icoil)%L )
-     curvRet = pi2*curvRet/(NS*coil(icoil)%L)
-  else   
-     FATAL( CurvDeriv0, .true. , invalid case_curv option ) 
-  endif
+     endif
+     curvRet = curvRet + curv_hold*sqrt(xt(kseg)**2+yt(kseg)**2+zt(kseg)**2)
+  enddo
+
+  call lenDeriv0( icoil, coil(icoil)%L )
+  curvRet = pi2*curvRet/(NS*coil(icoil)%L)
 
   DALLOCATE(curvv)
   DALLOCATE(xt)
@@ -211,7 +220,7 @@ end subroutine CurvDeriv0
 subroutine CurvDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a coil
 
   use globals, only: dp, zero, pi2, coil, DoF, myid, ounit, Ncoils, &
-                case_curv, curv_alpha, k0, curv_c, k1, curv_beta, curv_gamma, curv_sigma, penfun_curv, k1_len, FouCoil, MPI_COMM_FOCUS
+                case_curv, curv_alpha, k0, k1, curv_beta, curv_gamma, curv_sigma, penfun_curv, k1_len, FouCoil, MPI_COMM_FOCUS
   implicit none
   include "mpif.h"
 
@@ -230,6 +239,22 @@ subroutine CurvDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a co
   call lenDeriv0( icoil, coil(icoil)%L )
   leng = coil(icoil)%L
   call lenDeriv1( icoil, d1L(1:1,1:ND), ND )
+
+  if ( case_curv .eq. 1 ) then
+     curv_alpha = 0.0
+     curv_sigma = 1.0
+     curv_gamma = 1.0
+     k1 = 0.0
+  elseif ( case_curv .eq. 2 ) then
+     curv_alpha = 0.0
+     curv_sigma = 1.0
+     curv_gamma = 2.0
+     k1 = 0.0
+  elseif (case_curv .eq. 3 ) then
+     curv_sigma = 0.0
+  else
+     ! Do nothing
+  endif
   
   do kseg = 0,NS-1
 
@@ -244,144 +269,65 @@ subroutine CurvDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a co
         nss =      nff    *FouCoil(icoil)%cmt(kseg,nff)
         nsp = -1.0*nff*nff*FouCoil(icoil)%smt(kseg,nff)
 
-        if( case_curv == 1 ) then
-           ! Xc 
-           derivs(1,1+nff)      = derivs(1,1+nff)      + -1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*ncc) &
-           + ((f1**(-1))*((xt*ya-xa*yt)*(ncc*ya-ncp*yt)+(xt*za-xa*zt)*(ncc*za-ncp*zt)) )/f2 
-           ! Xs
-           derivs(1,1+nff+NF)   = derivs(1,1+nff+NF)   + -1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*nss) &
-           + ((f1**(-1))*((xt*ya-xa*yt)*(nss*ya-nsp*yt)+(xt*za-xa*zt)*(nss*za-nsp*zt)) )/f2
-           ! Yc
-           derivs(1,2+nff+2*NF) = derivs(1,2+nff+2*NF) + -1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*ncc) &
-           + ((f1**(-1))*((xt*ya-xa*yt)*(ncp*xt-ncc*xa)+(yt*za-ya*zt)*(ncc*za-ncp*zt)) )/f2  
-           ! Ys
-           derivs(1,2+nff+3*NF) = derivs(1,2+nff+3*NF) + -1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*nss) &
-           + ((f1**(-1))*((xt*ya-xa*yt)*(nsp*xt-nss*xa)+(yt*za-ya*zt)*(nss*za-nsp*zt)) )/f2
-           ! Zc
-           derivs(1,3+nff+4*NF) = derivs(1,3+nff+4*NF) + -1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*ncc) &
-           + ((f1**(-1))*((xt*za-xa*zt)*(xt*ncp-xa*ncc)+(yt*za-ya*zt)*(yt*ncp-ya*ncc)) )/f2
-           ! Zs
-           derivs(1,3+nff+5*NF) = derivs(1,3+nff+5*NF) + -1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*nss) &
-           + ((f1**(-1))*((xt*za-xa*zt)*(xt*nsp-xa*nss)+(yt*za-ya*zt)*(yt*nsp-ya*nss)) )/f2
-
-        elseif( case_curv == 2 ) then
-           curvHold = sqrt( (za*yt-zt*ya)**2 + (xa*zt-xt*za)**2 + (ya*xt-yt*xa)**2 ) / ((xt)**2+(yt)**2+(zt)**2)**(1.5)
-           ! Xc 
-           derivs(1,1+nff)      = derivs(1,1+nff)      + (-1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*ncc) &
-           + ((f1**(-1))*((xt*ya-xa*yt)*(ncc*ya-ncp*yt)+(xt*za-xa*zt)*(ncc*za-ncp*zt)) )/f2)*2.0*curvHold 
-           ! Xs
-           derivs(1,1+nff+NF)   = derivs(1,1+nff+NF)   + (-1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*nss) &
-           + ((f1**(-1))*((xt*ya-xa*yt)*(nss*ya-nsp*yt)+(xt*za-xa*zt)*(nss*za-nsp*zt)) )/f2)*2.0*curvHold
-           ! Yc
-           derivs(1,2+nff+2*NF) = derivs(1,2+nff+2*NF) + (-1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*ncc) &
-           + ((f1**(-1))*((xt*ya-xa*yt)*(ncp*xt-ncc*xa)+(yt*za-ya*zt)*(ncc*za-ncp*zt)) )/f2)*2.0*curvHold  
-           ! Ys
-           derivs(1,2+nff+3*NF) = derivs(1,2+nff+3*NF) + (-1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*nss) &
-           + ((f1**(-1))*((xt*ya-xa*yt)*(nsp*xt-nss*xa)+(yt*za-ya*zt)*(nss*za-nsp*zt)) )/f2)*2.0*curvHold
-           ! Zc
-           derivs(1,3+nff+4*NF) = derivs(1,3+nff+4*NF) + (-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*ncc) &
-           + ((f1**(-1))*((xt*za-xa*zt)*(xt*ncp-xa*ncc)+(yt*za-ya*zt)*(yt*ncp-ya*ncc)) )/f2)*2.0*curvHold
-           ! Zs
-           derivs(1,3+nff+5*NF) = derivs(1,3+nff+5*NF) + (-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*nss) &
-           + ((f1**(-1))*((xt*za-xa*zt)*(xt*nsp-xa*nss)+(yt*za-ya*zt)*(yt*nsp-ya*nss)) )/f2)*2.0*curvHold
-
-        elseif( case_curv == 3 ) then
-           curvHold = sqrt( (za*yt-zt*ya)**2 + (xa*zt-xt*za)**2 + (ya*xt-yt*xa)**2 ) / ((xt)**2+(yt)**2+(zt)**2)**(1.5)
-           hypc = 0.5*exp( curv_alpha*(curvHold-k0) ) + 0.5*exp( -1.0*curv_alpha*(curvHold-k0) )
-           hyps = 0.5*exp( curv_alpha*(curvHold-k0) ) - 0.5*exp( -1.0*curv_alpha*(curvHold-k0) )
-           penCurv = 2.0*( hypc - 1.0 )*hyps*curv_alpha
-           if( curvHold > k0 ) then
-              ! Xc
-              derivs(1,1+nff)      = derivs(1,1+nff)      + (-1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*ncc) &
-                            + ((f1**(-1))*((xt*ya-xa*yt)*(ncc*ya-ncp*yt)+(xt*za-xa*zt)*(ncc*za-ncp*zt)) )/f2)*penCurv
-              ! Xs
-              derivs(1,1+nff+NF)   = derivs(1,1+nff+NF)   + (-1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*nss) &
-                            + ((f1**(-1))*((xt*ya-xa*yt)*(nss*ya-nsp*yt)+(xt*za-xa*zt)*(nss*za-nsp*zt)) )/f2)*penCurv
-              ! Yc
-              derivs(1,2+nff+2*NF) = derivs(1,2+nff+2*NF) + (-1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*ncc) &
-                            + ((f1**(-1))*((xt*ya-xa*yt)*(ncp*xt-ncc*xa)+(yt*za-ya*zt)*(ncc*za-ncp*zt)) )/f2)*penCurv
-              ! Ys
-              derivs(1,2+nff+3*NF) = derivs(1,2+nff+3*NF) + (-1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*nss) &
-                            + ((f1**(-1))*((xt*ya-xa*yt)*(nsp*xt-nss*xa)+(yt*za-ya*zt)*(nss*za-nsp*zt)) )/f2)*penCurv
-              ! Zc
-              derivs(1,3+nff+4*NF) = derivs(1,3+nff+4*NF) + (-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*ncc) &
-                            + ((f1**(-1))*((xt*za-xa*zt)*(xt*ncp-xa*ncc)+(yt*za-ya*zt)*(yt*ncp-ya*ncc)) )/f2)*penCurv
-              ! Zs
-              derivs(1,3+nff+5*NF) = derivs(1,3+nff+5*NF) + (-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*nss) &
-                            + ((f1**(-1))*((xt*za-xa*zt)*(xt*nsp-xa*nss)+(yt*za-ya*zt)*(yt*nsp-ya*nss)) )/f2)*penCurv
-           else
-              derivs(1,1+nff) = derivs(1,1+nff)
-              derivs(1,1+nff+NF) = derivs(1,1+nff+NF)
-              derivs(1,2+nff+2*NF) = derivs(1,2+nff+2*NF)
-              derivs(1,2+nff+3*NF) = derivs(1,2+nff+3*NF)
-              derivs(1,3+nff+4*NF) = derivs(1,3+nff+4*NF)
-              derivs(1,3+nff+5*NF) = derivs(1,3+nff+5*NF)
-           endif
-
-        elseif( case_curv == 4 ) then
-           curvHold = f1/f2
-           penCurv = 0.0
-           curv_deriv = 0.0
-           if ( k1_len .eq. 1 ) then
-              k1_use = pi2/coil(icoil)%Lo
-           else
-              k1_use = k1
-           endif
-           if ( penfun_curv .eq. 1 ) then
-              if ( curvHold > k0 ) then
-                 hypc = 0.5*exp( curv_alpha*(curvHold-k0) ) + 0.5*exp( -1.0*curv_alpha*(curvHold-k0) )
-                 hyps = 0.5*exp( curv_alpha*(curvHold-k0) ) - 0.5*exp( -1.0*curv_alpha*(curvHold-k0) )
-                 penCurv = ( hypc - 1.0 )**2
-                 curv_deriv = 2.0*curv_alpha*( hypc - 1.0 )*hyps
-              endif
-           else
-              if ( curvHold > k0 ) then
-                 penCurv = (curv_alpha*(curvHold-k0))**curv_beta
-                 curv_deriv = curv_beta*curv_alpha*( (curv_alpha*(curvHold-k0))**(curv_beta-1.0) )
-              endif
-           endif
-           if ( curvHold > k1_use ) then
-              curv_deriv = curv_deriv + curv_sigma*curv_gamma*( (curvHold-k1_use)**(curv_gamma-1.0) )
-              penCurv = penCurv + curv_sigma*( (curvHold-k1_use)**curv_gamma )
-           endif
-           ! Xc
-           derivs(1,1+nff)     = derivs(1,1+nff)       + sqrt(xt**2+yt**2+zt**2)*penCurv*-1.0*d1L(   1,1+nff)/leng
-           derivs(1,1+nff)     = derivs(1,1+nff)       + xt*ncc*(xt**2+yt**2+zt**2)**(-.5)*penCurv
-           derivs(1,1+nff)     = derivs(1,1+nff)       + sqrt(xt**2+yt**2+zt**2) &
-           *(-1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*ncc) + ((f1**(-1))*((xt*ya-xa*yt)*(ncc*ya-ncp*yt)+(xt*za-xa*zt)*(ncc*za-ncp*zt)) )/f2)*curv_deriv
-           ! Xs
-           derivs(1,1+nff+NF)  = derivs(1,1+nff+NF)    + sqrt(xt**2+yt**2+zt**2)*penCurv*-1.0*d1L(1,1+nff+NF)/leng
-           derivs(1,1+nff+NF)  = derivs(1,1+nff+NF)    + xt*nss*(xt**2+yt**2+zt**2)**(-.5)*penCurv
-           derivs(1,1+nff+NF)  = derivs(1,1+nff+NF)    + sqrt(xt**2+yt**2+zt**2) &
-           *(-1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*nss) + ((f1**(-1))*((xt*ya-xa*yt)*(nss*ya-nsp*yt)+(xt*za-xa*zt)*(nss*za-nsp*zt)) )/f2)*curv_deriv
-           ! Yc
-           derivs(1,2+nff+2*NF) = derivs(1,2+nff+2*NF) + sqrt(xt**2+yt**2+zt**2)*penCurv*-1.0*d1L(1,2+nff+2*NF)/leng
-           derivs(1,2+nff+2*NF) = derivs(1,2+nff+2*NF) + yt*ncc*(xt**2+yt**2+zt**2)**(-.5)*penCurv
-           derivs(1,2+nff+2*NF) = derivs(1,2+nff+2*NF) + sqrt(xt**2+yt**2+zt**2) &
-           *(-1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*ncc) + ((f1**(-1))*((xt*ya-xa*yt)*(ncp*xt-ncc*xa)+(yt*za-ya*zt)*(ncc*za-ncp*zt)) )/f2)*curv_deriv
-           ! Ys
-           derivs(1,2+nff+3*NF) = derivs(1,2+nff+3*NF) + sqrt(xt**2+yt**2+zt**2)*penCurv*-1.0*d1L(1,2+nff+3*NF)/leng
-           derivs(1,2+nff+3*NF) = derivs(1,2+nff+3*NF) + yt*nss*(xt**2+yt**2+zt**2)**(-.5)*penCurv
-           derivs(1,2+nff+3*NF) = derivs(1,2+nff+3*NF) + sqrt(xt**2+yt**2+zt**2) &
-           *(-1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*nss) + ((f1**(-1))*((xt*ya-xa*yt)*(nsp*xt-nss*xa)+(yt*za-ya*zt)*(nss*za-nsp*zt)) )/f2)*curv_deriv
-           ! Zc
-           derivs(1,3+nff+4*NF) = derivs(1,3+nff+4*NF) + sqrt(xt**2+yt**2+zt**2)*penCurv*-1.0*d1L(1,3+nff+4*NF)/leng
-           derivs(1,3+nff+4*NF) = derivs(1,3+nff+4*NF) + zt*ncc*(xt**2+yt**2+zt**2)**(-.5)*penCurv
-           derivs(1,3+nff+4*NF) = derivs(1,3+nff+4*NF) + sqrt(xt**2+yt**2+zt**2) &
-           *(-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*ncc) + ((f1**(-1))*((xt*za-xa*zt)*(xt*ncp-xa*ncc)+(yt*za-ya*zt)*(yt*ncp-ya*ncc)) )/f2)*curv_deriv
-           ! Zs
-           derivs(1,3+nff+5*NF) = derivs(1,3+nff+5*NF) + sqrt(xt**2+yt**2+zt**2)*penCurv*-1.0*d1L(1,3+nff+5*NF)/leng
-           derivs(1,3+nff+5*NF) = derivs(1,3+nff+5*NF) + zt*nss*(xt**2+yt**2+zt**2)**(-.5)*penCurv
-           derivs(1,3+nff+5*NF) = derivs(1,3+nff+5*NF) + sqrt(xt**2+yt**2+zt**2) &
-           *(-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*nss) + ((f1**(-1))*((xt*za-xa*zt)*(xt*nsp-xa*nss)+(yt*za-ya*zt)*(yt*nsp-ya*nss)) )/f2)*curv_deriv
+        curvHold = f1/f2
+        penCurv = 0.0
+        curv_deriv = 0.0
+        if ( k1_len .eq. 1 ) then
+           k1_use = pi2/coil(icoil)%Lo
         else
-           FATAL( CurvDeriv1, .true. , invalid case_curv option )  
+           k1_use = k1
         endif
+        if ( penfun_curv .eq. 1 ) then
+           if ( curvHold > k0 ) then
+              hypc = 0.5*exp( curv_alpha*(curvHold-k0) ) + 0.5*exp( -1.0*curv_alpha*(curvHold-k0) )
+              hyps = 0.5*exp( curv_alpha*(curvHold-k0) ) - 0.5*exp( -1.0*curv_alpha*(curvHold-k0) )
+              penCurv = ( hypc - 1.0 )**2
+              curv_deriv = 2.0*curv_alpha*( hypc - 1.0 )*hyps
+           endif
+        else
+           if ( curvHold > k0 ) then
+              penCurv = (curv_alpha*(curvHold-k0))**curv_beta
+              curv_deriv = curv_beta*curv_alpha*( (curv_alpha*(curvHold-k0))**(curv_beta-1.0) )
+           endif
+        endif
+        if ( curvHold > k1_use ) then
+           curv_deriv = curv_deriv + curv_sigma*curv_gamma*( (curvHold-k1_use)**(curv_gamma-1.0) )
+           penCurv = penCurv + curv_sigma*( (curvHold-k1_use)**curv_gamma )
+        endif
+        ! Xc
+        derivs(1,1+nff)     = derivs(1,1+nff)       + sqrt(xt**2+yt**2+zt**2)*penCurv*-1.0*d1L(   1,1+nff)/leng
+        derivs(1,1+nff)     = derivs(1,1+nff)       + xt*ncc*(xt**2+yt**2+zt**2)**(-.5)*penCurv
+        derivs(1,1+nff)     = derivs(1,1+nff)       + sqrt(xt**2+yt**2+zt**2) &
+        *(-1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*ncc) + ((f1**(-1))*((xt*ya-xa*yt)*(ncc*ya-ncp*yt)+(xt*za-xa*zt)*(ncc*za-ncp*zt)) )/f2)*curv_deriv
+        ! Xs
+        derivs(1,1+nff+NF)  = derivs(1,1+nff+NF)    + sqrt(xt**2+yt**2+zt**2)*penCurv*-1.0*d1L(1,1+nff+NF)/leng
+        derivs(1,1+nff+NF)  = derivs(1,1+nff+NF)    + xt*nss*(xt**2+yt**2+zt**2)**(-.5)*penCurv
+        derivs(1,1+nff+NF)  = derivs(1,1+nff+NF)    + sqrt(xt**2+yt**2+zt**2) &
+        *(-1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*nss) + ((f1**(-1))*((xt*ya-xa*yt)*(nss*ya-nsp*yt)+(xt*za-xa*zt)*(nss*za-nsp*zt)) )/f2)*curv_deriv
+        ! Yc
+        derivs(1,2+nff+2*NF) = derivs(1,2+nff+2*NF) + sqrt(xt**2+yt**2+zt**2)*penCurv*-1.0*d1L(1,2+nff+2*NF)/leng
+        derivs(1,2+nff+2*NF) = derivs(1,2+nff+2*NF) + yt*ncc*(xt**2+yt**2+zt**2)**(-.5)*penCurv
+        derivs(1,2+nff+2*NF) = derivs(1,2+nff+2*NF) + sqrt(xt**2+yt**2+zt**2) &
+        *(-1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*ncc) + ((f1**(-1))*((xt*ya-xa*yt)*(ncp*xt-ncc*xa)+(yt*za-ya*zt)*(ncc*za-ncp*zt)) )/f2)*curv_deriv
+        ! Ys
+        derivs(1,2+nff+3*NF) = derivs(1,2+nff+3*NF) + sqrt(xt**2+yt**2+zt**2)*penCurv*-1.0*d1L(1,2+nff+3*NF)/leng
+        derivs(1,2+nff+3*NF) = derivs(1,2+nff+3*NF) + yt*nss*(xt**2+yt**2+zt**2)**(-.5)*penCurv
+        derivs(1,2+nff+3*NF) = derivs(1,2+nff+3*NF) + sqrt(xt**2+yt**2+zt**2) &
+        *(-1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*nss) + ((f1**(-1))*((xt*ya-xa*yt)*(nsp*xt-nss*xa)+(yt*za-ya*zt)*(nss*za-nsp*zt)) )/f2)*curv_deriv
+        ! Zc
+        derivs(1,3+nff+4*NF) = derivs(1,3+nff+4*NF) + sqrt(xt**2+yt**2+zt**2)*penCurv*-1.0*d1L(1,3+nff+4*NF)/leng
+        derivs(1,3+nff+4*NF) = derivs(1,3+nff+4*NF) + zt*ncc*(xt**2+yt**2+zt**2)**(-.5)*penCurv
+        derivs(1,3+nff+4*NF) = derivs(1,3+nff+4*NF) + sqrt(xt**2+yt**2+zt**2) &
+        *(-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*ncc) + ((f1**(-1))*((xt*za-xa*zt)*(xt*ncp-xa*ncc)+(yt*za-ya*zt)*(yt*ncp-ya*ncc)) )/f2)*curv_deriv
+        ! Zs
+        derivs(1,3+nff+5*NF) = derivs(1,3+nff+5*NF) + sqrt(xt**2+yt**2+zt**2)*penCurv*-1.0*d1L(1,3+nff+5*NF)/leng
+        derivs(1,3+nff+5*NF) = derivs(1,3+nff+5*NF) + zt*nss*(xt**2+yt**2+zt**2)**(-.5)*penCurv
+        derivs(1,3+nff+5*NF) = derivs(1,3+nff+5*NF) + sqrt(xt**2+yt**2+zt**2) &
+        *(-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*nss) + ((f1**(-1))*((xt*za-xa*zt)*(xt*nsp-xa*nss)+(yt*za-ya*zt)*(yt*nsp-ya*nss)) )/f2)*curv_deriv
      enddo
   enddo
   
-  derivs = pi2*derivs/NS
-  if( case_curv == 4 ) derivs = derivs/leng
+  derivs = pi2*derivs/(NS*leng)
 
   return
 

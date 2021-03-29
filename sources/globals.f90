@@ -100,9 +100,8 @@ module globals
   INTEGER              :: IsNormWeight   =   1
   INTEGER              :: case_bnormal   =   0
   INTEGER              :: case_length    =   1
-  INTEGER              :: case_curv      =   1 
+  INTEGER              :: case_curv      =   4 
   REAL                 :: curv_alpha     =   0.000D+00
-  REAL                 :: curv_c         =   1.000D-04
   REAL                 :: k0             =   1.000D+01
   REAL                 :: weight_bnorm   =   1.000D+00
   INTEGER              :: bharm_jsurf    =   0
@@ -217,7 +216,6 @@ module globals
                         case_length    , &
                         case_curv      , &
                         curv_alpha     , &
-                        curv_c         , &
                         k0             , &
                         weight_bnorm   , &
                         bharm_jsurf    , &
