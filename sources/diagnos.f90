@@ -53,6 +53,17 @@ SUBROUTINE diagnos
      enddo
 !!$     FATAL( output , idof .ne. Tdof, counting error in restart )
   endif
+  !-------------------------------average coil length-------------------------------------------------------  
+  AvgLength = zero
+  if ( (case_length == 1) .and. (sum(coil(1:Ncoils)%Lo) < sqrtmachprec) ) coil(1:Ncoils)%Lo = one
+  call length(0)
+  do icoil = 1, Ncoils
+     if(coil(icoil)%type .ne. 1) cycle ! only for Fourier
+     AvgLength = AvgLength + coil(icoil)%L
+  enddo
+  AvgLength = AvgLength / Ncoils
+  if(myid .eq. 0) write(ounit, '(8X": Average length of the coils is"8X" :" ES23.15)') AvgLength
+
   !-------------------------------coil maximum curvature----------------------------------------------------  
   MaxCurv = zero
   do icoil = 1, Ncoils
@@ -84,16 +95,6 @@ SUBROUTINE diagnos
     AvgCurv = AvgCurv / Ncoils
     if(myid .eq. 0) write(ounit, '(8X": Average curvature of the coils is"5X" :" ES23.15)') AvgCurv
 
-  !-------------------------------average coil length-------------------------------------------------------  
-  AvgLength = zero
-  if ( (case_length == 1) .and. (sum(coil(1:Ncoils)%Lo) < sqrtmachprec) ) coil(1:Ncoils)%Lo = one
-  call length(0)
-  do icoil = 1, Ncoils
-     if(coil(icoil)%type .ne. 1) cycle ! only for Fourier
-     AvgLength = AvgLength + coil(icoil)%L
-  enddo
-  AvgLength = AvgLength / Ncoils
-  if(myid .eq. 0) write(ounit, '(8X": Average length of the coils is"8X" :" ES23.15)') AvgLength
 
   !-----------------------------minimum coil coil separation------------------------------------  
   ! coils are supposed to be placed in order

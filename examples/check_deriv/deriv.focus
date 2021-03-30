@@ -4,7 +4,7 @@
  #coil_type   coil_symm  coil_name
      1      2    1         
  #Nseg        current         Ifree         Length         Lfree  target_length
-   128 -1.500725500000000E+05     0  2.033518962591905E+00     1  2.200000000000000E+00
+   128 -1.500725500000000E+05     0  2.033518907783376E+00     1  2.200000000000000E+00
  #NFcoil
   4
  #Fourier harmonics for coils ( xc; xs; yc; ys; zc; zs) 
@@ -18,7 +18,7 @@
  #coil_type   coil_symm  coil_name
      1      2    2         
  #Nseg        current         Ifree         Length         Lfree  target_length
-   128 -1.500725500000000E+05     0  2.095801646502330E+00     1  2.300000000000000E+00
+   128 -1.500725500000000E+05     0  2.095801591241713E+00     1  2.300000000000000E+00
  #NFcoil
   4
  #Fourier harmonics for coils ( xc; xs; yc; ys; zc; zs) 
@@ -32,7 +32,7 @@
  #coil_type   coil_symm  coil_name
      1      2    3         
  #Nseg        current         Ifree         Length         Lfree  target_length
-   128 -1.500725500000000E+05     0  2.169957742564031E+00     1  2.400000000000000E+00
+   128 -1.500725500000000E+05     0  2.169957681519326E+00     1  2.400000000000000E+00
  #NFcoil
   4
  #Fourier harmonics for coils ( xc; xs; yc; ys; zc; zs) 
@@ -46,7 +46,7 @@
  #coil_type   coil_symm  coil_name
      1      2    4         
  #Nseg        current         Ifree         Length         Lfree  target_length
-   128 -1.500725500000000E+05     0  2.256963944700190E+00     1  2.500000000000000E+00
+   128 -1.500725500000000E+05     0  2.256963877644726E+00     1  2.500000000000000E+00
  #NFcoil
   4
  #Fourier harmonics for coils ( xc; xs; yc; ys; zc; zs) 
@@ -60,7 +60,7 @@
  #coil_type   coil_symm  coil_name
      1      2    5         
  #Nseg        current         Ifree         Length         Lfree  target_length
-   128 -1.500725500000000E+05     0  2.258918695362754E+00     1  2.500000000000000E+00
+   128 -1.500725500000000E+05     0  2.258918623171938E+00     1  2.500000000000000E+00
  #NFcoil
   4
  #Fourier harmonics for coils ( xc; xs; yc; ys; zc; zs) 
@@ -74,7 +74,7 @@
  #coil_type   coil_symm  coil_name
      1      2    6         
  #Nseg        current         Ifree         Length         Lfree  target_length
-   128 -1.500725500000000E+05     0  2.227457614856919E+00     1  2.400000000000000E+00
+   128 -1.500725500000000E+05     0  2.227457545661790E+00     1  2.400000000000000E+00
  #NFcoil
   4
  #Fourier harmonics for coils ( xc; xs; yc; ys; zc; zs) 
