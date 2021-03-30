@@ -42,6 +42,12 @@ ifneq (,$(findstring eddy,$(HOSTNAME)))
  FC=mpiifort  # this is optional after recent updates
 endif
 
+#### Stellar Intel+IntelMPI+HDF5###############
+# available env: /home/caoxiang/module/focus/intel
+ifneq (,$(findstring stellar,$(HOSTNAME)))
+ FC=mpiifort  # this is optional after recent updates
+endif
+
 #### Traverse + GNU Fortran ################
 ifneq (,$(findstring traverse,$(HOSTNAME)))
 # available env: /home/caoxiang/Modules/focus/
