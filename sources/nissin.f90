@@ -3,7 +3,6 @@
 !latex \briefly{The objective function minimizes the coil's derivative of curvature and 
 !latex         the coil's curvature*torsion. This objective function was designed to 
 !latex         make coils easier to fabricate using the Nissin Freeform Bender. 
-!latex         This function is still under development. 
 
 !latex \calledby{\link{solvers}}
 
@@ -15,11 +14,11 @@
 ! chi = chi + weight_nis*nis
 ! t1N is total derivative of penalty
 ! LM implemented
-! not parallelized, at some point check to see how long takes to run
+! not parallelized, does not take long to run
 subroutine nissin(ideriv)
   use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, MPI_COMM_FOCUS, &
        coil, DoF, Ncoils, Nfixgeo, Ndof, nis, t1N, t2N, weight_nis, FouCoil, &
-       mnis, inis, LM_fvec, LM_fjac, nis_alpha, case_nis, nis0
+       mnis, inis, LM_fvec, LM_fjac
 
   implicit none
   include "mpif.h"
@@ -35,34 +34,16 @@ subroutine nissin(ideriv)
   nisHold = zero
   ivec = 1
 
-  FATAL( nissin , case_nis .ne. 1 , invalid choice of case_nis )
-
   if( ideriv >= 0 ) then
 
      do icoil = 1, Ncoils
         if( coil(icoil)%type .ne. 1 ) exit ! only for Fourier
         if( coil(icoil)%Lc     /=  0 ) then ! if geometry is free
            call NisDeriv0(icoil,nisAdd)
-           if( case_nis .eq. 1 ) then
-              !FATAL( nissin, nis_alpha < 1 , nis_alpha >= 1 for case_nis == 1 ) ! Change 
-              !nisHold = (nisAdd**2 + 1)**nis_alpha - 1
-              !nis = nis + nisHold
-              nis = nis + nisAdd
-              if (mnis > 0) then ! L-M format of targets
-                 !LM_fvec(inis+ivec) = weight_nis*nisHold
-                 LM_fvec(inis+ivec) = weight_nis*nisAdd
-                 ivec = ivec + 1
-              endif
-           else
-              !FATAL( nissin, nis_alpha < 0 , nis_alpha >= 0 for case_nis == 2 ) ! Change
-              !if( nisAdd**2 > nis0**2 ) then 
-              !   nisHold = ( cosh(nis_alpha*(nisAdd**2 - nis0**2)) - 1 )**2
-              !   nis = nis + nisHold
-              !endif
-              !if (mnis > 0) then ! L-M format of targets
-              !   LM_fvec(inis+ivec) = weight_nis*nisHold
-              !   ivec = ivec + 1
-              !endif
+           nis = nis + nisAdd
+           if (mnis > 0) then ! L-M format of targets
+              LM_fvec(inis+ivec) = weight_nis*nisAdd
+              ivec = ivec + 1
            endif
         endif 
      enddo
@@ -115,7 +96,7 @@ end subroutine nissin
 subroutine NisDeriv0(icoil,nisRet)
 
   use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils, &
-          nis_alpha, nis0, nis_gamma, nis_sigma, MPI_COMM_FOCUS
+          nis_alpha, nis_beta, penfun_nis, nis0, nis_gamma, nis_sigma, MPI_COMM_FOCUS
 
   implicit none
   include "mpif.h"
@@ -168,6 +149,25 @@ subroutine NisDeriv0(icoil,nisRet)
   FATAL( NisDeriv0, nis_gamma .lt. 1, nis_gamma needs to be > 1 )
   FATAL( NisDeriv0, nis_sigma .lt. 0, nis_sigma needs to be non-negative )
 
+  if ( penfun_nis .ne. 1 .and. penfun_nis .ne. 2 ) then
+     FATAL( NisDeriv0, .true. , invalid choice of penfun_nis, pick 1 or 2 )
+  endif
+  if ( nis0 < 0.0 ) then
+     FATAL( NisDeriv0, .true. , nis0 cannot be negative )
+  endif
+  if ( nis_alpha < 0.0 ) then
+     FATAL( NisDeriv0, .true. , nis_alpha cannot be negative )
+  endif
+  if ( nis_beta < 2.0 ) then
+     FATAL( NisDeriv0, .true. , nis_beta needs to be >= 2 )
+  endif
+  if ( nis_gamma < 1.0 ) then
+     FATAL( NisDeriv0, .true. , nis_gamma needs to be >= 1 )
+  endif
+  if ( nis_sigma < 0.0 ) then
+     FATAL( NisDeriv0, .true. , nis_sigma cannot be negative )
+  endif
+
   niss = zero
   nisRet = zero
 
@@ -194,10 +194,12 @@ subroutine NisDeriv0(icoil,nisRet)
   coil(icoil)%maxs = maxval(S)
 
   do kseg = 0, NS
-     if( S(kseg) .ge. nis0) then
-        !niss(kseg) = (cosh(nis_alpha*(S(kseg)-nis0)) - 1)**2
-        !niss(kseg) = (nis_alpha*(S(kseg)-nis0))**2
-        niss(kseg) = (nis_alpha*(S(kseg)-nis0))**2
+     if( S(kseg) .ge. nis0 ) then
+        if (penfun_nis .eq. 1) then
+            niss(kseg) = (cosh(nis_alpha*(S(kseg)-nis0)) - 1)**2
+        else
+            niss(kseg) = (nis_alpha*(S(kseg)-nis0))**nis_beta
+        endif
      endif
      niss(kseg) = niss(kseg) + nis_sigma*S(kseg)**nis_gamma
   enddo
@@ -242,7 +244,7 @@ end subroutine NisDeriv0
 subroutine NisDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a coil
 
   use globals, only: dp, zero, pi2, coil, DoF, myid, ounit, Ncoils, &
-          case_nis, nis_alpha, nis0, nis_gamma, nis_sigma, FouCoil, &
+          nis_alpha, nis_beta, penfun_nis, nis0, nis_gamma, nis_sigma, FouCoil, &
           MPI_COMM_FOCUS
   implicit none
   include "mpif.h"
@@ -406,9 +408,11 @@ subroutine NisDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a coi
 
   do kseg = 0, NS
      if( S(kseg) .ge. nis0) then
-        !niss(kseg) = (cosh(nis_alpha*(S(kseg)-nis0)) - 1)**2
-        !niss(kseg) = (nis_alpha*(S(kseg)-nis0))**2
-        niss(kseg) = (nis_alpha*(S(kseg)-nis0))**2
+        if (penfun_nis .eq. 1) then
+            niss(kseg) = (cosh(nis_alpha*(S(kseg)-nis0)) - 1)**2
+        else
+            niss(kseg) = (nis_alpha*(S(kseg)-nis0))**nis_beta
+        endif
      endif
      niss(kseg) = niss(kseg) + nis_sigma*S(kseg)**nis_gamma
   enddo
@@ -434,7 +438,6 @@ subroutine NisDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a coi
              dztdDof(0:NS,i)*za(0:NS) + xt(0:NS)*dxadDof(0:NS,i) + yt(0:NS)*dyadDof(0:NS,i) + zt(0:NS)*dzadDof(0:NS,i))
      
      dS1dDof(0:NS,i) = dS1dDof(0:NS,i) / absrp(0:NS)
-    !dS1dDof(0:NS,i) = dS1dDof(0:NS,i) - S1(0:NS) * absrp(0:NS)**(-3) * (xt(0:NS)*dxtdDof(0:NS,i) + yt(0:NS)*dytdDof(0:NS,i) + zt(0:NS)*dztdDof(0:NS,i))
      dS1dDof(0:NS,i) = dS1dDof(0:NS,i) - S1(0:NS) * absrp(0:NS)**(-2) * (xt(0:NS)*dxtdDof(0:NS,i) + yt(0:NS)*dytdDof(0:NS,i) + zt(0:NS)*dztdDof(0:NS,i))
      
      dS2dDof(0:NS,i) = (dlambdaunitxdDof(0:NS,i)*xb(0:NS) + dlambdaunitydDof(0:NS,i)*yb(0:NS) + dlambdaunitzdDof(0:NS,i)*zb(0:NS)) &
@@ -448,15 +451,13 @@ subroutine NisDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a coi
 
      do kseg = 0, NS
         if( S(kseg) .ge. nis0 ) then
-           !dnissdDof(kseg,i) = 2*((cosh(nis_alpha*(S(kseg)-nis0))-1))*sinh(nis_alpha*(S(kseg)-nis0))*nis_alpha*dSdDof(kseg,i)*absrp(kseg)
-           !dnissdDof(kseg,i) = dnissdDof(kseg,i) + (cosh(nis_alpha*(S(kseg)-nis0)) - 1)**2 * dabsrpdDof(kseg,i)
-
-           !dnissdDof(kseg,i) = 2*nis_alpha*(nis_alpha*(S(kseg)-nis0))*dSdDof(kseg,i)*absrp(kseg)
-           !dnissdDof(kseg,i) = dnissdDof(kseg,i) + (nis_alpha*(S(kseg)-nis0))**2 * dabsrpdDof(kseg,i)
-
-           dnissdDof(kseg,i) = 2*nis_alpha*(nis_alpha*(S(kseg)-nis0))*dSdDof(kseg,i) * absrp(kseg)
-           dnissdDof(kseg,i) = dnissdDof(kseg,i) + (nis_alpha*(S(kseg)-nis0))**2 * dabsrpdDof(kseg,i)
-           !derivs(1,i) = derivs(1,i) + dnissdDof(kseg,i)
+           if (penfun_nis .eq. 1) then
+              dnissdDof(kseg,i) = 2*((cosh(nis_alpha*(S(kseg)-nis0))-1))*sinh(nis_alpha*(S(kseg)-nis0))*nis_alpha*dSdDof(kseg,i)*absrp(kseg)
+              dnissdDof(kseg,i) = dnissdDof(kseg,i) + (cosh(nis_alpha*(S(kseg)-nis0)) - 1)**2 * dabsrpdDof(kseg,i)
+           else
+              dnissdDof(kseg,i) = nis_beta*nis_alpha*(nis_alpha*(S(kseg)-nis0))**(nis_beta-1)*dSdDof(kseg,i) * absrp(kseg)
+              dnissdDof(kseg,i) = dnissdDof(kseg,i) + (nis_alpha*(S(kseg)-nis0))**nis_beta * dabsrpdDof(kseg,i)
+           endif
         endif
         dnissdDof(kseg,i) = dnissdDof(kseg,i) + nis_gamma*nis_sigma*S(kseg)**(nis_gamma-1)*dSdDof(kseg,i)*absrp(kseg)
         dnissdDof(kseg,i) = dnissdDof(kseg,i) + nis_sigma*S(kseg)**nis_gamma*dabsrpdDof(kseg,i)

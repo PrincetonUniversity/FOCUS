@@ -137,11 +137,12 @@ module globals
   REAL                 :: tors0          =   0.000D+00
   REAL                 :: lambda0        =   0.000D+00
   REAL                 :: lambda_alpha   =   0.000D+00
-  INTEGER              :: case_nis       =   1
   REAL                 :: nis_alpha      =   1.000D+00
+  REAL                 :: nis_beta       =   2.000D+00
   REAL                 :: nis0           =   0.000D+00
   REAL                 :: nis_gamma      =   2.000D+00
   REAL                 :: nis_sigma      =   0.000D+00
+  INTEGER              :: penfun_nis     =   1
 
   INTEGER              :: case_optimize  =   0
   REAL                 :: exit_tol       =   1.000D-04
@@ -244,11 +245,12 @@ module globals
                         tors0          , &
                         lambda0        , &
                         lambda_alpha   , &
-                        case_nis       , &
                         nis_alpha      , &
+                        nis_beta       , &
                         nis0           , &
                         nis_gamma      , &
                         nis_sigma      , &
+                        penfun_nis     , &
                         weight_inorm   , &
                         weight_gnorm   , &
                         weight_mnorm   , &
