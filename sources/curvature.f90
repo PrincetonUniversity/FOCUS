@@ -124,33 +124,6 @@ subroutine CurvDeriv0(icoil,curvRet)
   ya(0:coil(icoil)%NS) = coil(icoil)%ya(0:coil(icoil)%NS)
   za(0:coil(icoil)%NS) = coil(icoil)%za(0:coil(icoil)%NS)
 
-  FATAL( CurvDeriv0, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
-
-  if ( penfun_curv .ne. 1 .and. penfun_curv .ne. 2 ) then
-     FATAL( CurvDeriv0, .true. , invalid choice of penfun_curv, pick 1 or 2 )
-  endif
-  if ( k0 < 0.0 ) then
-     FATAL( CurvDeriv0, .true. , k0 cannot be negative )
-  endif
-  if ( k1 < 0.0 ) then
-     FATAL( CurvDeriv0, .true. , k1 cannot be negative )
-  endif
-  if ( curv_alpha < 0.0 ) then
-     FATAL( CurvDeriv0, .true. , curv_alpha cannot be negative )
-  endif
-  if ( curv_beta < 2.0 ) then
-     FATAL( CurvDeriv0, .true. , curv_beta needs to be >= 2 )
-  endif
-  if ( curv_gamma < 1.0 ) then
-     FATAL( CurvDeriv0, .true. , curv_gamma needs to be >= 1 )
-  endif
-  if ( curv_sigma < 0.0 ) then
-     FATAL( CurvDeriv0, .true. , curv_sigma cannot be negative )
-  endif
-  if ( curv_gamma .eq. 1.0 .and. k1 .ne. 0.0 ) then
-     FATAL( CurvDeriv0, .true. , if curv_gamma = 1, k1 must = 0 )
-  endif
-
   ! Set variable based on case_curv
   if ( case_curv .eq. 1 ) then
      curv_alpha = 0.0
@@ -167,6 +140,16 @@ subroutine CurvDeriv0(icoil,curvRet)
   else 
      ! Do nothing 
   endif
+
+  FATAL( CurvDeriv0, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
+  FATAL( CurvDeriv0, penfun_curv .ne. 1 .and. penfun_curv .ne. 2 , invalid choice of penfun_curv, pick 1 or 2 )
+  FATAL( CurvDeriv0, k0 < 0.0 , k0 cannot be negative )
+  FATAL( CurvDeriv0, k1 < 0.0 , k1 cannot be negative )
+  FATAL( CurvDeriv0, curv_alpha < 0.0 , curv_alpha cannot be negative )
+  FATAL( CurvDeriv0, curv_beta < 2.0 , curv_beta needs to be >= 2 )
+  FATAL( CurvDeriv0, curv_gamma < 1.0 , curv_gamma needs to be >= 1 )
+  FATAL( CurvDeriv0, curv_sigma < 0.0 , curv_sigma cannot be negative )
+  FATAL( CurvDeriv0, curv_gamma .eq. 1.0 .and. k1 .ne. 0.0 , if curv_gamma = 1, k1 must = 0 )
  
   curvv = zero
   curvRet = zero

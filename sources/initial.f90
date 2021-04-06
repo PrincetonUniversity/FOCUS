@@ -620,19 +620,6 @@ subroutine check_input
         FATAL( initial, .true., selected case_length is not supported )
      end select
 
-     !select case ( case_curv )
-     !case ( 1 )
-     !   if (IsQuiet < 1) write(ounit, 1000) 'case_curv', case_curv, 'Linear format of curvature penalty.'
-     !case ( 2 )
-     !   if (IsQuiet < 1) write(ounit, 1000) 'case_curv', case_curv, 'Quadratic format of curvature penalty.'
-     !case ( 3 )
-     !   if (IsQuiet < 1) write(ounit, 1000) 'case_curv', case_curv, 'Penalty function of curvature.'
-     !case ( 4 )
-     !   if (IsQuiet < 1) write(ounit, 1000) 'case_curv', case_curv, 'Linear and Penalty function.'
-     !case default
-     !   FATAL( initial, .true., selected case_curv is not supported )
-     !end select
-
      !select case ( case_tors )
      !case ( 1 )
      !   if (IsQuiet < 1) write(ounit, 1000) 'case_tors', case_tors, 'Optimizing average torsion to 0.'

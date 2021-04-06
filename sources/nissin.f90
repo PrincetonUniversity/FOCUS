@@ -146,27 +146,12 @@ subroutine NisDeriv0(icoil,nisRet)
   zb(0:coil(icoil)%NS) = coil(icoil)%zb(0:coil(icoil)%NS)
 
   FATAL( NisDeriv0, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
-  FATAL( NisDeriv0, nis_gamma .lt. 1, nis_gamma needs to be > 1 )
-  FATAL( NisDeriv0, nis_sigma .lt. 0, nis_sigma needs to be non-negative )
-
-  if ( penfun_nis .ne. 1 .and. penfun_nis .ne. 2 ) then
-     FATAL( NisDeriv0, .true. , invalid choice of penfun_nis, pick 1 or 2 )
-  endif
-  if ( nis0 < 0.0 ) then
-     FATAL( NisDeriv0, .true. , nis0 cannot be negative )
-  endif
-  if ( nis_alpha < 0.0 ) then
-     FATAL( NisDeriv0, .true. , nis_alpha cannot be negative )
-  endif
-  if ( nis_beta < 2.0 ) then
-     FATAL( NisDeriv0, .true. , nis_beta needs to be >= 2 )
-  endif
-  if ( nis_gamma < 1.0 ) then
-     FATAL( NisDeriv0, .true. , nis_gamma needs to be >= 1 )
-  endif
-  if ( nis_sigma < 0.0 ) then
-     FATAL( NisDeriv0, .true. , nis_sigma cannot be negative )
-  endif
+  FATAL( NisDeriv0, penfun_nis .ne. 1 .and. penfun_nis .ne. 2 , invalid choice of penfun_nis, pick 1 or 2 )
+  FATAL( NisDeriv0, nis0 < 0.0 , nis0 cannot be negative )
+  FATAL( NisDeriv0, nis_alpha < 0.0 , nis_alpha cannot be negative )
+  FATAL( NisDeriv0, nis_beta < 2.0 , nis_beta needs to be >= 2 )
+  FATAL( NisDeriv0, nis_gamma < 1.0 , nis_gamma needs to be >= 1 )
+  FATAL( NisDeriv0, nis_sigma < 0.0 , nis_sigma cannot be negative )
 
   niss = zero
   nisRet = zero
