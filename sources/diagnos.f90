@@ -9,7 +9,7 @@ SUBROUTINE diagnos
        Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
        cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, Nfp, weight_bnorm, overlap, plasma, &
        cosnfp, sinnfp, symmetry, discretefactor, MPI_COMM_FOCUS, surf_Nfp, curv, case_curv, tors, nis, &
-       lambda_alpha, weight_nis
+       weight_nis
   use mpi
   implicit none
 
@@ -102,24 +102,6 @@ SUBROUTINE diagnos
   enddo
   AvgTors = AvgTors / Ncoils
   if(myid .eq. 0) write(ounit, '(8X": Average torsion of the coils is"5X"   :" ES23.15)') AvgTors
-
-  !-------------------------------minimum coil lambda-----------------------------------------------------
-  if( lambda_alpha .ne. 0 ) then
-  call TorsDeriv0(1,dum,dum)
-  MinLambda = coil(1)%minlambda
-  do icoil = 1, Ncoils
-     if(coil(icoil)%type .ne. 1) exit ! only for Fourier
-     call TorsDeriv0(icoil,dum,dum) !dummy return
-     if( coil(icoil)%minlambda .le. MinLambda) then
-        MinLambda = coil(icoil)%minlambda
-     endif
-#ifdef DEBUG
-     if(myid .eq. 0) write(ounit, '(8X": Minimum lambda of "I3 "-th coil is    : " ES23.15)') &
-        icoil, coil(icoil)%minlambda
-#endif
-  enddo
-  if(myid .eq. 0) write(ounit, '(8X": Minimum lambda of the coils is"5X"    :" ES23.15)') MinLambda
-  endif
 
   !-------------------------------maximum coil S------------------------------------------------------------
   if( weight_nis .ne. 0 ) then

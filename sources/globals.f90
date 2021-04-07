@@ -133,10 +133,12 @@ module globals
   REAL                 :: curv_sigma     =   0.000D+00
   INTEGER              :: k1_len         =   0
   INTEGER              :: case_tors      =   1
+  INTEGER              :: case_tau       =   1
+  INTEGER              :: penfun_tors    =   1
   REAL                 :: tors_alpha     =   1.000D+00
+  REAL                 :: tors_beta      =   2.000D+00
+  REAL                 :: tors_gamma     =   1.000D+00
   REAL                 :: tors0          =   0.000D+00
-  REAL                 :: lambda0        =   0.000D+00
-  REAL                 :: lambda_alpha   =   0.000D+00
   REAL                 :: nis_alpha      =   1.000D+00
   REAL                 :: nis_beta       =   2.000D+00
   REAL                 :: nis0           =   0.000D+00
@@ -241,10 +243,12 @@ module globals
                         curv_sigma     , &
                         k1_len         , &
                         case_tors      , &
+                        case_tau       , &
+                        penfun_tors    , &
                         tors_alpha     , &
+                        tors_beta      , &
+                        tors_gamma     , &
                         tors0          , &
-                        lambda0        , &
-                        lambda_alpha   , &
                         nis_alpha      , &
                         nis_beta       , &
                         nis0           , &
