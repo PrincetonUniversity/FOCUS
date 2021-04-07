@@ -18,6 +18,7 @@
 .cproject
 .idea/
 .project
+.vscode
 
 bin/
 docs/
@@ -27,4 +28,9 @@ examples/
 *.fpp
 f90wrap_*.f90
 _*.so
-focus_pkg/
+src.*/
+.f2py_f2cmap 
+.libs/ 
+__pycache__/
+python/focus.py
+sources/focuspy.f90

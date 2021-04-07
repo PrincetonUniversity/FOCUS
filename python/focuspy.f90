@@ -197,3 +197,47 @@ subroutine mute(action)
   endif
   return
 end subroutine mute
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+subroutine fortran_allocate(array, dim, lbound)
+  ! safely allocate 1D array called in python
+  use globals, only : dp, ounit
+  implicit none
+
+  REAL, ALLOCATABLE, INTENT(INOUT) :: array(:)
+  INTEGER, INTENT(IN) :: dim
+  INTEGER, OPTIONAL, INTENT(IN) :: lbound
+ 
+  INTEGER :: n0, ierr
+  INTEGER :: icount = 0
+
+  if ( allocated(array) ) then
+    deallocate(array, stat=ierr)
+    if ( ierr.ne.0 ) write(ounit, *) "Problems in deallocating the array, ierr=", ierr, ", icount=", icount
+  end if
+
+  n0 = 1
+  if (present(lbound)) n0 = lbound
+  allocate( array(n0:n0+dim-1), stat=ierr)
+  if ( ierr.ne.0 ) write(ounit, *) "Problems in allocating the array, ierr=", ierr, ", icount=", icount, &
+    & ", n0=", n0, ", dim=", dim
+  return
+end subroutine fortran_allocate
+
+subroutine allocate_coils()
+  ! allocate the allocatable derived types of coil data
+  use globals, only: Ncoils, coil, DoF, FouCoil, ounit
+  implicit none
+
+  INTEGER :: ierr
+
+  allocate( FouCoil(1:Ncoils), stat=ierr)
+  if ( ierr.ne.0 ) write(ounit, *) "Problems in allocating the array FouCoil, ierr=", ierr
+  allocate(    coil(1:Ncoils), stat=ierr)
+  if ( ierr.ne.0 ) write(ounit, *) "Problems in allocating the array coil, ierr=", ierr
+  allocate(     DoF(1:Ncoils), stat=ierr)
+  if ( ierr.ne.0 ) write(ounit, *) "Problems in allocating the array DoF, ierr=", ierr
+
+  return
+end subroutine allocate_coils

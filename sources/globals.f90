@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(10), parameter :: version='v0.13.04' ! version number
+  CHARACTER(10), parameter :: version='v0.13.11' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -47,12 +47,11 @@ module globals
   REAL, parameter      :: fifth      =  one / five
   REAL, parameter      :: sixth      =  one / six
   
-  REAL, parameter      :: pi         =  3.141592653589793238462643383279502884197
+  REAL, parameter      :: pi         =  acos(-1.0_dp)
   REAL, parameter      :: pi2        =  pi * two
   REAL, parameter      :: bsconstant =  1.0E-07   !biot-savart constant
   REAL, parameter      :: antibscont =  1.0E-07 / bsconstant
   REAL, parameter      :: mu0        =  2.0E-07 * pi2
-  REAL, parameter      :: goldenmean =  1.618033988749895 ! golden mean = ( one + sqrt(five) ) / two ;    
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -186,6 +185,8 @@ module globals
   REAL                 :: pp_zmax        =  0.000D+00
   INTEGER              :: pp_ns          =  10
   INTEGER              :: pp_maxiter     =  1000
+  INTEGER              :: pp_nsteps      =  1
+  INTEGER              :: pp_nfp         =  1
   REAL                 :: pp_xtol        =  1.000D-06
 
   CHARACTER(100)   :: input_surf     = 'plasma.boundary'  ! surface file
@@ -296,6 +297,8 @@ module globals
                         pp_zmax        , &
                         pp_ns          , &
                         pp_maxiter     , &
+                        pp_nsteps      , &
+                        pp_nfp         , &
                         pp_xtol        
 
 
@@ -306,7 +309,6 @@ module globals
   INTEGER              :: myid, ncpu, myworkid, color, masterid, nmaster, nworker
   INTEGER              :: MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS, MPI_COMM_FOCUS
   REAL                 :: machprec, vsmall, small, sqrtmachprec
-  CHARACTER(3)         :: nodelabel
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -341,10 +343,10 @@ module globals
      REAL   , allocatable :: xdof(:), xof(:,:), yof(:,:), zof(:,:)
   end type DegreeOfFreedom
   
-  type(arbitrarycoil)  , allocatable :: coil(:)  
-  type(toroidalsurface), allocatable :: surf(:)
-  type(FourierCoil)    , allocatable :: FouCoil(:)
-  type(DegreeOfFreedom), allocatable :: DoF(:)
+  type(arbitrarycoil)  , target, allocatable :: coil(:)  
+  type(toroidalsurface), target, allocatable :: surf(:)
+  type(FourierCoil)    , target, allocatable :: FouCoil(:)
+  type(DegreeOfFreedom), target, allocatable :: DoF(:)
 
   INTEGER              :: Nfp = 1, symmetry = 0, surf_Nfp = 1
   INTEGER              :: plasma = 1, limiter = 1
