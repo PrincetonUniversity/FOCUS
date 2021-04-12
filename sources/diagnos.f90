@@ -103,7 +103,7 @@ SUBROUTINE diagnos
   AvgTors = AvgTors / Ncoils
   if(myid .eq. 0) write(ounit, '(8X": Average torsion of the coils is"5X"   :" ES23.15)') AvgTors
 
-  !-------------------------------maximum coil S------------------------------------------------------------
+  !-------------------------------maximum coil c------------------------------------------------------------
   if( weight_nis .ne. 0 ) then
   call NisDeriv0(1,dum)
   MaxS = coil(1)%maxs
@@ -114,11 +114,11 @@ SUBROUTINE diagnos
         MaxS = coil(icoil)%maxs
      endif
 #ifdef DEBUG
-     if(myid .eq. 0) write(ounit, '(8X": Maximum S of "I3 "-th coil is         : " ES23.15)') &
+     if(myid .eq. 0) write(ounit, '(8X": Maximum c of "I3 "-th coil is         : " ES23.15)') &
         icoil, coil(icoil)%maxs
 #endif
   enddo
-  if(myid .eq. 0) write(ounit, '(8X": Maximum S of the coils is"5X"         :" ES23.15)') MaxS
+  if(myid .eq. 0) write(ounit, '(8X": Maximum c of the coils is"5X"         :" ES23.15)') MaxS
   endif
 
   !-------------------------------average coil length-------------------------------------------------------  
