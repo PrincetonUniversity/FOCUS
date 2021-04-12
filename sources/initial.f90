@@ -331,7 +331,6 @@ subroutine initial
       case default
           index_dot = INDEX(ext,'.input')
           IF (index_dot .gt. 0)  ext = ext(1:index_dot-1)
-          write(ounit, '("initial : machine_prec   = ", ES12.5, " ; sqrtmachprec   = ", ES12.5)') machprec, sqrtmachprec
 #ifdef DEBUG
           write(ounit, '("DEBUG info: extension from command line is "A)') trim(ext)
 #endif
@@ -389,7 +388,7 @@ subroutine check_input
   implicit none
    
   LOGICAL :: exist
-  
+
   !-------------machine constants -----------------------------------------------------------------------
   machprec = epsilon(pi)         ! get the machine precision
   sqrtmachprec = sqrt(machprec)  ! sqrt of machine precision
@@ -402,6 +401,11 @@ subroutine check_input
   out_coils  = trim(ext)//".coils"
   out_harm   = trim(ext)//".harmonics"
   out_plasma = trim(ext)//".plasma"
+
+  if (myid == master) then
+     write(ounit, '("initial : machine_prec   = ", ES12.5, " ; sqrtmachprec   = ", ES12.5)') &
+           machprec, sqrtmachprec
+  endif
 
   !-------------show the namelist for checking----------------------------------------------------------
   if (myid == 0) then ! Not quiet to output more informations;
@@ -687,9 +691,6 @@ subroutine check_input
   
   ClBCAST( limiter_surf,  100,  0 )
   ClBCAST( input_coils ,  100,  0 )
-
-  FATAL( initial, ncpu >= 1000 , too macy cpus, modify nodelabel)
-  write(nodelabel,'(i3.3)') myid ! nodelabel is global; 30 Oct 15;
 
   ! initialize iteration and total iterations;
   iout = 1 ; Nouts = 1

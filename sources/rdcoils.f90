@@ -680,19 +680,18 @@ SUBROUTINE readcoils(filename, maxnseg)
   implicit none
   include "mpif.h"
 
-  INTEGER, parameter         :: mcoil = 256, mseg = 1024 ! Largest coils and segments number
-  INTEGER                    :: icoil, cunit, istat, astat, lstat, ierr, maxnseg, seg(1:mseg)
-  REAL, dimension(mseg,mcoil):: x, y, z, I
+  INTEGER                    :: icoil, cunit, istat, astat, lstat, ierr, maxnseg, iseg
   CHARACTER*100              :: filename
   CHARACTER*200              :: line
   REAL                       :: tmp
-  CHARACTER (LEN=20), dimension(mcoil) :: name
+  CHARACTER (LEN=200)        :: name
 
-  cunit = 99; I = 1.0; Ncoils= 1; maxnseg = 0; seg = 0;
-
+  cunit = 99
+  
+  ! check if file exists
   open(cunit,FILE=trim(filename),STATUS='old',IOSTAT=istat)
   if ( istat .ne. 0 ) then
-     write(ounit,'("rdcoils : Reading coils data error in "A)') trim(filename)
+     write(ounit,'("rdcoils : Error happens in reading "A, " with IOSTAT=", I6)') trim(filename), istat
      call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
   endif
      
@@ -700,36 +699,31 @@ SUBROUTINE readcoils(filename, maxnseg)
   read(cunit,*)
   read(cunit,*)
   read(cunit,*)
+  
+  ! get the maximum number of segments first
+  maxnseg = 0
+  icoil = 0
+  iseg = 0
 
   do
      read(cunit,'(a)', IOSTAT = istat) line
      if(istat .ne. 0 .or. line(1:3) == 'end') exit !detect EOF or end
 
-     seg(Ncoils) = seg(Ncoils) + 1
-     read(line,*, IOSTAT = lstat) x(seg(Ncoils), Ncoils), y(seg(Ncoils), Ncoils), z(seg(Ncoils), Ncoils), &
-          I(seg(Ncoils), Ncoils)
-     if ( I(seg(Ncoils), Ncoils) == zero) then
-        seg(Ncoils) = seg(Ncoils) - 1  !remove the duplicated last point
-        read(line, *, IOSTAT = lstat) tmp, tmp, tmp, tmp, tmp, name(Ncoils)
-        Ncoils = Ncoils + 1
-     endif
+     read(line, *, IOSTAT=lstat) tmp, tmp, tmp, tmp, tmp, name
+     if (lstat .ne. 0) then
+        iseg = iseg + 1
+     else
+        icoil = icoil + 1
+        if (iseg .ge. maxnseg) maxnseg = iseg
+        iseg = 0
+     end if
   enddo
-
   close(cunit)
 
-  Ncoils = Ncoils - 1
-  maxnseg = maxval(seg)
-  FATAL( readcoils, Ncoils  .le. 0 .or. Ncoils   >  mcoil, illegal )
-  FATAL( readcoils, maxnseg .le. 0 .or. maxnseg  >  mseg , illegal )
-
-#ifdef DEBUG
-  write(ounit,'("rdcoils : Finding " I4 " coils and maximum segments number is " I6)') &
-       Ncoils, maxnseg
-  do icoil = 1, Ncoils
-     write(ounit, '("rdcoils : Number of segments in coil " I4 " is " I6)') icoil, seg(icoil)
-  enddo
-#endif
-
+  ! ALLOCATE data
+  Ncoils = icoil
+  FATAL( readcoils, Ncoils .le. 0 , Errors in reading coils )
+  FATAL( readcoils, maxnseg .le. 0 , Errors in reading coils )
   SALLOCATE( coilsX  , (1:maxnseg, 1:Ncoils), zero )
   SALLOCATE( coilsY  , (1:maxnseg, 1:Ncoils), zero )
   SALLOCATE( coilsZ  , (1:maxnseg, 1:Ncoils), zero )
@@ -737,12 +731,38 @@ SUBROUTINE readcoils(filename, maxnseg)
   SALLOCATE( coilseg , (1:Ncoils)           ,    0 )
   SALLOCATE( coilname, (1:Ncoils)           , ''   )
 
-  coilsX( 1:maxnseg, 1:Ncoils) = x( 1:maxnseg, 1:Ncoils)
-  coilsY( 1:maxnseg, 1:Ncoils) = y( 1:maxnseg, 1:Ncoils)
-  coilsZ( 1:maxnseg, 1:Ncoils) = z( 1:maxnseg, 1:Ncoils)
-  coilsI(            1:Ncoils) = I( 1        , 1:Ncoils)
-  coilseg(           1:Ncoils) = seg(          1:Ncoils)
-  coilname(          1:Ncoils) = name(         1:Ncoils)
+  ! read and assign data
+  open(cunit,FILE=trim(filename),STATUS='old',IOSTAT=istat)
+  read(cunit,*)
+  read(cunit,*)
+  read(cunit,*)
+  icoil = 1
+  iseg = 0
+  do
+   read(cunit,'(a)', IOSTAT = istat) line
+   if(istat .ne. 0 .or. line(1:3) == 'end') exit !detect EOF or end
+
+   read(line, *, IOSTAT=lstat) tmp, tmp, tmp, tmp, tmp, coilname(icoil)
+   if (lstat .ne. 0) then
+      iseg = iseg + 1
+      read(line, *) coilsX(iseg, icoil), coilsY(iseg, icoil), coilsZ(iseg, icoil), coilsI(icoil)
+   else
+      coilseg(icoil) = iseg
+      icoil = icoil + 1
+      iseg = 0
+   end if
+  enddo
+  close(cunit)
+  icoil = icoil - 1
+  FATAL( readcoils, Ncoils .ne. icoil, These two should be equal)
+
+#ifdef DEBUG
+  write(ounit,'("rdcoils : Finding " I4 " coils and maximum segments number is " I6)') &
+       Ncoils, maxnseg
+  do icoil = 1, Ncoils
+     write(ounit, '("rdcoils : Number of segments in coil " I4 " is " I6)') icoil, coilseg(icoil)
+  enddo
+#endif
 
   return
 

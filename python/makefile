@@ -90,7 +90,7 @@ LIBSRC_WRAP_FPP_FILES = $(addsuffix .fpp,${LIBSRC_WRAP_SOURCES})
 .PHONY: all all_clean
 
 
-all: _${PYTHON_MODN}.so  _${PYTHON_MODN}_pkg.so test
+all: _${PYTHON_MODN}.so test
 
 all_clean: f90wrap_clean
 	make -C ${SOURCES} clean ALLFILES="${ALLFILES} focuspy"
@@ -98,7 +98,7 @@ all_clean: f90wrap_clean
 
 f90wrap_clean:
 	-rm -f ${LIBSRC_OBJECTS} ${LIBSRC_FPP_FILES} $(LIB_NAME) _${PYTHON_MODN}*.so \
-	_${PYTHON_MODN}_pkg.so *.mod *.fpp f90wrap*.f90 f90wrap*.o *.o ${PYTHON_MODN}.py
+	*.mod *.fpp f90wrap*.f90 f90wrap*.o *.o ${PYTHON_MODN}.py
 	-rm -rf ${PYTHON_MODN}_pkg
 	-rm -rf src.*/ .f2py_f2cmap .libs/ __pycache__/
 	-rm -rf $(LIB_NAME)
@@ -108,19 +108,13 @@ $(LIBSRC_WRAP_FPP_FILES): %.fpp: ${SOURCES}/%_m.F90
 
 $(LIB_NAME): $(addprefix, ${SOURCES}/, $(HFILES)) focuspy.f90
 	cp focuspy.f90 ${SOURCES}/
-	make -C ${SOURCES} xfocus CC=gfortran PFLAGS=${CFLAGS} ALLFILES="${ALLFILES} focuspy"
+	make -C ${SOURCES} xfocus CC=gfortran PFLAGS="${PFLAGS} ${CFLAGS}" ALLFILES="${ALLFILES} focuspy"
 	cd ${SOURCES}; ${LIBTOOL} ../python/$@ $(ROBJS) $(NUMOBJ) focuspy_r.o
 	ranlib $@
 
-
 _${PYTHON_MODN}.so: $(LIB_NAME) ${LIBSRC_WRAP_FPP_FILES} 
 	f90wrap -m ${PYTHON_MODN} ${LIBSRC_WRAP_FPP_FILES} -k ${KIND_MAP} -v
-	f2py-f90wrap --f90exec=${FC} --build-dir . -c -m _${PYTHON_MODN} -L. -l$(PYTHON_MODN) -I${SOURCES} $(HDF5) f90wrap*.f90
-
-
-_${PYTHON_MODN}_pkg.so: $(LIB_NAME) ${LIBSRC_WRAP_FPP_FILES}
-	f90wrap -m ${PYTHON_MODN}_pkg ${LIBSRC_WRAP_FPP_FILES} -k ${KIND_MAP} -v -P
-	f2py-f90wrap --f90exec=${FC} --build-dir . -c -m _${PYTHON_MODN}_pkg -L. -l$(PYTHON_MODN) -I${SOURCES} $(HDF5) f90wrap*.f90
+	f2py-f90wrap --f90exec=${FC} --build-dir . -c -m _${PYTHON_MODN} -L. -l$(PYTHON_MODN) -I${SOURCES} $(LINKS) f90wrap*.f90
 
 test:
 	@python -c "import focus; print('FOCUS version: {:}'.format(focus.globals.version))"
