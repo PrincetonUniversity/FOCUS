@@ -2,9 +2,9 @@
 focus   : Begin execution with ncpu =  160
 initial : machine_prec   =  2.22045E-16 ; sqrtmachprec   =  1.49012E-08
  -----------INPUT NAMELIST------------------------------------
-initial : Read namelist focusin from : wista.input
+initial : Read namelist focusin from : aten.input
         : Read plasma boundary  from : plasma.boundary
-        : Read initial coils    from : wista.focus(Parameters only)
+        : Read initial coils    from : aten.focus(Parameters only)
         :         IsQuiet =     -1 ; Output detailed information.
         :     IsSymmetric =      2 ; Periodicity and stellarator symmetry are both enforced.
         :    case_surface =      0 ; Read VMEC-like Fourier harmonics for plasma boundary.
@@ -19,15 +19,15 @@ initial : Read namelist focusin from : wista.input
         :     case_length =      3 ; Modified quadratic length penalty.
         :      penfun_nis =      2 ; Polynomial penalty function.
         :   case_postproc =      1 ; Coil evaluations will be performed.
-outputs : HDF5 outputs           are saved in : focus_wista.h5
-outputs : Optimizated coils      are saved in : wista.focus ; wista.coils
+outputs : HDF5 outputs           are saved in : focus_aten.h5
+outputs : Optimizated coils      are saved in : aten.focus ; aten.coils
  -----------Reading surface-----------------------------------
 surface : The surface plasma.boundary will be discretized in    128 X    256 elements.
         : Nfou =     18 ; Nfp =      4 ; NBnf =      0 ;
         : Enclosed total surface volume = 3.55940E+00 m^3 ; area = 3.26876E+01 m^2.
         : The theta angle used is counter-clockwise.
  -----------INITIALIZE COILS----------------------------------
-rdcoils : identified      6 unique coils in wista.focus
+rdcoils : identified      6 unique coils in aten.focus
         :   6 fixed currents ;   0 fixed geometries.
         : coils will be discretized in    384 segments
 focus   : Initialization took  1.13727E-01 S.
