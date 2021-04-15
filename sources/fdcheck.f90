@@ -90,7 +90,7 @@ SUBROUTINE fdcheck( ideriv )
       endif
       
       ! get the maximum difference
-      if (diff > maxdiff) then
+      if (rdiff > maxrdiff) then
          imax = idof
          maxdiff = diff
          maxrdiff = rdiff
