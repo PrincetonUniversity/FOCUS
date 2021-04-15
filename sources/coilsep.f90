@@ -13,7 +13,6 @@
 ! chi = chi + weight_ccsep*ccsep
 ! t1C is total derivative of penalty
 ! LM implemented
-! not parallelized, should be parallelized, it's slow 
 subroutine coilsep(ideriv)
   use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, &
        coil, DoF, Ncoils, Nfixgeo, Ndof, ccsep, t1C, t2C, Nfp, &
@@ -83,7 +82,7 @@ subroutine coilsep(ideriv)
      endif
      t1C = 2.0*t1C / ( numCoil * (numCoil - 1) + machprec )
   endif
-
+  
   return
 end subroutine coilsep
 
@@ -101,7 +100,7 @@ subroutine CoilSepDeriv0(icoil, coilsep0)
   REAL   , intent(out) :: coilsep0
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   INTEGER              :: kseg0, kseg1, astat, ierr, i, per0, per1, ss0, ss1, j0, j00, j1, l0, l00, l1, NS, NS1
-  REAL                 :: rdiff, hypc, coilsepHold, xc0, yc0, zc0, xc1, yc1, zc1, coilseph
+  REAL                 :: rdifff, hypc, coilsepHold, xc0, yc0, zc0, xc1, yc1, zc1, coilseph
   REAL, allocatable    :: x0(:), y0(:), z0(:), x1(:), y1(:), z1(:), absrp0(:), absrp1(:)
 
   NS = coil(icoil)%NS
@@ -163,13 +162,13 @@ subroutine CoilSepDeriv0(icoil, coilsep0)
                  do kseg0 = 0, NS-1
                     if( myid.ne.modulo(kseg0,ncpu) ) cycle ! parallelization loop;
                     do kseg1 = 0, NS-1
-                       rdiff = sqrt( ( x0(kseg0) - x1(kseg1) )**2 + ( y0(kseg0) - y1(kseg1) )**2 + ( z0(kseg0) - z1(kseg1) )**2 )
-                       if ( rdiff < r_delta ) then
+                       rdifff = sqrt( ( x0(kseg0) - x1(kseg1) )**2 + ( y0(kseg0) - y1(kseg1) )**2 + ( z0(kseg0) - z1(kseg1) )**2 )
+                       if ( rdifff < r_delta ) then
                           if ( penfun_ccsep .eq. 1 ) then
-                             hypc = 0.5*exp(ccsep_alpha*( r_delta - rdiff )) + 0.5*exp(-1.0*ccsep_alpha*( r_delta - rdiff ))
+                             hypc = 0.5*exp(ccsep_alpha*( r_delta - rdifff )) + 0.5*exp(-1.0*ccsep_alpha*( r_delta - rdifff ))
                              coilseph = coilseph + (hypc - 1.0)**2
                           else 
-                             coilseph = coilseph + (ccsep_alpha*( r_delta - rdiff ))**ccsep_beta
+                             coilseph = coilseph + (ccsep_alpha*( r_delta - rdifff ))**ccsep_beta
                           endif
                        endif
                     enddo
@@ -220,13 +219,13 @@ subroutine CoilSepDeriv0(icoil, coilsep0)
                  do kseg0 = 0, NS-1
                     if( myid.ne.modulo(kseg0,ncpu) ) cycle ! parallelization loop;
                     do kseg1 = 0, NS1-1
-                       rdiff = sqrt( ( x0(kseg0) - x1(kseg1) )**2 + ( y0(kseg0) - y1(kseg1) )**2 + ( z0(kseg0) - z1(kseg1) )**2 )
-                       if ( rdiff < r_delta ) then
+                       rdifff = sqrt( ( x0(kseg0) - x1(kseg1) )**2 + ( y0(kseg0) - y1(kseg1) )**2 + ( z0(kseg0) - z1(kseg1) )**2 )
+                       if ( rdifff < r_delta ) then
                           if ( penfun_ccsep .eq. 1 ) then
-                             hypc = 0.5*exp(ccsep_alpha*( r_delta - rdiff )) + 0.5*exp(-1.0*ccsep_alpha*( r_delta - rdiff ))
+                             hypc = 0.5*exp(ccsep_alpha*( r_delta - rdifff )) + 0.5*exp(-1.0*ccsep_alpha*( r_delta - rdifff ))
                              coilseph = coilseph + (hypc - 1.0)**2
                           else 
-                             coilseph = coilseph + (ccsep_alpha*( r_delta - rdiff ))**ccsep_beta
+                             coilseph = coilseph + (ccsep_alpha*( r_delta - rdifff ))**ccsep_beta
                           endif
                        endif
                     enddo
@@ -269,7 +268,7 @@ subroutine CoilSepDeriv1(icoil, derivs, ND)
   REAL   , intent(out) :: derivs(1:1, 1:ND)
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   INTEGER              :: kseg0, kseg1, astat, ierr, per0, per1, ss0, ss1, j0, j00, j1, l0, l00, l1, i, NS, NS1
-  REAL                 :: dl3, hypc, hyps, rdiff, int_hold, xc0, yc0, zc0, xc1, yc1, zc1
+  REAL                 :: dl3, hypc, hyps, rdifff, int_hold, xc0, yc0, zc0, xc1, yc1, zc1
   REAL, allocatable    :: x0(:), y0(:), z0(:), x1(:), y1(:), z1(:), derivs_hold(:,:), absrp0(:), absrp1(:), derivsh(:)
 
   FATAL( CoilSepDeriv1, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
@@ -328,14 +327,14 @@ subroutine CoilSepDeriv1(icoil, derivs, ND)
                  do kseg0 = 0, NS-1
                     if( myid.ne.modulo(kseg0,ncpu) ) cycle ! parallelization loop;
                     do kseg1 = 0, NS-1
-                       rdiff = sqrt( ( x0(kseg0) - x1(kseg1) )**2 + ( y0(kseg0) - y1(kseg1) )**2 + ( z0(kseg0) - z1(kseg1) )**2 )
-                       if ( rdiff < r_delta ) then
+                       rdifff = sqrt( ( x0(kseg0) - x1(kseg1) )**2 + ( y0(kseg0) - y1(kseg1) )**2 + ( z0(kseg0) - z1(kseg1) )**2 )
+                       if ( rdifff < r_delta ) then
                           if ( penfun_ccsep .eq. 1 ) then
-                             hypc = 0.5*exp(ccsep_alpha*( r_delta - rdiff )) + 0.5*exp(-1.0*ccsep_alpha*( r_delta - rdiff ))
-                             hyps = 0.5*exp(ccsep_alpha*( r_delta - rdiff )) - 0.5*exp(-1.0*ccsep_alpha*( r_delta - rdiff ))
-                             int_hold = -2.0*ccsep_alpha*(hypc-1.0)*hyps/rdiff
+                             hypc = 0.5*exp(ccsep_alpha*( r_delta - rdifff )) + 0.5*exp(-1.0*ccsep_alpha*( r_delta - rdifff ))
+                             hyps = 0.5*exp(ccsep_alpha*( r_delta - rdifff )) - 0.5*exp(-1.0*ccsep_alpha*( r_delta - rdifff ))
+                             int_hold = -2.0*ccsep_alpha*(hypc-1.0)*hyps/rdifff
                           else
-                             int_hold = -1.0*ccsep_beta*ccsep_alpha*(ccsep_alpha*(r_delta-rdiff))**(ccsep_beta-1.0)/rdiff
+                             int_hold = -1.0*ccsep_beta*ccsep_alpha*(ccsep_alpha*(r_delta-rdifff))**(ccsep_beta-1.0)/rdifff
                           endif
                           derivsh(:) = derivsh(:) + int_hold*( &
                                   (x0(kseg0)-x1(kseg1))*(DoF(icoil)%xof(kseg0,:)*cos(pi2*(j0-1)/Nfp)-Dof(icoil)%yof(kseg0,:)*sin(pi2*(j0-1)/Nfp)) + &
@@ -394,14 +393,14 @@ subroutine CoilSepDeriv1(icoil, derivs, ND)
                  do kseg0 = 0, NS-1
                     if( myid.ne.modulo(kseg0,ncpu) ) cycle ! parallelization loop;
                     do kseg1 = 0, NS1-1
-                       rdiff = sqrt( ( x0(kseg0) - x1(kseg1) )**2 + ( y0(kseg0) - y1(kseg1) )**2 + ( z0(kseg0) - z1(kseg1) )**2 )
-                       if ( rdiff < r_delta ) then
+                       rdifff = sqrt( ( x0(kseg0) - x1(kseg1) )**2 + ( y0(kseg0) - y1(kseg1) )**2 + ( z0(kseg0) - z1(kseg1) )**2 )
+                       if ( rdifff < r_delta ) then
                           if ( penfun_ccsep .eq. 1 ) then
-                             hypc = 0.5*exp(ccsep_alpha*( r_delta - rdiff )) + 0.5*exp(-1.0*ccsep_alpha*( r_delta - rdiff ))
-                             hyps = 0.5*exp(ccsep_alpha*( r_delta - rdiff )) - 0.5*exp(-1.0*ccsep_alpha*( r_delta - rdiff ))
-                             int_hold = -2.0*ccsep_alpha*(hypc-1.0)*hyps/rdiff
+                             hypc = 0.5*exp(ccsep_alpha*( r_delta - rdifff )) + 0.5*exp(-1.0*ccsep_alpha*( r_delta - rdifff ))
+                             hyps = 0.5*exp(ccsep_alpha*( r_delta - rdifff )) - 0.5*exp(-1.0*ccsep_alpha*( r_delta - rdifff ))
+                             int_hold = -2.0*ccsep_alpha*(hypc-1.0)*hyps/rdifff
                           else
-                             int_hold = -1.0*ccsep_beta*ccsep_alpha*(ccsep_alpha*(r_delta-rdiff))**(ccsep_beta-1.0)/rdiff
+                             int_hold = -1.0*ccsep_beta*ccsep_alpha*(ccsep_alpha*(r_delta-rdifff))**(ccsep_beta-1.0)/rdifff
                           endif
                           derivsh(:) = derivsh(:) + int_hold*( &
                                   (x0(kseg0)-x1(kseg1))*(DoF(icoil)%xof(kseg0,:)*cos(pi2*(j0-1)/Nfp)-Dof(icoil)%yof(kseg0,:)*sin(pi2*(j0-1)/Nfp)) + &
