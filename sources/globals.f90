@@ -72,11 +72,6 @@ module globals
   CHARACTER(100)   :: out_focus ! output ext.focus file
   CHARACTER(100)   :: out_harm  ! output harmonics file
   CHARACTER(100)   :: out_plasma  ! updated plasma boundary
-
-  CHARACTER(100)   :: input_surf     = 'plasma.boundary'  ! surface file
-  CHARACTER(100)   :: input_coils    = 'none'             ! input file for coils
-  CHARACTER(100)   :: input_harm     = 'target.harmonics' ! input target harmonics file
-  CHARACTER(100)   :: limiter_surf   = 'none'             ! limiter surface
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
@@ -84,7 +79,8 @@ module globals
   INTEGER              :: IsQuiet        =  -1        
   INTEGER              :: IsSymmetric    =   0 
         
-  INTEGER              :: case_surface   =   0         
+  INTEGER              :: case_surface   =   0
+  CHARACTER(100)       :: input_surf     = 'plasma.boundary'  ! surface file       
   REAL                 :: knotsurf       =   0.200D-00
   REAL                 :: ellipticity    =   0.000D+00
   INTEGER              :: Nteta          =   64           
@@ -92,6 +88,7 @@ module globals
 
   INTEGER              :: case_init      =   0
   INTEGER              :: case_coils     =   1
+  CHARACTER(100)       :: input_coils    = 'none'             ! input file for coils
   INTEGER              :: Ncoils         =   0
   REAL                 :: init_current   =   1.000D+06        
   REAL                 :: init_radius    =   1.000D+00
@@ -111,6 +108,7 @@ module globals
 
   REAL                 :: weight_bharm   =   0.000D+00
   INTEGER              :: bharm_jsurf    =   0
+  CHARACTER(100)       :: input_harm     = 'target.harmonics' ! input target harmonics file
 
   REAL                 :: weight_tflux   =   0.000D+00
   REAL                 :: target_tflux   =   0.000D+00
@@ -150,6 +148,7 @@ module globals
 
   REAL                 :: weight_cssep   =   0.000D+00
   REAL                 :: cssep_factor   =   4.000D+00 
+  CHARACTER(100)       :: limiter_surf   = 'none'             ! limiter surface
 
   REAL                 :: weight_ccsep   =   0.000D+00
   INTEGER              :: penfun_ccsep   =   1
@@ -204,17 +203,24 @@ module globals
   INTEGER              :: pp_nsteps      =  1
   INTEGER              :: pp_nfp         =  1
   REAL                 :: pp_xtol        =  1.000D-06
+
+ 
+
+
+
                                                          
   namelist / focusin / &
   IsQuiet       ,&
   IsSymmetric   ,&
   case_surface  ,&
+  input_surf    ,&
   knotsurf      ,&
   ellipticity   ,&
   Nteta         ,&
   Nzeta         ,&
   case_init     ,&
   case_coils    ,&
+  input_coils   ,&
   Ncoils        ,&
   init_current  ,&
   init_radius   ,&
@@ -231,6 +237,7 @@ module globals
   case_bnormal  ,&
   weight_bharm  ,&
   bharm_jsurf   ,&
+  input_harm    ,&
   weight_tflux  ,&
   target_tflux  ,&
   weight_ttlen  ,&
@@ -264,6 +271,7 @@ module globals
   k1_len        ,&
   weight_cssep  ,&
   cssep_factor  ,&
+  limiter_surf  ,&
   weight_ccsep  ,&
   penfun_ccsep  ,&
   ccsep_skip    ,&
