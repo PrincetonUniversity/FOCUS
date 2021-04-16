@@ -66,13 +66,13 @@ subroutine solvers
 
   ! evaluate the initial coils, in case coils intersect with plasma
   call diagnos
+  
+  if (IsNormWeight /= 0) call normweight
 
   if (case_optimize < 0) then          ! finite difference checking derivatives;
      call fdcheck(case_optimize)
      return
   endif
-
-  if (IsNormWeight /= 0) call normweight
 
   if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "------------- Initial status ------------------------"
   !if (myid == 0) write(ounit, '("output  : "A6" : "11(A12," ; "))') "iout", "mark", "chi", "dE_norm", &
