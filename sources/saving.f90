@@ -100,7 +100,7 @@ subroutine saving
   HWRITERV( 1                ,   target_tflux  ,   target_tflux                  )
   HWRITERV( 1                ,   weight_ttlen  ,   weight_ttlen                  )
   HWRITERV( 1                ,   target_length ,   target_length                 )
-  HWRITERV( 1                ,   k0            ,   k0                            ) 
+  HWRITERV( 1                ,   curv_k0            ,   curv_k0                            ) 
   HWRITERV( 1                ,   weight_specw  ,   weight_specw                  )
   HWRITERV( 1                ,   weight_cssep  ,   weight_cssep                  )
   HWRITERV( 1                ,   weight_gnorm  ,   weight_gnorm                  )
@@ -260,11 +260,11 @@ subroutine saving
 
         select case (coil(icoil)%type)
         case (1)
-           write(wunit, '(4(A6, A15, 8X))') " #Nseg", "current",  "Ifree", "Length", "Lfree", "target_length"!, "k0"
+           write(wunit, '(4(A6, A15, 8X))') " #Nseg", "current",  "Ifree", "Length", "Lfree", "target_length"!, "curv_k0"
            !write(wunit,'(2X, I4, ES23.15, 3X, I3, ES23.15, 3X, I3, ES23.15, ES23.15)') &
-                !coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo, coil(icoil)%k0
+                !coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo, coil(icoil)%curv_k0
            write(wunit,'(2X, I4, ES23.15, 3X, I3, ES23.15, 3X, I3, ES23.15)') &
-                coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo !,coil(icoil)%k0  
+                coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo !,coil(icoil)%curv_k0  
            NF = FouCoil(icoil)%NF ! shorthand;
            write(wunit, *) "#NFcoil"
            write(wunit, '(I3)') NF

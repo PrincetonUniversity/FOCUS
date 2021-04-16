@@ -97,7 +97,7 @@ end subroutine curvature
 subroutine CurvDeriv0(icoil,curvRet)
 
   use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils, &
-          case_curv, curv_alpha, k0, k1, curv_beta, curv_gamma, curv_sigma, penfun_curv, k1_len, MPI_COMM_FOCUS
+          case_curv, curv_alpha, curv_k0, k1, curv_beta, curv_gamma, curv_sigma, penfun_curv, k1_len, MPI_COMM_FOCUS
 
   implicit none
   include "mpif.h"
@@ -143,7 +143,7 @@ subroutine CurvDeriv0(icoil,curvRet)
 
   FATAL( CurvDeriv0, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
   FATAL( CurvDeriv0, penfun_curv .ne. 1 .and. penfun_curv .ne. 2 , invalid choice of penfun_curv, pick 1 or 2 )
-  FATAL( CurvDeriv0, k0 < 0.0 , k0 cannot be negative )
+  FATAL( CurvDeriv0, curv_k0 < 0.0 , curv_k0 cannot be negative )
   FATAL( CurvDeriv0, k1 < 0.0 , k1 cannot be negative )
   FATAL( CurvDeriv0, curv_alpha < 0.0 , curv_alpha cannot be negative )
   FATAL( CurvDeriv0, curv_beta < 2.0 , curv_beta needs to be >= 2 )
@@ -166,12 +166,12 @@ subroutine CurvDeriv0(icoil,curvRet)
   do kseg = 0,NS-1
      curv_hold = 0.0
      if ( curv_alpha .ne. 0.0 ) then
-        if ( curvv(kseg) > k0 ) then
+        if ( curvv(kseg) > curv_k0 ) then
            if ( penfun_curv .eq. 1 ) then
-              hypc = 0.5*exp( curv_alpha*( curvv(kseg) - k0 ) ) + 0.5*exp( -1.0*curv_alpha*( curvv(kseg) - k0 ) )
+              hypc = 0.5*exp( curv_alpha*( curvv(kseg) - curv_k0 ) ) + 0.5*exp( -1.0*curv_alpha*( curvv(kseg) - curv_k0 ) )
               curv_hold = (hypc - 1.0)**2
            else
-              curv_hold = ( curv_alpha*(curvv(kseg)-k0) )**curv_beta
+              curv_hold = ( curv_alpha*(curvv(kseg)-curv_k0) )**curv_beta
            endif
         endif
      endif
@@ -203,7 +203,7 @@ end subroutine CurvDeriv0
 subroutine CurvDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a coil
 
   use globals, only: dp, zero, pi2, coil, DoF, myid, ounit, Ncoils, &
-                case_curv, curv_alpha, k0, k1, curv_beta, curv_gamma, curv_sigma, penfun_curv, k1_len, FouCoil, MPI_COMM_FOCUS
+                case_curv, curv_alpha, curv_k0, k1, curv_beta, curv_gamma, curv_sigma, penfun_curv, k1_len, FouCoil, MPI_COMM_FOCUS
   implicit none
   include "mpif.h"
 
@@ -281,16 +281,16 @@ subroutine CurvDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a co
         k1_use = k1
      endif
      if ( penfun_curv .eq. 1 ) then
-        if ( curvHold > k0 ) then
-           hypc = 0.5*exp( curv_alpha*(curvHold-k0) ) + 0.5*exp( -1.0*curv_alpha*(curvHold-k0) )
-           hyps = 0.5*exp( curv_alpha*(curvHold-k0) ) - 0.5*exp( -1.0*curv_alpha*(curvHold-k0) )
+        if ( curvHold > curv_k0 ) then
+           hypc = 0.5*exp( curv_alpha*(curvHold-curv_k0) ) + 0.5*exp( -1.0*curv_alpha*(curvHold-curv_k0) )
+           hyps = 0.5*exp( curv_alpha*(curvHold-curv_k0) ) - 0.5*exp( -1.0*curv_alpha*(curvHold-curv_k0) )
            penCurv = ( hypc - 1.0 )**2
            curv_deriv = 2.0*curv_alpha*( hypc - 1.0 )*hyps
         endif
      else
-        if ( curvHold > k0 ) then
-           penCurv = (curv_alpha*(curvHold-k0))**curv_beta
-           curv_deriv = curv_beta*curv_alpha*( (curv_alpha*(curvHold-k0))**(curv_beta-1.0) )
+        if ( curvHold > curv_k0 ) then
+           penCurv = (curv_alpha*(curvHold-curv_k0))**curv_beta
+           curv_deriv = curv_beta*curv_alpha*( (curv_alpha*(curvHold-curv_k0))**(curv_beta-1.0) )
         endif
      endif
      if ( curvHold > k1_use ) then

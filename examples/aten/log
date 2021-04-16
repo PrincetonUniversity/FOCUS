@@ -35,7 +35,7 @@ focus   : Initialization took  1.13727E-01 S.
 solvers : Total number of DOF is   1170
         : Initial weights are:        bnorm,       bharm,       tflux,       ttlen,       cssep,        curv,       ccsep,        tors,         nis,
         :                       1.00000E+03, 0.00000E+00, 0.00000E+00, 1.00000E+00, 0.00000E+00, 1.00000E+00, 1.00000E+00, 0.00000E+00, 1.00000E+00,
-        : target_tflux =  0.00000E+00 ; target_length =  2.40000E+00 ; k0 =  1.00000E+01 ; r_delta =  1.00000E-01  ; cssep_factor =  4.00000E+00
+        : target_tflux =  0.00000E+00 ; target_length =  2.40000E+00 ; curv_k0 =  1.00000E+01 ; r_delta =  1.00000E-01  ; cssep_factor =  4.00000E+00
  -----------COIL DIAGNOSTICS----------------------------------
 diagnos :      Bnormal ; Bmn harmonic ;    tor. flux ;  coil length ;     c-s sep. ;    curvature ;     c-c sep. ;      torsion ;       nissin ; 
         :  1.49925E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  2.74074E-02 ;  2.07687E+04 ;  0.00000E+00 ;  5.52325E-04 ; 

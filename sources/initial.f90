@@ -430,7 +430,7 @@ subroutine check_input
         FATAL( initial, NFcoil <= 0    , no enough harmonics )
         FATAL( initial, Nseg   <= 0    , no enough segments  )
         FATAL( initial, target_length < zero, illegal )        
-        FATAL( initial, k0            < zero, illegal )
+        FATAL( initial, curv_k0            < zero, illegal )
         write(ounit, '("        : Read initial coils    from : ", A, A)') trim(input_coils), '(MAKEGRID format)'
      case( 0 )
         if (trim(input_coils) == 'none') input_coils = trim(ext)//".focus"
@@ -444,14 +444,14 @@ subroutine check_input
         FATAL( initial, NFcoil <= 0    , no enough harmonics )
         FATAL( initial, Nseg   <= 0    , no enough segments  )
         FATAL( initial, target_length < zero, illegal )
-        FATAL( initial, k0            < zero, illegal )
+        FATAL( initial, curv_k0            < zero, illegal )
         if (IsQuiet < 1) write(ounit, 1000) 'case_init', case_init, 'Initialize circular coils.'
      case( 2 )
         FATAL( initial, Ncoils < 1, should provide the No. of coils)
         FATAL( initial, init_current == zero, invalid coil current)
         FATAL( initial, init_radius < zero, invalid coil radius)
         FATAL( initial, target_length < zero, illegal )
-        FATAL( initial, k0            < zero, illegal )
+        FATAL( initial, curv_k0            < zero, illegal )
         if (IsQuiet < 1) write(ounit, 1000) 'case_init', case_init, 'Initialize magnetic dipoles.'
      case default
         FATAL( initial, .true., selected case_init is not supported )

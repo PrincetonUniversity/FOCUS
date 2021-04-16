@@ -86,7 +86,7 @@ SUBROUTINE fdcheck( ideriv )
 
      if( myid.eq.0 ) then 
          write(ounit,'("fdcheck : ", I4, "/", I4, 5(" ; "ES15.7))') idof, Ndof, small, t1E(idof), fd, diff, rdiff
-         if (diff >= psmall**2) write(ounit, *) "----------suspicious unmatching-----------------------"
+         if (rdiff >= psmall) write(ounit, *) "----------suspicious unmatching-----------------------"
       endif
       
       ! get the maximum difference

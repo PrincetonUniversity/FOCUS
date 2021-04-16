@@ -24,7 +24,7 @@
  case_bnormal   =        1
  case_length    =        1 
  case_curv      =        3             ! Penalty function for curvature
- k0             =        1.000D+01     ! Maximum curvature constraint 
+ curv_k0             =        1.000D+01     ! Maximum curvature constraint 
  curv_alpha     =        2.000D+00     ! Exponent for curvature constraint violations 
  weight_bnorm   =        1.000D+02
  weight_bharm   =        0.000D+00
