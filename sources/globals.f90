@@ -129,7 +129,6 @@ module globals
   
   REAL                 :: weight_tors    =   0.000D+00
   INTEGER              :: case_tors      =   1
-  INTEGER              :: case_tau       =   1
   INTEGER              :: penfun_tors    =   1
   REAL                 :: tors0          =   0.000D+00
   REAL                 :: tors_alpha     =   1.000D+00
@@ -203,11 +202,6 @@ module globals
   INTEGER              :: pp_nsteps      =  1
   INTEGER              :: pp_nfp         =  1
   REAL                 :: pp_xtol        =  1.000D-06
-
- 
-
-
-
                                                          
   namelist / focusin / &
   IsQuiet       ,&
@@ -254,7 +248,6 @@ module globals
   curv_k0       ,&
   weight_tors   ,&
   case_tors     ,&
-  case_tau      ,&
   penfun_tors   ,&
   tors0         ,&
   tors_alpha    ,&
