@@ -72,6 +72,11 @@ module globals
   CHARACTER(100)   :: out_focus ! output ext.focus file
   CHARACTER(100)   :: out_harm  ! output harmonics file
   CHARACTER(100)   :: out_plasma  ! updated plasma boundary
+
+  CHARACTER(100)   :: input_surf     = 'plasma.boundary'  ! surface file
+  CHARACTER(100)   :: input_coils    = 'none'             ! input file for coils
+  CHARACTER(100)   :: input_harm     = 'target.harmonics' ! input target harmonics file
+  CHARACTER(100)   :: limiter_surf   = 'none'             ! limiter surface
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
@@ -97,56 +102,67 @@ module globals
               
   INTEGER              :: IsNormalize    =   1
   INTEGER              :: IsNormWeight   =   1
-  INTEGER              :: case_bnormal   =   0
-  INTEGER              :: case_length    =   1
-  INTEGER              :: case_curv      =   4 
-  REAL                 :: curv_alpha     =   0.000D+00
-  REAL                 :: curv_k0        =   1.000D+01
-  REAL                 :: weight_bnorm   =   1.000D+00
-  INTEGER              :: bharm_jsurf    =   0
-  REAL                 :: weight_bharm   =   0.000D+00
-  REAL                 :: weight_tflux   =   0.000D+00
-  REAL                 :: target_tflux   =   0.000D+00
-  REAL                 :: weight_ttlen   =   0.000D+00
-  REAL                 :: target_length  =   0.000D+00
-  REAL                 :: length_delta   =   0.000D+00
-  REAL                 :: weight_cssep   =   0.000D+00
-  REAL                 :: cssep_factor   =   4.000D+00 
-  REAL                 :: weight_specw   =   0.000D+00
-  REAL                 :: weight_ccsep   =   0.000D+00
-  REAL                 :: weight_tors    =   0.000D+00
-  REAL                 :: weight_nis     =   0.000D+00
-  REAL                 :: r_delta        =   1.000D-01
-  REAL                 :: ccsep_alpha    =   1.000D+01
   REAL                 :: weight_inorm   =   1.000D+00
   REAL                 :: weight_gnorm   =   1.000D+00
   REAL                 :: weight_mnorm   =   1.000D+00
+
+  REAL                 :: weight_bnorm   =   0.000D+00
+  INTEGER              :: case_bnormal   =   0
+
+  REAL                 :: weight_bharm   =   0.000D+00
+  INTEGER              :: bharm_jsurf    =   0
+
+  REAL                 :: weight_tflux   =   0.000D+00
+  REAL                 :: target_tflux   =   0.000D+00
+
+  REAL                 :: weight_ttlen   =   0.000D+00
+  INTEGER              :: case_length    =   1
+  REAL                 :: target_length  =   0.000D+00
+  REAL                 :: length_delta   =   0.000D+00
+
   REAL                 :: weight_curv    =   0.000D+00
-  INTEGER              :: penfun_ccsep   =   1
-  REAL                 :: ccsep_beta     =   2.000D+00
-  INTEGER              :: ccsep_skip     =   0
+  INTEGER              :: case_curv      =   4 
   INTEGER              :: penfun_curv    =   1
-  REAL                 :: k1             =   0.000D+00
+  REAL                 :: curv_alpha     =   0.000D+00
   REAL                 :: curv_beta      =   2.000D+00
   REAL                 :: curv_gamma     =   2.000D+00
   REAL                 :: curv_sigma     =   0.000D+00
-  INTEGER              :: k1_len         =   0
+  REAL                 :: curv_k0        =   1.000D+01
+  
+  REAL                 :: weight_tors    =   0.000D+00
   INTEGER              :: case_tors      =   1
   INTEGER              :: case_tau       =   1
   INTEGER              :: penfun_tors    =   1
+  REAL                 :: tors0          =   0.000D+00
   REAL                 :: tors_alpha     =   1.000D+00
   REAL                 :: tors_beta      =   2.000D+00
   REAL                 :: tors_gamma     =   1.000D+00
-  REAL                 :: tors0          =   0.000D+00
+
+  REAL                 :: weight_nis     =   0.000D+00
+  INTEGER              :: penfun_nis     =   1
+  REAL                 :: nis0           =   0.000D+00
   REAL                 :: nis_alpha      =   1.000D+00
   REAL                 :: nis_beta       =   2.000D+00
-  REAL                 :: nis0           =   0.000D+00
   REAL                 :: nis_gamma      =   2.000D+00
   REAL                 :: nis_sigma      =   0.000D+00
-  INTEGER              :: penfun_nis     =   1
+  REAL                 :: k1             =   0.000D+00
+  INTEGER              :: k1_len         =   0
+
+  REAL                 :: weight_cssep   =   0.000D+00
+  REAL                 :: cssep_factor   =   4.000D+00 
+
+  REAL                 :: weight_ccsep   =   0.000D+00
+  INTEGER              :: penfun_ccsep   =   1
+  INTEGER              :: ccsep_skip     =   0
+  REAL                 :: r_delta        =   1.000D-01
+  REAL                 :: ccsep_alpha    =   1.000D+01
+  REAL                 :: ccsep_beta     =   2.000D+00
+
+  REAL                 :: weight_specw   =   0.000D+00
 
   INTEGER              :: case_optimize  =   0
   REAL                 :: exit_tol       =   1.000D-04
+
   INTEGER              :: DF_maxiter     =   0
   REAL                 :: DF_xtol        =   1.000D-08     
   REAL                 :: DF_tausta      =   0.000D+00
@@ -188,119 +204,110 @@ module globals
   INTEGER              :: pp_nsteps      =  1
   INTEGER              :: pp_nfp         =  1
   REAL                 :: pp_xtol        =  1.000D-06
-
-  CHARACTER(100)   :: input_surf     = 'plasma.boundary'  ! surface file
-  CHARACTER(100)   :: input_coils    = 'none'             ! input file for coils
-  CHARACTER(100)   :: input_harm     = 'target.harmonics' ! input target harmonics file
-  CHARACTER(100)   :: limiter_surf   = 'none'             ! limiter surface
                                                          
-  namelist / focusin /  IsQuiet        , &
-                        IsSymmetric    , &
-                        input_surf     , &
-                        limiter_surf   , &
-                        input_harm     , &
-                        input_coils    , & 
-                        case_surface   , &
-                        knotsurf       , &
-                        ellipticity    , & 
-                        Nteta          , &
-                        Nzeta          , & 
-                        case_init      , &
-                        case_coils     , &  
-                        Ncoils         , &
-                        init_current   , & 
-                        init_radius    , & 
-                        IsVaryCurrent  , & 
-                        IsVaryGeometry , & 
-                        NFcoil         , &
-                        Nseg           , &
-                        IsNormalize    , &
-                        IsNormWeight   , &
-                        case_bnormal   , &
-                        case_length    , &
-                        case_curv      , &
-                        curv_alpha     , &
-                        curv_k0        , &
-                        weight_bnorm   , &
-                        bharm_jsurf    , &
-                        weight_bharm   , &
-                        weight_tflux   , &
-                        target_tflux   , &
-                        weight_ttlen   , &
-                        target_length  , &
-                        length_delta   , &
-                        weight_cssep   , &
-                        cssep_factor   , &
-                        weight_specw   , &
-                        weight_ccsep   , &
-                        weight_tors    , &
-                        weight_nis     , &
-                        r_delta        , &
-                        ccsep_alpha    , &
-                        penfun_curv    , &
-                        k1             , &
-                        curv_beta      , &
-                        curv_gamma     , &
-                        curv_sigma     , &
-                        k1_len         , &
-                        case_tors      , &
-                        case_tau       , &
-                        penfun_tors    , &
-                        tors_alpha     , &
-                        tors_beta      , &
-                        tors_gamma     , &
-                        tors0          , &
-                        nis_alpha      , &
-                        nis_beta       , &
-                        nis0           , &
-                        nis_gamma      , &
-                        nis_sigma      , &
-                        penfun_nis     , &
-                        weight_inorm   , &
-                        weight_gnorm   , &
-                        weight_mnorm   , &
-                        weight_curv    , &
-                        penfun_ccsep   , &
-                        ccsep_beta     , &
-                        ccsep_skip     , &
-                        case_optimize  , &
-                        exit_tol       , &
-                        DF_maxiter     , & 
-                        DF_xtol        , & 
-                        DF_tausta      , &  
-                        DF_tauend      , &       
-                        CG_maxiter     , & 
-                        CG_xtol        , & 
-                        CG_wolfe_c1    , &
-                        CG_wolfe_c2    , &
-                        LM_maxiter     , &  
-                        LM_xtol        , & 
-                        LM_ftol        , & 
-                        LM_factor      , & 
-                        HN_maxiter     , &  
-                        HN_xtol        , & 
-                        HN_factor      , & 
-                        TN_maxiter     , &
-                        TN_reorder     , &
-                        TN_xtol        , &
-                        TN_cr          , &  
-                        case_postproc  , & 
-                        save_freq      , & 
-                        save_coils     , &
-                        save_harmonics , &
-                        save_filaments , &
-                        update_plasma  , &
-                        pp_phi         , &
-                        pp_raxis       , &
-                        pp_zaxis       , &
-                        pp_rmax        , &
-                        pp_zmax        , &
-                        pp_ns          , &
-                        pp_maxiter     , &
-                        pp_nsteps      , &
-                        pp_nfp         , &
-                        pp_xtol        
-
+  namelist / focusin / &
+  IsQuiet       ,&
+  IsSymmetric   ,&
+  case_surface  ,&
+  knotsurf      ,&
+  ellipticity   ,&
+  Nteta         ,&
+  Nzeta         ,&
+  case_init     ,&
+  case_coils    ,&
+  Ncoils        ,&
+  init_current  ,&
+  init_radius   ,&
+  IsVaryCurrent ,&
+  IsVaryGeometry,&
+  NFcoil        ,&
+  Nseg          ,&
+  IsNormalize   ,&
+  IsNormWeight  ,&
+  weight_inorm  ,&
+  weight_gnorm  ,&
+  weight_mnorm  ,&
+  weight_bnorm  ,&
+  case_bnormal  ,&
+  weight_bharm  ,&
+  bharm_jsurf   ,&
+  weight_tflux  ,&
+  target_tflux  ,&
+  weight_ttlen  ,&
+  case_length   ,&
+  target_length ,&
+  length_delta  ,&
+  weight_curv   ,&
+  case_curv     ,&
+  penfun_curv   ,&
+  curv_alpha    ,&
+  curv_beta     ,&
+  curv_gamma    ,&
+  curv_sigma    ,&
+  curv_k0       ,&
+  weight_tors   ,&
+  case_tors     ,&
+  case_tau      ,&
+  penfun_tors   ,&
+  tors0         ,&
+  tors_alpha    ,&
+  tors_beta     ,&
+  tors_gamma    ,&
+  weight_nis    ,&
+  penfun_nis    ,&
+  nis0          ,&
+  nis_alpha     ,&
+  nis_beta      ,&
+  nis_gamma     ,&
+  nis_sigma     ,&
+  k1            ,&
+  k1_len        ,&
+  weight_cssep  ,&
+  cssep_factor  ,&
+  weight_ccsep  ,&
+  penfun_ccsep  ,&
+  ccsep_skip    ,&
+  r_delta       ,&
+  ccsep_alpha   ,&
+  ccsep_beta    ,&
+  weight_specw  ,&
+  case_optimize ,&
+  exit_tol      ,&
+  DF_maxiter    ,&
+  DF_xtol       ,&
+  DF_tausta     ,&
+  DF_tauend     ,&
+  CG_maxiter    ,&
+  CG_xtol       ,&
+  CG_wolfe_c1   ,&
+  CG_wolfe_c2   ,&
+  LM_maxiter    ,&
+  LM_xtol       ,&
+  LM_ftol       ,&
+  LM_factor     ,&
+  HN_maxiter    ,&
+  HN_xtol       ,&
+  HN_factor     ,&
+  TN_maxiter    ,&
+  TN_xtol       ,&
+  TN_reorder    ,&
+  TN_cr         ,&
+  case_postproc ,&
+  save_freq     ,&
+  save_coils    ,&
+  save_harmonics,&
+  save_filaments,&
+  update_plasma ,&
+  pp_phi        ,&
+  pp_raxis      ,&
+  pp_zaxis      ,&
+  pp_rmax       ,&
+  pp_zmax       ,&
+  pp_ns         ,&
+  pp_maxiter    ,&
+  pp_nsteps     ,&
+  pp_nfp        ,&
+  pp_xtol                            
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
