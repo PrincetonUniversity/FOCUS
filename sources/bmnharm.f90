@@ -104,19 +104,6 @@
 !!$
 !!$END SUBROUTINE bmnharm
 
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-module bharm_mod
-  ! contains some common variables used in subroutine bnormal
-  ! allocating once and re-using them will save allocation time
-  use globals, only : dp
-  implicit none
-
-  ! 0-order
-  ! none for now; in future, others should be moved to here. 03/30/2019
-  ! 1st-order
-  REAL, allocatable :: dBc(:), dBs(:)
-
-end module bharm_mod
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE readBmn

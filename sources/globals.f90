@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(10), parameter :: version='v0.13.11' ! version number
+  CHARACTER(10), parameter :: version='v0.14.01' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -455,3 +455,40 @@ module globals
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 end module globals
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+module bnorm_mod
+  ! contains some common variables used in subroutine bnormal
+  ! allocating once and re-using them will save allocation time
+  use globals, only : dp
+  implicit none
+
+  ! 0-order
+  REAL, allocatable :: dBx(:,:), dBy(:,:), dBz(:,:), Bm(:,:)
+  ! 1st-order
+  REAL, allocatable :: dBn(:), dBm(:), d1B(:,:,:)
+
+end module bnorm_mod
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+module bharm_mod
+  ! contains some common variables used in subroutine bnormal
+  ! allocating once and re-using them will save allocation time
+  use globals, only : dp
+  implicit none
+
+  ! 0-order
+  ! none for now; in future, others should be moved to here. 03/30/2019
+  ! 1st-order
+  REAL, allocatable :: dBc(:), dBs(:)
+
+end module bharm_mod
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+module mgrid_mod
+  use globals, only : dp, zero, pi2
+  INTEGER :: NR = 101, NZ=101, NP=72, MFP=0
+  REAL    :: Rmin=zero, Rmax=zero, Zmin=zero, Zmax=zero, Pmin=zero, Pmax=pi2
+  namelist / mgrid / Rmin, Rmax, Zmin, Zmax, Pmin, Pmax, NR, NZ, NP
+end module mgrid_mod
