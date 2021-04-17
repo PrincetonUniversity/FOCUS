@@ -58,6 +58,68 @@ Here is an example for the DIIID RMP coils case [target.harmonics](misc/target.h
 
 # Objective functions
 
+There are multiple objective functions available in FOCUS.
+If the weight of each function is greater than 0, then it is turned on.
+The overall target function will be the weighted summation of each individual one.
+Here is a list of input variable related to objective functions that should be stored in `*.input`. 
+For more details of each function, users are suggested to check [subroutines](subroutines.md).
+
+```fortran
+  ! Normal field error
+  REAL                 :: weight_bnorm   =   0.000D+00
+  INTEGER              :: case_bnormal   =   0
+  ! Bmn resonant harmonics
+  REAL                 :: weight_bharm   =   0.000D+00
+  INTEGER              :: bharm_jsurf    =   0
+  CHARACTER(100)       :: input_harm     = 'target.harmonics' ! input target harmonics file
+  ! toroidal flux
+  REAL                 :: weight_tflux   =   0.000D+00
+  REAL                 :: target_tflux   =   0.000D+00
+  ! coil length
+  REAL                 :: weight_ttlen   =   0.000D+00
+  INTEGER              :: case_length    =   1
+  REAL                 :: target_length  =   0.000D+00
+  REAL                 :: length_delta   =   0.000D+00
+  ! coil curvature
+  REAL                 :: weight_curv    =   0.000D+00
+  INTEGER              :: case_curv      =   4 
+  INTEGER              :: penfun_curv    =   1
+  REAL                 :: curv_alpha     =   0.000D+00
+  REAL                 :: curv_beta      =   2.000D+00
+  REAL                 :: curv_gamma     =   2.000D+00
+  REAL                 :: curv_sigma     =   0.000D+00
+  REAL                 :: curv_k0        =   1.000D+01
+  REAL                 :: curv_k1        =   0.000D+00
+  INTEGER              :: curv_k1len     =   0
+  ! coil torsion
+  REAL                 :: weight_tors    =   0.000D+00
+  INTEGER              :: case_tors      =   1
+  INTEGER              :: penfun_tors    =   1
+  REAL                 :: tors0          =   0.000D+00
+  REAL                 :: tors_alpha     =   1.000D+00
+  REAL                 :: tors_beta      =   2.000D+00
+  REAL                 :: tors_gamma     =   1.000D+00
+  ! coil nissin complexity
+  REAL                 :: weight_nissin  =   0.000D+00
+  INTEGER              :: penfun_nissin  =   1
+  REAL                 :: nissin0        =   0.000D+00
+  REAL                 :: nissin_alpha   =   1.000D+00
+  REAL                 :: nissin_beta    =   2.000D+00
+  REAL                 :: nissin_gamma   =   2.000D+00
+  REAL                 :: nissin_sigma   =   0.000D+00
+  ! coil-surface separation
+  REAL                 :: weight_cssep   =   0.000D+00
+  REAL                 :: cssep_factor   =   4.000D+00 
+  CHARACTER(100)       :: limiter_surf   = 'none'             ! limiter surface
+  ! coil-coil separation
+  REAL                 :: weight_ccsep   =   0.000D+00
+  INTEGER              :: penfun_ccsep   =   1
+  INTEGER              :: ccsep_skip     =   0
+  REAL                 :: r_delta        =   1.000D-01
+  REAL                 :: ccsep_alpha    =   1.000D+01
+  REAL                 :: ccsep_beta     =   2.000D+00
+```
+
 # Running
 
 Once you finish preparing the input files and successfully compile the code, move to your working directory, which contains the input files and the executable, and then type
