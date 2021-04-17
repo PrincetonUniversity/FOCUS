@@ -77,15 +77,15 @@ module globals
   
 !latex \subsection{Input namelist: \type{focusin}}
   INTEGER              :: IsQuiet        =  -1        
+  ! surface related      
   INTEGER              :: IsSymmetric    =   0 
-        
   INTEGER              :: case_surface   =   0
   CHARACTER(100)       :: input_surf     = 'plasma.boundary'  ! surface file       
   REAL                 :: knotsurf       =   0.200D-00
   REAL                 :: ellipticity    =   0.000D+00
   INTEGER              :: Nteta          =   64           
   INTEGER              :: Nzeta          =   64  
-
+  ! coil related
   INTEGER              :: case_init      =   0
   INTEGER              :: case_coils     =   1
   CHARACTER(100)       :: input_coils    = 'none'             ! input file for coils
@@ -96,28 +96,28 @@ module globals
   INTEGER              :: IsVaryGeometry =   1         
   INTEGER              :: NFcoil         =   4         
   INTEGER              :: Nseg           =   128 
-              
+  ! normalizations            
   INTEGER              :: IsNormalize    =   1
   INTEGER              :: IsNormWeight   =   1
   REAL                 :: weight_inorm   =   1.000D+00
   REAL                 :: weight_gnorm   =   1.000D+00
   REAL                 :: weight_mnorm   =   1.000D+00
-
+  ! Normal field error
   REAL                 :: weight_bnorm   =   0.000D+00
   INTEGER              :: case_bnormal   =   0
-
+  ! Bmn resonant harmonics
   REAL                 :: weight_bharm   =   0.000D+00
   INTEGER              :: bharm_jsurf    =   0
   CHARACTER(100)       :: input_harm     = 'target.harmonics' ! input target harmonics file
-
+  ! toroidal flux
   REAL                 :: weight_tflux   =   0.000D+00
   REAL                 :: target_tflux   =   0.000D+00
-
+  ! coil length
   REAL                 :: weight_ttlen   =   0.000D+00
   INTEGER              :: case_length    =   1
   REAL                 :: target_length  =   0.000D+00
   REAL                 :: length_delta   =   0.000D+00
-
+  ! coil curvature
   REAL                 :: weight_curv    =   0.000D+00
   INTEGER              :: case_curv      =   4 
   INTEGER              :: penfun_curv    =   1
@@ -128,7 +128,7 @@ module globals
   REAL                 :: curv_k0        =   1.000D+01
   REAL                 :: curv_k1        =   0.000D+00
   INTEGER              :: curv_k1len     =   0
-  
+  ! coil torsion
   REAL                 :: weight_tors    =   0.000D+00
   INTEGER              :: case_tors      =   1
   INTEGER              :: penfun_tors    =   1
@@ -136,7 +136,7 @@ module globals
   REAL                 :: tors_alpha     =   1.000D+00
   REAL                 :: tors_beta      =   2.000D+00
   REAL                 :: tors_gamma     =   1.000D+00
-
+  ! coil nissin complexity
   REAL                 :: weight_nissin  =   0.000D+00
   INTEGER              :: penfun_nissin  =   1
   REAL                 :: nissin0        =   0.000D+00
@@ -144,54 +144,53 @@ module globals
   REAL                 :: nissin_beta    =   2.000D+00
   REAL                 :: nissin_gamma   =   2.000D+00
   REAL                 :: nissin_sigma   =   0.000D+00
-
+  ! coil-surface separation
   REAL                 :: weight_cssep   =   0.000D+00
   REAL                 :: cssep_factor   =   4.000D+00 
   CHARACTER(100)       :: limiter_surf   = 'none'             ! limiter surface
-
+  ! coil-coil separation
   REAL                 :: weight_ccsep   =   0.000D+00
   INTEGER              :: penfun_ccsep   =   1
   INTEGER              :: ccsep_skip     =   0
   REAL                 :: r_delta        =   1.000D-01
   REAL                 :: ccsep_alpha    =   1.000D+01
   REAL                 :: ccsep_beta     =   2.000D+00
-
   REAL                 :: weight_specw   =   0.000D+00
-
+  ! optimize controls
   INTEGER              :: case_optimize  =   0
   REAL                 :: exit_tol       =   1.000D-04
-
+  ! differential flow
   INTEGER              :: DF_maxiter     =   0
   REAL                 :: DF_xtol        =   1.000D-08     
   REAL                 :: DF_tausta      =   0.000D+00
   REAL                 :: DF_tauend      =   1.000D+00               
- 
+  ! conjugate gradient
   INTEGER              :: CG_maxiter     =   0
   REAL                 :: CG_xtol        =   1.000D-08
   REAL                 :: CG_wolfe_c1    =   0.1
   REAL                 :: CG_wolfe_c2    =   0.9
-
+  ! levenberg-marquardt
   INTEGER              :: LM_maxiter     =   0
   REAL                 :: LM_xtol        =   1.000D-08
   REAL                 :: LM_ftol        =   1.000D-08
   REAL                 :: LM_factor      =   1.000D+02
-
+  ! not used
   INTEGER              :: HN_maxiter     =   0
   REAL                 :: HN_xtol        =   1.000D-08
   REAL                 :: HN_factor      =   100.0
-
+  ! not used
   INTEGER              :: TN_maxiter     =   0
   REAL                 :: TN_xtol        =   1.000D-08
   INTEGER              :: TN_reorder     =   0
   REAL                 :: TN_cr          =   0.1
-
+  ! post-processing
   INTEGER              :: case_postproc  =   1
   INTEGER              :: save_freq      =   1
   INTEGER              :: save_coils     =   0 
   INTEGER              :: save_harmonics =   0
   INTEGER              :: save_filaments =   0
   INTEGER              :: update_plasma  =   0    
-
+  ! poincare plots
   REAL                 :: pp_phi         =  0.000D+00
   REAL                 :: pp_raxis       =  0.000D+00       
   REAL                 :: pp_zaxis       =  0.000D+00
@@ -246,7 +245,7 @@ module globals
   curv_gamma    ,&
   curv_sigma    ,&
   curv_k0       ,&
-  curv_k1            ,&
+  curv_k1       ,&
   curv_k1len    ,&
   weight_tors   ,&
   case_tors     ,&
@@ -255,13 +254,13 @@ module globals
   tors_alpha    ,&
   tors_beta     ,&
   tors_gamma    ,&
-  weight_nissin    ,&
-  penfun_nissin    ,&
-  nissin0          ,&
-  nissin_alpha     ,&
-  nissin_beta      ,&
-  nissin_gamma     ,&
-  nissin_sigma     ,&
+  weight_nissin ,&
+  penfun_nissin ,&
+  nissin0       ,&
+  nissin_alpha  ,&
+  nissin_beta   ,&
+  nissin_gamma  ,&
+  nissin_sigma  ,&
   weight_cssep  ,&
   cssep_factor  ,&
   limiter_surf  ,&

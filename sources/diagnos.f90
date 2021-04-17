@@ -34,7 +34,7 @@ SUBROUTINE diagnos
       write(ounit, 100) "Coil length", ttlen
       write(ounit, 100) "Coil curvature", curv
       write(ounit, 100) "Coil torsion", tors
-      write(ounit, 100) "Nissian complexicity", nissin
+      write(ounit, 100) "Nissian complexity", nissin
       write(ounit, 100) "Coil-coil separation", ccsep
       write(ounit, 100) "Coil-surf separation", cssep
   endif 
