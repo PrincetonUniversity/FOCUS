@@ -27,7 +27,7 @@ If you want to view other output files, please turn on the flags in the namelist
 Intermediate coil data (XYZ points in space) are stored in binary file *.example.filaments.000001*. 
   So you can use them to plot coil evolution movie. (Better way is to use the data in hdf5 file.)
 
-Various post-processing options are available and they are controlled by `post_proc`.
+Various post-processing options are available and they are controlled by `case_postproc`.
 Here is a list of available functions.
 
 | post_proc | actions                                                              |
