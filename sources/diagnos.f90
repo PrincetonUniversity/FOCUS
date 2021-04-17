@@ -115,7 +115,7 @@ SUBROUTINE diagnos
   if(myid .eq. 0) write(ounit, '(8X": Average torsion of the coils is"5X"   :" ES23.15)') AvgTors
 
   !-------------------------------maximum coil c------------------------------------------------------------
-  if( weight_nissin .ne. 0 ) then
+  if( weight_nissin > 0.0_dp ) then
   call nissinDeriv0(1,dum)
   MaxS = coil(1)%maxs
   do icoil = 1, Ncoils

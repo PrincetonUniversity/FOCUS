@@ -296,7 +296,7 @@ subroutine AllocData(type)
      endif 
 
      ! nissin needed;
-     if (weight_nissin > sqrtmachprec) then
+     if (weight_nissin > 0.0_dp) then
         SALLOCATE( t1N,  (1:Ndof), zero )
      endif
 
@@ -346,7 +346,7 @@ subroutine AllocData(type)
            LM_mfvec = LM_mfvec + mtors
         endif
 
-        if (weight_nissin > sqrtmachprec) then
+        if (weight_nissin > 0.0_dp) then
            inissin = LM_mfvec
            mnissin = Ncoils - Nfixgeo
            LM_mfvec = LM_mfvec + mnissin

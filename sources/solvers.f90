@@ -375,7 +375,7 @@ subroutine costfun(ideriv)
   endif
 
   ! nissinsin
-  if (weight_nissin > machprec) then
+  if (weight_nissin > 0.0_dp) then
 
      call nissinsin(ideriv)
      chi = chi + weight_nissin * nissin
@@ -571,7 +571,7 @@ subroutine normweight
 
   !-!-!-!-!-!-!-!-!-!-nissin-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  if( weight_nissin >= machprec ) then
+  if( weight_nissin >= 0.0_dp ) then
 
      call nissinsin(0)
      if (abs(nissin) > machprec) weight_nissin = weight_nissin / nissin
