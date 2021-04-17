@@ -42,8 +42,8 @@
  ccsep_beta     =        2.000D+00
  ccsep_skip     =        1
  penfun_curv    =        1
- k1             =        0.000D+00
- k1_len         =        0
+ curv_k1        =        0.000D+00
+ curv_k1len     =        0
  curv_beta      =        2.000D+00
  curv_gamma     =        1.000D+00
  curv_sigma     =        0.000D+00

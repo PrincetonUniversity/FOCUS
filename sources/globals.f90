@@ -126,6 +126,8 @@ module globals
   REAL                 :: curv_gamma     =   2.000D+00
   REAL                 :: curv_sigma     =   0.000D+00
   REAL                 :: curv_k0        =   1.000D+01
+  REAL                 :: curv_k1             =   0.000D+00
+  INTEGER              :: curv_k1len     =   0
   
   REAL                 :: weight_tors    =   0.000D+00
   INTEGER              :: case_tors      =   1
@@ -142,8 +144,6 @@ module globals
   REAL                 :: nis_beta       =   2.000D+00
   REAL                 :: nis_gamma      =   2.000D+00
   REAL                 :: nis_sigma      =   0.000D+00
-  REAL                 :: k1             =   0.000D+00
-  INTEGER              :: k1_len         =   0
 
   REAL                 :: weight_cssep   =   0.000D+00
   REAL                 :: cssep_factor   =   4.000D+00 
@@ -246,6 +246,8 @@ module globals
   curv_gamma    ,&
   curv_sigma    ,&
   curv_k0       ,&
+  curv_k1            ,&
+  curv_k1len    ,&
   weight_tors   ,&
   case_tors     ,&
   penfun_tors   ,&
@@ -260,8 +262,6 @@ module globals
   nis_beta      ,&
   nis_gamma     ,&
   nis_sigma     ,&
-  k1            ,&
-  k1_len        ,&
   weight_cssep  ,&
   cssep_factor  ,&
   limiter_surf  ,&
