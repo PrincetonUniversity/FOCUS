@@ -39,7 +39,7 @@ SUBROUTINE diagnos
       write(ounit, 100) "Coil-surf separation", cssep
   endif 
 
-100  format (8X, ": ", A20, " = ", ES15.8E) 
+100  format (8X, ": ", A20, " = ", ES15.8) 
 
   !save all the coil parameters;
   if (allocated(coilspace)) then

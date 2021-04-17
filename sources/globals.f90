@@ -15,7 +15,7 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(10), parameter :: version='v0.14.01' ! version number
+  CHARACTER(10), parameter :: version='v0.14.02' ! version number
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -126,7 +126,7 @@ module globals
   REAL                 :: curv_gamma     =   2.000D+00
   REAL                 :: curv_sigma     =   0.000D+00
   REAL                 :: curv_k0        =   1.000D+01
-  REAL                 :: curv_k1             =   0.000D+00
+  REAL                 :: curv_k1        =   0.000D+00
   INTEGER              :: curv_k1len     =   0
   
   REAL                 :: weight_tors    =   0.000D+00

@@ -470,7 +470,7 @@ subroutine check_input
         FATAL( initial, .true., IsQuiet /= integer unspported option)
      end select
      
-1000 format(8X, ": ", A15, " = ", I6, " ; ", A)        
+1000 format(8X, ": ", A15, " = ", I2, " ; ", A)        
 
      select case (IsSymmetric)
      case (0)
