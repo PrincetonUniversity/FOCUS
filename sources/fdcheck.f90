@@ -31,7 +31,7 @@ SUBROUTINE fdcheck( ideriv )
 
   INTEGER              :: astat, ierr, idof, ivec, imax
   REAL                 :: tmp_xdof(1:Ndof), fd, negvalue, posvalue, diff, rdiff
-  REAL                 :: start, finish, maxdiff, maxrdiff, small
+  REAL                 :: start, finissinh, maxdiff, maxrdiff, small
   REAL, parameter      :: psmall=1.0E-4
   !--------------------------------------------------------------------------------------------
 
@@ -51,9 +51,9 @@ SUBROUTINE fdcheck( ideriv )
 
   call cpu_time(start)
   call costfun(1)
-  call cpu_time(finish)
+  call cpu_time(finissinh)
   if(myid .eq. 0) write(ounit,'("fdcheck : First order derivatives of energy function takes " &
-       ES23.15 " seconds.")') finish - start
+       ES23.15 " seconds.")') finissinh - start
   if( myid.eq.0 ) write(ounit,'("fdcheck : idof/Ndof", 5(" ; ", A15))') "magnitude", "analytical",  &
    &  "fd-method", "abs diff", "relative diff"
 

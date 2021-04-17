@@ -1,8 +1,8 @@
-!title (nissin) ! Calculate nissin complexity objective functon and its derivatives. (tkruger)
+!title (nissinsin) ! Calculate nissinsin complexity objective functon and its derivatives. (tkruger)
 
 !latex \briefly{The objective function minimizes the coil's derivative of curvature and 
 !latex         the coil's curvature*torsion. This objective function was designed to 
-!latex         make coils easier to fabricate using the Nissin Freeform Bender. 
+!latex         make coils easier to fabricate using the nissinsin Freeform Bender. 
 
 !latex \calledby{\link{solvers}}
 
@@ -10,28 +10,28 @@
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-! nis is total penalty 
-! chi = chi + weight_nis*nis
+! nissin is total penalty 
+! chi = chi + weight_nissin*nissin
 ! t1N is total derivative of penalty
 ! LM implemented
 ! not parallelized, does not take long to run
-subroutine nissin(ideriv)
+subroutine nissinsin(ideriv)
   use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, MPI_COMM_FOCUS, &
-       coil, DoF, Ncoils, Nfixgeo, Ndof, nis, t1N, t2N, weight_nis, FouCoil, &
-       mnis, inis, LM_fvec, LM_fjac
+       coil, DoF, Ncoils, Nfixgeo, Ndof, nissin, t1N, t2N, weight_nissin, FouCoil, &
+       mnissin, inissin, LM_fvec, LM_fjac
 
   implicit none
   include "mpif.h"
   INTEGER, INTENT(in) :: ideriv
 
   INTEGER             :: astat, ierr, icoil, idof, ND, NF, ivec
-  REAL                :: nisAdd, nisHold
+  REAL                :: nissinAdd, nissinHold
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
-  nis = zero
-  nisAdd = zero
-  nisHold = zero
+  nissin = zero
+  nissinAdd = zero
+  nissinHold = zero
   ivec = 1
 
   if( ideriv >= 0 ) then
@@ -39,16 +39,16 @@ subroutine nissin(ideriv)
      do icoil = 1, Ncoils
         if( coil(icoil)%type .ne. 1 ) exit ! only for Fourier
         if( coil(icoil)%Lc     /=  0 ) then ! if geometry is free
-           call NisDeriv0(icoil,nisAdd)
-           nis = nis + nisAdd
-           if (mnis > 0) then ! L-M format of targets
-              LM_fvec(inis+ivec) = weight_nis*nisAdd
+           call nissinDeriv0(icoil,nissinAdd)
+           nissin = nissin + nissinAdd
+           if (mnissin > 0) then ! L-M format of targets
+              LM_fvec(inissin+ivec) = weight_nissin*nissinAdd
               ivec = ivec + 1
            endif
         endif 
      enddo
 
-     nis = nis / (Ncoils - Nfixgeo + machprec)
+     nissin = nissin / (Ncoils - Nfixgeo + machprec)
 
   endif
 
@@ -71,47 +71,47 @@ subroutine nissin(ideriv)
         endif
 
         if ( coil(icoil)%Lc /= 0 ) then !if geometry is free;
-           call NisDeriv1( icoil, t1N(idof+1:idof+ND), ND, NF )
-           if (mnis > 0) then ! L-M format of targets
-              LM_fjac(inis+ivec, idof+1:idof+ND) = weight_nis * t1N(idof+1:idof+ND)
+           call nissinDeriv1( icoil, t1N(idof+1:idof+ND), ND, NF )
+           if (mnissin > 0) then ! L-M format of targets
+              LM_fjac(inissin+ivec, idof+1:idof+ND) = weight_nissin * t1N(idof+1:idof+ND)
               ivec = ivec + 1
            endif
            idof = idof + ND
         endif
 
      enddo
-     FATAL( nissin , idof .ne. Ndof, counting error in packing )
+     FATAL( nissinsin , idof .ne. Ndof, counting error in packing )
 
      t1N = t1N / (Ncoils - Nfixgeo + machprec)
 
   endif
 
   return
-end subroutine nissin
+end subroutine nissinsin
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-! calculate Nissin Complexity
+! calculate nissinsin Complexity
 
-subroutine NisDeriv0(icoil,nisRet)
+subroutine nissinDeriv0(icoil,nissinRet)
 
   use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils, &
-          nis_alpha, nis_beta, penfun_nis, nis0, nis_gamma, nis_sigma, MPI_COMM_FOCUS
+          nissin_alpha, nissin_beta, penfun_nissin, nissin0, nissin_gamma, nissin_sigma, MPI_COMM_FOCUS
 
   implicit none
   include "mpif.h"
 
   INTEGER, intent(in)  :: icoil
-  REAL   , intent(out) :: nisRet 
+  REAL   , intent(out) :: nissinRet 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   INTEGER              :: kseg, NS
-  REAL                 :: nis_hold
-  REAL,allocatable     :: niss(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), xb(:), yb(:), zb(:), &
+  REAL                 :: nissin_hold
+  REAL,allocatable     :: nissins(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), xb(:), yb(:), zb(:), &
      lambdax(:), lambday(:), lambdaz(:), lambdanorm(:), lambdaunitx(:), lambdaunity(:), lambdaunitz(:), &
      lambdapx(:), lambdapy(:), lambdapz(:), S(:), S1(:), S2(:), absrp(:)
 
   NS = coil(icoil)%NS 
-  SALLOCATE(niss, (0:NS), zero)
+  SALLOCATE(nissins, (0:NS), zero)
   SALLOCATE(S, (0:NS), zero)
   SALLOCATE(S1, (0:NS), zero)
   SALLOCATE(S2, (0:NS), zero)
@@ -145,16 +145,16 @@ subroutine NisDeriv0(icoil,nisRet)
   yb(0:coil(icoil)%NS) = coil(icoil)%yb(0:coil(icoil)%NS)
   zb(0:coil(icoil)%NS) = coil(icoil)%zb(0:coil(icoil)%NS)
 
-  FATAL( NisDeriv0, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
-  FATAL( NisDeriv0, penfun_nis .ne. 1 .and. penfun_nis .ne. 2 , invalid choice of penfun_nis, pick 1 or 2 )
-  FATAL( NisDeriv0, nis0 < 0.0 , nis0 cannot be negative )
-  FATAL( NisDeriv0, nis_alpha < 0.0 , nis_alpha cannot be negative )
-  FATAL( NisDeriv0, nis_beta < 2.0 , nis_beta needs to be >= 2 )
-  FATAL( NisDeriv0, nis_gamma < 1.0 , nis_gamma needs to be >= 1 )
-  FATAL( NisDeriv0, nis_sigma < 0.0 , nis_sigma cannot be negative )
+  FATAL( nissinDeriv0, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
+  FATAL( nissinDeriv0, penfun_nissin .ne. 1 .and. penfun_nissin .ne. 2 , invalid choice of penfun_nissin, pick 1 or 2 )
+  FATAL( nissinDeriv0, nissin0 < 0.0 , nissin0 cannot be negative )
+  FATAL( nissinDeriv0, nissin_alpha < 0.0 , nissin_alpha cannot be negative )
+  FATAL( nissinDeriv0, nissin_beta < 2.0 , nissin_beta needs to be >= 2 )
+  FATAL( nissinDeriv0, nissin_gamma < 1.0 , nissin_gamma needs to be >= 1 )
+  FATAL( nissinDeriv0, nissin_sigma < 0.0 , nissin_sigma cannot be negative )
 
-  niss = zero
-  nisRet = zero
+  nissins = zero
+  nissinRet = zero
 
   lambdax(0:NS) = yt(0:NS)*za(0:NS) - zt(0:NS)*ya(0:NS)
   lambday(0:NS) = zt(0:NS)*xa(0:NS) - xt(0:NS)*za(0:NS)
@@ -179,23 +179,23 @@ subroutine NisDeriv0(icoil,nisRet)
   coil(icoil)%maxs = maxval(S)
 
   do kseg = 0, NS
-     if( S(kseg) .ge. nis0 ) then
-        if (penfun_nis .eq. 1) then
-            niss(kseg) = (cosh(nis_alpha*(S(kseg)-nis0)) - 1)**2
+     if( S(kseg) .ge. nissin0 ) then
+        if (penfun_nissin .eq. 1) then
+            nissins(kseg) = (cosh(nissin_alpha*(S(kseg)-nissin0)) - 1)**2
         else
-            niss(kseg) = (nis_alpha*(S(kseg)-nis0))**nis_beta
+            nissins(kseg) = (nissin_alpha*(S(kseg)-nissin0))**nissin_beta
         endif
      endif
-     niss(kseg) = niss(kseg) + nis_sigma*S(kseg)**nis_gamma
+     nissins(kseg) = nissins(kseg) + nissin_sigma*S(kseg)**nissin_gamma
   enddo
   
-  niss(0:NS) = niss(0:NS)*absrp(0:NS)
+  nissins(0:NS) = nissins(0:NS)*absrp(0:NS)
 
-  nisRet = sum(niss)-niss(0)
+  nissinRet = sum(nissins)-nissins(0)
   call lenDeriv0( icoil, coil(icoil)%L )
-  nisRet = pi2*nisRet/(NS*coil(icoil)%L)
+  nissinRet = pi2*nissinRet/(NS*coil(icoil)%L)
 
-  DALLOCATE(niss)
+  DALLOCATE(nissins)
   DALLOCATE(S)
   DALLOCATE(S1)
   DALLOCATE(S2)
@@ -222,14 +222,14 @@ subroutine NisDeriv0(icoil,nisRet)
 
   return
 
-end subroutine NisDeriv0
+end subroutine nissinDeriv0
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-subroutine NisDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a coil
+subroutine nissinDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a coil
 
   use globals, only: dp, zero, pi2, coil, DoF, myid, ounit, Ncoils, &
-          nis_alpha, nis_beta, penfun_nis, nis0, nis_gamma, nis_sigma, FouCoil, &
+          nissin_alpha, nissin_beta, penfun_nissin, nissin0, nissin_gamma, nissin_sigma, FouCoil, &
           MPI_COMM_FOCUS
   implicit none
   include "mpif.h"
@@ -238,23 +238,23 @@ subroutine NisDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a coi
   REAL   , intent(out) :: derivs(1:1, 1:ND)
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   INTEGER              :: kseg, astat, ierr, doff, n, i, NS
-  REAL                 :: L, nisRet
+  REAL                 :: L, nissinRet
   REAL                 :: d1L(1:1, 1:ND)
   REAL,allocatable     :: absrp(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), xb(:), yb(:), zb(:), &
      lambdax(:), lambday(:), lambdaz(:), lambdanorm(:), lambdaunitx(:), lambdaunity(:), lambdaunitz(:), &
      dxtdDoF(:,:), dytdDoF(:,:), dztdDoF(:,:), dxadDoF(:,:), &
      dyadDoF(:,:), dzadDoF(:,:), dxbdDoF(:,:), dybdDoF(:,:), dzbdDoF(:,:), dlambdaxdDof(:,:), &
      dlambdaydDof(:,:), dlambdazdDof(:,:), dtaudDof(:,:), dabsrpdDof(:,:), lambdapx(:), &
-     lambdapy(:), lambdapz(:), S(:), S1(:), S2(:), dSdDof(:,:), dS1dDof(:,:), dS2dDof(:,:), dnissdDof(:,:), &
+     lambdapy(:), lambdapz(:), S(:), S1(:), S2(:), dSdDof(:,:), dS1dDof(:,:), dS2dDof(:,:), dnissinsdDof(:,:), &
      dlambdapxdDof(:,:), dlambdapydDof(:,:), dlambdapzdDof(:,:), dlambdaunitxdDof(:,:), dlambdaunitydDof(:,:), &
-     dlambdaunitzdDof(:,:), niss(:)
+     dlambdaunitzdDof(:,:), nissins(:)
 
-  FATAL( NisDeriv1, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
-  FATAL( NisDeriv1, ND .ne. 3+6*NF, Degrees of freedom are incorrect )
+  FATAL( nissinDeriv1, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
+  FATAL( nissinDeriv1, ND .ne. 3+6*NF, Degrees of freedom are incorrect )
 
   NS = coil(icoil)%NS
 
-  SALLOCATE(niss, (0:NS), zero)
+  SALLOCATE(nissins, (0:NS), zero)
   SALLOCATE(S, (0:NS), zero)
   SALLOCATE(S1, (0:NS), zero)
   SALLOCATE(S2, (0:NS), zero)
@@ -296,7 +296,7 @@ subroutine NisDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a coi
   SALLOCATE(dSdDof, (0:NS,1:ND), zero)
   SALLOCATE(dS1dDof, (0:NS,1:ND), zero)
   SALLOCATE(dS2dDof, (0:NS,1:ND), zero)
-  SALLOCATE(dnissdDof, (0:NS,1:ND), zero)
+  SALLOCATE(dnissinsdDof, (0:NS,1:ND), zero)
   SALLOCATE(dlambdapxdDof, (0:NS,1:ND), zero)
   SALLOCATE(dlambdapydDof, (0:NS,1:ND), zero)
   SALLOCATE(dlambdapzdDof, (0:NS,1:ND), zero)
@@ -392,20 +392,20 @@ subroutine NisDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a coi
   S(0:NS) = sqrt(S1(0:NS)**2 + S2(0:NS)**2)
 
   do kseg = 0, NS
-     if( S(kseg) .ge. nis0) then
-        if (penfun_nis .eq. 1) then
-            niss(kseg) = (cosh(nis_alpha*(S(kseg)-nis0)) - 1)**2
+     if( S(kseg) .ge. nissin0) then
+        if (penfun_nissin .eq. 1) then
+            nissins(kseg) = (cosh(nissin_alpha*(S(kseg)-nissin0)) - 1)**2
         else
-            niss(kseg) = (nis_alpha*(S(kseg)-nis0))**nis_beta
+            nissins(kseg) = (nissin_alpha*(S(kseg)-nissin0))**nissin_beta
         endif
      endif
-     niss(kseg) = niss(kseg) + nis_sigma*S(kseg)**nis_gamma
+     nissins(kseg) = nissins(kseg) + nissin_sigma*S(kseg)**nissin_gamma
   enddo
 
-  niss(0:NS) = niss(0:NS)*absrp(0:NS)
+  nissins(0:NS) = nissins(0:NS)*absrp(0:NS)
 
-  nisRet = sum(niss)-niss(0)
-  nisRet = pi2*nisRet/(NS*coil(icoil)%L)
+  nissinRet = sum(nissins)-nissins(0)
+  nissinRet = pi2*nissinRet/(NS*coil(icoil)%L)
   
   do i = 1,ND
      
@@ -435,26 +435,26 @@ subroutine NisDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a coi
      dSdDof(0:NS,i) = ( S1(0:NS)**2 + S2(0:NS)**2 )**(-.5) * ( S1(0:NS)*dS1dDof(0:NS,i) + S2(0:NS)*dS2dDof(0:NS,i) )
 
      do kseg = 0, NS
-        if( S(kseg) .ge. nis0 ) then
-           if (penfun_nis .eq. 1) then
-              dnissdDof(kseg,i) = 2*((cosh(nis_alpha*(S(kseg)-nis0))-1))*sinh(nis_alpha*(S(kseg)-nis0))*nis_alpha*dSdDof(kseg,i)*absrp(kseg)
-              dnissdDof(kseg,i) = dnissdDof(kseg,i) + (cosh(nis_alpha*(S(kseg)-nis0)) - 1)**2 * dabsrpdDof(kseg,i)
+        if( S(kseg) .ge. nissin0 ) then
+           if (penfun_nissin .eq. 1) then
+              dnissinsdDof(kseg,i) = 2*((cosh(nissin_alpha*(S(kseg)-nissin0))-1))*sinh(nissin_alpha*(S(kseg)-nissin0))*nissin_alpha*dSdDof(kseg,i)*absrp(kseg)
+              dnissinsdDof(kseg,i) = dnissinsdDof(kseg,i) + (cosh(nissin_alpha*(S(kseg)-nissin0)) - 1)**2 * dabsrpdDof(kseg,i)
            else
-              dnissdDof(kseg,i) = nis_beta*nis_alpha*(nis_alpha*(S(kseg)-nis0))**(nis_beta-1)*dSdDof(kseg,i) * absrp(kseg)
-              dnissdDof(kseg,i) = dnissdDof(kseg,i) + (nis_alpha*(S(kseg)-nis0))**nis_beta * dabsrpdDof(kseg,i)
+              dnissinsdDof(kseg,i) = nissin_beta*nissin_alpha*(nissin_alpha*(S(kseg)-nissin0))**(nissin_beta-1)*dSdDof(kseg,i) * absrp(kseg)
+              dnissinsdDof(kseg,i) = dnissinsdDof(kseg,i) + (nissin_alpha*(S(kseg)-nissin0))**nissin_beta * dabsrpdDof(kseg,i)
            endif
         endif
-        dnissdDof(kseg,i) = dnissdDof(kseg,i) + nis_gamma*nis_sigma*S(kseg)**(nis_gamma-1)*dSdDof(kseg,i)*absrp(kseg)
-        dnissdDof(kseg,i) = dnissdDof(kseg,i) + nis_sigma*S(kseg)**nis_gamma*dabsrpdDof(kseg,i)
-        derivs(1,i) = derivs(1,i) + dnissdDof(kseg,i)
+        dnissinsdDof(kseg,i) = dnissinsdDof(kseg,i) + nissin_gamma*nissin_sigma*S(kseg)**(nissin_gamma-1)*dSdDof(kseg,i)*absrp(kseg)
+        dnissinsdDof(kseg,i) = dnissinsdDof(kseg,i) + nissin_sigma*S(kseg)**nissin_gamma*dabsrpdDof(kseg,i)
+        derivs(1,i) = derivs(1,i) + dnissinsdDof(kseg,i)
      enddo
-     derivs(1,i) = derivs(1,i) - dnissdDof(0,i)
+     derivs(1,i) = derivs(1,i) - dnissinsdDof(0,i)
   enddo
 
   derivs(1,1:ND) = derivs(1,1:ND)*pi2/(NS*coil(icoil)%L)
-  derivs(1,1:ND) = derivs(1,1:ND) - d1L(1,1:ND)*nisRet / (coil(icoil)%L)
+  derivs(1,1:ND) = derivs(1,1:ND) - d1L(1,1:ND)*nissinRet / (coil(icoil)%L)
 
-  DALLOCATE(niss)  
+  DALLOCATE(nissins)  
   DALLOCATE(S)
   DALLOCATE(S1)
   DALLOCATE(S2)
@@ -496,7 +496,7 @@ subroutine NisDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a coi
   DALLOCATE(dSdDof)
   DALLOCATE(dS1dDof)
   DALLOCATE(dS2dDof)
-  DALLOCATE(dnissdDof)
+  DALLOCATE(dnissinsdDof)
   DALLOCATE(dlambdapxdDof)
   DALLOCATE(dlambdapydDof)
   DALLOCATE(dlambdapzdDof)
@@ -506,7 +506,7 @@ subroutine NisDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a coi
 
   return
 
-end subroutine NisDeriv1
+end subroutine nissinDeriv1
 
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!

@@ -47,11 +47,11 @@
  curv_beta      =        2.000D+00
  curv_gamma     =        1.000D+00
  curv_sigma     =        0.000D+00
- weight_nis     =        1.000D+00
- penfun_nis     =        2
- nis_alpha      =        5.000D+00
- nis_beta       =        2.000D+00
- nis0           =        7.000D+01
+ weight_nissin     =        1.000D+00
+ penfun_nissin     =        2
+ nissin_alpha      =        5.000D+00
+ nissin_beta       =        2.000D+00
+ nissin0           =        7.000D+01
 
  CG_maxiter     =        50
  CG_xtol        =        1.000D-10

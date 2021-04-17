@@ -8,8 +8,8 @@ SUBROUTINE diagnos
   use globals, only: dp, zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
        Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
        cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, Nfp, weight_bnorm, overlap, plasma, &
-       cosnfp, sinnfp, symmetry, discretefactor, MPI_COMM_FOCUS, surf_Nfp, curv, case_curv, tors, nis, &
-       weight_nis
+       cosnfp, sinnfp, symmetry, discretefactor, MPI_COMM_FOCUS, surf_Nfp, curv, case_curv, tors, nissin, &
+       weight_nissin
   use mpi
   implicit none
 
@@ -34,8 +34,8 @@ SUBROUTINE diagnos
   !     "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." , "curvature", "c-c sep.", "torsion"
   !if (myid == 0) write(ounit, '("        : "8(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep, curv, ccsep, tors
   if (myid == 0) write(ounit, '("diagnos : "9(A12," ; "))') , &
-       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." , "curvature", "c-c sep.", "torsion", "nissin"
-  if (myid == 0) write(ounit, '("        : "9(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep, curv, ccsep, tors, nis
+       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." , "curvature", "c-c sep.", "torsion", "nissinsin"
+  if (myid == 0) write(ounit, '("        : "9(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep, curv, ccsep, tors, nissin
 
   !save all the coil parameters;
   if (allocated(coilspace)) then
@@ -115,12 +115,12 @@ SUBROUTINE diagnos
   if(myid .eq. 0) write(ounit, '(8X": Average torsion of the coils is"5X"   :" ES23.15)') AvgTors
 
   !-------------------------------maximum coil c------------------------------------------------------------
-  if( weight_nis .ne. 0 ) then
-  call NisDeriv0(1,dum)
+  if( weight_nissin .ne. 0 ) then
+  call nissinDeriv0(1,dum)
   MaxS = coil(1)%maxs
   do icoil = 1, Ncoils
      if(coil(icoil)%type .ne. 1) exit ! only for Fourier
-     call NisDeriv0(icoil,dum) !dummy return
+     call nissinDeriv0(icoil,dum) !dummy return
      if( coil(icoil)%maxs .ge. MaxS) then
         MaxS = coil(icoil)%maxs
      endif

@@ -295,8 +295,8 @@ subroutine AllocData(type)
         SALLOCATE( t1T,  (1:Ndof), zero )
      endif 
 
-     ! nis needed;
-     if (weight_nis > sqrtmachprec) then
+     ! nissin needed;
+     if (weight_nissin > sqrtmachprec) then
         SALLOCATE( t1N,  (1:Ndof), zero )
      endif
 
@@ -346,10 +346,10 @@ subroutine AllocData(type)
            LM_mfvec = LM_mfvec + mtors
         endif
 
-        if (weight_nis > sqrtmachprec) then
-           inis = LM_mfvec
-           mnis = Ncoils - Nfixgeo
-           LM_mfvec = LM_mfvec + mnis
+        if (weight_nissin > sqrtmachprec) then
+           inissin = LM_mfvec
+           mnissin = Ncoils - Nfixgeo
+           LM_mfvec = LM_mfvec + mnissin
         endif
         
         FATAL( AllocData, LM_mfvec <= 0, INVALID number of cost functions )

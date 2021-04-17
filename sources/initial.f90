@@ -633,13 +633,13 @@ subroutine check_input
      !   FATAL( initial, .true., selected case_tors is not supported )
      !end select
 
-     select case ( penfun_nis )
+     select case ( penfun_nissin )
      case ( 1 )
-        if (IsQuiet < 1) write(ounit, 1000) 'penfun_nis', penfun_nis, 'Hyperbolic penalty function.'
+        if (IsQuiet < 1) write(ounit, 1000) 'penfun_nissin', penfun_nissin, 'Hyperbolic penalty function.'
      case ( 2 )
-        if (IsQuiet < 1) write(ounit, 1000) 'penfun_nis', penfun_nis, 'Polynomial penalty function.'
+        if (IsQuiet < 1) write(ounit, 1000) 'penfun_nissin', penfun_nissin, 'Polynomial penalty function.'
      case default
-        FATAL( initial, .true., selected penfun_nis is not supported )
+        FATAL( initial, .true., selected penfun_nissin is not supported )
      end select
 
      FATAL( initial, weight_bnorm  < zero, illegal )
@@ -651,7 +651,7 @@ subroutine check_input
      FATAL( initial, weight_cssep  < zero, illegal )
      FATAL( initial, weight_curv   < zero, illegal )
      FATAL( initial, weight_tors   < zero, illegal )
-     FATAL( initial, weight_nis    < zero, illegal )
+     FATAL( initial, weight_nissin    < zero, illegal )
 
      select case ( case_postproc )
      case ( 0 )
@@ -709,7 +709,7 @@ subroutine check_input
   tmpw_curv  = weight_curv
  !tmpw_cssep = weight_cssep
   tmpw_tors  = weight_tors
-  tmpw_nis   = weight_nis
+  tmpw_nissin   = weight_nissin
 
   call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
 
