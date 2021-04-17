@@ -5,15 +5,11 @@ SUBROUTINE diagnos
 ! DATE: 07/13/2017
 ! diagonose the coil performance
 !------------------------------------------------------------------------------------------------------   
-  use globals, only: dp, zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
-       Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
-       cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, Nfp, weight_bnorm, overlap, plasma, &
-       cosnfp, sinnfp, symmetry, discretefactor, MPI_COMM_FOCUS, surf_Nfp, curv, case_curv, tors, nissin, &
-       weight_nissin
+  use globals
   use mpi
   implicit none
 
-  INTEGER           :: icoil, itmp, astat, ierr, NF, idof, i, j, isurf, cs, ip, is, Npc, coilInd0, coilInd1
+  INTEGER           :: icoil, itmp, NF, idof, i, j, isurf, cs, ip, is, Npc, coilInd0, coilInd1
   LOGICAL           :: lwbnorm, l_raw
   REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist, ReDot, ImDot, dum, AvgCurv, AvgTors, &
                        MinLambda, MaxS, torsRet
@@ -30,12 +26,20 @@ SUBROUTINE diagnos
   if (case_optimize == 0) call AllocData(0) ! if not allocate data;
   call costfun(0)
 
-  !if (myid == 0) write(ounit, '("diagnos : "8(A12," ; "))') , &
-  !     "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." , "curvature", "c-c sep.", "torsion"
-  !if (myid == 0) write(ounit, '("        : "8(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep, curv, ccsep, tors
-  if (myid == 0) write(ounit, '("diagnos : "9(A12," ; "))') , &
-       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." , "curvature", "c-c sep.", "torsion", "nissinsin"
-  if (myid == 0) write(ounit, '("        : "9(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep, curv, ccsep, tors, nissin
+  if (myid == 0) then
+      write(ounit, '("diagnos : Individual cost function values: ")') 
+      write(ounit, 100) "Bnormal", bnorm
+      write(ounit, 100) "B_mn harmonics", bharm
+      write(ounit, 100) "Toroidal flux", tflux
+      write(ounit, 100) "Coil length", ttlen
+      write(ounit, 100) "Coil curvature", curv
+      write(ounit, 100) "Coil torsion", tors
+      write(ounit, 100) "Nissian complexicity", nissin
+      write(ounit, 100) "Coil-coil separation", ccsep
+      write(ounit, 100) "Coil-surf separation", cssep
+  endif 
+
+100  format (8X, ": ", A20, " = ", ES15.8E) 
 
   !save all the coil parameters;
   if (allocated(coilspace)) then
