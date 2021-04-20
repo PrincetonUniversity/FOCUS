@@ -6,7 +6,7 @@ SUBROUTINE diagnos
 ! diagonose the coil performance
 !------------------------------------------------------------------------------------------------------   
   use globals, only: dp, zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
-       Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
+       Nteta, Nzeta, bnorm, resbn, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
        cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, Nfp, weight_bnorm, overlap, plasma, &
        cosnfp, sinnfp, symmetry, discretefactor, MPI_COMM_FOCUS, surf_Nfp, curv, case_curv, tors, nis, &
        weight_nis
@@ -30,12 +30,12 @@ SUBROUTINE diagnos
   if (case_optimize == 0) call AllocData(0) ! if not allocate data;
   call costfun(0)
 
-  !if (myid == 0) write(ounit, '("diagnos : "8(A12," ; "))') , &
-  !     "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." , "curvature", "c-c sep.", "torsion"
-  !if (myid == 0) write(ounit, '("        : "8(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep, curv, ccsep, tors
-  if (myid == 0) write(ounit, '("diagnos : "9(A12," ; "))') , &
-       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." , "curvature", "c-c sep.", "torsion", "nissin"
-  if (myid == 0) write(ounit, '("        : "9(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep, curv, ccsep, tors, nis
+  !if (myid == 0) write(ounit, '("diagnos : "9(A12," ; "))') , &
+  !     "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." , "curvature", "c-c sep.", "torsion", "nissin"
+  !if (myid == 0) write(ounit, '("        : "9(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep, curv, ccsep, tors, nis
+  if (myid == 0) write(ounit, '("diagnos : "10(A12," ; "))') , &
+       "Bnormal", "Res. Bn", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." , "curvature", "c-c sep.", "torsion", "nissin"
+  if (myid == 0) write(ounit, '("        : "10(ES12.5," ; "))') bnorm, resbn, bharm, tflux, ttlen, cssep, curv, ccsep, tors, nis
 
   !save all the coil parameters;
   if (allocated(coilspace)) then

@@ -37,7 +37,8 @@ subroutine bnormal( ideriv )
        coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, plasma, &
        bnorm, t1B, t2B, bn, Ndof, Cdof, weight_bharm, case_bnormal, &
        weight_bnorm, ibnorm, mbnorm, ibharm, mbharm, LM_fvec, LM_fjac, &
-       bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn, MPI_COMM_FOCUS
+       bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn, &
+       weight_resbn, target_resbn, resbn, resbn_m, resbn_n, t1R, b1s, b1c, resbn_bnc, resbn_bns, MPI_COMM_FOCUS
   use bnorm_mod
   use bharm_mod
   use mpi
@@ -47,6 +48,8 @@ subroutine bnormal( ideriv )
   !--------------------------------------------------------------------------------------------
   INTEGER                               :: astat, ierr
   INTEGER                               :: icoil, iteta, jzeta, idof, ND, NumGrid, isurf
+  REAL                                  :: arg, teta, zeta, bnc, bns, shift
+  REAL, allocatable                     :: cosarg(:,:), sinarg(:,:)
   !--------------------------initialize and allocate arrays-------------------------------------
   isurf = plasma 
   NumGrid = Nteta*Nzeta
@@ -55,6 +58,26 @@ subroutine bnormal( ideriv )
   surf(isurf)%Bx = zero; surf(isurf)%By = zero; surf(isurf)%Bz = zero; surf(isurf)%Bn = zero     
   dBx = zero; dBy = zero; dBz = zero; Bm = zero
   bn = zero
+  ! resonant Bn
+  if (weight_resbn .gt. sqrtmachprec) then
+      FATAL( bnormal, resbn_m .le. 0, wrong poloidal mode number)
+      FATAL( bnormal, resbn_n .le. 0, wrong toroidal mode number)
+      resbn = zero ; bnc = zero ;  bns = zero
+      shift = half
+      if (.not. allocated(cosarg) ) then
+         SALLOCATE( cosarg, (0:Nteta-1, 0:Nzeta-1), zero )
+         SALLOCATE( sinarg, (0:Nteta-1, 0:Nzeta-1), zero )
+         do jzeta = 0, Nzeta - 1
+            zeta = ( jzeta + shift ) * pi2 / surf(1)%Nzeta
+            do iteta = 0, Nteta - 1
+               teta = ( iteta + shift ) * pi2 / surf(1)%Nteta
+               arg = resbn_m*teta - resbn_n*zeta
+               cosarg(iteta, jzeta) = cos(arg)
+               sinarg(iteta, jzeta) = sin(arg)
+            enddo
+         enddo
+      endif
+  endif
   !-------------------------------calculate Bn-------------------------------------------------- 
   if( ideriv >= 0 ) then
      do jzeta = 0, Nzeta - 1
@@ -93,7 +116,7 @@ subroutine bnormal( ideriv )
      call MPI_ALLREDUCE( MPI_IN_PLACE, surf(isurf)%Bn, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
      call MPI_ALLREDUCE( MPI_IN_PLACE, bnorm, 1  , MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
      bnorm = bnorm * half * discretefactor
-     bn = surf(isurf)%Bn +  surf(isurf)%pb  ! bn is B.n from coils
+     bn = surf(isurf)%Bn +  surf(isurf)%pb  ! bn is B.n from coils, SHOULD THIS BE +???
      ! bn = surf(isurf)%Bx * surf(isurf)%nx + surf(isurf)%By * surf(isurf)%ny + surf(isurf)%Bz * surf(isurf)%nz
      !! if (case_bnormal == 0) bnorm = bnorm * bsconstant * bsconstant ! take bsconst back
      ! collect |B|
@@ -114,6 +137,15 @@ subroutine bnormal( ideriv )
            FATAL( bnorm, .true., case_bnormal can only be 0/1 )
         end select           
      endif
+     ! resonant Bn
+     if (weight_resbn .gt. sqrtmachprec) then ! resonant Bn perturbation
+         bnc = sum(surf(1)%Bn * cosarg) * discretefactor
+         bns = sum(surf(1)%Bn * sinarg) * discretefactor
+         resbn_bnc = bnc
+         resbn_bns = bns
+         resbn = abs(sqrt(bnc*bnc + bns*bns) - target_resbn)
+         ! if(myid==0) write(ounit, '("Resonant Bmn spectrum = "ES23.15)'), sqrt(bnc*bnc + bns*bns)
+     endif
      ! Bn harmonics related
      if (weight_bharm > sqrtmachprec) then
         call twodft( bn, Bmns, Bmnc, Bmnim, Bmnin, NBmn ) ! Bn from coils
@@ -130,6 +162,11 @@ subroutine bnormal( ideriv )
      ! reset data
      t1B = zero ; d1B = zero
      dBn = zero ; dBm = zero
+     if (weight_resbn .gt. sqrtmachprec) then
+         t1R = zero
+         b1c = zero
+         b1s = zero
+     endif
      do jzeta = 0, Nzeta - 1
         do iteta = 0, Nteta - 1
            if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;
@@ -183,7 +220,11 @@ subroutine bnormal( ideriv )
                    &                    / (bm(iteta, jzeta) * sqrt(bm(iteta, jzeta)))
            case default
               FATAL( bnorm, .true., case_bnormal can only be 0/1 )
-           end select                
+           end select
+           if (weight_resbn .gt. sqrtmachprec) then  ! resonant Bn error
+               b1c = b1c + dBn(1:Ndof) * cosarg(iteta, jzeta) / surf(1)%ds(iteta, jzeta)
+               b1s = b1s + dBn(1:Ndof) * sinarg(iteta, jzeta) / surf(1)%ds(iteta, jzeta)
+           endif 
         enddo  !end iteta;
      enddo  !end jzeta;
      ! gather data
@@ -191,6 +232,12 @@ subroutine bnormal( ideriv )
      call MPI_ALLREDUCE( MPI_IN_PLACE, t1B, Ndof        , MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
      call MPI_ALLREDUCE( MPI_IN_PLACE, d1B, Ndof*NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
      t1B = t1B * discretefactor
+     if (weight_resbn .gt. sqrtmachprec) then
+         b1c = b1c * discretefactor
+         b1s = b1s * discretefactor
+         t1R = sign(1.0_dp, sqrt(bnc*bnc+bns*bns)-target_resbn) * (bnc*bnc + bns*bns)**(-0.5)*(bnc * b1c + bns * b1s)
+         call MPI_ALLREDUCE( MPI_IN_PLACE, t1R, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+     endif
      ! LM discrete derivatives
      if (mbnorm > 0) then
         do idof = 1, Ndof

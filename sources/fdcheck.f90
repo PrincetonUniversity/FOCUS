@@ -60,6 +60,7 @@ SUBROUTINE fdcheck( ideriv )
   do idof = 1, Ndof
      ! perturbation will be relative.
      small = xdof(idof) * psmall
+     if (abs(small)<machprec) small = psmall
      !backward pertubation;
      tmp_xdof = xdof
      tmp_xdof(idof) = tmp_xdof(idof) - half * small

@@ -96,6 +96,10 @@ subroutine saving
   HWRITEIV( 1                ,   curv_alpha    ,   curv_alpha                    )
   HWRITERV( 1                ,   weight_bnorm  ,   weight_bnorm                  )
   HWRITERV( 1                ,   weight_bharm  ,   weight_bharm                  )
+  HWRITERV( 1                ,   weight_resbn  ,   weight_resbn                  )
+  HWRITERV( 1                ,   target_resbn  ,   target_resbn                  )
+  HWRITERV( 1                ,   resbn_m       ,   resbn_m                       )
+  HWRITERV( 1                ,   resbn_n       ,   resbn_n                       )
   HWRITERV( 1                ,   weight_tflux  ,   weight_tflux                  )
   HWRITERV( 1                ,   target_tflux  ,   target_tflux                  )
   HWRITERV( 1                ,   weight_ttlen  ,   weight_ttlen                  )
@@ -167,6 +171,10 @@ subroutine saving
      HWRITERA( Nteta,Nzeta      ,   Bx            ,   surf(plasma)%Bx(0:Nteta-1,0:Nzeta-1) )
      HWRITERA( Nteta,Nzeta      ,   By            ,   surf(plasma)%By(0:Nteta-1,0:Nzeta-1) )
      HWRITERA( Nteta,Nzeta      ,   Bz            ,   surf(plasma)%Bz(0:Nteta-1,0:Nzeta-1) )
+     HWRITERV( 1                ,   chi2b         ,   bnorm                           )
+     HWRITERV( 1                ,   resbn         ,   resbn                           )
+     HWRITERV( 1                ,   resbn_bnc     ,   resbn_bnc                       )
+     HWRITERV( 1                ,   resbn_bns     ,   resbn_bns                       )
   endif
 
   HWRITEIV( 1                ,   iout          ,   iout                          )
@@ -174,8 +182,8 @@ subroutine saving
   HWRITERV( 1                ,   Gnorm         ,   Gnorm                         )
   HWRITERV( 1                ,   Mnorm         ,   Mnorm                         )
   HWRITERV( 1                ,   overlap       ,   overlap                       )
-  !HWRITERA( iout, 10         ,   evolution     ,   evolution(1:iout, 0:10)       )
-  HWRITERA( iout, 11         ,   evolution     ,   evolution(1:iout, 0:11)       )
+  !HWRITERA( iout, 11         ,   evolution     ,   evolution(1:iout, 0:11)       )
+  HWRITERA( iout, 12         ,   evolution     ,   evolution(1:iout, 0:12)       )
   HWRITERA( iout, Tdof       ,   coilspace     ,   coilspace(1:iout, 1:Tdof)     )
 
   if (allocated(deriv)) then

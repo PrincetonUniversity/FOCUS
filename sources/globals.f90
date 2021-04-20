@@ -105,6 +105,10 @@ module globals
   REAL                 :: weight_bnorm   =   1.000D+00
   INTEGER              :: bharm_jsurf    =   0
   REAL                 :: weight_bharm   =   0.000D+00
+  REAL                 :: weight_resbn   =   0.000D+00
+  REAL                 :: target_resbn   =   0.000D+00
+  INTEGER              :: resbn_m        =   1
+  INTEGER              :: resbn_n        =   1
   REAL                 :: weight_tflux   =   0.000D+00
   REAL                 :: target_tflux   =   0.000D+00
   REAL                 :: weight_ttlen   =   0.000D+00
@@ -224,6 +228,10 @@ module globals
                         weight_bnorm   , &
                         bharm_jsurf    , &
                         weight_bharm   , &
+                        weight_resbn   , &
+                        target_resbn   , &
+                        resbn_m        , &
+                        resbn_n        , &
                         weight_tflux   , &
                         target_tflux   , &
                         weight_ttlen   , &
@@ -315,7 +323,7 @@ module globals
 !latex \subsection{surface and coils data}
   type toroidalsurface
      INTEGER              :: Nteta, Nzeta, Nfou=0, Nfp=0, NBnf=0
-     REAL   , allocatable :: Rbc(:), Zbs(:), Rbs(:), Zbc(:), Bnc(:), Bns(:)
+     REAL   , allocatable :: Rbc(:), Zbs(:), Rbs(:), Zbc(:), Bnc(:), Bns(:), Pmnc(:), Pmns(:)
      REAL   , allocatable :: xx(:,:), yy(:,:), zz(:,:), nx(:,:), ny(:,:), nz(:,:), &
                              xt(:,:), yt(:,:), zt(:,:), xp(:,:), yp(:,:), zp(:,:), &
                              ds(:,:), bn(:,:), pb(:,:), &
@@ -349,6 +357,7 @@ module globals
   type(DegreeOfFreedom), target, allocatable :: DoF(:)
 
   INTEGER              :: Nfp = 1, symmetry = 0, surf_Nfp = 1
+!  INTEGER              :: symmetry = 0, surf_Nfp = 1
   INTEGER              :: plasma = 1, limiter = 1
   REAL   , allocatable :: cosnfp(:), sinnfp(:)
     
@@ -373,7 +382,10 @@ module globals
   ! Bn surface integration;
   REAL                 :: bnorm
   REAL   , allocatable :: t1B(:), t2B(:,:), bn(:,:)
-  ! Bn reasonant harmoics;
+  ! Bn resonant harmoics in Boozer coordinates
+  REAL                 :: resbn, resbn_bnc, resbn_bns
+  REAL   , allocatable :: t1R(:), b1s(:), b1c(:)
+  ! Bn resonant harmoics;
   INTEGER              :: NBmn
   INTEGER, allocatable :: Bmnin(:), Bmnim(:)
   REAL                 :: bharm, bharm_factor

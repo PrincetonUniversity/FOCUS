@@ -118,8 +118,8 @@ subroutine AllocData(type)
 
      SALLOCATE(    xdof, (1:Ndof), zero ) ! dof vector;
      SALLOCATE( dofnorm, (1:Ndof), one ) ! dof normalized value vector;
-     !SALLOCATE( evolution, (1:Nouts+1, 0:10), zero ) !evolution array;
-     SALLOCATE( evolution, (1:Nouts+1, 0:11), zero ) !evolution array;
+     !SALLOCATE( evolution, (1:Nouts+1, 0:11), zero ) !evolution array;
+     SALLOCATE( evolution, (1:Nouts+1, 0:12), zero ) !evolution array;
      SALLOCATE( coilspace, (1:Nouts+1, 1:Tdof), zero ) ! all the coil parameters;
      
      ! determine dofnorm
@@ -220,7 +220,7 @@ subroutine AllocData(type)
   if (type == 0 .or. type == 1) then  ! 0-order cost functions related arrays;
 
      ! Bnorm and Bharm needed;
-     if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec .or. IsQuiet <= -2) then
+     if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec .or. weight_resbn > sqrtmachprec .or. IsQuiet <= -2) then
         SALLOCATE(         bn, (0:Nteta-1,0:Nzeta-1), zero ) ! Bn from coils;        
         SALLOCATE( surf(isurf)%bn, (0:Nteta-1,0:Nzeta-1), zero ) ! total Bn;
         SALLOCATE( surf(isurf)%Bx, (0:Nteta-1,0:Nzeta-1), zero ) ! Bx on the surface;
@@ -252,11 +252,17 @@ subroutine AllocData(type)
      SALLOCATE( deriv, (1:Ndof, 0:9), zero )
 
      ! Bnorm related;
-     if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec) then
+     if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec .or. weight_resbn > sqrtmachprec) then
         SALLOCATE( t1B, (1:Ndof), zero )  !total d bnorm / d x;
         SALLOCATE( dBn, (1:Ndof), zero )  !total d Bn / d x;
         SALLOCATE( dBm, (1:Ndof), zero )  !total d Bm / d x;
         SALLOCATE( d1B, (1:Ndof,0:Nteta-1,0:Nzeta-1), zero ) ! discretized dBn
+     endif
+
+     if (weight_resbn > sqrtmachprec) then
+        SALLOCATE( t1R, (1:Ndof), zero )
+        SALLOCATE( b1s, (1:Ndof), zero ) ! total d Bn_mn / dx
+        SALLOCATE( b1c, (1:Ndof), zero ) ! total d Bn_mn / dx
      endif
 
      ! Bharm related;
