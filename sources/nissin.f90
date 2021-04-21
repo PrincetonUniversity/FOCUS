@@ -15,13 +15,13 @@
 ! t1N is total derivative of penalty
 ! LM implemented
 ! not parallelized, does not take long to run
-subroutine nissin(ideriv)
+subroutine nissin_complexity(ideriv)
   use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, MPI_COMM_FOCUS, &
        coil, DoF, Ncoils, Nfixgeo, Ndof, nissin, t1N, t2N, weight_nissin, FouCoil, &
        mnissin, inissin, LM_fvec, LM_fjac
 
+  use mpi
   implicit none
-  include "mpif.h"
   INTEGER, INTENT(in) :: ideriv
 
   INTEGER             :: astat, ierr, icoil, idof, ND, NF, ivec
@@ -87,7 +87,7 @@ subroutine nissin(ideriv)
   endif
 
   return
-end subroutine nissin
+end subroutine nissin_complexity
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -98,8 +98,8 @@ subroutine nissinDeriv0(icoil,nissinRet)
   use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils, &
           nissin_alpha, nissin_beta, penfun_nissin, nissin0, nissin_gamma, nissin_sigma, MPI_COMM_FOCUS
 
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER, intent(in)  :: icoil
   REAL   , intent(out) :: nissinRet 
@@ -231,8 +231,8 @@ subroutine nissinDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a 
   use globals, only: dp, zero, pi2, coil, DoF, myid, ounit, Ncoils, &
           nissin_alpha, nissin_beta, penfun_nissin, nissin0, nissin_gamma, nissin_sigma, FouCoil, &
           MPI_COMM_FOCUS
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER, intent(in)  :: icoil, ND , NF
   REAL   , intent(out) :: derivs(1:1, 1:ND)
