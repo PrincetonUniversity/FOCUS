@@ -64,8 +64,8 @@ subroutine length(ideriv)
        ittlen, mttlen, LM_fvec, LM_fjac, weight_ttlen, length_delta, &
        MPI_COMM_FOCUS
 
+  use mpi
   implicit none
-  include "mpif.h"
   INTEGER, INTENT(in) :: ideriv
 
   INTEGER             :: astat, ierr, icoil, idof, ND, ivec
@@ -175,8 +175,8 @@ end subroutine length
 subroutine LenDeriv0(icoil, length)
 
   use globals, only: dp, zero, coil, myid, ounit, Ncoils, MPI_COMM_FOCUS 
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER, intent(in)  :: icoil
   REAL   , intent(out) :: length
@@ -206,8 +206,8 @@ end subroutine LenDeriv0
 subroutine LenDeriv1(icoil, derivs, ND)
 
   use globals, only: dp, zero, pi2, coil, DoF, myid, ounit, Ncoils, MPI_COMM_FOCUS
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER, intent(in)  :: icoil, ND
   REAL   , intent(out) :: derivs(1:1, 1:ND)

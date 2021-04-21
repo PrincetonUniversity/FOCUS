@@ -22,8 +22,8 @@ subroutine curvature(ideriv)
        coil, DoF, Ncoils, Nfixgeo, Ndof, curv, t1K, t2K, weight_curv, FouCoil, &
        mcurv, icurv, LM_fvec, LM_fjac
 
+  use mpi
   implicit none
-  include "mpif.h"
   INTEGER, INTENT(in) :: ideriv
 
   INTEGER             :: astat, ierr, icoil, idof, ND, NF, ivec
@@ -100,8 +100,8 @@ subroutine CurvDeriv0(icoil,curvRet)
           case_curv, curv_alpha, curv_k0, curv_k1, curv_beta, curv_gamma, curv_sigma, penfun_curv, &
           curv_k1len, MPI_COMM_FOCUS
 
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER, intent(in)  :: icoil
   REAL   , intent(out) :: curvRet 
@@ -206,8 +206,8 @@ subroutine CurvDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a co
   use globals, only: dp, zero, pi2, coil, DoF, myid, ounit, Ncoils, &
                 case_curv, curv_alpha, curv_k0, curv_k1, curv_beta, curv_gamma, &
                 curv_sigma, penfun_curv, curv_k1len, FouCoil, MPI_COMM_FOCUS
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER, intent(in)  :: icoil, ND , NF
   REAL   , intent(out) :: derivs(1:1, 1:ND)

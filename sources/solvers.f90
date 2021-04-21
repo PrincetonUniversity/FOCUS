@@ -36,8 +36,8 @@
 
 subroutine solvers
   use globals
+  use mpi
   implicit none
-  include "mpif.h"
 
   REAL :: start, finish
 
@@ -203,8 +203,8 @@ subroutine costfun(ideriv)
        nissin        , t1N, t2N, weight_nissin,   &
        curv       , t1K, t2K, weight_curv, MPI_COMM_FOCUS
 
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER, INTENT(in) :: ideriv
   
@@ -249,7 +249,7 @@ subroutine costfun(ideriv)
      call curvature(0)
      call coilsep(0)
      call torsion(0)
-     call nissin(0)
+     call nissin_complexity(0)
 
   endif
 
@@ -413,7 +413,7 @@ subroutine costfun(ideriv)
   ! nissin
   if (weight_nissin > 0.0_dp) then
 
-     call nissin(ideriv)
+     call nissin_complexity(ideriv)
      chi = chi + weight_nissin * nissin
      if     ( ideriv == 1 ) then
         t1E = t1E + weight_nissin * t1N
@@ -470,8 +470,8 @@ subroutine normweight
        target_tflux, psi_avg, coil, Ncoils, case_length, Bmnc, Bmns, tBmnc, tBmns, weight_curv, curv, &
        weight_tors, tors, weight_nissin, nissin, MPI_COMM_FOCUS
 
-  implicit none  
-  include "mpif.h"
+  use mpi
+  implicit none
 
   INTEGER    :: ierr, icoil
   REAL       :: tmp, cur_tflux, modBn, modtBn
@@ -609,7 +609,7 @@ subroutine normweight
 
   if( weight_nissin >= 0.0_dp ) then
 
-     call nissin(0)
+     call nissin_complexity(0)
      if (abs(nissin) > machprec) weight_nissin = weight_nissin / nissin
      if( myid == 0 ) write(ounit, 1000) "weight_nissin", weight_nissin
      if( myid .eq. 0 .and. weight_nissin < machprec) write(ounit, '("warning : weight_nissin < machine_precision, nissin will not be used.")')
@@ -632,8 +632,8 @@ subroutine output (mark)
        coil, coilspace, FouCoil, chi, t1E, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
        evolution, xdof, DoF, exit_tol, exit_signal, sumDE, curv, tors, nissin, MPI_COMM_FOCUS
 
-  implicit none  
-  include "mpif.h"
+  use mpi
+  implicit none
 
   REAL, INTENT( IN ) :: mark
 

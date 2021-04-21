@@ -8,8 +8,8 @@ subroutine AllocData(type)
 !------------------------------------------------------------------------------------------------------
   use globals
   use bnorm_mod
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER, intent(in) :: type
 

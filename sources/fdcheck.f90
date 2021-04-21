@@ -23,8 +23,8 @@ SUBROUTINE fdcheck( ideriv )
   use globals, only: dp, zero, half, machprec, sqrtmachprec, ncpu, myid, ounit, MPI_COMM_FOCUS, &
                      coil, xdof, Ndof, t1E, t2E, chi, LM_maxiter, LM_fvec, LM_fjac
                      
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER, INTENT(in)  :: ideriv
   !--------------------------------------------------------------------------------------------

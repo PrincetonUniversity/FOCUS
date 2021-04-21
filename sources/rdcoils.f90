@@ -560,8 +560,8 @@ SUBROUTINE discfou2
   ! DATE: 2017/03/18
   !---------------------------------------------------------------------------------------------  
   use globals, only: dp, zero, pi2, myid, ncpu, ounit, coil, FouCoil, Ncoils, MPI_COMM_FOCUS
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER :: icoil, iorder, llmodnp, ierr, NS, NF
   !-------------------------call fouriermatr----------------------------------------------------  
@@ -677,8 +677,8 @@ END subroutine fouriermatrix
 
 SUBROUTINE readcoils(filename, maxnseg)
   use globals, only: dp, zero, coilsX, coilsY, coilsZ, coilsI, coilseg, coilname, Ncoils, ounit, myid, MPI_COMM_FOCUS
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER                    :: icoil, cunit, istat, astat, lstat, ierr, maxnseg, iseg
   CHARACTER*100              :: filename
@@ -772,8 +772,8 @@ end SUBROUTINE READCOILS
 
 SUBROUTINE Fourier( X, XFC, XFS, Nsegs, NFcoil)
   use globals, only: dp, ounit, zero, pi2, half, myid, MPI_COMM_FOCUS
+  use mpi
   implicit none
-  include "mpif.h"
 
   REAL    :: X(1:Nsegs), XFC(0:NFcoil), XFS(0:NFcoil)
   INTEGER :: Nsegs, NFcoil, ifou, iseg, funit, ierr

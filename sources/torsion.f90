@@ -21,8 +21,8 @@ subroutine torsion(ideriv)
        mtors, itors, LM_fvec, LM_fjac, tors_alpha, tors_beta, tors_gamma, case_tors, &
        penfun_tors, tors0
 
+  use mpi
   implicit none
-  include "mpif.h"
   INTEGER, INTENT(in) :: ideriv
 
   INTEGER             :: astat, ierr, icoil, idof, ND, NF, ivec
@@ -114,8 +114,8 @@ subroutine TorsDeriv0(icoil,torsRet)
   use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils, &
           MPI_COMM_FOCUS
 
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER, intent(in)  :: icoil
   REAL   , intent(out) :: torsRet
@@ -208,8 +208,8 @@ subroutine TorsDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a co
   use globals, only: dp, zero, pi2, coil, DoF, myid, ounit, Ncoils, &
           case_tors, tors_alpha, tors_beta, tors_gamma, tors0, &
           penfun_tors, FouCoil, MPI_COMM_FOCUS
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER, intent(in)  :: icoil, ND , NF
   REAL   , intent(out) :: derivs(1:1, 1:ND)

@@ -32,8 +32,8 @@ subroutine descent
   use globals, only: dp, zero, half, myid, ncpu, ounit, IsQuiet, astat, ierr, sqrtmachprec, &
         Ndof, iout, DF_tausta, DF_tauend, DF_xtol, DF_maxiter, exit_signal, MPI_COMM_FOCUS
 
-  implicit none  
-  include "mpif.h"
+  use mpi
+  implicit none
 
   !---------------------------------------------------------------------------------------------     
   INTEGER              :: itau, iflag, iwork(5)
@@ -100,8 +100,8 @@ end subroutine descent
 subroutine denergy( tau, lxdof, dE )
   
   use globals, only: dp,  Ndof, myid, ounit, t1E
+  use mpi
   implicit none
-  include "mpif.h"
   !---------------------------------------------------------------------------------------------      
   REAL                 :: tau, lxdof(*), dE(*)
   

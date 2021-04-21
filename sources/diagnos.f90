@@ -319,8 +319,8 @@ END SUBROUTINE diagnos
 subroutine avgcurvature(icoil)
 
   use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER, INTENT(in) :: icoil
 
@@ -377,8 +377,8 @@ end subroutine mindist
 subroutine importance(icoil)
   use globals, only: dp,  zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils, &
                      surf, Nteta, Nzeta, bsconstant, coil_importance, plasma, MPI_COMM_FOCUS
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER, INTENT(in) :: icoil  
 
@@ -403,9 +403,9 @@ subroutine importance(icoil)
   enddo ! end do jzeta
 
   call MPI_BARRIER( MPI_COMM_FOCUS, ierr )     
-  call MPI_ALLREDUCE( MPI_IN_PLACE, tbx, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_FOCUS, ierr )
-  call MPI_ALLREDUCE( MPI_IN_PLACE, tby, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_FOCUS, ierr )
-  call MPI_ALLREDUCE( MPI_IN_PLACE, tbz, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_FOCUS, ierr )
+  call MPI_ALLREDUCE( MPI_IN_PLACE, tbx, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+  call MPI_ALLREDUCE( MPI_IN_PLACE, tby, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+  call MPI_ALLREDUCE( MPI_IN_PLACE, tbz, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
 
   coil_importance(icoil) = sum( (tbx*surf(isurf)%Bx + tby*surf(isurf)%By + tbz*surf(isurf)%Bz) / &
                                 (surf(isurf)%Bx**2 + surf(isurf)%By**2 + surf(isurf)%Bz**2) ) / NumGrid

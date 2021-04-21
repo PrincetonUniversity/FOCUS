@@ -18,9 +18,9 @@ subroutine coilsep(ideriv)
        coil, DoF, Ncoils, Nfixgeo, Ndof, ccsep, t1C, t2C, Nfp, &
        iccsep, mccsep, LM_fvec, LM_fjac, weight_ccsep, &
        MPI_COMM_FOCUS
-
+  use mpi
   implicit none
-  include "mpif.h"
+
   INTEGER, INTENT(in) :: ideriv
 
   INTEGER             :: astat, ierr, icoil, idof, ND, ivec, numCoil
@@ -92,9 +92,10 @@ end subroutine coilsep
 
 subroutine CoilSepDeriv0(icoil, coilsep0)
 
-  use globals, only: dp, zero, pi2, coil, myid, ncpu, ounit, Ncoils, Nfp, machprec, r_delta, ccsep_alpha, penfun_ccsep, ccsep_beta, ccsep_skip, MPI_COMM_FOCUS 
+  use globals, only: dp, zero, pi2, coil, myid, ncpu, ounit, Ncoils, Nfp, machprec, r_delta, ccsep_alpha, &
+                   & penfun_ccsep, ccsep_beta, ccsep_skip, MPI_COMM_FOCUS
+  use mpi 
   implicit none
-  include "mpif.h"
 
   INTEGER, intent(in)  :: icoil
   REAL   , intent(out) :: coilsep0
@@ -260,9 +261,11 @@ end subroutine CoilSepDeriv0
 
 subroutine CoilSepDeriv1(icoil, derivs, ND)
 
-  use globals, only: dp, zero, pi2, coil, DoF, myid, ncpu, ounit, machprec, Ncoils, Nfp, r_delta, ccsep_alpha, penfun_ccsep, ccsep_beta, ccsep_skip, MPI_COMM_FOCUS
+  use globals, only: dp, zero, pi2, coil, DoF, myid, ncpu, ounit, machprec, Ncoils, Nfp, r_delta, &
+                   & ccsep_alpha, penfun_ccsep, ccsep_beta, ccsep_skip, MPI_COMM_FOCUS
+  use mpi
   implicit none
-  include "mpif.h"
+
 
   INTEGER, intent(in)  :: icoil, ND
   REAL   , intent(out) :: derivs(1:1, 1:ND)

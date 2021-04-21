@@ -53,8 +53,8 @@
 !!$  !----------------------------------------------------------------------------------------
 !!$  use globals, only: zero, half, myid, Ndof, Nteta, Nzeta, surf, &
 !!$                     bn, dB, bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn
+!!$  use mpi
 !!$  implicit none
-!!$  include "mpif.h"
 !!$
 !!$  INTEGER, INTENT(in) :: ideriv
 !!$  !----------------------------------------------------------------------------------------
@@ -116,8 +116,8 @@ SUBROUTINE readBmn
                      input_harm, bharm_jsurf, surf, plasma, MPI_COMM_FOCUS, bharm_factor, &
                      two, weight_bnorm, machprec
   use bharm_mod
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER  :: ii, jj, ij, imn, ierr, astat, isurf
   REAL     :: teta, zeta, arg
@@ -234,8 +234,8 @@ SUBROUTINE twodft(func, hs, hc, im, in, mn)
   !-------------------------------------------------------------------------------!
   use globals, only: dp, zero, half, two, pi2, myid, ounit, bharm_factor, &
        Nteta, Nzeta, carg, sarg, bharm_jsurf, surf, plasma, MPI_COMM_FOCUS 
+  use mpi
   implicit none
-  include "mpif.h"
   !-------------------------------------------------------------------------------
   REAL   , INTENT(in ) :: func(1:Nteta*Nzeta) ! 2D array into 1D array;
   REAL   , INTENT(out) :: hc(1:mn), hs(1:mn)
@@ -288,8 +288,8 @@ SUBROUTINE twoift(func, hs, hc, im, in, mn)
   !-------------------------------------------------------------------------------!
   use globals, only: dp, zero, half, two, pi2, myid, ounit, Nteta, Nzeta, &
    carg, sarg, MPI_COMM_FOCUS, bharm_factor, bharm_jsurf, plasma, surf
+  use mpi
   implicit none
-  include "mpif.h"
   !-------------------------------------------------------------------------------
   REAL   , INTENT(out) :: func(1:Nteta*Nzeta) ! 2D array into 1D array;
   REAL   , INTENT(in ) :: hc(1:mn), hs(1:mn)
@@ -327,8 +327,8 @@ SUBROUTINE saveBmn
   !----------------------------------------------------------------------------------------
   use globals, only: dp, zero, ierr, astat, myid, machprec, MPI_COMM_FOCUS, &
    & weight_Bharm, NBmn, Bmnc, Bmns, iBmnc, iBmns
+  use mpi
   implicit none
-  include "mpif.h"
 
   if (weight_bharm > machprec) then
 
