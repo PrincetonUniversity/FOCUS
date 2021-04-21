@@ -111,10 +111,17 @@ subroutine solvers
      return
   endif
 
-  if (myid == 0 .and. IsQuiet < 0) write(ounit, *) "------------- Initial status ------------------------"
-  !if (myid == 0) write(ounit, '("output  : "A6" : "11(A12," ; "))') "iout", "mark", "chi", "dE_norm", &
-  !     "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep.", "curvature", "c-c sep.", "torsion"
-  if (myid == 0) write(ounit, '("output  : "A6" : "4(A15," ; "))') "iout", "mark", "total function", "||gradient||", "Bnormal"
+  if (myid ==0) then
+     if (IsQuiet < 0) write(ounit, *) "------------- Initial status ------------------------"
+     if (IsQuiet < 0) then
+         write(ounit, '("output  : "A6" : "12(A12," ; "))') "iout", "mark", "chi", "dE_norm", &
+              "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep.", "curvature", & 
+              "c-c sep.", "torsion", "nissin"
+     else
+         write(ounit, '("output  : "A6" : "4(A15," ; "))') "iout", "mark", "total function", "||gradient||", "Bnormal"
+     endif
+   endif 
+
   call costfun(1)
   call saveBmn    ! in bmnharm.h;
   iout = 0 ! reset output counter;
@@ -249,7 +256,7 @@ subroutine costfun(ideriv)
      call curvature(0)
      call coilsep(0)
      call torsion(0)
-     call nissin_complexity(0)
+     call nisscom(0)
 
   endif
 
@@ -413,7 +420,7 @@ subroutine costfun(ideriv)
   ! nissin
   if (weight_nissin > 0.0_dp) then
 
-     call nissin_complexity(ideriv)
+     call nisscom(ideriv)
      chi = chi + weight_nissin * nissin
      if     ( ideriv == 1 ) then
         t1E = t1E + weight_nissin * t1N
@@ -609,7 +616,7 @@ subroutine normweight
 
   if( weight_nissin >= 0.0_dp ) then
 
-     call nissin_complexity(0)
+     call nisscom(0)
      if (abs(nissin) > machprec) weight_nissin = weight_nissin / nissin
      if( myid == 0 ) write(ounit, 1000) "weight_nissin", weight_nissin
      if( myid .eq. 0 .and. weight_nissin < machprec) write(ounit, '("warning : weight_nissin < machine_precision, nissin will not be used.")')
@@ -630,8 +637,7 @@ subroutine output (mark)
 
   use globals, only: dp, zero, ounit, myid, ierr, astat, iout, Nouts, Ncoils, save_freq, Tdof, &
        coil, coilspace, FouCoil, chi, t1E, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
-       evolution, xdof, DoF, exit_tol, exit_signal, sumDE, curv, tors, nissin, MPI_COMM_FOCUS
-
+       evolution, xdof, DoF, exit_tol, exit_signal, sumDE, curv, tors, nissin, MPI_COMM_FOCUS, IsQuiet
   use mpi
   implicit none
 
@@ -644,8 +650,14 @@ subroutine output (mark)
   
   FATAL( output , iout > Nouts+2, maximum iteration reached )
 
-  if (myid == 0) write(ounit, '("output  : "I6" : "4(ES15.8," ; "))') iout, mark, chi, sumdE, bnorm
-
+  if (myid == 0) then 
+      if (IsQuiet < 0) then
+         write(ounit, '("output  : "I6" : "12(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, bharm, &
+               tflux, ttlen, cssep, curv, ccsep, tors, nissin
+      else
+         write(ounit, '("output  : "I6" : "4(ES15.8," ; "))') iout, mark, chi, sumdE, bnorm
+      endif 
+   endif 
   ! save evolution data;
   if (allocated(evolution)) then
      evolution(iout,0) = mark

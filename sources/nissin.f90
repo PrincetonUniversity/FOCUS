@@ -15,7 +15,7 @@
 ! t1N is total derivative of penalty
 ! LM implemented
 ! not parallelized, does not take long to run
-subroutine nissin_complexity(ideriv)
+subroutine nisscom(ideriv)
   use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, MPI_COMM_FOCUS, &
        coil, DoF, Ncoils, Nfixgeo, Ndof, nissin, t1N, t2N, weight_nissin, FouCoil, &
        mnissin, inissin, LM_fvec, LM_fjac
@@ -87,7 +87,7 @@ subroutine nissin_complexity(ideriv)
   endif
 
   return
-end subroutine nissin_complexity
+end subroutine nisscom
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
