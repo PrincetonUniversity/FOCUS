@@ -249,7 +249,7 @@ subroutine costfun(ideriv)
      call curvature(0)
      call coilsep(0)
      call torsion(0)
-     call nissinsin(0)
+     call nissin(0)
 
   endif
 
@@ -410,10 +410,10 @@ subroutine costfun(ideriv)
      endif
   endif
 
-  ! nissinsin
+  ! nissin
   if (weight_nissin > 0.0_dp) then
 
-     call nissinsin(ideriv)
+     call nissin(ideriv)
      chi = chi + weight_nissin * nissin
      if     ( ideriv == 1 ) then
         t1E = t1E + weight_nissin * t1N
@@ -609,7 +609,7 @@ subroutine normweight
 
   if( weight_nissin >= 0.0_dp ) then
 
-     call nissinsin(0)
+     call nissin(0)
      if (abs(nissin) > machprec) weight_nissin = weight_nissin / nissin
      if( myid == 0 ) write(ounit, 1000) "weight_nissin", weight_nissin
      if( myid .eq. 0 .and. weight_nissin < machprec) write(ounit, '("warning : weight_nissin < machine_precision, nissin will not be used.")')

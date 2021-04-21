@@ -1,8 +1,8 @@
-!title (nissinsin) ! Calculate nissinsin complexity objective functon and its derivatives. (tkruger)
+!title (nissin) ! Calculate nissin complexity objective functon and its derivatives. (tkruger)
 
 !latex \briefly{The objective function minimizes the coil's derivative of curvature and 
 !latex         the coil's curvature*torsion. This objective function was designed to 
-!latex         make coils easier to fabricate using the nissinsin Freeform Bender. 
+!latex         make coils easier to fabricate using the nissin Freeform Bender. 
 
 !latex \calledby{\link{solvers}}
 
@@ -15,7 +15,7 @@
 ! t1N is total derivative of penalty
 ! LM implemented
 ! not parallelized, does not take long to run
-subroutine nissinsin(ideriv)
+subroutine nissin(ideriv)
   use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, MPI_COMM_FOCUS, &
        coil, DoF, Ncoils, Nfixgeo, Ndof, nissin, t1N, t2N, weight_nissin, FouCoil, &
        mnissin, inissin, LM_fvec, LM_fjac
@@ -80,18 +80,18 @@ subroutine nissinsin(ideriv)
         endif
 
      enddo
-     FATAL( nissinsin , idof .ne. Ndof, counting error in packing )
+     FATAL( nissin , idof .ne. Ndof, counting error in packing )
 
      t1N = t1N / (Ncoils - Nfixgeo + machprec)
 
   endif
 
   return
-end subroutine nissinsin
+end subroutine nissin
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-! calculate nissinsin Complexity
+! calculate nissin Complexity
 
 subroutine nissinDeriv0(icoil,nissinRet)
 

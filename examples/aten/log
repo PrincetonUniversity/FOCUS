@@ -37,7 +37,7 @@ solvers : Total number of DOF is   1170
         :                       1.00000E+03, 0.00000E+00, 0.00000E+00, 1.00000E+00, 0.00000E+00, 1.00000E+00, 1.00000E+00, 0.00000E+00, 1.00000E+00,
         : target_tflux =  0.00000E+00 ; target_length =  2.40000E+00 ; curv_k0 =  1.00000E+01 ; r_delta =  1.00000E-01  ; cssep_factor =  4.00000E+00
  -----------COIL DIAGNOSTICS----------------------------------
-diagnos :      Bnormal ; Bmn harmonic ;    tor. flux ;  coil length ;     c-s sep. ;    curvature ;     c-c sep. ;      torsion ;       nissinsin ; 
+diagnos :      Bnormal ; Bmn harmonic ;    tor. flux ;  coil length ;     c-s sep. ;    curvature ;     c-c sep. ;      torsion ;       nissin ; 
         :  1.49925E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  2.74074E-02 ;  2.07687E+04 ;  0.00000E+00 ;  5.52325E-04 ; 
         : Average length of the coils is         :  5.412609128491643E+00
         : Maximum curvature of all the coils is  :  1.069926194856268E+01 ; at coil   5
@@ -49,7 +49,7 @@ diagnos :      Bnormal ; Bmn harmonic ;    tor. flux ;  coil length ;     c-s se
         : Ave. relative absolute Bn error |Bn|/B :  6.41806E-04; max(|Bn|)= 1.00127E-02
         : Surface area normalized Bn error int(|Bn|/B*ds)/A :   5.118454472459201E-04
  ------------- Initial status ------------------------
-output  :   iout :         mark ;          chi ;      dE_norm ;      Bnormal ; Bmn harmonic ;    tor. flux ;  coil length ;     c-s sep. ;    curvature ;     c-c sep. ;      torsion ;       nissinsin ; 
+output  :   iout :         mark ;          chi ;      dE_norm ;      Bnormal ; Bmn harmonic ;    tor. flux ;  coil length ;     c-s sep. ;    curvature ;     c-c sep. ;      torsion ;       nissin ; 
 output  :      1 :  0.00000E+00 ;  2.07687E+04 ;  3.74654E+08 ;  1.49925E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  2.74074E-02 ;  2.07687E+04 ;  0.00000E+00 ;  5.52325E-04 ; 
  ------------- Nonlinear Conjugate Gradient (CG) -----
 output  :      2 :  9.82235E+01 ;  7.64269E+03 ;  1.37835E+08 ;  1.48569E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  2.75656E-02 ;  7.64265E+03 ;  0.00000E+00 ;  1.56030E-02 ; 
@@ -108,7 +108,7 @@ congrad : Computation using conjugate gradient finissinhed.
 focus   : Optimization took      9 M     22 S.
  -----------POST-PROCESSING-----------------------------------
  -----------COIL DIAGNOSTICS----------------------------------
-diagnos :      Bnormal ; Bmn harmonic ;    tor. flux ;  coil length ;     c-s sep. ;    curvature ;     c-c sep. ;      torsion ;       nissinsin ; 
+diagnos :      Bnormal ; Bmn harmonic ;    tor. flux ;  coil length ;     c-s sep. ;    curvature ;     c-c sep. ;      torsion ;       nissin ; 
         :  1.31546E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  3.30517E-02 ;  9.08065E-03 ;  0.00000E+00 ;  2.19066E-03 ; 
         : Average length of the coils is         :  5.412388823989782E+00
         : Maximum curvature of all the coils is  :  1.073423182794150E+01 ; at coil   6

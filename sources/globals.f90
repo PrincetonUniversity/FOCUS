@@ -399,7 +399,7 @@ module globals
   ! Average Torsion 
   REAL                 :: tors
   REAL   , allocatable :: t1T(:), t2T(:,:)
-  ! nissinsin complexity
+  ! nissin complexity
   REAL                 :: nissin
   REAL   , allocatable :: t1N(:), t2N(:,:)
   ! Coil-surface spearation
