@@ -61,39 +61,39 @@ subroutine solvers
      ! coil length
      if (weight_ttlen > machprec) then 
         write(ounit, '(8X,": weight_ttlen = ", ES12.5, "; case_length = ", I1)') weight_ttlen, case_length
-        write(ounit, '(8X,": target_length = ", ES12.5, "; length_delta = ", ES12.5)') target_length, length_delta
+        write(ounit, '(8X,":   target_length = ", ES12.5, "; length_delta = ", ES12.5)') target_length, length_delta
      endif
      ! curvature 
      if (weight_curv > machprec) then 
         write(ounit, '(8X,": weight_curv = ", ES12.5, ";  case_curv = ", I1, &
         & "; penfun_curv = ", I1)') weight_curv, case_curv, penfun_curv
-        write(ounit, '(8X,": curv_alpha = ", ES12.5, "; curv_beta = ", ES12.5, &
-        & "; curv_gamma = ", ES12.5, "; curv_sigma = ", ES12.5)') curv_alpha, curv_beta, curv_gamma, curv_sigma
-        write(ounit, '(8X,": curv_k0 = ", ES12.5, "; curv_k1 = ", ES12.5, &
+        write(ounit, '(8X,":   curv_alpha = ", ES12.5, "; curv_beta = ", ES12.5)') curv_alpha, curv_beta
+        write(ounit, '(8X,":   curv_gamma = ", ES12.5, "; curv_sigma = ", ES12.5)')  curv_gamma, curv_sigma
+        write(ounit, '(8X,":   curv_k0 = ", ES12.5, "; curv_k1 = ", ES12.5, &
         & "; curv_k1len = ", I1)') curv_k0, curv_k1, curv_k1len
      endif 
      ! torsion
      if (weight_tors > machprec) then 
         write(ounit, '(8X,": weight_tors = ", ES12.5, "; penfun_tors = ", I1)') weight_tors, penfun_tors
-        write(ounit, '(8X,": tors_alpha = ", ES12.5, "; tors_beta = ", ES12.5, &
+        write(ounit, '(8X,":   tors_alpha = ", ES12.5, "; tors_beta = ", ES12.5, &
         & "; tors_gamma = ", ES12.5, "; tors0 = ", ES12.5)') tors_alpha, tors_beta, tors_gamma, tors0
      endif 
      ! Nissin complexicity 
      if (weight_nissin > 0.0_dp) then 
         write(ounit, '(8X,": weight_nissin = ", ES12.5, ";  penfun_nissin = ", I1, &
         & "; nissin0 = ", ES12.5)') weight_nissin, penfun_nissin, nissin0
-        write(ounit, '(8X,": nissin_alpha = ", ES12.5, "; nissin_beta = ", ES12.5, &
-        & "; nissin_gamma = ", ES12.5, "; nissin_sigma = ", ES12.5)') nissin_alpha, nissin_beta, nissin_gamma, nissin_sigma
+        write(ounit, '(8X,":   nissin_alpha = ", ES12.5, "; nissin_beta = ", ES12.5)') nissin_alpha, nissin_beta
+        write(ounit, '(8X,":   nissin_gamma = ", ES12.5, "; nissin_sigma = ", ES12.5)')  nissin_gamma, nissin_sigma
      endif 
      ! coil-surface separation
      if (weight_cssep > machprec) then 
-        write(ounit, '(8X,": weight_cssep = ", ES12.5, "; cssep_factor = ", I1)') weight_cssep, cssep_factor
+        write(ounit, '(8X,": weight_cssep = ", ES12.5, "; cssep_factor = ", ES12.5)') weight_cssep, cssep_factor
      endif 
      ! coil-coil separation
      if (weight_ccsep > machprec) then 
         write(ounit, '(8X,": weight_ccsep = ", ES12.5, "; penfun_ccsep = ", I1 &
         & "ccsep_skip = ", I1)') weight_ccsep, penfun_ccsep, ccsep_skip
-        write(ounit, '(8X,": ccsep_alpha = ", ES12.5, "; ccsep_beta = ", ES12.5, &
+        write(ounit, '(8X,":   ccsep_alpha = ", ES12.5, "; ccsep_beta = ", ES12.5, &
         & "; r_delta = ", ES12.5)') ccsep_alpha, ccsep_beta, r_delta
      endif 
   endif
