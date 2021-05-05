@@ -36,7 +36,7 @@
  weight_curv    =        1.000D-00
  length_delta   =        1.000D-01
  weight_ccsep   =        1.000D+00
- ccsep_alpha    =        8.000D+02
+ ccsep_alpha    =        1.500D+02
  r_delta        =        1.000D-01
  penfun_ccsep   =        1
  ccsep_beta     =        2.000D+00
@@ -47,11 +47,11 @@
  curv_beta      =        2.000D+00
  curv_gamma     =        1.000D+00
  curv_sigma     =        0.000D+00
- weight_nissin  =        1.000D+00
- penfun_nissin  =        2
- nissin_alpha   =        5.000D+00
+ weight_nissin  =        1.000D-03
+ penfun_nissin  =        1
+ nissin_alpha   =        1.000D-01
  nissin_beta    =        2.000D+00
- nissin0        =        7.000D+01
+ nissin0        =        0.000D+00
 
  CG_maxiter     =        50
  CG_xtol        =        1.000D-10
