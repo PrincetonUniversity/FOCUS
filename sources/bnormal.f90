@@ -222,8 +222,11 @@ subroutine bnormal( ideriv )
               FATAL( bnorm, .true., case_bnormal can only be 0/1 )
            end select
            if (weight_resbn .gt. sqrtmachprec) then  ! resonant Bn error
-               b1c = b1c + dBn(1:Ndof) * cosarg(iteta, jzeta) / surf(1)%ds(iteta, jzeta)
-               b1s = b1s + dBn(1:Ndof) * sinarg(iteta, jzeta) / surf(1)%ds(iteta, jzeta)
+               !b1c = b1c + dBn(1:Ndof) * cosarg(iteta, jzeta) / surf(1)%ds(iteta, jzeta)
+               !b1s = b1s + dBn(1:Ndof) * sinarg(iteta, jzeta) / surf(1)%ds(iteta, jzeta)
+               ! Should ds be there? 
+               b1c = b1c + dBn(1:Ndof) * cosarg(iteta, jzeta)
+               b1s = b1s + dBn(1:Ndof) * sinarg(iteta, jzeta)
            endif 
         enddo  !end iteta;
      enddo  !end jzeta;
@@ -235,6 +238,7 @@ subroutine bnormal( ideriv )
      if (weight_resbn .gt. sqrtmachprec) then
          b1c = b1c * discretefactor
          b1s = b1s * discretefactor
+         !bnc = sum(surf(1)%Bn * cosarg) * discretefactor
          t1R = sign(1.0_dp, sqrt(bnc*bnc+bns*bns)-target_resbn) * (bnc*bnc + bns*bns)**(-0.5)*(bnc * b1c + bns * b1s)
          call MPI_ALLREDUCE( MPI_IN_PLACE, t1R, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
      endif

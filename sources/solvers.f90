@@ -624,8 +624,11 @@ subroutine output (mark)
   
   FATAL( output , iout > Nouts+2, maximum iteration reached )
 
-  if (myid == 0) write(ounit, '("output  : "I6" : "12(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, bharm, &
-       tflux, ttlen, cssep, curv, ccsep, tors, nis
+  !if (myid == 0) write(ounit, '("output  : "I6" : "12(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, bharm, &
+  !     tflux, ttlen, cssep, curv, ccsep, tors, nis
+  if (myid == 0) write(ounit, '("output  : "I6" : "13(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, resbn, &
+     bharm, tflux, ttlen, cssep, curv, ccsep, tors, nis
+
 
   ! save evolution data;
   if (allocated(evolution)) then

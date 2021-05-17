@@ -267,7 +267,8 @@ subroutine rdbooz
     SALLOCATE( cosnfp, (1:Nfp), zero )
     SALLOCATE( sinnfp, (1:Nfp), zero )  
 
-    do ip = 1, Nfp_raw
+    !do ip = 1, Nfp_raw                    ! Might need to change this. .coils file shows 0's for X and Y
+    do ip = 1, Nfp   
        cosnfp(ip) = cos((ip-1)*pi2/Nfp)
        sinnfp(ip) = sin((ip-1)*pi2/Nfp)
     enddo
