@@ -47,9 +47,9 @@
  curv_beta      =        2.000D+00
  curv_gamma     =        1.000D+00
  curv_sigma     =        0.000D+00
- weight_nissin  =        1.000D-03
- penfun_nissin  =        1
- nissin_alpha   =        1.000D-01
+ weight_nissin  =        1.000D+00
+ penfun_nissin  =        2
+ nissin_alpha   =        1.000D-06
  nissin_beta    =        2.000D+00
  nissin0        =        0.000D+00
 
