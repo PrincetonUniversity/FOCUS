@@ -104,7 +104,7 @@ subroutine nissinDeriv0(icoil,nissinRet)
   INTEGER, intent(in)  :: icoil
   REAL   , intent(out) :: nissinRet 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  INTEGER              :: kseg, NS
+  INTEGER              :: kseg, NS!, check
   REAL                 :: nissin_hold
   REAL,allocatable     :: nissin(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), xb(:), yb(:), zb(:), &
      lambdax(:), lambday(:), lambdaz(:), lambdanorm(:), lambdaunitx(:), lambdaunity(:), lambdaunitz(:), &
@@ -155,6 +155,7 @@ subroutine nissinDeriv0(icoil,nissinRet)
 
   nissin = zero
   nissinRet = zero
+  !check = 0
 
   lambdax(0:NS) = yt(0:NS)*za(0:NS) - zt(0:NS)*ya(0:NS)
   lambday(0:NS) = zt(0:NS)*xa(0:NS) - xt(0:NS)*za(0:NS)
@@ -181,14 +182,24 @@ subroutine nissinDeriv0(icoil,nissinRet)
   do kseg = 0, NS
      if( S(kseg) .ge. nissin0 ) then
         if (penfun_nissin .eq. 1) then
+            ! Check on magnitude 
+            !if ( cosh(nissin_alpha*(S(kseg)-nissin0)) .ge. 1.0*10**32 ) then
+            !   check = 1
+            !endif
             nissin(kseg) = (cosh(nissin_alpha*(S(kseg)-nissin0)) - 1)**2
         else
+            !if ( (nissin_alpha*(S(kseg)-nissin0))**nissin_beta .ge. 1.0*10**32 ) then
+            !   check = 1
+            !endif         
             nissin(kseg) = (nissin_alpha*(S(kseg)-nissin0))**nissin_beta
         endif
      endif
      nissin(kseg) = nissin(kseg) + nissin_sigma*S(kseg)**nissin_gamma
   enddo
   
+  !if ( check .eq. 1 ) then
+  !   if (myid == 0) write(ounit, *) "Nissin value magnitude too large!"
+  !endif    
   nissin(0:NS) = nissin(0:NS)*absrp(0:NS)
 
   nissinRet = sum(nissin)-nissin(0)
