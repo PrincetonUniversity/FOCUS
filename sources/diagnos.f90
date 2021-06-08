@@ -30,9 +30,6 @@ SUBROUTINE diagnos
   if (case_optimize == 0) call AllocData(0) ! if not allocate data;
   call costfun(0)
 
-  !if (myid == 0) write(ounit, '("diagnos : "9(A12," ; "))') , &
-  !     "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." , "curvature", "c-c sep.", "torsion", "nissin"
-  !if (myid == 0) write(ounit, '("        : "9(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep, curv, ccsep, tors, nis
   if (myid == 0) write(ounit, '("diagnos : "10(A12," ; "))') , &
        "Bnormal", "Res. Bn", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." , "curvature", "c-c sep.", "torsion", "nissin"
   if (myid == 0) write(ounit, '("        : "10(ES12.5," ; "))') bnorm, resbn, bharm, tflux, ttlen, cssep, curv, ccsep, tors, nis

@@ -26,7 +26,7 @@ subroutine saving
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 
-  INTEGER            :: ii, jj, icoil, NF, ip, is, cs, Npc
+  INTEGER            :: ii, jj, icoil, NF, ip, is, cs, Npc, Nseg_stable
 
   ! the following are used by the macros HWRITEXX below; do not alter/remove;
   INTEGER            :: hdfier, rank
@@ -100,6 +100,7 @@ subroutine saving
   HWRITERV( 1                ,   target_resbn  ,   target_resbn                  )
   HWRITERV( 1                ,   resbn_m       ,   resbn_m                       )
   HWRITERV( 1                ,   resbn_n       ,   resbn_n                       )
+  HWRITERV( 1                ,   ghost_use     ,   ghost_use                     )
   HWRITERV( 1                ,   weight_tflux  ,   weight_tflux                  )
   HWRITERV( 1                ,   target_tflux  ,   target_tflux                  )
   HWRITERV( 1                ,   weight_ttlen  ,   weight_ttlen                  )
@@ -182,12 +183,10 @@ subroutine saving
   HWRITERV( 1                ,   Gnorm         ,   Gnorm                         )
   HWRITERV( 1                ,   Mnorm         ,   Mnorm                         )
   HWRITERV( 1                ,   overlap       ,   overlap                       )
-  !HWRITERA( iout, 11         ,   evolution     ,   evolution(1:iout, 0:11)       )
   HWRITERA( iout, 12         ,   evolution     ,   evolution(1:iout, 0:12)       )
   HWRITERA( iout, Tdof       ,   coilspace     ,   coilspace(1:iout, 1:Tdof)     )
 
   if (allocated(deriv)) then
-     !HWRITERA( Ndof, 6       ,   deriv         ,   deriv(1:Ndof, 0:6)            )
      HWRITERA( Ndof, 9       ,   deriv         ,   deriv(1:Ndof, 0:9)            )
   endif
 
@@ -203,7 +202,32 @@ subroutine saving
   endif
 
   if (allocated(coil_importance)) then
-     HWRITERV( Ncoils        , coil_importance ,  coil_importance                )
+     HWRITERV( Ncoils           , coil_importance ,  coil_importance             )
+  endif
+
+  Nseg_stable = gsurf(1)%Nseg_stable
+  if (weight_resbn > sqrtmachprec .and. ghost_use .eq. 1 ) then
+     HWRITEIV( 1                , Nseg_stable   , Nseg_stable                    )
+     HWRITERV( Nseg_stable      , zeta          , gsurf(1)%zeta(1:Nseg_stable)   )
+     HWRITERV( Nseg_stable      , os            , gsurf(1)%os(1:Nseg_stable)     )
+     HWRITERV( Nseg_stable      , otheta        , gsurf(1)%otheta(1:Nseg_stable) )
+     HWRITERV( Nseg_stable      , xs            , gsurf(1)%xs(1:Nseg_stable)     )
+     HWRITERV( Nseg_stable      , xtheta        , gsurf(1)%xtheta(1:Nseg_stable) )
+     HWRITERV( Nseg_stable      , ox            , gsurf(1)%ox(1:Nseg_stable)     )
+     HWRITERV( Nseg_stable      , oy            , gsurf(1)%oy(1:Nseg_stable)     )
+     HWRITERV( Nseg_stable      , oz            , gsurf(1)%oz(1:Nseg_stable)     )
+     HWRITERV( Nseg_stable      , xx            , gsurf(1)%xx(1:Nseg_stable)     )
+     HWRITERV( Nseg_stable      , xy            , gsurf(1)%xy(1:Nseg_stable)     )
+     HWRITERV( Nseg_stable      , xz            , gsurf(1)%xz(1:Nseg_stable)     )
+     HWRITERV( Nseg_stable      , of            , gsurf(1)%of(1:Nseg_stable)     )
+     HWRITERV( Nseg_stable      , xf            , gsurf(1)%xf(1:Nseg_stable)     )
+     HWRITERV( Nseg_stable      , og            , gsurf(1)%og(1:Nseg_stable)     )
+     HWRITERV( Nseg_stable      , xg            , gsurf(1)%xg(1:Nseg_stable)     )
+     HWRITERV( Nseg_stable      , osdot         , gsurf(1)%osdot(1:Nseg_stable)  )
+     HWRITERV( Nseg_stable      , xsdot         , gsurf(1)%xsdot(1:Nseg_stable)  )
+     HWRITERV( Nseg_stable      , othetadot  , gsurf(1)%othetadot(1:Nseg_stable) )
+     HWRITERV( Nseg_stable      , xthetadot  , gsurf(1)%xthetadot(1:Nseg_stable) )
+     HWRITERV( 1                , F             , gsurf(1)%F                     )
   endif
   
   if (allocated(LM_fvec)) then
@@ -268,11 +292,9 @@ subroutine saving
 
         select case (coil(icoil)%type)
         case (1)
-           write(wunit, '(4(A6, A15, 8X))') " #Nseg", "current",  "Ifree", "Length", "Lfree", "target_length"!, "k0"
-           !write(wunit,'(2X, I4, ES23.15, 3X, I3, ES23.15, 3X, I3, ES23.15, ES23.15)') &
-                !coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo, coil(icoil)%k0
+           write(wunit, '(4(A6, A15, 8X))') " #Nseg", "current",  "Ifree", "Length", "Lfree", "target_length"
            write(wunit,'(2X, I4, ES23.15, 3X, I3, ES23.15, 3X, I3, ES23.15)') &
-                coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo !,coil(icoil)%k0  
+                coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo 
            NF = FouCoil(icoil)%NF ! shorthand;
            write(wunit, *) "#NFcoil"
            write(wunit, '(I3)') NF

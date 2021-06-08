@@ -38,7 +38,8 @@ subroutine bnormal( ideriv )
        bnorm, t1B, t2B, bn, Ndof, Cdof, weight_bharm, case_bnormal, &
        weight_bnorm, ibnorm, mbnorm, ibharm, mbharm, LM_fvec, LM_fjac, &
        bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn, &
-       weight_resbn, target_resbn, resbn, resbn_m, resbn_n, t1R, b1s, b1c, resbn_bnc, resbn_bns, MPI_COMM_FOCUS
+       weight_resbn, target_resbn, resbn, resbn_m, resbn_n, t1R, b1s, b1c, resbn_bnc, resbn_bns, &
+       ghost_use, MPI_COMM_FOCUS
   use bnorm_mod
   use bharm_mod
   use mpi
@@ -64,6 +65,9 @@ subroutine bnormal( ideriv )
       FATAL( bnormal, resbn_n .le. 0, wrong toroidal mode number)
       resbn = zero ; bnc = zero ;  bns = zero
       shift = half
+      if (ghost_use .eq. 1) then
+         call ghost(1)
+      endif
       if (.not. allocated(cosarg) ) then
          SALLOCATE( cosarg, (0:Nteta-1, 0:Nzeta-1), zero )
          SALLOCATE( sinarg, (0:Nteta-1, 0:Nzeta-1), zero )
@@ -139,11 +143,14 @@ subroutine bnormal( ideriv )
      endif
      ! resonant Bn
      if (weight_resbn .gt. sqrtmachprec) then ! resonant Bn perturbation
-         bnc = sum(surf(1)%Bn * cosarg) * discretefactor
+         !if( ghost_use .ne. 1 ) then
+         bnc = sum(surf(1)%Bn * cosarg) * discretefactor ! Should include a ds term? 
          bns = sum(surf(1)%Bn * sinarg) * discretefactor
+         ! For ghost surface dont use above two lines, B dot dS will be calculated here 
          resbn_bnc = bnc
          resbn_bns = bns
          resbn = abs(sqrt(bnc*bnc + bns*bns) - target_resbn)
+         ! At some point change objective function to be squared instead of abs 
          ! if(myid==0) write(ounit, '("Resonant Bmn spectrum = "ES23.15)'), sqrt(bnc*bnc + bns*bns)
      endif
      ! Bn harmonics related
@@ -222,11 +229,9 @@ subroutine bnormal( ideriv )
               FATAL( bnorm, .true., case_bnormal can only be 0/1 )
            end select
            if (weight_resbn .gt. sqrtmachprec) then  ! resonant Bn error
-               !b1c = b1c + dBn(1:Ndof) * cosarg(iteta, jzeta) / surf(1)%ds(iteta, jzeta)
-               !b1s = b1s + dBn(1:Ndof) * sinarg(iteta, jzeta) / surf(1)%ds(iteta, jzeta)
-               ! Should ds be there? 
-               b1c = b1c + dBn(1:Ndof) * cosarg(iteta, jzeta)
+               b1c = b1c + dBn(1:Ndof) * cosarg(iteta, jzeta) ! Should include a ds term? 
                b1s = b1s + dBn(1:Ndof) * sinarg(iteta, jzeta)
+               ! For ghost surface replace above two lines, dB dot dS will be calculated elsewhere
            endif 
         enddo  !end iteta;
      enddo  !end jzeta;

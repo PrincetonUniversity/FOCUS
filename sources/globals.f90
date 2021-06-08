@@ -72,6 +72,7 @@ module globals
   CHARACTER(100)   :: out_focus ! output ext.focus file
   CHARACTER(100)   :: out_harm  ! output harmonics file
   CHARACTER(100)   :: out_plasma  ! updated plasma boundary
+  CHARACTER(100)   :: out_stable  ! output ext.stable file
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
@@ -109,6 +110,8 @@ module globals
   REAL                 :: target_resbn   =   0.000D+00
   INTEGER              :: resbn_m        =   1
   INTEGER              :: resbn_n        =   1
+  INTEGER              :: ghost_use      =   0
+  INTEGER              :: period_Nseg    =   128
   REAL                 :: weight_tflux   =   0.000D+00
   REAL                 :: target_tflux   =   0.000D+00
   REAL                 :: weight_ttlen   =   0.000D+00
@@ -180,7 +183,8 @@ module globals
   INTEGER              :: save_coils     =   0 
   INTEGER              :: save_harmonics =   0
   INTEGER              :: save_filaments =   0
-  INTEGER              :: update_plasma  =   0    
+  INTEGER              :: update_plasma  =   0   
+  INTEGER              :: save_stable    =   0 
 
   REAL                 :: pp_phi         =  0.000D+00
   REAL                 :: pp_raxis       =  0.000D+00       
@@ -195,6 +199,7 @@ module globals
 
   CHARACTER(100)   :: input_surf     = 'plasma.boundary'  ! surface file
   CHARACTER(100)   :: input_coils    = 'none'             ! input file for coils
+  CHARACTER(100)   :: input_stable   = 'none'             ! input file for stable field lines
   CHARACTER(100)   :: input_harm     = 'target.harmonics' ! input target harmonics file
   CHARACTER(100)   :: limiter_surf   = 'none'             ! limiter surface
                                                          
@@ -203,7 +208,8 @@ module globals
                         input_surf     , &
                         limiter_surf   , &
                         input_harm     , &
-                        input_coils    , & 
+                        input_coils    , &
+                        input_stable   , & 
                         case_surface   , &
                         knotsurf       , &
                         ellipticity    , & 
@@ -232,6 +238,8 @@ module globals
                         target_resbn   , &
                         resbn_m        , &
                         resbn_n        , &
+                        ghost_use      , &
+                        period_Nseg    , &
                         weight_tflux   , &
                         target_tflux   , &
                         weight_ttlen   , &
@@ -298,6 +306,7 @@ module globals
                         save_harmonics , &
                         save_filaments , &
                         update_plasma  , &
+                        save_stable    , &
                         pp_phi         , &
                         pp_raxis       , &
                         pp_zaxis       , &
@@ -350,11 +359,24 @@ module globals
      INTEGER              :: ND
      REAL   , allocatable :: xdof(:), xof(:,:), yof(:,:), zof(:,:)
   end type DegreeOfFreedom
+
+  type ghostsurface
+     INTEGER              :: NF_stable, NF_axis, Nseg_stable
+     INTEGER, allocatable :: on(:), xn(:), axisn(:)
+     REAL   , allocatable :: osnc(:), osns(:), othetanc(:), othetans(:), xsnc(:), xsns(:), &
+                             xthetanc(:), xthetans(:), axisrnc(:), axiszns(:), os(:), xs(:), &
+                             otheta(:), xtheta(:), zeta(:), Ra(:), Za(:), osdot(:), xsdot(:), &
+                             othetadot(:), xthetadot(:), ox(:), oy(:), oz(:), xx(:), xy(:), &
+                             xz(:), of(:), og(:), xf(:), xg(:)
+     REAL                 :: F
+     ! Put in variables for discritized curves, and discritized ghost surface
+  end type ghostsurface
   
   type(arbitrarycoil)  , target, allocatable :: coil(:)  
   type(toroidalsurface), target, allocatable :: surf(:)
   type(FourierCoil)    , target, allocatable :: FouCoil(:)
   type(DegreeOfFreedom), target, allocatable :: DoF(:)
+  type(ghostsurface)   , target, allocatable :: gsurf(:)
 
   INTEGER              :: Nfp = 1, symmetry = 0, surf_Nfp = 1
 !  INTEGER              :: symmetry = 0, surf_Nfp = 1

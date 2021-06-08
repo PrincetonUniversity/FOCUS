@@ -401,6 +401,7 @@ subroutine check_input
   out_coils  = trim(ext)//".coils"
   out_harm   = trim(ext)//".harmonics"
   out_plasma = trim(ext)//".plasma"
+  out_stable = trim(ext)//".stable"
 
   if (myid == master) then
      write(ounit, '("initial : machine_prec   = ", ES12.5, " ; sqrtmachprec   = ", ES12.5)') &
@@ -695,6 +696,9 @@ subroutine check_input
      endif
      if (update_plasma/=0) then
         write(ounit, '("outputs : Updated plasma boundary is saved in : ", A)') trim(out_plasma)
+     endif
+     if (save_stable/=0) then
+        write(ounit, '("outputs : Stable field lines are saved in : ", A)') trim(out_stable)
      endif
 
   endif

@@ -37,7 +37,7 @@ PROGRAM focus
 
   use globals, only: dp, ncpu, myid, ounit, ierr, astat, eunit, case_surface, case_coils, case_optimize, &
        case_postproc, xdof, time_initialize, time_optimize, time_postproc, &
-       version, MPI_COMM_FOCUS
+       version, sqrtmachprec, ghost_use, weight_resbn, MPI_COMM_FOCUS
   use mpi  !to enable gfortran mpi_wtime bugs; 07/20/2017
   implicit none
 
@@ -63,6 +63,8 @@ PROGRAM focus
  !case( 2 ) ; call readwout  ! read vmec output for plasma boundary and Boozer coordinates; for future;
 
   end select
+
+  if (weight_resbn > sqrtmachprec .and. ghost_use .eq. 1) call stable
     
   select case( case_coils )
 
