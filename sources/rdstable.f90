@@ -145,6 +145,19 @@ subroutine rdstable(filename, index)
   SALLOCATE( gsurf(index)%og, (1:Nseg_stable), 0.0 )
   SALLOCATE( gsurf(index)%xf, (1:Nseg_stable), 0.0 )
   SALLOCATE( gsurf(index)%xg, (1:Nseg_stable), 0.0 )
+  SALLOCATE( gsurf(index)%oxdot, (1:Nseg_stable), 0.0 )
+  SALLOCATE( gsurf(index)%oydot, (1:Nseg_stable), 0.0 )
+  SALLOCATE( gsurf(index)%ozdot, (1:Nseg_stable), 0.0 )
+  SALLOCATE( gsurf(index)%xxdot, (1:Nseg_stable), 0.0 )
+  SALLOCATE( gsurf(index)%xydot, (1:Nseg_stable), 0.0 )
+  SALLOCATE( gsurf(index)%xzdot, (1:Nseg_stable), 0.0 )
+
+  ! do this once for now
+  !if (ghost_use .eq. 1) then
+  !   call ghost(1)
+  !endif
+  gsurf(index)%donee = 0
+
 
 
   !surf(index)%Nteta = Nteta 

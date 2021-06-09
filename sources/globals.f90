@@ -111,6 +111,7 @@ module globals
   INTEGER              :: resbn_m        =   1
   INTEGER              :: resbn_n        =   1
   INTEGER              :: ghost_use      =   0
+  INTEGER              :: rcflux_use     =   1
   INTEGER              :: period_Nseg    =   128
   REAL                 :: weight_tflux   =   0.000D+00
   REAL                 :: target_tflux   =   0.000D+00
@@ -239,6 +240,7 @@ module globals
                         resbn_m        , &
                         resbn_n        , &
                         ghost_use      , &
+                        rcflux_use     , &
                         period_Nseg    , &
                         weight_tflux   , &
                         target_tflux   , &
@@ -361,13 +363,14 @@ module globals
   end type DegreeOfFreedom
 
   type ghostsurface
-     INTEGER              :: NF_stable, NF_axis, Nseg_stable
+     INTEGER              :: NF_stable, NF_axis, Nseg_stable, donee
      INTEGER, allocatable :: on(:), xn(:), axisn(:)
      REAL   , allocatable :: osnc(:), osns(:), othetanc(:), othetans(:), xsnc(:), xsns(:), &
                              xthetanc(:), xthetans(:), axisrnc(:), axiszns(:), os(:), xs(:), &
                              otheta(:), xtheta(:), zeta(:), Ra(:), Za(:), osdot(:), xsdot(:), &
                              othetadot(:), xthetadot(:), ox(:), oy(:), oz(:), xx(:), xy(:), &
-                             xz(:), of(:), og(:), xf(:), xg(:)
+                             xz(:), of(:), og(:), xf(:), xg(:), oxdot(:), oydot(:), ozdot(:), &
+                             xxdot(:), xydot(:), xzdot(:)
      REAL                 :: F
      ! Put in variables for discritized curves, and discritized ghost surface
   end type ghostsurface

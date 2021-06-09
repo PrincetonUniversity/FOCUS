@@ -230,6 +230,9 @@ subroutine AllocData(type)
         SALLOCATE( dBx, (0:Cdof,0:Cdof), zero ) ! d^2Bx/(dx1,dx2) on each coil; Cdof is the max coil dof
         SALLOCATE( dBy, (0:Cdof,0:Cdof), zero ) ! d^2By/(dx1,dx2) on each coil;
         SALLOCATE( dBz, (0:Cdof,0:Cdof), zero ) ! d^2Bz/(dx1,dx2) on each coil;        
+        SALLOCATE( dAx, (0:Cdof,0:Cdof), zero )
+        SALLOCATE( dAy, (0:Cdof,0:Cdof), zero )
+        SALLOCATE( dAz, (0:Cdof,0:Cdof), zero )
      endif
 
      ! Bharm needed;

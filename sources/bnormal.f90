@@ -18,7 +18,7 @@ module bnorm_mod
   implicit none
 
   ! 0-order
-  REAL, allocatable :: dBx(:,:), dBy(:,:), dBz(:,:), Bm(:,:)
+  REAL, allocatable :: dBx(:,:), dBy(:,:), dBz(:,:), Bm(:,:), dAx(:,:), dAy(:,:), dAz(:,:)
   ! 1st-order
   REAL, allocatable :: dBn(:), dBm(:), d1B(:,:,:)
 
@@ -39,7 +39,7 @@ subroutine bnormal( ideriv )
        weight_bnorm, ibnorm, mbnorm, ibharm, mbharm, LM_fvec, LM_fjac, &
        bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn, &
        weight_resbn, target_resbn, resbn, resbn_m, resbn_n, t1R, b1s, b1c, resbn_bnc, resbn_bns, &
-       ghost_use, MPI_COMM_FOCUS
+       gsurf, ghost_use, rcflux_use, xdof, machprec, MPI_COMM_FOCUS
   use bnorm_mod
   use bharm_mod
   use mpi
@@ -49,7 +49,8 @@ subroutine bnormal( ideriv )
   !--------------------------------------------------------------------------------------------
   INTEGER                               :: astat, ierr
   INTEGER                               :: icoil, iteta, jzeta, idof, ND, NumGrid, isurf
-  REAL                                  :: arg, teta, zeta, bnc, bns, shift
+  REAL                                  :: arg, teta, zeta, bnc, bns, shift, rcflux, psmall, &
+                                           small, negvalue, posvalue, tmp_xdof(1:Ndof)
   REAL, allocatable                     :: cosarg(:,:), sinarg(:,:)
   !--------------------------initialize and allocate arrays-------------------------------------
   isurf = plasma 
@@ -57,7 +58,7 @@ subroutine bnormal( ideriv )
   ! reset to zero;
   bnorm = zero 
   surf(isurf)%Bx = zero; surf(isurf)%By = zero; surf(isurf)%Bz = zero; surf(isurf)%Bn = zero     
-  dBx = zero; dBy = zero; dBz = zero; Bm = zero
+  dBx = zero; dBy = zero; dBz = zero; Bm = zero; dAx = zero; dAy = zero; dAz = zero
   bn = zero
   ! resonant Bn
   if (weight_resbn .gt. sqrtmachprec) then
@@ -65,7 +66,9 @@ subroutine bnormal( ideriv )
       FATAL( bnormal, resbn_n .le. 0, wrong toroidal mode number)
       resbn = zero ; bnc = zero ;  bns = zero
       shift = half
-      if (ghost_use .eq. 1) then
+      ! do after rdstable for now
+      if (ghost_use .eq. 1 .and. gsurf(1)%donee .eq. 0) then
+         gsurf(1)%donee = 1
          call ghost(1)
       endif
       if (.not. allocated(cosarg) ) then
@@ -143,15 +146,32 @@ subroutine bnormal( ideriv )
      endif
      ! resonant Bn
      if (weight_resbn .gt. sqrtmachprec) then ! resonant Bn perturbation
-         !if( ghost_use .ne. 1 ) then
-         bnc = sum(surf(1)%Bn * cosarg) * discretefactor ! Should include a ds term? 
-         bns = sum(surf(1)%Bn * sinarg) * discretefactor
-         ! For ghost surface dont use above two lines, B dot dS will be calculated here 
-         resbn_bnc = bnc
-         resbn_bns = bns
-         resbn = abs(sqrt(bnc*bnc + bns*bns) - target_resbn)
-         ! At some point change objective function to be squared instead of abs 
-         ! if(myid==0) write(ounit, '("Resonant Bmn spectrum = "ES23.15)'), sqrt(bnc*bnc + bns*bns)
+         if( rcflux_use .eq. 0 ) then
+            !if( ghost_use .ne. 1 ) then
+            bnc = sum(surf(1)%Bn * cosarg) * discretefactor ! Should include a ds term? 
+            bns = sum(surf(1)%Bn * sinarg) * discretefactor
+            ! For ghost surface dont use above two lines, B dot dS will be calculated here 
+            resbn_bnc = bnc
+            resbn_bns = bns
+            resbn = abs(sqrt(bnc*bnc + bns*bns) - target_resbn)
+            ! At some point change objective function to be squared instead of abs 
+            ! if(myid==0) write(ounit, '("Resonant Bmn spectrum = "ES23.15)'), sqrt(bnc*bnc + bns*bns)
+         else
+            rcflux = 0.0
+            do jzeta = 1, gsurf(1)%Nseg_stable-1
+               if( myid.ne.modulo(jzeta,ncpu) ) cycle ! parallelization loop;
+               do icoil = 1, Ncoils
+                  call afield0(icoil, gsurf(1)%ox(jzeta), gsurf(1)%oy(jzeta), gsurf(1)%oz(jzeta), dAx(0,0), dAy(0,0), dAz(0,0) )
+                  rcflux = rcflux + dAx(0,0)*gsurf(1)%oxdot(jzeta) + dAy(0,0)*gsurf(1)%oydot(jzeta) + dAz(0,0)*gsurf(1)%ozdot(jzeta)
+                  call afield0(icoil, gsurf(1)%xx(jzeta), gsurf(1)%xy(jzeta), gsurf(1)%xz(jzeta), dAx(0,0), dAy(0,0), dAz(0,0) )
+                  rcflux = rcflux - dAx(0,0)*gsurf(1)%xxdot(jzeta) - dAy(0,0)*gsurf(1)%xydot(jzeta) - dAz(0,0)*gsurf(1)%xzdot(jzeta)
+               enddo
+            enddo
+            call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
+            call MPI_ALLREDUCE( MPI_IN_PLACE, rcflux, 1  , MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+            rcflux = rcflux*pi2*resbn_m/(gsurf(1)%Nseg_stable-1)
+            resbn = rcflux**2
+         endif
      endif
      ! Bn harmonics related
      if (weight_bharm > sqrtmachprec) then
@@ -241,11 +261,65 @@ subroutine bnormal( ideriv )
      call MPI_ALLREDUCE( MPI_IN_PLACE, d1B, Ndof*NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
      t1B = t1B * discretefactor
      if (weight_resbn .gt. sqrtmachprec) then
-         b1c = b1c * discretefactor
-         b1s = b1s * discretefactor
-         !bnc = sum(surf(1)%Bn * cosarg) * discretefactor
-         t1R = sign(1.0_dp, sqrt(bnc*bnc+bns*bns)-target_resbn) * (bnc*bnc + bns*bns)**(-0.5)*(bnc * b1c + bns * b1s)
-         call MPI_ALLREDUCE( MPI_IN_PLACE, t1R, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+         if( rcflux_use .eq. 0 ) then
+            b1c = b1c * discretefactor
+            b1s = b1s * discretefactor
+            !bnc = sum(surf(1)%Bn * cosarg) * discretefactor
+            t1R = sign(1.0_dp, sqrt(bnc*bnc+bns*bns)-target_resbn) * (bnc*bnc + bns*bns)**(-0.5)*(bnc * b1c + bns * b1s)
+            call MPI_ALLREDUCE( MPI_IN_PLACE, t1R, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+         else
+            do idof = 1, Ndof
+                ! perturbation will be relative.
+                psmall = 1.0E-6
+                small = xdof(idof) * psmall
+                if (abs(small)<machprec) small = psmall
+
+                !backward pertubation;
+                tmp_xdof = xdof
+                tmp_xdof(idof) = tmp_xdof(idof) - half * small
+                call unpacking(tmp_xdof)
+                rcflux = 0.0
+                do jzeta = 1, gsurf(1)%Nseg_stable-1
+                   if( myid.ne.modulo(jzeta,ncpu) ) cycle ! parallelization loop;
+                   do icoil = 1, Ncoils
+                      call afield0(icoil, gsurf(1)%ox(jzeta), gsurf(1)%oy(jzeta), gsurf(1)%oz(jzeta), dAx(0,0), dAy(0,0), dAz(0,0) )
+                      rcflux = rcflux + dAx(0,0)*gsurf(1)%oxdot(jzeta) + dAy(0,0)*gsurf(1)%oydot(jzeta) + dAz(0,0)*gsurf(1)%ozdot(jzeta)
+                      call afield0(icoil, gsurf(1)%xx(jzeta), gsurf(1)%xy(jzeta), gsurf(1)%xz(jzeta), dAx(0,0), dAy(0,0), dAz(0,0) )
+                      rcflux = rcflux - dAx(0,0)*gsurf(1)%xxdot(jzeta) - dAy(0,0)*gsurf(1)%xydot(jzeta) - dAz(0,0)*gsurf(1)%xzdot(jzeta)
+                   enddo
+                enddo
+                call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
+                call MPI_ALLREDUCE( MPI_IN_PLACE, rcflux, 1  , MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+                rcflux = rcflux*pi2*resbn_m/(gsurf(1)%Nseg_stable-1)
+                negvalue = rcflux**2
+
+                !forward pertubation;
+                tmp_xdof = xdof
+                tmp_xdof(idof) = tmp_xdof(idof) + half * small
+                call unpacking(tmp_xdof)
+                rcflux = 0.0
+                do jzeta = 1, gsurf(1)%Nseg_stable-1
+                   if( myid.ne.modulo(jzeta,ncpu) ) cycle ! parallelization loop;
+                   do icoil = 1, Ncoils
+                      call afield0(icoil, gsurf(1)%ox(jzeta), gsurf(1)%oy(jzeta), gsurf(1)%oz(jzeta), dAx(0,0), dAy(0,0), dAz(0,0) )
+                      rcflux = rcflux + dAx(0,0)*gsurf(1)%oxdot(jzeta) + dAy(0,0)*gsurf(1)%oydot(jzeta) + dAz(0,0)*gsurf(1)%ozdot(jzeta)
+                      call afield0(icoil, gsurf(1)%xx(jzeta), gsurf(1)%xy(jzeta), gsurf(1)%xz(jzeta), dAx(0,0), dAy(0,0), dAz(0,0) )
+                      rcflux = rcflux - dAx(0,0)*gsurf(1)%xxdot(jzeta) - dAy(0,0)*gsurf(1)%xydot(jzeta) - dAz(0,0)*gsurf(1)%xzdot(jzeta)
+                   enddo
+                enddo
+                call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
+                call MPI_ALLREDUCE( MPI_IN_PLACE, rcflux, 1  , MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+                rcflux = rcflux*pi2*resbn_m/(gsurf(1)%Nseg_stable-1)
+                posvalue = rcflux**2
+
+                !finite difference;
+                t1R(idof) = (posvalue - negvalue) / small
+
+                ! reset
+                call unpacking(xdof)
+                !call bnormal(0)
+            enddo
+         endif
      endif
      ! LM discrete derivatives
      if (mbnorm > 0) then

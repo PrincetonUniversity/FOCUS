@@ -145,7 +145,31 @@ subroutine calcfg(index)
   gsurf(index)%xz(1:Nseg_stable) = gsurf(index)%xs(1:Nseg_stable)*sin(gsurf(index)%xtheta(1:Nseg_stable)) + &
           gsurf(index)%Za(1:Nseg_stable)
 
-  ! Calculate contravariant basis, make variables local
+  ! Calculate xdot, etc for dl. Use fd for now
+  do i = 1, Nseg_stable-1
+     gsurf(index)%oxdot(i) = gsurf(index)%ox(i+1) - gsurf(index)%ox(i)
+     gsurf(index)%xxdot(i) = gsurf(index)%xx(i+1) - gsurf(index)%xx(i)
+     gsurf(index)%oydot(i) = gsurf(index)%oy(i+1) - gsurf(index)%ox(i)
+     gsurf(index)%xydot(i) = gsurf(index)%xy(i+1) - gsurf(index)%xx(i)
+     gsurf(index)%ozdot(i) = gsurf(index)%oz(i+1) - gsurf(index)%ox(i)
+     gsurf(index)%xzdot(i) = gsurf(index)%xz(i+1) - gsurf(index)%xx(i)
+  enddo
+  gsurf(index)%oxdot(Nseg_stable) = gsurf(index)%oxdot(1)
+  gsurf(index)%xxdot(Nseg_stable) = gsurf(index)%xxdot(1)
+  gsurf(index)%oydot(Nseg_stable) = gsurf(index)%oydot(1)
+  gsurf(index)%xydot(Nseg_stable) = gsurf(index)%xydot(1)
+  gsurf(index)%ozdot(Nseg_stable) = gsurf(index)%ozdot(1)
+  gsurf(index)%xzdot(Nseg_stable) = gsurf(index)%xzdot(1)
+  
+  gsurf(index)%oxdot(1:Nseg_stable) = gsurf(index)%oxdot(1:Nseg_stable)/(Nseg_stable-1)
+  gsurf(index)%xxdot(1:Nseg_stable) = gsurf(index)%xxdot(1:Nseg_stable)/(Nseg_stable-1)
+  gsurf(index)%oydot(1:Nseg_stable) = gsurf(index)%oydot(1:Nseg_stable)/(Nseg_stable-1)
+  gsurf(index)%xydot(1:Nseg_stable) = gsurf(index)%xydot(1:Nseg_stable)/(Nseg_stable-1)
+  gsurf(index)%ozdot(1:Nseg_stable) = gsurf(index)%ozdot(1:Nseg_stable)/(Nseg_stable-1)
+  gsurf(index)%xzdot(1:Nseg_stable) = gsurf(index)%xzdot(1:Nseg_stable)/(Nseg_stable-1)
+ 
+
+  ! Calculate contravariant basis, make variables local, MATH IS INCORRECT
   SALLOCATE( gradosx, (1:Nseg_stable), 0.0 )
   SALLOCATE( gradosy, (1:Nseg_stable), 0.0 )
   SALLOCATE( gradosz, (1:Nseg_stable), 0.0 )
