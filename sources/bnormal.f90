@@ -268,16 +268,17 @@ subroutine bnormal( ideriv )
             t1R = sign(1.0_dp, sqrt(bnc*bnc+bns*bns)-target_resbn) * (bnc*bnc + bns*bns)**(-0.5)*(bnc * b1c + bns * b1s)
             call MPI_ALLREDUCE( MPI_IN_PLACE, t1R, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
          else
+#if 0
             do idof = 1, Ndof
                 ! perturbation will be relative.
                 psmall = 1.0E-6
                 small = xdof(idof) * psmall
                 if (abs(small)<machprec) small = psmall
-
+             
                 !backward pertubation;
                 tmp_xdof = xdof
                 tmp_xdof(idof) = tmp_xdof(idof) - half * small
-                call unpacking(tmp_xdof)
+               call unpacking(tmp_xdof)
                 rcflux = 0.0
                 do jzeta = 1, gsurf(1)%Nseg_stable-1
                    if( myid.ne.modulo(jzeta,ncpu) ) cycle ! parallelization loop;
@@ -319,6 +320,39 @@ subroutine bnormal( ideriv )
                 call unpacking(xdof)
                 !call bnormal(0)
             enddo
+#endif
+            do jzeta = 1, gsurf(1)%Nseg_stable-1
+               if( myid.ne.modulo(jzeta,ncpu) ) cycle ! parallelization loop;
+               idof = 0
+               do icoil = 1, Ncoils
+                  ND = DoF(icoil)%ND
+                  if ( coil(icoil)%Ic /= 0 ) then
+                     call afield0(icoil, gsurf(1)%ox(jzeta), gsurf(1)%oy(jzeta), gsurf(1)%oz(jzeta), dAx(0,0), dAy(0,0), dAz(0,0) )
+                     t1R(idof+1) = t1R(idof+1) + (dAx(0,0)*gsurf(1)%oxdot(jzeta) + dAy(0,0)*gsurf(1)%oydot(jzeta) + &
+                                   dAz(0,0)*gsurf(1)%ozdot(jzeta)) / coil(icoil)%I
+                     call afield0(icoil, gsurf(1)%xx(jzeta), gsurf(1)%xy(jzeta), gsurf(1)%xz(jzeta), dAx(0,0), dAy(0,0), dAz(0,0) )
+                     t1R(idof+1) = t1R(idof+1) - (dAx(0,0)*gsurf(1)%xxdot(jzeta) + dAy(0,0)*gsurf(1)%xydot(jzeta) + &
+                                   dAz(0,0)*gsurf(1)%xzdot(jzeta)) / coil(icoil)%I
+                     idof = idof + 1
+                  endif
+                  if ( coil(icoil)%Lc /= 0 ) then
+                     call afield1(icoil, gsurf(1)%ox(jzeta), gsurf(1)%oy(jzeta), gsurf(1)%oz(jzeta), dAx(1:ND,0), dAy(1:ND,0), dAz(1:ND,0), ND )
+                     t1R(idof+1:idof+ND) = t1R(idof+1:idof+ND) + dAx(1:ND,0)*gsurf(1)%oxdot(jzeta) + dAy(1:ND,0)*gsurf(1)%oydot(jzeta) & 
+                             + dAz(1:ND,0)*gsurf(1)%ozdot(jzeta)
+                     call afield1(icoil, gsurf(1)%xx(jzeta), gsurf(1)%xy(jzeta), gsurf(1)%xz(jzeta), dAx(1:ND,0), dAy(1:ND,0), dAz(1:ND,0), ND )
+                     t1R(idof+1:idof+ND) = t1R(idof+1:idof+ND) - dAx(1:ND,0)*gsurf(1)%xxdot(jzeta) - dAy(1:ND,0)*gsurf(1)%xydot(jzeta) &
+                             - dAz(1:ND,0)*gsurf(1)%xzdot(jzeta)
+                     idof = idof + ND
+                  endif
+               enddo
+               FATAL( bnormal, idof .ne. Ndof, counting error in packing ) 
+            enddo
+            call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
+            call MPI_ALLREDUCE( MPI_IN_PLACE, t1R, Ndof  , MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+            !rcflux = rcflux*pi2*resbn_m/(gsurf(1)%Nseg_stable-1)
+            t1R(1:Ndof) = t1R(1:Ndof)*pi2*resbn_m/(gsurf(1)%Nseg_stable-1)
+            !resbn = rcflux**2
+            t1R(1:Ndof) = 2*rcflux*t1R(1:Ndof)
          endif
      endif
      ! LM discrete derivatives
