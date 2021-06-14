@@ -113,6 +113,7 @@ module globals
   INTEGER              :: ghost_use      =   0
   INTEGER              :: rcflux_use     =   1
   INTEGER              :: period_Nseg    =   128
+  REAL                 :: rcflux_pre     =   1.000D+00
   REAL                 :: weight_tflux   =   0.000D+00
   REAL                 :: target_tflux   =   0.000D+00
   REAL                 :: weight_ttlen   =   0.000D+00
@@ -155,6 +156,8 @@ module globals
 
   INTEGER              :: case_optimize  =   0
   REAL                 :: exit_tol       =   1.000D-04
+  REAL                 :: psmall         =   1.000D-04
+
   INTEGER              :: DF_maxiter     =   0
   REAL                 :: DF_xtol        =   1.000D-08     
   REAL                 :: DF_tausta      =   0.000D+00
@@ -242,6 +245,7 @@ module globals
                         ghost_use      , &
                         rcflux_use     , &
                         period_Nseg    , &
+                        rcflux_pre     , &
                         weight_tflux   , &
                         target_tflux   , &
                         weight_ttlen   , &
@@ -283,6 +287,7 @@ module globals
                         ccsep_skip     , &
                         case_optimize  , &
                         exit_tol       , &
+                        psmall         , &
                         DF_maxiter     , & 
                         DF_xtol        , & 
                         DF_tausta      , &  
