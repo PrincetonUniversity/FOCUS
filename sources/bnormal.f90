@@ -173,7 +173,7 @@ subroutine bnormal( ideriv )
                   rcflux = rcflux + rcflux_pre*dAz(0,0)*gsurf(1)%ozdot(jzeta)
                   call afield0(icoil, gsurf(1)%xx(jzeta), gsurf(1)%xy(jzeta), gsurf(1)%xz(jzeta), dAx(0,0), dAy(0,0), dAz(0,0) )
                   rcflux = rcflux - rcflux_pre*dAx(0,0)*gsurf(1)%xxdot(jzeta) 
-                  rclfux = rcflux - rcflux_pre*dAy(0,0)*gsurf(1)%xydot(jzeta) 
+                  rcflux = rcflux - rcflux_pre*dAy(0,0)*gsurf(1)%xydot(jzeta) 
                   rcflux = rcflux - rcflux_pre*dAz(0,0)*gsurf(1)%xzdot(jzeta)
                enddo
             enddo

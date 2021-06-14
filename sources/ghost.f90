@@ -149,10 +149,10 @@ subroutine calcfg(index)
   do i = 1, Nseg_stable-1
      gsurf(index)%oxdot(i) = gsurf(index)%ox(i+1) - gsurf(index)%ox(i)
      gsurf(index)%xxdot(i) = gsurf(index)%xx(i+1) - gsurf(index)%xx(i)
-     gsurf(index)%oydot(i) = gsurf(index)%oy(i+1) - gsurf(index)%ox(i)
-     gsurf(index)%xydot(i) = gsurf(index)%xy(i+1) - gsurf(index)%xx(i)
-     gsurf(index)%ozdot(i) = gsurf(index)%oz(i+1) - gsurf(index)%ox(i)
-     gsurf(index)%xzdot(i) = gsurf(index)%xz(i+1) - gsurf(index)%xx(i)
+     gsurf(index)%oydot(i) = gsurf(index)%oy(i+1) - gsurf(index)%oy(i)
+     gsurf(index)%xydot(i) = gsurf(index)%xy(i+1) - gsurf(index)%xy(i)
+     gsurf(index)%ozdot(i) = gsurf(index)%oz(i+1) - gsurf(index)%oz(i)
+     gsurf(index)%xzdot(i) = gsurf(index)%xz(i+1) - gsurf(index)%xz(i)
   enddo
   gsurf(index)%oxdot(Nseg_stable) = gsurf(index)%oxdot(1)
   gsurf(index)%xxdot(Nseg_stable) = gsurf(index)%xxdot(1)
@@ -161,12 +161,12 @@ subroutine calcfg(index)
   gsurf(index)%ozdot(Nseg_stable) = gsurf(index)%ozdot(1)
   gsurf(index)%xzdot(Nseg_stable) = gsurf(index)%xzdot(1)
   
-  gsurf(index)%oxdot(1:Nseg_stable) = gsurf(index)%oxdot(1:Nseg_stable)/(Nseg_stable-1)
-  gsurf(index)%xxdot(1:Nseg_stable) = gsurf(index)%xxdot(1:Nseg_stable)/(Nseg_stable-1)
-  gsurf(index)%oydot(1:Nseg_stable) = gsurf(index)%oydot(1:Nseg_stable)/(Nseg_stable-1)
-  gsurf(index)%xydot(1:Nseg_stable) = gsurf(index)%xydot(1:Nseg_stable)/(Nseg_stable-1)
-  gsurf(index)%ozdot(1:Nseg_stable) = gsurf(index)%ozdot(1:Nseg_stable)/(Nseg_stable-1)
-  gsurf(index)%xzdot(1:Nseg_stable) = gsurf(index)%xzdot(1:Nseg_stable)/(Nseg_stable-1)
+  gsurf(index)%oxdot(1:Nseg_stable) = (Nseg_stable-1)*gsurf(index)%oxdot(1:Nseg_stable)/(pi2*resbn_m)
+  gsurf(index)%xxdot(1:Nseg_stable) = (Nseg_stable-1)*gsurf(index)%xxdot(1:Nseg_stable)/(pi2*resbn_m)
+  gsurf(index)%oydot(1:Nseg_stable) = (Nseg_stable-1)*gsurf(index)%oydot(1:Nseg_stable)/(pi2*resbn_m)
+  gsurf(index)%xydot(1:Nseg_stable) = (Nseg_stable-1)*gsurf(index)%xydot(1:Nseg_stable)/(pi2*resbn_m)
+  gsurf(index)%ozdot(1:Nseg_stable) = (Nseg_stable-1)*gsurf(index)%ozdot(1:Nseg_stable)/(pi2*resbn_m)
+  gsurf(index)%xzdot(1:Nseg_stable) = (Nseg_stable-1)*gsurf(index)%xzdot(1:Nseg_stable)/(pi2*resbn_m)
  
 
   ! Calculate contravariant basis, make variables local, MATH IS INCORRECT
