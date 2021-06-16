@@ -230,7 +230,7 @@ subroutine saving
      HWRITERV( Nseg_stable      , obsups        , gsurf(1)%obsups(1:Nseg_stable) )
      HWRITERV( Nseg_stable      , obsupzeta , gsurf(1)%obsupzeta(1:Nseg_stable)  )
      HWRITERV( Nseg_stable      , obsuptheta, gsurf(1)%obsuptheta(1:Nseg_stable) )
-     HWRITERV( Nseg_stable      , xbsupo        , gsurf(1)%xbsups(1:Nseg_stable) )
+     HWRITERV( Nseg_stable      , xbsups        , gsurf(1)%xbsups(1:Nseg_stable) )
      HWRITERV( Nseg_stable      , xbsupzeta , gsurf(1)%xbsupzeta(1:Nseg_stable)  )
      HWRITERV( Nseg_stable      , xbsuptheta, gsurf(1)%xbsuptheta(1:Nseg_stable) )
      HWRITERV( 1                , F             , gsurf(1)%F                     )
