@@ -375,7 +375,9 @@ module globals
                              otheta(:), xtheta(:), zeta(:), Ra(:), Za(:), osdot(:), xsdot(:), &
                              othetadot(:), xthetadot(:), ox(:), oy(:), oz(:), xx(:), xy(:), &
                              xz(:), of(:), og(:), xf(:), xg(:), oxdot(:), oydot(:), ozdot(:), &
-                             xxdot(:), xydot(:), xzdot(:)
+                             xxdot(:), xydot(:), xzdot(:), odRadx(:), odRady(:), odZadx(:), &
+                             odZady(:), xdRadx(:), xdRady(:), xdZadx(:), xdZady(:), obsups(:), &
+                             obsupzeta(:), obsuptheta(:), xbsups(:), xbsupzeta(:), xbsuptheta(:)
      REAL                 :: F
      ! Put in variables for discritized curves, and discritized ghost surface
   end type ghostsurface

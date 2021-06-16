@@ -227,9 +227,19 @@ subroutine saving
      HWRITERV( Nseg_stable      , xsdot         , gsurf(1)%xsdot(1:Nseg_stable)  )
      HWRITERV( Nseg_stable      , othetadot  , gsurf(1)%othetadot(1:Nseg_stable) )
      HWRITERV( Nseg_stable      , xthetadot  , gsurf(1)%xthetadot(1:Nseg_stable) )
+     HWRITERV( Nseg_stable      , obsups        , gsurf(1)%obsups(1:Nseg_stable) )
+     HWRITERV( Nseg_stable      , obsupzeta , gsurf(1)%obsupzeta(1:Nseg_stable)  )
+     HWRITERV( Nseg_stable      , obsuptheta, gsurf(1)%obsuptheta(1:Nseg_stable) )
+     HWRITERV( Nseg_stable      , xbsupo        , gsurf(1)%xbsups(1:Nseg_stable) )
+     HWRITERV( Nseg_stable      , xbsupzeta , gsurf(1)%xbsupzeta(1:Nseg_stable)  )
+     HWRITERV( Nseg_stable      , xbsuptheta, gsurf(1)%xbsuptheta(1:Nseg_stable) )
      HWRITERV( 1                , F             , gsurf(1)%F                     )
   endif
-  
+
+
+!obsupzeta(:), obsuptheta(:), xbsups(:), xbsupzeta(:), xbsuptheta(:)
+
+
   if (allocated(LM_fvec)) then
      HWRITEIV( 1                ,   ibnorm        ,   ibnorm                     )
      HWRITEIV( 1                ,   mbnorm        ,   mbnorm                     )     
