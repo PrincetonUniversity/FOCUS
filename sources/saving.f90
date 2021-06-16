@@ -219,6 +219,12 @@ subroutine saving
      HWRITERV( Nseg_stable      , xx            , gsurf(1)%xx(1:Nseg_stable)     )
      HWRITERV( Nseg_stable      , xy            , gsurf(1)%xy(1:Nseg_stable)     )
      HWRITERV( Nseg_stable      , xz            , gsurf(1)%xz(1:Nseg_stable)     )
+     HWRITERV( Nseg_stable      , oxdot         , gsurf(1)%oxdot(1:Nseg_stable)  )
+     HWRITERV( Nseg_stable      , oydot         , gsurf(1)%oydot(1:Nseg_stable)  )
+     HWRITERV( Nseg_stable      , ozdot         , gsurf(1)%ozdot(1:Nseg_stable)  )
+     HWRITERV( Nseg_stable      , xxdot         , gsurf(1)%xxdot(1:Nseg_stable)  )
+     HWRITERV( Nseg_stable      , xydot         , gsurf(1)%xydot(1:Nseg_stable)  )
+     HWRITERV( Nseg_stable      , xzdot         , gsurf(1)%xzdot(1:Nseg_stable)  )
      HWRITERV( Nseg_stable      , of            , gsurf(1)%of(1:Nseg_stable)     )
      HWRITERV( Nseg_stable      , xf            , gsurf(1)%xf(1:Nseg_stable)     )
      HWRITERV( Nseg_stable      , og            , gsurf(1)%og(1:Nseg_stable)     )
@@ -235,10 +241,6 @@ subroutine saving
      HWRITERV( Nseg_stable      , xbsuptheta, gsurf(1)%xbsuptheta(1:Nseg_stable) )
      HWRITERV( 1                , F             , gsurf(1)%F                     )
   endif
-
-
-!obsupzeta(:), obsuptheta(:), xbsups(:), xbsupzeta(:), xbsuptheta(:)
-
 
   if (allocated(LM_fvec)) then
      HWRITEIV( 1                ,   ibnorm        ,   ibnorm                     )
