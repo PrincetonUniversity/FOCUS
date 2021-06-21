@@ -127,14 +127,6 @@ subroutine rdstable(filename, index)
   SALLOCATE( gsurf(index)%zeta, (1:Nseg_stable), 0.0 )
   SALLOCATE( gsurf(index)%Ra, (1:Nseg_stable), 0.0 )
   SALLOCATE( gsurf(index)%Za, (1:Nseg_stable), 0.0 )
-  !SALLOCATE( gsurf(index)%odRadx, (1:Nseg_stable), 0.0 )
-  !SALLOCATE( gsurf(index)%odRady, (1:Nseg_stable), 0.0 )
-  !SALLOCATE( gsurf(index)%odZadx, (1:Nseg_stable), 0.0 )
-  !SALLOCATE( gsurf(index)%odZady, (1:Nseg_stable), 0.0 )
-  !SALLOCATE( gsurf(index)%xdRadx, (1:Nseg_stable), 0.0 )
-  !SALLOCATE( gsurf(index)%xdRady, (1:Nseg_stable), 0.0 )
-  !SALLOCATE( gsurf(index)%xdZadx, (1:Nseg_stable), 0.0 )
-  !SALLOCATE( gsurf(index)%xdZady, (1:Nseg_stable), 0.0 )
   SALLOCATE( gsurf(index)%os, (1:Nseg_stable), 0.0 )
   SALLOCATE( gsurf(index)%xs, (1:Nseg_stable), 0.0 )
   SALLOCATE( gsurf(index)%otheta, (1:Nseg_stable), 0.0 )
@@ -172,6 +164,24 @@ subroutine rdstable(filename, index)
   !   call ghost(1)
   !endif
   gsurf(index)%donee = 0
+
+  do i = 1,gsurf(index)%Nseg_stable
+     gsurf(index)%zeta(i) = (i-1)*pi2*resbn_m/(Nseg_stable-1)
+  enddo
+
+  gsurf(index)%Ndof_stable = 4*gsurf(index)%NF_stable
+  SALLOCATE( gsurf(index)%xdof_stable, (1:gsurf(index)%Ndof_stable), 0.0 )
+  SALLOCATE( gsurf(index)%dFdxdof_stable, (1:gsurf(index)%Ndof_stable), 0.0 )
+  
+  gsurf(index)%xdof_stable(            1:  NF_stable) = gsurf(index)%osnc(1:NF_stable)
+  gsurf(index)%xdof_stable(  NF_stable+1:2*NF_stable) = gsurf(index)%osns(1:NF_stable)
+  gsurf(index)%xdof_stable(2*NF_stable+1:3*NF_stable) = gsurf(index)%othetanc(1:NF_stable)
+  gsurf(index)%xdof_stable(3*NF_stable+1:4*NF_stable) = gsurf(index)%othetans(1:NF_stable)
+
+
+
+
+
 
 
 

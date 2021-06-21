@@ -13,22 +13,22 @@
 subroutine ghost(index)
   use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, &
        coil, DoF, Ncoils, Nfixgeo, Ndof, resbn_m, gsurf, MPI_COMM_FOCUS
-
+  
+  use mpi
   implicit none
-  include "mpif.h"
-  INTEGER, INTENT(in)    :: index
+  !include "mpif.h"
+  INTEGER, INTENT(in) :: index
 
-  INTEGER             :: astat, ierr, i, Nseg_stable
-
-  Nseg_stable = gsurf(index)%Nseg_stable
-  do i = 1,Nseg_stable
-     gsurf(index)%zeta(i) = (i-1)*pi2*resbn_m/(Nseg_stable-1)
-  enddo
+  INTEGER             :: astat, ierr
 
   ! Calculate f and g functions for o and x
   call calcfg(index)
 
+  ! Calculate derivatives of f and g
+  call calcfg_deriv(index)
+
   ! Optimize F = of^2 + xf^2 + og^2 + xg^2 functional
+  call congrad_stable(index)
 
   ! Construct ghost surface
 
@@ -40,9 +40,10 @@ end subroutine ghost
 
 subroutine calcfg(index)
   use globals, only: dp, zero, half, pi2, ncpu, myid, resbn_m, resbn_n, gsurf, Ncoils, ounit, MPI_COMM_FOCUS
-
+  
+  use mpi
   implicit none
-  include "mpif.h"
+  !include "mpif.h"
   INTEGER, INTENT(IN) :: index
 
   INTEGER             :: astat, ierr, i, Nseg_stable, p, q, icoil
@@ -134,29 +135,7 @@ subroutine calcfg(index)
   gsurf(index)%xz(1:Nseg_stable) = gsurf(index)%xs(1:Nseg_stable)*sin(gsurf(index)%xtheta(1:Nseg_stable)) + &
           gsurf(index)%Za(1:Nseg_stable)
 
-  ! Calculate xdot, etc for dl. Use fd for now
-  !do i = 1, Nseg_stable-1
-  !   gsurf(index)%oxdot(i) = gsurf(index)%ox(i+1) - gsurf(index)%ox(i)
-  !   gsurf(index)%xxdot(i) = gsurf(index)%xx(i+1) - gsurf(index)%xx(i)
-  !   gsurf(index)%oydot(i) = gsurf(index)%oy(i+1) - gsurf(index)%oy(i)
-  !   gsurf(index)%xydot(i) = gsurf(index)%xy(i+1) - gsurf(index)%xy(i)
-  !   gsurf(index)%ozdot(i) = gsurf(index)%oz(i+1) - gsurf(index)%oz(i)
-  !   gsurf(index)%xzdot(i) = gsurf(index)%xz(i+1) - gsurf(index)%xz(i)
-  !enddo
-  !gsurf(index)%oxdot(Nseg_stable) = gsurf(index)%oxdot(1)
-  !gsurf(index)%xxdot(Nseg_stable) = gsurf(index)%xxdot(1)
-  !gsurf(index)%oydot(Nseg_stable) = gsurf(index)%oydot(1)
-  !gsurf(index)%xydot(Nseg_stable) = gsurf(index)%xydot(1)
-  !gsurf(index)%ozdot(Nseg_stable) = gsurf(index)%ozdot(1)
-  !gsurf(index)%xzdot(Nseg_stable) = gsurf(index)%xzdot(1)
-  
-  !gsurf(index)%oxdot(1:Nseg_stable) = (Nseg_stable-1)*gsurf(index)%oxdot(1:Nseg_stable)/(pi2*q)
-  !gsurf(index)%xxdot(1:Nseg_stable) = (Nseg_stable-1)*gsurf(index)%xxdot(1:Nseg_stable)/(pi2*q)
-  !gsurf(index)%oydot(1:Nseg_stable) = (Nseg_stable-1)*gsurf(index)%oydot(1:Nseg_stable)/(pi2*q)
-  !gsurf(index)%xydot(1:Nseg_stable) = (Nseg_stable-1)*gsurf(index)%xydot(1:Nseg_stable)/(pi2*q)
-  !gsurf(index)%ozdot(1:Nseg_stable) = (Nseg_stable-1)*gsurf(index)%ozdot(1:Nseg_stable)/(pi2*q)
-  !gsurf(index)%xzdot(1:Nseg_stable) = (Nseg_stable-1)*gsurf(index)%xzdot(1:Nseg_stable)/(pi2*q)
-
+  ! Calculate derivative of field line w.r.t zeta
   gsurf(index)%oxdot(1:Nseg_stable) = -1.0*sin(zeta(1:Nseg_stable))*(gsurf(index)%Ra(1:Nseg_stable)&
          + gsurf(index)%os(1:Nseg_stable)*cos(gsurf(index)%otheta(1:Nseg_stable))) &
          + cos(zeta(1:Nseg_stable))*( Radot(1:Nseg_stable) + gsurf(index)%osdot(1:Nseg_stable)&
@@ -324,7 +303,9 @@ subroutine calcfg(index)
   SALLOCATE( xBy, (1:Nseg_stable), 0.0 )
   SALLOCATE( xBz, (1:Nseg_stable), 0.0 )
 
+  ! Parallelized, but commented until tested 
   do i = 1, Nseg_stable
+     !if( myid.ne.modulo(i,ncpu) ) cycle ! parallelization loop;
      do icoil = 1, Ncoils
         call bfield0(icoil, gsurf(index)%ox(i), gsurf(index)%oy(i), gsurf(index)%oz(i), Bxhold, Byhold, Bzhold)
         oBx(i) = oBx(i) + Bxhold
@@ -337,22 +318,29 @@ subroutine calcfg(index)
         xBz(i) = xBz(i) + Bzhold
      enddo
   enddo
+  !call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
+  !call MPI_ALLREDUCE( MPI_IN_PLACE, oBx, Nseg_stable, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+  !call MPI_ALLREDUCE( MPI_IN_PLACE, oBy, Nseg_stable, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+  !call MPI_ALLREDUCE( MPI_IN_PLACE, oBz, Nseg_stable, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+  !call MPI_ALLREDUCE( MPI_IN_PLACE, xBx, Nseg_stable, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+  !call MPI_ALLREDUCE( MPI_IN_PLACE, xBy, Nseg_stable, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+  !call MPI_ALLREDUCE( MPI_IN_PLACE, xBz, Nseg_stable, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
 
-   ! Calculate B^s, B^zeta, B^theta on stable field lines
-   gsurf(index)%obsups(1:Nseg_stable) = oBx(1:Nseg_stable)*gradosx(1:Nseg_stable) + &
-           oBy(1:Nseg_stable)*gradosy(1:Nseg_stable) + oBz(1:Nseg_stable)*gradosz(1:Nseg_stable)
-   gsurf(index)%xbsups(1:Nseg_stable) = xBx(1:Nseg_stable)*gradxsx(1:Nseg_stable) + &
-           xBy(1:Nseg_stable)*gradxsy(1:Nseg_stable) + xBz(1:Nseg_stable)*gradxsz(1:Nseg_stable)
+  ! Calculate B^s, B^zeta, B^theta on stable field lines
+  gsurf(index)%obsups(1:Nseg_stable) = oBx(1:Nseg_stable)*gradosx(1:Nseg_stable) + &
+          oBy(1:Nseg_stable)*gradosy(1:Nseg_stable) + oBz(1:Nseg_stable)*gradosz(1:Nseg_stable)
+  gsurf(index)%xbsups(1:Nseg_stable) = xBx(1:Nseg_stable)*gradxsx(1:Nseg_stable) + &
+          xBy(1:Nseg_stable)*gradxsy(1:Nseg_stable) + xBz(1:Nseg_stable)*gradxsz(1:Nseg_stable)
 
-   gsurf(index)%obsupzeta(1:Nseg_stable) = oBx(1:Nseg_stable)*gradozetax(1:Nseg_stable) + &
-           oBy(1:Nseg_stable)*gradozetay(1:Nseg_stable) + oBz(1:Nseg_stable)*gradozetaz(1:Nseg_stable)
-   gsurf(index)%xbsupzeta(1:Nseg_stable) = xBx(1:Nseg_stable)*gradxzetax(1:Nseg_stable) + &
-           xBy(1:Nseg_stable)*gradxzetay(1:Nseg_stable) + xBz(1:Nseg_stable)*gradxzetaz(1:Nseg_stable)
+  gsurf(index)%obsupzeta(1:Nseg_stable) = oBx(1:Nseg_stable)*gradozetax(1:Nseg_stable) + &
+          oBy(1:Nseg_stable)*gradozetay(1:Nseg_stable) + oBz(1:Nseg_stable)*gradozetaz(1:Nseg_stable)
+  gsurf(index)%xbsupzeta(1:Nseg_stable) = xBx(1:Nseg_stable)*gradxzetax(1:Nseg_stable) + &
+          xBy(1:Nseg_stable)*gradxzetay(1:Nseg_stable) + xBz(1:Nseg_stable)*gradxzetaz(1:Nseg_stable)
 
-   gsurf(index)%obsuptheta(1:Nseg_stable) = oBx(1:Nseg_stable)*gradothetax(1:Nseg_stable) + &
-           oBy(1:Nseg_stable)*gradothetay(1:Nseg_stable) + oBz(1:Nseg_stable)*gradothetaz(1:Nseg_stable)
-   gsurf(index)%xbsuptheta(1:Nseg_stable) = xBx(1:Nseg_stable)*gradxthetax(1:Nseg_stable) + &
-           xBy(1:Nseg_stable)*gradxthetay(1:Nseg_stable) + xBz(1:Nseg_stable)*gradxthetaz(1:Nseg_stable)
+  gsurf(index)%obsuptheta(1:Nseg_stable) = oBx(1:Nseg_stable)*gradothetax(1:Nseg_stable) + &
+          oBy(1:Nseg_stable)*gradothetay(1:Nseg_stable) + oBz(1:Nseg_stable)*gradothetaz(1:Nseg_stable)
+  gsurf(index)%xbsuptheta(1:Nseg_stable) = xBx(1:Nseg_stable)*gradxthetax(1:Nseg_stable) + &
+          xBy(1:Nseg_stable)*gradxthetay(1:Nseg_stable) + xBz(1:Nseg_stable)*gradxthetaz(1:Nseg_stable)
 
   ! Calculate f,g and F
   gsurf(index)%of(1:Nseg_stable) = gsurf(index)%obsups(1:Nseg_stable)/gsurf(index)%obsupzeta(1:Nseg_stable) - &
@@ -410,3 +398,188 @@ subroutine calcfg(index)
   return
 
 end subroutine calcfg
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+subroutine calcfg_deriv(index)
+  use globals, only: dp, zero, half, machprec, sqrtmachprec, ncpu, myid, ounit, MPI_COMM_FOCUS, &
+                               psmall, gsurf
+  use mpi
+  implicit none
+  !include "mpif.h"
+
+  INTEGER, INTENT(in)  :: index
+  !--------------------------------------------------------------------------------------------
+  
+  INTEGER              :: astat, ierr, idof
+  REAL                 :: tmp_xdof(1:gsurf(index)%Ndof_stable), fd, negvalue, posvalue
+  REAL                 :: start, finish, small
+ !REAL, parameter      :: psmall=1.0E-4
+  !--------------------------------------------------------------------------------------------
+  
+  FATAL( calcfg_deriv, gsurf(index)%Ndof_stable < 1, No enough DOFs )
+  !--------------------------------------------------------------------------------------------
+  
+  do idof = 1, gsurf(index)%Ndof_stable
+
+     ! perturbation will be relative.
+     small = gsurf(index)%xdof_stable(idof) * psmall
+     if (abs(small)<machprec) small = psmall
+     
+     !backward pertubation;
+     tmp_xdof = gsurf(index)%xdof_stable
+     tmp_xdof(idof) = tmp_xdof(idof) - half * small
+     call unpacking_stable(tmp_xdof,index)
+     call calcfg(index)
+     negvalue = gsurf(index)%F
+
+     !forward pertubation;
+     tmp_xdof = gsurf(index)%xdof_stable
+     tmp_xdof(idof) = tmp_xdof(idof) + half * small
+     call unpacking_stable(tmp_xdof,index)
+     call calcfg(index)
+     posvalue = gsurf(index)%F
+
+     !finite difference;
+     gsurf(index)%dFdxdof_stable(idof) = (posvalue - negvalue) / small
+  
+  enddo
+
+  return
+
+end subroutine calcfg_deriv
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+subroutine congrad_stable(index)
+  use globals, only: dp, sqrtmachprec, myid, ounit, CG_maxiter, CG_xtol, &
+       exit_signal, tstart, tfinish, gsurf, MPI_COMM_FOCUS
+  
+  use mpi
+  implicit none
+
+  INTEGER, INTENT(in)     :: index
+  INTEGER                 :: ierr, astat, iter, n, nfunc, ngrad, status, CG_maxiter_hold, NF_stable
+  REAL                    :: f, gnorm
+  REAL, dimension(1:gsurf(index)%Ndof_stable) :: x, g, d, xtemp, gtemp
+  EXTERNAL                :: myvalue_stable, mygrad_stable
+
+  !tfinish = MPI_Wtime()
+  iter = 0
+  n = gsurf(index)%Ndof_stable
+  x(1:n) = gsurf(index)%xdof_stable(1:n)
+
+  CG_maxiter_hold = CG_maxiter
+  CG_maxiter = 10
+  ! Put in CG_xtol too
+
+  call cg_descent (CG_xtol, x, n, myvalue_stable, mygrad_stable, status, gnorm, f, iter, nfunc, ngrad, d, g, xtemp, gtemp)
+
+  !tstart = MPI_Wtime()
+  !call output(tstart-tfinish)
+
+  if (myid == 0) then
+     select case (status)
+     case (0)
+        write(ounit, '("congrad : status="I1": convergence tolerance satisfied.")')  status
+     case (1)
+        write(ounit, '("congrad : status="I1": change in func <= feps*|f|.")')  status
+     case (2)
+        write(ounit, '("congrad : status="I1": total iterations exceeded maxit.")')  status
+     case (3)
+        write(ounit, '("congrad : status="I1": slope always negative in line search.")')  status
+     case (4)
+        write(ounit, '("congrad : status="I1": number secant iterations exceed nsecant.")')  status
+     case (5)
+        write(ounit, '("congrad : status="I1": search direction not a descent direction.")')  status
+     case (6)
+        write(ounit, '("congrad : status="I1": line search fails in initial interval.")')  status
+     case (7)
+        write(ounit, '("congrad : status="I1": line search fails during bisection.")')  status
+     case (8)
+        write(ounit, '("congrad : status="I1": line search fails during interval update.")')  status
+     case default
+        write(ounit, '("congrad : status="I1": unknow options!")')  status
+     end select
+  end if
+
+  if(myid .eq. 0) write(ounit, '("congrad : Stable conjugate gradient finished.")')
+
+  CG_maxiter = CG_maxiter_hold
+
+  NF_stable = gsurf(index)%NF_stable
+  gsurf(index)%xdof_stable(            1:  NF_stable) = gsurf(index)%osnc(1:NF_stable)
+  gsurf(index)%xdof_stable(  NF_stable+1:2*NF_stable) = gsurf(index)%osns(1:NF_stable)
+  gsurf(index)%xdof_stable(2*NF_stable+1:3*NF_stable) = gsurf(index)%othetanc(1:NF_stable)
+  gsurf(index)%xdof_stable(3*NF_stable+1:4*NF_stable) = gsurf(index)%othetans(1:NF_stable)
+
+  return
+
+end subroutine congrad_stable
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+
+subroutine myvalue_stable(f, x, n, index)
+  use globals, only: dp, myid, ounit, ierr, gsurf, MPI_COMM_FOCUS
+  use mpi
+  implicit none
+  !include "mpif.h"
+
+  INTEGER, INTENT(in) :: n, index
+  REAL, INTENT(in)    :: x(n)
+  REAL, INTENT(out)   :: f
+
+  call MPI_BARRIER( MPI_COMM_FOCUS, ierr ) ! wait all cpus;
+  
+  call unpacking_stable(x,index)
+  call calcfg(index)
+  f = gsurf(index)%F
+
+  return
+
+end subroutine myvalue_stable
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+
+subroutine mygrad_stable(g, x, n, index)
+  use globals, only: dp, myid, ounit, ierr, gsurf, MPI_COMM_FOCUS
+  use mpi
+  implicit none
+
+  INTEGER, INTENT(in) :: n, index
+  REAL, INTENT(in)    :: x(n)
+  REAL, INTENT(out)   :: g(n)
+
+  call MPI_BARRIER( MPI_COMM_FOCUS, ierr ) ! wait all cpus;
+  
+  call unpacking_stable(x,index)
+  call calcfg_deriv(index)
+  g = gsurf(index)%dFdxdof_stable
+
+  return
+
+end subroutine mygrad_stable
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
+
+subroutine unpacking_stable(x, index)
+  use globals, only: dp, myid, ounit, ierr, gsurf, MPI_COMM_FOCUS
+  use mpi
+  implicit none
+
+  INTEGER, INTENT(in) :: index
+  REAL, INTENT(in)    :: x(gsurf(index)%Ndof_stable)
+
+  INTEGER             :: NF_stable
+
+  call MPI_BARRIER( MPI_COMM_FOCUS, ierr ) ! wait all cpus;
+
+  NF_stable = gsurf(index)%NF_stable
+  gsurf(index)%osnc(1:NF_stable)     = x(            1:  NF_stable)
+  gsurf(index)%osns(1:NF_stable)     = x(  NF_stable+1:2*NF_stable)
+  gsurf(index)%othetanc(1:NF_stable) = x(2*NF_stable+1:3*NF_stable)
+  gsurf(index)%othetans(1:NF_stable) = x(3*NF_stable+1:4*NF_stable)
+
+  return
+
+end subroutine unpacking_stable

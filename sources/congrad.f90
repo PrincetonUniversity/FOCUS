@@ -281,7 +281,7 @@ SUBROUTINE congrad
   REAL, dimension(1:Ndof) :: x, g, d, xtemp, gtemp
   EXTERNAL                :: myvalue, mygrad
 
-  tfinish = MPI_Wtime()
+  !tfinish = MPI_Wtime()
   iter = 0
   n = Ndof
   call packdof(x(1:n)) ! initial xdof;
