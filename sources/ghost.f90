@@ -303,9 +303,9 @@ subroutine calcfg(index)
   SALLOCATE( xBy, (1:Nseg_stable), 0.0 )
   SALLOCATE( xBz, (1:Nseg_stable), 0.0 )
 
-  ! Parallelized, but commented until tested 
+  ! Parallelized
   do i = 1, Nseg_stable
-     !if( myid.ne.modulo(i,ncpu) ) cycle ! parallelization loop;
+     if( myid.ne.modulo(i,ncpu) ) cycle ! parallelization loop;
      do icoil = 1, Ncoils
         call bfield0(icoil, gsurf(index)%ox(i), gsurf(index)%oy(i), gsurf(index)%oz(i), Bxhold, Byhold, Bzhold)
         oBx(i) = oBx(i) + Bxhold
@@ -318,13 +318,13 @@ subroutine calcfg(index)
         xBz(i) = xBz(i) + Bzhold
      enddo
   enddo
-  !call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
-  !call MPI_ALLREDUCE( MPI_IN_PLACE, oBx, Nseg_stable, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
-  !call MPI_ALLREDUCE( MPI_IN_PLACE, oBy, Nseg_stable, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
-  !call MPI_ALLREDUCE( MPI_IN_PLACE, oBz, Nseg_stable, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
-  !call MPI_ALLREDUCE( MPI_IN_PLACE, xBx, Nseg_stable, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
-  !call MPI_ALLREDUCE( MPI_IN_PLACE, xBy, Nseg_stable, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
-  !call MPI_ALLREDUCE( MPI_IN_PLACE, xBz, Nseg_stable, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+  call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
+  call MPI_ALLREDUCE( MPI_IN_PLACE, oBx, Nseg_stable, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+  call MPI_ALLREDUCE( MPI_IN_PLACE, oBy, Nseg_stable, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+  call MPI_ALLREDUCE( MPI_IN_PLACE, oBz, Nseg_stable, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+  call MPI_ALLREDUCE( MPI_IN_PLACE, xBx, Nseg_stable, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+  call MPI_ALLREDUCE( MPI_IN_PLACE, xBy, Nseg_stable, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+  call MPI_ALLREDUCE( MPI_IN_PLACE, xBz, Nseg_stable, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
 
   ! Calculate B^s, B^zeta, B^theta on stable field lines
   gsurf(index)%obsups(1:Nseg_stable) = oBx(1:Nseg_stable)*gradosx(1:Nseg_stable) + &
@@ -519,17 +519,21 @@ end subroutine congrad_stable
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
-subroutine myvalue_stable(f, x, n, index)
+subroutine myvalue_stable(f, x, n)
   use globals, only: dp, myid, ounit, ierr, gsurf, MPI_COMM_FOCUS
   use mpi
   implicit none
   !include "mpif.h"
 
-  INTEGER, INTENT(in) :: n, index
+  INTEGER, INTENT(in) :: n
   REAL, INTENT(in)    :: x(n)
   REAL, INTENT(out)   :: f
 
+  INTEGER             :: index
+
   call MPI_BARRIER( MPI_COMM_FOCUS, ierr ) ! wait all cpus;
+
+  index = 1
   
   call unpacking_stable(x,index)
   call calcfg(index)
@@ -541,17 +545,21 @@ end subroutine myvalue_stable
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
-subroutine mygrad_stable(g, x, n, index)
+subroutine mygrad_stable(g, x, n)
   use globals, only: dp, myid, ounit, ierr, gsurf, MPI_COMM_FOCUS
   use mpi
   implicit none
 
-  INTEGER, INTENT(in) :: n, index
+  INTEGER, INTENT(in) :: n
   REAL, INTENT(in)    :: x(n)
   REAL, INTENT(out)   :: g(n)
 
+  INTEGER             :: index
+
   call MPI_BARRIER( MPI_COMM_FOCUS, ierr ) ! wait all cpus;
   
+  index = 1
+
   call unpacking_stable(x,index)
   call calcfg_deriv(index)
   g = gsurf(index)%dFdxdof_stable
