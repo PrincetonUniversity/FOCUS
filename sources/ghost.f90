@@ -16,7 +16,6 @@ subroutine ghost(index)
   
   use mpi
   implicit none
-  !include "mpif.h"
   INTEGER, INTENT(in) :: index
 
   INTEGER             :: astat, ierr
@@ -43,7 +42,6 @@ subroutine calcfg(index)
   
   use mpi
   implicit none
-  !include "mpif.h"
   INTEGER, INTENT(IN) :: index
 
   INTEGER             :: astat, ierr, i, Nseg_stable, p, q, icoil
@@ -303,7 +301,7 @@ subroutine calcfg(index)
   SALLOCATE( xBy, (1:Nseg_stable), 0.0 )
   SALLOCATE( xBz, (1:Nseg_stable), 0.0 )
 
-  ! Parallelized
+  ! Parallelized, maybe change to be parallelized elsewhere
   do i = 1, Nseg_stable
      if( myid.ne.modulo(i,ncpu) ) cycle ! parallelization loop;
      do icoil = 1, Ncoils
@@ -406,44 +404,40 @@ subroutine calcfg_deriv(index)
                                psmall, gsurf
   use mpi
   implicit none
-  !include "mpif.h"
 
   INTEGER, INTENT(in)  :: index
-  !--------------------------------------------------------------------------------------------
   
-  INTEGER              :: astat, ierr, idof
+  INTEGER              :: astat, ierr, idof, NF_stable
   REAL                 :: tmp_xdof(1:gsurf(index)%Ndof_stable), fd, negvalue, posvalue
   REAL                 :: start, finish, small
- !REAL, parameter      :: psmall=1.0E-4
-  !--------------------------------------------------------------------------------------------
-  
-  FATAL( calcfg_deriv, gsurf(index)%Ndof_stable < 1, No enough DOFs )
-  !--------------------------------------------------------------------------------------------
   
   do idof = 1, gsurf(index)%Ndof_stable
-
      ! perturbation will be relative.
      small = gsurf(index)%xdof_stable(idof) * psmall
      if (abs(small)<machprec) small = psmall
-     
      !backward pertubation;
      tmp_xdof = gsurf(index)%xdof_stable
      tmp_xdof(idof) = tmp_xdof(idof) - half * small
      call unpacking_stable(tmp_xdof,index)
      call calcfg(index)
      negvalue = gsurf(index)%F
-
      !forward pertubation;
      tmp_xdof = gsurf(index)%xdof_stable
      tmp_xdof(idof) = tmp_xdof(idof) + half * small
      call unpacking_stable(tmp_xdof,index)
      call calcfg(index)
      posvalue = gsurf(index)%F
-
      !finite difference;
      gsurf(index)%dFdxdof_stable(idof) = (posvalue - negvalue) / small
-  
   enddo
+
+  !NF_stable = gsurf(index)%NF_stable
+  !
+  !gsurf(index)%dFdxdof_stable(            1:  NF_stable) = dFdosnc(1:NF_stable)
+  !gsurf(index)%dFdxdof_stable(  NF_stabel+1:2*NF_stable) = dFdosns(1:NF_stable)
+  !gsurf(index)%dFdxdof_stable(2*NF_stable+1:3*NF_stable) = dFdothetanc(1:NF_stable)
+  !gsurf(index)%dFdxdof_stable(3*NF_stable+1:4*NF_stable) = dFdothetans(1:NF_stable)
+  ! inlude x terms also 
 
   return
 
@@ -460,23 +454,20 @@ subroutine congrad_stable(index)
 
   INTEGER, INTENT(in)     :: index
   INTEGER                 :: ierr, astat, iter, n, nfunc, ngrad, status, CG_maxiter_hold, NF_stable
-  REAL                    :: f, gnorm
+  REAL                    :: f, gnorm, CG_xtol_hold
   REAL, dimension(1:gsurf(index)%Ndof_stable) :: x, g, d, xtemp, gtemp
   EXTERNAL                :: myvalue_stable, mygrad_stable
 
-  !tfinish = MPI_Wtime()
   iter = 0
   n = gsurf(index)%Ndof_stable
   x(1:n) = gsurf(index)%xdof_stable(1:n)
 
   CG_maxiter_hold = CG_maxiter
   CG_maxiter = 10
-  ! Put in CG_xtol too
+  CG_xtol_hold = CG_xtol
+  CG_xtol = 1.0E-6
 
   call cg_descent (CG_xtol, x, n, myvalue_stable, mygrad_stable, status, gnorm, f, iter, nfunc, ngrad, d, g, xtemp, gtemp)
-
-  !tstart = MPI_Wtime()
-  !call output(tstart-tfinish)
 
   if (myid == 0) then
      select case (status)
@@ -506,12 +497,17 @@ subroutine congrad_stable(index)
   if(myid .eq. 0) write(ounit, '("congrad : Stable conjugate gradient finished.")')
 
   CG_maxiter = CG_maxiter_hold
+  CG_xtol = CG_xtol_hold
 
   NF_stable = gsurf(index)%NF_stable
   gsurf(index)%xdof_stable(            1:  NF_stable) = gsurf(index)%osnc(1:NF_stable)
   gsurf(index)%xdof_stable(  NF_stable+1:2*NF_stable) = gsurf(index)%osns(1:NF_stable)
   gsurf(index)%xdof_stable(2*NF_stable+1:3*NF_stable) = gsurf(index)%othetanc(1:NF_stable)
   gsurf(index)%xdof_stable(3*NF_stable+1:4*NF_stable) = gsurf(index)%othetans(1:NF_stable)
+  gsurf(index)%xdof_stable(4*NF_stable+1:5*NF_stable) = gsurf(index)%xsnc(1:NF_stable)
+  gsurf(index)%xdof_stable(5*NF_stable+1:6*NF_stable) = gsurf(index)%xsns(1:NF_stable)
+  gsurf(index)%xdof_stable(6*NF_stable+1:7*NF_stable) = gsurf(index)%xthetanc(1:NF_stable)
+  gsurf(index)%xdof_stable(7*NF_stable+1:8*NF_stable) = gsurf(index)%xthetans(1:NF_stable)
 
   return
 
@@ -523,7 +519,6 @@ subroutine myvalue_stable(f, x, n)
   use globals, only: dp, myid, ounit, ierr, gsurf, MPI_COMM_FOCUS
   use mpi
   implicit none
-  !include "mpif.h"
 
   INTEGER, INTENT(in) :: n
   REAL, INTENT(in)    :: x(n)
@@ -587,6 +582,10 @@ subroutine unpacking_stable(x, index)
   gsurf(index)%osns(1:NF_stable)     = x(  NF_stable+1:2*NF_stable)
   gsurf(index)%othetanc(1:NF_stable) = x(2*NF_stable+1:3*NF_stable)
   gsurf(index)%othetans(1:NF_stable) = x(3*NF_stable+1:4*NF_stable)
+  gsurf(index)%xsnc(1:NF_stable)     = x(4*NF_stable+1:5*NF_stable)
+  gsurf(index)%xsns(1:NF_stable)     = x(5*NF_stable+1:6*NF_stable)
+  gsurf(index)%xthetanc(1:NF_stable) = x(6*NF_stable+1:7*NF_stable)
+  gsurf(index)%xthetans(1:NF_stable) = x(7*NF_stable+1:8*NF_stable)
 
   return
 
