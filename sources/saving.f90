@@ -423,7 +423,7 @@ SUBROUTINE write_plasma
    else if (case_surface == 2) then
       write(wunit,*      ) "#  n   m   Rbc   Rbs    Zbc   Zbs  Pmnc  Pmns"
       do imn = 1, Nfou
-         write(wunit,'(2I6, 4ES15.6)') bin(imn)/Nfp_raw, bim(imn), Rbc(imn), Rbs(imn), & 
+         write(wunit,'(2I6, 6ES15.6)') bin(imn)/Nfp_raw, bim(imn), Rbc(imn), Rbs(imn), & 
             & Zbc(imn), Zbs(imn), Pmnc(imn), Pmns(imn)
       enddo      
    endif 
