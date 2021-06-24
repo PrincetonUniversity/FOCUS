@@ -526,7 +526,7 @@ subroutine normweight
       if ( weight_resbn >= machprec ) then
          if (abs(bnorm) > machprec) weight_resbn = weight_resbn / resbn
          if( myid == 0 ) write(ounit, 1000) "weight_resbn", weight_resbn
-         if( myid .eq. 0 .and. weight_bnorm < machprec) write(ounit, '("warning : weight_resbn < machine_precision, resbn will not be used.")')
+         if( myid .eq. 0 .and. weight_resbn < machprec) write(ounit, '("warning : weight_resbn < machine_precision, resbn will not be used.")')
       endif
 
   endif

@@ -337,7 +337,8 @@ SUBROUTINE write_plasma
   use globals, only : dp, zero, half, two, pi, pi2, myid, ncpu, ounit, wunit, ext, &
                       Nfou, Nfp, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
                       Nteta, Nzeta, surf, Nfp_raw, bnorm, sqrtmachprec, out_plasma, &
-                      discretefactor, shift, IsSymmetric, MPI_COMM_FAMUS
+                      discretefactor, shift, IsSymmetric, MPI_COMM_FAMUS, & 
+                      Pmnc, Pmns, case_surface
   
   implicit none  
   include "mpif.h"
@@ -414,20 +415,30 @@ SUBROUTINE write_plasma
   write(wunit,'(3I6)' ) Nfou, Nfp_raw, Nbnf
 
   write(wunit,*      ) "#------- plasma boundary------"
-  write(wunit,*      ) "#  n   m   Rbc   Rbs    Zbc   Zbs"
-  do imn = 1, Nfou
-     write(wunit,'(2I6, 4ES15.6)') bin(imn)/Nfp_raw, bim(imn), Rbc(imn), Rbs(imn), Zbc(imn), Zbs(imn)
-  enddo
+  if (case_surface == 0) then 
+      write(wunit,*      ) "#  n   m   Rbc   Rbs    Zbc   Zbs"
+      do imn = 1, Nfou
+         write(wunit,'(2I6, 4ES15.6)') bin(imn)/Nfp_raw, bim(imn), Rbc(imn), Rbs(imn), Zbc(imn), Zbs(imn)
+      enddo
+   else if (case_surface == 2) then
+      write(wunit,*      ) "#  n   m   Rbc   Rbs    Zbc   Zbs  Pmnc  Pmns"
+      do imn = 1, Nfou
+         write(wunit,'(2I6, 4ES15.6)') bin(imn)/Nfp_raw, bim(imn), Rbc(imn), Rbs(imn), & 
+            & Zbc(imn), Zbs(imn), Pmnc(imn), Pmns(imn)
+      enddo      
+   endif 
 
   write(wunit,*      ) "#-------Bn harmonics----------"
   write(wunit,*      ) "#  n  m  bnc   bns"
   if (Nbnf .gt. 0) then
      do imn = 1, Nbnf
-        write(wunit,'(2I6, 2ES15.6)') bnin(imn)/(Nfp_raw/nfp), bnim(imn), bnc(imn), bns(imn)
+        write(wunit,'(2I6, 2ES15.6)') bnin(imn)/(Nfp_raw/nfp), bnim(imn), -bnc(imn), -bns(imn)
      enddo
   else
      write(wunit,'(2I6, 2ES15.6)') 0, 0, 0.0, 0.0
   endif
+
+  write(ounit, *) "The sign of Bn has been flipped. You can now directly use it in FAMUS."
 
   close(wunit)
 END SUBROUTINE write_plasma
