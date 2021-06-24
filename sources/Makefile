@@ -46,9 +46,9 @@ ifeq ($(CC),gfortran)
      -ffpe-trap=zero -fcheck=all -DDEBUG
 endif
 
-#### EDDY Intel+IntelMPI+HDF5###############
-# available env: /home/caoxiang/Modules/focus/develop
-ifneq (,$(findstring eddy,$(HOSTNAME)))
+#### Stellar Intel+IntelMPI+HDF5###############
+# available env: /home/caoxiang/module/focus/intel
+ifneq (,$(findstring stellar,$(HOSTNAME)))
  FC=mpiifort  # this is optional after recent updates
 endif
 
