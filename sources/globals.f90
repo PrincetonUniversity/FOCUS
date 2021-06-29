@@ -169,6 +169,9 @@ module globals
   REAL                 :: CG_wolfe_c1    =   0.1
   REAL                 :: CG_wolfe_c2    =   0.9
 
+  INTEGER              :: CG_maxiter_s   =   10
+  REAL                 :: CG_xtol_s      =   1.000D-08
+
   INTEGER              :: LM_maxiter     =   0
   REAL                 :: LM_xtol        =   1.000D-08
   REAL                 :: LM_ftol        =   1.000D-08

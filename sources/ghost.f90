@@ -1037,7 +1037,8 @@ end subroutine calcfg_deriv
 
 subroutine congrad_stable(index)
   use globals, only: dp, sqrtmachprec, myid, ounit, CG_maxiter, CG_xtol, &
-       exit_signal, tstart, tfinish, gsurf, output_use, MPI_COMM_FOCUS
+       exit_signal, tstart, tfinish, gsurf, output_use, CG_maxiter_s, &
+       CG_xtol_s, MPI_COMM_FOCUS
   
   use mpi
   implicit none
@@ -1053,9 +1054,11 @@ subroutine congrad_stable(index)
   x(1:n) = gsurf(index)%xdof_stable(1:n)
 
   CG_maxiter_hold = CG_maxiter
-  CG_maxiter = 10
+  !CG_maxiter = 10
+  CG_maxiter = CG_maxiter_s
   CG_xtol_hold = CG_xtol
-  CG_xtol = 1.0E-6
+  !CG_xtol = 1.0E-6
+  CG_xtol = CG_xtol_s
 
   output_use = 0
 
