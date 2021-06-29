@@ -301,8 +301,10 @@ module globals
                         CG_xtol        , & 
                         CG_wolfe_c1    , &
                         CG_wolfe_c2    , &
-                        LM_maxiter     , &  
-                        LM_xtol        , & 
+                        CG_maxiter_s   , &
+                        CG_xtol_s      , &
+                        LM_maxiter     , &
+                        LM_xtol        , &
                         LM_ftol        , & 
                         LM_factor      , & 
                         HN_maxiter     , &  
