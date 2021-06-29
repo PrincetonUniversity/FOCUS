@@ -1037,7 +1037,7 @@ end subroutine calcfg_deriv
 
 subroutine congrad_stable(index)
   use globals, only: dp, sqrtmachprec, myid, ounit, CG_maxiter, CG_xtol, &
-       exit_signal, tstart, tfinish, gsurf, MPI_COMM_FOCUS
+       exit_signal, tstart, tfinish, gsurf, output_use, MPI_COMM_FOCUS
   
   use mpi
   implicit none
@@ -1056,6 +1056,8 @@ subroutine congrad_stable(index)
   CG_maxiter = 10
   CG_xtol_hold = CG_xtol
   CG_xtol = 1.0E-6
+
+  output_use = 0
 
   call cg_descent (CG_xtol, x, n, myvalue_stable, mygrad_stable, status, gnorm, f, iter, nfunc, ngrad, d, g, xtemp, gtemp)
 
@@ -1098,6 +1100,8 @@ subroutine congrad_stable(index)
   gsurf(index)%xdof_stable(5*NF_stable+1:6*NF_stable) = gsurf(index)%xsns(1:NF_stable)
   gsurf(index)%xdof_stable(6*NF_stable+1:7*NF_stable) = gsurf(index)%xthetanc(1:NF_stable)
   gsurf(index)%xdof_stable(7*NF_stable+1:8*NF_stable) = gsurf(index)%xthetans(1:NF_stable)
+
+  output_use = 1
 
   return
 

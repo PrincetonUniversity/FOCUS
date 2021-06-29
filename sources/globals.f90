@@ -157,6 +157,7 @@ module globals
   INTEGER              :: case_optimize  =   0
   REAL                 :: exit_tol       =   1.000D-04
   REAL                 :: psmall         =   1.000D-04
+  INTEGER              :: output_use     =   1
 
   INTEGER              :: DF_maxiter     =   0
   REAL                 :: DF_xtol        =   1.000D-08     
@@ -288,6 +289,7 @@ module globals
                         case_optimize  , &
                         exit_tol       , &
                         psmall         , &
+                        output_use     , &
                         DF_maxiter     , & 
                         DF_xtol        , & 
                         DF_tausta      , &  
