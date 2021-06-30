@@ -44,8 +44,8 @@ subroutine calcfg(index)
   implicit none
   INTEGER, INTENT(IN) :: index
 
-  INTEGER             :: astat, ierr, i, Nseg_stable, p, q, icoil
-  REAL                :: Bxhold, Byhold, Bzhold
+  INTEGER             :: astat, ierr, i, Nseg_stable, icoil
+  REAL                :: Bxhold, Byhold, Bzhold, p, q
   REAL, ALLOCATABLE   :: zeta(:), gradosx(:), gradosy(:), gradosz(:), gradxsx(:), gradxsy(:), &
                          gradxsz(:), gradozetax(:), gradozetay(:), gradozetaz(:), gradxzetax(:), &
                          gradxzetay(:), gradxzetaz(:), gradothetax(:), gradothetay(:), &
@@ -57,9 +57,8 @@ subroutine calcfg(index)
   SALLOCATE( zeta, (1:Nseg_stable), 0.0)
   zeta(1:Nseg_stable) = gsurf(index)%zeta(1:Nseg_stable)
 
-  ! Calculate s, theta, sdot, thetadot for o and x
-  p = resbn_n
-  q = resbn_m
+  p = real(resbn_n)
+  q = real(resbn_m)
 
   gsurf(index)%os(1:Nseg_stable) = 0.0
   gsurf(index)%xs(1:Nseg_stable) = 0.0
@@ -407,9 +406,9 @@ subroutine calcfg_deriv(index)
 
   INTEGER, INTENT(in)  :: index
   
-  INTEGER              :: astat, ierr, idof, NF_stable, Nseg_stable, q, i, j
+  INTEGER              :: astat, ierr, idof, NF_stable, Nseg_stable, i, j
   REAL                 :: tmp_xdof(1:gsurf(index)%Ndof_stable), fd, negvalue, posvalue
-  REAL                 :: start, finish, small
+  REAL                 :: start, finish, small, q
   REAL, ALLOCATABLE    :: zeta(:), gradobsupsx(:), gradobsupsy(:), gradobsupsz(:), gradobsupzetax(:), &
   gradobsupzetay(:), gradobsupzetaz(:), gradobsupthetax(:), gradobsupthetay(:), gradobsupthetaz(:), &
   gradxbsupsx(:), gradxbsupsy(:), gradxbsupsz(:), gradxbsupzetax(:), gradxbsupzetay(:), gradxbsupzetaz(:), &
@@ -456,7 +455,7 @@ subroutine calcfg_deriv(index)
   !   gsurf(index)%dFdxdof_stable(idof) = (posvalue - negvalue) / small
   !enddo
   
-  q = resbn_m
+  q = real(resbn_m)
 
   NF_stable = gsurf(index)%NF_stable
   Nseg_stable = gsurf(index)%Nseg_stable
@@ -849,8 +848,6 @@ subroutine calcfg_deriv(index)
              / gsurf(index)%xbsupzeta(1:Nseg_stable)**2 - dxthetadotdxthetans(1:Nseg_stable,i)
   enddo
 
-  ! Fix allocations here and above
-
   SALLOCATE( dFdosnc, (1:NF_stable), 0.0 )
   SALLOCATE( dFdosns, (1:NF_stable), 0.0 )
   SALLOCATE( dFdothetanc, (1:NF_stable), 0.0 )
@@ -1191,7 +1188,7 @@ end subroutine unpacking_stable
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
 subroutine calcbsup(index,ox,oy,oz,obsups,obsupzeta,obsuptheta)
-  use globals, only: dp, zero, half, pi2, ncpu, myid, resbn_m, resbn_n, gsurf, Ncoils, ounit, &
+  use globals, only: dp, zero, half, pi2, ncpu, myid, resbn_m, gsurf, Ncoils, ounit, &
                      MPI_COMM_FOCUS
   
   use mpi
@@ -1202,18 +1199,18 @@ subroutine calcbsup(index,ox,oy,oz,obsups,obsupzeta,obsuptheta)
   REAL, INTENT(OUT)   :: obsups(1:gsurf(index)%Nseg_stable), obsupzeta(1:gsurf(index)%Nseg_stable), &
                          obsuptheta(1:gsurf(index)%Nseg_stable)
 
-  INTEGER             :: astat, ierr, i, Nseg_stable, q, icoil
-  REAL                :: Bxhold, Byhold, Bzhold
+  INTEGER             :: astat, ierr, i, Nseg_stable, icoil
+  REAL                :: Bxhold, Byhold, Bzhold, q
   REAL, ALLOCATABLE   :: zeta(:), gradosx(:), gradosy(:), gradosz(:), os(:), gradozetax(:), &
                          gradozetay(:), gradozetaz(:), gradothetax(:), gradothetay(:), &
-                         gradothetaz(:), otheta(:), oBx(:), oBy(:), oBz(:), odRadx(:), odRady(:), &
+                         gradothetaz(:), tanotheta(:), oBx(:), oBy(:), oBz(:), odRadx(:), odRady(:), &
                          odZadx(:), odZady(:)
 
   Nseg_stable = gsurf(index)%Nseg_stable
   SALLOCATE( zeta, (1:Nseg_stable), 0.0)
   zeta(1:Nseg_stable) = gsurf(index)%zeta(1:Nseg_stable)
 
-  q = resbn_m
+  q = real(resbn_m)
 
   ! Calculate derivative of axis w.r.t x and y, variables are local
   SALLOCATE( odRadx, (1:Nseg_stable), 0.0 )
@@ -1273,24 +1270,24 @@ subroutine calcbsup(index,ox,oy,oz,obsups,obsupzeta,obsuptheta)
   SALLOCATE( gradothetax, (1:Nseg_stable), 0.0 )
   SALLOCATE( gradothetay, (1:Nseg_stable), 0.0 )
   SALLOCATE( gradothetaz, (1:Nseg_stable), 0.0 )
-  SALLOCATE( otheta, (1:Nseg_stable), 0.0 )
+  SALLOCATE( tanotheta, (1:Nseg_stable), 0.0 )
 
-  otheta(1:Nseg_stable) = atan( (oz(1:Nseg_stable)-gsurf(index)%Za(1:Nseg_stable)) / &
-          (sqrt(ox(1:Nseg_stable)**2+oy(1:Nseg_stable)**2)-gsurf(index)%Ra(1:Nseg_stable)) )
+  tanotheta(1:Nseg_stable) = (oz(1:Nseg_stable)-gsurf(index)%Za(1:Nseg_stable)) / &
+          (sqrt(ox(1:Nseg_stable)**2+oy(1:Nseg_stable)**2)-gsurf(index)%Ra(1:Nseg_stable))
 
   gradothetax(1:Nseg_stable) = -1.0*( (oz(1:Nseg_stable)-gsurf(index)%Za(1:Nseg_stable)) * &
           (sqrt(ox(1:Nseg_stable)**2+oy(1:Nseg_stable)**2) - gsurf(index)%Ra(1:Nseg_stable))**-2.0 * &
           ( (ox(1:Nseg_stable)**2+oy(1:Nseg_stable)**2)**-.5 * ox(1:Nseg_stable) - odRadx(1:Nseg_stable) ) &
           + odZadx(1:Nseg_stable) / (sqrt(ox(1:Nseg_stable)**2+oy(1:Nseg_stable)**2) &
-          - gsurf(index)%Ra(1:Nseg_stable)) ) / (tan(otheta(1:Nseg_stable))**2+1)
+          - gsurf(index)%Ra(1:Nseg_stable)) ) / (tanotheta(1:Nseg_stable)**2+1)
 
   gradothetay(1:Nseg_stable) = -1.0*( (oz(1:Nseg_stable)-gsurf(index)%Za(1:Nseg_stable)) * &
           (sqrt(ox(1:Nseg_stable)**2+oy(1:Nseg_stable)**2) - gsurf(index)%Ra(1:Nseg_stable))**-2.0 * &
           ( (ox(1:Nseg_stable)**2+oy(1:Nseg_stable)**2)**-.5 * oy(1:Nseg_stable) - odRady(1:Nseg_stable) ) &
           + odZady(1:Nseg_stable) / (sqrt(ox(1:Nseg_stable)**2+oy(1:Nseg_stable)**2) &
-          - gsurf(index)%Ra(1:Nseg_stable)) ) / (tan(otheta(1:Nseg_stable))**2+1)
+          - gsurf(index)%Ra(1:Nseg_stable)) ) / (tanotheta(1:Nseg_stable)**2+1)
 
-  gradothetaz(1:Nseg_stable) = ( (tan(otheta(1:Nseg_stable))**2+1) * &
+  gradothetaz(1:Nseg_stable) = ( (tanotheta(1:Nseg_stable)**2+1) * &
           ( sqrt(ox(1:Nseg_stable)**2+oy(1:Nseg_stable)**2) - gsurf(index)%Ra(1:Nseg_stable) ) )**-1.0
 
   ! Calculate field on stable field lines
@@ -1339,7 +1336,7 @@ subroutine calcbsup(index,ox,oy,oz,obsups,obsupzeta,obsuptheta)
   DALLOCATE( gradothetax )
   DALLOCATE( gradothetay )
   DALLOCATE( gradothetaz )
-  DALLOCATE( otheta )
+  DALLOCATE( tanotheta )
   DALLOCATE( oBx )
   DALLOCATE( oBy )
   DALLOCATE( oBz )
