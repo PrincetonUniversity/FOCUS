@@ -26,7 +26,7 @@ subroutine saving
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 
-  INTEGER            :: ii, jj, icoil, NF, ip, is, cs, Npc, Nseg_stable
+  INTEGER            :: ii, jj, icoil, NF, ip, is, cs, Npc, Nseg_stable, index
 
   ! the following are used by the macros HWRITEXX below; do not alter/remove;
   INTEGER            :: hdfier, rank
@@ -407,6 +407,37 @@ subroutine saving
      do imn = 1, NBmn
         write(wunit,'(2(I3, 4X), 3(ES23.15,4X))') Bmnin(imn)/surf(plasma)%Nfp, & 
              Bmnim(imn), Bmnc(imn), Bmns(imn), wBmn(imn)
+     enddo
+     close(wunit)
+
+  endif
+
+  !--------------------------write stable field line file-------------------------------
+
+  if( save_stable == 1 .and. allocated(gsurf) ) then
+     index = 1
+     open(wunit, file=trim(out_stable), status='unknown', action='write')
+     write(wunit,'("# NF_stable")')
+     write(wunit,'(I4)') gsurf(index)%NF_stable
+     write(wunit,'("# O Point Fourier Harmonics")')
+     write(wunit,'("# n   snc   sns   thetanc   thetans")')
+     do imn = 1, gsurf(index)%NF_stable
+        write(wunit,'( (I4, 2X), 4(ES23.16,2X))') gsurf(index)%on(imn), gsurf(index)%osnc(imn), &
+                gsurf(index)%osns(imn), gsurf(index)%othetanc(imn), gsurf(index)%othetans(imn)
+     enddo
+     write(wunit,'("# X Point Fourier Harmonics")')
+     write(wunit,'("# n   snc   sns   thetanc   thetans")')
+     do imn = 1, gsurf(index)%NF_stable
+        write(wunit,'( (I4, 2X), 4(ES23.16,2X))') gsurf(index)%xn(imn), gsurf(index)%xsnc(imn), &
+                gsurf(index)%xsns(imn), gsurf(index)%xthetanc(imn), gsurf(index)%xthetans(imn)
+     enddo
+     write(wunit,'("# NF_axis")') 
+     write(wunit,'(I3)') gsurf(index)%NF_axis
+     write(wunit,'("# Axis Fourier Harmonics")')
+     write(wunit,'("# n   rnc   zns")')
+     do imn = 1, gsurf(index)%NF_axis
+        write(wunit,'( (I4, 2X), 2(ES23.16,2X))') gsurf(index)%axisn(imn), &
+                gsurf(index)%axisrnc(imn), gsurf(index)%axiszns(imn)
      enddo
      close(wunit)
 
