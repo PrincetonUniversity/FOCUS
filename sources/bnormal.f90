@@ -67,8 +67,9 @@ subroutine bnormal( ideriv )
       resbn = zero ; bnc = zero ;  bns = zero
       shift = half
       ! do after rdstable for now
-      if (ghost_use .eq. 1 .and. gsurf(1)%donee .eq. 0) then
-         gsurf(1)%donee = 1
+      !if (ghost_use .eq. 1 .and. gsurf(1)%donee .eq. 0) then
+      if (ghost_use .eq. 1 ) then
+         !gsurf(1)%donee = 1
          call ghost(1)
          ! normalize weight_resbn by rcflux_pre**2
          ! weight_resbn = weight_resbn/rcflux_pre**2
