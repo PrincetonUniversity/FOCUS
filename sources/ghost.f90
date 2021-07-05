@@ -1059,7 +1059,7 @@ subroutine congrad_stable(index)
 
   output_use = 0
 
-  call cg_descent (CG_xtol, x, n, myvalue_stable, mygrad_stable, status, gnorm, f, iter, nfunc, ngrad, d, g, xtemp, gtemp)
+  call cg_descent_stable (CG_xtol, x, n, myvalue_stable, mygrad_stable, status, gnorm, f, iter, nfunc, ngrad, d, g, xtemp, gtemp)
 
   if (myid == 0) then
      select case (status)

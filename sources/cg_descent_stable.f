@@ -41,14 +41,14 @@ c     |(double) x       --starting guess (length n)                    |
 c     |                                                                |
 c     |(int)    dim     --problem dimension (also denoted n)           |
 c     |                                                                |
-c     |         cg_value--name of cost evaluation subroutine           |
-c     |                  (external in main program, cg_value(f, x, n)  |
+c     |         cg_value_stable--name of cost evaluation subroutine           |
+c     |                  (external in main program, cg_value_stable(f, x, n)  |
 c     |                   puts value of cost function at x in f        |
 c     |                   f is double precision scalar and x is        |
 c     |                   double precision array of length n)          |
 c     |                                                                |
-c     |         cg_grad --name gradient evaluation subroutine          |
-c     |                  (external in main program, cg_grad (g, x, n)  |
+c     |         cg_grad_stable --name gradient evaluation subroutine          |
+c     |                  (external in main program, cg_grad_stable (g, x, n)  |
 c     |                   puts gradient at x in g, g and x are         |
 c     |                   double precision arrays of length n)         |
 c     |                                                                |
@@ -92,11 +92,12 @@ c     |Note: The file cg_descent.parm must be placed in the directory  |
 c     |      where the code is run                                     |
 c     |________________________________________________________________|
 c
-      subroutine cg_descent (grad_tol, x, dim, cg_value, cg_grad,
-     &                       status, gnorm, f, iter, nfunc, ngrad,
-     &                       d, g, xtemp, gtemp)
+      subroutine cg_descent_stable (grad_tol, x, dim, cg_value_stable,
+     &                       cg_grad_stable, status, gnorm, f, iter,
+     &                       nfunc, ngrad, d, g, xtemp, gtemp)
 
-       use globals, only: dp, myid, ounit, IsQuiet, tstart, tfinish
+       use globals, only: dp, myid, ounit, IsQuiet, tstart, tfinish,
+     &                    output_use
        use mpi
 
       double precision x (*), d (*), g (*), xtemp (*), gtemp (*),
@@ -117,9 +118,9 @@ c
 
       logical          PertRule, QuadOK, QuadStep, PrintLevel,
      &                 PrintFinal, StopRule, AWolfe, Step, debug,
-     &                 cg_tol
+     &                 cg_tol_stable
 
-      external         cg_value, cg_grad
+      external         cg_value_stable, cg_grad_stable
 
       common /cgparms/delta, sigma, eps,
      &                gamma, rho, tol, eta, fpert, f0, Ck, Qdecay,
@@ -133,7 +134,7 @@ c
 
 c initialize the parameters
 
-      call cg_init (grad_tol, dim)
+      call cg_init_stable (grad_tol, dim)
 
       if ( Step ) then
           alpha = gnorm
@@ -146,9 +147,9 @@ c initialize the parameters
 
 c initial function and gradient evaluations, initial direction
 
-      call cg_value (f, x, n)
+      call cg_value_stable (f, x, n)
       nf = nf + 1
-      call cg_grad (g, x, n)
+      call cg_grad_stable (g, x, n)
       ng = ng + 1
       f0 = f + f
       gnorm = zero
@@ -199,7 +200,7 @@ c initial function and gradient evaluations, initial direction
      &            ' gnorm= ', e14.6, ' AWolfe= ', l2)
       endif
 
-      if ( cg_tol (f, gnorm) ) goto 100
+      if ( cg_tol_stable (f, gnorm) ) goto 100
 
       dphi0 = -gnorm2
       if ( .not.Step ) then
@@ -232,8 +233,8 @@ c
               endif
               if ( t .gt. QuadCutOff ) then
                   talpha = psi1*alpha  
-                  call cg_step (xtemp, x, d, talpha)
-                  call cg_value (ftemp, xtemp, n)
+                  call cg_step_stable (xtemp, x, d, talpha)
+                  call cg_value_stable (ftemp, xtemp, n)
                   nf = nf + 1
                   if ( ftemp .lt. f ) then
                      denom = 2.0d0*(((ftemp-f)/talpha)-dphi0)
@@ -267,11 +268,11 @@ c parameters in Wolfe and approximiate Wolfe conditions, and in update
           wolfe_lo = sigma*dphi0
           awolfe_hi = delta2*dphi0
           if ( AWolfe ) then
-              call cg_line  (alpha, f, dphi, dphi0, x, xtemp, d, gtemp,
-     &                     cg_value, cg_grad)
+              call cg_line_stable (alpha, f, dphi, dphi0, x, xtemp, d,
+     &                     gtemp, cg_value_stable, cg_grad_stable)
           else
-              call cg_lineW (alpha, f, dphi, dphi0, x, xtemp, d, gtemp,
-     &                     cg_value, cg_grad)
+              call cg_lineW_stable (alpha, f, dphi, dphi0, x, xtemp, d,
+     &                     gtemp, cg_value_stable, cg_grad_stable)
           endif
 
           if ( info .gt. 0 ) goto 100
@@ -336,7 +337,7 @@ c compute beta, yk2, gnorm, gnorm2, dnorm2, update x and g,
                   dnorm2 = dnorm2 + d (i)**2 + d (i1)**2 + d (i2)**2
      &                                       + d (i3)**2 + d (i4)**2
               enddo
-              if ( cg_tol (f, gnorm) ) goto 100
+              if ( cg_tol_stable (f, gnorm) ) goto 100
               dkyk = dphi - dphi0
               beta = (ykgk - 2.d0*dphi*yk2/dkyk)/dkyk
 
@@ -421,7 +422,7 @@ c     search direction d = -g
                   gnorm = dmax1 (gnorm, dabs(t4)) 
                   gnorm2 = gnorm2 + t*t + t1*t1 + t2*t2 + t3*t3 + t4*t4
               enddo
-              if ( cg_tol (f, gnorm) ) goto 100
+              if ( cg_tol_stable (f, gnorm) ) goto 100
               dphi0 = -gnorm2
           endif
           if ( .not.AWolfe ) then
@@ -430,7 +431,7 @@ c     search direction d = -g
               endif
           endif
       
-          if ( PrintLevel .or. PrintFinal ) then
+          if ( PrintLevel .or. PrintFinal .and. output_use .eq. 1 ) then
              tstart = MPI_Wtime()
              call output(tstart-tfinish)  
 c              write (*, 10) iter, f, gnorm, AWolfe
@@ -600,7 +601,7 @@ c
 c      (double) grad_tol-- used in stopping rule
 c      (int)    dim     --problem dimension (also denoted n)
 
-      subroutine cg_init (grad_tol, dim)
+      subroutine cg_init_stable (grad_tol, dim)
       use globals, only : cg_maxiter, CG_wolfe_c1, CG_wolfe_c2, cg_xtol,
      &     IsQuiet
       double precision delta, sigma, eps,
@@ -713,7 +714,7 @@ c      (double) alpha   -- stepsize
 c      (double) f       -- function value associated with stepsize alpha
 c      (double) dphi    -- derivative value associated with stepsize alpha
 
-      logical function cg_Wolfe (alpha, f, dphi)
+      logical function cg_Wolfe_stable (alpha, f, dphi)
 
       double precision delta, sigma, eps,
      &                 gamma, rho, tol, eta, fpert, f0, Ck, Qdecay,
@@ -743,7 +744,7 @@ c      (double) dphi    -- derivative value associated with stepsize alpha
 c test original Wolfe conditions
 
           if ( f-f0 .le. alpha*wolfe_hi ) then
-              cg_Wolfe = .true.
+              cg_Wolfe_stable = .true.
               if ( PrintLevel) then
                  write (*, 10) f, f0, alpha*wolfe_hi, dphi
 10                format (' wolfe f:', e14.6, ' f0: ',
@@ -755,7 +756,7 @@ c test approximate Wolfe conditions
 
           elseif ( AWolfe ) then
               if ( (f .le. fpert).and.(dphi .le. awolfe_hi) ) then
-                  cg_Wolfe = .true.
+                  cg_Wolfe_stable = .true.
                   if ( PrintLevel ) then
                      write (*, 20) f, fpert, dphi, awolfe_hi
 20                        format ('f:', e14.6, ' fpert:', e14.6,
@@ -765,7 +766,7 @@ c test approximate Wolfe conditions
               endif
           endif
       endif
-      cg_Wolfe = .false.
+      cg_Wolfe_stable = .false.
       return
       end
 
@@ -773,7 +774,7 @@ c check for convergence of the cg iterations
 c      (double) f       -- function value associated with stepsize
 c      (double) gnorm   -- gradient (infinity) norm
 
-      logical function cg_tol (f, gnorm)
+      logical function cg_tol_stable (f, gnorm)
 
       double precision delta, sigma, eps,
      &                 gamma, rho, tol, eta, fpert, f0, Ck, Qdecay,
@@ -800,16 +801,16 @@ c      (double) gnorm   -- gradient (infinity) norm
 
       if ( StopRule ) then
           if ( gnorm .le. tol ) then
-              cg_tol = .true.
+              cg_tol_stable = .true.
               return
           endif
       else
           if ( gnorm .le. tol*(1.0 + dabs (f)) ) then
-              cg_tol = .true.
+              cg_tol_stable = .true.
               return
           endif
       endif
-      cg_tol = .false.
+      cg_tol_stable = .false.
       return
       end
 
@@ -817,7 +818,7 @@ c compute dot product of x and y, vectors of length n
 c      (double) x       -- first vector
 c      (double) y       -- second vector
 
-      double precision function cg_dot (x, y)
+      double precision function cg_dot_stable (x, y)
 
       double precision delta, sigma, eps,
      &                 gamma, rho, tol, eta, fpert, f0, Ck, Qdecay,
@@ -850,7 +851,7 @@ c      (double) y       -- second vector
           t = t + x (i)*y(i) + x (i+1)*y (i+1) + x (i+2)*y (i+2)
      &                       + x (i+3)*y (i+3) + x (i+4)*y (i+4)
       enddo
-      cg_dot = t
+      cg_dot_stable = t
       return
       end
 
@@ -862,7 +863,7 @@ c      (double) x       -- initial vector
 c      (double) d       -- search direction vector
 c      (double) alpha   -- stepsize along search direction vector
 
-      subroutine cg_step (xtemp, x, d, alpha)
+      subroutine cg_step_stable (xtemp, x, d, alpha)
 
       double precision delta, sigma, eps,
      &                 gamma, rho, tol, eta, fpert, f0, Ck, Qdecay,
@@ -911,11 +912,11 @@ c      (double) x       -- current iterate
 c      (double) xtemp   -- x + alpha*d
 c      (double) d       -- current search direction
 c      (double) gtemp   -- gradient at x + alpha*d
-c      (external) cg_value -- routine to evaluate function value
-c      (external) cg_grad  -- routine to evaluate function gradient
+c      (external) cg_value_stable -- routine to evaluate function value
+c      (external) cg_grad_stable  -- routine to evaluate function gradient
 
-      subroutine cg_line (alpha, phi, dphi, dphi0, x, xtemp, d, gtemp,
-     &                    cg_value, cg_grad)
+      subroutine cg_line_stable (alpha, phi, dphi, dphi0, x, xtemp, d,
+     &                    gtemp, cg_value_stable, cg_grad_stable)
 
       double precision delta, sigma, eps,
      &                 gamma, rho, tol, eta, fpert, f0, Ck, Qdecay,
@@ -925,17 +926,17 @@ c      (external) cg_grad  -- routine to evaluate function gradient
      &                 x (*), xtemp (*), d (*), gtemp (*),
      &                 a, dphia, b, dphib, alpha, phi, dphi, c,
      &                 a0, da0, b0, db0, width, fquad, dphi0,
-     &                 cg_dot
+     &                 cg_dot_stable
 
       integer          n, n5, n6, nf, ng, info, nrestart,
      &                 nexpand, nsecant, maxit,
-     &                 ngrow, nshrink, cg_update, iter, flag
+     &                 ngrow, nshrink, cg_update_stable, iter, flag
 
       logical          PertRule, QuadOK, QuadStep, PrintLevel,
      &                 PrintFinal, StopRule, AWolfe, Step, debug,
-     &                 cg_Wolfe
+     &                 cg_Wolfe_stable
 
-      external         cg_value, cg_grad
+      external         cg_value_stable, cg_grad_stable
 
       common /cgparms/delta, sigma, eps,
      &                gamma, rho, tol, eta, fpert, f0, Ck, Qdecay,
@@ -947,10 +948,10 @@ c      (external) cg_grad  -- routine to evaluate function gradient
      &                PertRule, QuadOK, QuadStep, PrintLevel,
      &                PrintFinal, StopRule, AWolfe, Step, debug
 
-      call cg_step (xtemp, x, d, alpha)
-      call cg_grad (gtemp, xtemp, n) 
+      call cg_step_stable (xtemp, x, d, alpha)
+      call cg_grad_stable (gtemp, xtemp, n) 
       ng = ng + 1
-      dphi = cg_dot (gtemp, d)
+      dphi = cg_dot_stable (gtemp, d)
 c
 c Find initial interval [a,b] such that dphia < 0, dphib >= 0,
 c        and phia <= phi0 + feps*dabs (phi0)
@@ -960,7 +961,7 @@ c
       ngrow = 0
       nshrink = 0
       do while ( dphi .lt. zero )
-          call cg_value (phi, xtemp, n)
+          call cg_value_stable (phi, xtemp, n)
           nf = nf + 1
 c
 c if quadstep in effect and quadratic conditions hold, check wolfe condition
@@ -973,7 +974,7 @@ c
 10                    format ('alpha:', e14.6, ' phi:', e14.6,
      &                        ' fquad:', e14.6)
                   endif
-                  if ( cg_Wolfe (alpha, phi, dphi) ) return
+                  if ( cg_Wolfe_stable (alpha, phi, dphi) ) return
               endif
           endif
           if ( phi .le. fpert ) then
@@ -991,12 +992,12 @@ c
                       info = 6
                       return
                   endif
-                  call cg_step (xtemp, x, d, alpha)
-                  call cg_grad (gtemp, xtemp, n) 
+                  call cg_step_stable (xtemp, x, d, alpha)
+                  call cg_grad_stable (gtemp, xtemp, n) 
                   ng = ng + 1
-                  dphi = cg_dot (gtemp, d)
+                  dphi = cg_dot_stable (gtemp, d)
                   if ( dphi .ge. zero ) goto 100
-                  call cg_value (phi, xtemp, n)
+                  call cg_value_stable (phi, xtemp, n)
                   nf = nf + 1
                   if ( PrintLevel ) then
                       write (6, 20) a, b, alpha, phi, dphi
@@ -1005,7 +1006,7 @@ c
      &                        ' phi:', e14.6, ' dphi:', e14.6)
                   endif
                   if ( QuadOK .and. (phi .le. fquad) ) then
-                      if ( cg_Wolfe (alpha, phi, dphi) ) return
+                      if ( cg_Wolfe_stable (alpha, phi, dphi) ) return
                   endif
                   if ( phi .le. fpert ) then
                       a = alpha
@@ -1024,10 +1025,10 @@ c
               return
           endif
           alpha = rho*alpha
-          call cg_step (xtemp, x, d, alpha)
-          call cg_grad (gtemp, xtemp, n) 
+          call cg_step_stable (xtemp, x, d, alpha)
+          call cg_grad_stable (gtemp, xtemp, n) 
           ng = ng + 1
-          dphi = cg_dot (gtemp, d)
+          dphi = cg_dot_stable (gtemp, d)
           if ( PrintLevel ) then
               write (*, 30) a, alpha, phi, dphi
 30            format ('expand,   a:', e14.6, ' alpha:', e14.6,
@@ -1038,11 +1039,11 @@ c
       b = alpha
       dphib = dphi
       if ( QuadOK ) then
-          call cg_value (phi, xtemp, n)
+          call cg_value_stable (phi, xtemp, n)
           nf = nf + 1
           if ( ngrow + nshrink .eq. 0 ) fquad = dmin1 (phi, f0)
           if ( phi .le. fquad ) then
-              if ( cg_Wolfe (alpha, phi, dphi) ) return
+              if ( cg_Wolfe_stable (alpha, phi, dphi) ) return
           endif
       endif
       do iter = 1, nsecant
@@ -1062,8 +1063,9 @@ c
           b0 = b
           da0 = dphia
           db0 = dphib
-          flag = cg_update (a, dphia, b, dphib, alpha, phi,
-     &              dphi, x, xtemp, d, gtemp, cg_value, cg_grad)
+          flag = cg_update_stable (a, dphia, b, dphib, alpha, phi,
+     &              dphi, x, xtemp, d, gtemp, cg_value_stable, 
+     &              cg_grad_stable)
           if ( flag .gt. 0 ) then
               return
           else if ( flag .eq. 0 ) then
@@ -1082,8 +1084,9 @@ c
               endif
               if ( (alpha .gt. a) .and. (alpha .lt. b) ) then
                   if ( PrintLevel ) write (*, *) "2nd secant"
-                  flag = cg_update (a, dphia, b, dphib, alpha, phi,
-     &                      dphi, x, xtemp, d, gtemp, cg_value, cg_grad)
+                  flag = cg_update_stable (a, dphia, b, dphib, alpha,
+     &                      phi, dphi, x, xtemp, d, gtemp,
+     &                      cg_value_stable, cg_grad_stable)
                   if ( flag .gt. 0 ) return
               endif
           endif
@@ -1093,8 +1096,9 @@ c
           if ( (b-a) .ge. width ) then
               alpha = .5d0*(b+a)
               if ( PrintLevel ) write (*, *) "bisection"
-              flag = cg_update (a, dphia, b, dphib, alpha, phi,
-     &                  dphi, x, xtemp, d, gtemp, cg_value, cg_grad)
+              flag = cg_update_stable (a, dphia, b, dphib, alpha, phi,
+     &                  dphi, x, xtemp, d, gtemp, cg_value_stable, 
+     &                  cg_grad_stable)
               if ( flag .gt. 0 ) return
           else
               if ( b .le. a ) then
@@ -1107,7 +1111,7 @@ c
       return
       end
 
-c  This routine is identical to cg_line except that the function
+c  This routine is identical to cg_line_stable except that the function
 c  psi (a) = phi (a) - phi (0) - a*delta*dphi (0) is miniminized instead of
 c  the function phi
 
@@ -1119,11 +1123,11 @@ c      (double) x       -- current iterate
 c      (double) xtemp   -- x + alpha*d
 c      (double) d       -- current search direction
 c      (double) gtemp   -- gradient at x + alpha*d
-c      (external) cg_value -- routine to evaluate function value
-c      (external) cg_grad  -- routine to evaluate function gradient
+c      (external) cg_value_stable -- routine to evaluate function value
+c      (external) cg_grad_stable  -- routine to evaluate function gradient
 
-      subroutine cg_lineW (alpha, phi, dphi, dphi0, x, xtemp, d, gtemp,
-     &                    cg_value, cg_grad)
+      subroutine cg_lineW_stable (alpha, phi, dphi, dphi0, x, xtemp, d,
+     &                    gtemp, cg_value_stable, cg_grad_stable)
 
       double precision delta, sigma, eps,
      &                 gamma, rho, tol, eta, fpert, f0, Ck, Qdecay,
@@ -1133,17 +1137,17 @@ c      (external) cg_grad  -- routine to evaluate function gradient
      &                 x (*), xtemp (*), d (*), gtemp (*),
      &                 a, dpsia, b, dpsib, alpha, phi, dphi, c,
      &                 a0, da0, b0, db0, width, fquad, dphi0,
-     &                 cg_dot, psi, dpsi
+     &                 cg_dot_stable, psi, dpsi
 
       integer          n, n5, n6, nf, ng, info, nrestart,
      &                 nexpand, nsecant, maxit,
-     &                 ngrow, nshrink, cg_updateW, iter, flag
+     &                 ngrow, nshrink, cg_updateW_stable, iter, flag
 
       logical          PertRule, QuadOK, QuadStep, PrintLevel,
      &                 PrintFinal, StopRule, AWolfe, Step, debug,
-     &                 cg_Wolfe
+     &                 cg_Wolfe_stable
 
-      external         cg_value, cg_grad
+      external         cg_value_stable, cg_grad_stable
 
       common /cgparms/delta, sigma, eps,
      &                gamma, rho, tol, eta, fpert, f0, Ck, Qdecay,
@@ -1155,10 +1159,10 @@ c      (external) cg_grad  -- routine to evaluate function gradient
      &                PertRule, QuadOK, QuadStep, PrintLevel,
      &                PrintFinal, StopRule, AWolfe, Step, debug
 
-      call cg_step (xtemp, x, d, alpha)
-      call cg_grad (gtemp, xtemp, n) 
+      call cg_step_stable (xtemp, x, d, alpha)
+      call cg_grad_stable (gtemp, xtemp, n) 
       ng = ng + 1
-      dphi = cg_dot (gtemp, d)
+      dphi = cg_dot_stable (gtemp, d)
       dpsi = dphi - wolfe_hi
 c
 c Find initial interval [a,b] such that dpsia < 0, dpsib >= 0,
@@ -1169,7 +1173,7 @@ c
       ngrow = 0
       nshrink = 0
       do while ( dpsi .lt. zero )
-          call cg_value (phi, xtemp, n)
+          call cg_value_stable (phi, xtemp, n)
           psi = phi - alpha*wolfe_hi
           
           nf = nf + 1
@@ -1184,7 +1188,7 @@ c
 10                    format ('alpha:', e14.6, ' phi:', e14.6,
      &                        ' fquad:', e14.6)
                   endif
-                  if ( cg_Wolfe (alpha, phi, dphi) ) return
+                  if ( cg_Wolfe_stable (alpha, phi, dphi) ) return
               endif
           endif
           if ( psi .le. fpert ) then
@@ -1202,13 +1206,13 @@ c
                       info = 6
                       return
                   endif
-                  call cg_step (xtemp, x, d, alpha)
-                  call cg_grad (gtemp, xtemp, n) 
+                  call cg_step_stable (xtemp, x, d, alpha)
+                  call cg_grad_stable (gtemp, xtemp, n) 
                   ng = ng + 1
-                  dphi = cg_dot (gtemp, d)
+                  dphi = cg_dot_stable (gtemp, d)
                   dpsi = dphi - wolfe_hi
                   if ( dpsi .ge. zero ) goto 100
-                  call cg_value (phi, xtemp, n)
+                  call cg_value_stable (phi, xtemp, n)
                   psi = phi - alpha*wolfe_hi
                   nf = nf + 1
                   if ( PrintLevel ) then
@@ -1218,7 +1222,7 @@ c
      &                        ' phi:', e14.6, ' dphi:', e14.6)
                   endif
                   if ( QuadOK .and. (phi .le. fquad) ) then
-                      if ( cg_Wolfe (alpha, phi, dphi) ) return
+                      if ( cg_Wolfe_stable (alpha, phi, dphi) ) return
                   endif
                   if ( psi .le. fpert ) then
                       a = alpha
@@ -1237,10 +1241,10 @@ c
               return
           endif
           alpha = rho*alpha
-          call cg_step (xtemp, x, d, alpha)
-          call cg_grad (gtemp, xtemp, n) 
+          call cg_step_stable (xtemp, x, d, alpha)
+          call cg_grad_stable (gtemp, xtemp, n) 
           ng = ng + 1
-          dphi = cg_dot (gtemp, d)
+          dphi = cg_dot_stable (gtemp, d)
           dpsi = dphi - wolfe_hi
           if ( PrintLevel ) then
               write (*, 30) a, alpha, phi, dphi
@@ -1253,11 +1257,11 @@ c
       b = alpha
       dpsib = dpsi
       if ( QuadOK ) then
-          call cg_value (phi, xtemp, n)
+          call cg_value_stable (phi, xtemp, n)
           nf = nf + 1
           if ( ngrow + nshrink .eq. 0 ) fquad = dmin1 (phi, f0)
           if ( phi .le. fquad ) then
-              if ( cg_Wolfe (alpha, phi, dphi) ) return
+              if ( cg_Wolfe_stable (alpha, phi, dphi) ) return
           endif
       endif
       do iter = 1, nsecant
@@ -1277,9 +1281,9 @@ c
           b0 = b
           da0 = dpsia
           db0 = dpsib
-          flag = cg_updateW (a, dpsia, b, dpsib, alpha,
+          flag = cg_updateW_stable (a, dpsia, b, dpsib, alpha,
      &               phi, dphi, dpsi, x, xtemp, d, gtemp,
-     &               cg_value, cg_grad)
+     &               cg_value_stable, cg_grad_stable)
           if ( flag .gt. 0 ) then
               return
           else if ( flag .eq. 0 ) then
@@ -1298,9 +1302,9 @@ c
               endif
               if ( (alpha .gt. a) .and. (alpha .lt. b) ) then
                   if ( PrintLevel ) write (*, *) "2nd secant"
-                  flag = cg_updateW (a, dpsia, b, dpsib, alpha,
+                  flag = cg_updateW_stable (a, dpsia, b, dpsib, alpha,
      &                       phi, dphi, dpsi, x, xtemp, d, gtemp,
-     &                       cg_value, cg_grad)
+     &                       cg_value_stable, cg_grad_stable)
                   if ( flag .gt. 0 ) return
               endif
           endif
@@ -1310,9 +1314,9 @@ c
           if ( (b-a) .ge. width ) then
               alpha = .5d0*(b+a)
               if ( PrintLevel ) write (*, *) "bisection"
-              flag = cg_updateW (a, dpsia, b, dpsib, alpha,
+              flag = cg_updateW_stable (a, dpsia, b, dpsib, alpha,
      &                   phi, dphi, dpsi, x, xtemp, d, gtemp,
-     &                   cg_value, cg_grad)
+     &                   cg_value_stable, cg_grad_stable)
               if ( flag .gt. 0 ) return
           else
               if ( b .le. a ) then
@@ -1340,11 +1344,12 @@ c      (double) x       -- current iterate
 c      (double) xtemp   -- x + alpha*d
 c      (double) d       -- current search direction
 c      (double) gtemp   -- gradient at x + alpha*d
-c      (external) cg_value -- routine to evaluate function value
-c      (external) cg_grad  -- routine to evaluate function gradient
+c      (external) cg_value_stable -- routine to evaluate function value
+c      (external) cg_grad_stable  -- routine to evaluate function gradient
 
-      integer function cg_update (a, dphia, b, dphib, alpha, phi,
-     &                    dphi, x, xtemp, d, gtemp, cg_value, cg_grad)
+      integer function cg_update_stable (a, dphia, b, dphib, alpha, phi,
+     &                    dphi, x, xtemp, d, gtemp, cg_value_stable, 
+     &                    cg_grad_stable)
 
       double precision delta, sigma, eps,
      &                 gamma, rho, tol, eta, fpert, f0, Ck, Qdecay,
@@ -1353,7 +1358,7 @@ c      (external) cg_grad  -- routine to evaluate function gradient
      &                 zero, feps, psi0, psi1, psi2,
      &                 a, dphia, b, dphib, alpha, phi, dphi,
      &                 x (*), xtemp (*), d (*), gtemp (*),
-     &                 cg_dot
+     &                 cg_dot_stable
 
       integer          n, n5, n6, nf, ng, info, nrestart,
      &                 nexpand, nsecant, maxit,
@@ -1361,9 +1366,9 @@ c      (external) cg_grad  -- routine to evaluate function gradient
 
       logical          PertRule, QuadOK, QuadStep, PrintLevel,
      &                 PrintFinal, StopRule, AWolfe, Step, debug,
-     &                 cg_Wolfe
+     &                 cg_Wolfe_stable
 
-      external         cg_value, cg_grad
+      external         cg_value_stable, cg_grad_stable
 
       common /cgparms/delta, sigma, eps,
      &                gamma, rho, tol, eta, fpert, f0, Ck, Qdecay,
@@ -1375,20 +1380,20 @@ c      (external) cg_grad  -- routine to evaluate function gradient
      &                PertRule, QuadOK, QuadStep, PrintLevel,
      &                PrintFinal, StopRule, AWolfe, Step, debug
 
-      call cg_step (xtemp, x, d, alpha)
-      call cg_value (phi, xtemp, n)
+      call cg_step_stable (xtemp, x, d, alpha)
+      call cg_value_stable (phi, xtemp, n)
       nf = nf + 1
-      call cg_grad (gtemp, xtemp, n) 
+      call cg_grad_stable (gtemp, xtemp, n) 
       ng = ng + 1
-      dphi = cg_dot (gtemp, d)
+      dphi = cg_dot_stable (gtemp, d)
       if ( PrintLevel ) then
           write (*, 10) alpha, phi, dphi
 10        format ('update alpha:', e14.6, ' phi:', e14.6,
      &            ' dphi:', e14.6)
       endif
-      cg_update = 0
-      if ( cg_Wolfe (alpha, phi, dphi) ) then
-          cg_update = 1
+      cg_update_stable = 0
+      if ( cg_Wolfe_stable (alpha, phi, dphi) ) then
+          cg_update_stable = 1
           goto 110
       endif
       if ( dphi .ge. zero ) then
@@ -1409,22 +1414,22 @@ c      (external) cg_grad  -- routine to evaluate function gradient
           nshrink = nshrink + 1
           if ( nshrink .gt. nexpand ) then
               info = 8
-              cg_update = 1
+              cg_update_stable = 1
               goto 110
           endif
-          call cg_step (xtemp, x, d, alpha)
-          call cg_grad (gtemp, xtemp, n) 
+          call cg_step_stable (xtemp, x, d, alpha)
+          call cg_grad_stable (gtemp, xtemp, n) 
           ng = ng + 1
-          dphi = cg_dot (gtemp, d)
-          call cg_value (phi, xtemp, n)
+          dphi = cg_dot_stable (gtemp, d)
+          call cg_value_stable (phi, xtemp, n)
           nf = nf + 1
           if ( PrintLevel ) then
               write (6, 20) a, alpha, phi, dphi
 20            format ('contract, a:', e14.6, ' alpha:', e14.6,
      &                 ' phi:', e14.6, ' dphi:', e14.6)
           endif
-          if ( cg_Wolfe (alpha, phi, dphi) ) then
-              cg_update = 1
+          if ( cg_Wolfe_stable (alpha, phi, dphi) ) then
+              cg_update_stable = 1
               goto 110
           endif
           if ( dphi .ge. zero ) then
@@ -1443,17 +1448,17 @@ c      (external) cg_grad  -- routine to evaluate function gradient
           endif
       enddo
 100   continue
-      cg_update = -1
+      cg_update_stable = -1
 110   continue
       if ( PrintLevel ) then
-          write (*, 200) a, b, dphia, dphib, cg_update
+          write (*, 200) a, b, dphia, dphib, cg_update_stable
 200       format ('UP a:', e14.6, ' b:', e14.6,
      &             ' da:', e14.6, ' db:', e14.6, ' up:', i2)
       endif
       return
       end
 
-c  This routine is identical to cg_update except that the function
+c  This routine is identical to cg_update_stable except that the function
 c  psi (a) = phi (a) - phi (0) - a*delta*dphi (0) is miniminized instead of
 c  the function phi
 c
@@ -1473,11 +1478,12 @@ c      (double) x       -- current iterate
 c      (double) xtemp   -- x + alpha*d
 c      (double) d       -- current search direction
 c      (double) gtemp   -- gradient at x + alpha*d
-c      (external) cg_value -- routine to evaluate function value
-c      (external) cg_grad  -- routine to evaluate function gradient
+c      (external) cg_value_stable -- routine to evaluate function value
+c      (external) cg_grad_stable  -- routine to evaluate function gradient
 
-      integer function cg_updateW (a, dpsia, b, dpsib, alpha, phi, dphi,
-     &                      dpsi, x, xtemp, d, gtemp, cg_value, cg_grad)
+      integer function cg_updateW_stable (a, dpsia, b, dpsib, alpha,
+     &                      phi, dphi, dpsi, x, xtemp, d, gtemp,
+     &                      cg_value_stable, cg_grad_stable)
 
       double precision delta, sigma, eps,
      &                 gamma, rho, tol, eta, fpert, f0, Ck, Qdecay,
@@ -1486,16 +1492,16 @@ c      (external) cg_grad  -- routine to evaluate function gradient
      &                 zero, feps, psi0, psi1, psi2,
      &                 a, dpsia, b, dpsib, alpha, phi, dphi,
      &                 x (*), xtemp (*), d (*), gtemp (*),
-     &                 cg_dot, psi, dpsi
+     &                 cg_dot_stable, psi, dpsi
 
       integer          n, n5, n6, nf, ng, info, nrestart,
      &                 nexpand, nsecant, maxit, nshrink
 
       logical          PertRule, QuadOK, QuadStep, PrintLevel,
      &                 PrintFinal, StopRule, AWolfe, Step, debug,
-     &                 cg_Wolfe
+     &                 cg_Wolfe_stable
 
-      external         cg_value, cg_grad
+      external         cg_value_stable, cg_grad_stable
 
       common /cgparms/delta, sigma, eps,
      &                gamma, rho, tol, eta, fpert, f0, Ck, Qdecay,
@@ -1507,22 +1513,22 @@ c      (external) cg_grad  -- routine to evaluate function gradient
      &                PertRule, QuadOK, QuadStep, PrintLevel,
      &                PrintFinal, StopRule, AWolfe, Step, debug
 
-      call cg_step (xtemp, x, d, alpha)
-      call cg_value (phi, xtemp, n)
+      call cg_step_stable (xtemp, x, d, alpha)
+      call cg_value_stable (phi, xtemp, n)
       psi = phi - alpha*wolfe_hi
       nf = nf + 1
-      call cg_grad (gtemp, xtemp, n) 
+      call cg_grad_stable (gtemp, xtemp, n) 
       ng = ng + 1
-      dphi = cg_dot (gtemp, d)
+      dphi = cg_dot_stable (gtemp, d)
       dpsi = dphi - wolfe_hi
       if ( PrintLevel ) then
           write (*, 10) alpha, psi, dpsi
 10        format ('update alpha:', e14.6, ' psi:', e14.6,
      &            ' dpsi:', e14.6)
       endif
-      cg_updateW = 0
-      if ( cg_Wolfe (alpha, phi, dphi) ) then
-          cg_updateW = 1
+      cg_updateW_stable = 0
+      if ( cg_Wolfe_stable (alpha, phi, dphi) ) then
+          cg_updateW_stable = 1
           goto 110
       endif
       if ( dpsi .ge. zero ) then
@@ -1543,15 +1549,15 @@ c      (external) cg_grad  -- routine to evaluate function gradient
           nshrink = nshrink + 1
           if ( nshrink .gt. nexpand ) then
               info = 8
-              cg_updateW = 1
+              cg_updateW_stable = 1
               goto 110
           endif
-          call cg_step (xtemp, x, d, alpha)
-          call cg_grad (gtemp, xtemp, n) 
+          call cg_step_stable (xtemp, x, d, alpha)
+          call cg_grad_stable (gtemp, xtemp, n) 
           ng = ng + 1
-          dphi = cg_dot (gtemp, d)
+          dphi = cg_dot_stable (gtemp, d)
           dpsi = dphi - wolfe_hi
-          call cg_value (phi, xtemp, n)
+          call cg_value_stable (phi, xtemp, n)
           psi = phi - alpha*wolfe_hi
           nf = nf + 1
           if ( PrintLevel ) then
@@ -1559,8 +1565,8 @@ c      (external) cg_grad  -- routine to evaluate function gradient
 20            format ('contract, a:', e14.6, ' alpha:', e14.6,
      &                 ' phi:', e14.6, ' dphi:', e14.6)
           endif
-          if ( cg_Wolfe (alpha, phi, dphi) ) then
-              cg_updateW = 1
+          if ( cg_Wolfe_stable (alpha, phi, dphi) ) then
+              cg_updateW_stable = 1
               goto 110
           endif
           if ( dpsi .ge. zero ) then
@@ -1579,10 +1585,10 @@ c      (external) cg_grad  -- routine to evaluate function gradient
           endif
       enddo
 100   continue
-      cg_updateW = -1
+      cg_updateW_stable = -1
 110   continue
       if ( PrintLevel ) then
-          write (*, 200) a, b, dpsia, dpsib, cg_updateW
+          write (*, 200) a, b, dpsia, dpsib, cg_updateW_stable
 200       format ('UP a:', e14.6, ' b:', e14.6,
      &             ' da:', e14.6, ' db:', e14.6, ' up:', i2)
       endif
@@ -1591,16 +1597,16 @@ c      (external) cg_grad  -- routine to evaluate function gradient
 c Version 1.2 Changes:
 c
 c   1. Fix problem with user specified initial step (overwriting step)
-c   2. Change dphi to dpsi at lines 1228 and 1234 in cg_lineW
+c   2. Change dphi to dpsi at lines 1228 and 1234 in cg_lineW_stable
 c   3. Add comment about how to compute dnorm2 by an update of previous dnorm2
-c   4. In comment statements for cg_lineW and cg_updateW, insert "delta"
+c   4. In comment statements for cg_lineW_stable and cg_updateW_stable, insert "delta"
 c      in definition of psi (a)
 c   5. In dimension statements, change "(1)" to "(*)"
 
 c Version 1.3 Changes:
 c   1. Remove extraneous write in line 985 (same thing written out twice)
 c   2. Remove the parameter theta from cg_descent.parm and from the code
-c      (we use theta = .5 in the cg_update)
+c      (we use theta = .5 in the cg_update_stable)
 
 c Version 1.4 Change:
 c   1. The variable dpsi needs to be included in the argument list for
