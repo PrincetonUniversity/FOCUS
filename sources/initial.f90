@@ -474,13 +474,13 @@ subroutine check_input
 
      select case (IsSymmetric)
      case (0)
-        if (IsQuiet < 0) write(ounit, 1000) 'IsSymmetric', IsSymmetric, & 
+        if (IsQuiet < 1) write(ounit, 1000) 'IsSymmetric', IsSymmetric, & 
              &  'No stellarator symmetry or periodicity enforced.'
      case (1)
-        if (IsQuiet < 0) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
+        if (IsQuiet < 1) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
              &  'Periodicity is enforced.'
      case (2)
-        if (IsQuiet < 0) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
+        if (IsQuiet < 1) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
              &  'Periodicity and stellarator symmetry are both enforced.'
      case default
         FATAL( initial, .true., IsSymmetric /= 0 or 2 unspported option)

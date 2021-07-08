@@ -6,7 +6,7 @@
  knotsurf       =        0.200D-00
  ellipticity    =        0.000D+00
  Nteta          =      128           
- Nzeta          =      256   
+ Nzeta          =      128   
 
  case_init      =        0
  case_coils     =        1
@@ -25,10 +25,10 @@
  case_length    =        3 
  case_curv      =        4
  curv_k0        =        1.000D+01
- curv_alpha     =        3.000D+00
- weight_bnorm   =        1.000D+03
+ curv_alpha     =        3.000D-02
+ weight_bnorm   =        1.000D+00
  weight_bharm   =        0.000D+00
- weight_tflux   =        0.000D-05
+ weight_tflux   =        0.000D-00
  target_tflux   =        0.000D+00
  weight_ttlen   =        1.000D+00
  target_length  =        2.400D+00 
@@ -60,7 +60,7 @@
 
  case_postproc  =        1
  save_freq      =        1
- save_coils     =        1 
+ save_coils     =        10 
  save_harmonics =        1
  save_filaments =        0              
 /
