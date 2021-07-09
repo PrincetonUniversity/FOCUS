@@ -75,8 +75,8 @@ SUBROUTINE surfsep(ideriv)
        coil, DoF, Ncoils, Nfixgeo, Ndof, cssep, t1S, t2S, psurf, surf, &
        icssep, mcssep, LM_fvec, LM_fjac, weight_cssep, MPI_COMM_FOCUS
 
+  use mpi
   implicit none
-  include "mpif.h"
   INTEGER, INTENT(in) :: ideriv
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   INTEGER             :: astat, ierr, icoil, iteta, jzeta, NumGrid, Nteta, Nzeta, idof, ND, ivec
@@ -184,8 +184,8 @@ SUBROUTINE CSPotential0(icoil, iteta, jzeta, dcssep)
 ! calculate the potential energy between the i-th coil and the (iteta, jzeta) point on the surface
 !------------------------------------------------------------------------------------------------------  
   use globals, only: dp, zero, coil, myid, ounit, Ncoils, surf, psurf, cssep_factor, MPI_COMM_FOCUS
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER, intent(in)  :: icoil, iteta, jzeta
   REAL   , intent(out) :: dcssep
@@ -228,8 +228,8 @@ SUBROUTINE CSPotential1(icoil, iteta, jzeta, d1S, ND)
 ! between the i-th coil and the (iteta, jzeta) point on the surface
 !------------------------------------------------------------------------------------------------------  
   use globals, only: dp, zero, coil, myid, ounit, Ncoils, surf, psurf, cssep_factor, DoF, MPI_COMM_FOCUS
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER, intent(in)  :: icoil, iteta, jzeta, ND
   REAL   , intent(out) :: d1S(1:1, 1:ND)

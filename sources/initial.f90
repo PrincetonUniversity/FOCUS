@@ -430,7 +430,7 @@ subroutine check_input
         FATAL( initial, NFcoil <= 0    , no enough harmonics )
         FATAL( initial, Nseg   <= 0    , no enough segments  )
         FATAL( initial, target_length < zero, illegal )        
-        FATAL( initial, k0            < zero, illegal )
+        FATAL( initial, curv_k0            < zero, illegal )
         write(ounit, '("        : Read initial coils    from : ", A, A)') trim(input_coils), '(MAKEGRID format)'
      case( 0 )
         if (trim(input_coils) == 'none') input_coils = trim(ext)//".focus"
@@ -444,14 +444,14 @@ subroutine check_input
         FATAL( initial, NFcoil <= 0    , no enough harmonics )
         FATAL( initial, Nseg   <= 0    , no enough segments  )
         FATAL( initial, target_length < zero, illegal )
-        FATAL( initial, k0            < zero, illegal )
+        FATAL( initial, curv_k0            < zero, illegal )
         if (IsQuiet < 1) write(ounit, 1000) 'case_init', case_init, 'Initialize circular coils.'
      case( 2 )
         FATAL( initial, Ncoils < 1, should provide the No. of coils)
         FATAL( initial, init_current == zero, invalid coil current)
         FATAL( initial, init_radius < zero, invalid coil radius)
         FATAL( initial, target_length < zero, illegal )
-        FATAL( initial, k0            < zero, illegal )
+        FATAL( initial, curv_k0            < zero, illegal )
         if (IsQuiet < 1) write(ounit, 1000) 'case_init', case_init, 'Initialize magnetic dipoles.'
      case default
         FATAL( initial, .true., selected case_init is not supported )
@@ -470,17 +470,17 @@ subroutine check_input
         FATAL( initial, .true., IsQuiet /= integer unspported option)
      end select
      
-1000 format(8X, ": ", A15, " = ", I6, " ; ", A)        
+1000 format(8X, ": ", A15, " = ", I2, " ; ", A)        
 
      select case (IsSymmetric)
      case (0)
-        if (IsQuiet < 0) write(ounit, 1000) 'IsSymmetric', IsSymmetric, & 
+        if (IsQuiet < 1) write(ounit, 1000) 'IsSymmetric', IsSymmetric, & 
              &  'No stellarator symmetry or periodicity enforced.'
      case (1)
-        if (IsQuiet < 0) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
+        if (IsQuiet < 1) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
              &  'Periodicity is enforced.'
      case (2)
-        if (IsQuiet < 0) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
+        if (IsQuiet < 1) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
              &  'Periodicity and stellarator symmetry are both enforced.'
      case default
         FATAL( initial, .true., IsSymmetric /= 0 or 2 unspported option)
@@ -619,22 +619,27 @@ subroutine check_input
      case ( 2 )
         if (IsQuiet < 1) write(ounit, 1000) 'case_length', case_length, 'Exponential format of length penalty.'
      case ( 3 )
-        if (IsQuiet < 1) write(ounit, 1000) 'case_length', case_length, 'Delta quadratic length penalty.'
+        if (IsQuiet < 1) write(ounit, 1000) 'case_length', case_length, 'Modified quadratic length penalty.'
      case default
         FATAL( initial, .true., selected case_length is not supported )
      end select
 
-     select case ( case_curv )
+     !select case ( case_tors )
+     !case ( 1 )
+     !   if (IsQuiet < 1) write(ounit, 1000) 'case_tors', case_tors, 'Optimizing average torsion to 0.'
+     !case ( 2 )
+     !   if (IsQuiet < 1) write(ounit, 1000) 'case_tors', case_tors, 'Optimizing average torsion to tors0.'
+     !case default
+     !   FATAL( initial, .true., selected case_tors is not supported )
+     !end select
+
+     select case ( penfun_nissin )
      case ( 1 )
-        if (IsQuiet < 1) write(ounit, 1000) 'case_curv', case_curv, 'Linear format of curvature penalty.'
+        if (IsQuiet < 1) write(ounit, 1000) 'penfun_nissin', penfun_nissin, 'Hyperbolic penalty function.'
      case ( 2 )
-        if (IsQuiet < 1) write(ounit, 1000) 'case_curv', case_curv, 'Quadratic format of curvature penalty.'
-     case ( 3 )
-        if (IsQuiet < 1) write(ounit, 1000) 'case_curv', case_curv, 'Penalty function of curvature.'
-     case ( 4 )
-        if (IsQuiet < 1) write(ounit, 1000) 'case_curv', case_curv, 'Linear and Penalty function.'
+        if (IsQuiet < 1) write(ounit, 1000) 'penfun_nissin', penfun_nissin, 'Polynomial penalty function.'
      case default
-        FATAL( initial, .true., selected case_curv is not supported )
+        FATAL( initial, .true., selected penfun_nissin is not supported )
      end select
 
      FATAL( initial, weight_bnorm  < zero, illegal )
@@ -644,6 +649,9 @@ subroutine check_input
      FATAL( initial, weight_specw  < zero, illegal )
      FATAL( initial, weight_ccsep  < zero, illegal )
      FATAL( initial, weight_cssep  < zero, illegal )
+     FATAL( initial, weight_curv   < zero, illegal )
+     FATAL( initial, weight_tors   < zero, illegal )
+     FATAL( initial, weight_nissin    < zero, illegal )
 
      select case ( case_postproc )
      case ( 0 )
@@ -700,6 +708,8 @@ subroutine check_input
   tmpw_ccsep = weight_ccsep
   tmpw_curv  = weight_curv
  !tmpw_cssep = weight_cssep
+  tmpw_tors  = weight_tors
+  tmpw_nissin   = weight_nissin
 
   call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
 
@@ -711,6 +721,7 @@ end subroutine check_input
 
 SUBROUTINE write_focus_namelist
   use globals
+  use mgrid_mod
   use mpi
   implicit none
 
@@ -723,6 +734,7 @@ SUBROUTINE write_focus_namelist
      write(ounit, *) 'Writing an template input file in ', trim(example)
      open(wunit, file=trim(example), status='unknown', action='write')
      write(wunit, focusin)
+     write(wunit, mgrid)
      close(wunit)
   endif
 

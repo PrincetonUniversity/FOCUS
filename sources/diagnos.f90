@@ -5,16 +5,14 @@ SUBROUTINE diagnos
 ! DATE: 07/13/2017
 ! diagonose the coil performance
 !------------------------------------------------------------------------------------------------------   
-  use globals, only: dp, zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
-       Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
-       cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, Nfp, weight_bnorm, overlap, plasma, &
-       cosnfp, sinnfp, symmetry, discretefactor, MPI_COMM_FOCUS, surf_Nfp, curv, case_curv
+  use globals
   use mpi
   implicit none
 
-  INTEGER           :: icoil, itmp, astat, ierr, NF, idof, i, j, isurf, cs, ip, is, Npc, coilInd0, coilInd1
+  INTEGER           :: icoil, itmp, NF, idof, i, j, isurf, cs, ip, is, Npc, coilInd0, coilInd1
   LOGICAL           :: lwbnorm, l_raw
-  REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist, ReDot, ImDot, dum, AvgCurv
+  REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist, ReDot, ImDot, dum, AvgCurv, AvgTors, &
+                       MinLambda, MaxS, torsRet
   REAL, parameter   :: infmax = 1.0E6
   REAL, allocatable :: Atmp(:,:), Btmp(:,:)
 
@@ -28,9 +26,20 @@ SUBROUTINE diagnos
   if (case_optimize == 0) call AllocData(0) ! if not allocate data;
   call costfun(0)
 
-  if (myid == 0) write(ounit, '("diagnos : "6(A12," ; "))') , &
-       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." , "curv"
-  if (myid == 0) write(ounit, '("        : "6(ES12.5," ; "))') bnorm, bharm, tflux, ttlen, cssep, curv
+  if (myid == 0) then
+      write(ounit, '("diagnos : Individual cost function values: ")') 
+      write(ounit, 100) "Bnormal", bnorm
+      write(ounit, 100) "B_mn harmonics", bharm
+      write(ounit, 100) "Toroidal flux", tflux
+      write(ounit, 100) "Coil length", ttlen
+      write(ounit, 100) "Coil curvature", curv
+      write(ounit, 100) "Coil torsion", tors
+      write(ounit, 100) "Nissin complexity", nissin
+      write(ounit, 100) "Coil-coil separation", ccsep
+      write(ounit, 100) "Coil-surf separation", cssep
+  endif 
+
+100  format (8X, ": ", A20, " = ", ES15.8) 
 
   !save all the coil parameters;
   if (allocated(coilspace)) then
@@ -68,7 +77,7 @@ SUBROUTINE diagnos
   MaxCurv = zero
   do icoil = 1, Ncoils
      if(coil(icoil)%type .ne. 1) cycle ! only for Fourier
-     call CurvDeriv0(icoil,dum) !Might have to put a dummy return
+     call CurvDeriv0(icoil,dum) !dummy return
      if (coil(icoil)%maxcurv .ge. MaxCurv) then
         MaxCurv = coil(icoil)%maxcurv
         itmp = icoil !record the number
@@ -82,18 +91,50 @@ SUBROUTINE diagnos
        " ; at coil " I3)') MaxCurv, itmp
 
   !-------------------------------average coil curvature-------------------------------------------------------
-    AvgCurv = zero
-    do icoil = 1, Ncoils
-       if(coil(icoil)%type .ne. 1) exit ! only for Fourier
-       call avgcurvature(icoil)
-       AvgCurv = AvgCurv + coil(icoil)%avgcurv
+  AvgCurv = zero
+  do icoil = 1, Ncoils
+     if(coil(icoil)%type .ne. 1) exit ! only for Fourier
+     call avgcurvature(icoil)
+     AvgCurv = AvgCurv + coil(icoil)%avgcurv
 #ifdef DEBUG
      if(myid .eq. 0) write(ounit, '(8X": Average curvature of "I3 "-th coil is : " ES23.15)') &
           icoil, coil(icoil)%avgcurv
 #endif
-    enddo
-    AvgCurv = AvgCurv / Ncoils
-    if(myid .eq. 0) write(ounit, '(8X": Average curvature of the coils is"5X" :" ES23.15)') AvgCurv
+  enddo
+  AvgCurv = AvgCurv / Ncoils
+  if(myid .eq. 0) write(ounit, '(8X": Average curvature of the coils is"5X" :" ES23.15)') AvgCurv
+
+  !-------------------------------average coil torsion-----------------------------------------------------
+  AvgTors = zero
+  do icoil = 1, Ncoils
+     if(coil(icoil)%type .ne. 1) exit ! only for Fourier 
+     call TorsDeriv0(icoil,torsRet,dum) !dummy return
+     AvgTors = AvgTors + abs(torsRet) 
+#ifdef DEBUG
+     if(myid .eq. 0) write(ounit, '(8X": Average torsion of "I3 "-th coil is   : " ES23.15)') &
+        icoil, abs(torsRet)
+#endif
+  enddo
+  AvgTors = AvgTors / Ncoils
+  if(myid .eq. 0) write(ounit, '(8X": Average torsion of the coils is"5X"   :" ES23.15)') AvgTors
+
+  !-------------------------------maximum coil c------------------------------------------------------------
+  if( weight_nissin > 0.0_dp ) then
+  call nissinDeriv0(1,dum)
+  MaxS = coil(1)%maxs
+  do icoil = 1, Ncoils
+     if(coil(icoil)%type .ne. 1) exit ! only for Fourier
+     call nissinDeriv0(icoil,dum) !dummy return
+     if( coil(icoil)%maxs .ge. MaxS) then
+        MaxS = coil(icoil)%maxs
+     endif
+#ifdef DEBUG
+     if(myid .eq. 0) write(ounit, '(8X": Maximum c of "I3 "-th coil is         : " ES23.15)') &
+        icoil, coil(icoil)%maxs
+#endif
+  enddo
+  if(myid .eq. 0) write(ounit, '(8X": Maximum c of the coils is"5X"         :" ES23.15)') MaxS
+  endif
 
 
   !-----------------------------minimum coil coil separation------------------------------------  
@@ -109,19 +150,52 @@ SUBROUTINE diagnos
      Atmp(1, 0:coil(icoil)%NS-1) = coil(icoil)%xx(0:coil(icoil)%NS-1)
      Atmp(2, 0:coil(icoil)%NS-1) = coil(icoil)%yy(0:coil(icoil)%NS-1)
      Atmp(3, 0:coil(icoil)%NS-1) = coil(icoil)%zz(0:coil(icoil)%NS-1)
+     ! Check distances for coil and its symmetric coils 
+     if ( coil(icoil)%symm /= 0 ) then
+        SALLOCATE(Btmp, (1:3,0:coil(icoil)%NS-1), zero)
+        if ( coil(icoil)%symm .eq. 1 ) then
+           cs = 0
+           Npc = Nfp
+        elseif ( coil(icoil)%symm .eq. 2 ) then
+           cs = 1
+           Npc = Nfp
+        endif
+        do ip = 1, Npc
+           do is = 0, cs
+              if ( ip .eq. 1 .and. is .eq. 0 ) cycle
+              Btmp(1, 0:coil(icoil)%NS-1) = (coil(icoil)%xx(0:coil(icoil)%NS-1)*cosnfp(ip) &
+                                        & - coil(icoil)%yy(0:coil(icoil)%NS-1)*sinnfp(ip) ) 
+              Btmp(2, 0:coil(icoil)%NS-1) = (-1)**is * (coil(icoil)%xx(0:coil(icoil)%NS-1)*sinnfp(ip) &
+                                                   & + coil(icoil)%yy(0:coil(icoil)%NS-1)*cosnfp(ip) )
+              Btmp(3, 0:coil(icoil)%NS-1) = (-1)**is * (coil(icoil)%zz(0:coil(icoil)%NS-1))
+              call mindist(Atmp, coil(icoil)%NS, Btmp, coil(icoil)%NS, tmp_dist)
+#ifdef DEBUG
+              if(myid .eq. 0) write(ounit, '(8X": distance between  "I3.3"-th and "I3.3"-th coil (ip="I2.2 &
+                   ", is="I1") is : " ES23.15)') icoil, icoil, ip, is, tmp_dist
+#endif
+              if (minCCdist .ge. tmp_dist) then
+                 minCCdist = tmp_dist
+                 coilInd0 = icoil
+                 coilInd1 = icoil
+              endif
+           enddo
+        enddo
+        DALLOCATE(Btmp)
+     endif
      do itmp = 1, Ncoils
         ! skip self and non-Fourier coils
         if (itmp == icoil .or. coil(icoil)%type /= 1) cycle
-        SALLOCATE(Btmp, (1:3,0:coil(itmp )%NS-1), zero)
+        SALLOCATE(Btmp, (1:3,0:coil(itmp)%NS-1), zero)
         ! check if the coil is stellarator symmetric
-        select case (coil(icoil)%symm) 
+        !select case (coil(icoil)%symm)
+        select case (coil(itmp)%symm) 
         case ( 0 )
            cs  = 0
            Npc = 1
         case ( 1 )
            cs  = 0
            Npc = Nfp
-        case ( 2) 
+        case ( 2 ) 
            cs  = 1
            Npc = Nfp
         end select
@@ -139,7 +213,7 @@ SUBROUTINE diagnos
                    ", is="I1") is : " ES23.15)') icoil, itmp, ip, is, tmp_dist
 #endif
               if (minCCdist .ge. tmp_dist) then 
-                 minCCdist=tmp_dist
+                 minCCdist = tmp_dist
                  coilInd0 = icoil
                  coilInd1 = itmp
               endif
@@ -150,10 +224,8 @@ SUBROUTINE diagnos
      DALLOCATE(Atmp)
   enddo
 
-  !if(myid .eq. 0) write(ounit, '(8X": The minimum coil-coil distance is "4X" :" ES23.15)') minCCdist
-  !if(myid .eq. 0) write(ounit, '(8X": The minimum coil-coil distance is between coils "I3.3" and "I3.3" and &
-  !        is "4X" :" ES23.15)') coilInd0, coilInd1, minCCdist
-  if(myid .eq. 0) write(ounit, '(8X": The minimum coil-coil distance is "4X" :" ES23.15" ; at coils"I3" ,"I3)') minCCdist, coilInd0, coilInd1
+  if(myid .eq. 0) write(ounit, '(8X": The minimum coil-coil distance is "4X" :" ES23.15" ; at coils"I3" &
+          ,"I3)') minCCdist, coilInd0, coilInd1
 
   !--------------------------------minimum coil plasma separation-------------------------------  
   minCPdist = infmax
@@ -247,8 +319,8 @@ END SUBROUTINE diagnos
 subroutine avgcurvature(icoil)
 
   use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER, INTENT(in) :: icoil
 
@@ -305,8 +377,8 @@ end subroutine mindist
 subroutine importance(icoil)
   use globals, only: dp,  zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils, &
                      surf, Nteta, Nzeta, bsconstant, coil_importance, plasma, MPI_COMM_FOCUS
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER, INTENT(in) :: icoil  
 
@@ -331,9 +403,9 @@ subroutine importance(icoil)
   enddo ! end do jzeta
 
   call MPI_BARRIER( MPI_COMM_FOCUS, ierr )     
-  call MPI_ALLREDUCE( MPI_IN_PLACE, tbx, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_FOCUS, ierr )
-  call MPI_ALLREDUCE( MPI_IN_PLACE, tby, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_FOCUS, ierr )
-  call MPI_ALLREDUCE( MPI_IN_PLACE, tbz, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_FOCUS, ierr )
+  call MPI_ALLREDUCE( MPI_IN_PLACE, tbx, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+  call MPI_ALLREDUCE( MPI_IN_PLACE, tby, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+  call MPI_ALLREDUCE( MPI_IN_PLACE, tbz, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
 
   coil_importance(icoil) = sum( (tbx*surf(isurf)%Bx + tby*surf(isurf)%By + tbz*surf(isurf)%Bz) / &
                                 (surf(isurf)%Bx**2 + surf(isurf)%By**2 + surf(isurf)%Bz**2) ) / NumGrid
