@@ -1,5 +1,5 @@
 &focusin
- IsQuiet        =        -1
+ IsQuiet        =        0
  IsSymmetric    =        2 
 
  case_surface   =        0         
@@ -59,8 +59,8 @@
  CG_wolfe_c2    =        0.9
 
  case_postproc  =        1
- save_freq      =        1
- save_coils     =        10 
+ save_freq      =       10
+ save_coils     =        1 
  save_harmonics =        1
  save_filaments =        0              
 /
