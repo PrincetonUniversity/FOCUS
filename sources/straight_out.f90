@@ -176,7 +176,7 @@ subroutine StrDeriv0(icoil,strRet)
 	endif
       enddo
   !if (myid==0 .AND. icoil==1) write(ounit,'("strv "7F20.10)')strv
-
+  coil(icoil)%straight = strv 
   if( case_straight == 1 ) then ! linear
 
      strRet = sum(strv)
