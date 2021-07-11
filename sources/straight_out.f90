@@ -27,11 +27,21 @@
 !latex     In particular $\kappa_o$ has the meaning of a maximum allowed curvature and the cost function has no effect on points with a curvature smaller than this parameter.
 
 !latex     W(t) is a weight function to enure the penalty is only applied to the outer part of the coil
-!latex    \begin{eqnarray}
-!latex    W(t) = \begin{cases} 1, \hspace{2em}  ||x|| > R_m + \beta d_R \\ 0, \hspace{2em}  otherwise \end{cases}
-!latex    \end{eqnarray}
-!latex    where $R_m$ is the mean distance of the coil form a user-defined point,$d_R$ is the difference between the distance of the most distant point 
-!latex    and the mean distance and $\beta$ is a user defined parameter.   
+!latex     \begin{equation}
+!latex     W(t) = \begin{cases} 1, \hspace{2em} P_{xy}(t) > P_m + \beta P_d \\ 0, \hspace{2em}  otherwise \end{cases}
+!latex     where $P_m$ is the mean squared distance of the coil projection in the x-y plane from a user-defined point and $P_d$
+!latex 	   is a measure for half the maximum projection in the x-y plane of the coil radius.
+!latex	   Considering the distance of the projection of a point along the coil in the x-y plane from the user-defined point ($x_0,y_0$)
+!latex     \begin{equation}
+!latex     P_{xy}(t) = (x_i(t) - x_0)^2 + (y_i(t) - y_0)^2 \ ,
+!latex     \end{equation}
+!latex     they are defined as 
+!latex     \begin{align}
+!latex      & P_m = \overline{P_{xy}} \ , & P_d = \frac{\max(P_{xy}) - P_m}{2} \ .
+!latex      \end{align}
+!latex      $\beta$ is a user-defined parameter that can be used to tweak the section of the coil affected by the optimization.
+!latex      With a value $\beta = 0$ the section of the coil with a projected distance greater than the mean value for that coil will all be affected 
+!latex      while for a value $\beta = 2$ the new cost function will not be applied to any point. 
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
