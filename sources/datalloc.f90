@@ -79,6 +79,8 @@ subroutine AllocData(type)
            SALLOCATE( coil(icoil)%za, (0:coil(icoil)%NS), zero )
            SALLOCATE( coil(icoil)%dl, (0:coil(icoil)%NS), zero )
            SALLOCATE( coil(icoil)%dd, (0:coil(icoil)%NS), zero )
+	   SALLOCATE( coil(icoil)%curvature, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%straight, (0:coil(icoil)%NS), zero )
            coil(icoil)%dd = pi2 / NS  ! discretizing factor;
         case(2)
 #ifdef dposition
