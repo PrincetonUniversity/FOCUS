@@ -121,7 +121,8 @@ subroutine CurvDeriv0(icoil,curvRet)
              + (coil(icoil)%ya*coil(icoil)%xt-coil(icoil)%yt*coil(icoil)%xa)**2 )& 
              / ((coil(icoil)%xt)**2+(coil(icoil)%yt)**2+(coil(icoil)%zt)**2)**(1.5)
   coil(icoil)%maxcurv = maxval(curvv)
-
+  coil(icoil)%curvature = curvv
+  
   if( case_curv == 1 ) then ! linear
      curvRet = sum(curvv)-curvv(0)
      if (coil(icoil)%type==1) curvRet = pi2*curvRet/NS
