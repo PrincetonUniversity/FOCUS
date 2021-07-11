@@ -78,12 +78,15 @@
 !latex               with radius of \inputvar{init\_radius} and a central infinitely long current. 
 !latex               Dipole magnetizations anc the central current are all set to  \inputvar{init\_current}.
 !latex    \ei
-!latex 
+!latex    \item \inputvar{coil\_type\_spline = 5} \\
+!latex    \textit{Specify integer assigned to cubic B-spline representation} \\
+!latex
 !latex  \item \inputvar{case\_coils = 1} \\
 !latex    \textit{Specify representation used for the initial coils, seen in \link{rdcoils}} \\
 !latex    \bi \vspace{-5mm}
 !latex    \item[0:] using piecewise linear representation; (not ready)
 !latex    \item[1:] using Fourier series representation;
+!latex    \item[coil_type_spline:] using cubic B-spline representation;
 !latex    \ei
 !latex 
 !latex  \item \inputvar{Ncoils = 0} \\
@@ -183,8 +186,14 @@
 !latex 
 !latex  \item \inputvar{weight\_Gnorm = 1.0} \\
 !latex    \textit{additional factor for normalizing geometric variables; the larger, the more optimized for
-!latex     coil shapes; seen in \link{rdcoils}} 
-!latex 
+!latex     coil shapes; seen in \link{rdcoils}}
+!latex
+!latex  \item \inputvar{origin_surface_x = 0} \\
+!latex    \textit{X coordinate of surface center used in computing straight cost function} 
+!latex  \item \inputvar{origin_surface_y = 0} \\
+!latex    \textit{Y coordinate of surface center used in computing straight cost function} 
+!latex  \item \inputvar{origin_surface_z = 0} \\
+!latex    \textit{Z coordinate of surface center used in computing straight cost function} 
 !latex  \par \begin{tikzpicture} \draw[dashed] (0,1) -- (10,1); \end{tikzpicture}
 !latex 
 !latex  \item \inputvar{case\_optimize = 1} \\
