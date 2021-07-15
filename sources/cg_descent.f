@@ -96,7 +96,8 @@ c
      &                       status, gnorm, f, iter, nfunc, ngrad,
      &                       d, g, xtemp, gtemp)
 
-       use globals, only: dp, myid, ounit, IsQuiet, tstart, tfinish
+       use globals, only: dp, myid, ounit, IsQuiet, tstart, tfinish,
+     &                    output_use
        use mpi
 
       double precision x (*), d (*), g (*), xtemp (*), gtemp (*),
@@ -430,7 +431,7 @@ c     search direction d = -g
               endif
           endif
       
-          if ( PrintLevel .or. PrintFinal ) then
+          if ( PrintLevel .or. PrintFinal .and. output_use .eq. 1 ) then
              tstart = MPI_Wtime()
              call output(tstart-tfinish)  
 c              write (*, 10) iter, f, gnorm, AWolfe

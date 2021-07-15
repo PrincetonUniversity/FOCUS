@@ -10,7 +10,7 @@
  PFILES= $(ALLFILES:=.pdf)   # documentations
  ROBJS=$(ALLFILES:=_r.o)     # release version objectives
  DOBJS=$(ALLFILES:=_d.o)     # debug version objectives
- NUMOBJ= ode.o lmder1.o hybrj.o cg_descent.o cg_descent_stable.o # numerical libraries
+ NUMOBJ= ode.o lmder1.o hybrj.o cg_descent.o #cg_descent_stable.o # numerical libraries
 
 ############################################################################################################
 
@@ -117,8 +117,8 @@ hybrj.o: hybrj.f
 cg_descent.o : cg_descent.f
 	$(FC) -c $(RFLAGS) -o $@ $<
 
-cg_descent_stable.o : cg_descent_stable.f
-	$(FC) -c $(RFLAGS) -o $@ $<
+#cg_descent_stable.o : cg_descent_stable.f
+#	$(FC) -c $(RFLAGS) -o $@ $<
 
 $(ROBJS): %_r.o: %_m.F90 globals_r.o
 	$(FC) -c $(RFLAGS) -o $@ $<  $(LIBS)

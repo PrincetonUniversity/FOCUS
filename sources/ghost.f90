@@ -12,7 +12,7 @@
 ! not parallelized; communications may take more time;
 subroutine ghost(index)
   use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, &
-       coil, DoF, Ncoils, Nfixgeo, Ndof, resbn_m, gsurf, MPI_COMM_FOCUS
+       coil, DoF, Ncoils, Nfixgeo, resbn_m, gsurf, MPI_COMM_FOCUS
   
   use mpi
   implicit none
@@ -1041,53 +1041,80 @@ subroutine congrad_stable(index)
   implicit none
 
   INTEGER, INTENT(in)     :: index
-  INTEGER                 :: ierr, astat, iter, n, nfunc, ngrad, status, CG_maxiter_hold, NF_stable
-  REAL                    :: f, gnorm, CG_xtol_hold
-  REAL, dimension(1:gsurf(index)%Ndof_stable) :: x, g, d, xtemp, gtemp
+  INTEGER                 :: ierr, astat, iter_stable, n_stable, nfunc_stable, ngrad_stable, status, &
+                             CG_maxiter_hold, NF_stable, j, cont
+  REAL                    :: f_stable, f_hold, gnorm_stable, CG_xtol_hold, step, initial_step
+  REAL, dimension(1:gsurf(index)%Ndof_stable) :: x_stable, g_stable, d_stable, xtemp_stable, gtemp_stable, &
+                             x_hold
   EXTERNAL                :: myvalue_stable, mygrad_stable
 
-  iter = 0
-  n = gsurf(index)%Ndof_stable
-  x(1:n) = gsurf(index)%xdof_stable(1:n)
+  iter_stable = 0
+  n_stable = gsurf(index)%Ndof_stable
+  x_stable(1:n_stable) = gsurf(index)%xdof_stable(1:n_stable)
 
   CG_maxiter_hold = CG_maxiter
-  !CG_maxiter = 10
   CG_maxiter = CG_maxiter_s
   CG_xtol_hold = CG_xtol
-  !CG_xtol = 1.0E-6
   CG_xtol = CG_xtol_s
 
   output_use = 0
 
-  call cg_descent_stable (CG_xtol, x, n, myvalue_stable, mygrad_stable, status, gnorm, f, iter, nfunc, ngrad, d, g, xtemp, gtemp)
+  !call cg_descent_stable (CG_xtol, x_stable, n_stable, myvalue_stable, mygrad_stable, status, &
+  !       gnorm_stable, f_stable, iter_stable, nfunc_stable, ngrad_stable, d_stable, g_stable, xtemp_stable, gtemp_stable)
 
-  if (myid == 0) then
-     select case (status)
-     case (0)
-        write(ounit, '("congrad : status="I1": convergence tolerance satisfied.")')  status
-     case (1)
-        write(ounit, '("congrad : status="I1": change in func <= feps*|f|.")')  status
-     case (2)
-        write(ounit, '("congrad : status="I1": total iterations exceeded maxit.")')  status
-     case (3)
-        write(ounit, '("congrad : status="I1": slope always negative in line search.")')  status
-     case (4)
-        write(ounit, '("congrad : status="I1": number secant iterations exceed nsecant.")')  status
-     case (5)
-        write(ounit, '("congrad : status="I1": search direction not a descent direction.")')  status
-     case (6)
-        write(ounit, '("congrad : status="I1": line search fails in initial interval.")')  status
-     case (7)
-        write(ounit, '("congrad : status="I1": line search fails during bisection.")')  status
-     case (8)
-        write(ounit, '("congrad : status="I1": line search fails during interval update.")')  status
-     case default
-        write(ounit, '("congrad : status="I1": unknow options!")')  status
-     end select
-  end if
+  !call cg_descent (CG_xtol, x_stable, n_stable, myvalue_stable, mygrad_stable, status, &
+  !       gnorm_stable, f_stable, iter_stable, nfunc_stable, ngrad_stable, d_stable, g_stable, xtemp_stable, gtemp_stable)
 
-  if(myid .eq. 0) write(ounit, '("congrad : Stable conjugate gradient finished.")')
+  !if (myid == 0) then
+  !   select case (status)
+  !   case (0)
+  !      write(ounit, '("congrad : status="I1": convergence tolerance satisfied.")')  status
+  !   case (1)
+  !      write(ounit, '("congrad : status="I1": change in func <= feps*|f|.")')  status
+  !   case (2)
+  !      write(ounit, '("congrad : status="I1": total iterations exceeded maxit.")')  status
+  !   case (3)
+  !      write(ounit, '("congrad : status="I1": slope always negative in line search.")')  status
+  !   case (4)
+  !      write(ounit, '("congrad : status="I1": number secant iterations exceed nsecant.")')  status
+  !   case (5)
+  !      write(ounit, '("congrad : status="I1": search direction not a descent direction.")')  status
+  !   case (6)
+  !      write(ounit, '("congrad : status="I1": line search fails in initial interval.")')  status
+  !   case (7)
+  !      write(ounit, '("congrad : status="I1": line search fails during bisection.")')  status
+  !   case (8)
+  !      write(ounit, '("congrad : status="I1": line search fails during interval update.")')  status
+  !   case default
+  !      write(ounit, '("congrad : status="I1": unknow options!")')  status
+  !   end select
+  !end if
 
+  !if(myid .eq. 0) write(ounit, '("congrad : Stable conjugate gradient finished.")')
+
+  initial_step = 1.0E-14
+  do j = 1, CG_maxiter
+     call myvalue_stable(f_stable, x_stable, n_stable)
+     call mygrad_stable(g_stable, x_stable, n_stable)
+     step = initial_step
+     x_hold(1:n_stable) = x_stable(1:n_stable)
+     f_hold = f_stable
+     cont = 1
+     if (myid == 0 ) write(ounit, '("Value of F:   "ES12.5)') f_stable
+     do while (cont .eq. 1)
+        x_stable(1:n_stable) = x_hold(1:n_stable) - step*g_stable(1:n_stable)
+        call myvalue_stable(f_stable, x_stable, n_stable)
+        !if (myid == 0 ) write(ounit, '("Value of F:   "ES12.5)') f_stable
+        if ( f_stable > f_hold ) then
+           cont = 0
+           x_stable(1:n_stable) = x_hold(1:n_stable) - step*g_stable(1:n_stable)/2.0
+           call myvalue_stable(f_stable, x_stable, n_stable)
+        endif
+        f_hold = f_stable
+        step = step*2.0
+     enddo
+  enddo
+  
   CG_maxiter = CG_maxiter_hold
   CG_xtol = CG_xtol_hold
 
@@ -1109,14 +1136,14 @@ end subroutine congrad_stable
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
-subroutine myvalue_stable(f, x, n)
+subroutine myvalue_stable(f_stable, x_stable, n_stable)
   use globals, only: dp, myid, ounit, ierr, gsurf, MPI_COMM_FOCUS
   use mpi
   implicit none
 
-  INTEGER, INTENT(in) :: n
-  REAL, INTENT(in)    :: x(n)
-  REAL, INTENT(out)   :: f
+  INTEGER, INTENT(in) :: n_stable
+  REAL, INTENT(in)    :: x_stable(n_stable)
+  REAL, INTENT(out)   :: f_stable
 
   INTEGER             :: index
 
@@ -1124,9 +1151,9 @@ subroutine myvalue_stable(f, x, n)
 
   index = 1
   
-  call unpacking_stable(x,index)
+  call unpacking_stable(x_stable,index)
   call calcfg(index)
-  f = gsurf(index)%F
+  f_stable = gsurf(index)%F
 
   return
 
@@ -1134,14 +1161,14 @@ end subroutine myvalue_stable
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
-subroutine mygrad_stable(g, x, n)
+subroutine mygrad_stable(g_stable, x_stable, n_stable)
   use globals, only: dp, myid, ounit, ierr, gsurf, MPI_COMM_FOCUS
   use mpi
   implicit none
 
-  INTEGER, INTENT(in) :: n
-  REAL, INTENT(in)    :: x(n)
-  REAL, INTENT(out)   :: g(n)
+  INTEGER, INTENT(in) :: n_stable
+  REAL, INTENT(in)    :: x_stable(n_stable)
+  REAL, INTENT(out)   :: g_stable(n_stable)
 
   INTEGER             :: index
 
@@ -1149,9 +1176,9 @@ subroutine mygrad_stable(g, x, n)
   
   index = 1
 
-  call unpacking_stable(x,index)
+  call unpacking_stable(x_stable,index)
   call calcfg_deriv(index)
-  g = gsurf(index)%dFdxdof_stable
+  g_stable = gsurf(index)%dFdxdof_stable
 
   return
 
@@ -1159,27 +1186,27 @@ end subroutine mygrad_stable
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 
-subroutine unpacking_stable(x, index)
+subroutine unpacking_stable(x_stable, index)
   use globals, only: dp, myid, ounit, ierr, gsurf, MPI_COMM_FOCUS
   use mpi
   implicit none
 
   INTEGER, INTENT(in) :: index
-  REAL, INTENT(in)    :: x(gsurf(index)%Ndof_stable)
+  REAL, INTENT(in)    :: x_stable(gsurf(index)%Ndof_stable)
 
   INTEGER             :: NF_stable
 
   call MPI_BARRIER( MPI_COMM_FOCUS, ierr ) ! wait all cpus;
 
   NF_stable = gsurf(index)%NF_stable
-  gsurf(index)%osnc(1:NF_stable)     = x(            1:  NF_stable)
-  gsurf(index)%osns(1:NF_stable)     = x(  NF_stable+1:2*NF_stable)
-  gsurf(index)%othetanc(1:NF_stable) = x(2*NF_stable+1:3*NF_stable)
-  gsurf(index)%othetans(1:NF_stable) = x(3*NF_stable+1:4*NF_stable)
-  gsurf(index)%xsnc(1:NF_stable)     = x(4*NF_stable+1:5*NF_stable)
-  gsurf(index)%xsns(1:NF_stable)     = x(5*NF_stable+1:6*NF_stable)
-  gsurf(index)%xthetanc(1:NF_stable) = x(6*NF_stable+1:7*NF_stable)
-  gsurf(index)%xthetans(1:NF_stable) = x(7*NF_stable+1:8*NF_stable)
+  gsurf(index)%osnc(1:NF_stable)     = x_stable(            1:  NF_stable)
+  gsurf(index)%osns(1:NF_stable)     = x_stable(  NF_stable+1:2*NF_stable)
+  gsurf(index)%othetanc(1:NF_stable) = x_stable(2*NF_stable+1:3*NF_stable)
+  gsurf(index)%othetans(1:NF_stable) = x_stable(3*NF_stable+1:4*NF_stable)
+  gsurf(index)%xsnc(1:NF_stable)     = x_stable(4*NF_stable+1:5*NF_stable)
+  gsurf(index)%xsns(1:NF_stable)     = x_stable(5*NF_stable+1:6*NF_stable)
+  gsurf(index)%xthetanc(1:NF_stable) = x_stable(6*NF_stable+1:7*NF_stable)
+  gsurf(index)%xthetans(1:NF_stable) = x_stable(7*NF_stable+1:8*NF_stable)
 
   return
 
