@@ -375,7 +375,7 @@ module globals
   end type DegreeOfFreedom
 
   type ghostsurface
-     INTEGER              :: NF_stable, NF_axis, Nseg_stable, donee, Ndof_stable
+     INTEGER              :: NF_stable, NF_axis, Nseg_stable, donee, Ndof_stable, iter_track
      INTEGER, allocatable :: on(:), xn(:), axisn(:)
      REAL   , allocatable :: osnc(:), osns(:), othetanc(:), othetans(:), xsnc(:), xsns(:), &
                              xthetanc(:), xthetans(:), axisrnc(:), axiszns(:), os(:), xs(:), &
@@ -384,7 +384,7 @@ module globals
                              xz(:), of(:), og(:), xf(:), xg(:), oxdot(:), oydot(:), ozdot(:), &
                              xxdot(:), xydot(:), xzdot(:), obsups(:), obsupzeta(:), obsuptheta(:),&
                              xbsups(:), xbsupzeta(:), xbsuptheta(:), xdof_stable(:), &
-                             dFdxdof_stable(:)
+                             dFdxdof_stable(:), xdof_stable_hold(:)
      REAL                 :: F
      ! Put in variables for discritized curves, and discritized ghost surface
   end type ghostsurface

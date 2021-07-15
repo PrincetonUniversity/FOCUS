@@ -12,13 +12,29 @@
 ! not parallelized; communications may take more time;
 subroutine ghost(index)
   use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, &
-       coil, DoF, Ncoils, Nfixgeo, resbn_m, gsurf, MPI_COMM_FOCUS
+       coil, Ncoils, Nfixgeo, resbn_m, gsurf, MPI_COMM_FOCUS
   
   use mpi
   implicit none
   INTEGER, INTENT(in) :: index
 
   INTEGER             :: astat, ierr
+
+  ! Set hold variables if first call of iteration
+  !if ( gsurf(index)%iter_track .eq. iter ) then
+  !   gsurf(index)%xdof_stable_hold(1:gsurf(index)%Ndof_stable) = gsurf(index)%xdof_stable(1:gsurf(index)%Ndof_stable)
+  !   gsurf(index)%iter_track = gsurf(index)%iter_track + 1
+  !endif
+
+  ! Reset variables if > first call of iteration
+  !if ( gsurf(index)%iter_track > iter ) then
+  !   gsurf(index)%xdof_stable(1:gsurf(index)%Ndof_stable) = gsurf(index)%xdof_stable_hold(1:gsurf(index)%Ndof_stable)
+  !   call unpacking_stable(gsurf(index)%xdof_stable,index)
+  !endif
+
+  ! Reset variables to be initial 
+  gsurf(index)%xdof_stable(1:gsurf(index)%Ndof_stable) = gsurf(index)%xdof_stable_hold(1:gsurf(index)%Ndof_stable)
+  call unpacking_stable(gsurf(index)%xdof_stable,index)
 
   ! Calculate f and g functions for o and x
   call calcfg(index)
@@ -44,7 +60,7 @@ subroutine calcfg(index)
   implicit none
   INTEGER, INTENT(IN) :: index
 
-  INTEGER             :: astat, ierr, i, Nseg_stable, icoil
+  INTEGER             :: astat, ierr, i, j, Nseg_stable, icoil
   REAL                :: Bxhold, Byhold, Bzhold, p, q
   REAL, ALLOCATABLE   :: zeta(:), gradosx(:), gradosy(:), gradosz(:), gradxsx(:), gradxsy(:), &
                          gradxsz(:), gradozetax(:), gradozetay(:), gradozetaz(:), gradxzetax(:), &
@@ -60,109 +76,9 @@ subroutine calcfg(index)
   p = real(resbn_n)
   q = real(resbn_m)
 
-  gsurf(index)%os(1:Nseg_stable) = 0.0
-  gsurf(index)%xs(1:Nseg_stable) = 0.0
-  gsurf(index)%otheta(1:Nseg_stable) = 0.0
-  gsurf(index)%xtheta(1:Nseg_stable) = 0.0
-  gsurf(index)%osdot(1:Nseg_stable) = 0.0
-  gsurf(index)%xsdot(1:Nseg_stable) = 0.0
-  gsurf(index)%othetadot(1:Nseg_stable) = 0.0
-  gsurf(index)%xthetadot(1:Nseg_stable) = 0.0
-
-  do i = 1, gsurf(index)%NF_stable
-     gsurf(index)%os(1:Nseg_stable) = gsurf(index)%os(1:Nseg_stable) + &
-             gsurf(index)%osnc(i)*cos(gsurf(index)%on(i)*zeta(1:Nseg_stable)/q) + &
-             gsurf(index)%osns(i)*sin(gsurf(index)%on(i)*zeta(1:Nseg_stable)/q)
-     gsurf(index)%xs(1:Nseg_stable) = gsurf(index)%xs(1:Nseg_stable) + &
-             gsurf(index)%xsnc(i)*cos(gsurf(index)%xn(i)*zeta(1:Nseg_stable)/q) + &
-             gsurf(index)%xsns(i)*sin(gsurf(index)%xn(i)*zeta(1:Nseg_stable)/q)
-     gsurf(index)%otheta(1:Nseg_stable) = gsurf(index)%otheta(1:Nseg_stable) + &
-             gsurf(index)%othetanc(i)*cos(gsurf(index)%on(i)*zeta(1:Nseg_stable)/q) + &
-             gsurf(index)%othetans(i)*sin(gsurf(index)%on(i)*zeta(1:Nseg_stable)/q)
-     gsurf(index)%xtheta(1:Nseg_stable) = gsurf(index)%xtheta(1:Nseg_stable) + &
-             gsurf(index)%xthetanc(i)*cos(gsurf(index)%xn(i)*zeta(1:Nseg_stable)/q) + &
-             gsurf(index)%xthetans(i)*sin(gsurf(index)%xn(i)*zeta(1:Nseg_stable)/q)
-
-     gsurf(index)%osdot(1:Nseg_stable) = gsurf(index)%osdot(1:Nseg_stable) - &
-             gsurf(index)%on(i)*gsurf(index)%osnc(i)*sin(gsurf(index)%on(i)*zeta(1:Nseg_stable)/q)/q + &
-             gsurf(index)%on(i)*gsurf(index)%osns(i)*cos(gsurf(index)%on(i)*zeta(1:Nseg_stable)/q)/q
-     gsurf(index)%xsdot(1:Nseg_stable) = gsurf(index)%xsdot(1:Nseg_stable) - &
-             gsurf(index)%xn(i)*gsurf(index)%xsnc(i)*sin(gsurf(index)%xn(i)*zeta(1:Nseg_stable)/q)/q + &
-             gsurf(index)%xn(i)*gsurf(index)%xsns(i)*cos(gsurf(index)%xn(i)*zeta(1:Nseg_stable)/q)/q
-     gsurf(index)%othetadot(1:Nseg_stable) = gsurf(index)%othetadot(1:Nseg_stable) - &
-             gsurf(index)%on(i)*gsurf(index)%othetanc(i)*sin(gsurf(index)%on(i)*zeta(1:Nseg_stable)/q)/q + &
-             gsurf(index)%on(i)*gsurf(index)%othetans(i)*cos(gsurf(index)%on(i)*zeta(1:Nseg_stable)/q)/q
-     gsurf(index)%xthetadot(1:Nseg_stable) = gsurf(index)%xthetadot(1:Nseg_stable) - &
-             gsurf(index)%xn(i)*gsurf(index)%xthetanc(i)*sin(gsurf(index)%xn(i)*zeta(1:Nseg_stable)/q)/q + &
-             gsurf(index)%xn(i)*gsurf(index)%xthetans(i)*cos(gsurf(index)%xn(i)*zeta(1:Nseg_stable)/q)/q
-  enddo
-  gsurf(index)%otheta(1:Nseg_stable) = gsurf(index)%otheta(1:Nseg_stable) + p*zeta(1:Nseg_stable)/q
-  gsurf(index)%xtheta(1:Nseg_stable) = gsurf(index)%xtheta(1:Nseg_stable) + p*zeta(1:Nseg_stable)/q
-
-  gsurf(index)%othetadot(1:Nseg_stable) = gsurf(index)%othetadot(1:Nseg_stable) + p/q
-  gsurf(index)%xthetadot(1:Nseg_stable) = gsurf(index)%xthetadot(1:Nseg_stable) + p/q
-
-  ! Calculate axis, and derivative of axis w.r.t zeta
-  gsurf(index)%Ra(1:Nseg_stable) = 0.0
-  gsurf(index)%Za(1:Nseg_stable) = 0.0
+  ! Allocate everything
   SALLOCATE( Radot, (1:Nseg_stable), 0.0 )
-  SALLOCATE( Zadot, (1:Nseg_stable), 0.0 )
-  do i = 1, gsurf(index)%NF_axis
-     gsurf(index)%Ra(1:Nseg_stable) = gsurf(index)%Ra(1:Nseg_stable) + &
-             gsurf(index)%axisrnc(i)*cos(gsurf(index)%axisn(i)*zeta(1:Nseg_stable))
-     gsurf(index)%Za(1:Nseg_stable) = gsurf(index)%Za(1:Nseg_stable) + &
-             gsurf(index)%axiszns(i)*sin(gsurf(index)%axisn(i)*zeta(1:Nseg_stable))
-     Radot(1:Nseg_stable) = Radot(1:Nseg_stable) - &
-             gsurf(index)%axisn(i)*gsurf(index)%axisrnc(i)*sin(gsurf(index)%axisn(i)*zeta(1:Nseg_stable))
-     Zadot(1:Nseg_stable) = Zadot(1:Nseg_stable) + &
-             gsurf(index)%axisn(i)*gsurf(index)%axiszns(i)*cos(gsurf(index)%axisn(i)*zeta(1:Nseg_stable))
-  enddo
-
-  ! Transfrom field line from s,zeta,theta to x,y,z
-  gsurf(index)%ox(1:Nseg_stable) = cos(zeta(1:Nseg_stable))*(gsurf(index)%Ra(1:Nseg_stable) + &
-          gsurf(index)%os(1:Nseg_stable)*cos(gsurf(index)%otheta(1:Nseg_stable)))
-  gsurf(index)%xx(1:Nseg_stable) = cos(zeta(1:Nseg_stable))*(gsurf(index)%Ra(1:Nseg_stable) + &
-          gsurf(index)%xs(1:Nseg_stable)*cos(gsurf(index)%xtheta(1:Nseg_stable)))
-  gsurf(index)%oy(1:Nseg_stable) = sin(zeta(1:Nseg_stable))*(gsurf(index)%Ra(1:Nseg_stable) + &
-          gsurf(index)%os(1:Nseg_stable)*cos(gsurf(index)%otheta(1:Nseg_stable)))
-  gsurf(index)%xy(1:Nseg_stable) = sin(zeta(1:Nseg_stable))*(gsurf(index)%Ra(1:Nseg_stable) + &
-          gsurf(index)%xs(1:Nseg_stable)*cos(gsurf(index)%xtheta(1:Nseg_stable)))
-  gsurf(index)%oz(1:Nseg_stable) = gsurf(index)%os(1:Nseg_stable)*sin(gsurf(index)%otheta(1:Nseg_stable)) + &
-          gsurf(index)%Za(1:Nseg_stable)
-  gsurf(index)%xz(1:Nseg_stable) = gsurf(index)%xs(1:Nseg_stable)*sin(gsurf(index)%xtheta(1:Nseg_stable)) + &
-          gsurf(index)%Za(1:Nseg_stable)
-
-  ! Calculate derivative of field line w.r.t zeta
-  gsurf(index)%oxdot(1:Nseg_stable) = -1.0*sin(zeta(1:Nseg_stable))*(gsurf(index)%Ra(1:Nseg_stable)&
-         + gsurf(index)%os(1:Nseg_stable)*cos(gsurf(index)%otheta(1:Nseg_stable))) &
-         + cos(zeta(1:Nseg_stable))*( Radot(1:Nseg_stable) + gsurf(index)%osdot(1:Nseg_stable)&
-         *cos(gsurf(index)%otheta(1:Nseg_stable)) - gsurf(index)%os(1:Nseg_stable)*&
-         sin(gsurf(index)%otheta(1:Nseg_stable))*gsurf(index)%othetadot(1:Nseg_stable) )
-  gsurf(index)%xxdot(1:Nseg_stable) = -1.0*sin(zeta(1:Nseg_stable))*(gsurf(index)%Ra(1:Nseg_stable)& 
-         + gsurf(index)%xs(1:Nseg_stable)*cos(gsurf(index)%xtheta(1:Nseg_stable))) &
-         + cos(zeta(1:Nseg_stable))*( Radot(1:Nseg_stable) + gsurf(index)%xsdot(1:Nseg_stable)&
-         *cos(gsurf(index)%xtheta(1:Nseg_stable)) - gsurf(index)%xs(1:Nseg_stable)*&
-         sin(gsurf(index)%xtheta(1:Nseg_stable))*gsurf(index)%xthetadot(1:Nseg_stable) )
-
-  gsurf(index)%oydot(1:Nseg_stable) =      cos(zeta(1:Nseg_stable))*(gsurf(index)%Ra(1:Nseg_stable)& 
-         + gsurf(index)%os(1:Nseg_stable)*cos(gsurf(index)%otheta(1:Nseg_stable))) &
-         + sin(zeta(1:Nseg_stable))*( Radot(1:Nseg_stable) + gsurf(index)%osdot(1:Nseg_stable)&
-         *cos(gsurf(index)%otheta(1:Nseg_stable)) - gsurf(index)%os(1:Nseg_stable)*&
-         sin(gsurf(index)%otheta(1:Nseg_stable))*gsurf(index)%othetadot(1:Nseg_stable) )
-  gsurf(index)%xydot(1:Nseg_stable) =      cos(zeta(1:Nseg_stable))*(gsurf(index)%Ra(1:Nseg_stable)&
-         + gsurf(index)%xs(1:Nseg_stable)*cos(gsurf(index)%xtheta(1:Nseg_stable))) &
-         + sin(zeta(1:Nseg_stable))*( Radot(1:Nseg_stable) + gsurf(index)%xsdot(1:Nseg_stable)&
-         *cos(gsurf(index)%xtheta(1:Nseg_stable)) - gsurf(index)%xs(1:Nseg_stable)*&
-         sin(gsurf(index)%xtheta(1:Nseg_stable))*gsurf(index)%xthetadot(1:Nseg_stable) )
-
-  gsurf(index)%ozdot(1:Nseg_stable) = gsurf(index)%osdot(1:Nseg_stable)*&
-          sin(gsurf(index)%otheta(1:Nseg_stable)) + gsurf(index)%os(1:Nseg_stable)&
-          *cos(gsurf(index)%otheta(1:Nseg_stable))*gsurf(index)%othetadot(1:Nseg_stable) + Zadot(1:Nseg_stable)
-  gsurf(index)%xzdot(1:Nseg_stable) = gsurf(index)%xsdot(1:Nseg_stable)*&
-          sin(gsurf(index)%xtheta(1:Nseg_stable)) + gsurf(index)%xs(1:Nseg_stable)&
-          *cos(gsurf(index)%xtheta(1:Nseg_stable))*gsurf(index)%xthetadot(1:Nseg_stable) + Zadot(1:Nseg_stable)
-
-  ! Calculate derivative of axis w.r.t x and y, variables are local
+  SALLOCATE( Zadot, (1:Nseg_stable), 0.0 ) 
   SALLOCATE( odRadx, (1:Nseg_stable), 0.0 )
   SALLOCATE( odRady, (1:Nseg_stable), 0.0 )
   SALLOCATE( odZadx, (1:Nseg_stable), 0.0 )
@@ -171,128 +87,24 @@ subroutine calcfg(index)
   SALLOCATE( xdRady, (1:Nseg_stable), 0.0 )
   SALLOCATE( xdZadx, (1:Nseg_stable), 0.0 )
   SALLOCATE( xdZady, (1:Nseg_stable), 0.0 )
-  do i = 1, gsurf(index)%NF_axis
-     odRadx(1:Nseg_stable) = odRadx(1:Nseg_stable) + &
-             gsurf(index)%axisn(i)*gsurf(index)%axisrnc(i)*sin(gsurf(index)%axisn(i)*zeta(1:Nseg_stable))*gsurf(index)%oy(1:Nseg_stable) / &
-             ( gsurf(index)%ox(1:Nseg_stable)**2 * ( gsurf(index)%oy(1:Nseg_stable)**2/gsurf(index)%ox(1:Nseg_stable)**2 + 1 ) )
-     odRady(1:Nseg_stable) = odRady(1:Nseg_stable) - &
-             gsurf(index)%axisn(i)*gsurf(index)%axisrnc(i)*sin(gsurf(index)%axisn(i)*zeta(1:Nseg_stable)) / &
-             ( gsurf(index)%ox(1:Nseg_stable) * ( gsurf(index)%oy(1:Nseg_stable)**2/gsurf(index)%ox(1:Nseg_stable)**2 + 1 ) )
-     odZadx(1:Nseg_stable) = odZadx(1:Nseg_stable) - &
-             gsurf(index)%axisn(i)*gsurf(index)%axiszns(i)*cos(gsurf(index)%axisn(i)*zeta(1:Nseg_stable))*gsurf(index)%oy(1:Nseg_stable) / &
-             ( gsurf(index)%ox(1:Nseg_stable)**2 * ( gsurf(index)%oy(1:Nseg_stable)**2/gsurf(index)%ox(1:Nseg_stable)**2 + 1 ) )
-     odZady(1:Nseg_stable) = odZady(1:Nseg_stable) + &
-             gsurf(index)%axisn(i)*gsurf(index)%axiszns(i)*cos(gsurf(index)%axisn(i)*zeta(1:Nseg_stable)) / &
-             ( gsurf(index)%ox(1:Nseg_stable) * ( gsurf(index)%oy(1:Nseg_stable)**2/gsurf(index)%ox(1:Nseg_stable)**2 + 1 ) )
-
-     xdRadx(1:Nseg_stable) = xdRadx(1:Nseg_stable) + &
-             gsurf(index)%axisn(i)*gsurf(index)%axisrnc(i)*sin(gsurf(index)%axisn(i)*zeta(1:Nseg_stable))*gsurf(index)%xy(1:Nseg_stable) / &
-             ( gsurf(index)%xx(1:Nseg_stable)**2 * ( gsurf(index)%xy(1:Nseg_stable)**2/gsurf(index)%xx(1:Nseg_stable)**2 + 1 ) )
-     xdRady(1:Nseg_stable) = xdRady(1:Nseg_stable) - &
-             gsurf(index)%axisn(i)*gsurf(index)%axisrnc(i)*sin(gsurf(index)%axisn(i)*zeta(1:Nseg_stable)) / &
-             ( gsurf(index)%xx(1:Nseg_stable) * ( gsurf(index)%xy(1:Nseg_stable)**2/gsurf(index)%xx(1:Nseg_stable)**2 + 1 ) )
-     xdZadx(1:Nseg_stable) = xdZadx(1:Nseg_stable) - &
-             gsurf(index)%axisn(i)*gsurf(index)%axiszns(i)*cos(gsurf(index)%axisn(i)*zeta(1:Nseg_stable))*gsurf(index)%xy(1:Nseg_stable) / &
-             ( gsurf(index)%xx(1:Nseg_stable)**2 * ( gsurf(index)%xy(1:Nseg_stable)**2/gsurf(index)%xx(1:Nseg_stable)**2 + 1 ) )
-     xdZady(1:Nseg_stable) = xdZady(1:Nseg_stable) + &
-             gsurf(index)%axisn(i)*gsurf(index)%axiszns(i)*cos(gsurf(index)%axisn(i)*zeta(1:Nseg_stable)) / &
-             ( gsurf(index)%xx(1:Nseg_stable) * ( gsurf(index)%xy(1:Nseg_stable)**2/gsurf(index)%xx(1:Nseg_stable)**2 + 1 ) )
-  enddo 
-
-  ! Calculate contravariant basis, variables are local
   SALLOCATE( gradosx, (1:Nseg_stable), 0.0 )
   SALLOCATE( gradosy, (1:Nseg_stable), 0.0 )
   SALLOCATE( gradosz, (1:Nseg_stable), 0.0 )
   SALLOCATE( gradxsx, (1:Nseg_stable), 0.0 )
   SALLOCATE( gradxsy, (1:Nseg_stable), 0.0 )
   SALLOCATE( gradxsz, (1:Nseg_stable), 0.0 )
-  
-  gradosx(1:Nseg_stable) = ( sqrt( gsurf(index)%ox(1:Nseg_stable)**2 + gsurf(index)%oy(1:Nseg_stable)**2 ) - &
-          gsurf(index)%Ra(1:Nseg_stable) )*( (gsurf(index)%ox(1:Nseg_stable)**2 + &
-          gsurf(index)%oy(1:Nseg_stable)**2)**(-.5)*gsurf(index)%ox(1:Nseg_stable) - &
-          odRadx(1:Nseg_stable) )/gsurf(index)%os(1:Nseg_stable) - &
-          (gsurf(index)%oz(1:Nseg_stable) - gsurf(index)%Za(1:Nseg_stable))*odZadx(1:Nseg_stable)/gsurf(index)%os(1:Nseg_stable)
-  gradxsx(1:Nseg_stable) = ( sqrt( gsurf(index)%xx(1:Nseg_stable)**2 + gsurf(index)%xy(1:Nseg_stable)**2 ) - &
-          gsurf(index)%Ra(1:Nseg_stable) )*( (gsurf(index)%xx(1:Nseg_stable)**2 + &
-          gsurf(index)%xy(1:Nseg_stable)**2)**(-.5)*gsurf(index)%xx(1:Nseg_stable) - & 
-          xdRadx(1:Nseg_stable) )/gsurf(index)%xs(1:Nseg_stable) - &
-          (gsurf(index)%xz(1:Nseg_stable) - gsurf(index)%Za(1:Nseg_stable))*xdZadx(1:Nseg_stable)/gsurf(index)%xs(1:Nseg_stable)
-  
-  gradosy(1:Nseg_stable) = ( sqrt( gsurf(index)%ox(1:Nseg_stable)**2 + gsurf(index)%oy(1:Nseg_stable)**2 ) - &
-          gsurf(index)%Ra(1:Nseg_stable) )*( (gsurf(index)%ox(1:Nseg_stable)**2 + &
-          gsurf(index)%oy(1:Nseg_stable)**2)**(-.5)*gsurf(index)%oy(1:Nseg_stable) - &
-          odRady(1:Nseg_stable) )/gsurf(index)%os(1:Nseg_stable) - &
-          (gsurf(index)%oz(1:Nseg_stable) - gsurf(index)%Za(1:Nseg_stable))*odZady(1:Nseg_stable)/gsurf(index)%os(1:Nseg_stable)
-  gradxsy(1:Nseg_stable) = ( sqrt( gsurf(index)%xx(1:Nseg_stable)**2 + gsurf(index)%xy(1:Nseg_stable)**2 ) - &
-          gsurf(index)%Ra(1:Nseg_stable) )*( (gsurf(index)%xx(1:Nseg_stable)**2 + &
-          gsurf(index)%xy(1:Nseg_stable)**2)**(-.5)*gsurf(index)%xy(1:Nseg_stable) - &
-          xdRady(1:Nseg_stable) )/gsurf(index)%xs(1:Nseg_stable) - &
-          (gsurf(index)%xz(1:Nseg_stable) - gsurf(index)%Za(1:Nseg_stable))*xdZady(1:Nseg_stable)/gsurf(index)%xs(1:Nseg_stable)
- 
-  gradosz(1:Nseg_stable) = ( gsurf(index)%oz(1:Nseg_stable) - gsurf(index)%Za(1:Nseg_stable) )/gsurf(index)%os(1:Nseg_stable)
-  gradxsz(1:Nseg_stable) = ( gsurf(index)%xz(1:Nseg_stable) - gsurf(index)%Za(1:Nseg_stable) )/gsurf(index)%xs(1:Nseg_stable)
-
   SALLOCATE( gradozetax, (1:Nseg_stable), 0.0 )
   SALLOCATE( gradozetay, (1:Nseg_stable), 0.0 )
   SALLOCATE( gradozetaz, (1:Nseg_stable), 0.0 )
   SALLOCATE( gradxzetax, (1:Nseg_stable), 0.0 )
   SALLOCATE( gradxzetay, (1:Nseg_stable), 0.0 )
   SALLOCATE( gradxzetaz, (1:Nseg_stable), 0.0 )
-  
-  gradozetax(1:Nseg_stable) = -1.0*(gsurf(index)%oy(1:Nseg_stable)**2/gsurf(index)%ox(1:Nseg_stable)**2+1)**-1.0 * &
-          gsurf(index)%oy(1:Nseg_stable)/gsurf(index)%ox(1:Nseg_stable)**2
-  gradxzetax(1:Nseg_stable) = -1.0*(gsurf(index)%xy(1:Nseg_stable)**2/gsurf(index)%xx(1:Nseg_stable)**2+1)**-1.0 * &
-          gsurf(index)%xy(1:Nseg_stable)/gsurf(index)%xx(1:Nseg_stable)**2
-  
-  gradozetay(1:Nseg_stable) = (gsurf(index)%oy(1:Nseg_stable)**2/gsurf(index)%ox(1:Nseg_stable)**2+1)**-1.0 * &
-          1.0/gsurf(index)%ox(1:Nseg_stable)
-  gradxzetay(1:Nseg_stable) = (gsurf(index)%xy(1:Nseg_stable)**2/gsurf(index)%xx(1:Nseg_stable)**2+1)**-1.0 * &
-          1.0/gsurf(index)%xx(1:Nseg_stable)
-
-  !gradozetaz(1:Nseg_stable) = 0.0
-  !gradxzetaz(1:Nseg_stable) = 0.0
-
   SALLOCATE( gradothetax, (1:Nseg_stable), 0.0 )
   SALLOCATE( gradothetay, (1:Nseg_stable), 0.0 )
   SALLOCATE( gradothetaz, (1:Nseg_stable), 0.0 )
   SALLOCATE( gradxthetax, (1:Nseg_stable), 0.0 )
   SALLOCATE( gradxthetay, (1:Nseg_stable), 0.0 )
   SALLOCATE( gradxthetaz, (1:Nseg_stable), 0.0 )
-
-  gradothetax(1:Nseg_stable) = -1.0*( (gsurf(index)%oz(1:Nseg_stable)-gsurf(index)%Za(1:Nseg_stable)) * &
-          (sqrt(gsurf(index)%ox(1:Nseg_stable)**2+gsurf(index)%oy(1:Nseg_stable)**2) - gsurf(index)%Ra(1:Nseg_stable))**-2.0 * &
-          ( (gsurf(index)%ox(1:Nseg_stable)**2+gsurf(index)%oy(1:Nseg_stable)**2)**-.5 * gsurf(index)%ox(1:Nseg_stable) - odRadx(1:Nseg_stable) ) &
-          + odZadx(1:Nseg_stable) / (sqrt(gsurf(index)%ox(1:Nseg_stable)**2+gsurf(index)%oy(1:Nseg_stable)**2) &
-          - gsurf(index)%Ra(1:Nseg_stable)) ) / (tan(gsurf(index)%otheta(1:Nseg_stable))**2+1)
-  gradxthetax(1:Nseg_stable) = -1.0*( (gsurf(index)%xz(1:Nseg_stable)-gsurf(index)%Za(1:Nseg_stable)) * &
-          (sqrt(gsurf(index)%xx(1:Nseg_stable)**2+gsurf(index)%xy(1:Nseg_stable)**2) - gsurf(index)%Ra(1:Nseg_stable))**-2.0 * &
-          ( (gsurf(index)%xx(1:Nseg_stable)**2+gsurf(index)%xy(1:Nseg_stable)**2)**-.5 * gsurf(index)%xx(1:Nseg_stable) - xdRadx(1:Nseg_stable) ) &
-          + xdZadx(1:Nseg_stable) / (sqrt(gsurf(index)%xx(1:Nseg_stable)**2+gsurf(index)%xy(1:Nseg_stable)**2) &
-          - gsurf(index)%Ra(1:Nseg_stable)) ) / (tan(gsurf(index)%xtheta(1:Nseg_stable))**2+1)
-
-  gradothetay(1:Nseg_stable) = -1.0*( (gsurf(index)%oz(1:Nseg_stable)-gsurf(index)%Za(1:Nseg_stable)) * &
-          (sqrt(gsurf(index)%ox(1:Nseg_stable)**2+gsurf(index)%oy(1:Nseg_stable)**2) - gsurf(index)%Ra(1:Nseg_stable))**-2.0 * &
-          ( (gsurf(index)%ox(1:Nseg_stable)**2+gsurf(index)%oy(1:Nseg_stable)**2)**-.5 * gsurf(index)%oy(1:Nseg_stable) - odRady(1:Nseg_stable) ) &
-          + odZady(1:Nseg_stable) / (sqrt(gsurf(index)%ox(1:Nseg_stable)**2+gsurf(index)%oy(1:Nseg_stable)**2) &
-          - gsurf(index)%Ra(1:Nseg_stable)) ) / (tan(gsurf(index)%otheta(1:Nseg_stable))**2+1)
-  gradxthetay(1:Nseg_stable) = -1.0*( (gsurf(index)%xz(1:Nseg_stable)-gsurf(index)%Za(1:Nseg_stable)) * &
-          (sqrt(gsurf(index)%xx(1:Nseg_stable)**2+gsurf(index)%xy(1:Nseg_stable)**2) - gsurf(index)%Ra(1:Nseg_stable))**-2.0 * &
-          ( (gsurf(index)%xx(1:Nseg_stable)**2+gsurf(index)%xy(1:Nseg_stable)**2)**-.5 * gsurf(index)%xy(1:Nseg_stable) - xdRady(1:Nseg_stable) ) &
-          + xdZady(1:Nseg_stable) / (sqrt(gsurf(index)%xx(1:Nseg_stable)**2+gsurf(index)%xy(1:Nseg_stable)**2) &
-          - gsurf(index)%Ra(1:Nseg_stable)) ) / (tan(gsurf(index)%xtheta(1:Nseg_stable))**2+1)
-
-  gradothetaz(1:Nseg_stable) = ( (tan(gsurf(index)%otheta(1:Nseg_stable))**2+1) * &
-          ( sqrt(gsurf(index)%ox(1:Nseg_stable)**2+gsurf(index)%oy(1:Nseg_stable)**2) - gsurf(index)%Ra(1:Nseg_stable) ) )**-1.0
-  gradxthetaz(1:Nseg_stable) = ( (tan(gsurf(index)%xtheta(1:Nseg_stable))**2+1) * &
-          ( sqrt(gsurf(index)%xx(1:Nseg_stable)**2+gsurf(index)%xy(1:Nseg_stable)**2) - gsurf(index)%Ra(1:Nseg_stable) ) )**-1.0
-
-  ! Dont need to calculate Jacobian since not calculating covariant basis
-  !J =     gradsx*( gradthetay*gradzetaz - gradthetaz*gradzetay )
-  !J = J + gradsy*( gradthetaz*gradzetax - gradthetax*gradzetaz )
-  !J = J + gradsz*( gradthetax*gradzetay - gradthetay*gradzetax )
-  !J = -1.0*J**-1.0 ! Made negative since switched angles 
-
-  ! Calculate field on stable field lines
   SALLOCATE( oBx, (1:Nseg_stable), 0.0 )
   SALLOCATE( oBy, (1:Nseg_stable), 0.0 )
   SALLOCATE( oBz, (1:Nseg_stable), 0.0 )
@@ -300,65 +112,242 @@ subroutine calcfg(index)
   SALLOCATE( xBy, (1:Nseg_stable), 0.0 )
   SALLOCATE( xBz, (1:Nseg_stable), 0.0 )
 
-  ! Parallelized, maybe change to be parallelized elsewhere
-  do i = 1, Nseg_stable
-     if( myid.ne.modulo(i,ncpu) ) cycle ! parallelization loop;
-     do icoil = 1, Ncoils
-        call bfield0(icoil, gsurf(index)%ox(i), gsurf(index)%oy(i), gsurf(index)%oz(i), Bxhold, Byhold, Bzhold)
-        oBx(i) = oBx(i) + Bxhold
-        oBy(i) = oBy(i) + Byhold
-        oBz(i) = oBz(i) + Bzhold
+  gsurf(index)%of(1:Nseg_stable) = 0.0
+  gsurf(index)%xf(1:Nseg_stable) = 0.0
+  gsurf(index)%og(1:Nseg_stable) = 0.0
+  gsurf(index)%xg(1:Nseg_stable) = 0.0
+  
+  do j = 1, Nseg_stable ! start of unindented big loop
+  if( myid.ne.modulo(j,ncpu) ) cycle ! parallelization 
 
-        call bfield0(icoil, gsurf(index)%xx(i), gsurf(index)%xy(i), gsurf(index)%xz(i), Bxhold, Byhold, Bzhold)
-        xBx(i) = xBx(i) + Bxhold
-        xBy(i) = xBy(i) + Byhold
-        xBz(i) = xBz(i) + Bzhold
-     enddo
+  gsurf(index)%os(j) = 0.0
+  gsurf(index)%xs(j) = 0.0
+  gsurf(index)%otheta(j) = 0.0
+  gsurf(index)%xtheta(j) = 0.0
+  gsurf(index)%osdot(j) = 0.0
+  gsurf(index)%xsdot(j) = 0.0
+  gsurf(index)%othetadot(j) = 0.0
+  gsurf(index)%xthetadot(j) = 0.0
+  do i = 1, gsurf(index)%NF_stable
+     gsurf(index)%os(j) = gsurf(index)%os(j) + &
+             gsurf(index)%osnc(i)*cos(gsurf(index)%on(i)*zeta(j)/q) + &
+             gsurf(index)%osns(i)*sin(gsurf(index)%on(i)*zeta(j)/q)
+     gsurf(index)%xs(j) = gsurf(index)%xs(j) + &
+             gsurf(index)%xsnc(i)*cos(gsurf(index)%xn(i)*zeta(j)/q) + &
+             gsurf(index)%xsns(i)*sin(gsurf(index)%xn(i)*zeta(j)/q)
+     gsurf(index)%otheta(j) = gsurf(index)%otheta(j) + &
+             gsurf(index)%othetanc(i)*cos(gsurf(index)%on(i)*zeta(j)/q) + &
+             gsurf(index)%othetans(i)*sin(gsurf(index)%on(i)*zeta(j)/q)
+     gsurf(index)%xtheta(j) = gsurf(index)%xtheta(j) + &
+             gsurf(index)%xthetanc(i)*cos(gsurf(index)%xn(i)*zeta(j)/q) + &
+             gsurf(index)%xthetans(i)*sin(gsurf(index)%xn(i)*zeta(j)/q)
+     gsurf(index)%osdot(j) = gsurf(index)%osdot(j) - &
+             gsurf(index)%on(i)*gsurf(index)%osnc(i)*sin(gsurf(index)%on(i)*zeta(j)/q)/q + &
+             gsurf(index)%on(i)*gsurf(index)%osns(i)*cos(gsurf(index)%on(i)*zeta(j)/q)/q
+     gsurf(index)%xsdot(j) = gsurf(index)%xsdot(j) - &
+             gsurf(index)%xn(i)*gsurf(index)%xsnc(i)*sin(gsurf(index)%xn(i)*zeta(j)/q)/q + &
+             gsurf(index)%xn(i)*gsurf(index)%xsns(i)*cos(gsurf(index)%xn(i)*zeta(j)/q)/q
+     gsurf(index)%othetadot(j) = gsurf(index)%othetadot(j) - &
+             gsurf(index)%on(i)*gsurf(index)%othetanc(i)*sin(gsurf(index)%on(i)*zeta(j)/q)/q + &
+             gsurf(index)%on(i)*gsurf(index)%othetans(i)*cos(gsurf(index)%on(i)*zeta(j)/q)/q
+     gsurf(index)%xthetadot(j) = gsurf(index)%xthetadot(j) - &
+             gsurf(index)%xn(i)*gsurf(index)%xthetanc(i)*sin(gsurf(index)%xn(i)*zeta(j)/q)/q + &
+             gsurf(index)%xn(i)*gsurf(index)%xthetans(i)*cos(gsurf(index)%xn(i)*zeta(j)/q)/q
   enddo
-  call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
-  call MPI_ALLREDUCE( MPI_IN_PLACE, oBx, Nseg_stable, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
-  call MPI_ALLREDUCE( MPI_IN_PLACE, oBy, Nseg_stable, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
-  call MPI_ALLREDUCE( MPI_IN_PLACE, oBz, Nseg_stable, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
-  call MPI_ALLREDUCE( MPI_IN_PLACE, xBx, Nseg_stable, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
-  call MPI_ALLREDUCE( MPI_IN_PLACE, xBy, Nseg_stable, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
-  call MPI_ALLREDUCE( MPI_IN_PLACE, xBz, Nseg_stable, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
-
+  gsurf(index)%otheta(j) = gsurf(index)%otheta(j) + p*zeta(j)/q
+  gsurf(index)%xtheta(j) = gsurf(index)%xtheta(j) + p*zeta(j)/q
+  gsurf(index)%othetadot(j) = gsurf(index)%othetadot(j) + p/q
+  gsurf(index)%xthetadot(j) = gsurf(index)%xthetadot(j) + p/q
+  ! Calculate axis, and derivative of axis w.r.t zeta
+  gsurf(index)%Ra(j) = 0.0
+  gsurf(index)%Za(j) = 0.0
+  do i = 1, gsurf(index)%NF_axis
+     gsurf(index)%Ra(j) = gsurf(index)%Ra(j) + &
+             gsurf(index)%axisrnc(i)*cos(gsurf(index)%axisn(i)*zeta(j))
+     gsurf(index)%Za(j) = gsurf(index)%Za(j) + &
+             gsurf(index)%axiszns(i)*sin(gsurf(index)%axisn(i)*zeta(j))
+     Radot(j) = Radot(j) - &
+             gsurf(index)%axisn(i)*gsurf(index)%axisrnc(i)*sin(gsurf(index)%axisn(i)*zeta(j))
+     Zadot(j) = Zadot(j) + &
+             gsurf(index)%axisn(i)*gsurf(index)%axiszns(i)*cos(gsurf(index)%axisn(i)*zeta(j))
+  enddo
+  ! Transfrom field line from s,zeta,theta to x,y,z
+  gsurf(index)%ox(j) = cos(zeta(j))*(gsurf(index)%Ra(j) + &
+          gsurf(index)%os(j)*cos(gsurf(index)%otheta(j)))
+  gsurf(index)%xx(j) = cos(zeta(j))*(gsurf(index)%Ra(j) + &
+          gsurf(index)%xs(j)*cos(gsurf(index)%xtheta(j)))
+  gsurf(index)%oy(j) = sin(zeta(j))*(gsurf(index)%Ra(j) + &
+          gsurf(index)%os(j)*cos(gsurf(index)%otheta(j)))
+  gsurf(index)%xy(j) = sin(zeta(j))*(gsurf(index)%Ra(j) + &
+          gsurf(index)%xs(j)*cos(gsurf(index)%xtheta(j)))
+  gsurf(index)%oz(j) = gsurf(index)%os(j)*sin(gsurf(index)%otheta(j)) + &
+          gsurf(index)%Za(j)
+  gsurf(index)%xz(j) = gsurf(index)%xs(j)*sin(gsurf(index)%xtheta(j)) + &
+          gsurf(index)%Za(j)
+  ! Calculate derivative of field line w.r.t zeta
+  gsurf(index)%oxdot(j) = -1.0*sin(zeta(j))*(gsurf(index)%Ra(j)&
+         + gsurf(index)%os(j)*cos(gsurf(index)%otheta(j))) &
+         + cos(zeta(j))*( Radot(j) + gsurf(index)%osdot(j)&
+         *cos(gsurf(index)%otheta(j)) - gsurf(index)%os(j)*&
+         sin(gsurf(index)%otheta(j))*gsurf(index)%othetadot(j) )
+  gsurf(index)%xxdot(j) = -1.0*sin(zeta(j))*(gsurf(index)%Ra(j)& 
+         + gsurf(index)%xs(j)*cos(gsurf(index)%xtheta(j))) &
+         + cos(zeta(j))*( Radot(j) + gsurf(index)%xsdot(j)&
+         *cos(gsurf(index)%xtheta(j)) - gsurf(index)%xs(j)*&
+         sin(gsurf(index)%xtheta(j))*gsurf(index)%xthetadot(j) )
+  gsurf(index)%oydot(j) =      cos(zeta(j))*(gsurf(index)%Ra(j)& 
+         + gsurf(index)%os(j)*cos(gsurf(index)%otheta(j))) &
+         + sin(zeta(j))*( Radot(j) + gsurf(index)%osdot(j)&
+         *cos(gsurf(index)%otheta(j)) - gsurf(index)%os(j)*&
+         sin(gsurf(index)%otheta(j))*gsurf(index)%othetadot(j) )
+  gsurf(index)%xydot(j) =      cos(zeta(j))*(gsurf(index)%Ra(j)&
+         + gsurf(index)%xs(j)*cos(gsurf(index)%xtheta(j))) &
+         + sin(zeta(j))*( Radot(j) + gsurf(index)%xsdot(j)&
+         *cos(gsurf(index)%xtheta(j)) - gsurf(index)%xs(j)*&
+         sin(gsurf(index)%xtheta(j))*gsurf(index)%xthetadot(j) )
+  gsurf(index)%ozdot(j) = gsurf(index)%osdot(j)*&
+          sin(gsurf(index)%otheta(j)) + gsurf(index)%os(j)&
+          *cos(gsurf(index)%otheta(j))*gsurf(index)%othetadot(j) + Zadot(j)
+  gsurf(index)%xzdot(j) = gsurf(index)%xsdot(j)*&
+          sin(gsurf(index)%xtheta(j)) + gsurf(index)%xs(j)&
+          *cos(gsurf(index)%xtheta(j))*gsurf(index)%xthetadot(j) + Zadot(j)
+  ! Calculate derivative of axis w.r.t x and y, variables are local
+  do i = 1, gsurf(index)%NF_axis
+     odRadx(j) = odRadx(j) + &
+             gsurf(index)%axisn(i)*gsurf(index)%axisrnc(i)*sin(gsurf(index)%axisn(i)*zeta(j))*gsurf(index)%oy(j) / &
+             ( gsurf(index)%ox(j)**2 * ( gsurf(index)%oy(j)**2/gsurf(index)%ox(j)**2 + 1 ) )
+     odRady(j) = odRady(j) - &
+             gsurf(index)%axisn(i)*gsurf(index)%axisrnc(i)*sin(gsurf(index)%axisn(i)*zeta(j)) / &
+             ( gsurf(index)%ox(j) * ( gsurf(index)%oy(j)**2/gsurf(index)%ox(j)**2 + 1 ) )
+     odZadx(j) = odZadx(j) - &
+             gsurf(index)%axisn(i)*gsurf(index)%axiszns(i)*cos(gsurf(index)%axisn(i)*zeta(j))*gsurf(index)%oy(j) / &
+             ( gsurf(index)%ox(j)**2 * ( gsurf(index)%oy(j)**2/gsurf(index)%ox(j)**2 + 1 ) )
+     odZady(j) = odZady(j) + &
+             gsurf(index)%axisn(i)*gsurf(index)%axiszns(i)*cos(gsurf(index)%axisn(i)*zeta(j)) / &
+             ( gsurf(index)%ox(j) * ( gsurf(index)%oy(j)**2/gsurf(index)%ox(j)**2 + 1 ) )
+     xdRadx(j) = xdRadx(j) + &
+             gsurf(index)%axisn(i)*gsurf(index)%axisrnc(i)*sin(gsurf(index)%axisn(i)*zeta(j))*gsurf(index)%xy(j) / &
+             ( gsurf(index)%xx(j)**2 * ( gsurf(index)%xy(j)**2/gsurf(index)%xx(j)**2 + 1 ) )
+     xdRady(j) = xdRady(j) - &
+             gsurf(index)%axisn(i)*gsurf(index)%axisrnc(i)*sin(gsurf(index)%axisn(i)*zeta(j)) / &
+             ( gsurf(index)%xx(j) * ( gsurf(index)%xy(j)**2/gsurf(index)%xx(j)**2 + 1 ) )
+     xdZadx(j) = xdZadx(j) - &
+             gsurf(index)%axisn(i)*gsurf(index)%axiszns(i)*cos(gsurf(index)%axisn(i)*zeta(j))*gsurf(index)%xy(j) / &
+             ( gsurf(index)%xx(j)**2 * ( gsurf(index)%xy(j)**2/gsurf(index)%xx(j)**2 + 1 ) )
+     xdZady(j) = xdZady(j) + &
+             gsurf(index)%axisn(i)*gsurf(index)%axiszns(i)*cos(gsurf(index)%axisn(i)*zeta(j)) / &
+             ( gsurf(index)%xx(j) * ( gsurf(index)%xy(j)**2/gsurf(index)%xx(j)**2 + 1 ) )
+  enddo 
+  ! Calculate contravariant basis, variables are local
+  gradosx(j) = ( sqrt( gsurf(index)%ox(j)**2 + gsurf(index)%oy(j)**2 ) - &
+          gsurf(index)%Ra(j) )*( (gsurf(index)%ox(j)**2 + &
+          gsurf(index)%oy(j)**2)**(-.5)*gsurf(index)%ox(j) - &
+          odRadx(j) )/gsurf(index)%os(j) - &
+          (gsurf(index)%oz(j) - gsurf(index)%Za(j))*odZadx(j)/gsurf(index)%os(j)
+  gradxsx(j) = ( sqrt( gsurf(index)%xx(j)**2 + gsurf(index)%xy(j)**2 ) - &
+          gsurf(index)%Ra(j) )*( (gsurf(index)%xx(j)**2 + &
+          gsurf(index)%xy(j)**2)**(-.5)*gsurf(index)%xx(j) - & 
+          xdRadx(j) )/gsurf(index)%xs(j) - &
+          (gsurf(index)%xz(j) - gsurf(index)%Za(j))*xdZadx(j)/gsurf(index)%xs(j)
+  gradosy(j) = ( sqrt( gsurf(index)%ox(j)**2 + gsurf(index)%oy(j)**2 ) - &
+          gsurf(index)%Ra(j) )*( (gsurf(index)%ox(j)**2 + &
+          gsurf(index)%oy(j)**2)**(-.5)*gsurf(index)%oy(j) - &
+          odRady(j) )/gsurf(index)%os(j) - &
+          (gsurf(index)%oz(j) - gsurf(index)%Za(j))*odZady(j)/gsurf(index)%os(j)
+  gradxsy(j) = ( sqrt( gsurf(index)%xx(j)**2 + gsurf(index)%xy(j)**2 ) - &
+          gsurf(index)%Ra(j) )*( (gsurf(index)%xx(j)**2 + &
+          gsurf(index)%xy(j)**2)**(-.5)*gsurf(index)%xy(j) - &
+          xdRady(j) )/gsurf(index)%xs(j) - &
+          (gsurf(index)%xz(j) - gsurf(index)%Za(j))*xdZady(j)/gsurf(index)%xs(j)
+  gradosz(j) = ( gsurf(index)%oz(j) - gsurf(index)%Za(j) )/gsurf(index)%os(j)
+  gradxsz(j) = ( gsurf(index)%xz(j) - gsurf(index)%Za(j) )/gsurf(index)%xs(j)
+  gradozetax(j) = -1.0*(gsurf(index)%oy(j)**2/gsurf(index)%ox(j)**2+1)**-1.0 * &
+          gsurf(index)%oy(j)/gsurf(index)%ox(j)**2
+  gradxzetax(j) = -1.0*(gsurf(index)%xy(j)**2/gsurf(index)%xx(j)**2+1)**-1.0 * &
+          gsurf(index)%xy(j)/gsurf(index)%xx(j)**2
+  gradozetay(j) = (gsurf(index)%oy(j)**2/gsurf(index)%ox(j)**2+1)**-1.0 * &
+          1.0/gsurf(index)%ox(j)
+  gradxzetay(j) = (gsurf(index)%xy(j)**2/gsurf(index)%xx(j)**2+1)**-1.0 * &
+          1.0/gsurf(index)%xx(j)
+  !gradozetaz(j) = 0.0
+  !gradxzetaz(j) = 0.0
+  gradothetax(j) = -1.0*( (gsurf(index)%oz(j)-gsurf(index)%Za(j)) * &
+          (sqrt(gsurf(index)%ox(j)**2+gsurf(index)%oy(j)**2) - gsurf(index)%Ra(j))**-2.0 * &
+          ( (gsurf(index)%ox(j)**2+gsurf(index)%oy(j)**2)**-.5 * gsurf(index)%ox(j) - odRadx(j) ) &
+          + odZadx(j) / (sqrt(gsurf(index)%ox(j)**2+gsurf(index)%oy(j)**2) &
+          - gsurf(index)%Ra(j)) ) / (tan(gsurf(index)%otheta(j))**2+1)
+  gradxthetax(j) = -1.0*( (gsurf(index)%xz(j)-gsurf(index)%Za(j)) * &
+          (sqrt(gsurf(index)%xx(j)**2+gsurf(index)%xy(j)**2) - gsurf(index)%Ra(j))**-2.0 * &
+          ( (gsurf(index)%xx(j)**2+gsurf(index)%xy(j)**2)**-.5 * gsurf(index)%xx(j) - xdRadx(j) ) &
+          + xdZadx(j) / (sqrt(gsurf(index)%xx(j)**2+gsurf(index)%xy(j)**2) &
+          - gsurf(index)%Ra(j)) ) / (tan(gsurf(index)%xtheta(j))**2+1)
+  gradothetay(j) = -1.0*( (gsurf(index)%oz(j)-gsurf(index)%Za(j)) * &
+          (sqrt(gsurf(index)%ox(j)**2+gsurf(index)%oy(j)**2) - gsurf(index)%Ra(j))**-2.0 * &
+          ( (gsurf(index)%ox(j)**2+gsurf(index)%oy(j)**2)**-.5 * gsurf(index)%oy(j) - odRady(j) ) &
+          + odZady(j) / (sqrt(gsurf(index)%ox(j)**2+gsurf(index)%oy(j)**2) &
+          - gsurf(index)%Ra(j)) ) / (tan(gsurf(index)%otheta(j))**2+1)
+  gradxthetay(j) = -1.0*( (gsurf(index)%xz(j)-gsurf(index)%Za(j)) * &
+          (sqrt(gsurf(index)%xx(j)**2+gsurf(index)%xy(j)**2) - gsurf(index)%Ra(j))**-2.0 * &
+          ( (gsurf(index)%xx(j)**2+gsurf(index)%xy(j)**2)**-.5 * gsurf(index)%xy(j) - xdRady(j) ) &
+          + xdZady(j) / (sqrt(gsurf(index)%xx(j)**2+gsurf(index)%xy(j)**2) &
+          - gsurf(index)%Ra(j)) ) / (tan(gsurf(index)%xtheta(j))**2+1)
+  gradothetaz(j) = ( (tan(gsurf(index)%otheta(j))**2+1) * &
+          ( sqrt(gsurf(index)%ox(j)**2+gsurf(index)%oy(j)**2) - gsurf(index)%Ra(j) ) )**-1.0
+  gradxthetaz(j) = ( (tan(gsurf(index)%xtheta(j))**2+1) * &
+          ( sqrt(gsurf(index)%xx(j)**2+gsurf(index)%xy(j)**2) - gsurf(index)%Ra(j) ) )**-1.0
+  ! Calculate field on stable field lines
+  do icoil = 1, Ncoils
+     call bfield0(icoil, gsurf(index)%ox(j), gsurf(index)%oy(j), gsurf(index)%oz(j), Bxhold, Byhold, Bzhold)
+     oBx(j) = oBx(j) + Bxhold
+     oBy(j) = oBy(j) + Byhold
+     oBz(j) = oBz(j) + Bzhold
+     call bfield0(icoil, gsurf(index)%xx(i), gsurf(index)%xy(i), gsurf(index)%xz(i), Bxhold, Byhold, Bzhold)
+     xBx(j) = xBx(j) + Bxhold
+     xBy(j) = xBy(j) + Byhold
+     xBz(j) = xBz(j) + Bzhold
+  enddo
   ! Calculate B^s, B^zeta, B^theta on stable field lines
-  gsurf(index)%obsups(1:Nseg_stable) = oBx(1:Nseg_stable)*gradosx(1:Nseg_stable) + &
-          oBy(1:Nseg_stable)*gradosy(1:Nseg_stable) + oBz(1:Nseg_stable)*gradosz(1:Nseg_stable)
-  gsurf(index)%xbsups(1:Nseg_stable) = xBx(1:Nseg_stable)*gradxsx(1:Nseg_stable) + &
-          xBy(1:Nseg_stable)*gradxsy(1:Nseg_stable) + xBz(1:Nseg_stable)*gradxsz(1:Nseg_stable)
-
-  gsurf(index)%obsupzeta(1:Nseg_stable) = oBx(1:Nseg_stable)*gradozetax(1:Nseg_stable) + &
-          oBy(1:Nseg_stable)*gradozetay(1:Nseg_stable) + oBz(1:Nseg_stable)*gradozetaz(1:Nseg_stable)
-  gsurf(index)%xbsupzeta(1:Nseg_stable) = xBx(1:Nseg_stable)*gradxzetax(1:Nseg_stable) + &
-          xBy(1:Nseg_stable)*gradxzetay(1:Nseg_stable) + xBz(1:Nseg_stable)*gradxzetaz(1:Nseg_stable)
-
-  gsurf(index)%obsuptheta(1:Nseg_stable) = oBx(1:Nseg_stable)*gradothetax(1:Nseg_stable) + &
-          oBy(1:Nseg_stable)*gradothetay(1:Nseg_stable) + oBz(1:Nseg_stable)*gradothetaz(1:Nseg_stable)
-  gsurf(index)%xbsuptheta(1:Nseg_stable) = xBx(1:Nseg_stable)*gradxthetax(1:Nseg_stable) + &
-          xBy(1:Nseg_stable)*gradxthetay(1:Nseg_stable) + xBz(1:Nseg_stable)*gradxthetaz(1:Nseg_stable)
-
+  gsurf(index)%obsups(j) = oBx(j)*gradosx(j) + &
+          oBy(j)*gradosy(j) + oBz(j)*gradosz(j)
+  gsurf(index)%xbsups(j) = xBx(j)*gradxsx(j) + &
+          xBy(j)*gradxsy(j) + xBz(j)*gradxsz(j)
+  gsurf(index)%obsupzeta(j) = oBx(j)*gradozetax(j) + &
+          oBy(j)*gradozetay(j) + oBz(j)*gradozetaz(j)
+  gsurf(index)%xbsupzeta(j) = xBx(j)*gradxzetax(j) + &
+          xBy(j)*gradxzetay(j) + xBz(j)*gradxzetaz(j)
+  gsurf(index)%obsuptheta(j) = oBx(j)*gradothetax(j) + &
+          oBy(j)*gradothetay(j) + oBz(j)*gradothetaz(j)
+  gsurf(index)%xbsuptheta(j) = xBx(j)*gradxthetax(j) + &
+          xBy(j)*gradxthetay(j) + xBz(j)*gradxthetaz(j)
   ! Calculate f,g and F
-  gsurf(index)%of(1:Nseg_stable) = gsurf(index)%obsups(1:Nseg_stable)/gsurf(index)%obsupzeta(1:Nseg_stable) - &
-          gsurf(index)%osdot(1:Nseg_stable)
-  gsurf(index)%xf(1:Nseg_stable) = gsurf(index)%xbsups(1:Nseg_stable)/gsurf(index)%xbsupzeta(1:Nseg_stable) - &
-          gsurf(index)%xsdot(1:Nseg_stable)
+  gsurf(index)%of(j) = gsurf(index)%obsups(j)/gsurf(index)%obsupzeta(j) - &
+          gsurf(index)%osdot(j)
+  gsurf(index)%xf(j) = gsurf(index)%xbsups(j)/gsurf(index)%xbsupzeta(j) - &
+          gsurf(index)%xsdot(j)
+  gsurf(index)%og(j) = gsurf(index)%obsuptheta(j)/gsurf(index)%obsupzeta(j) - &
+          gsurf(index)%othetadot(j)
+  gsurf(index)%xg(j) = gsurf(index)%xbsuptheta(j)/gsurf(index)%xbsupzeta(j) - &
+          gsurf(index)%xthetadot(j)
 
-  gsurf(index)%og(1:Nseg_stable) = gsurf(index)%obsuptheta(1:Nseg_stable)/gsurf(index)%obsupzeta(1:Nseg_stable) - &
-          gsurf(index)%othetadot(1:Nseg_stable)
-  gsurf(index)%xg(1:Nseg_stable) = gsurf(index)%xbsuptheta(1:Nseg_stable)/gsurf(index)%xbsupzeta(1:Nseg_stable) - &
-          gsurf(index)%xthetadot(1:Nseg_stable)
+  enddo ! end of unindented big loop
+
+  call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
+  call MPI_ALLREDUCE( MPI_IN_PLACE, gsurf(index)%of, Nseg_stable, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+  call MPI_ALLREDUCE( MPI_IN_PLACE, gsurf(index)%xf, Nseg_stable, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+  call MPI_ALLREDUCE( MPI_IN_PLACE, gsurf(index)%og, Nseg_stable, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+  call MPI_ALLREDUCE( MPI_IN_PLACE, gsurf(index)%xg, Nseg_stable, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
 
   gsurf(index)%F = 0.0
-  do i = 1, Nseg_stable-1
-     gsurf(index)%F = gsurf(index)%F + gsurf(index)%of(i)**2 + gsurf(index)%og(i)**2 + &
-             gsurf(index)%xf(i)**2 + gsurf(index)%xg(i)**2
+  do i = j, Nseg_stable-1
+     gsurf(index)%F = gsurf(index)%F + gsurf(index)%of(j)**2 + gsurf(index)%og(j)**2 + &
+             gsurf(index)%xf(j)**2 + gsurf(index)%xg(j)**2
   enddo
   gsurf(index)%F = pi2*q*gsurf(index)%F/(Nseg_stable-1)
 
   ! DALLOCATE
   DALLOCATE( zeta )
+  DALLOCATE( Radot )
+  DALLOCATE( Zadot )
   DALLOCATE( odRadx )
   DALLOCATE( odRady )
   DALLOCATE( odZadx )

@@ -182,8 +182,9 @@ subroutine rdstable(filename, index)
   gsurf(index)%xdof_stable(6*NF_stable+1:7*NF_stable) = gsurf(index)%xthetanc(1:NF_stable)
   gsurf(index)%xdof_stable(7*NF_stable+1:8*NF_stable) = gsurf(index)%xthetans(1:NF_stable)
 
-
-
+  gsurf(index)%iter_track = 1
+  SALLOCATE( gsurf(index)%xdof_stable_hold, (1:gsurf(index)%Ndof_stable), 0.0 )
+  gsurf(index)%xdof_stable_hold(1:gsurf(index)%Ndof_stable) = gsurf(index)%xdof_stable(1:gsurf(index)%Ndof_stable)
 
 
 
