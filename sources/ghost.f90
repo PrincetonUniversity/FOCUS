@@ -1026,7 +1026,7 @@ subroutine congrad_stable(index)
 
   INTEGER, INTENT(in)     :: index
   INTEGER                 :: ierr, astat, iter_stable, n_stable, nfunc_stable, ngrad_stable, status, &
-                             CG_maxiter_hold, NF_stable, j, cont
+                             CG_maxiter_hold, NF_stable, j, cont, num_steps
   REAL                    :: f_stable, f_hold, gnorm_stable, CG_xtol_hold, step, initial_step
   REAL, dimension(1:gsurf(index)%Ndof_stable) :: x_stable, g_stable, d_stable, xtemp_stable, gtemp_stable, &
                              x_hold
@@ -1076,7 +1076,7 @@ subroutine congrad_stable(index)
 
   !if(myid .eq. 0) write(ounit, '("congrad : Stable conjugate gradient finished.")')
 
-  initial_step = 1.0E-14
+  initial_step = 1.0E-15
   do j = 1, CG_maxiter
      call myvalue_stable(f_stable, x_stable, n_stable)
      call mygrad_stable(g_stable, x_stable, n_stable)
@@ -1085,10 +1085,10 @@ subroutine congrad_stable(index)
      f_hold = f_stable
      cont = 1
      if (myid == 0 ) write(ounit, '("Value of F:   "ES12.5)') f_stable
+     num_steps = 0
      do while (cont .eq. 1)
         x_stable(1:n_stable) = x_hold(1:n_stable) - step*g_stable(1:n_stable)
         call myvalue_stable(f_stable, x_stable, n_stable)
-        !if (myid == 0 ) write(ounit, '("Value of F:   "ES12.5)') f_stable
         if ( f_stable > f_hold ) then
            cont = 0
            x_stable(1:n_stable) = x_hold(1:n_stable) - step*g_stable(1:n_stable)/2.0
@@ -1096,7 +1096,9 @@ subroutine congrad_stable(index)
         endif
         f_hold = f_stable
         step = step*2.0
+        num_steps = num_steps + 1
      enddo
+     if (num_steps .eq. 1) exit
   enddo
   
   CG_maxiter = CG_maxiter_hold
