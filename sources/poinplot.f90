@@ -301,7 +301,6 @@ SUBROUTINE ppiota(rzrzt,iflag)
      phi_init = phi_stop
      phi_stop = phi_init + pi2/pp_nfp/pp_nsteps
      call ode( BRpZ_iota, n, rzrzt, phi_init, phi_stop, relerr, abserr, ifail, work, iwork )
-  enddo 
 
   if ( ifail /= 2 ) then     
      if ( IsQuiet < -1 ) then
@@ -318,8 +317,10 @@ SUBROUTINE ppiota(rzrzt,iflag)
         end select
      end if
      iflag = -1
+     return
      ! call MPI_ABORT( MPI_COMM_FAMUS, 1, ierr )
   end if
+  enddo 
 
   return
 END SUBROUTINE ppiota

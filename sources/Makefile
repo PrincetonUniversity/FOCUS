@@ -29,7 +29,7 @@
  LIBS=-I$(HDF5_HOME)/include
  LINKS=-L$(HDF5_HOME)/lib -lhdf5_fortran -lhdf5 -lpthread -lz -lm
 
- LMGRID = T
+ LMGRID = F
  ifeq ($(LMGRID),T)
    PFLAGS += -D mgrid_poincare
    LIBS += -I$(STELLOPT_PATH)/LIBSTELL/Release
@@ -48,7 +48,7 @@ endif
 
 #### EDDY Intel+IntelMPI+HDF5###############
 # available env: /home/caoxiang/Modules/focus/develop
-ifneq (,$(findstring eddy,$(HOSTNAME)))
+ifneq (,$(findstring stellar,$(HOSTNAME)))
  FC=mpiifort  # this is optional after recent updates
 endif
 

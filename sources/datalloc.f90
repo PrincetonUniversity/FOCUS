@@ -231,13 +231,13 @@ subroutine AllocData(itype)
            endif
            ND = DoF(icoil)%ND
            if(coil(icoil)%Lc /= 0) then
-              if (coil(icoil)%itype == 2) then  ! permanent magnets
+              if (coil(icoil)%itype == 2) then  ! permanent magnets                 
                  ! theta
-                 lowbound(idof+1) = 0
-                 upbound(idof+1) = pi
+                 lowbound(idof+1) = -0.087 + coil(icoil)%mt
+                 upbound(idof+1) = 0.087 + coil(icoil)%mt
                  ! phi
-                 lowbound(idof+2) = -pi
-                 upbound(idof+2) = pi                 
+                 lowbound(idof+2) = -0.087 + coil(icoil)%mp
+                 upbound(idof+2) = 0.087 + coil(icoil)%mp               
                  nbounds(idof+1:idof+ND)  =  2   
               endif
               idof = idof + ND
