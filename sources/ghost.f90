@@ -1019,7 +1019,7 @@ end subroutine calcfg_deriv
 subroutine congrad_stable(index)
   use globals, only: dp, sqrtmachprec, myid, ounit, CG_maxiter, CG_xtol, &
        exit_signal, tstart, tfinish, gsurf, output_use, CG_maxiter_s, &
-       CG_xtol_s, MPI_COMM_FOCUS
+       CG_xtol_s, machprec, MPI_COMM_FOCUS
   
   use mpi
   implicit none
@@ -1076,7 +1076,7 @@ subroutine congrad_stable(index)
 
   !if(myid .eq. 0) write(ounit, '("congrad : Stable conjugate gradient finished.")')
 
-  initial_step = 1.0E-15
+  initial_step = machprec
   do j = 1, CG_maxiter
      call myvalue_stable(f_stable, x_stable, n_stable)
      call mygrad_stable(g_stable, x_stable, n_stable)

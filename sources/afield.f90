@@ -3,30 +3,10 @@
 
 !latex \briefly{Computes magnetic vector potential field given coil geometry.}
 
-!latex \calledby{\link{bnormal}}
-!latex \calls{}
-
-!latex \tableofcontents
-
-!!latex \subsection{magnetic vector potential field}
-!!latex \bi
-!!latex \item The magnetic field of filamentary coils is calculated bt Biot-Savart Law, involving a line integral.
-!!latex J. Hanson and S. Hirshman had a better representation for straight segments to avoid unnecessary sigularities
-!!latex and improve numerical error at points neary the coil.
-!!latex \item But currently, we use the normal expression of Biot-Savart Law and derivatives of B with repsect to 
-!!latex x, y, z is also calculated.
-!!latex \item Later, error analysis and comparison to Hanson's method should be carried out. 
-!!latex \ei
-
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine afield0(icoil, x, y, z, tAx, tAy, tAz)
-!!------------------------------------------------------------------------------------------------------ 
-!! DATE:  06/15/2016; 03/26/2017
-!! calculate the magnetic field of icoil using manually discretized coils. 
-!! Biot-Savart constant and currents are not included for later simplication. 
-!! Be careful if coils have different resolutions.
-!!------------------------------------------------------------------------------------------------------   
+
   use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, cosnfp, sinnfp, &
                      zero, myid, ounit, Nfp, pi2, half, two, one, bsconstant, MPI_COMM_FOCUS
   use mpi
@@ -82,13 +62,9 @@ subroutine afield0(icoil, x, y, z, tAx, tAy, tAz)
               ltx = coil(icoil)%xt(kseg)                                        ! r_c'
               lty = coil(icoil)%yt(kseg)
               ltz = coil(icoil)%zt(kseg)
-              !absrp = sqrt( ltx**2 + lty**2 + ltz**2 )                          ! |r_c'|
-              !Ax = Ax + ( dlz*lty - dly*ltz ) * rm3 * coil(icoil)%dd(kseg)
-              !Ay = Ay + ( dlx*ltz - dlz*ltx ) * rm3 * coil(icoil)%dd(kseg)
-              !Az = Az + ( dly*ltx - dlx*lty ) * rm3 * coil(icoil)%dd(kseg)
-              Ax = Ax + ltx*coil(icoil)%dd(kseg)*rm1
-              Ay = Ay + lty*coil(icoil)%dd(kseg)*rm1
-              Az = Az + ltz*coil(icoil)%dd(kseg)*rm1
+              Ax = Ax + ltx*rm1
+              Ay = Ay + lty*rm1
+              Az = Az + ltz*rm1
            enddo    ! enddo kseg
            Ax = Ax * coil(icoil)%I * bsconstant
            Ay = Ay * coil(icoil)%I * bsconstant
@@ -117,12 +93,7 @@ end subroutine afield0
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine afield1(icoil, x, y, z, tAx, tAy, tAz, ND)
-!!------------------------------------------------------------------------------------------------------ 
-!! DATE:  06/15/2016; 03/26/2017
-!! calculate the magnetic field and the first dirivatives of icoil using manually discretized coils;
-!! Biot-Savart constant and currents are not included for later simplication;
-!! Discretizing factor is includeed; coil(icoil)%dd(kseg)
-!!------------------------------------------------------------------------------------------------------   
+
   use globals, only: dp, coil, DoF, surf, NFcoil, Ncoils, Nteta, Nzeta, &
                      zero, myid, ounit, Nfp, one, bsconstant, cosnfp, sinnfp, MPI_COMM_FOCUS
   use mpi
@@ -188,25 +159,15 @@ subroutine afield1(icoil, x, y, z, tAx, tAy, tAz, ND)
               ltz = coil(icoil)%zt(kseg)
               dots = -1.0*dlx*ltx + -1.0*dly*lty + -1.0*dlz*ltz                            ! (r_c-r) dot r_c'
 
-              !dBxx(1,kseg) = ( 3*(dlz*lty-dly*ltz)*dlx*rm5                             ) * coil(icoil)%dd(kseg) !Bx/x
-              !dBxy(1,kseg) = ( 3*(dlz*lty-dly*ltz)*dly*rm5 - 3*dlz*rxp*rm5 + 2*ltz*rm3 ) * coil(icoil)%dd(kseg) !Bx/y
-              !dBxz(1,kseg) = ( 3*(dlz*lty-dly*ltz)*dlz*rm5 + 3*dly*rxp*rm5 - 2*lty*rm3 ) * coil(icoil)%dd(kseg) !Bx/z
-              !dByx(1,kseg) = ( 3*(dlx*ltz-dlz*ltx)*dlx*rm5 + 3*dlz*rxp*rm5 - 2*ltz*rm3 ) * coil(icoil)%dd(kseg) !By/x
-              !dByy(1,kseg) = ( 3*(dlx*ltz-dlz*ltx)*dly*rm5                             ) * coil(icoil)%dd(kseg) !By/y
-              !dByz(1,kseg) = ( 3*(dlx*ltz-dlz*ltx)*dlz*rm5 - 3*dlx*rxp*rm5 + 2*ltx*rm3 ) * coil(icoil)%dd(kseg) !By/z
-              !dBzx(1,kseg) = ( 3*(dly*ltx-dlx*lty)*dlx*rm5 - 3*dly*rxp*rm5 + 2*lty*rm3 ) * coil(icoil)%dd(kseg) !Bz/x
-              !dBzy(1,kseg) = ( 3*(dly*ltx-dlx*lty)*dly*rm5 + 3*dlx*rxp*rm5 - 2*ltx*rm3 ) * coil(icoil)%dd(kseg) !Bz/y
-              !dBzz(1,kseg) = ( 3*(dly*ltx-dlx*lty)*dlz*rm5                             ) * coil(icoil)%dd(kseg) !Bz/z
-              
-              dAxx(1,kseg) = ( rm3*dlx*ltx + rm3*dots ) * coil(icoil)%dd(kseg) !Ax/x
-              dAxy(1,kseg) = ( rm3*dly*ltx )            * coil(icoil)%dd(kseg) !Ax/y
-              dAxz(1,kseg) = ( rm3*dlz*ltx )            * coil(icoil)%dd(kseg) !Ax/z
-              dAyx(1,kseg) = ( rm3*dlx*lty )            * coil(icoil)%dd(kseg) !Ay/x
-              dAyy(1,kseg) = ( rm3*dly*lty + rm3*dots ) * coil(icoil)%dd(kseg) !Ay/y
-              dAyz(1,kseg) = ( rm3*dlz*lty )            * coil(icoil)%dd(kseg) !Ay/z
-              dAzx(1,kseg) = ( rm3*dlx*ltz )            * coil(icoil)%dd(kseg) !Az/x
-              dAzy(1,kseg) = ( rm3*dly*ltz )            * coil(icoil)%dd(kseg) !Az/y
-              dAzz(1,kseg) = ( rm3*dlz*ltz + rm3*dots ) * coil(icoil)%dd(kseg) !Az/z
+              dAxx(1,kseg) = ( rm3*dlx*ltx + rm3*dots ) !Ax/x
+              dAxy(1,kseg) = ( rm3*dly*ltx )            !Ax/y
+              dAxz(1,kseg) = ( rm3*dlz*ltx )            !Ax/z
+              dAyx(1,kseg) = ( rm3*dlx*lty )            !Ay/x
+              dAyy(1,kseg) = ( rm3*dly*lty + rm3*dots ) !Ay/y
+              dAyz(1,kseg) = ( rm3*dlz*lty )            !Ay/z
+              dAzx(1,kseg) = ( rm3*dlx*ltz )            !Az/x
+              dAzy(1,kseg) = ( rm3*dly*ltz )            !Az/y
+              dAzz(1,kseg) = ( rm3*dlz*ltz + rm3*dots ) !Az/z
            enddo    ! enddo kseg
            ! db/dv = dB/dx * dx/dv  v->variables
            Ax(1:1, 1:ND) = matmul(dAxx, DoF(icoil)%xof) + matmul(dAxy, DoF(icoil)%yof) + matmul(dAxz, DoF(icoil)%zof)
@@ -235,3 +196,73 @@ subroutine afield1(icoil, x, y, z, tAx, tAy, tAz, ND)
   return
 
 end subroutine afield1
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+subroutine deltaafield(icoil, x, y, z, dAxx, dAxy, dAxz, dAyx, dAyy, dAyz, dAzx, dAzy, dAzz)
+
+  use globals, only: dp, coil, DoF, surf, NFcoil, Ncoils, Nteta, Nzeta, &
+                     zero, myid, ounit, Nfp, one, bsconstant, cosnfp, sinnfp, MPI_COMM_FOCUS
+  use mpi
+  implicit none
+
+  INTEGER, intent(in) :: icoil
+  REAL,    intent(in) :: x, y, z
+  REAL, dimension(1:coil(icoil)%NS), intent(out) :: dAxx, dAxy, dAxz, dAyx, dAyy, dAyz, dAzx, dAzy, dAzz
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+  INTEGER              :: ierr, astat, kseg, NS, ip, is, cs, Npc
+  REAL                 :: dlx, dly, dlz, r2, rm3, m_dot_r, ltx, lty, ltz, dots, &
+                          sinp, sint, cosp, cost, mx, my, mz, xx, yy, zz
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+  
+  FATAL( deltaafield, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
+
+  dlx = zero ; dly = zero ; dlz = zero
+  ltx = zero ; lty = zero ; ltz = zero
+
+  xx = x
+  yy = y
+  zz = z
+
+  select case (coil(icoil)%type)
+  ! Fourier coils
+  case(1)
+     NS = coil(icoil)%NS
+     ! Should be vectorized
+     do kseg = 1, NS
+        dlx = xx - coil(icoil)%xx(kseg)                                              ! r-r_c
+        dly = yy - coil(icoil)%yy(kseg)
+        dlz = zz - coil(icoil)%zz(kseg)
+        r2 = dlx**2 + dly**2 + dlz**2 
+        rm3 = one/(sqrt(r2)*r2)                                                      ! |r_c-r|^-1
+        ltx = coil(icoil)%xt(kseg)                                                   ! r_c'
+        lty = coil(icoil)%yt(kseg)
+        ltz = coil(icoil)%zt(kseg)
+        dots = -1.0*dlx*ltx + -1.0*dly*lty + -1.0*dlz*ltz                            ! (r_c-r) dot r_c'
+
+        dAxx(kseg) = coil(icoil)%I*bsconstant*( rm3*dlx*ltx + rm3*dots ) !Ax/x
+        dAxy(kseg) = coil(icoil)%I*bsconstant*( rm3*dly*ltx )            !Ax/y
+        dAxz(kseg) = coil(icoil)%I*bsconstant*( rm3*dlz*ltx )            !Ax/z
+        dAyx(kseg) = coil(icoil)%I*bsconstant*( rm3*dlx*lty )            !Ay/x
+        dAyy(kseg) = coil(icoil)%I*bsconstant*( rm3*dly*lty + rm3*dots ) !Ay/y
+        dAyz(kseg) = coil(icoil)%I*bsconstant*( rm3*dlz*lty )            !Ay/z
+        dAzx(kseg) = coil(icoil)%I*bsconstant*( rm3*dlx*ltz )            !Az/x
+        dAzy(kseg) = coil(icoil)%I*bsconstant*( rm3*dly*ltz )            !Az/y
+        dAzz(kseg) = coil(icoil)%I*bsconstant*( rm3*dlz*ltz + rm3*dots ) !Az/z
+     enddo
+  ! Magnetic dipoles 
+  case(2)
+     FATAL(deltaafield, .true., not supported coil types)
+  ! toroidal field and verticle field
+  case(3)
+     FATAL(deltaafield, .true., not supported coil types)
+  case default
+     FATAL(deltaafield, .true., not supported coil types)
+  end select
+
+  return
+
+end subroutine deltaafield

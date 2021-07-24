@@ -9,16 +9,18 @@ SUBROUTINE diagnos
        Nteta, Nzeta, bnorm, resbn, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
        cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, Nfp, weight_bnorm, overlap, plasma, &
        cosnfp, sinnfp, symmetry, discretefactor, MPI_COMM_FOCUS, surf_Nfp, curv, case_curv, tors, nis, &
-       weight_nis
+       weight_nis, weight_resbn, gsurf, resbn_m, pi2, rcflux_use
   use mpi
   implicit none
 
-  INTEGER           :: icoil, itmp, astat, ierr, NF, idof, i, j, isurf, cs, ip, is, Npc, coilInd0, coilInd1
+  INTEGER           :: icoil, itmp, astat, ierr, NF, idof, i, j, isurf, cs, ip, is, Npc, coilInd0, coilInd1, NS
   LOGICAL           :: lwbnorm, l_raw
   REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist, ReDot, ImDot, dum, AvgCurv, AvgTors, &
-                       MinLambda, MaxS, torsRet
+                       MinLambda, MaxS, torsRet, normdpsidr, island_tol
   REAL, parameter   :: infmax = 1.0E6
   REAL, allocatable :: Atmp(:,:), Btmp(:,:)
+  REAL, dimension(1:coil(1)%NS) :: dAxx, dAxy, dAxz, dAyx, dAyy, dAyz, dAzx, dAzy, dAzz
+  REAL, dimension(1:Ncoils,1:coil(1)%NS) :: absdpsidr
 
   isurf = plasma
   itmp = 0
@@ -251,7 +253,7 @@ SUBROUTINE diagnos
   if(myid .eq. 0) then
      write(ounit, '(8X": The minimum coil-plasma distance is    :" ES23.15 &
           " ; at coil " I3)') minCPdist, itmp
-     if (minCPdist < 0.1) then
+     if (minCPdist < 0.01) then
         write(ounit, '(8X":-----------WARNING!!!-------------------------")')
         write(ounit, '(8X": Initial coils might intersect with the plasma")')
         write(ounit, '(8X":----------------------------------------------")') 
@@ -266,6 +268,45 @@ SUBROUTINE diagnos
      overlap = sqrt( (ReDot*ReDot + ImDot*ImDot) &
                  / ( (sum(Bmnc*Bmnc)+sum(Bmns*Bmns)) * (sum(tBmnc*tBmnc)+sum(tBmns*tBmns)) ) )
      if(myid .eq. 0) write(ounit, '(8X": Overlap of the realized Bn harmonics is:" F8.3 " %")') 100*overlap
+  endif
+
+  !--------------------------------island width tolerance---------------------------------------  
+  if (weight_resbn > sqrtmachprec .and. rcflux_use .eq. 1) then
+     SALLOCATE( gsurf(1)%dpsidx, (1:Ncoils,1:coil(1)%NS) , 0.0)
+     SALLOCATE( gsurf(1)%dpsidy, (1:Ncoils,1:coil(1)%NS) , 0.0)
+     SALLOCATE( gsurf(1)%dpsidz, (1:Ncoils,1:coil(1)%NS) , 0.0)
+     do icoil = 1, Ncoils
+        NS = coil(icoil)%NS
+        FATAL( diagnos, coil(1)%NS .ne. NS, coils with dif resolution breaks island tolerance calculation) 
+        do i = 1, gsurf(1)%Nseg_stable-1
+           call deltaafield(icoil, gsurf(1)%ox(i), gsurf(1)%oy(i), gsurf(1)%oz(i), dAxx, dAxy, dAxz, dAyx, dAyy, dAyz, dAzx, dAzy, dAzz)
+           gsurf(1)%dpsidx(icoil,1:NS) = gsurf(1)%dpsidx(icoil,1:NS) + dAxx(1:NS)*gsurf(1)%oxdot(i) &
+                   + dAyx(1:NS)*gsurf(1)%oydot(i) + dAzx(1:NS)*gsurf(1)%ozdot(i)
+           gsurf(1)%dpsidy(icoil,1:NS) = gsurf(1)%dpsidy(icoil,1:NS) + dAxy(1:NS)*gsurf(1)%oxdot(i) &
+                   + dAyy(1:NS)*gsurf(1)%oydot(i) + dAzy(1:NS)*gsurf(1)%ozdot(i)
+           gsurf(1)%dpsidz(icoil,1:NS) = gsurf(1)%dpsidz(icoil,1:NS) + dAxz(1:NS)*gsurf(1)%oxdot(i) &
+                   + dAyz(1:NS)*gsurf(1)%oydot(i) + dAzz(1:NS)*gsurf(1)%ozdot(i)
+           call deltaafield(icoil, gsurf(1)%xx(i), gsurf(1)%xy(i), gsurf(1)%xz(i), dAxx, dAxy, dAxz, dAyx, dAyy, dAyz, dAzx, dAzy, dAzz)
+           gsurf(1)%dpsidx(icoil,1:NS) = gsurf(1)%dpsidx(icoil,1:NS) - dAxx(1:NS)*gsurf(1)%xxdot(i) &
+                   - dAyx(1:NS)*gsurf(1)%xydot(i) - dAzx(1:NS)*gsurf(1)%xzdot(i)
+           gsurf(1)%dpsidy(icoil,1:NS) = gsurf(1)%dpsidy(icoil,1:NS) - dAxy(1:NS)*gsurf(1)%xxdot(i) &
+                   - dAyy(1:NS)*gsurf(1)%xydot(i) - dAzy(1:NS)*gsurf(1)%xzdot(i)
+           gsurf(1)%dpsidz(icoil,1:NS) = gsurf(1)%dpsidz(icoil,1:NS) - dAxz(1:NS)*gsurf(1)%xxdot(i) &
+                   - dAyz(1:NS)*gsurf(1)%xydot(i) - dAzz(1:NS)*gsurf(1)%xzdot(i)
+        enddo
+        gsurf(1)%dpsidx(icoil,1:NS) = pi2*resbn_m*gsurf(1)%dpsidx(icoil,1:NS)/(gsurf(1)%Nseg_stable-1)
+        gsurf(1)%dpsidy(icoil,1:NS) = pi2*resbn_m*gsurf(1)%dpsidy(icoil,1:NS)/(gsurf(1)%Nseg_stable-1)
+        gsurf(1)%dpsidz(icoil,1:NS) = pi2*resbn_m*gsurf(1)%dpsidz(icoil,1:NS)/(gsurf(1)%Nseg_stable-1)
+     enddo
+     absdpsidr(1:Ncoils,1:NS) = sqrt( gsurf(1)%dpsidx(1:Ncoils,1:NS)**2 + &
+             gsurf(1)%dpsidy(1:Ncoils,1:NS)**2 + gsurf(1)%dpsidz(1:Ncoils,1:NS)**2 )
+     normdpsidr = 0.0
+     do icoil = 1, Ncoils
+        normdpsidr = normdpsidr + pi2*sum(absdpsidr(icoil,1:NS-1))/(NS-1)
+     enddo
+     island_tol = 8.0*1.0E-3/normdpsidr
+     !island_tol = 8.0*deltapsi/normdpsidr ! Factor of 8 comes from SS, change later
+     if(myid .eq. 0) write(ounit, '(8X": Coil tolerance from island is: "ES12.5"mm")') island_tol/1000.0
   endif
 
   !--------------------------------calculate the average Bn error-------------------------------
@@ -311,7 +352,7 @@ END SUBROUTINE diagnos
 
 subroutine avgcurvature(icoil)
 
-  use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils
+  use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Ncoils
   implicit none
   include "mpif.h"
 
@@ -368,7 +409,7 @@ end subroutine mindist
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine importance(icoil)
-  use globals, only: dp,  zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils, &
+  use globals, only: dp,  zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Ncoils, &
                      surf, Nteta, Nzeta, bsconstant, coil_importance, plasma, MPI_COMM_FOCUS
   implicit none
   include "mpif.h"

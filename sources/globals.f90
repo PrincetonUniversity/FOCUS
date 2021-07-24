@@ -384,9 +384,9 @@ module globals
                              xz(:), of(:), og(:), xf(:), xg(:), oxdot(:), oydot(:), ozdot(:), &
                              xxdot(:), xydot(:), xzdot(:), obsups(:), obsupzeta(:), obsuptheta(:),&
                              xbsups(:), xbsupzeta(:), xbsuptheta(:), xdof_stable(:), &
-                             dFdxdof_stable(:), xdof_stable_hold(:)
+                             dFdxdof_stable(:), xdof_stable_hold(:), dpsidx(:,:), dpsidy(:,:), &
+                             dpsidz(:,:)
      REAL                 :: F
-     ! Put in variables for discritized curves, and discritized ghost surface
   end type ghostsurface
   
   type(arbitrarycoil)  , target, allocatable :: coil(:)  
