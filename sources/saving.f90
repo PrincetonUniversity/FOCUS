@@ -240,9 +240,9 @@ subroutine saving
      HWRITERV( Nseg_stable      , xbsupzeta , gsurf(1)%xbsupzeta(1:Nseg_stable)  )
      HWRITERV( Nseg_stable      , xbsuptheta, gsurf(1)%xbsuptheta(1:Nseg_stable) )
      HWRITERV( 1                , F             , gsurf(1)%F                     )
-     HWRITERV( Ncoils,coil(1)%Nseg, dpsidx, gsurf(1)%dpsidx(1:Ncoils,1:coil(1)%Nseg) )
-     HWRITERV( Ncoils,coil(1)%Nseg, dpsidy, gsurf(1)%dpsidy(1:Ncoils,1:coil(1)%Nseg) )
-     HWRITERV( Ncoils,coil(1)%Nseg, dpsidz, gsurf(1)%dpsidz(1:Ncoils,1:coil(1)%Nseg) )
+     HWRITERA( Ncoils,coil(1)%NS, dpsidx, gsurf(1)%dpsidx(1:Ncoils,1:coil(1)%NS) )
+     HWRITERA( Ncoils,coil(1)%NS, dpsidy, gsurf(1)%dpsidy(1:Ncoils,1:coil(1)%NS) )
+     HWRITERA( Ncoils,coil(1)%NS, dpsidz, gsurf(1)%dpsidz(1:Ncoils,1:coil(1)%NS) )
   endif
 
   if (allocated(LM_fvec)) then

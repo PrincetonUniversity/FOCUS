@@ -304,8 +304,8 @@ SUBROUTINE diagnos
      do icoil = 1, Ncoils
         normdpsidr = normdpsidr + pi2*sum(absdpsidr(icoil,1:NS-1))/(NS-1)
      enddo
-     island_tol = 8.0*1.0E-3/normdpsidr
-     !island_tol = 8.0*deltapsi/normdpsidr ! Factor of 8 comes from SS, change later
+     island_tol = 1.0E-3/(normdpsidr*8.0)
+     !island_tol = deltapsi/(normdpsidr*8.0) ! Factor of 8 comes from SS, change later
      if(myid .eq. 0) write(ounit, '(8X": Coil tolerance from island is: "ES12.5"mm")') island_tol/1000.0
   endif
 
