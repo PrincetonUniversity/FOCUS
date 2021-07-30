@@ -251,7 +251,6 @@ SUBROUTINE axis_fcn(n,x,fvec,iflag)
      phi_init = phi_stop
      phi_stop = phi_init + pi2/pp_nfp/pp_nsteps
      call ode( BRpZ, n, rz_end, phi_init, phi_stop, relerr, abserr, ifail, work, iwork )
-  enddo 
 
   if ( ifail /= 2 ) then     
      if ( myid==0 .and. IsQuiet < 0 ) then
@@ -270,6 +269,7 @@ SUBROUTINE axis_fcn(n,x,fvec,iflag)
      iflag = -1
      ! call MPI_ABORT( MPI_COMM_FAMUS, 1, ierr )
   end if
+  enddo 
 
   fvec = rz_end - x
 
