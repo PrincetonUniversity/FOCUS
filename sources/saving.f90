@@ -18,6 +18,7 @@
 subroutine saving
 
   use globals
+  use poincare_mod
   use mpi
   use hdf5
 
@@ -158,6 +159,10 @@ subroutine saving
   HWRITEIV( 1                ,   case_bnormal  ,   case_bnormal                  )
   HWRITEIV( 1                ,   case_length   ,   case_length                   )
   HWRITERV( 1                ,   weight_bnorm  ,   weight_bnorm                  )
+  HWRITERV( 1                ,   weight_resbn  ,   weight_resbn                  )
+  HWRITERV( 1                ,   target_resbn  ,   target_resbn                  )
+  HWRITEIV( 1                ,   resbn_m       ,   resbn_m                       )
+  HWRITEIV( 1                ,   resbn_n       ,   resbn_n                       )
   HWRITERV( 1                ,   weight_bharm  ,   weight_bharm                  )
   HWRITERV( 1                ,   weight_tflux  ,   weight_tflux                  )
   HWRITERV( 1                ,   target_tflux  ,   target_tflux                  )
@@ -168,6 +173,7 @@ subroutine saving
   HWRITERV( 1                ,   weight_gnorm  ,   weight_gnorm                  )
   HWRITERV( 1                ,   weight_inorm  ,   weight_inorm                  )
   HWRITERV( 1                ,   weight_mnorm  ,   weight_mnorm                  )
+  HWRITERV( 1                ,   normalized_B  ,   normalized_B                    )
   HWRITERV( 1                ,   DF_tausta     ,   DF_tausta                     )
   HWRITERV( 1                ,   DF_tauend     ,   DF_tauend                     )
   HWRITERV( 1                ,   DF_xtol       ,   DF_xtol                       )
@@ -192,7 +198,9 @@ subroutine saving
   HWRITERV( 1                ,   pp_xtol       ,   pp_xtol                       )
 
   HWRITEIV( 1                ,   Nfp           ,   Nfp_raw                         )
+  HWRITEIV( 1                ,   symm_factor   ,   symm_factor                     )
   HWRITERV( 1                ,   surf_vol      ,   surf(1)%vol                     )
+  HWRITERV( 1                ,   surf_area     ,   surf(1)%area                    )
   HWRITERA( Nteta,Nzeta      ,   xsurf         ,   surf(1)%xx(0:Nteta-1,0:Nzeta-1) )
   HWRITERA( Nteta,Nzeta      ,   ysurf         ,   surf(1)%yy(0:Nteta-1,0:Nzeta-1) )
   HWRITERA( Nteta,Nzeta      ,   zsurf         ,   surf(1)%zz(0:Nteta-1,0:Nzeta-1) )
@@ -207,6 +215,11 @@ subroutine saving
      HWRITERA( Nteta,Nzeta      ,   Bx            ,   surf(1)%Bx(0:Nteta-1,0:Nzeta-1) )
      HWRITERA( Nteta,Nzeta      ,   By            ,   surf(1)%By(0:Nteta-1,0:Nzeta-1) )
      HWRITERA( Nteta,Nzeta      ,   Bz            ,   surf(1)%Bz(0:Nteta-1,0:Nzeta-1) )
+     HWRITERV( 1                ,   chi2b         ,   bnorm                           )
+     HWRITERV( 1                ,   resbn         ,   resbn                           )
+     HWRITERV( 1                ,   resbn_bnc     ,   resbn_bnc                       )
+     HWRITERV( 1                ,   resbn_bns     ,   resbn_bns                       )     
+     HWRITERV( 1                ,   normalized_Bn ,   bn_norm_b                       )
   endif
 
   HWRITEIV( 1                ,   iout          ,   iout                          )
@@ -324,7 +337,8 @@ SUBROUTINE write_plasma
   use globals, only : dp, zero, half, two, pi, pi2, myid, ncpu, ounit, wunit, ext, &
                       Nfou, Nfp, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
                       Nteta, Nzeta, surf, Nfp_raw, bnorm, sqrtmachprec, out_plasma, &
-                      discretefactor, shift, IsSymmetric, MPI_COMM_FAMUS
+                      discretefactor, shift, IsSymmetric, MPI_COMM_FAMUS, & 
+                      Pmnc, Pmns, case_surface
   
   implicit none  
   include "mpif.h"
@@ -401,20 +415,30 @@ SUBROUTINE write_plasma
   write(wunit,'(3I6)' ) Nfou, Nfp_raw, Nbnf
 
   write(wunit,*      ) "#------- plasma boundary------"
-  write(wunit,*      ) "#  n   m   Rbc   Rbs    Zbc   Zbs"
-  do imn = 1, Nfou
-     write(wunit,'(2I6, 4ES15.6)') bin(imn)/Nfp_raw, bim(imn), Rbc(imn), Rbs(imn), Zbc(imn), Zbs(imn)
-  enddo
+  if (case_surface == 0) then 
+      write(wunit,*      ) "#  n   m   Rbc   Rbs    Zbc   Zbs"
+      do imn = 1, Nfou
+         write(wunit,'(2I6, 4ES15.6)') bin(imn)/Nfp_raw, bim(imn), Rbc(imn), Rbs(imn), Zbc(imn), Zbs(imn)
+      enddo
+   else if (case_surface == 2) then
+      write(wunit,*      ) "#  n   m   Rbc   Rbs    Zbc   Zbs  Pmnc  Pmns"
+      do imn = 1, Nfou
+         write(wunit,'(2I6, 6ES15.6)') bin(imn)/Nfp_raw, bim(imn), Rbc(imn), Rbs(imn), & 
+            & Zbc(imn), Zbs(imn), Pmnc(imn), Pmns(imn)
+      enddo      
+   endif 
 
   write(wunit,*      ) "#-------Bn harmonics----------"
   write(wunit,*      ) "#  n  m  bnc   bns"
   if (Nbnf .gt. 0) then
      do imn = 1, Nbnf
-        write(wunit,'(2I6, 2ES15.6)') bnin(imn)/(Nfp_raw/nfp), bnim(imn), bnc(imn), bns(imn)
+        write(wunit,'(2I6, 2ES15.6)') bnin(imn)/(Nfp_raw/nfp), bnim(imn), -bnc(imn), -bns(imn)
      enddo
   else
      write(wunit,'(2I6, 2ES15.6)') 0, 0, 0.0, 0.0
   endif
+
+  write(ounit, *) "The sign of Bn has been flipped. You can now directly use it in FAMUS."
 
   close(wunit)
 END SUBROUTINE write_plasma

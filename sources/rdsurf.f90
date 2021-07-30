@@ -64,10 +64,10 @@
 
 subroutine fousurf
   
-  use globals, only : dp, zero, half, pi2, myid, ounit, runit, input_surf, IsQuiet, IsSymmetric, &
+  use globals, only : dp, zero, half, pi2, pi, myid, ounit, runit, input_surf, IsQuiet, IsSymmetric, &
                       Nfou, Nfp, NBnf, bim, bin, Bnim, Bnin, Rbc, Rbs, Zbc, Zbs, Bnc, Bns,  &
                       Nteta, Nzeta, surf, discretefactor, Nfp_raw, cosnfp, sinnfp, &
-                      half_shift, shift, MPI_COMM_FAMUS
+                      half_shift, shift, MPI_COMM_FAMUS, symm_factor
   
   implicit none
   
@@ -191,6 +191,7 @@ subroutine fousurf
      symmetry = 1     
   end select
   ! discretefactor = discretefactor/Nfp
+  symm_factor = nfp * 2**symmetry
 
   SALLOCATE( cosnfp, (1:Nfp_raw), zero )
   SALLOCATE( sinnfp, (1:Nfp_raw), zero )  
@@ -222,6 +223,7 @@ subroutine fousurf
   SALLOCATE( surf(1)%zp, (0:Nteta-1,0:Nzeta-1), zero ) !dz/dzeta;
   
   surf(1)%vol = zero  ! volume enclosed by plasma boundary
+  surf(1)%area = zero ! surface area
  
   discretefactor = (pi2/surf(1)%Nteta) * (pi2/surf(1)%Nzeta)
 
@@ -287,13 +289,21 @@ subroutine fousurf
         surf(1)%ds(ii,jj) =         dd
 
         ! using Gauss theorom; V = \int_S x \cdot n dt dz
-        surf(1)%vol = surf(1)%vol + surf(1)%xx(ii,jj) * ds(1) + surf(1)%yy(ii,jj) * ds(2) + surf(1)%zz(ii,jj) * ds(3)
+        surf(1)%vol = surf(1)%vol + surf(1)%xx(ii,jj) * ds(1) &
+                                  + surf(1)%yy(ii,jj) * ds(2) &
+                                  + surf(1)%zz(ii,jj) * ds(3)
+        surf(1)%area = surf(1)%area + surf(1)%ds(ii, jj)
 
      enddo ! end of do jj; 14 Apr 16;
   enddo ! end of do ii; 14 Apr 16;
 
-  surf(1)%vol = abs(surf(1)%vol) * discretefactor * Nfp * 2**symmetry 
-  if( myid == 0 .and. IsQuiet <= 0) write(ounit, '(8X": Enclosed volume ="ES12.5" m^3 ;" )') surf(1)%vol
+  surf(1)%vol = abs(surf(1)%vol)/3 * discretefactor * Nfp * 2**symmetry 
+  surf(1)%area = surf(1)%area * discretefactor * Nfp * 2**symmetry 
+ 
+  if (myid == 0 .and. IsQuiet <= 0) then
+      write (ounit, '(8X": Enclosed total surface volume ="ES12.5" m^3 ; area ="ES12.5" m^2." )') &
+         surf(1)%vol, surf(1)%area
+  endif
 
   !calculate target Bn with input harmonics; 05 Jan 17;
   if(NBnf >  0) then
@@ -307,7 +317,6 @@ subroutine fousurf
            enddo
         enddo
      enddo
-
   endif
   
   return

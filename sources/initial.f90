@@ -303,10 +303,15 @@ subroutine check_input
      FATAL( initial, weight_bnorm  < zero, illegal )
      FATAL( initial, weight_bharm  < zero, illegal )
      FATAL( initial, weight_tflux  < zero, illegal )
-     FATAL( initial, weight_ttlen  < zero, illegal )
-     FATAL( initial, weight_specw  < zero, illegal )
-     FATAL( initial, weight_ccsep  < zero, illegal )
-     FATAL( initial, weight_cssep  < zero, illegal )
+     FATAL( initial, weight_dpbin  < zero, illegal )
+     FATAL( initial, weight_pmvol  < zero, illegal )
+     FATAL( initial, weight_pmsum  < zero, illegal )
+     FATAL( initial, weight_resbn  < zero, illegal )
+
+     if (weight_resbn > machprec) then
+        write(ounit, '("Res. Bn : resbn_m = ", I2," , resbn_n = ", I2)') resbn_m, resbn_n
+        write(ounit, '(8X, ": target_resbn = ", ES12.5)') target_resbn
+     endif
 
      select case ( case_postproc )
      case ( 0 )
@@ -376,7 +381,8 @@ end subroutine check_input
 SUBROUTINE write_namelist
   use globals
   use ncsx_ports_mod, only: ncsx_ports
-  use mgrid_mod
+  use mgrid_focus
+  use poincare_mod
   use mpi
   implicit none
 
@@ -389,6 +395,7 @@ SUBROUTINE write_namelist
   open(wunit, file=trim(example), status='unknown', action='write')
   write(wunit, focusin)
   write(wunit, mgrid)
+  write(wunit, poincare)
   write(wunit, ncsx_ports)
   close(wunit)
 

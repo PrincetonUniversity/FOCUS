@@ -1,10 +1,11 @@
 ! write binary mgrid file
-module mgrid_mod
+module mgrid_focus
   use globals, only : dp, zero, pi2
   INTEGER :: NR = 101, NZ=101, NP=72, MFP=0
   REAL    :: Rmin=zero, Rmax=zero, Zmin=zero, Zmax=zero, Pmin=zero, Pmax=pi2
-  namelist / mgrid / Rmin, Rmax, Zmin, Zmax, Pmin, Pmax, NR, NZ, NP
-end module mgrid_mod
+  CHARACTER(LEN=100) :: mgrid_name = 'none'
+  namelist / mgrid / Rmin, Rmax, Zmin, Zmax, Pmin, Pmax, NR, NZ, NP, MFP, mgrid_name
+end module mgrid_focus
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -12,7 +13,7 @@ subroutine wtmgrid
   use globals, only : dp, zero, half, pi2, ext, ncpu, myid, ounit, wunit, runit, nfp_raw,  &
        sqrtmachprec, master, nmaster, nworker, masterid, color, myworkid, &
        MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS, MPI_COMM_FAMUS
-  use mgrid_mod
+  use mgrid_focus
   implicit none
   include "mpif.h"
 
@@ -23,7 +24,6 @@ subroutine wtmgrid
   REAL                 :: RpZ(1:3), R, P, Z, B(1:3), pressure, gap, &
        czeta, szeta, xx, yy, zz, dx, dy, dz, dBx, dBy, dBz
   REAL, allocatable    :: BRZp(:,:,:,:), BRpZ(:,:,:,:)
-  CHARACTER(LEN=100)   :: mgrid_name
   CHARACTER(LEN=30)    :: curlabel(1:1)
 
   do icpu = 1, ncpu
@@ -35,7 +35,9 @@ subroutine wtmgrid
      endif ! end of if( myid == 0 )
   enddo
   
-  mgrid_name = "mgrid.FAMUS_"//trim(ext) ! filename, could be user input
+  if (trim(mgrid_name) == 'none') then
+     mgrid_name = "mgrid.FAMUS_"//trim(ext) ! filename, could be user input
+  endif 
   if (Mfp <= 0) Mfp = nfp_raw ! overrid to nfp_raw if not specified
   B = zero  ; dx = 1E-4 ; dy = 1E-4 ; dz = 1E-4
 

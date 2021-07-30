@@ -2,10 +2,11 @@
 
 ############################################################################################################
 
- ALLFILES= globals ncsx_ports_mod ncsx_ports_load ncsx_ports_eval wtmgrid initial  \
-           rdsurf rdknot rdcoils packdof bfield bmnharm bnormal fdcheck \
-           torflux length surfsep minvol bindip totalpm datalloc solvers descent congrad qnewton lmalg saving diagnos \
-           specinp poinplot boozer focus            
+ ALLFILES= globals ncsx_ports_mod ncsx_ports_load ncsx_ports_eval wtmgrid poinplot initial  \
+           rdsurf rdknot rdboozer rdcoils packdof bfield bmnharm bnormal fdcheck \
+           torflux length surfsep minvol bindip totalpm datalloc \
+		   solvers descent congrad qnewton lmalg saving diagnos \
+           specinp boozer focus            
  HFILES= $(ALLFILES:=.f90)   # raw source files
  FFILES= $(ALLFILES:=_m.F90) # Fortran 90 files 
  PFILES= $(ALLFILES:=.pdf)   # documentations
@@ -28,19 +29,26 @@
  LIBS=-I$(HDF5_HOME)/include
  LINKS=-L$(HDF5_HOME)/lib -lhdf5_fortran -lhdf5 -lpthread -lz -lm
 
+ LMGRID = F
+ ifeq ($(LMGRID),T)
+   PFLAGS += -D mgrid_poincare
+   LIBS += -I$(STELLOPT_PATH)/LIBSTELL/Release
+   LINKS += -L$(STELLOPT_PATH)/LIBSTELL/Release -lstell
+ endif
+
 #### GFORTRAN+OpenMPI+HDF5###############
 # available env: /p/focus/modules/focus/gfortran
 ifeq ($(CC),gfortran)
 # RFLAGS=-O3 -w -fdefault-real-8 -ffree-line-length-none -march=native -ffast-math
- PFLAGS+=-fallow-argument-mismatch # only used for GCC-10
+ # PFLAGS+=-fallow-argument-mismatch # only used for GCC-10
  RFLAGS=-O3 -w -ffree-line-length-none -ffast-math $(PFLAGS)
  DFLAGS=-Og $(PFLAGS) -w -ffree-line-length-none -Wextra -Wtarget-lifetime -fbacktrace -fbounds-check  \
      -ffpe-trap=zero -fcheck=all -DDEBUG
 endif
 
-#### EDDY Intel+IntelMPI+HDF5###############
-# available env: /home/caoxiang/Modules/focus/develop
-ifneq (,$(findstring eddy,$(HOSTNAME)))
+#### Stellar Intel+IntelMPI+HDF5###############
+# available env: /home/caoxiang/module/focus/intel
+ifneq (,$(findstring stellar,$(HOSTNAME)))
  FC=mpiifort  # this is optional after recent updates
 endif
 
@@ -65,6 +73,7 @@ ifneq (,$(findstring cobra,$(HOSTNAME)))
  RFLAGS+=-xCORE-AVX512 -qopt-zmm-usage=high
  LINKS=-L$(HDF5_HOME)/lib -lhdf5_fortran -lhdf5 -lpthread -lz -lm -Wl,-rpath -Wl,$(HDF5_HOME)/lib
 endif
+
 
 #### IPP raven Intel+IntelMPI+HDF5###############
 ifneq (,$(findstring raven,$(HOSTNAME)))
@@ -93,32 +102,32 @@ dfocus: $(DOBJS) $(NUMOBJ)
 	mkdir -p ../bin ; mv dfocus ../bin/
 
 ############################################################################################################
-ode.o : ode.f90
-	$(FC) -c $(RFLAGS) -o $@ $<
-
+ode.o : ode.f90 
+	$(FC) -c $(RFLAGS) -o $@ $< $(LIBS)
 lmder1.o : lmder1.f
-	$(FC) -c $(RFLAGS) -o $@ $<
+	$(FC) -c $(RFLAGS) -o $@ $< $(LIBS)
 
 hybrj.o: hybrj.f
-	$(FC) -c $(RFLAGS) -o $@ $<
+	$(FC) -c $(RFLAGS) -o $@ $< $(LIBS)
 
 lbfgsb.o: lbfgsb.f
-	$(FC) -c $(RFLAGS) -o $@ $<
+	$(FC) -c $(RFLAGS) -o $@ $< $(LIBS)
 
 cg_descent.o : cg_descent.f
-	$(FC) -c $(RFLAGS) -o $@ $<
+	$(FC) -c $(RFLAGS) -o $@ $< $(LIBS)
 
 simann.o : simann.f90
-	$(FC) -c $(RFLAGS) -o $@ $<
+	$(FC) -c $(RFLAGS) -o $@ $< $(LIBS)
 
-$(ROBJS): %_r.o: %_m.F90
+$(ROBJS): %_r.o: %_m.F90 globals_r.o
 	$(FC) -c $(RFLAGS) -o $@ $<  $(LIBS)
 
-$(DOBJS): %_d.o: %_m.F90
+$(DOBJS): %_d.o: %_m.F90 globals_d.o
 	$(FC) -c $(DFLAGS) -o $@ $<  $(LIBS)
 
 $(FFILES): %_m.F90: %.f90
 	m4 -P $(MACROS) $< > $@
+
 
 ############################################################################################################
 

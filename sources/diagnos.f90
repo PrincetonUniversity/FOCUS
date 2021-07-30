@@ -8,7 +8,8 @@ SUBROUTINE diagnos
   use globals, only: dp, zero, one, myid, ounit, sqrtmachprec, IsQuiet, case_optimize, coil, surf, Ncoils, &
        Nteta, Nzeta, bnorm, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
        cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, weight_bnorm, overlap, &
-       dpbin, pmvol, pmsum, total_moment, magtorque, ext, MPI_COMM_FAMUS
+       dpbin, pmvol, pmsum, resbn, total_moment, magtorque, ext, normalized_B, bn_norm_b, symm_factor, & 
+       discretefactor, MPI_COMM_FAMUS
                      
   implicit none
   include "mpif.h"
@@ -25,9 +26,9 @@ SUBROUTINE diagnos
   if (case_optimize == 0) call AllocData(0) ! if not allocate data;
   call costfun(case_optimize)
 
-  if (myid == 0) write(ounit, '("diagnos : "4(A12," ; "))') , &
-       "Bnormal", "PM eff. vol.", "Dip. Binary", "Total PM Vol"
-  if (myid == 0) write(ounit, '("        : "5(ES12.5," ; "))') bnorm, pmsum, dpbin, pmvol
+  if (myid == 0) write(ounit, '("diagnos : "5(A12," ; "))') , &
+       "Bnormal", "PM eff. vol.", "Dip. Binary", "Total PM Vol", "Res. Bn"
+  if (myid == 0) write(ounit, '("        : "5(ES12.5," ; "))') bnorm, pmsum, dpbin, pmvol, resbn
 
   ! compute Bx, By, Bz for later calculations
   do jzeta = 0, Nzeta - 1
@@ -52,8 +53,7 @@ SUBROUTINE diagnos
   minCPdist = infmax
   do icoil = 1, Ncoils
 
-     if(coil(icoil)%itype .ne. 1) continue ! only for Fourier
-
+     if(coil(icoil)%itype .ne. 1) cycle ! only for Fourier
      SALLOCATE(Atmp, (1:3,0:coil(icoil)%NS-1), zero)
      SALLOCATE(Btmp, (1:3,1:(Nteta*Nzeta)), zero)
 
@@ -104,6 +104,14 @@ SUBROUTINE diagnos
           sum(abs(surf(1)%bn/sqrt(surf(1)%Bx**2 + surf(1)%By**2 + surf(1)%Bz**2))) / (Nteta*Nzeta), &
           maxval(abs(surf(1)%bn))
      endif
+     if(normalized_B .le. sqrtmachprec) then
+         bn_norm_b = sum(abs(surf(1)%bn/sqrt(surf(1)%Bx**2 + surf(1)%By**2 + surf(1)%Bz**2))*surf(1)%ds) * discretefactor / (surf(1)%area/symm_factor)
+     else
+         bn_norm_b = sum(abs(surf(1)%bn/normalized_B)*surf(1)%ds) * discretefactor / (surf(1)%area/symm_factor)
+     endif
+     if (myid .eq. 0) then
+         write(ounit, '(8X": Surface averaged normalized Bn error   : " ES12.5, "; norm_B = ", ES12.5)') bn_norm_b, normalized_B
+     endif 
   endif
 
   !--------------------------------calculate dipole effective volume------------------------------------  

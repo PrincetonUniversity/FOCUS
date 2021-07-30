@@ -50,12 +50,15 @@ PROGRAM FAMUS
   
   call initial ! read input namelist and broadcast;
 
+  tstart = MPI_Wtime()
+
   call check_input
 
   select case( case_surface )
 
   case( 0 ) ; call fousurf   ! general format (VMEC-like) plasma boundary;
   case( 1 ) ; call rdknot    ! knototran-like plasma boundary;
+  case( 2 ) ; call rdbooz    ! surface in Boozer coordinates
  !case( 2 ) ; call readwout  ! read vmec output for plasma boundary and Boozer coordinates; for future;
 
   end select
