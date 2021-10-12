@@ -55,8 +55,7 @@ subroutine saving
      if(allocated(t1C)) deriv(1:Ndof,7) = t1C(1:Ndof)
      if(allocated(t1T)) deriv(1:Ndof,8) = t1T(1:Ndof)
      if(allocated(t1N)) deriv(1:Ndof,9) = t1N(1:Ndof)
-     if(allocated(t1CU)) deriv(1:Ndof,10)=t1CU(1:Ndof)
-     if(allocated(t1Str)) deriv(1:Ndof,11)=t1Str(1:Ndof)
+     if(allocated(t1Str)) deriv(1:Ndof,10)=t1Str(1:Ndof)
   endif
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -183,7 +182,7 @@ subroutine saving
 
   if (allocated(deriv)) then
      !HWRITERA( Ndof, 6       ,   deriv         ,   deriv(1:Ndof, 0:6)            )
-     HWRITERA( Ndof, 11       ,   deriv         ,   deriv(1:Ndof, 0:11)            )
+     HWRITERA( Ndof, 10       ,   deriv         ,   deriv(1:Ndof, 0:10)            )
   endif
 
   if (allocated(Bmnc)) then
