@@ -3,7 +3,7 @@
 ############################################################################################################
 
 
- ALLFILES= globals initial surface rdsurf rdknot rdcoils packdof bfield \
+ ALLFILES= globals initial surface rdsurf rdknot rdbooz rdcoils packdof bfield \
            fdcheck datalloc solvers descent congrad lmalg \
 		   bmnharm bnormal torflux length surfsep nissin torsion coilsep curvature \
            splines straight_out saving diagnos specinp poinplot boozer wtmgrid focus 
