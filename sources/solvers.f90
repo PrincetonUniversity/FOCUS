@@ -101,7 +101,7 @@ subroutine solvers
         write(ounit, '(8X,": weight_straight  = ", ES12.5, ";  case_straight = ", I1)') weight_staight, case_straight
         write(ounit, '(8X,":   str_alpha = ", ES12.5)') str_alpha
         write(ounit, '(8X,":   str_k0    = ", ES12.5)') str_k0
-
+     endif
   endif
 
   if (abs(case_optimize) >= 1) call AllocData(1)
