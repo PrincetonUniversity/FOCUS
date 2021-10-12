@@ -213,7 +213,7 @@ subroutine CurvDeriv1(icoil, derivs, ND, NC) !Calculate all derivatives for a co
 
   use globals, only: dp, zero, pi2, coil, DoF, myid, ounit, Ncoils, &
                 case_curv, curv_alpha, curv_k0, curv_k1, curv_beta, curv_gamma, &
-                curv_sigma, penfun_curv, curv_k1len, FouCoil, MPI_COMM_FOCUS, curv_c,curvH,Splines,coil_type_spline
+                curv_sigma, penfun_curv, curv_k1len, FouCoil, MPI_COMM_FOCUS, curv_c,k0,Splines,coil_type_spline
   use mpi
   implicit none
 
@@ -221,7 +221,7 @@ subroutine CurvDeriv1(icoil, derivs, ND, NC) !Calculate all derivatives for a co
   REAL   , intent(out) :: derivs(1:1, 1:ND)
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   INTEGER              :: kseg, astat, ierr, doff, nff, NS, n
-  REAL                 :: xt, yt, zt, xa, ya, za, f1, f2, curvHold, penCurv, leng, hypc, hyps, curv_deriv, &
+  REAL                 :: xt, yt, zt, xa, ya, za, f1, f2,ncc, nss, ncp, nsp, curvHold, penCurv,curvH,leng, hypc, hyps, curv_deriv, &
                           k1_use, rtxrax, rtxray, rtxraz
   REAL                 :: d1L(1:1, 1:ND)
   REAL,allocatable     :: dxtdDoF(:,:), dytdDoF(:,:), dztdDoF(:,:), dxadDoF(:,:), dyadDoF(:,:), dzadDoF(:,:)
@@ -232,28 +232,6 @@ subroutine CurvDeriv1(icoil, derivs, ND, NC) !Calculate all derivatives for a co
   derivs(1,1:ND) = 0.0
   NS = coil(icoil)%NS
   
-  SALLOCATE(dxtdDoF, (0:NS,1:ND), zero)
-  SALLOCATE(dytdDoF, (0:NS,1:ND), zero)
-  SALLOCATE(dztdDoF, (0:NS,1:ND), zero)
-  SALLOCATE(dxadDoF, (0:NS,1:ND), zero)
-  SALLOCATE(dyadDoF, (0:NS,1:ND), zero)
-  SALLOCATE(dzadDoF, (0:NS,1:ND), zero)
-  do n = 1,NF
-     dxtdDof(0:NS,n+1)      = -1*FouCoil(icoil)%smt(0:NS,n) * n
-     dxtdDof(0:NS,n+NF+1)   =    FouCoil(icoil)%cmt(0:NS,n) * n
-     dytdDof(0:NS,n+2*NF+2) = -1*FouCoil(icoil)%smt(0:NS,n) * n
-     dytdDof(0:NS,n+3*NF+2) =    FouCoil(icoil)%cmt(0:NS,n) * n
-     dztdDof(0:NS,n+4*NF+3) = -1*FouCoil(icoil)%smt(0:NS,n) * n
-     dztdDof(0:NS,n+5*NF+3) =    FouCoil(icoil)%cmt(0:NS,n) * n
-
-     dxadDof(0:NS,n+1)      = -1*FouCoil(icoil)%cmt(0:NS,n) * n*n
-     dxadDof(0:NS,n+NF+1)   = -1*FouCoil(icoil)%smt(0:NS,n) * n*n
-     dyadDof(0:NS,n+2*NF+2) = -1*FouCoil(icoil)%cmt(0:NS,n) * n*n
-     dyadDof(0:NS,n+3*NF+2) = -1*FouCoil(icoil)%smt(0:NS,n) * n*n
-     dzadDof(0:NS,n+4*NF+3) = -1*FouCoil(icoil)%cmt(0:NS,n) * n*n
-     dzadDof(0:NS,n+5*NF+3) = -1*FouCoil(icoil)%smt(0:NS,n) * n*n
-  enddo
-
   derivs = zero
   d1L = zero
   call lenDeriv0( icoil, coil(icoil)%L )
@@ -281,8 +259,30 @@ subroutine CurvDeriv1(icoil, derivs, ND, NC) !Calculate all derivatives for a co
      xa = coil(icoil)%xa(kseg) ; ya = coil(icoil)%ya(kseg) ; za = coil(icoil)%za(kseg) ;
      f1 = sqrt( (xt*ya-xa*yt)**2 + (xt*za-xa*zt)**2 + (yt*za-ya*zt)**2 );
      f2 = (xt**2+yt**2+zt**2)**(1.5);
-     select case (coil(icoil)%type)
-	case(1)
+     select case (coil(icoil)%type)    
+  case(1)
+     SALLOCATE(dxtdDoF, (0:NS,1:ND), zero)
+     SALLOCATE(dytdDoF, (0:NS,1:ND), zero)
+     SALLOCATE(dztdDoF, (0:NS,1:ND), zero)
+     SALLOCATE(dxadDoF, (0:NS,1:ND), zero)
+     SALLOCATE(dyadDoF, (0:NS,1:ND), zero)
+     SALLOCATE(dzadDoF, (0:NS,1:ND), zero)
+     do n = 1,NC
+            dxtdDof(0:NS,n+1)      = -1*FouCoil(icoil)%smt(0:NS,n) * n
+     	    dxtdDof(0:NS,n+NF+1)   =    FouCoil(icoil)%cmt(0:NS,n) * n
+     	    dytdDof(0:NS,n+2*NF+2) = -1*FouCoil(icoil)%smt(0:NS,n) * n
+     	    dytdDof(0:NS,n+3*NF+2) =    FouCoil(icoil)%cmt(0:NS,n) * n
+     	    dztdDof(0:NS,n+4*NF+3) = -1*FouCoil(icoil)%smt(0:NS,n) * n
+     	    dztdDof(0:NS,n+5*NF+3) =    FouCoil(icoil)%cmt(0:NS,n) * n
+
+     	    dxadDof(0:NS,n+1)      = -1*FouCoil(icoil)%cmt(0:NS,n) * n*n
+     	    dxadDof(0:NS,n+NF+1)   = -1*FouCoil(icoil)%smt(0:NS,n) * n*n
+     	    dyadDof(0:NS,n+2*NF+2) = -1*FouCoil(icoil)%cmt(0:NS,n) * n*n
+     	    dyadDof(0:NS,n+3*NF+2) = -1*FouCoil(icoil)%smt(0:NS,n) * n*n
+     	    dzadDof(0:NS,n+4*NF+3) = -1*FouCoil(icoil)%cmt(0:NS,n) * n*n
+     	    dzadDof(0:NS,n+5*NF+3) = -1*FouCoil(icoil)%smt(0:NS,n) * n*n
+     enddo	
+	
      rtxrax = yt*za - zt*ya
      rtxray = zt*xa - xt*za
      rtxraz = xt*ya - yt*xa
