@@ -10,7 +10,7 @@ SUBROUTINE diagnos
   use mpi
   implicit none
 
-  INTEGER           :: icoil, itmp, ierr, NF,NCP, idof, i, j, isurf, cs, ip, is, Npc, coilInd0, coilInd1
+  INTEGER           :: icoil, itmp, NF,NCP, idof, i, j, isurf, cs, ip, is, Npc, coilInd0, coilInd1
   LOGICAL           :: lwbnorm, l_raw
   REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist, ReDot, ImDot, dum, AvgCurv, AvgTors, &
                        MinLambda, MaxS, torsRet
