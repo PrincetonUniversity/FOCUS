@@ -28,7 +28,7 @@
  case_length    =        2              ! 1: quadratic format, converging the target length; 2: exponential format, as short as possible
  weight_bnorm   =        0.000D+00      ! weight for real space Bn errors
  weight_bharm   =        1.000D+00      ! weight for Bmn harmonic errors
- bharm_jsurf    =        0              ! 0: no weightes;  1: weighted with area square; 2: weighted with area
+ bharm_jsurf    =        0              ! 0: no weightes;  1: weighted with area; 2: weighted with squared root of area
  weight_tflux   =        0.000D+00      ! weight for toroidal flux error, specified by target_tflux
  target_tflux   =        0.000D+00      ! target for the toroidal flux, 0: the present value
  weight_ttlen   =        0.000D+00      ! weight for coil length error

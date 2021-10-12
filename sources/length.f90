@@ -64,8 +64,8 @@ subroutine length(ideriv)
        ittlen, mttlen, LM_fvec, LM_fjac, weight_ttlen, length_delta, &
        MPI_COMM_FOCUS,coil_type_spline
 
+  use mpi
   implicit none
-  include "mpif.h"
   INTEGER, INTENT(in) :: ideriv
 
   INTEGER             :: astat, ierr, icoil, idof, ND, ivec
@@ -148,6 +148,7 @@ subroutine length(ideriv)
                  if (case_length == 2) &
                       & LM_fjac(ivec, idof+1:idof+ND) = LM_fjac(ivec, idof+1:idof+ND) &
                       & * exp(coil(icoil)%L) / exp(coil(icoil)%Lo)
+                 ! Need to add in case_length == 3 
                  ivec = ivec + 1
               endif
            endif 
@@ -173,9 +174,9 @@ end subroutine length
 
 subroutine LenDeriv0(icoil, length)
 
-  use globals, only: dp, zero, coil, myid, ounit, Ncoils, MPI_COMM_FOCUS,coil_type_spline  
+  use globals, only: dp, zero, coil, myid, ounit, Ncoils, MPI_COMM_FOCUS,coil_type_spline
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER, intent(in)  :: icoil
   REAL   , intent(out) :: length
@@ -205,8 +206,8 @@ end subroutine LenDeriv0
 subroutine LenDeriv1(icoil, derivs, ND)
 
   use globals, only: dp, zero, pi2, coil, DoF, myid, ounit, Ncoils, MPI_COMM_FOCUS
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER, intent(in)  :: icoil, ND
   REAL   , intent(out) :: derivs(1:1, 1:ND)

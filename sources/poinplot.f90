@@ -5,7 +5,7 @@ SUBROUTINE poinplot
   !------------------------------------------------------------------------------------------------------ 
   USE globals, only : dp, myid, ncpu, zero, half, pi, pi2, ounit, pi, sqrtmachprec, pp_maxiter, &
                       pp_phi, pp_raxis, pp_zaxis, pp_xtol, pp_rmax, pp_zmax, ppr, ppz, pp_ns, iota,  &
-                      XYZB, lboozmn, booz_mnc, booz_mns, booz_mn, total_num, &
+                      XYZB, lboozmn, booz_mnc, booz_mns, booz_mn, total_num, pp_nfp, pp_nsteps, &
                       master, nmaster, nworker, masterid, color, myworkid, MPI_COMM_MASTERS, &
                       MPI_COMM_MYWORLD, MPI_COMM_WORKERS, plasma, surf, MPI_COMM_FOCUS
   USE mpi
@@ -87,6 +87,8 @@ SUBROUTINE poinplot
 
   if(myid==0) write(ounit, '("poinplot: following fieldlines between ("ES12.5 &
        ","ES12.5" ) and ("ES12.5","ES12.5" )")') pp_raxis, pp_zaxis, pp_rmax, pp_zmax
+  if(myid==0) write(ounit, '(8X, ": Field-line integrated in [0, 2*pi/", I1, "] with ", I4, " steps.")') &
+                    pp_nfp, pp_nsteps
 
   do is = 1, pp_ns     ! pp_ns is the number of eavaluation surfaces
      niter = 0    ! number of successful iterations
@@ -108,7 +110,7 @@ SUBROUTINE poinplot
      if (niter==0) then
         iota(is) = zero
      else 
-        iota(is) = rzrzt(5) / (niter*pi2)
+        iota(is) = rzrzt(5) / (niter*pi2/pp_nfp)
      endif
 
      if (myworkid == 0) write(ounit, '(8X": order="I6" ; masterid="I6" ; (R,Z)=("ES12.5","ES12.5 & 
@@ -201,7 +203,8 @@ END SUBROUTINE find_axis
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE axis_fcn(n,x,fvec,iflag)
-  USE globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, surf, pp_xtol, plasma, pp_nsteps
+  USE globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, surf, &
+                      pp_xtol, plasma, pp_nsteps, pp_nfp
   USE mpi
   IMPLICIT NONE
 
@@ -221,7 +224,7 @@ SUBROUTINE axis_fcn(n,x,fvec,iflag)
   do i = 1, pp_nsteps
      ifail = 1
      phi_init = phi_stop
-     phi_stop = phi_init + pi2/pp_nsteps
+     phi_stop = phi_init + pi2/pp_nfp/pp_nsteps
      call ode( BRpZ, n, rz_end, phi_init, phi_stop, relerr, abserr, ifail, work, iwork )
   enddo 
 
@@ -251,7 +254,8 @@ END SUBROUTINE axis_fcn
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE ppiota(rzrzt,iflag)
-  USE globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, surf, pp_xtol, plasma, pp_nsteps
+  USE globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, &
+                      pp_phi, surf, pp_xtol, plasma, pp_nsteps, pp_nfp
   USE mpi
   IMPLICIT NONE
 
@@ -271,7 +275,7 @@ SUBROUTINE ppiota(rzrzt,iflag)
   do i = 1, pp_nsteps
      ifail = 1
      phi_init = phi_stop
-     phi_stop = phi_init + pi2/pp_nsteps
+     phi_stop = phi_init + pi2/pp_nfp/pp_nsteps
      call ode( BRpZ_iota, n, rzrzt, phi_init, phi_stop, relerr, abserr, ifail, work, iwork )
   enddo 
 

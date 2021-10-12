@@ -323,12 +323,6 @@ subroutine initial
   if(myid == 0) write(ounit, *) "---------------------  FOCUS ", version, "------------------------------"
   if(myid == 0) write(ounit,'("focus   : Begin execution with ncpu =",i5)') ncpu
 
-  !-------------machine constants -----------------------------------------------------------------------
-  machprec = epsilon(pi)         ! get the machine precision
-  sqrtmachprec = sqrt(machprec)  ! sqrt of machine precision
-  vsmall = ten * machprec        ! very small number
-  small = thousand * machprec    ! small number
-
   !-------------read input namelist----------------------------------------------------------------------
   if(myid == 0) then ! only the master node reads the input; 25 Mar 15;
       call getarg(1,ext) ! get argument from command line
@@ -346,7 +340,6 @@ subroutine initial
       case default
           index_dot = INDEX(ext,'.input')
           IF (index_dot .gt. 0)  ext = ext(1:index_dot-1)
-          write(ounit, '("initial : machine_prec   = ", ES12.5, " ; sqrtmachprec   = ", ES12.5)') machprec, sqrtmachprec
 #ifdef DEBUG
           write(ounit, '("DEBUG info: extension from command line is "A)') trim(ext)
 #endif
@@ -405,12 +398,23 @@ subroutine check_input
    
   LOGICAL :: exist
 
+  !-------------machine constants -----------------------------------------------------------------------
+  machprec = epsilon(pi)         ! get the machine precision
+  sqrtmachprec = sqrt(machprec)  ! sqrt of machine precision
+  vsmall = ten * machprec        ! very small number
+  small = thousand * machprec    ! small number
+
   !-------------output files name ---------------------------------------------------------------------------
   hdf5file   = "focus_"//trim(ext)//".h5"
   out_focus  = trim(ext)//".focus"
   out_coils  = trim(ext)//".coils"
   out_harm   = trim(ext)//".harmonics"
   out_plasma = trim(ext)//".plasma"
+
+  if (myid == master) then
+     write(ounit, '("initial : machine_prec   = ", ES12.5, " ; sqrtmachprec   = ", ES12.5)') &
+           machprec, sqrtmachprec
+  endif
 
   !-------------show the namelist for checking----------------------------------------------------------
   if (myid == 0) then ! Not quiet to output more informations;
@@ -435,7 +439,7 @@ subroutine check_input
         FATAL( initial, NFcoil <= 0    , no enough harmonics )
         FATAL( initial, Nseg   <= 0    , no enough segments  )
         FATAL( initial, target_length < zero, illegal )        
-        FATAL( initial, k0            < zero, illegal )
+        FATAL( initial, curv_k0            < zero, illegal )
         write(ounit, '("        : Read initial coils    from : ", A, A)') trim(input_coils), '(MAKEGRID format)'
      case( 0 )
         if (trim(input_coils) == 'none') input_coils = trim(ext)//".focus"
@@ -449,14 +453,14 @@ subroutine check_input
         FATAL( initial, NFcoil <= 0    , no enough harmonics )
         FATAL( initial, Nseg   <= 0    , no enough segments  )
         FATAL( initial, target_length < zero, illegal )
-        FATAL( initial, k0            < zero, illegal )
+        FATAL( initial, curv_k0            < zero, illegal )
         if (IsQuiet < 1) write(ounit, 1000) 'case_init', case_init, 'Initialize circular coils.'
      case( 2 )
         FATAL( initial, Ncoils < 1, should provide the No. of coils)
         FATAL( initial, init_current == zero, invalid coil current)
         FATAL( initial, init_radius < zero, invalid coil radius)
         FATAL( initial, target_length < zero, illegal )
-        FATAL( initial, k0            < zero, illegal )
+        FATAL( initial, curv_k0            < zero, illegal )
         if (IsQuiet < 1) write(ounit, 1000) 'case_init', case_init, 'Initialize magnetic dipoles.'
      case default
         FATAL( initial, .true., selected case_init is not supported )
@@ -475,17 +479,17 @@ subroutine check_input
         FATAL( initial, .true., IsQuiet /= integer unspported option)
      end select
      
-1000 format(8X, ": ", A15, " = ", I6, " ; ", A)        
+1000 format(8X, ": ", A15, " = ", I2, " ; ", A)        
 
      select case (IsSymmetric)
      case (0)
-        if (IsQuiet < 0) write(ounit, 1000) 'IsSymmetric', IsSymmetric, & 
+        if (IsQuiet < 1) write(ounit, 1000) 'IsSymmetric', IsSymmetric, & 
              &  'No stellarator symmetry or periodicity enforced.'
      case (1)
-        if (IsQuiet < 0) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
+        if (IsQuiet < 1) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
              &  'Periodicity is enforced.'
      case (2)
-        if (IsQuiet < 0) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
+        if (IsQuiet < 1) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
              &  'Periodicity and stellarator symmetry are both enforced.'
      case default
         FATAL( initial, .true., IsSymmetric /= 0 or 2 unspported option)
@@ -628,22 +632,27 @@ subroutine check_input
      case ( 2 )
         if (IsQuiet < 1) write(ounit, 1000) 'case_length', case_length, 'Exponential format of length penalty.'
      case ( 3 )
-        if (IsQuiet < 1) write(ounit, 1000) 'case_length', case_length, 'Delta quadratic length penalty.'
+        if (IsQuiet < 1) write(ounit, 1000) 'case_length', case_length, 'Modified quadratic length penalty.'
      case default
         FATAL( initial, .true., selected case_length is not supported )
      end select
 
-     select case ( case_curv )
+     !select case ( case_tors )
+     !case ( 1 )
+     !   if (IsQuiet < 1) write(ounit, 1000) 'case_tors', case_tors, 'Optimizing average torsion to 0.'
+     !case ( 2 )
+     !   if (IsQuiet < 1) write(ounit, 1000) 'case_tors', case_tors, 'Optimizing average torsion to tors0.'
+     !case default
+     !   FATAL( initial, .true., selected case_tors is not supported )
+     !end select
+
+     select case ( penfun_nissin )
      case ( 1 )
-        if (IsQuiet < 1) write(ounit, 1000) 'case_curv', case_curv, 'Linear format of curvature penalty.'
+        if (IsQuiet < 1) write(ounit, 1000) 'penfun_nissin', penfun_nissin, 'Hyperbolic penalty function.'
      case ( 2 )
-        if (IsQuiet < 1) write(ounit, 1000) 'case_curv', case_curv, 'Quadratic format of curvature penalty.'
-     case ( 3 )
-        if (IsQuiet < 1) write(ounit, 1000) 'case_curv', case_curv, 'Penalty function of curvature.'
-     case ( 4 )
-        if (IsQuiet < 1) write(ounit, 1000) 'case_curv', case_curv, 'Linear and Penalty function.'
+        if (IsQuiet < 1) write(ounit, 1000) 'penfun_nissin', penfun_nissin, 'Polynomial penalty function.'
      case default
-        FATAL( initial, .true., selected case_curv is not supported )
+        FATAL( initial, .true., selected penfun_nissin is not supported )
      end select
      
      select case ( case_straight )
@@ -668,6 +677,9 @@ subroutine check_input
      FATAL( initial, weight_specw  < zero, illegal )
      FATAL( initial, weight_ccsep  < zero, illegal )
      FATAL( initial, weight_cssep  < zero, illegal )
+     FATAL( initial, weight_curv   < zero, illegal )
+     FATAL( initial, weight_tors   < zero, illegal )
+     FATAL( initial, weight_nissin    < zero, illegal )
 
      select case ( case_postproc )
      case ( 0 )
@@ -708,9 +720,6 @@ subroutine check_input
   ClBCAST( limiter_surf,  100,  0 )
   ClBCAST( input_coils ,  100,  0 )
 
-  FATAL( initial, ncpu >= 1000 , too macy cpus, modify nodelabel)
-  write(nodelabel,'(i3.3)') myid ! nodelabel is global; 30 Oct 15;
-
   ! initialize iteration and total iterations;
   iout = 1 ; Nouts = 1
   if (case_optimize >0) Nouts = DF_maxiter + CG_maxiter + LM_maxiter + HN_maxiter + TN_maxiter
@@ -728,6 +737,8 @@ subroutine check_input
   tmpw_curv  = weight_curv
   tmpw_str   = weight_straight
  !tmpw_cssep = weight_cssep
+  tmpw_tors  = weight_tors
+  tmpw_nissin   = weight_nissin
 
   call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
 
@@ -739,6 +750,7 @@ end subroutine check_input
 
 SUBROUTINE write_focus_namelist
   use globals
+  use mgrid_mod
   use mpi
   implicit none
 
@@ -751,6 +763,7 @@ SUBROUTINE write_focus_namelist
      write(ounit, *) 'Writing an template input file in ', trim(example)
      open(wunit, file=trim(example), status='unknown', action='write')
      write(wunit, focusin)
+     write(wunit, mgrid)
      close(wunit)
   endif
 

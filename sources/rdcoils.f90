@@ -162,7 +162,7 @@ subroutine rdcoils
         coil(icoil)%I  =  coilsI(icoil)
         coil(icoil)%Ic =  IsVaryCurrent
         coil(icoil)%L  =  target_length ! irrelevant until re-computed;
-        !coil(icoil)%k0 =  k0
+        !coil(icoil)%curv_k0 =  curv_k0
         coil(icoil)%Lc =  IsVaryGeometry
         coil(icoil)%Lo =  target_length
         coil(icoil)%name = trim(coilname(icoil))
@@ -437,7 +437,7 @@ subroutine rdcoils
      coil(icoil)%L  =  pi2*init_radius
      coil(icoil)%Lc =  0               ! IsVaryGeometry ! ignore Bz first; 20190102
      coil(icoil)%Lo =  target_length
-     !coil(icoil)%k0 =  k0
+     !coil(icoil)%curv_k0 =  curv_k0
      coil(icoil)%Bz =  zero
      coil(icoil)%name = 'bg_BtBz_01'
      coil(icoil)%type = 3
@@ -457,7 +457,7 @@ subroutine rdcoils
            coil(icoil)%L  =  pi2*init_radius
            coil(icoil)%Lc =  IsVaryGeometry
            coil(icoil)%Lo =  target_length
-           !coil(icoil)%k0 =  k0
+           !coil(icoil)%curv_k0 =  curv_k0
            write(coil(icoil)%name,'("pm_"I6)') icoil
            FATAL( rdcoils, coil(icoil)%Ic < 0 .or. coil(icoil)%Ic > 1, illegal )
            FATAL( rdcoils, coil(icoil)%Lc < 0 .or. coil(icoil)%Lc > 1, illegal )
@@ -563,6 +563,9 @@ subroutine discoil(ifirst)
            coil(icoil)%xa = zero
            coil(icoil)%ya = zero
            coil(icoil)%za = zero
+           coil(icoil)%xb = zero
+           coil(icoil)%yb = zero
+           coil(icoil)%zb = zero
            NS = coil(icoil)%NS
            NF = FouCoil(icoil)%NF  ! allias variable for simplicity;
            !-------------------------calculate coil data-------------------------------------------------  
@@ -589,6 +592,12 @@ subroutine discoil(ifirst)
                                                               - FouCoil(icoil)%smt(0:NS,mm) * Foucoil(icoil)%ys(mm) ) * mm*mm
               coil(icoil)%za(0:NS) = coil(icoil)%za(0:NS) + ( - FouCoil(icoil)%cmt(0:NS,mm) * Foucoil(icoil)%zc(mm) &
                                                               - FouCoil(icoil)%smt(0:NS,mm) * Foucoil(icoil)%zs(mm) ) * mm*mm
+              coil(icoil)%xb(0:NS) = coil(icoil)%xb(0:NS) + (   FouCoil(icoil)%smt(0:NS,mm) * Foucoil(icoil)%xc(mm) &
+                                                              - FouCoil(icoil)%cmt(0:NS,mm) * Foucoil(icoil)%xs(mm) ) * mm*mm*mm
+              coil(icoil)%yb(0:NS) = coil(icoil)%yb(0:NS) + (   FouCoil(icoil)%smt(0:NS,mm) * Foucoil(icoil)%yc(mm) &
+                                                              - FouCoil(icoil)%cmt(0:NS,mm) * Foucoil(icoil)%ys(mm) ) * mm*mm*mm
+              coil(icoil)%zb(0:NS) = coil(icoil)%zb(0:NS) + (   FouCoil(icoil)%smt(0:NS,mm) * Foucoil(icoil)%zc(mm) &
+                                                              - FouCoil(icoil)%cmt(0:NS,mm) * Foucoil(icoil)%zs(mm) ) * mm*mm*mm
            enddo ! end of do mm; 
 
         case(2)
@@ -663,8 +672,8 @@ SUBROUTINE discfou2
   ! DATE: 2017/03/18
   !---------------------------------------------------------------------------------------------  
   use globals, only: dp, zero, pi2, myid, ncpu, ounit, coil, FouCoil, Ncoils, MPI_COMM_FOCUS
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER :: icoil, iorder, llmodnp, ierr, NS, NF
   !-------------------------call fouriermatr----------------------------------------------------  
@@ -780,8 +789,8 @@ END subroutine fouriermatrix
 
 SUBROUTINE readcoils(filename, maxnseg)
   use globals, only: dp, zero, coilsX, coilsY, coilsZ, coilsI, coilseg, coilname, Ncoils, ounit, myid, MPI_COMM_FOCUS
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER                    :: icoil, cunit, istat, astat, lstat, ierr, maxnseg, iseg
   CHARACTER*100              :: filename
@@ -875,8 +884,8 @@ end SUBROUTINE READCOILS
 
 SUBROUTINE Fourier( X, XFC, XFS, Nsegs, NFcoil)
   use globals, only: dp, ounit, zero, pi2, half, myid, MPI_COMM_FOCUS
+  use mpi
   implicit none
-  include "mpif.h"
 
   REAL    :: X(1:Nsegs), XFC(0:NFcoil), XFS(0:NFcoil)
   INTEGER :: Nsegs, NFcoil, ifou, iseg, funit, ierr

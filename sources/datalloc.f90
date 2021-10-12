@@ -8,8 +8,8 @@ subroutine AllocData(type)
 !------------------------------------------------------------------------------------------------------
   use globals
   use bnorm_mod
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER, intent(in) :: type
 
@@ -77,6 +77,9 @@ subroutine AllocData(type)
            SALLOCATE( coil(icoil)%xa, (0:coil(icoil)%NS), zero )
            SALLOCATE( coil(icoil)%ya, (0:coil(icoil)%NS), zero )
            SALLOCATE( coil(icoil)%za, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%xb, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%yb, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%zb, (0:coil(icoil)%NS), zero )
            SALLOCATE( coil(icoil)%dl, (0:coil(icoil)%NS), zero )
            SALLOCATE( coil(icoil)%dd, (0:coil(icoil)%NS), zero )
 	   SALLOCATE( coil(icoil)%curvature, (0:coil(icoil)%NS), zero )
@@ -170,7 +173,7 @@ subroutine AllocData(type)
 
      SALLOCATE(    xdof, (1:Ndof), zero ) ! dof vector;
      SALLOCATE( dofnorm, (1:Ndof), one ) ! dof normalized value vector;
-     SALLOCATE( evolution, (1:Nouts+1, 0:9), zero ) !evolution array;
+     SALLOCATE( evolution, (1:Nouts+1, 0:12), zero ) !evolution array;
      SALLOCATE( coilspace, (1:Nouts+1, 1:Tdof), zero ) ! all the coil parameters;
      
      ! determine dofnorm
@@ -299,7 +302,8 @@ subroutine AllocData(type)
      
      FATAL( AllocData, Ndof < 1, INVALID Ndof value )
      SALLOCATE( t1E, (1:Ndof), zero )
-     SALLOCATE( deriv, (1:Ndof, 0:7), zero )
+     !SALLOCATE( deriv, (1:Ndof, 0:7), zero )
+     SALLOCATE( deriv, (1:Ndof, 0:9), zero )
 
      ! Bnorm related;
      if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec) then
@@ -327,7 +331,12 @@ subroutine AllocData(type)
 
      ! curv needed;
      if (weight_curv > sqrtmachprec) then
-        SALLOCATE( t1CU,  (1:Ndof), zero )
+        SALLOCATE( t1K,  (1:Ndof), zero )
+     endif
+
+     ! ccsep needed;
+     if (weight_ccsep > sqrtmachprec) then
+        SALLOCATE( t1C,  (1:Ndof), zero )
      endif
 
      if (weight_straight > sqrtmachprec) then
@@ -337,7 +346,17 @@ subroutine AllocData(type)
      ! cssep needed;
      if (weight_cssep > sqrtmachprec) then
         SALLOCATE( t1S,  (1:Ndof), zero )
+     endif
+
+     ! tors needed;
+     if (weight_tors > sqrtmachprec) then
+        SALLOCATE( t1T,  (1:Ndof), zero )
      endif 
+
+     ! nissin needed;
+     if (weight_nissin > 0.0_dp) then
+        SALLOCATE( t1N,  (1:Ndof), zero )
+     endif
 
      ! L-M algorithn enabled
      if (LM_maxiter > 0) then
@@ -377,6 +396,18 @@ subroutine AllocData(type)
            icssep = LM_mfvec
            mcssep = Ncoils - Nfixgeo
            LM_mfvec = LM_mfvec + mcssep
+        endif
+
+        if (weight_tors > sqrtmachprec) then
+           itors = LM_mfvec
+           mtors = Ncoils - Nfixgeo
+           LM_mfvec = LM_mfvec + mtors
+        endif
+
+        if (weight_nissin > 0.0_dp) then
+           inissin = LM_mfvec
+           mnissin = Ncoils - Nfixgeo
+           LM_mfvec = LM_mfvec + mnissin
         endif
         
         FATAL( AllocData, LM_mfvec <= 0, INVALID number of cost functions )
