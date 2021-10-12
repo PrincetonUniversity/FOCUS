@@ -269,18 +269,18 @@ subroutine CurvDeriv1(icoil, derivs, ND, NC) !Calculate all derivatives for a co
      SALLOCATE(dzadDoF, (0:NS,1:ND), zero)
      do n = 1,NC
             dxtdDof(0:NS,n+1)      = -1*FouCoil(icoil)%smt(0:NS,n) * n
-     	    dxtdDof(0:NS,n+NF+1)   =    FouCoil(icoil)%cmt(0:NS,n) * n
-     	    dytdDof(0:NS,n+2*NF+2) = -1*FouCoil(icoil)%smt(0:NS,n) * n
-     	    dytdDof(0:NS,n+3*NF+2) =    FouCoil(icoil)%cmt(0:NS,n) * n
-     	    dztdDof(0:NS,n+4*NF+3) = -1*FouCoil(icoil)%smt(0:NS,n) * n
-     	    dztdDof(0:NS,n+5*NF+3) =    FouCoil(icoil)%cmt(0:NS,n) * n
+     	    dxtdDof(0:NS,n+NC+1)   =    FouCoil(icoil)%cmt(0:NS,n) * n
+     	    dytdDof(0:NS,n+2*NC+2) = -1*FouCoil(icoil)%smt(0:NS,n) * n
+     	    dytdDof(0:NS,n+3*NC+2) =    FouCoil(icoil)%cmt(0:NS,n) * n
+     	    dztdDof(0:NS,n+4*NC+3) = -1*FouCoil(icoil)%smt(0:NS,n) * n
+     	    dztdDof(0:NS,n+5*NC+3) =    FouCoil(icoil)%cmt(0:NS,n) * n
 
      	    dxadDof(0:NS,n+1)      = -1*FouCoil(icoil)%cmt(0:NS,n) * n*n
-     	    dxadDof(0:NS,n+NF+1)   = -1*FouCoil(icoil)%smt(0:NS,n) * n*n
-     	    dyadDof(0:NS,n+2*NF+2) = -1*FouCoil(icoil)%cmt(0:NS,n) * n*n
-     	    dyadDof(0:NS,n+3*NF+2) = -1*FouCoil(icoil)%smt(0:NS,n) * n*n
-     	    dzadDof(0:NS,n+4*NF+3) = -1*FouCoil(icoil)%cmt(0:NS,n) * n*n
-     	    dzadDof(0:NS,n+5*NF+3) = -1*FouCoil(icoil)%smt(0:NS,n) * n*n
+     	    dxadDof(0:NS,n+NC+1)   = -1*FouCoil(icoil)%smt(0:NS,n) * n*n
+     	    dyadDof(0:NS,n+2*NC+2) = -1*FouCoil(icoil)%cmt(0:NS,n) * n*n
+     	    dyadDof(0:NS,n+3*NC+2) = -1*FouCoil(icoil)%smt(0:NS,n) * n*n
+     	    dzadDof(0:NS,n+4*NC+3) = -1*FouCoil(icoil)%cmt(0:NS,n) * n*n
+     	    dzadDof(0:NS,n+5*NC+3) = -1*FouCoil(icoil)%smt(0:NS,n) * n*n
      enddo	
 	
      rtxrax = yt*za - zt*ya
