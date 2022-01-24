@@ -148,6 +148,12 @@ module globals
   REAL                 :: weight_cssep   =   0.000D+00
   REAL                 :: cssep_factor   =   4.000D+00 
   CHARACTER(100)       :: limiter_surf   = 'none'             ! limiter surface
+  INTEGER              :: case_cssep     =   1
+  REAL                 :: mincssep       =   7.000D-01
+  REAL                 :: cssep_alpha    =   1.000D+00
+  REAL                 :: cssep_beta     =   2.000D+00
+  REAL                 :: cssep_gamma    =   2.000D+00
+  REAL                 :: cssep_sigma    =   0.000D+00
   ! coil-coil separation
   REAL                 :: weight_ccsep   =   0.000D+00
   INTEGER              :: penfun_ccsep   =   1
@@ -264,6 +270,12 @@ module globals
   weight_cssep  ,&
   cssep_factor  ,&
   limiter_surf  ,&
+  case_cssep    ,&
+  mincssep      ,&
+  cssep_alpha   ,&
+  cssep_beta    ,&
+  cssep_gamma   ,&
+  cssep_sigma   ,&
   weight_ccsep  ,&
   penfun_ccsep  ,&
   ccsep_skip    ,&

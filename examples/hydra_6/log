@@ -1,0 +1,98 @@
+ ---------------------  FOCUS v0.14.06  ------------------------------
+focus   : Begin execution with ncpu =  160
+initial : machine_prec   =  2.22045E-16 ; sqrtmachprec   =  1.49012E-08
+ -----------INPUT NAMELIST------------------------------------
+initial : Read namelist focusin from : hydra_6.input
+        : Read plasma boundary  from : plasma.boundary
+        : Read limiter surface  from : plasma.boundary
+        : Read initial coils    from : hydra_6.focus(Parameters only)
+        :         IsQuiet = -1 ; Output detailed information.
+        :     IsSymmetric =  2 ; Periodicity and stellarator symmetry are both enforced.
+        :    case_surface =  0 ; Read VMEC-like Fourier harmonics for plasma boundary.
+        :      case_coils =  1 ; Using Fourier series as the basic representation.
+        :   case_optimize =  1 ; Gradient-based optimizations will be performed.
+                          : Nonlinear Conjugate Gradient method will be used, maxiter=     5
+                          : CG_wolfe_c1 =  1.00000E-04 ; CG_wolfe_c2 =  9.00000E-01 ; CG_xtol =  1.00000E-10
+        :     IsNormalize =  0 ; No normalization on coil parameters.
+        :    IsNormWeight =  0 ; No normalization on weights for constraints.
+        :    case_bnormal =  1 ; Bn normalized to |B|.
+        :     bharm_jsurf =  1 ; No normalization on Bn harmonics.
+        :     case_length =  3 ; Modified quadratic length penalty.
+        :   penfun_nissin =  1 ; Hyperbolic penalty function.
+        :   case_postproc =  1 ; Coil evaluations will be performed.
+outputs : HDF5 outputs           are saved in : focus_hydra_6.h5
+outputs : Optimizated coils      are saved in : hydra_6.focus ; hydra_6.coils
+ -----------Reading surface-----------------------------------
+surface : The surface plasma.boundary will be discretized in    128 X    256 elements.
+        : Nfou =     98 ; Nfp =      6 ; NBnf =    725 ;
+        : Enclosed total surface volume = 5.24331E+01 m^3 ; area = 2.73682E+02 m^2.
+        : The theta angle used is counter-clockwise.
+ -----------INITIALIZE COILS----------------------------------
+rdcoils : identified      6 unique coils in hydra_6.focus
+        :   6 fixed currents ;   0 fixed geometries.
+        : coils will be discretized in    384 segments
+focus   : Initialization took  3.08483E+00 S.
+ -----------OPTIMIZATIONS-------------------------------------
+solvers : Total number of DOF is   1170
+        : Initial weights are: 
+        : weight_bnorm =  1.00000E+04; case_bnormal = 1
+        : weight_curv  =  1.00000E+00;  case_curv = 4; penfun_curv = 2
+        :   curv_alpha =  1.00000E+00; curv_beta  =  2.00000E+00
+        :   curv_gamma =  2.00000E+00; curv_sigma =  0.00000E+00
+        :   curv_k0    =  4.00000E+00; curv_k1    =  0.00000E+00; curv_k1len = 0
+        : weight_cssep =  1.00000E+00; cssep_factor =  4.00000E+00
+ ------------- Initial status ------------------------
+ -----------COIL DIAGNOSTICS----------------------------------
+diagnos : Individual cost function values: 
+        :              Bnormal =  4.62873474E-06
+        :       B_mn harmonics =  0.00000000E+00
+        :        Toroidal flux =  0.00000000E+00
+        :          Coil length =  0.00000000E+00
+        :       Coil curvature =  5.98716971E-06
+        :         Coil torsion =  0.00000000E+00
+        :    Nissin complexity =  0.00000000E+00
+        : Coil-coil separation =  0.00000000E+00
+        : Coil-surf separation =  9.90926097E-03
+        : Average length of the coils is         :  1.506926679648257E+01
+        : Maximum curvature of all the coils is  :  4.062600975133968E+00 ; at coil   2
+        : Average curvature of the coils is      :  1.403394877977076E+00
+        : Average torsion of the coils is        :  8.182802362593590E-01
+        : The minimum coil-coil distance is      :  2.490024797167685E-01 ; at coils  6 ,  6
+        : The minimum coil-plasma distance is    :  5.315239401496975E-01 ; at coil   1
+        : Ave. relative absolute Bn error |Bn|/B :  5.13567E-04; max(|Bn|)= 1.25377E-02
+        : Surface area normalized Bn error int(|Bn|/B*ds)/A :   4.943099032624924E-04
+ ------------- Iterations ------------------------
+output  :   iout :         mark ;          chi ;      dE_norm ;      Bnormal ; Bmn harmonic ;    tor. flux ;  coil length ;     c-s sep. ;    curvature ;     c-c sep. ;      torsion ;       nissin ; 
+output  :      1 :  0.00000E+00 ;  5.62026E-02 ;  4.21483E-01 ;  4.62873E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  9.90926E-03 ;  5.98717E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ; 
+ ------------- Nonlinear Conjugate Gradient (CG) -----
+output  :      2 :  1.04258E+02 ;  5.61876E-02 ;  8.53075E-01 ;  4.62771E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  9.89845E-03 ;  1.20716E-05 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ; 
+output  :      3 :  1.39429E+02 ;  5.61323E-02 ;  6.92682E-01 ;  4.62556E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  9.86954E-03 ;  7.19928E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ; 
+output  :      4 :  1.74656E+02 ;  5.61034E-02 ;  2.15445E+00 ;  4.62157E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  9.82511E-03 ;  6.25824E-05 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ; 
+output  :      5 :  2.10448E+02 ;  5.59991E-02 ;  8.35305E-01 ;  4.61794E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  9.80784E-03 ;  1.19151E-05 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ; 
+output  :      6 :  2.45769E+02 ;  5.59636E-02 ;  2.00974E+00 ;  4.61115E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  9.78160E-03 ;  7.05423E-05 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ; 
+congrad : status=2: total iterations exceeded maxit.
+congrad : Computation using conjugate gradient finished.
+        : CG takes   2.461558272700000E+02 seconds;
+focus   : Optimization took      4 M     43 S.
+ -----------POST-PROCESSING-----------------------------------
+ -----------COIL DIAGNOSTICS----------------------------------
+diagnos : Individual cost function values: 
+        :              Bnormal =  4.61114749E-06
+        :       B_mn harmonics =  0.00000000E+00
+        :        Toroidal flux =  0.00000000E+00
+        :          Coil length =  0.00000000E+00
+        :       Coil curvature =  7.05422620E-05
+        :         Coil torsion =  0.00000000E+00
+        :    Nissin complexity =  0.00000000E+00
+        : Coil-coil separation =  0.00000000E+00
+        : Coil-surf separation =  9.78160296E-03
+        : Average length of the coils is         :  1.507085442418581E+01
+        : Maximum curvature of all the coils is  :  4.393662849418671E+00 ; at coil   2
+        : Average curvature of the coils is      :  1.404321599260127E+00
+        : Average torsion of the coils is        :  5.642906121371264E-01
+        : The minimum coil-coil distance is      :  2.470391119634436E-01 ; at coils  4 ,  3
+        : The minimum coil-plasma distance is    :  5.324871528330384E-01 ; at coil   1
+        : Ave. relative absolute Bn error |Bn|/B :  5.13639E-04; max(|Bn|)= 1.25213E-02
+        : Surface area normalized Bn error int(|Bn|/B*ds)/A :   4.939642608491743E-04
+focus   : Post-processing took  2.60435E+00 S.
+ -------------------------------------------------------------

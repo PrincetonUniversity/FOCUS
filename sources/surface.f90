@@ -27,6 +27,11 @@ SUBROUTINE surface
 
   ! read the limiter surface
   if (limiter /= plasma) then
+     if ( limiter_surf .eq. input_surf ) then 
+        limiter = plasma
+        psurf = limiter
+        return
+     endif
      inquire( file=trim(limiter_surf), exist=exist)  
      FATAL( surface, .not.exist, limiter_surf does not exist )
      FATAL( surface, limiter <= plasma, something goes wrong the surface indexing )
