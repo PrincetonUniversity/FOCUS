@@ -2,9 +2,10 @@
 
 ############################################################################################################
 
- ALLFILES= globals curvature initial rdsurf rdknot rdcoils packdof bfield bmnharm bnormal fdcheck \
-           torflux length surfsep datalloc solvers descent congrad lmalg saving diagnos \
-           specinp poinplot boozer wtmgrid surface focus 
+ ALLFILES= globals initial surface rdsurf rdknot rdcoils packdof bfield \
+           fdcheck datalloc solvers descent congrad lmalg \
+		   bmnharm bnormal torflux length surfsep nissin torsion coilsep curvature \
+           saving diagnos specinp poinplot boozer wtmgrid focus 
  HFILES= $(ALLFILES:=.f90)   # raw source files
  FFILES= $(ALLFILES:=_m.F90) # Fortran 90 files 
  PFILES= $(ALLFILES:=.pdf)   # documentations
@@ -114,7 +115,7 @@ lmder1.o : lmder1.f
 hybrj.o: hybrj.f
 	$(FC) -c $(RFLAGS) -o $@ $<
 
-cg_descent.o : cg_descent.f
+cg_descent.o : cg_descent.f globals_r.o 
 	$(FC) -c $(RFLAGS) -o $@ $<
 
 $(ROBJS): %_r.o: %_m.F90 globals_r.o

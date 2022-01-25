@@ -11,20 +11,6 @@
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-module bnorm_mod
-  ! contains some common variables used in subroutine bnormal
-  ! allocating once and re-using them will save allocation time
-  use globals, only : dp
-  implicit none
-
-  ! 0-order
-  REAL, allocatable :: dBx(:,:), dBy(:,:), dBz(:,:), Bm(:,:)
-  ! 1st-order
-  REAL, allocatable :: dBn(:), dBm(:), d1B(:,:,:)
-
-end module bnorm_mod
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
 subroutine bnormal( ideriv )
 !------------------------------------------------------------------------------------------------------ 
 ! DATE:  04/02/2017;

@@ -26,8 +26,8 @@ SUBROUTINE packdof(lxdof)
   !--------------------------------------------------------------------------------------------- 
   use globals, only : dp, zero, myid, ounit, MPI_COMM_FOCUS, &
                     & case_coils, Ncoils, coil, DoF, Ndof, DoFnorm
+  use mpi
   implicit none
-  include "mpif.h"
 
   REAL    :: lxdof(1:Ndof)
   INTEGER :: idof, icoil, ND, astat, ierr
@@ -103,8 +103,8 @@ SUBROUTINE unpacking(lxdof)
   !--------------------------------------------------------------------------------------------- 
   use globals, only: dp, zero, myid, ounit, MPI_COMM_FOCUS, &
        & case_coils, Ncoils, coil, DoF, Ndof, DoFnorm
+  use mpi
   implicit none
-  include "mpif.h"
 
   REAL    :: lxdof(1:Ndof)
   INTEGER :: idof, icoil, ND, astat, ierr, ifirst
@@ -177,8 +177,8 @@ SUBROUTINE packcoil
   ! DATE: 2017/03/25
   !--------------------------------------------------------------------------------------------- 
   use globals, only: dp, zero, myid, ounit, case_coils, Ncoils, coil, FouCoil, DoF, MPI_COMM_FOCUS
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER  :: icoil, idof, NF, ierr, astat
 
@@ -246,8 +246,8 @@ SUBROUTINE unpackcoil
   ! DATE: 2017/03/25
   !--------------------------------------------------------------------------------------------- 
   use globals, only: dp, zero, myid, ounit, case_coils, Ncoils, coil, FouCoil, DoF, MPI_COMM_FOCUS
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER  :: icoil, idof, NF, ierr, astat
 

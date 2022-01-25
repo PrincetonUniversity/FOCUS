@@ -23,15 +23,15 @@ SUBROUTINE fdcheck( ideriv )
   use globals, only: dp, zero, half, machprec, sqrtmachprec, ncpu, myid, ounit, MPI_COMM_FOCUS, &
                      coil, xdof, Ndof, t1E, t2E, chi, LM_maxiter, LM_fvec, LM_fjac
                      
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER, INTENT(in)  :: ideriv
   !--------------------------------------------------------------------------------------------
 
   INTEGER              :: astat, ierr, idof, ivec, imax
   REAL                 :: tmp_xdof(1:Ndof), fd, negvalue, posvalue, diff, rdiff
-  REAL                 :: start, finish, maxdiff, maxrdiff, small
+  REAL                 :: start, finissinh, maxdiff, maxrdiff, small
   REAL, parameter      :: psmall=1.0E-4
   !--------------------------------------------------------------------------------------------
 
@@ -51,9 +51,9 @@ SUBROUTINE fdcheck( ideriv )
 
   call cpu_time(start)
   call costfun(1)
-  call cpu_time(finish)
+  call cpu_time(finissinh)
   if(myid .eq. 0) write(ounit,'("fdcheck : First order derivatives of energy function takes " &
-       ES23.15 " seconds.")') finish - start
+       ES23.15 " seconds.")') finissinh - start
   if( myid.eq.0 ) write(ounit,'("fdcheck : idof/Ndof", 5(" ; ", A15))') "magnitude", "analytical",  &
    &  "fd-method", "abs diff", "relative diff"
 
@@ -86,11 +86,11 @@ SUBROUTINE fdcheck( ideriv )
 
      if( myid.eq.0 ) then 
          write(ounit,'("fdcheck : ", I4, "/", I4, 5(" ; "ES15.7))') idof, Ndof, small, t1E(idof), fd, diff, rdiff
-         if (diff >= psmall**2) write(ounit, *) "----------suspicious unmatching-----------------------"
+         if (rdiff >= psmall) write(ounit, *) "----------suspicious unmatching-----------------------"
       endif
       
       ! get the maximum difference
-      if (diff > maxdiff) then
+      if (rdiff > maxrdiff) then
          imax = idof
          maxdiff = diff
          maxrdiff = rdiff
