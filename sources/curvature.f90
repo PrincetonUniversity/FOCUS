@@ -106,7 +106,7 @@ subroutine CurvDeriv0(icoil,curvRet)
   INTEGER, intent(in)  :: icoil
   REAL   , intent(out) :: curvRet 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  INTEGER              :: kseg, NS
+  INTEGER              :: kseg, NS, cond
   REAL                 :: hypc, curv_hold, k1_use
   REAL,allocatable     :: curvv(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:)
 
@@ -125,7 +125,6 @@ subroutine CurvDeriv0(icoil,curvRet)
   ya(0:coil(icoil)%NS) = coil(icoil)%ya(0:coil(icoil)%NS)
   za(0:coil(icoil)%NS) = coil(icoil)%za(0:coil(icoil)%NS)
 
-  ! Set variable based on case_curv
   if ( case_curv .eq. 1 ) then
      curv_alpha = 0.0
      curv_sigma = 1.0
@@ -154,6 +153,7 @@ subroutine CurvDeriv0(icoil,curvRet)
  
   curvv = zero
   curvRet = zero
+  cond = 0
 
   curvv = sqrt( (za*yt-zt*ya)**2 + (xa*zt-xt*za)**2  + (ya*xt-yt*xa)**2 ) / (xt**2+yt**2+zt**2)**(1.5)
   coil(icoil)%maxcurv = maxval(curvv)
@@ -169,9 +169,31 @@ subroutine CurvDeriv0(icoil,curvRet)
      if ( curv_alpha .ne. 0.0 ) then
         if ( curvv(kseg) > curv_k0 ) then
            if ( penfun_curv .eq. 1 ) then
+              if( curv_alpha*(curvv(kseg)-curv_k0) .gt. 710.7 ) then
+                 curvRet = HUGE(curvRet)
+                 DALLOCATE(curvv)
+                 DALLOCATE(xt)
+                 DALLOCATE(yt)
+                 DALLOCATE(zt)
+                 DALLOCATE(xa)
+                 DALLOCATE(ya)
+                 DALLOCATE(za)
+                 return
+              endif
               hypc = 0.5*exp( curv_alpha*( curvv(kseg) - curv_k0 ) ) + 0.5*exp( -1.0*curv_alpha*( curvv(kseg) - curv_k0 ) )
               curv_hold = (hypc - 1.0)**2
            else
+              if( log10(curv_alpha*(curvv(kseg)-curv_k0)) .gt. 308.0 / curv_beta ) then
+                 curvRet = HUGE(curvRet)
+                 DALLOCATE(curvv)
+                 DALLOCATE(xt)
+                 DALLOCATE(yt)
+                 DALLOCATE(zt)
+                 DALLOCATE(xa)
+                 DALLOCATE(ya)
+                 DALLOCATE(za)
+                 return
+              endif
               curv_hold = ( curv_alpha*(curvv(kseg)-curv_k0) )**curv_beta
            endif
         endif
@@ -186,7 +208,7 @@ subroutine CurvDeriv0(icoil,curvRet)
 
   call lenDeriv0( icoil, coil(icoil)%L )
   curvRet = pi2*curvRet/(NS*coil(icoil)%L)
-
+  
   DALLOCATE(curvv)
   DALLOCATE(xt)
   DALLOCATE(yt)

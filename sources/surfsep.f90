@@ -198,7 +198,7 @@ SUBROUTINE CSPotential0(icoil, iteta, jzeta, dcssep)
   INTEGER, intent(in)  :: icoil, iteta, jzeta
   REAL   , intent(out) :: dcssep
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  INTEGER              :: kseg, astat, ierr, j0, per0, l0, ss0, NS
+  INTEGER              :: kseg, astat, ierr, j0, per0, l0, ss0, NS, cond
   REAL                 :: dl, xt, yt, zt, xc, yc, zc, xs, ys, zs, dx, dy, dz, lr
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -216,7 +216,8 @@ SUBROUTINE CSPotential0(icoil, iteta, jzeta, dcssep)
      cssep_gamma = cssep_factor
   endif
  
-  dcssep = zero 
+  dcssep = zero
+  cond = 0
 
   xs = surf(psurf)%xx(iteta, jzeta); ys = surf(psurf)%yy(iteta, jzeta); zs = surf(psurf)%zz(iteta, jzeta)
 
@@ -250,6 +251,10 @@ SUBROUTINE CSPotential0(icoil, iteta, jzeta, dcssep)
      lr = dx*dx + dy*dy + dz*dz ! length**2 of r_vector
 
      if ( sqrt(lr) .lt. mincssep ) then
+        if( log10(cssep_alpha*(mincssep-sqrt(lr))) .gt. 308.0 / cssep_beta ) then
+           dcssep = HUGE(dcssep)
+           return
+        endif
         dcssep = dcssep + ( cssep_alpha*(mincssep-sqrt(lr)) )**cssep_beta*coil(icoil)%dd(kseg)*sqrt(dl)
      endif
      dcssep = dcssep + cssep_sigma*lr**(-0.5*cssep_gamma)*sqrt(dl)*coil(icoil)%dd(kseg)
@@ -261,7 +266,7 @@ SUBROUTINE CSPotential0(icoil, iteta, jzeta, dcssep)
 
   call lenDeriv0( icoil, coil(icoil)%L )
   dcssep = dcssep / coil(icoil)%L
-
+  
   return
 END SUBROUTINE CSPotential0
 
