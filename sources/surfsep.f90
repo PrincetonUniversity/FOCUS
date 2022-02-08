@@ -203,7 +203,6 @@ SUBROUTINE CSPotential0(icoil, iteta, jzeta, dcssep)
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   FATAL( CSPotential0, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
-
   FATAL( CSPotential0, cssep_alpha .lt. 0.0, coil to surface alpha cannot be negative )
   FATAL( CSPotential0, cssep_beta .lt. 2.0, coil to surface beta cannot be less than 2 )
   FATAL( CSPotential0, cssep_sigma .lt. 0.0, coil to surface sigma cannot be negative )
@@ -287,7 +286,7 @@ SUBROUTINE CSPotential1(icoil, iteta, jzeta, d1S, ND)
   REAL   , intent(out) :: d1S(1:1, 1:ND)
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   INTEGER              :: kseg, astat, ierr, j0, per0, l0, ss0
-  REAL                 :: q, xt, yt, zt, xa, ya, za, xc, yc, zc, xs, ys, zs
+  REAL                 :: xt, yt, zt, xa, ya, za, xc, yc, zc, xs, ys, zs
   REAL                 :: dl, dx, dy, dz, lr, pm, holdd
   REAL, dimension(1:1, 0:coil(icoil)%NS-1) :: dSx, dSy, dSz
   REAL, dimension(0:coil(icoil)%NS-1, 1:ND) :: DoFx, DoFy, DoFz
@@ -303,7 +302,6 @@ SUBROUTINE CSPotential1(icoil, iteta, jzeta, d1S, ND)
   endif
 
   d1S = zero
-  q = cssep_factor ! easy convention
   xs = surf(psurf)%xx(iteta, jzeta) ; ys = surf(psurf)%yy(iteta, jzeta) ; zs = surf(psurf)%zz(iteta, jzeta)
 
   d1L = zero

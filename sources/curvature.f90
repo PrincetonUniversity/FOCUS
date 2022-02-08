@@ -16,7 +16,7 @@
 ! chi = chi + weight_curv*curv
 ! t1K is total derivative of curvature penalty
 ! LM implemented
-! not parallelized, does not take long to calculate 
+! not parallelized, parallelization checked and slowed code 
 subroutine curvature(ideriv)
   use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, MPI_COMM_FOCUS, &
        coil, DoF, Ncoils, Nfixgeo, Ndof, curv, t1K, t2K, weight_curv, FouCoil, &
@@ -106,18 +106,11 @@ subroutine CurvDeriv0(icoil,curvRet)
   INTEGER, intent(in)  :: icoil
   REAL   , intent(out) :: curvRet 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  INTEGER              :: kseg, NS, cond
+  INTEGER              :: kseg, NS
   REAL                 :: hypc, curv_hold, k1_use
-  REAL,allocatable     :: curvv(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:)
+  REAL                 :: curvv(0:coil(icoil)%NS), xt(0:coil(icoil)%NS), yt(0:coil(icoil)%NS), zt(0:coil(icoil)%NS), xa(0:coil(icoil)%NS), ya(0:coil(icoil)%NS), za(0:coil(icoil)%NS)
 
   NS = coil(icoil)%NS 
-  SALLOCATE(curvv, (0:NS), zero)
-  SALLOCATE(xt, (0:NS), zero)
-  SALLOCATE(yt, (0:NS), zero)
-  SALLOCATE(zt, (0:NS), zero)
-  SALLOCATE(xa, (0:NS), zero)
-  SALLOCATE(ya, (0:NS), zero)
-  SALLOCATE(za, (0:NS), zero)
   xt(0:coil(icoil)%NS) = coil(icoil)%xt(0:coil(icoil)%NS)
   yt(0:coil(icoil)%NS) = coil(icoil)%yt(0:coil(icoil)%NS)
   zt(0:coil(icoil)%NS) = coil(icoil)%zt(0:coil(icoil)%NS)
@@ -153,7 +146,6 @@ subroutine CurvDeriv0(icoil,curvRet)
  
   curvv = zero
   curvRet = zero
-  cond = 0
 
   curvv = sqrt( (za*yt-zt*ya)**2 + (xa*zt-xt*za)**2  + (ya*xt-yt*xa)**2 ) / (xt**2+yt**2+zt**2)**(1.5)
   coil(icoil)%maxcurv = maxval(curvv)
@@ -171,13 +163,6 @@ subroutine CurvDeriv0(icoil,curvRet)
            if ( penfun_curv .eq. 1 ) then
               if( curv_alpha*(curvv(kseg)-curv_k0) .gt. 710.7 ) then
                  curvRet = HUGE(curvRet)
-                 DALLOCATE(curvv)
-                 DALLOCATE(xt)
-                 DALLOCATE(yt)
-                 DALLOCATE(zt)
-                 DALLOCATE(xa)
-                 DALLOCATE(ya)
-                 DALLOCATE(za)
                  return
               endif
               hypc = 0.5*exp( curv_alpha*( curvv(kseg) - curv_k0 ) ) + 0.5*exp( -1.0*curv_alpha*( curvv(kseg) - curv_k0 ) )
@@ -185,13 +170,6 @@ subroutine CurvDeriv0(icoil,curvRet)
            else
               if( log10(curv_alpha*(curvv(kseg)-curv_k0)) .gt. 308.0 / curv_beta ) then
                  curvRet = HUGE(curvRet)
-                 DALLOCATE(curvv)
-                 DALLOCATE(xt)
-                 DALLOCATE(yt)
-                 DALLOCATE(zt)
-                 DALLOCATE(xa)
-                 DALLOCATE(ya)
-                 DALLOCATE(za)
                  return
               endif
               curv_hold = ( curv_alpha*(curvv(kseg)-curv_k0) )**curv_beta
@@ -209,14 +187,6 @@ subroutine CurvDeriv0(icoil,curvRet)
   call lenDeriv0( icoil, coil(icoil)%L )
   curvRet = pi2*curvRet/(NS*coil(icoil)%L)
   
-  DALLOCATE(curvv)
-  DALLOCATE(xt)
-  DALLOCATE(yt)
-  DALLOCATE(zt)
-  DALLOCATE(xa)
-  DALLOCATE(ya)
-  DALLOCATE(za)
-
   return
 
 end subroutine CurvDeriv0

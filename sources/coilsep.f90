@@ -91,7 +91,7 @@ end subroutine coilsep
 subroutine CoilSepDeriv0(icoil, coilsep0)
 
   use globals, only: dp, zero, pi2, coil, myid, ncpu, ounit, Ncoils, Nfp, machprec, r_delta, ccsep_alpha, &
-                   & penfun_ccsep, ccsep_beta, ccsep_skip, MPI_COMM_FOCUS
+                     penfun_ccsep, ccsep_beta, ccsep_skip, MPI_COMM_FOCUS
   use mpi 
   implicit none
 
@@ -116,14 +116,16 @@ subroutine CoilSepDeriv0(icoil, coilsep0)
 
   FATAL( CoilSepDeriv0, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
   FATAL( CoilSepDeriv0, penfun_ccsep .ne. 1 .and. penfun_ccsep .ne. 2, invalid choice of penfun_ccsep, pick 1 or 2 )
-  FATAL( CurvDeriv0, r_delta .le. 0.0 , r_delta needs to be positive )
-  FATAL( CurvDeriv0, ccsep_alpha < 0.0 , ccsep_alpha cannot be negative )
-  FATAL( CurvDeriv0, ccsep_beta < 2.0 , ccsep_beta needs to be >= 2 )
+  FATAL( CoilSepDeriv0, r_delta .le. 0.0 , r_delta needs to be positive )
+  FATAL( CoilSepDeriv0, ccsep_alpha < 0.0 , ccsep_alpha cannot be negative )
+  FATAL( CoilSepDeriv0, ccsep_beta < 2.0 , ccsep_beta needs to be >= 2 )
 
   coilsep0 = zero
   coilseph = zero
   coilsepHold = zero
   cond = 0
+
+  call lenDeriv0( icoil, coil(icoil)%L )
 
   if ( coil(icoil)%symm == 0 ) then 
      per0 = 1
@@ -225,7 +227,6 @@ subroutine CoilSepDeriv0(icoil, coilsep0)
                  coilseph = zero
               enddo
            enddo
-           call lenDeriv0( icoil, coil(icoil)%L )
            coilsep0 = coilsep0 + pi2*pi2*coilsepHold/(NS*NS*coil(icoil)%L)
            coilsepHold = 0.0
            DALLOCATE(x1)
@@ -238,6 +239,8 @@ subroutine CoilSepDeriv0(icoil, coilsep0)
         do i = icoil+1, Ncoils 
            if (coil(icoil)%Lc == 0 .and. coil(i)%Lc == 0) cycle
            NS1 = coil(i)%NS
+           DALLOCATE(absrp1)
+           SALLOCATE(absrp1, (0:NS1-1), zero)
            SALLOCATE(x1, (0:NS1-1), zero)
            SALLOCATE(y1, (0:NS1-1), zero)
            SALLOCATE(z1, (0:NS1-1), zero)
@@ -266,11 +269,11 @@ subroutine CoilSepDeriv0(icoil, coilsep0)
                  yt1(0:NS1-1) = ((-1.0)**l1)*((coil(i)%yt(0:NS1-1))*cos(pi2*(j1-1)/Nfp) + (coil(i)%xt(0:NS1-1))*sin(pi2*(j1-1)/Nfp))
                  zt1(0:NS1-1) = (coil(i)%zt(0:NS1-1))*((-1.0)**l1)
                  
-                 absrp1(0:NS-1) = sqrt( (coil(i)%xt(0:NS-1))**2 + (coil(i)%yt(0:NS-1))**2 + (coil(i)%zt(0:NS-1))**2 )
+                 absrp1(0:NS1-1) = sqrt( (coil(i)%xt(0:NS1-1))**2 + (coil(i)%yt(0:NS1-1))**2 + (coil(i)%zt(0:NS1-1))**2 )
                  if ( ccsep_skip .eq. 1 ) then
-                    xc1 = sum( x1(0:NS-1)*absrp1(0:NS-1) ) / sum( absrp1(0:NS-1) )
-                    yc1 = sum( y1(0:NS-1)*absrp1(0:NS-1) ) / sum( absrp1(0:NS-1) )
-                    zc1 = sum( z1(0:NS-1)*absrp1(0:NS-1) ) / sum( absrp1(0:NS-1) )
+                    xc1 = sum( x1(0:NS1-1)*absrp1(0:NS1-1) ) / sum( absrp1(0:NS1-1) )
+                    yc1 = sum( y1(0:NS1-1)*absrp1(0:NS1-1) ) / sum( absrp1(0:NS1-1) )
+                    zc1 = sum( z1(0:NS1-1)*absrp1(0:NS1-1) ) / sum( absrp1(0:NS1-1) )
                     if ( sqrt((xc0-xc1)**2+(yc0-yc1)**2+(zc0-zc1)**2 ) .ge. (coil(i)%Lo+coil(icoil)%Lo)*.25 ) cycle
                  endif
                  do kseg0 = 0, NS-1
@@ -334,7 +337,6 @@ subroutine CoilSepDeriv0(icoil, coilsep0)
      enddo
   enddo
   
-  call lenDeriv0( icoil, coil(icoil)%L )
   coilsep0 = coilsep0 / coil(icoil)%L
   
   DALLOCATE(x0)
@@ -378,6 +380,9 @@ subroutine CoilSepDeriv1(icoil, derivs, ND)
 
   SALLOCATE(derivs_hold, (1:1,1:ND), zero)
   SALLOCATE(derivsh, (1:ND), zero)
+
+  call lenDeriv0( icoil, coil(icoil)%L )
+  call lenDeriv1( icoil, d1L(1:1,1:ND), ND )
   
   NS = coil(icoil)%NS
 
@@ -557,8 +562,6 @@ subroutine CoilSepDeriv1(icoil, derivs, ND)
               enddo
            enddo
            intt = pi2*pi2*intt/(NS*NS)
-           call lenDeriv0( icoil, coil(icoil)%L )
-           call lenDeriv1( icoil, d1L(1:1,1:ND), ND )
            derivs(1,:) = derivs(1,:) + pi2*pi2*derivs_hold(1,:)/(NS*NS*coil(icoil)%L)-2.0*intt*d1L(1,:)/(coil(icoil)%L**2)
            derivs_hold = zero
            intt = zero
@@ -589,6 +592,8 @@ subroutine CoilSepDeriv1(icoil, derivs, ND)
               FATAL( CoilSepDeriv1, .true. , Errors in coil symmetry )
            endif
            NS1 = coil(i)%NS
+           DALLOCATE(absrp1)
+           SALLOCATE(absrp1, (0:NS1-1), zero)
            SALLOCATE(x1, (0:NS1-1), zero)
            SALLOCATE(y1, (0:NS1-1), zero)
            SALLOCATE(z1, (0:NS1-1), zero)
@@ -597,7 +602,7 @@ subroutine CoilSepDeriv1(icoil, derivs, ND)
            SALLOCATE(zt1, (0:NS1-1), zero)
            SALLOCATE(xa1, (0:NS1-1), zero)
            SALLOCATE(ya1, (0:NS1-1), zero)
-           SALLOCATE(za1, (0:NS1-1), zero) ! Check everything ending in 1 has correct NS1
+           SALLOCATE(za1, (0:NS1-1), zero)
            do j1 = 1, per1
               do l1 = 0, ss1
                  x1(0:NS1-1)=(coil(i)%xx(0:NS1-1))*cos(pi2*(j1-1)/Nfp)-(coil(i)%yy(0:NS1-1))*sin(pi2*(j1-1)/Nfp)
@@ -614,9 +619,9 @@ subroutine CoilSepDeriv1(icoil, derivs, ND)
                  
                  absrp1(0:NS1-1) = sqrt( (coil(i)%xt(0:NS1-1))**2 + (coil(i)%yt(0:NS1-1))**2 + (coil(i)%zt(0:NS1-1))**2 )
                  if ( ccsep_skip .eq. 1 ) then
-                    xc1 = sum( x1(0:NS-1)*absrp1(0:NS-1) ) / sum( absrp1(0:NS-1) )
-                    yc1 = sum( y1(0:NS-1)*absrp1(0:NS-1) ) / sum( absrp1(0:NS-1) )
-                    zc1 = sum( z1(0:NS-1)*absrp1(0:NS-1) ) / sum( absrp1(0:NS-1) )
+                    xc1 = sum( x1(0:NS1-1)*absrp1(0:NS1-1) ) / sum( absrp1(0:NS1-1) )
+                    yc1 = sum( y1(0:NS1-1)*absrp1(0:NS1-1) ) / sum( absrp1(0:NS1-1) )
+                    zc1 = sum( z1(0:NS1-1)*absrp1(0:NS1-1) ) / sum( absrp1(0:NS1-1) )
                     if ( sqrt((xc0-xc1)**2+(yc0-yc1)**2+(zc0-zc1)**2 ) .ge. (coil(i)%Lo+coil(icoil)%Lo)*.25 ) cycle
                  endif
                  do kseg0 = 0, NS-1
@@ -685,8 +690,6 @@ subroutine CoilSepDeriv1(icoil, derivs, ND)
            enddo
            intt = pi2*pi2*intt/(NS*NS1) 
            call lenDeriv0( i, coil(i)%L )
-           call lenDeriv0( icoil, coil(icoil)%L )
-           call lenDeriv1( icoil, d1L(1:1,1:ND), ND ) ! Probably don't need this
            derivs(1,:) = derivs(1,:) + pi2*pi2*derivs_hold(1,:)/(NS*NS1*coil(i)%L)-intt*d1L(1,:)/(coil(i)%L*coil(icoil)%L) 
            derivs_hold = zero
            intt = zero
@@ -704,7 +707,6 @@ subroutine CoilSepDeriv1(icoil, derivs, ND)
      enddo
   enddo
   
-  call lenDeriv0( icoil, coil(icoil)%L )
   derivs = derivs/coil(icoil)%L
 
   DALLOCATE(derivs_hold)
