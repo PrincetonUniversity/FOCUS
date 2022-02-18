@@ -1,0 +1,70 @@
+&focusin
+ IsQuiet        =        -1
+ IsSymmetric    =        2 
+
+ case_surface   =        0         
+ knotsurf       =        0.200D-00
+ ellipticity    =        0.000D+00
+ Nteta          =      128           
+ Nzeta          =      256   
+
+ case_init      =        0
+ case_coils     =        1
+ Ncoils         =        72
+ init_current   =        1.000D+06        
+ init_radius    =        0.300D+00
+ IsVaryCurrent  =        0         
+ IsVaryGeometry =        1         
+ NFcoil         =        16 
+ Nseg           =        384
+
+ case_optimize  =        1 
+ IsNormalize    =        0
+ IsNormWeight   =        0
+ case_bnormal   =        1
+ case_length    =        3 
+ case_curv      =        4
+ curv_k0        =        4.000D+00
+ curv_alpha     =        1.000D+00        
+ weight_bnorm   =        1.000D+04
+ weight_bharm   =        0.000D+00
+ weight_tflux   =        0.000D-05
+ target_tflux   =        0.000D+00
+ weight_ttlen   =        0.000D+00
+ target_length  =        2.500D+01 
+ weight_specw   =        0.000D+00
+ weight_curv    =        1.000D-00
+ length_delta   =        1.000D-01
+ weight_ccsep   =        0.000D+00
+ ccsep_alpha    =        3.000D+03
+ r_delta        =        2.500D-01
+ penfun_ccsep   =        2
+ ccsep_beta     =        2.000D+00
+ ccsep_skip     =        1
+ penfun_curv    =        2
+ curv_k1        =        0.000D+00
+ curv_k1len     =        0
+ curv_beta      =        2.000D+00
+ curv_gamma     =        2.000D+00
+ curv_sigma     =        0.000D-00
+
+ weight_cssep   =        1.000D+00
+ cssep_factor   =        4.000D+00
+ case_cssep     =        2
+ mincssep       =        7.000D-01
+ cssep_alpha    =        1.000D+01
+ cssep_beta     =        2.000D+00
+ cssep_sigma    =        0.000D+00
+ cssep_gamma    =        2.000D+00
+
+ CG_maxiter     =        5
+ CG_xtol        =        1.000D-10
+ CG_wolfe_c1    =        1.000D-04
+ CG_wolfe_c2    =        0.9
+
+ case_postproc  =        1
+ save_freq      =        1
+ save_coils     =        1 
+ save_harmonics =        1
+ save_filaments =        0              
+/
