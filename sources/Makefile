@@ -4,7 +4,7 @@
 
  ALLFILES= globals initial surface rdsurf rdknot rdcoils packdof bfield \
            fdcheck datalloc solvers descent congrad lmalg \
-		   bmnharm bnormal torflux length surfsep nissin torsion coilsep curvature \
+	   stochastic bmnharm bnormal torflux length surfsep nissin torsion coilsep curvature \
            saving diagnos specinp poinplot boozer wtmgrid focus 
  HFILES= $(ALLFILES:=.f90)   # raw source files
  FFILES= $(ALLFILES:=_m.F90) # Fortran 90 files 

@@ -243,7 +243,7 @@ subroutine costfun(ideriv)
        specw      , t1P, t2P, weight_specw, &
        ccsep      , t1C, t2C, weight_ccsep, &
        tors       , t1T, t2T, weight_tors,  &
-       nissin        , t1N, t2N, weight_nissin,   &
+       nissin     , t1N, t2N, weight_nissin,   &
        curv       , t1K, t2K, weight_curv, MPI_COMM_FOCUS
 
   use mpi

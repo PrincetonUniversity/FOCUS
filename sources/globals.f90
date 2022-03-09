@@ -163,6 +163,9 @@ module globals
   REAL                 :: ccsep_alpha    =   1.000D+01
   REAL                 :: ccsep_beta     =   2.000D+00
   REAL                 :: weight_specw   =   0.000D+00
+  ! bnrom stochastic
+  INTEGER              :: Npert          =   10
+  REAL                 :: sdelta         =   1.000D-02
   ! optimize controls
   INTEGER              :: case_optimize  =   0
   REAL                 :: exit_tol       =   1.000D-04
@@ -284,6 +287,8 @@ module globals
   ccsep_alpha   ,&
   ccsep_beta    ,&
   weight_specw  ,&
+  Npert         ,&
+  sdelta        ,&
   case_optimize ,&
   exit_tol      ,&
   DF_maxiter    ,&

@@ -12,7 +12,7 @@ SUBROUTINE diagnos
   INTEGER           :: icoil, itmp, NF, idof, i, j, isurf, cs, ip, is, Npc, coilInd0, coilInd1, j0, per0, l0, ss0
   LOGICAL           :: lwbnorm, l_raw
   REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist, ReDot, ImDot, dum, AvgCurv, AvgTors, &
-                       MinLambda, MaxS, torsRet
+                       MinLambda, MaxS, torsRet, bnormmax, bnormavg, nxx(Ncoils,Npert), psx(Ncoils,Npert)
   REAL, parameter   :: infmax = 1.0E6
   REAL, allocatable :: Atmp(:,:), Btmp(:,:)
 
@@ -305,7 +305,28 @@ SUBROUTINE diagnos
      endif
   endif
 
-  return
+  !--------------------------------calculate the stochastic Bn error----------------------------
+  if ( Npert .ge. 1 ) then
+
+     ! Stochastic variables set here
+     do icoil = 1, Ncoils
+        do j = 1, Npert
+           ! Parallelization will be weird with random number
+           call random_number(torsRet) 
+           psx(icoil,j) = pi2*torsRet
+           call random_number(torsRet)
+           nxx(icoil,j) = FLOOR(3.0*torsRet) + 1 ! Should give int between 1 and 3
+        enddo
+     enddo
+
+     call stochastic( 0, psx, nxx, bnormmax, bnormavg ) ! Maybe input perturbations here 
+
+     if(myid .eq. 0) write(ounit, '(8X": Maximum field error after perturbations: "ES23.15)') bnormmax
+     if(myid .eq. 0) write(ounit, '(8X": Average field error after perturbations: "ES23.15)') bnormavg
+
+  endif
+
+  return ! Does this return mean coil importance never gets calculated? 
 
   !--------------------------------calculate coil importance------------------------------------  
   if (.not. allocated(coil_importance)) then
