@@ -308,18 +308,7 @@ SUBROUTINE diagnos
   !--------------------------------calculate the stochastic Bn error----------------------------
   if ( Npert .ge. 1 ) then
 
-     ! Stochastic variables set here
-     do icoil = 1, Ncoils
-        do j = 1, Npert
-           ! Parallelization will be weird with random number
-           call random_number(torsRet) 
-           psx(icoil,j) = pi2*torsRet
-           call random_number(torsRet)
-           nxx(icoil,j) = FLOOR(3.0*torsRet) + 1 ! Should give int between 1 and 3
-        enddo
-     enddo
-
-     call stochastic( 0, psx, nxx, bnormmax, bnormavg ) ! Maybe input perturbations here 
+     call stochastic( 0, bnormmax, bnormavg )
 
      if(myid .eq. 0) write(ounit, '(8X": Maximum field error after perturbations: "ES23.15)') bnormmax
      if(myid .eq. 0) write(ounit, '(8X": Average field error after perturbations: "ES23.15)') bnormavg
