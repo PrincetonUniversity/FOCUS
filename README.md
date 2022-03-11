@@ -2,7 +2,8 @@
 
 # <img alt="FOCUS" src="https://princetonuniversity.github.io/FOCUS/logo.png" height="80"> Flexible Optimized Coils Using Space curves
 
-**FOCUS** is a nonlinear optimization code for designing 3D coils. 
+**FOCUS** is a nonlinear optimization code for designing 3D coils.
+Its sibling, **FAMUS**, can be use to design permanent magnets.
 
 - **Website (including documentation):** https://princetonuniversity.github.io/FOCUS/
 - **Source:** https://github.com/PrincetonUniversity/FOCUS
@@ -12,7 +13,6 @@
 
 There are several branches available. Please use the correct one.
 
-- **master:** the basic branch for the latest stable version.
 - **develop:** the develop branch including the newest features.
 - **dipole:** branch for designing permanent magnets (FAMUS).
 - **old:** the old branch that was originally developped (require NAG library).
