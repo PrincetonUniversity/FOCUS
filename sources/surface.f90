@@ -13,6 +13,7 @@ SUBROUTINE surface
   if ( weight_cssep > machprec ) then     
      plasma = 1
      limiter = 2
+     if ( limiter_surf .eq. input_surf ) limiter = plasma ! use the plasma surface as limiter surface
   else ! use the plasma surface as limiter
      plasma = 1
      limiter = 1

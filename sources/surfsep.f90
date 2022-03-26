@@ -73,32 +73,40 @@ SUBROUTINE surfsep(ideriv)
 !------------------------------------------------------------------------------------------------------  
   use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, &
        coil, DoF, Ncoils, Nfixgeo, Ndof, cssep, t1S, t2S, psurf, surf, &
-       icssep, mcssep, LM_fvec, LM_fjac, weight_cssep, MPI_COMM_FOCUS,coil_type_spline
+       icssep, mcssep, LM_fvec, LM_fjac, weight_cssep, Nteta, Nzeta, Nfp, MPI_COMM_FOCUS,coil_type_spline
+
 
   use mpi
   implicit none
   INTEGER, INTENT(in) :: ideriv
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  INTEGER             :: astat, ierr, icoil, iteta, jzeta, NumGrid, Nteta, Nzeta, idof, ND, ivec
+  INTEGER             :: astat, ierr, icoil, iteta, jzeta, NumGrid, idof, ND, ivec, totalcoil
   REAL                :: dcssep, discretefactor, d1S(1:Ndof), L1S(1:Ndof), coilsum
   REAL                :: lcssep(Ncoils), jac(Ncoils, Ndof)
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   cssep = zero ; lcssep = zero;
-  Nteta = surf(psurf)%Nteta ! please note psurf could be other surfaces than the plasma boundary.
-  Nzeta = surf(psurf)%Nzeta ! Nteta & Nzeta are local variables here,
   NumGrid = Nteta*Nzeta     ! specifying the resolution of the prevent surface.
   discretefactor = (pi2/Nteta) * (pi2/Nzeta)
-  !num_free = Ncoils - Nfixgeo ! number of free coils
   lcssep = zero
+  totalcoil = zero
   
   if( ideriv >= 0 ) then
      ivec = 1
      do icoil = 1, Ncoils
         if ((coil(icoil)%type /= 1) .AND. (coil(icoil)%type /= coil_type_spline)) cycle ! skip for other coils
         coilsum = zero
-        if ( coil(icoil)%Lc /= 0 ) then 
+        if ( coil(icoil)%Lc /= 0 ) then
+           if ( coil(icoil)%symm == 0 ) then
+              totalcoil = totalcoil + 1
+           elseif ( coil(icoil)%symm == 1 ) then
+              totalcoil = totalcoil + Nfp
+           elseif ( coil(icoil)%symm == 2 ) then 
+              totalcoil = totalcoil + Nfp*2
+           else
+              FATAL( diagnos, .true. , Errors in coil symmetry )
+           endif
            do jzeta = 0, Nzeta - 1
               do iteta = 0, Nteta - 1           
                  if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;                     
@@ -115,7 +123,7 @@ SUBROUTINE surfsep(ideriv)
         endif       
      enddo ! end do icoil
 
-     cssep = sum(lcssep(1:Ncoils)) * discretefactor /  (Ncoils - Nfixgeo + machprec) ! average value
+     cssep = sum(lcssep(1:Ncoils)) * discretefactor /  (totalcoil + machprec) ! average value
 
      ! L-M format of targets
      if (mcssep > 0) then
@@ -167,7 +175,7 @@ SUBROUTINE surfsep(ideriv)
      endif
      
      do idof = 1, Ndof       
-        t1S(idof) = sum(jac(1:Ncoils, idof)) * discretefactor /  (Ncoils - Nfixgeo + machprec) 
+        t1S(idof) = sum(jac(1:Ncoils, idof)) * discretefactor /  (totalcoil + machprec)
      enddo
      
   endif
@@ -183,38 +191,77 @@ SUBROUTINE CSPotential0(icoil, iteta, jzeta, dcssep)
 ! DATE: 04/05/2018
 ! calculate the potential energy between the i-th coil and the (iteta, jzeta) point on the surface
 !------------------------------------------------------------------------------------------------------  
-  use globals, only: dp, zero, coil, myid, ounit, Ncoils, surf, psurf, cssep_factor, MPI_COMM_FOCUS
+  use globals, only: dp, zero, coil, myid, ounit, Ncoils, surf, psurf, cssep_factor, case_cssep, &
+                     mincssep, cssep_alpha, cssep_beta, cssep_gamma, cssep_sigma, Nfp, pi2, MPI_COMM_FOCUS
   use mpi
   implicit none
 
   INTEGER, intent(in)  :: icoil, iteta, jzeta
   REAL   , intent(out) :: dcssep
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  INTEGER              :: kseg, astat, ierr
+  INTEGER              :: kseg, astat, ierr, j0, per0, l0, ss0, NS
   REAL                 :: dl, xt, yt, zt, xc, yc, zc, xs, ys, zs, dx, dy, dz, lr
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   FATAL( CSPotential0, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
-!  FATAL( CSPotential0, iteta .lt. 0 .or. iteta .gt. Nteta , iteta not in right range )
-!  FATAL( CSPotential0, jzeta .lt. 0 .or. jzeta .gt. Nzeta , jzeta not in right range )
-  
+
+  FATAL( CSPotential0, cssep_alpha .lt. 0.0, coil to surface alpha cannot be negative )
+  FATAL( CSPotential0, cssep_beta .lt. 2.0, coil to surface beta cannot be less than 2 )
+  FATAL( CSPotential0, cssep_sigma .lt. 0.0, coil to surface sigma cannot be negative )
+  FATAL( CSPotential0, cssep_gamma .lt. 1.0, coil to surface gamma cannot be less than 1 )
+  FATAL( CSPotential0, mincssep .lt. 0.0, coil to surface separation cannot be negative )
+
+  if( case_cssep .eq. 1 ) then
+     cssep_alpha = 0.0
+     cssep_sigma = 1.0
+     cssep_gamma = cssep_factor
+  endif
+ 
   dcssep = zero 
 
-  xs = surf(psurf)%xx(iteta, jzeta) ; ys = surf(psurf)%yy(iteta, jzeta) ; zs = surf(psurf)%zz(iteta, jzeta)
-  
-  do kseg = 0, coil(icoil)%NS-1
+  xs = surf(psurf)%xx(iteta, jzeta); ys = surf(psurf)%yy(iteta, jzeta); zs = surf(psurf)%zz(iteta, jzeta)
 
-     ! easy convention
-     xc = coil(icoil)%xx(kseg) ; yc = coil(icoil)%yy(kseg) ; zc = coil(icoil)%zz(kseg)
-     xt = coil(icoil)%xt(kseg) ; yt = coil(icoil)%yt(kseg) ; zt = coil(icoil)%zt(kseg)
+  if ( coil(icoil)%symm == 0 ) then
+     per0 = 1
+     ss0 = 0
+  elseif ( coil(icoil)%symm == 1 ) then
+     per0 = Nfp
+     ss0 = 0
+  elseif ( coil(icoil)%symm == 2 ) then
+     per0 = Nfp
+     ss0 = 1
+  else
+     FATAL( diagnos, .true. , Errors in coil symmetry )
+  endif
+  do j0 = 1, per0
+  do l0 = 0, ss0
+
+  do kseg = 0, coil(icoil)%NS-1
      
+     xc = (coil(icoil)%xx(kseg))*cos(pi2*(j0-1)/Nfp) - (coil(icoil)%yy(kseg))*sin(pi2*(j0-1)/Nfp)
+     yc = ((-1.0)**l0)*((coil(icoil)%yy(kseg))*cos(pi2*(j0-1)/Nfp) + (coil(icoil)%xx(kseg))*sin(pi2*(j0-1)/Nfp))
+     zc = (coil(icoil)%zz(kseg))*((-1.0)**l0)
+     
+     xt = (coil(icoil)%xt(kseg))*cos(pi2*(j0-1)/Nfp) - (coil(icoil)%yt(kseg))*sin(pi2*(j0-1)/Nfp)
+     yt = ((-1.0)**l0)*((coil(icoil)%yt(kseg))*cos(pi2*(j0-1)/Nfp) + (coil(icoil)%xt(kseg))*sin(pi2*(j0-1)/Nfp))
+     zt = (coil(icoil)%zt(kseg))*((-1.0)**l0)
+
      dl = xt*xt + yt*yt + zt*zt ! elment length (square)
      dx = xc - xs ; dy = yc - ys; dz = zc - zs ! r_vector, distance
      lr = dx*dx + dy*dy + dz*dz ! length**2 of r_vector
 
-     dcssep = dcssep + sqrt(dl) / (lr**(cssep_factor/2.0)) * coil(icoil)%dd(kseg)
+     if ( sqrt(lr) .lt. mincssep ) then
+        dcssep = dcssep + ( cssep_alpha*(mincssep-sqrt(lr)) )**cssep_beta*coil(icoil)%dd(kseg)*sqrt(dl)
+     endif
+     dcssep = dcssep + cssep_sigma*lr**(-0.5*cssep_gamma)*sqrt(dl)*coil(icoil)%dd(kseg)
 
   enddo ! end kseg
+
+  enddo
+  enddo
+
+  call lenDeriv0( icoil, coil(icoil)%L )
+  dcssep = dcssep / coil(icoil)%L
 
   return
 END SUBROUTINE CSPotential0
@@ -227,45 +274,121 @@ SUBROUTINE CSPotential1(icoil, iteta, jzeta, d1S, ND)
 ! calculate the derivatives of the potential energy 
 ! between the i-th coil and the (iteta, jzeta) point on the surface
 !------------------------------------------------------------------------------------------------------  
-  use globals, only: dp, zero, coil, myid, ounit, Ncoils, surf, psurf, cssep_factor, DoF, MPI_COMM_FOCUS
+  use globals, only: dp, zero, coil, myid, ounit, Ncoils, surf, psurf, cssep_factor, DoF, case_cssep, &
+                     mincssep, cssep_alpha, cssep_beta, cssep_gamma, cssep_sigma, Nfp, pi2, MPI_COMM_FOCUS
   use mpi
   implicit none
 
   INTEGER, intent(in)  :: icoil, iteta, jzeta, ND
   REAL   , intent(out) :: d1S(1:1, 1:ND)
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  INTEGER              :: kseg, astat, ierr
+  INTEGER              :: kseg, astat, ierr, j0, per0, l0, ss0
   REAL                 :: q, xt, yt, zt, xa, ya, za, xc, yc, zc, xs, ys, zs
-  REAL                 :: dl, dx, dy, dz, lr, pm
+  REAL                 :: dl, dx, dy, dz, lr, pm, holdd
   REAL, dimension(1:1, 0:coil(icoil)%NS-1) :: dSx, dSy, dSz
+  REAL, dimension(0:coil(icoil)%NS-1, 1:ND) :: DoFx, DoFy, DoFz
+  REAL, dimension(1:1,1:ND) :: d1L
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   FATAL( CSPotential0, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
+
+  if( case_cssep .eq. 1 ) then
+     cssep_alpha = 0.0
+     cssep_sigma = 1.0
+     cssep_gamma = cssep_factor
+  endif
+
   d1S = zero
   q = cssep_factor ! easy convention
   xs = surf(psurf)%xx(iteta, jzeta) ; ys = surf(psurf)%yy(iteta, jzeta) ; zs = surf(psurf)%zz(iteta, jzeta)
 
-  do kseg = 0, coil(icoil)%NS-1
+  d1L = zero
+  call lenDeriv0( icoil, coil(icoil)%L )
+  call lenDeriv1( icoil, d1L(1:1,1:ND), ND )
 
-     ! easy convention
-     xc = coil(icoil)%xx(kseg) ; yc = coil(icoil)%yy(kseg) ; zc = coil(icoil)%zz(kseg)
-     xt = coil(icoil)%xt(kseg) ; yt = coil(icoil)%yt(kseg) ; zt = coil(icoil)%zt(kseg) 
-     xa = coil(icoil)%xa(kseg) ; ya = coil(icoil)%ya(kseg) ; za = coil(icoil)%za(kseg)
+  if ( coil(icoil)%symm == 0 ) then
+     per0 = 1
+     ss0 = 0
+  elseif ( coil(icoil)%symm == 1 ) then
+     per0 = Nfp
+     ss0 = 0
+  elseif ( coil(icoil)%symm == 2 ) then
+     per0 = Nfp
+     ss0 = 1
+  else
+     FATAL( diagnos, .true. , Errors in coil symmetry )
+  endif
+  
+  do j0 = 1, per0
+  do l0 = 0, ss0
+ 
+  dSx = zero
+  dSy = zero
+  dSz = zero
+  holdd = zero
+ 
+  do kseg = 0, coil(icoil)%NS-1
+     
+     xc = (coil(icoil)%xx(kseg))*cos(pi2*(j0-1)/Nfp) - (coil(icoil)%yy(kseg))*sin(pi2*(j0-1)/Nfp)
+     yc = ((-1.0)**l0)*((coil(icoil)%yy(kseg))*cos(pi2*(j0-1)/Nfp) + (coil(icoil)%xx(kseg))*sin(pi2*(j0-1)/Nfp))
+     zc = (coil(icoil)%zz(kseg))*((-1.0)**l0)
+
+     xt = (coil(icoil)%xt(kseg))*cos(pi2*(j0-1)/Nfp) - (coil(icoil)%yt(kseg))*sin(pi2*(j0-1)/Nfp)
+     yt = ((-1.0)**l0)*((coil(icoil)%yt(kseg))*cos(pi2*(j0-1)/Nfp) + (coil(icoil)%xt(kseg))*sin(pi2*(j0-1)/Nfp))
+     zt = (coil(icoil)%zt(kseg))*((-1.0)**l0)
+     
+     xa = (coil(icoil)%xa(kseg))*cos(pi2*(j0-1)/Nfp) - (coil(icoil)%ya(kseg))*sin(pi2*(j0-1)/Nfp)
+     ya = ((-1.0)**l0)*((coil(icoil)%ya(kseg))*cos(pi2*(j0-1)/Nfp) + (coil(icoil)%xa(kseg))*sin(pi2*(j0-1)/Nfp))
+     za = (coil(icoil)%za(kseg))*((-1.0)**l0)
 
      dl = xt*xt + yt*yt + zt*zt ! elment length (square)
      dx = xc - xs ; dy = yc - ys; dz = zc - zs ! r_vector, distance
      lr = dx*dx + dy*dy + dz*dz ! length**2 of r_vector
-     pm = 1.0 / ( (lr**(q/2.0)) * (dl**(1.5)) ) * coil(icoil)%dd(kseg) ! 1/P * Delta t in the documentation
+     
+     if ( sqrt(lr) .lt. mincssep ) then
+        dSx(1,kseg)=dSx(1,kseg)-1.0*cssep_alpha*cssep_beta*(cssep_alpha*(mincssep-sqrt(lr)))**(cssep_beta-1.0)*lr**(-0.5)*dx*sqrt(dl)
+        dSy(1,kseg)=dSy(1,kseg)-1.0*cssep_alpha*cssep_beta*(cssep_alpha*(mincssep-sqrt(lr)))**(cssep_beta-1.0)*lr**(-0.5)*dy*sqrt(dl)
+        dSz(1,kseg)=dSz(1,kseg)-1.0*cssep_alpha*cssep_beta*(cssep_alpha*(mincssep-sqrt(lr)))**(cssep_beta-1.0)*lr**(-0.5)*dz*sqrt(dl)
+           
+        dSx(1,kseg)=dSx(1,kseg)+cssep_alpha*cssep_beta*(cssep_alpha*(mincssep-sqrt(lr)))**(cssep_beta-1.0)*lr**(-0.5)*(dx*xt+dy*yt+dz*zt)*dl**(-0.5)*xt
+        dSy(1,kseg)=dSy(1,kseg)+cssep_alpha*cssep_beta*(cssep_alpha*(mincssep-sqrt(lr)))**(cssep_beta-1.0)*lr**(-0.5)*(dx*xt+dy*yt+dz*zt)*dl**(-0.5)*yt
+        dSz(1,kseg)=dSz(1,kseg)+cssep_alpha*cssep_beta*(cssep_alpha*(mincssep-sqrt(lr)))**(cssep_beta-1.0)*lr**(-0.5)*(dx*xt+dy*yt+dz*zt)*dl**(-0.5)*zt
 
-     dSx(1, kseg) = pm * ( -q*dx*dl*dl/lr + q*xt*dl*(dx*xt+dy*yt+dz*zt)/lr - xa*dl + xt*(xt*xa+yt*ya+zt*za) )
-     dSy(1, kseg) = pm * ( -q*dy*dl*dl/lr + q*yt*dl*(dx*xt+dy*yt+dz*zt)/lr - ya*dl + yt*(xt*xa+yt*ya+zt*za) )
-     dSz(1, kseg) = pm * ( -q*dz*dl*dl/lr + q*zt*dl*(dx*xt+dy*yt+dz*zt)/lr - za*dl + zt*(xt*xa+yt*ya+zt*za) )
+        dSx(1,kseg)=dSx(1,kseg)-(cssep_alpha*(mincssep-sqrt(lr)))**cssep_beta*(-1.0*dl**(-1.5)*(xt*xa+yt*ya+zt*za)*xt+dl**(-0.5)*xa)
+        dSy(1,kseg)=dSy(1,kseg)-(cssep_alpha*(mincssep-sqrt(lr)))**cssep_beta*(-1.0*dl**(-1.5)*(xt*xa+yt*ya+zt*za)*yt+dl**(-0.5)*ya)
+        dSz(1,kseg)=dSz(1,kseg)-(cssep_alpha*(mincssep-sqrt(lr)))**cssep_beta*(-1.0*dl**(-1.5)*(xt*xa+yt*ya+zt*za)*zt+dl**(-0.5)*za)
+
+        holdd = holdd + (cssep_alpha*(mincssep-sqrt(lr)))**cssep_beta*sqrt(dl)*coil(icoil)%dd(kseg)
+     endif
+     dSx(1,kseg)=dSx(1,kseg)-1.0*cssep_sigma*cssep_gamma*lr**(-0.5*(cssep_gamma+2.0))*dx*sqrt(dl)
+     dSy(1,kseg)=dSy(1,kseg)-1.0*cssep_sigma*cssep_gamma*lr**(-0.5*(cssep_gamma+2.0))*dy*sqrt(dl)
+     dSz(1,kseg)=dSz(1,kseg)-1.0*cssep_sigma*cssep_gamma*lr**(-0.5*(cssep_gamma+2.0))*dz*sqrt(dl)
+        
+     dSx(1,kseg)=dSx(1,kseg)+cssep_sigma*cssep_gamma*lr**(-0.5*(cssep_gamma+2.0))*(dx*xt+dy*yt+dz*zt)*dl**(-0.5)*xt
+     dSy(1,kseg)=dSy(1,kseg)+cssep_sigma*cssep_gamma*lr**(-0.5*(cssep_gamma+2.0))*(dx*xt+dy*yt+dz*zt)*dl**(-0.5)*yt
+     dSz(1,kseg)=dSz(1,kseg)+cssep_sigma*cssep_gamma*lr**(-0.5*(cssep_gamma+2.0))*(dx*xt+dy*yt+dz*zt)*dl**(-0.5)*zt
+        
+     dSx(1,kseg)=dSx(1,kseg)-cssep_sigma*lr**(-0.5*cssep_gamma)*(-1.0*dl**(-1.5)*(xt*xa+yt*ya+zt*za)*xt+dl**(-0.5)*xa)
+     dSy(1,kseg)=dSy(1,kseg)-cssep_sigma*lr**(-0.5*cssep_gamma)*(-1.0*dl**(-1.5)*(xt*xa+yt*ya+zt*za)*yt+dl**(-0.5)*ya)
+     dSz(1,kseg)=dSz(1,kseg)-cssep_sigma*lr**(-0.5*cssep_gamma)*(-1.0*dl**(-1.5)*(xt*xa+yt*ya+zt*za)*zt+dl**(-0.5)*za)
+        
+     dSx(1,kseg) = dSx(1,kseg)*coil(icoil)%dd(kseg)
+     dSy(1,kseg) = dSy(1,kseg)*coil(icoil)%dd(kseg)
+     dSz(1,kseg) = dSz(1,kseg)*coil(icoil)%dd(kseg)
+        
+     holdd = holdd + cssep_sigma*lr**(-0.5*cssep_gamma)*sqrt(dl)*coil(icoil)%dd(kseg)
      
   enddo ! end kseg
 
-  d1S(1:1, 1:ND) = matmul(dSx, DoF(icoil)%xof) + matmul(dSy, DoF(icoil)%yof) + matmul(dSz, DoF(icoil)%zof)
+  DoFx = (DoF(icoil)%xof)*cos(pi2*(j0-1)/Nfp) - (DoF(icoil)%yof)*sin(pi2*(j0-1)/Nfp)
+  DoFy = ((-1.0)**l0)*((DoF(icoil)%yof)*cos(pi2*(j0-1)/Nfp) + (DoF(icoil)%xof)*sin(pi2*(j0-1)/Nfp))
+  DoFz = (DoF(icoil)%zof)*((-1.0)**l0)
+  
+  d1S(1:1, 1:ND) = d1S(1:1, 1:ND) + (matmul(dSx,DoFx)+matmul(dSy,DoFy)+matmul(dSz,DoFz))/coil(icoil)%L - holdd*d1L(1:1,1:ND)/(coil(icoil)%L)**2.0
 
+  enddo 
+  enddo 
+  
   return
 
 END SUBROUTINE CSPotential1
-

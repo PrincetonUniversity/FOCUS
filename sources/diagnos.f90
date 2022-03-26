@@ -10,7 +10,9 @@ SUBROUTINE diagnos
   use mpi
   implicit none
 
-  INTEGER           :: icoil, itmp, NF,NCP, idof, i, j, isurf, cs, ip, is, Npc, coilInd0, coilInd1
+
+  INTEGER           :: icoil, itmp, NF,NCP, idof, i, j, isurf, cs, ip, is, Npc, coilInd0, coilInd1, j0, per0, l0, ss0
+
   LOGICAL           :: lwbnorm, l_raw
   REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist, ReDot, ImDot, dum, AvgCurv, AvgTors, &
                        MinLambda, MaxS, torsRet
@@ -241,25 +243,42 @@ SUBROUTINE diagnos
      SALLOCATE(Atmp, (1:3,0:coil(icoil)%NS-1), zero)
      SALLOCATE(Btmp, (1:3,1:(Nteta*Nzeta)), zero)
 
-     Atmp(1, 0:coil(icoil)%NS-1) = coil(icoil)%xx(0:coil(icoil)%NS-1)
-     Atmp(2, 0:coil(icoil)%NS-1) = coil(icoil)%yy(0:coil(icoil)%NS-1)
-     Atmp(3, 0:coil(icoil)%NS-1) = coil(icoil)%zz(0:coil(icoil)%NS-1)
-
-     Btmp(1, 1:(Nteta*Nzeta)) = reshape(surf(isurf)%xx(0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))
-     Btmp(2, 1:(Nteta*Nzeta)) = reshape(surf(isurf)%yy(0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))
-     Btmp(3, 1:(Nteta*Nzeta)) = reshape(surf(isurf)%zz(0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))
-
-     call mindist(Atmp, coil(icoil)%NS, Btmp, Nteta*Nzeta, tmp_dist)
-
-     if (minCPdist .ge. tmp_dist) then 
-        minCPdist=tmp_dist
-        itmp = icoil
+     if ( coil(icoil)%symm == 0 ) then
+        per0 = 1
+        ss0 = 0
+     elseif ( coil(icoil)%symm == 1 ) then
+        per0 = Nfp
+        ss0 = 0
+     elseif ( coil(icoil)%symm == 2 ) then
+        per0 = Nfp
+        ss0 = 1
+     else
+        FATAL( diagnos, .true. , Errors in coil symmetry )
      endif
+     do j0 = 1, per0
+        do l0 = 0, ss0
+           Atmp(1, 0:coil(icoil)%NS-1) = (coil(icoil)%xx(0:coil(icoil)%NS-1))*cos(pi2*(j0-1)/Nfp) - (coil(icoil)%yy(0:coil(icoil)%NS-1))*sin(pi2*(j0-1)/Nfp)
+           Atmp(2, 0:coil(icoil)%NS-1) = ((-1.0)**l0)*((coil(icoil)%yy(0:coil(icoil)%NS-1))*cos(pi2*(j0-1)/Nfp) + (coil(icoil)%xx(0:coil(icoil)%NS-1))*sin(pi2*(j0-1)/Nfp)) 
+           Atmp(3, 0:coil(icoil)%NS-1) = (coil(icoil)%zz(0:coil(icoil)%NS-1))*((-1.0)**l0)
+
+           Btmp(1, 1:(Nteta*Nzeta)) = reshape(surf(isurf)%xx(0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))
+           Btmp(2, 1:(Nteta*Nzeta)) = reshape(surf(isurf)%yy(0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))
+           Btmp(3, 1:(Nteta*Nzeta)) = reshape(surf(isurf)%zz(0:Nteta-1, 0:Nzeta-1), (/Nteta*Nzeta/))
+
+           call mindist(Atmp, coil(icoil)%NS, Btmp, Nteta*Nzeta, tmp_dist)
+
+           if (minCPdist .ge. tmp_dist) then 
+              minCPdist=tmp_dist
+              itmp = icoil
+           endif
+        enddo
+     enddo
 
      DALLOCATE(Atmp)
      DALLOCATE(Btmp)
 
   enddo
+
   if(myid .eq. 0) then
      write(ounit, '(8X": The minimum coil-plasma distance is    :" ES23.15 &
           " ; at coil " I3)') minCPdist, itmp

@@ -241,3 +241,27 @@ subroutine allocate_coils()
 
   return
 end subroutine allocate_coils
+
+subroutine get_coils(i, n, xx, yy, zz)
+  ! access the data of the i-th coil
+  !
+  ! import focus
+  ! xx = np.zeros(focus.globals.nseg)
+  ! yy = np.zeros(focus.globals.nseg)
+  ! zz = np.zeros(focus.globals.nseg)
+  ! focus.get_coils(1, focus.globals.nseg, xx, yy, zz)
+  !
+  use globals, only : dp, coil, ounit
+  implicit none
+
+  INTEGER,intent(in) :: i, n
+  REAL,intent(out) ::  xx(n), yy(n), zz(n)
+
+  if (n .ne. (size(coil(i)%xx)-1)) write(ounit, *) "The size of array doesn't match.", n, size(coil(i)%xx)
+
+  xx = coil(i)%xx(0:n-1)
+  yy = coil(i)%yy(0:n-1)
+  zz = coil(i)%zz(0:n-1)
+
+  return 
+end subroutine get_coils
