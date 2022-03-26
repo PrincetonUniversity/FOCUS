@@ -232,12 +232,48 @@ subroutine CurvDeriv1(icoil, derivs, ND, NC) !Calculate all derivatives for a co
   derivs(1,1:ND) = 0.0
   NS = coil(icoil)%NS
   
+  SALLOCATE(dxtdDoF, (0:NS,1:ND), zero)
+  SALLOCATE(dytdDoF, (0:NS,1:ND), zero)
+  SALLOCATE(dztdDoF, (0:NS,1:ND), zero)
+  SALLOCATE(dxadDoF, (0:NS,1:ND), zero)
+  SALLOCATE(dyadDoF, (0:NS,1:ND), zero)
+  SALLOCATE(dzadDoF, (0:NS,1:ND), zero)
+     
+  select case (coil(icoil)%type)    
+ 	 case(1)
+     		do n = 1,NC
+            	    	dxtdDof(0:NS,n+1)      = -1*FouCoil(icoil)%smt(0:NS,n) * n
+     		    	dxtdDof(0:NS,n+NC+1)   =    FouCoil(icoil)%cmt(0:NS,n) * n
+     	    		dytdDof(0:NS,n+2*NC+2) = -1*FouCoil(icoil)%smt(0:NS,n) * n
+     	    		dytdDof(0:NS,n+3*NC+2) =    FouCoil(icoil)%cmt(0:NS,n) * n
+     	    		dztdDof(0:NS,n+4*NC+3) = -1*FouCoil(icoil)%smt(0:NS,n) * n
+     	    		dztdDof(0:NS,n+5*NC+3) =    FouCoil(icoil)%cmt(0:NS,n) * n
+
+     	    		dxadDof(0:NS,n+1)      = -1*FouCoil(icoil)%cmt(0:NS,n) * n*n
+     	    		dxadDof(0:NS,n+NC+1)   = -1*FouCoil(icoil)%smt(0:NS,n) * n*n
+     	    		dyadDof(0:NS,n+2*NC+2) = -1*FouCoil(icoil)%cmt(0:NS,n) * n*n
+     	    		dyadDof(0:NS,n+3*NC+2) = -1*FouCoil(icoil)%smt(0:NS,n) * n*n
+     	    		dzadDof(0:NS,n+4*NC+3) = -1*FouCoil(icoil)%cmt(0:NS,n) * n*n
+     	    		dzadDof(0:NS,n+5*NC+3) = -1*FouCoil(icoil)%smt(0:NS,n) * n*n
+     		enddo
+  	case(coil_type_spline) 
+	  		dxtdDof(0:NS,0:ND)      =    Splines(icoil)%db_dt(0:NS,0:ND)
+	  		dytdDof(0:NS,0:ND)      =    Splines(icoil)%db_dt(0:NS,0:ND)
+	  		dztdDof(0:NS,0:ND)      =    Splines(icoil)%db_dt(0:NS,0:ND)
+			
+     	    		dxadDof(0:NS,0:ND)       =    Splines(icoil)%db_dt_2(0:NS,0:ND)
+     	    		dyadDof(0:NS,0:ND)       =    Splines(icoil)%db_dt_2(0:NS,0:ND)
+     	    		dzadDof(0:NS,0:ND)       =    Splines(icoil)%db_dt_2(0:NS,0:ND)
+  	case default 
+		FATAL( CurvDeriv1, .true. , invalid coil_type option )	
+  end select
+  
   derivs = zero
   d1L = zero
   call lenDeriv0( icoil, coil(icoil)%L )
   leng = coil(icoil)%L
   call lenDeriv1( icoil, d1L(1:1,1:ND), ND )
-
+ 
   if ( case_curv .eq. 1 ) then
      curv_alpha = 0.0
      curv_sigma = 1.0
@@ -257,40 +293,15 @@ subroutine CurvDeriv1(icoil, derivs, ND, NC) !Calculate all derivatives for a co
   do kseg = 0,NS-1
      xt = coil(icoil)%xt(kseg) ; yt = coil(icoil)%yt(kseg) ; zt = coil(icoil)%zt(kseg) ;
      xa = coil(icoil)%xa(kseg) ; ya = coil(icoil)%ya(kseg) ; za = coil(icoil)%za(kseg) ;
-     f1 = sqrt( (xt*ya-xa*yt)**2 + (xt*za-xa*zt)**2 + (yt*za-ya*zt)**2 );
-     f2 = (xt**2+yt**2+zt**2)**(1.5);
-     select case (coil(icoil)%type)    
-  case(1)
-     SALLOCATE(dxtdDoF, (0:NS,1:ND), zero)
-     SALLOCATE(dytdDoF, (0:NS,1:ND), zero)
-     SALLOCATE(dztdDoF, (0:NS,1:ND), zero)
-     SALLOCATE(dxadDoF, (0:NS,1:ND), zero)
-     SALLOCATE(dyadDoF, (0:NS,1:ND), zero)
-     SALLOCATE(dzadDoF, (0:NS,1:ND), zero)
-     do n = 1,NC
-            dxtdDof(0:NS,n+1)      = -1*FouCoil(icoil)%smt(0:NS,n) * n
-     	    dxtdDof(0:NS,n+NC+1)   =    FouCoil(icoil)%cmt(0:NS,n) * n
-     	    dytdDof(0:NS,n+2*NC+2) = -1*FouCoil(icoil)%smt(0:NS,n) * n
-     	    dytdDof(0:NS,n+3*NC+2) =    FouCoil(icoil)%cmt(0:NS,n) * n
-     	    dztdDof(0:NS,n+4*NC+3) = -1*FouCoil(icoil)%smt(0:NS,n) * n
-     	    dztdDof(0:NS,n+5*NC+3) =    FouCoil(icoil)%cmt(0:NS,n) * n
-
-     	    dxadDof(0:NS,n+1)      = -1*FouCoil(icoil)%cmt(0:NS,n) * n*n
-     	    dxadDof(0:NS,n+NC+1)   = -1*FouCoil(icoil)%smt(0:NS,n) * n*n
-     	    dyadDof(0:NS,n+2*NC+2) = -1*FouCoil(icoil)%cmt(0:NS,n) * n*n
-     	    dyadDof(0:NS,n+3*NC+2) = -1*FouCoil(icoil)%smt(0:NS,n) * n*n
-     	    dzadDof(0:NS,n+4*NC+3) = -1*FouCoil(icoil)%cmt(0:NS,n) * n*n
-     	    dzadDof(0:NS,n+5*NC+3) = -1*FouCoil(icoil)%smt(0:NS,n) * n*n
-     enddo	
-	
      rtxrax = yt*za - zt*ya
      rtxray = zt*xa - xt*za
      rtxraz = xt*ya - yt*xa
-     f1 = sqrt( (xt*ya-xa*yt)**2 + (xt*za-xa*zt)**2 + (yt*za-ya*zt)**2 )
-     f2 = (xt**2+yt**2+zt**2)**1.5
+     f1 = sqrt( (xt*ya-xa*yt)**2 + (xt*za-xa*zt)**2 + (yt*za-ya*zt)**2 );
+     f2 = (xt**2+yt**2+zt**2)**(1.5);
      curvHold = f1/f2
      penCurv = 0.0
      curv_deriv = 0.0
+     
      if ( curv_k1len .eq. 1 ) then
         k1_use = pi2/coil(icoil)%Lo
      else
@@ -321,93 +332,9 @@ subroutine CurvDeriv1(icoil, derivs, ND, NC) !Calculate all derivatives for a co
      + ( rtxrax*(dytdDof(kseg,1:ND)*za - dztdDof(kseg,1:ND)*ya + yt*dzadDof(kseg,1:ND) - zt*dyadDof(kseg,1:ND)) &
      +   rtxray*(dztdDof(kseg,1:ND)*xa - dxtdDof(kseg,1:ND)*za + zt*dxadDof(kseg,1:ND) - xt*dzadDof(kseg,1:ND)) &
      +   rtxraz*(dxtdDof(kseg,1:ND)*ya - dytdDof(kseg,1:ND)*xa + xt*dyadDof(kseg,1:ND) - yt*dxadDof(kseg,1:ND)) )/(f1*f2) )*curv_deriv
-  case(coil_type_spline)
-	    do nff = 1,NC
-        	ncc = Splines(icoil)%db_dt(kseg,nff-1)
-        	ncp = Splines(icoil)%db_dt_2(kseg,nff-1)
-
-  	  	if( case_curv == 1 ) then
-
-			! X 
-           		derivs(1,nff)      = derivs(1,nff)      + -1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*ncc) &
-           		+ ((f1**(-1))*((xt*ya-xa*yt)*(ncc*ya-ncp*yt)+(xt*za-xa*zt)*(ncc*za-ncp*zt)) )/f2; 
-			! Y
-           		derivs(1,nff+NC) = derivs(1,nff+NC) + -1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*ncc) &
-           		+ ((f1**(-1))*((xt*ya-xa*yt)*(ncp*xt-ncc*xa)+(yt*za-ya*zt)*(ncc*za-ncp*zt)) )/f2;
-			! Z
-           		derivs(1,nff+2*NC) = derivs(1,nff+2*NC) + -1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*ncc) &
-           		+ ((f1**(-1))*((xt*za-xa*zt)*(xt*ncp-xa*ncc)+(yt*za-ya*zt)*(yt*ncp-ya*ncc)) )/f2;
-
-
-	        elseif( case_curv == 2 ) then
-        		curvHold = sqrt( (za*yt-zt*ya)**2 + (xa*zt-xt*za)**2 + (ya*xt-yt*xa)**2 ) / ((xt)**2+(yt)**2+(zt)**2)**(1.5);
-           		! X 
-           		derivs(1,nff)      = derivs(1,nff)      + (-1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*ncc) &
-          		 + ((f1**(-1))*((xt*ya-xa*yt)*(ncc*ya-ncp*yt)+(xt*za-xa*zt)*(ncc*za-ncp*zt)) )/f2)*2.0*curvHold; 
-			! Y
-           		derivs(1,nff+NC) = derivs(1,nff+NC) + (-1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*ncc) &
-           		+ ((f1**(-1))*((xt*ya-xa*yt)*(ncp*xt-ncc*xa)+(yt*za-ya*zt)*(ncc*za-ncp*zt)) )/f2)*2.0*curvHold; 
-			! Z
-           		derivs(1,nff+2*NC) = derivs(1,nff+2*NC) + (-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*ncc) &
-           		+ ((f1**(-1))*((xt*za-xa*zt)*(xt*ncp-xa*ncc)+(yt*za-ya*zt)*(yt*ncp-ya*ncc)) )/f2)*2.0*curvHold; 
-        	elseif( case_curv == 3 ) then
-           		curvHold = sqrt( (za*yt-zt*ya)**2 + (xa*zt-xt*za)**2 + (ya*xt-yt*xa)**2 ) / ((xt)**2+(yt)**2+(zt)**2)**(1.5);
-           		penCurv = curv_alpha*((curvHold-k0)**(curv_alpha-1.0));
-           		if( curvHold > k0 ) then
-              			! X 
-              			derivs(1,nff)      = derivs(1,nff)      + (-1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*ncc) &
-              			+ ((f1**(-1))*((xt*ya-xa*yt)*(ncc*ya-ncp*yt)+(xt*za-xa*zt)*(ncc*za-ncp*zt)) )/f2)*penCurv; 
-				! Y
-				derivs(1,nff + NC) = derivs(1,nff+NC) + (-1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*ncc) &
-              			+ ((f1**(-1))*((xt*ya-xa*yt)*(ncp*xt-ncc*xa)+(yt*za-ya*zt)*(ncc*za-ncp*zt)) )/f2)*penCurv; 
-				! Z
-              			derivs(1,nff+2*NC) = derivs(1,nff+2*NC) + (-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*ncc) &
-              			+ ((f1**(-1))*((xt*za-xa*zt)*(xt*ncp-xa*ncc)+(yt*za-ya*zt)*(yt*ncp-ya*ncc)) )/f2)*penCurv;
-           		else
-              			derivs(1,nff) = derivs(1,nff);
-				derivs(1,nff + NC) = derivs(1,nff + NC);
-				derivs(1,nff + 2*NC) = derivs(1,nff + 2*NC);
-           		endif
-
-        	elseif( case_curv == 4 ) then
-           		curvHold = sqrt( (za*yt-zt*ya)**2 + (xa*zt-xt*za)**2 + (ya*xt-yt*xa)**2 ) / ((xt)**2+(yt)**2+(zt)**2)**(1.5);
-           		if( curvHold > k0 ) then
-              			curvH = 1.0
-           		else 
-              			curvH = 0.0
-           		endif
-           		! X
-           		derivs(1,nff)     = derivs(1,nff)       + sqrt(xt**2+yt**2+zt**2) &
-           		*(curvH*( curvHold - k0 )**curv_alpha + curv_c*curvHold)*-1.0*d1L(   1,nff)/leng
-           		derivs(1,nff)     = derivs(1,nff)       + xt*ncc*(xt**2+yt**2+zt**2)**(-.5) &
-           		*(curvH*( curvHold - k0 )**curv_alpha + curv_c*curvHold)
-           		derivs(1,nff)     = derivs(1,nff)       + sqrt(xt**2+yt**2+zt**2) &
-           		*(-1.0*(f1/(f2**2))*( 3.0*xt*sqrt(xt**2+yt**2+zt**2)*ncc) + ((f1**(-1))*((xt*ya-xa*yt)*(ncc*ya-ncp*yt)+(xt*za-xa*zt)*(ncc*za-ncp*zt)) )/f2) &
-           		*(curv_alpha*curvH*( curvHold - k0 )**(curv_alpha - 1.0) + curv_c)
-           		! Y
-           		derivs(1,nff+NC) = derivs(1,nff+NC) + sqrt(xt**2+yt**2+zt**2) &
-           		*(curvH*( curvHold - k0 )**curv_alpha + curv_c*curvHold)*-1.0*d1L(1,nff+NC)/leng
-           		derivs(1,nff+NC) = derivs(1,nff+NC) + yt*ncc*(xt**2+yt**2+zt**2)**(-.5) &
-           		*(curvH*( curvHold - k0 )**curv_alpha + curv_c*curvHold)
-           		derivs(1,nff+NC) = derivs(1,nff+NC) + sqrt(xt**2+yt**2+zt**2) &
-           		*(-1.0*(f1/(f2**2))*( 3.0*yt*sqrt(xt**2+yt**2+zt**2)*ncc) + ((f1**(-1))*((xt*ya-xa*yt)*(ncp*xt-ncc*xa)+(yt*za-ya*zt)*(ncc*za-ncp*zt)) )/f2) &
-           		*(curv_alpha*curvH*( curvHold - k0 )**(curv_alpha - 1.0) + curv_c)
-           		! Z
-           		derivs(1,nff+2*NC) = derivs(1,nff+2*NC) + sqrt(xt**2+yt**2+zt**2) &
-           		*(curvH*( curvHold - k0 )**curv_alpha + curv_c*curvHold)*-1.0*d1L(1,nff+2*NC)/leng
-           		derivs(1,nff+2*NC) = derivs(1,nff+2*NC) + zt*ncc*(xt**2+yt**2+zt**2)**(-.5) &
-           		*(curvH*( curvHold - k0 )**curv_alpha + curv_c*curvHold)
-           		derivs(1,nff+2*NC) = derivs(1,nff+2*NC) + sqrt(xt**2+yt**2+zt**2) &
-           		*(-1.0*(f1/(f2**2))*( 3.0*zt*sqrt(xt**2+yt**2+zt**2)*ncc) + ((f1**(-1))*((xt*za-xa*zt)*(xt*ncp-xa*ncc)+(yt*za-ya*zt)*(yt*ncp-ya*ncc)) )/f2) &
-           		*(curv_alpha*curvH*( curvHold - k0 )**(curv_alpha - 1.0) + curv_c)
-        	else
-           		FATAL( CurvDeriv1, .true. , invalid case_curv option )  
-        	endif
-       	  enddo
-	case default 
-		FATAL( CurvDeriv1, .true. , invalid coil_type option )	
-	end select
+     
   enddo
+  
   if (coil(icoil)%type == 1)  derivs = pi2*derivs/(NS*leng)
   if (coil(icoil)%type == coil_type_spline )derivs = derivs/(NS*leng)
   !if( case_curv == 4 ) derivs = derivs/leng
