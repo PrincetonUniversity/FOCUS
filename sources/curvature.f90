@@ -213,7 +213,7 @@ subroutine CurvDeriv1(icoil, derivs, ND, NC) !Calculate all derivatives for a co
 
   use globals, only: dp, zero, pi2, coil, DoF, myid, ounit, Ncoils, &
                 case_curv, curv_alpha, curv_k0, curv_k1, curv_beta, curv_gamma, &
-                curv_sigma, penfun_curv, curv_k1len, FouCoil, MPI_COMM_FOCUS, curv_c,k0,Splines,coil_type_spline
+                curv_sigma, penfun_curv, curv_k1len, FouCoil, MPI_COMM_FOCUS,Splines,coil_type_spline
   use mpi
   implicit none
 
