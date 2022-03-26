@@ -150,7 +150,7 @@ subroutine StrDeriv0(icoil,strRet)
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   INTEGER              :: kseg, NS
   REAL,allocatable     :: strv(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:)
-  REAL                 :: hypc, curv_hold, k1_use,mean_xy_distance, dispersion
+  REAL                 :: hypc, str_hold, k1_use,mean_xy_distance, dispersion
 
   NS = coil(icoil)%NS 
 
@@ -261,7 +261,7 @@ end subroutine StrDeriv0
 subroutine StrDeriv1(icoil, derivs, ND, NC ) !Calculate all derivatives for a coil
 
   use globals, only: dp, zero, pi2, coil, DoF, myid, ounit, Ncoils, &
-                case_straight, straight_alpha, str_k0, str_k1, str_beta, str_gamma &
+                case_straight, str_alpha, str_k0, str_k1, str_beta, str_gamma &
 		,str_sigma, penfun_str, str_k1len, FouCoil, MPI_COMM_FOCUS,Splines,coil_type_spline, &
 	        origin_surface_x, origin_surface_y, origin_surface_z,xdof,coeff_disp_straight
   implicit none
@@ -379,7 +379,7 @@ subroutine StrDeriv1(icoil, derivs, ND, NC ) !Calculate all derivatives for a co
 		endif
 	     else
 		if ( strHold > str_k0 ) then
-		   strCurv = (str_alpha*(strHold-str_k0))**str_beta
+		   penStr = (str_alpha*(strHold-str_k0))**str_beta
 		   str_deriv = str_beta*str_alpha*( (str_alpha*(strHold-str_k0))**(str_beta-1.0) )
 		endif
 	     endif
