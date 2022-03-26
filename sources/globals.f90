@@ -102,12 +102,6 @@ module globals
   INTEGER              :: IsNormWeight   =   1
   ! Normal field error
   INTEGER              :: case_bnormal   =   0
-  INTEGER              :: case_straight  =   1
-  REAL                 :: straight_alpha =   2.000D+00
-  REAL                 :: curv_c         =   1.000D-04
-  REAL                 :: k0             =   0.000D+00
-  REAL                 :: str_c          =   1.000D-04
-  REAL                 :: str_k0         =   2.000D+00
   REAL                 :: weight_bnorm   =   1.000D+00
   ! Bmn resonant harmonics
   REAL                 :: weight_bharm   =   0.000D+00
@@ -132,6 +126,18 @@ module globals
   REAL                 :: curv_k0        =   1.000D+01
   REAL                 :: curv_k1        =   0.000D+00
   INTEGER              :: curv_k1len     =   0
+  ! straight function
+  REAL                 :: weight_straight     =   0.000D+00
+  REAL                 :: coeff_disp_straight =   0.50D+00
+  INTEGER              :: case_straight       =   3 
+  INTEGER              :: penfun_str    =   1
+  REAL                 :: str_alpha     =   0.000D+00
+  REAL                 :: str_beta      =   2.000D+00
+  REAL                 :: str_gamma     =   2.000D+00
+  REAL                 :: str_sigma     =   0.000D+00
+  REAL                 :: str_k0        =   1.000D+01
+  REAL                 :: str_k1        =   0.000D+00
+  INTEGER              :: str_k1len     =   0
   ! coil torsion
   REAL                 :: weight_tors    =   0.000D+00
   INTEGER              :: case_tors      =   1
@@ -157,8 +163,6 @@ module globals
   REAL                 :: weight_inorm   =   1.000D+00
   REAL                 :: weight_gnorm   =   1.000D+00
   REAL                 :: weight_mnorm   =   1.000D+00
-  REAL                 :: weight_straight    =   0.000D+00
-  REAL                 :: coeff_disp_straight=   0.250D+00
   REAL                 :: origin_surface_x =   0.000D+00
   REAL                 :: origin_surface_y  =   0.000D+00
   REAL                 :: origin_surface_z  =   0.000D+00
@@ -259,14 +263,17 @@ module globals
   curv_k0       ,&
   curv_k1       ,&
   curv_k1len    ,&
-  case_straight  , &
-  straight_alpha , &
-  curv_c         , &
-  k0             , &
-  str_c          , &
-  str_k0         , &
   weight_straight, &
   coeff_disp_straight, &
+  case_straight  , &
+  penfun_str     ,&
+  str_alpha    ,&
+  str_beta     ,&
+  str_gamma    ,&
+  str_sigma    ,&
+  str_k0       ,&
+  str_k1       ,&
+  str_k1len    ,&
   origin_surface_x, &
   origin_surface_y, &
   origin_surface_z, &
