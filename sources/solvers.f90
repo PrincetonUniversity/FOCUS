@@ -98,7 +98,7 @@ subroutine solvers
      endif
      ! stochastic bnorm
      if (weight_sbnorm > machprec) then
-        write(ounit, '(8X,": weight_sbnorm = ", ES12.5, "; Npert = ", I1)') weight_sbnorm, Npert
+        write(ounit, '(8X,": weight_sbnorm = ", ES12.5, "; Npert = ", I10)') weight_sbnorm, Npert
      endif
   endif
 

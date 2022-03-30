@@ -75,9 +75,8 @@ PROGRAM focus
   call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
 
   ! Call stochastic construction if neccessary
-  if(myid==0) write(ounit, '(8X,"focus : Npert = ", I1)') Npert
   if ( weight_sbnorm .gt. 0.0 .or. Npert .gt. 0 ) then
-     !if(myid==0) write(ounit, '(8X,": weight_sbnorm = ", ES12.5, "; Npert = ", I1)') weight_sbnorm, Npert
+     if(myid==0) write(ounit, '(8X,": weight_sbnorm = ", ES12.5, "; Npert = ", I10)') weight_sbnorm, Npert
      call perturbation(0)
   endif
 
