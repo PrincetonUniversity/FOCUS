@@ -12,7 +12,7 @@ SUBROUTINE diagnos
   INTEGER           :: icoil, itmp, NF, idof, i, j, isurf, cs, ip, is, Npc, coilInd0, coilInd1, j0, per0, l0, ss0
   LOGICAL           :: lwbnorm, l_raw
   REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist, ReDot, ImDot, dum, AvgCurv, AvgTors, &
-                       MinLambda, MaxS, torsRet, bnormmax, bnormavg, nxx(Ncoils,Npert), psx(Ncoils,Npert)
+                       MinLambda, MaxS, torsRet
   REAL, parameter   :: infmax = 1.0E6
   REAL, allocatable :: Atmp(:,:), Btmp(:,:)
 
@@ -308,7 +308,7 @@ SUBROUTINE diagnos
   !--------------------------------calculate the stochastic Bn error----------------------------
   if ( Npert .ge. 1 ) then
 
-     call stochastic( 0, bnormmax, bnormavg )
+     call stochastic( 0 )
 
      if(myid .eq. 0) write(ounit, '(8X": Maximum field error after perturbations: "ES23.15)') bnormmax
      if(myid .eq. 0) write(ounit, '(8X": Average field error after perturbations: "ES23.15)') bnormavg

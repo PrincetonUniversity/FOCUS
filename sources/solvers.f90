@@ -95,7 +95,11 @@ subroutine solvers
         & "ccsep_skip = ", I1)') weight_ccsep, penfun_ccsep, ccsep_skip
         write(ounit, '(8X,":   ccsep_alpha = ", ES12.5, "; ccsep_beta   = ", ES12.5, &
         & "; r_delta = ", ES12.5)') ccsep_alpha, ccsep_beta, r_delta
-     endif 
+     endif
+     ! stochastic bnorm
+     if (weight_sbnorm > machprec) then
+        write(ounit, '(8X,": weight_sbnorm = ", ES12.5, "; Npert = ", I1)') weight_sbnorm, Npert
+     endif
   endif
 
   if (abs(case_optimize) >= 1) call AllocData(1)
@@ -119,9 +123,9 @@ subroutine solvers
   if (lim_out .eq. 0) then
      if (myid == 0) then
         if (IsQuiet < 0) then
-           write(ounit, '("output  : "A6" : "12(A12," ; "))') "iout", "mark", "chi", "dE_norm", &
+           write(ounit, '("output  : "A6" : "13(A12," ; "))') "iout", "mark", "chi", "dE_norm", &
                 "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep.", "curvature", &
-                "c-c sep.", "torsion", "nissin"
+                "c-c sep.", "torsion", "nissin", "sBnormal"
         else
            write(ounit, '("output  : "A6" : "4(A15," ; "))') "iout", "mark", "total function", "||gradient||", "Bnormal"
         endif
@@ -154,6 +158,9 @@ subroutine solvers
      endif
      if ( weight_nissin .ne. 0.0 ) then
         write(ounit, '(A12," ; ")',advance="no") "nissin"
+     endif
+     if ( weight_sbnorm .ne. 0.0 ) then
+        write(ounit, '(A12," ; ")',advance="no") "sBnormal"
      endif
      write(*,*)
   endif
@@ -242,9 +249,10 @@ subroutine costfun(ideriv)
        cssep      , t1S, t2S, weight_cssep, &
        specw      , t1P, t2P, weight_specw, &
        ccsep      , t1C, t2C, weight_ccsep, &
-       tors       , t1T, t2T, weight_tors,  &
-       nissin     , t1N, t2N, weight_nissin,   &
-       curv       , t1K, t2K, weight_curv, MPI_COMM_FOCUS
+       tors       , t1T, t2T, weight_tors, &
+       nissin     , t1N, t2N, weight_nissin, &
+       curv       , t1K, t2K, weight_curv, &
+       bnormavg   , t1Bavg, weight_sbnorm, MPI_COMM_FOCUS
 
   use mpi
   implicit none
@@ -267,6 +275,7 @@ subroutine costfun(ideriv)
   curv  = zero
   tors  = zero
   nissin   = zero
+  bnormavg = zero
 
   if (IsQuiet <= -2) then
 
@@ -466,6 +475,19 @@ subroutine costfun(ideriv)
      endif
   endif
 
+  ! stochastic bnorm
+  if (weight_sbnorm > 0.0_dp) then
+  
+     call stochastic(0) ! Change this name 
+     chi = chi + weight_sbnorm * bnormavg
+     if     ( ideriv == 1 ) then
+        t1E = t1E + weight_sbnorm * t1Bavg
+     !elseif ( ideriv == 2 ) then
+     !   t1E = t1E + weight_nissin * t1N
+     !   t2E = t2E + weight_nissin * t2N
+     endif
+  endif
+
 !!$  if (allocated(deriv)) then
 !!$     deriv = zero
 !!$     do ii = 1, Ndof
@@ -511,7 +533,7 @@ subroutine normweight
   use globals, only: dp, zero, one, machprec, ounit, myid, xdof, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
        weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_specw, weight_ccsep, &
        target_tflux, psi_avg, coil, Ncoils, case_length, Bmnc, Bmns, tBmnc, tBmns, weight_curv, curv, &
-       weight_tors, tors, weight_nissin, nissin, MPI_COMM_FOCUS
+       weight_tors, tors, weight_nissin, nissin, weight_sbnorm, bnormavg, MPI_COMM_FOCUS
 
   use mpi
   implicit none
@@ -659,6 +681,17 @@ subroutine normweight
 
   endif
 
+  !-!-!-!-!-!-!-!-!-!-sbnorm-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+  if( weight_sbnorm >= 0.0_dp ) then
+
+     call stochastic(0)
+     if (abs(bnormavg) > machprec) weight_sbnorm = weight_sbnorm / bnormavg
+     if( myid == 0 ) write(ounit, 1000) "weight_sbnorm", weight_sbnorm
+     if( myid .eq. 0 .and. weight_sbnorm < machprec) write(ounit, '("warning : weight_sbnorm < machine_precision, bnormavg will not be used.")')
+  
+  endif
+
 1000 format(8X,": "A12" is normalized to " ES12.5)
 
   call packdof(xdof)
@@ -672,10 +705,10 @@ end subroutine normweight
 subroutine output (mark)
 
   use globals, only: dp, zero, ounit, myid, ierr, astat, iout, Nouts, Ncoils, save_freq, Tdof, &
-       coil, coilspace, FouCoil, chi, t1E, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
+       coil, coilspace, FouCoil, chi, t1E, bnorm, bnormavg, bharm, tflux, ttlen, cssep, specw, ccsep, &
        evolution, xdof, DoF, exit_tol, exit_signal, sumDE, curv, tors, nissin, MPI_COMM_FOCUS, IsQuiet, &
        weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_curv, weight_ccsep, &
-       weight_tors, weight_nissin, lim_out
+       weight_tors, weight_nissin, weight_sbnorm, lim_out
   use mpi
   implicit none
   REAL, INTENT( IN ) :: mark
@@ -686,8 +719,8 @@ subroutine output (mark)
   if (lim_out .eq. 0) then
      if (myid == 0) then
         if (IsQuiet < 0) then
-           write(ounit, '("output  : "I6" : "12(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, bharm, &
-                   tflux, ttlen, cssep, curv, ccsep, tors, nissin
+           write(ounit, '("output  : "I6" : "13(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, bharm, &
+                   tflux, ttlen, cssep, curv, ccsep, tors, nissin, bnormavg
         else
            write(ounit, '("output  : "I6" : "4(ES15.8," ; "))') iout, mark, chi, sumdE, bnorm
         endif
@@ -721,6 +754,9 @@ subroutine output (mark)
      if ( weight_nissin .ne. 0.0 ) then
         write(ounit, '(ES12.5," ; ")',advance="no") nissin
      endif
+     if ( weight_sbnorm .ne. 0.0 ) then
+        write(ounit, '(ES12.5," ; ")',advance="no") bnormavg
+     endif
      write(*,*)
   endif
 
@@ -738,6 +774,7 @@ subroutine output (mark)
      evolution(iout,9) = ccsep
      evolution(iout,10)= tors
      evolution(iout,11)= nissin
+     evolution(iout,12)= bnormavg
   endif
 
   ! exit the optimization if no obvious changes in past 5 outputs; 07/20/2017

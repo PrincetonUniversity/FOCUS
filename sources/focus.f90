@@ -37,7 +37,7 @@ PROGRAM focus
 
   use globals, only: dp, ncpu, myid, ounit, ierr, astat, eunit, case_surface, case_coils, case_optimize, &
        case_postproc, xdof, time_initialize, time_optimize, time_postproc, &
-       version, MPI_COMM_FOCUS
+       version, Npert, weight_sbnorm, MPI_COMM_FOCUS
   use mpi  !to enable gfortran mpi_wtime bugs; 07/20/2017
   implicit none
 
@@ -71,6 +71,15 @@ PROGRAM focus
   end select
 
   call packdof(xdof)  ! packdof in xdof array;
+
+  call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
+
+  ! Call stochastic construction if neccessary
+  if(myid==0) write(ounit, '(8X,"focus : Npert = ", I1)') Npert
+  if ( weight_sbnorm .gt. 0.0 .or. Npert .gt. 0 ) then
+     !if(myid==0) write(ounit, '(8X,": weight_sbnorm = ", ES12.5, "; Npert = ", I1)') weight_sbnorm, Npert
+     call perturbation(0)
+  endif
 
   call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
 

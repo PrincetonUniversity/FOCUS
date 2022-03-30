@@ -652,6 +652,7 @@ subroutine check_input
      FATAL( initial, weight_curv   < zero, illegal )
      FATAL( initial, weight_tors   < zero, illegal )
      FATAL( initial, weight_nissin    < zero, illegal )
+     FATAL( initial, weight_sbnorm    < zero, illegal )
 
      select case ( case_postproc )
      case ( 0 )

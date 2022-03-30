@@ -299,6 +299,11 @@ subroutine AllocData(type)
         SALLOCATE( t1N,  (1:Ndof), zero )
      endif
 
+     ! stochastic bnorm needed;
+     if (weight_sbnorm > 0.0_dp) then
+        SALLOCATE( t1Bavg,  (1:Ndof), zero )
+     endif
+
      ! L-M algorithn enabled
      if (LM_maxiter > 0) then
         LM_mfvec = 0 ! number of total cost functions

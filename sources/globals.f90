@@ -106,6 +106,7 @@ module globals
   ! Normal field error
   REAL                 :: weight_bnorm   =   0.000D+00
   INTEGER              :: case_bnormal   =   0
+  REAL                 :: weight_sbnorm  =   0.000D+00
   ! Bmn resonant harmonics
   REAL                 :: weight_bharm   =   0.000D+00
   INTEGER              :: bharm_jsurf    =   0
@@ -165,6 +166,7 @@ module globals
   REAL                 :: weight_specw   =   0.000D+00
   ! bnrom stochastic
   INTEGER              :: Npert          =   10
+  INTEGER              :: Nmax           =   3
   REAL                 :: sdelta         =   1.000D-02
   ! optimize controls
   INTEGER              :: case_optimize  =   0
@@ -238,6 +240,7 @@ module globals
   weight_mnorm  ,&
   weight_bnorm  ,&
   case_bnormal  ,&
+  weight_sbnorm ,& 
   weight_bharm  ,&
   bharm_jsurf   ,&
   input_harm    ,&
@@ -288,6 +291,7 @@ module globals
   ccsep_beta    ,&
   weight_specw  ,&
   Npert         ,&
+  Nmax          ,&
   sdelta        ,&
   case_optimize ,&
   exit_tol      ,&
@@ -354,7 +358,8 @@ module globals
      REAL                 :: I=zero,  L=zero, Lo, maxcurv, ox, oy, oz, mt, mp, Bt, Bz, avgcurv, &
                                    minlambda, maxs
      REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), &
-                             xb(:), yb(:), zb(:), dl(:), dd(:)
+                             xb(:), yb(:), zb(:), dl(:), dd(:), &
+                             nxx(:), nyy(:), nzz(:), psx(:), psy(:), psz(:)
      character(10)        :: name
   end type arbitrarycoil
 
@@ -430,6 +435,9 @@ module globals
   ! Spectral condensation;
   REAL                 :: specw
   REAL   , allocatable :: t1P(:), t2P(:,:)
+  ! stochastic bnorm
+  REAL                 :: bnormavg, bnormmax
+  REAL   , allocatable :: t1Bavg(:)!, t2N(:,:)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
