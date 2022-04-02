@@ -38,7 +38,7 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  INTEGER              :: ierr, astat, kseg, ip, is, cs, Npc
+  INTEGER              :: ierr, astat, kseg, ip, is, cs, Npc, NS
   REAL                 :: dlx, dly, dlz, rm3, ltx, lty, ltz, rr, r2, m_dot_r, &
                           mx, my, mz, xx, yy, zz, Bx, By, Bz
   REAL, allocatable    :: dlxv(:), dlyv(:), dlzv(:), rm3v(:), &
@@ -91,16 +91,31 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
            !Bx = Bx * coil(icoil)%I * bsconstant
            !By = By * coil(icoil)%I * bsconstant
            !Bz = Bz * coil(icoil)%I * bsconstant
-           dlxv = xx - coil(icoil)%xx
-           dlyv = yy - coil(icoil)%yy
-           dlzv = zz - coil(icoil)%zz
-           rm3v = (sqrt(dlxv**2 + dlyv**2 + dlzv**2))**(-3)
-           Bxv = ( dlzv*coil(icoil)%yt - dlyv*coil(icoil)%zt ) * rm3v * coil(icoil)%dd
-           Byv = ( dlxv*coil(icoil)%zt - dlzv*coil(icoil)%xt ) * rm3v * coil(icoil)%dd
-           Bzv = ( dlyv*coil(icoil)%xt - dlxv*coil(icoil)%yt ) * rm3v * coil(icoil)%dd
-           Bx = sum(Bxv) * coil(icoil)%I * bsconstant
-           By = sum(Byv) * coil(icoil)%I * bsconstant
-           Bz = sum(Bzv) * coil(icoil)%I * bsconstant
+           NS = coil(icoil)%NS
+           SALLOCATE( dlxv , (1:NS), zero )
+           SALLOCATE( dlyv , (1:NS), zero )
+           SALLOCATE( dlzv , (1:NS), zero )
+           SALLOCATE( rm3v , (1:NS), zero )
+           SALLOCATE( Bxv ,  (1:NS), zero )
+           SALLOCATE( Byv ,  (1:NS), zero )
+           SALLOCATE( Bzv ,  (1:NS), zero )
+           dlxv(1:NS) = xx - coil(icoil)%xx(1:NS)
+           dlyv(1:NS) = yy - coil(icoil)%yy(1:NS)
+           dlzv(1:NS) = zz - coil(icoil)%zz(1:NS)
+           rm3v(1:NS) = (sqrt(dlxv(1:NS)**2 + dlyv(1:NS)**2 + dlzv(1:NS)**2))**(-3)
+           Bxv(1:NS) = ( dlzv(1:NS)*coil(icoil)%yt(1:NS) - dlyv(1:NS)*coil(icoil)%zt(1:NS) )*rm3v(1:NS)*coil(icoil)%dd(1:NS)
+           Byv(1:NS) = ( dlxv(1:NS)*coil(icoil)%zt(1:NS) - dlzv(1:NS)*coil(icoil)%xt(1:NS) )*rm3v(1:NS)*coil(icoil)%dd(1:NS)
+           Bzv(1:NS) = ( dlyv(1:NS)*coil(icoil)%xt(1:NS) - dlxv(1:NS)*coil(icoil)%yt(1:NS) )*rm3v(1:NS)*coil(icoil)%dd(1:NS)
+           Bx = Bx + sum(Bxv) * coil(icoil)%I * bsconstant
+           By = By + sum(Byv) * coil(icoil)%I * bsconstant
+           Bz = Bz + sum(Bzv) * coil(icoil)%I * bsconstant
+           DALLOCATE( dlxv )
+           DALLOCATE( dlyv )
+           DALLOCATE( dlzv )
+           DALLOCATE( rm3v )
+           DALLOCATE( Bxv )
+           DALLOCATE( Byv )
+           DALLOCATE( Bzv )
         ! magnetic dipoles
         case(2)
            ! Biot-Savart law
