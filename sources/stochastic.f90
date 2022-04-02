@@ -22,7 +22,7 @@ subroutine stochastic(ideriv)
                          pertxx(0:coil(1)%NS-1), pertxt(0:coil(1)%NS-1), psx(1:Ncoils,1:Npert), &
                          pertyy(0:coil(1)%NS-1), pertyt(0:coil(1)%NS-1), psy(1:Ncoils,1:Npert), &
                          pertzz(0:coil(1)%NS-1), pertzt(0:coil(1)%NS-1), psz(1:Ncoils,1:Npert)
-  REAL, allocatable   :: xxhold(:,:), xthold(:,:), yyhold(:,:), ythold(:,:), &
+  REAL, allocatable   :: t1Bhold(:), xxhold(:,:), xthold(:,:), yyhold(:,:), ythold(:,:), &
                          zzhold(:,:), zthold(:,:), g(:,:), gp(:,:)
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -36,9 +36,13 @@ subroutine stochastic(ideriv)
      nzz(icoil,1:Npert) = coil(icoil)%nzz(1:Npert)
   enddo
 
-  ! Put conditional on derivative
-  call bnormal( 1 ) 
+  if ( ideriv .eq. 0 ) then
+     call bnormal( 0 )
+  else
+     call bnormal( 1 )
+  endif
   bnormhold = bnorm
+  t1Bhold = t1B
   bnormmax = zero
   bnormavg = zero
   t1Bavg = zero
@@ -109,16 +113,22 @@ subroutine stochastic(ideriv)
         !coil(icoil)%za(0:coil(1)%NS-1) = coil(icoil)%za(0:coil(1)%NS-1) + pertza(0:coil(1)%NS-1)
      enddo
      call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
-     call bnormal( 1 )
+     if ( ideriv .eq. 0 ) then
+        call bnormal( 0 )
+     else
+        call bnormal( 1 )
+        t1Bavg = t1Bavg + t1B
+     endif
      if ( bnormmax .le. bnorm ) bnormmax = bnorm
      bnormavg = bnormavg + bnorm
-     t1Bavg = t1Bavg + t1B
   enddo
   sdelta = sdelta*sqrt(3.0)
   bnormavg = bnormavg / real(Npert)
-  t1Bavg = t1Bavg / real(Npert)
+  if ( ideriv .eq. 1 ) t1Bavg = t1Bavg / real(Npert)
 
   bnorm = bnormhold
+  if ( ideriv .eq. 1 ) t1B = t1Bhold
+
   do icoil = 1, Ncoils
      coil(icoil)%xx(0:coil(1)%NS-1) = xxhold(icoil,0:coil(1)%NS-1)
      coil(icoil)%xt(0:coil(1)%NS-1) = xthold(icoil,0:coil(1)%NS-1)

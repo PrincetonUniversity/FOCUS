@@ -131,38 +131,40 @@ subroutine solvers
         endif
      endif
   else
-     write(ounit, '("output  : "A6" : "3(A12," ; "))',advance="no") "iout", "mark", "chi", "dE_norm"
-     if ( weight_bnorm .ne. 0.0 ) then
-        write(ounit, '(A12," ; ")',advance="no") "Bnormal"
+     if (myid .eq. 0) then
+        write(ounit, '("output  : "A6" : "3(A12," ; "))',advance="no") "iout", "mark", "chi", "dE_norm"
+        if ( weight_bnorm .ne. 0.0 ) then
+           write(ounit, '(A12," ; ")',advance="no") "Bnormal"
+        endif
+        if ( weight_bharm .ne. 0.0 ) then
+           write(ounit, '(A12," ; ")',advance="no") "Bmn harmonics"
+        endif
+        if ( weight_tflux .ne. 0.0 ) then
+           write(ounit, '(A12," ; ")',advance="no") "tor. flux"
+        endif
+        if ( weight_ttlen .ne. 0.0 ) then
+           write(ounit, '(A12," ; ")',advance="no") "coil length"
+        endif
+        if ( weight_cssep .ne. 0.0 ) then
+           write(ounit, '(A12," ; ")',advance="no") "c-s sep."
+        endif
+        if ( weight_curv .ne. 0.0 ) then
+           write(ounit, '(A12," ; ")',advance="no") "curvature"
+        endif
+        if ( weight_ccsep .ne. 0.0 ) then
+           write(ounit, '(A12," ; ")',advance="no") "c-c sep."
+        endif
+        if ( weight_tors .ne. 0.0 ) then
+           write(ounit, '(A12," ; ")',advance="no") "torsion"
+        endif
+        if ( weight_nissin .ne. 0.0 ) then
+           write(ounit, '(A12," ; ")',advance="no") "nissin"
+        endif
+        if ( weight_sbnorm .ne. 0.0 ) then
+           write(ounit, '(A12," ; ")',advance="no") "sBnormal"
+        endif
+        write(*,*)
      endif
-     if ( weight_bharm .ne. 0.0 ) then
-        write(ounit, '(A12," ; ")',advance="no") "Bmn harmonics"
-     endif
-     if ( weight_tflux .ne. 0.0 ) then
-        write(ounit, '(A12," ; ")',advance="no") "tor. flux"
-     endif
-     if ( weight_ttlen .ne. 0.0 ) then
-        write(ounit, '(A12," ; ")',advance="no") "coil length"
-     endif
-     if ( weight_cssep .ne. 0.0 ) then
-        write(ounit, '(A12," ; ")',advance="no") "c-s sep."
-     endif
-     if ( weight_curv .ne. 0.0 ) then
-        write(ounit, '(A12," ; ")',advance="no") "curvature"
-     endif
-     if ( weight_ccsep .ne. 0.0 ) then
-        write(ounit, '(A12," ; ")',advance="no") "c-c sep."
-     endif
-     if ( weight_tors .ne. 0.0 ) then
-        write(ounit, '(A12," ; ")',advance="no") "torsion"
-     endif
-     if ( weight_nissin .ne. 0.0 ) then
-        write(ounit, '(A12," ; ")',advance="no") "nissin"
-     endif
-     if ( weight_sbnorm .ne. 0.0 ) then
-        write(ounit, '(A12," ; ")',advance="no") "sBnormal"
-     endif
-     write(*,*)
   endif
   
   call costfun(1)
@@ -478,7 +480,7 @@ subroutine costfun(ideriv)
   ! stochastic bnorm
   if (weight_sbnorm > 0.0_dp) then
   
-     call stochastic(0) ! Change this name 
+     call stochastic(ideriv) 
      chi = chi + weight_sbnorm * bnormavg
      if     ( ideriv == 1 ) then
         t1E = t1E + weight_sbnorm * t1Bavg
@@ -726,38 +728,40 @@ subroutine output (mark)
         endif
      endif
   else
-     write(ounit, '("output  : "I6" : "3(ES12.5," ; "))',advance="no") iout, mark, chi, sumdE
-     if ( weight_bnorm .ne. 0.0 ) then
-        write(ounit, '(ES12.5," ; ")',advance="no") bnorm
+     if (myid == 0) then
+        write(ounit, '("output  : "I6" : "3(ES12.5," ; "))',advance="no") iout, mark, chi, sumdE
+        if ( weight_bnorm .ne. 0.0 ) then
+           write(ounit, '(ES12.5," ; ")',advance="no") bnorm
+        endif
+        if ( weight_bharm .ne. 0.0 ) then
+           write(ounit, '(ES12.5," ; ")',advance="no") bharm
+        endif
+        if ( weight_tflux .ne. 0.0 ) then
+           write(ounit, '(ES12.5," ; ")',advance="no") tflux
+        endif
+        if ( weight_ttlen .ne. 0.0 ) then
+           write(ounit, '(ES12.5," ; ")',advance="no") ttlen
+        endif
+        if ( weight_cssep .ne. 0.0 ) then
+           write(ounit, '(ES12.5," ; ")',advance="no") cssep
+        endif
+        if ( weight_curv .ne. 0.0 ) then
+           write(ounit, '(ES12.5," ; ")',advance="no") curv
+        endif
+        if ( weight_ccsep .ne. 0.0 ) then
+           write(ounit, '(ES12.5," ; ")',advance="no") ccsep
+        endif
+        if ( weight_tors .ne. 0.0 ) then
+           write(ounit, '(ES12.5," ; ")',advance="no") tors
+        endif
+        if ( weight_nissin .ne. 0.0 ) then
+           write(ounit, '(ES12.5," ; ")',advance="no") nissin
+        endif
+        if ( weight_sbnorm .ne. 0.0 ) then
+           write(ounit, '(ES12.5," ; ")',advance="no") bnormavg
+        endif
+        write(*,*)
      endif
-     if ( weight_bharm .ne. 0.0 ) then
-        write(ounit, '(ES12.5," ; ")',advance="no") bharm
-     endif
-     if ( weight_tflux .ne. 0.0 ) then
-        write(ounit, '(ES12.5," ; ")',advance="no") tflux
-     endif
-     if ( weight_ttlen .ne. 0.0 ) then
-        write(ounit, '(ES12.5," ; ")',advance="no") ttlen
-     endif
-     if ( weight_cssep .ne. 0.0 ) then
-        write(ounit, '(ES12.5," ; ")',advance="no") cssep
-     endif
-     if ( weight_curv .ne. 0.0 ) then
-        write(ounit, '(ES12.5," ; ")',advance="no") curv
-     endif
-     if ( weight_ccsep .ne. 0.0 ) then
-        write(ounit, '(ES12.5," ; ")',advance="no") ccsep
-     endif
-     if ( weight_tors .ne. 0.0 ) then
-        write(ounit, '(ES12.5," ; ")',advance="no") tors
-     endif
-     if ( weight_nissin .ne. 0.0 ) then
-        write(ounit, '(ES12.5," ; ")',advance="no") nissin
-     endif
-     if ( weight_sbnorm .ne. 0.0 ) then
-        write(ounit, '(ES12.5," ; ")',advance="no") bnormavg
-     endif
-     write(*,*)
   endif
 
   ! save evolution data;
