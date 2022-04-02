@@ -247,8 +247,7 @@ subroutine AllocData(type)
      
      FATAL( AllocData, Ndof < 1, INVALID Ndof value )
      SALLOCATE( t1E, (1:Ndof), zero )
-     !SALLOCATE( deriv, (1:Ndof, 0:7), zero )
-     SALLOCATE( deriv, (1:Ndof, 0:9), zero )
+     SALLOCATE( deriv, (1:Ndof, 0:10), zero )
 
      ! Bnorm related;
      if (weight_bnorm > sqrtmachprec .or. weight_bharm > sqrtmachprec) then

@@ -180,8 +180,7 @@ subroutine saving
   HWRITERA( iout, Tdof       ,   coilspace     ,   coilspace(1:iout, 1:Tdof)     )
 
   if (allocated(deriv)) then
-     !HWRITERA( Ndof, 6       ,   deriv         ,   deriv(1:Ndof, 0:6)            )
-     HWRITERA( Ndof, 9       ,   deriv         ,   deriv(1:Ndof, 0:9)            )
+     HWRITERA( Ndof, 11      ,   deriv        ,    deriv(1:Ndof, 0:10)          )
   endif
 
   if (allocated(Bmnc)) then

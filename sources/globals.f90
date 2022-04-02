@@ -217,6 +217,7 @@ module globals
   namelist / focusin / &
   IsQuiet       ,&
   IsSymmetric   ,&
+  lim_out       ,&
   case_surface  ,&
   input_surf    ,&
   knotsurf      ,&

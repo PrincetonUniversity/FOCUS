@@ -40,7 +40,9 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
 
   INTEGER              :: ierr, astat, kseg, ip, is, cs, Npc
   REAL                 :: dlx, dly, dlz, rm3, ltx, lty, ltz, rr, r2, m_dot_r, &
-       &                  mx, my, mz, xx, yy, zz, Bx, By, Bz
+                          mx, my, mz, xx, yy, zz, Bx, By, Bz
+  REAL, allocatable    :: dlxv(:), dlyv(:), dlzv(:), rm3v(:), &
+                          Bxv(:), Byv(:), Bzv(:)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -74,21 +76,31 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
         ! Fourier coils
         case(1)
            ! Biot-Savart law
-           do kseg = 0, coil(icoil)%NS-1
-              dlx = xx - coil(icoil)%xx(kseg)
-              dly = yy - coil(icoil)%yy(kseg)
-              dlz = zz - coil(icoil)%zz(kseg)
-              rm3 = (sqrt(dlx**2 + dly**2 + dlz**2))**(-3)
-              ltx = coil(icoil)%xt(kseg)
-              lty = coil(icoil)%yt(kseg)
-              ltz = coil(icoil)%zt(kseg)
-              Bx = Bx + ( dlz*lty - dly*ltz ) * rm3 * coil(icoil)%dd(kseg)
-              By = By + ( dlx*ltz - dlz*ltx ) * rm3 * coil(icoil)%dd(kseg)
-              Bz = Bz + ( dly*ltx - dlx*lty ) * rm3 * coil(icoil)%dd(kseg)
-           enddo    ! enddo kseg
-           Bx = Bx * coil(icoil)%I * bsconstant
-           By = By * coil(icoil)%I * bsconstant
-           Bz = Bz * coil(icoil)%I * bsconstant
+           !do kseg = 0, coil(icoil)%NS-1
+              !dlx = xx - coil(icoil)%xx(kseg)
+              !dly = yy - coil(icoil)%yy(kseg)
+              !dlz = zz - coil(icoil)%zz(kseg)
+              !rm3 = (sqrt(dlx**2 + dly**2 + dlz**2))**(-3)
+              !ltx = coil(icoil)%xt(kseg)
+              !lty = coil(icoil)%yt(kseg)
+              !ltz = coil(icoil)%zt(kseg)
+              !Bx = Bx + ( dlz*lty - dly*ltz ) * rm3 * coil(icoil)%dd(kseg)
+              !By = By + ( dlx*ltz - dlz*ltx ) * rm3 * coil(icoil)%dd(kseg)
+              !Bz = Bz + ( dly*ltx - dlx*lty ) * rm3 * coil(icoil)%dd(kseg)
+           !enddo    ! enddo kseg
+           !Bx = Bx * coil(icoil)%I * bsconstant
+           !By = By * coil(icoil)%I * bsconstant
+           !Bz = Bz * coil(icoil)%I * bsconstant
+           dlxv = xx - coil(icoil)%xx
+           dlyv = yy - coil(icoil)%yy
+           dlzv = zz - coil(icoil)%zz
+           rm3v = (sqrt(dlxv**2 + dlyv**2 + dlzv**2))**(-3)
+           Bxv = ( dlzv*coil(icoil)%yt - dlyv*coil(icoil)%zt ) * rm3v * coil(icoil)%dd
+           Byv = ( dlxv*coil(icoil)%zt - dlzv*coil(icoil)%xt ) * rm3v * coil(icoil)%dd
+           Bzv = ( dlyv*coil(icoil)%xt - dlxv*coil(icoil)%yt ) * rm3v * coil(icoil)%dd
+           Bx = sum(Bxv) * coil(icoil)%I * bsconstant
+           By = sum(Byv) * coil(icoil)%I * bsconstant
+           Bz = sum(Bzv) * coil(icoil)%I * bsconstant
         ! magnetic dipoles
         case(2)
            ! Biot-Savart law
