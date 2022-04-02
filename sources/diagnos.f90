@@ -37,6 +37,7 @@ SUBROUTINE diagnos
       write(ounit, 100) "Nissin complexity", nissin
       write(ounit, 100) "Coil-coil separation", ccsep
       write(ounit, 100) "Coil-surf separation", cssep
+      write(ounit, 100) "Stochastic Bnormal", bnormavg
   endif 
 
 100  format (8X, ": ", A20, " = ", ES15.8) 
