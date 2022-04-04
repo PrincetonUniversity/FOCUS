@@ -7,7 +7,7 @@
 !latex  \section{General}
 !latex  Write something...
 
-subroutine stochastic(ideriv)
+subroutine sbnormal(ideriv)
   use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, &
        coil, DoF, Ncoils, Nfixgeo, Ndof, bnorm, t1B, t1Bavg, Npert, sdelta, Nmax, &
        bnormavg, bnormmax, MPI_COMM_FOCUS
@@ -47,26 +47,22 @@ subroutine stochastic(ideriv)
   bnormavg = zero
   t1Bavg = zero
 
-  ! Assume all coils have same resolution, CHANGE LATER
   SALLOCATE(xxhold, ( 1:Ncoils , 0:coil(1)%NS-1) , zero)
   SALLOCATE(xthold, ( 1:Ncoils , 0:coil(1)%NS-1) , zero)
-  !SALLOCATE(xahold, ( 1:Ncoils , 0:coil(1)%NS-1) , zero)
   SALLOCATE(yyhold, ( 1:Ncoils , 0:coil(1)%NS-1) , zero)
   SALLOCATE(ythold, ( 1:Ncoils , 0:coil(1)%NS-1) , zero)
-  !SALLOCATE(yahold, ( 1:Ncoils , 0:coil(1)%NS-1) , zero)
   SALLOCATE(zzhold, ( 1:Ncoils , 0:coil(1)%NS-1) , zero)
   SALLOCATE(zthold, ( 1:Ncoils , 0:coil(1)%NS-1) , zero)
-  !SALLOCATE(zahold, ( 1:Ncoils , 0:coil(1)%NS-1) , zero)
   do icoil = 1, Ncoils
+     if( coil(icoil)%NS .ne. coil(1)%NS ) then
+        if (myid .eq. 0) write(ounit, '(8X"WARNING: Stochastic needs NS constant")')
+     endif
      xxhold(icoil,0:coil(1)%NS-1) = coil(icoil)%xx(0:coil(1)%NS-1)
      xthold(icoil,0:coil(1)%NS-1) = coil(icoil)%xt(0:coil(1)%NS-1)
-     !xahold(icoil,0:coil(1)%NS-1) = coil(icoil)%xa(0:coil(1)%NS-1)
      yyhold(icoil,0:coil(1)%NS-1) = coil(icoil)%yy(0:coil(1)%NS-1)
      ythold(icoil,0:coil(1)%NS-1) = coil(icoil)%yt(0:coil(1)%NS-1)
-     !yahold(icoil,0:coil(1)%NS-1) = coil(icoil)%ya(0:coil(1)%NS-1)
      zzhold(icoil,0:coil(1)%NS-1) = coil(icoil)%zz(0:coil(1)%NS-1)
      zthold(icoil,0:coil(1)%NS-1) = coil(icoil)%zt(0:coil(1)%NS-1)
-     !zahold(icoil,0:coil(1)%NS-1) = coil(icoil)%za(0:coil(1)%NS-1)
   enddo
 
   SALLOCATE(g, ( 1:Ncoils , 0:coil(1)%NS-1) , zero)
@@ -81,38 +77,38 @@ subroutine stochastic(ideriv)
   enddo
 
   sdelta = sdelta/sqrt(3.0)
+
   do j = 1, Npert
      do icoil = 1, Ncoils
         if( coil(icoil)%type .ne. 1 ) cycle
-        pertxx(0:coil(1)%NS-1) = sdelta*cos(pi2*nxx(icoil,j)*g(icoil,0:coil(1)%NS-1) + psx(icoil,j))
-        pertxt(0:coil(1)%NS-1) = -1.0*pi2*nxx(icoil,j)*sdelta*sin(pi2*nxx(icoil,j)*g(icoil,0:coil(1)%NS-1) + psx(icoil,j))*gp(icoil,0:coil(1)%NS-1)
-        ! don't need pertxa as of right now
-        coil(icoil)%xx(0:coil(1)%NS-1) = xxhold(icoil,0:coil(1)%NS-1)
-        coil(icoil)%xt(0:coil(1)%NS-1) = xthold(icoil,0:coil(1)%NS-1)
-        !coil(icoil)%xa(0:coil(1)%NS-1) = xahold(icoil,0:coil(1)%NS-1)
-        coil(icoil)%xx(0:coil(1)%NS-1) = coil(icoil)%xx(0:coil(1)%NS-1) + pertxx(0:coil(1)%NS-1)
-        coil(icoil)%xt(0:coil(1)%NS-1) = coil(icoil)%xt(0:coil(1)%NS-1) + pertxt(0:coil(1)%NS-1)
-        !coil(icoil)%xa(0:coil(1)%NS-1) = coil(icoil)%xa(0:coil(1)%NS-1) + pertxa(0:coil(1)%NS-1)
+        !pertxx(0:coil(1)%NS-1) = sdelta*cos(pi2*nxx(icoil,j)*g(icoil,0:coil(1)%NS-1) + psx(icoil,j))
+        !pertxt(0:coil(1)%NS-1) = -1.0*pi2*nxx(icoil,j)*sdelta*sin(pi2*nxx(icoil,j)*g(icoil,0:coil(1)%NS-1) + psx(icoil,j))*gp(icoil,0:coil(1)%NS-1)
+        !coil(icoil)%xx(0:coil(1)%NS-1) = xxhold(icoil,0:coil(1)%NS-1)
+        !coil(icoil)%xt(0:coil(1)%NS-1) = xthold(icoil,0:coil(1)%NS-1)
+        !coil(icoil)%xx(0:coil(1)%NS-1) = coil(icoil)%xx(0:coil(1)%NS-1) + pertxx(0:coil(1)%NS-1)
+        !coil(icoil)%xt(0:coil(1)%NS-1) = coil(icoil)%xt(0:coil(1)%NS-1) + pertxt(0:coil(1)%NS-1)
+        coil(icoil)%xx(0:coil(1)%NS-1) = xxhold(icoil,0:coil(1)%NS-1) + sdelta*cos(pi2*nxx(icoil,j)*g(icoil,0:coil(1)%NS-1) + psx(icoil,j))
+        coil(icoil)%xt(0:coil(1)%NS-1) = xthold(icoil,0:coil(1)%NS-1) - pi2*nxx(icoil,j)*sdelta*sin(pi2*nxx(icoil,j)*g(icoil,0:coil(1)%NS-1) + psx(icoil,j))*gp(icoil,0:coil(1)%NS-1)
 
-        pertyy(0:coil(1)%NS-1) = sdelta*cos(pi2*nyy(icoil,j)*g(icoil,0:coil(1)%NS-1) + psy(icoil,j))
-        pertyt(0:coil(1)%NS-1) = -1.0*pi2*nyy(icoil,j)*sdelta*sin(pi2*nyy(icoil,j)*g(icoil,0:coil(1)%NS-1) + psy(icoil,j))*gp(icoil,0:coil(1)%NS-1)
-        coil(icoil)%yy(0:coil(1)%NS-1) = yyhold(icoil,0:coil(1)%NS-1)
-        coil(icoil)%yt(0:coil(1)%NS-1) = ythold(icoil,0:coil(1)%NS-1)
-        !coil(icoil)%ya(0:coil(1)%NS-1) = yahold(icoil,0:coil(1)%NS-1)
-        coil(icoil)%yy(0:coil(1)%NS-1) = coil(icoil)%yy(0:coil(1)%NS-1) + pertyy(0:coil(1)%NS-1)
-        coil(icoil)%yt(0:coil(1)%NS-1) = coil(icoil)%yt(0:coil(1)%NS-1) + pertyt(0:coil(1)%NS-1)
-        !coil(icoil)%ya(0:coil(1)%NS-1) = coil(icoil)%ya(0:coil(1)%NS-1) + pertya(0:coil(1)%NS-1)
+        !pertyy(0:coil(1)%NS-1) = sdelta*cos(pi2*nyy(icoil,j)*g(icoil,0:coil(1)%NS-1) + psy(icoil,j))
+        !pertyt(0:coil(1)%NS-1) = -1.0*pi2*nyy(icoil,j)*sdelta*sin(pi2*nyy(icoil,j)*g(icoil,0:coil(1)%NS-1) + psy(icoil,j))*gp(icoil,0:coil(1)%NS-1)
+        !coil(icoil)%yy(0:coil(1)%NS-1) = yyhold(icoil,0:coil(1)%NS-1)
+        !coil(icoil)%yt(0:coil(1)%NS-1) = ythold(icoil,0:coil(1)%NS-1)
+        !coil(icoil)%yy(0:coil(1)%NS-1) = coil(icoil)%yy(0:coil(1)%NS-1) + pertyy(0:coil(1)%NS-1)
+        !coil(icoil)%yt(0:coil(1)%NS-1) = coil(icoil)%yt(0:coil(1)%NS-1) + pertyt(0:coil(1)%NS-1)
+        coil(icoil)%yy(0:coil(1)%NS-1) = yyhold(icoil,0:coil(1)%NS-1) + sdelta*cos(pi2*nyy(icoil,j)*g(icoil,0:coil(1)%NS-1) + psy(icoil,j))
+        coil(icoil)%yt(0:coil(1)%NS-1) = ythold(icoil,0:coil(1)%NS-1) - pi2*nyy(icoil,j)*sdelta*sin(pi2*nyy(icoil,j)*g(icoil,0:coil(1)%NS-1) + psy(icoil,j))*gp(icoil,0:coil(1)%NS-1)
         
-        pertzz(0:coil(1)%NS-1) = sdelta*cos(pi2*nzz(icoil,j)*g(icoil,0:coil(1)%NS-1) + psz(icoil,j))
-        pertzt(0:coil(1)%NS-1) = 1.0*pi2*nzz(icoil,j)*sdelta*sin(pi2*nzz(icoil,j)*g(icoil,0:coil(1)%NS-1) + psz(icoil,j))*gp(icoil,0:coil(1)%NS-1)
-        coil(icoil)%zz(0:coil(1)%NS-1) = zzhold(icoil,0:coil(1)%NS-1)
-        coil(icoil)%zt(0:coil(1)%NS-1) = zthold(icoil,0:coil(1)%NS-1)
-        !coil(icoil)%za(0:coil(1)%NS-1) = zahold(icoil,0:coil(1)%NS-1)
-        coil(icoil)%zz(0:coil(1)%NS-1) = coil(icoil)%zz(0:coil(1)%NS-1) + pertzz(0:coil(1)%NS-1)
-        coil(icoil)%zt(0:coil(1)%NS-1) = coil(icoil)%zt(0:coil(1)%NS-1) + pertzt(0:coil(1)%NS-1)
-        !coil(icoil)%za(0:coil(1)%NS-1) = coil(icoil)%za(0:coil(1)%NS-1) + pertza(0:coil(1)%NS-1)
+        !pertzz(0:coil(1)%NS-1) = sdelta*cos(pi2*nzz(icoil,j)*g(icoil,0:coil(1)%NS-1) + psz(icoil,j))
+        !pertzt(0:coil(1)%NS-1) = -1.0*pi2*nzz(icoil,j)*sdelta*sin(pi2*nzz(icoil,j)*g(icoil,0:coil(1)%NS-1) + psz(icoil,j))*gp(icoil,0:coil(1)%NS-1)
+        !coil(icoil)%zz(0:coil(1)%NS-1) = zzhold(icoil,0:coil(1)%NS-1)
+        !coil(icoil)%zt(0:coil(1)%NS-1) = zthold(icoil,0:coil(1)%NS-1)
+        !coil(icoil)%zz(0:coil(1)%NS-1) = coil(icoil)%zz(0:coil(1)%NS-1) + pertzz(0:coil(1)%NS-1)
+        !coil(icoil)%zt(0:coil(1)%NS-1) = coil(icoil)%zt(0:coil(1)%NS-1) + pertzt(0:coil(1)%NS-1)
+        coil(icoil)%zz(0:coil(1)%NS-1) = zzhold(icoil,0:coil(1)%NS-1) + sdelta*cos(pi2*nzz(icoil,j)*g(icoil,0:coil(1)%NS-1) + psz(icoil,j))
+        coil(icoil)%zt(0:coil(1)%NS-1) = zthold(icoil,0:coil(1)%NS-1) - pi2*nzz(icoil,j)*sdelta*sin(pi2*nzz(icoil,j)*g(icoil,0:coil(1)%NS-1) + psz(icoil,j))*gp(icoil,0:coil(1)%NS-1)
      enddo
-     call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
+     !call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
      if ( ideriv .eq. 0 ) then
         call bnormal( 0 )
      else
@@ -122,10 +118,10 @@ subroutine stochastic(ideriv)
      if ( bnormmax .le. bnorm ) bnormmax = bnorm
      bnormavg = bnormavg + bnorm
   enddo
+
   sdelta = sdelta*sqrt(3.0)
   bnormavg = bnormavg / real(Npert)
   if ( ideriv .eq. 1 ) t1Bavg = t1Bavg / real(Npert)
-
   bnorm = bnormhold
   if ( ideriv .eq. 1 ) t1B = t1Bhold
 
@@ -147,11 +143,8 @@ subroutine stochastic(ideriv)
   DALLOCATE(g)
   DALLOCATE(gp)
 
-  ! Section for checking if linear functional variations are accurate, put in
-  ! other function maybe in diagnos
-
   return
-end subroutine stochastic
+end subroutine sbnormal
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

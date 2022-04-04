@@ -304,6 +304,7 @@ subroutine costfun(ideriv)
      call coilsep(0)
      call torsion(0)
      call nisscom(0)
+     call sbnormal(0)
 
   endif
 
@@ -480,7 +481,7 @@ subroutine costfun(ideriv)
   ! stochastic bnorm
   if (weight_sbnorm > 0.0_dp) then
   
-     call stochastic(ideriv) 
+     call sbnormal(ideriv) 
      chi = chi + weight_sbnorm * bnormavg
      if     ( ideriv == 1 ) then
         t1E = t1E + weight_sbnorm * t1Bavg
@@ -687,7 +688,7 @@ subroutine normweight
 
   if( weight_sbnorm >= 0.0_dp ) then
 
-     call stochastic(0)
+     call sbnormal(0)
      if (abs(bnormavg) > machprec) weight_sbnorm = weight_sbnorm / bnormavg
      if( myid == 0 ) write(ounit, 1000) "weight_sbnorm", weight_sbnorm
      if( myid .eq. 0 .and. weight_sbnorm < machprec) write(ounit, '("warning : weight_sbnorm < machine_precision, bnormavg will not be used.")')
