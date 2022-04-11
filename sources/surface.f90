@@ -13,6 +13,7 @@ SUBROUTINE surface
   if ( weight_cssep > machprec ) then     
      plasma = 1
      limiter = 2
+     if ( limiter_surf .eq. input_surf ) limiter = plasma ! use the plasma surface as limiter surface
   else ! use the plasma surface as limiter
      plasma = 1
      limiter = 1
@@ -27,11 +28,6 @@ SUBROUTINE surface
 
   ! read the limiter surface
   if (limiter /= plasma) then
-     if ( limiter_surf .eq. input_surf ) then 
-        limiter = plasma
-        psurf = limiter
-        return
-     endif
      inquire( file=trim(limiter_surf), exist=exist)  
      FATAL( surface, .not.exist, limiter_surf does not exist )
      FATAL( surface, limiter <= plasma, something goes wrong the surface indexing )
