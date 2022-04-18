@@ -77,7 +77,7 @@ module globals
   
 !latex \subsection{Input namelist: \type{focusin}}
   INTEGER              :: IsQuiet        =   0
-  INTEGER              :: lim_out        =   0
+  INTEGER              :: lim_out        =   1
   ! surface related      
   INTEGER              :: IsSymmetric    =   0 
   INTEGER              :: case_surface   =   0
