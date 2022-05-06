@@ -24,6 +24,7 @@ Here are the list and links.
 | nissin  | evaluate the coil Nissin complexity | [nissin.f90](https://github.com/PrincetonUniversity/FOCUS/blob/master/sources/nissin.f90) | [nissin.pdf](https://princetonuniversity.github.io/FOCUS/nissin.pdf) |
 | surfsep | push coils away from any surfaces | [surfsep.f90](https://github.com/PrincetonUniversity/FOCUS/blob/master/sources/surfsep.f90) | [surfsep.pdf](https://princetonuniversity.github.io/FOCUS/Coil_to_Surface_Separation.pdf) |
 | coilsep | push coils away from any other | [coilsep.f90](https://github.com/PrincetonUniversity/FOCUS/blob/master/sources/coilsep.f90) | [coilsep.pdf](https://princetonuniversity.github.io/FOCUS/coilsep.pdf) |
+| straight_out | Straighten the outboard section | [straight_out.f90](https://github.com/PrincetonUniversity/FOCUS/blob/master/sources/straight_out.f90) | [straight_out.pdf](https://princetonuniversity.github.io/FOCUS/straight_out.pdf) |
 | solvers | interface for all the optimizers | [solvers.f90](https://github.com/PrincetonUniversity/FOCUS/blob/master/sources/solvers.f90) | [solvers.pdf](https://princetonuniversity.github.io/FOCUS/solvers.pdf) |
 | descent | differential flow optimization | [descent.f90](https://github.com/PrincetonUniversity/FOCUS/blob/master/sources/descent.f90) | [descent.pdf](https://princetonuniversity.github.io/FOCUS/descent.pdf) |
 | congrad | conjugate gradient optimization | [congrad.f90](https://github.com/PrincetonUniversity/FOCUS/blob/master/sources/congrad.f90) | [congrad.pdf](https://princetonuniversity.github.io/FOCUS/congrad.pdf) |

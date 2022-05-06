@@ -39,8 +39,10 @@ For instance, you want to run the code with a case name of "example".
     
   - *case_init =  0* : **input_coils** (default: 'example.focus')
   
-    Read the coils data from **example.focus**. This file contains all the Fourier harmonics and control labels for the coils.
-	Here is an example for the rotating ellipse case [ellipse.focus](misc/ellipse.focus)
+    It contains the control labels for the coils and, depending on
+    the representation chosen, the Fourier harmonics or the coordinates of the splines control points. 
+	  Here is an example for the rotating ellipse case using Fourier representation [ellipse.focus](misc/ellipse.focus) and 
+    an example using the spline representation [ellipse.focus](https://github.com/PrincetonUniversity/FOCUS/blob/develop/examples/ellipse_spline/ellipse.focus).
     
   - *case_init =  1*
   
@@ -65,9 +67,9 @@ Here is a list of input variable related to objective functions that should be s
 For more details of each function, users are suggested to check [subroutines](subroutines.md).
 
 ```fortran
-  ! Normal field error
-  REAL                 :: weight_bnorm   =   0.000D+00
+ ! Normal field error
   INTEGER              :: case_bnormal   =   0
+  REAL                 :: weight_bnorm   =   1.000D+00
   ! Bmn resonant harmonics
   REAL                 :: weight_bharm   =   0.000D+00
   INTEGER              :: bharm_jsurf    =   0
@@ -91,6 +93,18 @@ For more details of each function, users are suggested to check [subroutines](su
   REAL                 :: curv_k0        =   1.000D+01
   REAL                 :: curv_k1        =   0.000D+00
   INTEGER              :: curv_k1len     =   0
+  ! straight function
+  REAL                 :: weight_straight     =   0.000D+00
+  REAL                 :: coeff_disp_straight =   0.50D+00
+  INTEGER              :: case_straight       =   3 
+  INTEGER              :: penfun_str    =   1
+  REAL                 :: str_alpha     =   0.000D+00
+  REAL                 :: str_beta      =   2.000D+00
+  REAL                 :: str_gamma     =   2.000D+00
+  REAL                 :: str_sigma     =   0.000D+00
+  REAL                 :: str_k0        =   1.000D+01
+  REAL                 :: str_k1        =   0.000D+00
+  INTEGER              :: str_k1len     =   0
   ! coil torsion
   REAL                 :: weight_tors    =   0.000D+00
   INTEGER              :: case_tors      =   1
@@ -111,13 +125,27 @@ For more details of each function, users are suggested to check [subroutines](su
   REAL                 :: weight_cssep   =   0.000D+00
   REAL                 :: cssep_factor   =   4.000D+00 
   CHARACTER(100)       :: limiter_surf   = 'none'             ! limiter surface
+  INTEGER              :: case_cssep     =   1
+  REAL                 :: mincssep       =   7.000D-01
+  REAL                 :: cssep_alpha    =   1.000D+00
+  REAL                 :: cssep_beta     =   2.000D+00
+  REAL                 :: cssep_gamma    =   2.000D+00
+  REAL                 :: cssep_sigma    =   0.000D+00
   ! coil-coil separation
   REAL                 :: weight_ccsep   =   0.000D+00
+  REAL                 :: weight_inorm   =   1.000D+00
+  REAL                 :: weight_gnorm   =   1.000D+00
+  REAL                 :: weight_mnorm   =   1.000D+00
+  REAL                 :: origin_surface_x =   0.000D+00
+  REAL                 :: origin_surface_y  =   0.000D+00
+  REAL                 :: origin_surface_z  =   0.000D+00
   INTEGER              :: penfun_ccsep   =   1
   INTEGER              :: ccsep_skip     =   0
   REAL                 :: r_delta        =   1.000D-01
   REAL                 :: ccsep_alpha    =   1.000D+01
   REAL                 :: ccsep_beta     =   2.000D+00
+  REAL                 :: weight_specw   =   0.000D+00
+
 ```
 
 # Running
