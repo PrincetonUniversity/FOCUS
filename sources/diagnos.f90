@@ -5,11 +5,14 @@ SUBROUTINE diagnos
 ! DATE: 07/13/2017
 ! diagonose the coil performance
 !------------------------------------------------------------------------------------------------------   
+
   use globals
   use mpi
   implicit none
 
-  INTEGER           :: icoil, itmp, NF, idof, i, j, isurf, cs, ip, is, Npc, coilInd0, coilInd1, j0, per0, l0, ss0
+
+  INTEGER           :: icoil, itmp, NF,NCP, idof, i, j, isurf, cs, ip, is, Npc, coilInd0, coilInd1, j0, per0, l0, ss0
+
   LOGICAL           :: lwbnorm, l_raw
   REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist, ReDot, ImDot, dum, AvgCurv, AvgTors, &
                        MinLambda, MaxS, torsRet
@@ -37,6 +40,7 @@ SUBROUTINE diagnos
       write(ounit, 100) "Nissin complexity", nissin
       write(ounit, 100) "Coil-coil separation", ccsep
       write(ounit, 100) "Coil-surf separation", cssep
+      write(ounit, 100) "Straight-out", str
   endif 
 
 100  format (8X, ": ", A20, " = ", ES15.8) 
@@ -56,7 +60,10 @@ SUBROUTINE diagnos
            coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%ys(1:NF) ; idof = idof + NF
            coilspace(iout, idof+1:idof+NF+1) = FouCoil(icoil)%zc(0:NF) ; idof = idof + NF +1
            coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%zs(1:NF) ; idof = idof + NF
-!!$        case default
+	case (coil_type_spline)
+           NCP = Splines(icoil)%NCP
+           coilspace(iout, idof+1:idof+NCP*3) = Splines(icoil)%Cpoints(0:3*NCP-1) ; idof = idof + 3*NCP 
+!!$     case default
 !!$           FATAL(descent, .true., not supported coil types)
         end select
      enddo
@@ -67,7 +74,7 @@ SUBROUTINE diagnos
   if ( (case_length == 1) .and. (sum(coil(1:Ncoils)%Lo) < sqrtmachprec) ) coil(1:Ncoils)%Lo = one
   call length(0)
   do icoil = 1, Ncoils
-     if(coil(icoil)%type .ne. 1) cycle ! only for Fourier
+     if(coil(icoil)%type .ne. 1 .AND. (coil(icoil)%type .ne. coil_type_spline)) cycle ! only for Fourier
      AvgLength = AvgLength + coil(icoil)%L
   enddo
   AvgLength = AvgLength / Ncoils
@@ -76,7 +83,7 @@ SUBROUTINE diagnos
   !-------------------------------coil maximum curvature----------------------------------------------------  
   MaxCurv = zero
   do icoil = 1, Ncoils
-     if(coil(icoil)%type .ne. 1) cycle ! only for Fourier
+     if(coil(icoil)%type .ne. 1 .AND. (coil(icoil)%type .ne. coil_type_spline)) cycle ! only for Fourier
      call CurvDeriv0(icoil,dum) !dummy return
      if (coil(icoil)%maxcurv .ge. MaxCurv) then
         MaxCurv = coil(icoil)%maxcurv
@@ -93,7 +100,7 @@ SUBROUTINE diagnos
   !-------------------------------average coil curvature-------------------------------------------------------
   AvgCurv = zero
   do icoil = 1, Ncoils
-     if(coil(icoil)%type .ne. 1) exit ! only for Fourier
+     if(coil(icoil)%type .ne. 1 .AND. (coil(icoil)%type .ne. coil_type_spline)) exit ! only for Fourier
      call avgcurvature(icoil)
      AvgCurv = AvgCurv + coil(icoil)%avgcurv
 #ifdef DEBUG
@@ -143,7 +150,7 @@ SUBROUTINE diagnos
   coilInd0 = 0
   coilInd1 = 1
   do icoil = 1, Ncoils
-     if(coil(icoil)%type .ne. 1) cycle ! only for Fourier
+     if(coil(icoil)%type .ne. 1 .AND. (coil(icoil)%type .ne. coil_type_spline)) cycle
      if(Ncoils .eq. 1) exit ! if only one coil
      ! Data for the first coil
      SALLOCATE(Atmp, (1:3,0:coil(icoil)%NS-1), zero)
@@ -184,7 +191,7 @@ SUBROUTINE diagnos
      endif
      do itmp = 1, Ncoils
         ! skip self and non-Fourier coils
-        if (itmp == icoil .or. coil(icoil)%type /= 1) cycle
+        if (itmp == icoil .or. ((coil(icoil)%type .ne. 1) .AND. (coil(icoil)%type .ne. coil_type_spline))) cycle
         SALLOCATE(Btmp, (1:3,0:coil(itmp)%NS-1), zero)
         ! check if the coil is stellarator symmetric
         !select case (coil(icoil)%symm)
@@ -231,7 +238,7 @@ SUBROUTINE diagnos
   minCPdist = infmax
   do icoil = 1, Ncoils
 
-     if(coil(icoil)%type .ne. 1) cycle ! only for Fourier
+     if(coil(icoil)%type .ne. 1  .AND. (coil(icoil)%type .ne. coil_type_spline)) cycle
 
      SALLOCATE(Atmp, (1:3,0:coil(icoil)%NS-1), zero)
      SALLOCATE(Btmp, (1:3,1:(Nteta*Nzeta)), zero)
@@ -335,14 +342,15 @@ END SUBROUTINE diagnos
 
 subroutine avgcurvature(icoil)
 
-  use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils
+
+  use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils,Splines,coil_type_spline
   use mpi
   implicit none
 
   INTEGER, INTENT(in) :: icoil
 
   REAL,allocatable    :: davgcurv(:)
-
+  call length(0)
   SALLOCATE(davgcurv, (0:coil(icoil)%NS-1), zero)
 
   davgcurv = sqrt( (coil(icoil)%za*coil(icoil)%yt-coil(icoil)%zt*coil(icoil)%ya)**2  &
@@ -350,7 +358,10 @@ subroutine avgcurvature(icoil)
              + (coil(icoil)%ya*coil(icoil)%xt-coil(icoil)%yt*coil(icoil)%xa)**2 )& 
              / ((coil(icoil)%xt)**2+(coil(icoil)%yt)**2+(coil(icoil)%zt)**2)**(1.5)
   davgcurv = davgcurv*sqrt(coil(icoil)%xt**2+coil(icoil)%yt**2+coil(icoil)%zt**2)
-  coil(icoil)%avgcurv = pi2*sum(davgcurv)/size(davgcurv)
+
+  if (coil(icoil)%type == coil_type_spline) coil(icoil)%avgcurv = 1.0*sum(davgcurv)/size(davgcurv)
+  if (coil(icoil)%type == 1)coil(icoil)%avgcurv = pi2*sum(davgcurv)/size(davgcurv)
+
   coil(icoil)%avgcurv = coil(icoil)%avgcurv/coil(icoil)%L
 
   return

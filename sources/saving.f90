@@ -26,7 +26,7 @@ subroutine saving
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 
-  INTEGER            :: ii, jj, icoil, NF, ip, is, cs, Npc
+  INTEGER            :: ii, jj, icoil, NF,NCP, ip, is, cs, Npc
 
   ! the following are used by the macros HWRITEXX below; do not alter/remove;
   INTEGER            :: hdfier, rank
@@ -55,6 +55,7 @@ subroutine saving
      if(allocated(t1C)) deriv(1:Ndof,7) = t1C(1:Ndof)
      if(allocated(t1T)) deriv(1:Ndof,8) = t1T(1:Ndof)
      if(allocated(t1N)) deriv(1:Ndof,9) = t1N(1:Ndof)
+     if(allocated(t1Str)) deriv(1:Ndof,10)=t1Str(1:Ndof)
   endif
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -93,6 +94,7 @@ subroutine saving
   HWRITEIV( 1                ,   case_bnormal  ,   case_bnormal                  )
   HWRITEIV( 1                ,   case_length   ,   case_length                   )
   HWRITEIV( 1                ,   case_curv     ,   case_curv                     )
+  HWRITEIV( 1                ,   case_straight ,   case_straight                 )
   HWRITEIV( 1                ,   curv_alpha    ,   curv_alpha                    )
   HWRITERV( 1                ,   weight_bnorm  ,   weight_bnorm                  )
   HWRITERV( 1                ,   weight_bharm  ,   weight_bharm                  )
@@ -107,6 +109,7 @@ subroutine saving
   HWRITERV( 1                ,   weight_inorm  ,   weight_inorm                  )
   HWRITERV( 1                ,   weight_mnorm  ,   weight_mnorm                  )
   HWRITERV( 1                ,   weight_curv   ,   weight_curv                   )
+  HWRITERV( 1                ,   weight_straight,   weight_straight              )
   HWRITERV( 1                ,   weight_ccsep  ,   weight_ccsep                  )
   HWRITERV( 1                ,   weight_tors   ,   weight_tors                   )
   HWRITERV( 1                ,   ccsep_alpha   ,   ccsep_alpha                   )
@@ -174,12 +177,12 @@ subroutine saving
   HWRITERV( 1                ,   Gnorm         ,   Gnorm                         )
   HWRITERV( 1                ,   Mnorm         ,   Mnorm                         )
   HWRITERV( 1                ,   overlap       ,   overlap                       )
-  HWRITERA( iout, 12         ,   evolution     ,   evolution(1:iout, 0:11)       )
+  HWRITERA( iout, 13         ,   evolution     ,   evolution(1:iout, 0:12)       )
   HWRITERA( iout, Tdof       ,   coilspace     ,   coilspace(1:iout, 1:Tdof)     )
 
   if (allocated(deriv)) then
      !HWRITERA( Ndof, 6       ,   deriv         ,   deriv(1:Ndof, 0:6)            )
-     HWRITERA( Ndof, 9       ,   deriv         ,   deriv(1:Ndof, 0:9)            )
+     HWRITERA( Ndof, 10       ,   deriv         ,   deriv(1:Ndof, 0:10)            )
   endif
 
   if (allocated(Bmnc)) then
@@ -210,6 +213,8 @@ subroutine saving
      HWRITEIV( 1                ,   mcssep        ,   mcssep                     )
      HWRITEIV( 1                ,   icurv         ,   icurv                      )
      HWRITEIV( 1                ,   mcurv         ,   mcurv                      )
+     HWRITEIV( 1                ,   istr          ,   istr                       )
+     HWRITEIV( 1                ,   mstr          ,   mstr                       )
      HWRITEIV( 1                ,   iccsep        ,   iccsep                     )
      HWRITEIV( 1                ,   mccsep        ,   mccsep                     )
      HWRITEIV( 1                ,   itors         ,   itors                      )
@@ -237,6 +242,40 @@ subroutine saving
   HWRITERV( 1                ,  time_initialize,   time_initialize               )
   HWRITERV( 1                ,  time_optimize  ,   time_optimize                 )
   HWRITERV( 1                ,  time_postproc  ,   time_postproc                 )
+
+  ! do icoil = 1,Ncoils
+  !   select case(icoil)
+  !     case(1)
+  !       HWRITERV( coil(icoil)%NS            ,  curvature_1,   coil(icoil)%curvature(1:coil(icoil)%NS )              )
+  !       HWRITERV( coil(icoil)%NS            ,  straight_1,   coil(icoil)%straight (1:coil(icoil)%NS )              ) 
+  !     case(2)
+  !       HWRITERV( coil(icoil)%NS            ,  curvature_2,   coil(icoil)%curvature(1:coil(icoil)%NS )              )
+  !       HWRITERV( coil(icoil)%NS            ,  straight_2,   coil(icoil)%straight (1:coil(icoil)%NS )              ) 
+  !     case(3)
+  !       HWRITERV( coil(icoil)%NS            ,  curvature_3,   coil(icoil)%curvature(1:coil(icoil)%NS )              )
+  !       HWRITERV( coil(icoil)%NS            ,  straight_3,   coil(icoil)%straight (1:coil(icoil)%NS )              ) 
+  !     case(4)
+  !       HWRITERV( coil(icoil)%NS            ,  curvature_4,   coil(icoil)%curvature(1:coil(icoil)%NS )              )
+  !       HWRITERV( coil(icoil)%NS            ,  straight_4,   coil(icoil)%straight (1:coil(icoil)%NS )              ) 
+  !     case(5)
+  !       HWRITERV( coil(icoil)%NS            ,  curvature_5,   coil(icoil)%curvature(1:coil(icoil)%NS )              )
+  !       HWRITERV( coil(icoil)%NS            ,  straight_5,   coil(icoil)%straight (1:coil(icoil)%NS )              ) 
+  !     case(6)
+  !       HWRITERV( coil(icoil)%NS            ,  curvature_6,   coil(icoil)%curvature(1:coil(icoil)%NS )              )
+  !       HWRITERV( coil(icoil)%NS            ,  straight_6,   coil(icoil)%straight (1:coil(icoil)%NS )              ) 
+  !     case(7)
+  !       HWRITERV( coil(icoil)%NS            ,  curvature_7,   coil(icoil)%curvature(1:coil(icoil)%NS )              )
+  !       HWRITERV( coil(icoil)%NS            ,  straight_7,   coil(icoil)%straight (1:coil(icoil)%NS )              ) 
+  !     case(8)
+  !       HWRITERV( coil(icoil)%NS            ,  curvature_8,   coil(icoil)%curvature(1:coil(icoil)%NS )              )
+  !       HWRITERV( coil(icoil)%NS            ,  straight_8,   coil(icoil)%straight (1:coil(icoil)%NS )              ) 
+  !     case(9)
+  !       HWRITERV( coil(icoil)%NS            ,  curvature_9,   coil(icoil)%curvature(1:coil(icoil)%NS )              )
+  !       HWRITERV( coil(icoil)%NS            ,  straight_9,   coil(icoil)%straight (1:coil(icoil)%NS )              ) 
+  !     end select
+  ! end do
+
+
 
   call h5fclose_f( file_id, hdfier ) ! terminate access;
   FATAL( restart, hdfier.ne.0, error calling h5fclose_f )
@@ -282,6 +321,21 @@ subroutine saving
            write(wunit, *) "# Ic     I    Lc  Bz  (Ic control I; Lc control Bz)"
            write(wunit,'(I3, ES23.15, I3, ES23.15)') coil(icoil)%Ic, coil(icoil)%I, &
                                                      coil(icoil)%Lc, coil(icoil)%Bz
+	case (coil_type_spline)
+           write(wunit, '(4(A6, A15, 8X))') " #Nseg", "current",  "Ifree", "Length", "Lfree", "target_length"!, "k0"
+           !write(wunit,'(2X, I4, ES23.15, 3X, I3, ES23.15, 3X, I3, ES23.15, ES23.15)') &
+                !coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo, coil(icoil)%k0
+           write(wunit,'(2X, I4, ES23.15, 3X, I3, ES23.15, 3X, I3, ES23.15)') &
+                coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo !,coil(icoil)%k0  
+           NCP = Splines(icoil)%NCP ! shorthand;
+           write(wunit, *) "#NCP "
+           write(wunit, '(I3,I3)') NCP 
+           write(wunit, *) "knot vector"
+           write(wunit, 1000) Splines(icoil)%vect
+           write(wunit, *) "#Control points for coils ( x;y;z) "
+           write(wunit, 1000) Splines(icoil)%Cpoints(0:NCP-1)
+           write(wunit, 1000) Splines(icoil)%Cpoints(NCP:2*NCP-1)
+           write(wunit, 1000) Splines(icoil)%Cpoints(NCP*2:3*NCP-1)
         case default
            FATAL(restart, .true., not supported coil types)
         end select
@@ -300,7 +354,7 @@ subroutine saving
      write(funit,'("mirror NIL")')
      do icoil = 1, Ncoils
         ! will only write x,y,z in cartesian coordinates
-        if (coil(icoil)%type /= 1) cycle
+        if ((coil(icoil)%type /= 1) .AND. (coil(icoil)%type /= coil_type_spline)) cycle
         ! check if the coil is stellarator symmetric
         select case (coil(icoil)%symm) 
         case ( 0 )

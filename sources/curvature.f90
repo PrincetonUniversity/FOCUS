@@ -20,13 +20,13 @@
 subroutine curvature(ideriv)
   use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, MPI_COMM_FOCUS, &
        coil, DoF, Ncoils, Nfixgeo, Ndof, curv, t1K, t2K, weight_curv, FouCoil, &
-       mcurv, icurv, LM_fvec, LM_fjac
+       mcurv, icurv, LM_fvec, LM_fjac,coil_type_spline,Splines
 
   use mpi
   implicit none
   INTEGER, INTENT(in) :: ideriv
 
-  INTEGER             :: astat, ierr, icoil, idof, ND, NF, ivec
+  INTEGER             :: astat, ierr, icoil, idof, ND, NF,NCP, ivec
   REAL                :: curvAdd
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -38,7 +38,7 @@ subroutine curvature(ideriv)
   if( ideriv >= 0 ) then
 
      do icoil = 1, Ncoils
-        if( coil(icoil)%type .ne. 1 ) exit ! only for Fourier
+        if( (coil(icoil)%type .ne. 1) .AND. (coil(icoil)%type .ne. coil_type_spline) ) exit
         if( coil(icoil)%Lc     /=  0 ) then ! if geometry is free
            call CurvDeriv0(icoil,curvAdd)
            curv = curv + curvAdd
@@ -62,17 +62,20 @@ subroutine curvature(ideriv)
      idof = 0
      do icoil = 1, Ncoils
 
-        if(coil(icoil)%type .ne. 1) exit ! only for Fourier
+     if( (coil(icoil)%type .ne. 1) .AND. (coil(icoil)%type .ne. coil_type_spline) ) exit
 
         ND = DoF(icoil)%ND
-        NF = FouCoil(icoil)%NF
+        if (coil(icoil)%type == 1) NF = FouCoil(icoil)%NF
+        if (coil(icoil)%type == coil_type_spline) NCP = Splines(icoil)%NCP
 
         if ( coil(icoil)%Ic /= 0 ) then !if current is free;
            idof = idof + 1
         endif
 
         if ( coil(icoil)%Lc /= 0 ) then !if geometry is free;
-           call CurvDeriv1( icoil, t1K(idof+1:idof+ND), ND, NF )
+        
+           if (coil(icoil)%type == coil_type_spline) call CurvDeriv1( icoil, t1K(idof+1:idof+ND), ND, NCP )
+           if (coil(icoil)%type == 1) call CurvDeriv1( icoil, t1K(idof+1:idof+ND), ND, NF )
            if (mcurv > 0) then ! L-M format of targets
               LM_fjac(icurv+ivec, idof+1:idof+ND) = weight_curv * t1K(idof+1:idof+ND)
               ivec = ivec + 1
@@ -98,7 +101,7 @@ subroutine CurvDeriv0(icoil,curvRet)
 
   use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils, &
           case_curv, curv_alpha, curv_k0, curv_k1, curv_beta, curv_gamma, curv_sigma, penfun_curv, &
-          curv_k1len, MPI_COMM_FOCUS
+          curv_k1len, MPI_COMM_FOCUS,coil_type_spline,Splines
 
   use mpi
   implicit none
@@ -108,7 +111,8 @@ subroutine CurvDeriv0(icoil,curvRet)
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   INTEGER              :: kseg, NS
   REAL                 :: hypc, curv_hold, k1_use
-  REAL                 :: curvv(0:coil(icoil)%NS), xt(0:coil(icoil)%NS), yt(0:coil(icoil)%NS), zt(0:coil(icoil)%NS), xa(0:coil(icoil)%NS), ya(0:coil(icoil)%NS), za(0:coil(icoil)%NS)
+  REAL                 :: curvv(0:coil(icoil)%NS), xt(0:coil(icoil)%NS), yt(0:coil(icoil)%NS), &
+                          zt(0:coil(icoil)%NS), xa(0:coil(icoil)%NS), ya(0:coil(icoil)%NS), za(0:coil(icoil)%NS)
 
   NS = coil(icoil)%NS 
   xt(0:coil(icoil)%NS) = coil(icoil)%xt(0:coil(icoil)%NS)
@@ -150,6 +154,8 @@ subroutine CurvDeriv0(icoil,curvRet)
   curvv = sqrt( (za*yt-zt*ya)**2 + (xa*zt-xt*za)**2  + (ya*xt-yt*xa)**2 ) / (xt**2+yt**2+zt**2)**(1.5)
   coil(icoil)%maxcurv = maxval(curvv)
 
+  coil(icoil)%curvature = curvv
+
   if ( curv_k1len .eq. 1 ) then
      k1_use = pi2/coil(icoil)%Lo
   else
@@ -180,38 +186,43 @@ subroutine CurvDeriv0(icoil,curvRet)
         if ( curvv(kseg) > k1_use ) then
            curv_hold = curv_hold + curv_sigma*( ( curvv(kseg) - k1_use )**curv_gamma )
         endif
+
      endif
      curvRet = curvRet + curv_hold*sqrt(xt(kseg)**2+yt(kseg)**2+zt(kseg)**2)
   enddo
 
   call lenDeriv0( icoil, coil(icoil)%L )
-  curvRet = pi2*curvRet/(NS*coil(icoil)%L)
   
+  if (coil(icoil)%type==1) curvRet = pi2*curvRet/(NS*coil(icoil)%L)
+  if (coil(icoil)%type==coil_type_spline) curvRet = 1.0*curvRet/(NS*coil(icoil)%L)	
+
   return
 
 end subroutine CurvDeriv0
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-subroutine CurvDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a coil
+subroutine CurvDeriv1(icoil, derivs, ND, NC) !Calculate all derivatives for a coil
 
   use globals, only: dp, zero, pi2, coil, DoF, myid, ounit, Ncoils, &
                 case_curv, curv_alpha, curv_k0, curv_k1, curv_beta, curv_gamma, &
-                curv_sigma, penfun_curv, curv_k1len, FouCoil, MPI_COMM_FOCUS
+                curv_sigma, penfun_curv, curv_k1len, FouCoil, MPI_COMM_FOCUS,Splines,coil_type_spline
   use mpi
   implicit none
 
-  INTEGER, intent(in)  :: icoil, ND , NF
+  INTEGER, intent(in)  :: icoil, ND , NC  !NC is actually NCP for splines and NF for FouCoil
   REAL   , intent(out) :: derivs(1:1, 1:ND)
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   INTEGER              :: kseg, astat, ierr, doff, nff, NS, n
-  REAL                 :: xt, yt, zt, xa, ya, za, f1, f2, curvHold, penCurv, leng, hypc, hyps, curv_deriv, &
+  REAL                 :: xt, yt, zt, xa, ya, za, f1, f2,ncc, nss, ncp, nsp, curvHold, penCurv,curvH,leng, hypc, hyps, curv_deriv, &
                           k1_use, rtxrax, rtxray, rtxraz
   REAL                 :: d1L(1:1, 1:ND)
   REAL,allocatable     :: dxtdDoF(:,:), dytdDoF(:,:), dztdDoF(:,:), dxadDoF(:,:), dyadDoF(:,:), dzadDoF(:,:)
 
   FATAL( CurvDeriv1, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
 
+
+  derivs(1,1:ND) = 0.0
   NS = coil(icoil)%NS
   
   SALLOCATE(dxtdDoF, (0:NS,1:ND), zero)
@@ -220,28 +231,42 @@ subroutine CurvDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a co
   SALLOCATE(dxadDoF, (0:NS,1:ND), zero)
   SALLOCATE(dyadDoF, (0:NS,1:ND), zero)
   SALLOCATE(dzadDoF, (0:NS,1:ND), zero)
-  do n = 1,NF
-     dxtdDof(0:NS,n+1)      = -1*FouCoil(icoil)%smt(0:NS,n) * n
-     dxtdDof(0:NS,n+NF+1)   =    FouCoil(icoil)%cmt(0:NS,n) * n
-     dytdDof(0:NS,n+2*NF+2) = -1*FouCoil(icoil)%smt(0:NS,n) * n
-     dytdDof(0:NS,n+3*NF+2) =    FouCoil(icoil)%cmt(0:NS,n) * n
-     dztdDof(0:NS,n+4*NF+3) = -1*FouCoil(icoil)%smt(0:NS,n) * n
-     dztdDof(0:NS,n+5*NF+3) =    FouCoil(icoil)%cmt(0:NS,n) * n
+     
+  select case (coil(icoil)%type)    
+ 	 case(1)
+     		do n = 1,NC
+            	    	dxtdDof(0:NS,n+1)      = -1*FouCoil(icoil)%smt(0:NS,n) * n
+     		    	dxtdDof(0:NS,n+NC+1)   =    FouCoil(icoil)%cmt(0:NS,n) * n
+     	    		dytdDof(0:NS,n+2*NC+2) = -1*FouCoil(icoil)%smt(0:NS,n) * n
+     	    		dytdDof(0:NS,n+3*NC+2) =    FouCoil(icoil)%cmt(0:NS,n) * n
+     	    		dztdDof(0:NS,n+4*NC+3) = -1*FouCoil(icoil)%smt(0:NS,n) * n
+     	    		dztdDof(0:NS,n+5*NC+3) =    FouCoil(icoil)%cmt(0:NS,n) * n
 
-     dxadDof(0:NS,n+1)      = -1*FouCoil(icoil)%cmt(0:NS,n) * n*n
-     dxadDof(0:NS,n+NF+1)   = -1*FouCoil(icoil)%smt(0:NS,n) * n*n
-     dyadDof(0:NS,n+2*NF+2) = -1*FouCoil(icoil)%cmt(0:NS,n) * n*n
-     dyadDof(0:NS,n+3*NF+2) = -1*FouCoil(icoil)%smt(0:NS,n) * n*n
-     dzadDof(0:NS,n+4*NF+3) = -1*FouCoil(icoil)%cmt(0:NS,n) * n*n
-     dzadDof(0:NS,n+5*NF+3) = -1*FouCoil(icoil)%smt(0:NS,n) * n*n
-  enddo
-
+     	    		dxadDof(0:NS,n+1)      = -1*FouCoil(icoil)%cmt(0:NS,n) * n*n
+     	    		dxadDof(0:NS,n+NC+1)   = -1*FouCoil(icoil)%smt(0:NS,n) * n*n
+     	    		dyadDof(0:NS,n+2*NC+2) = -1*FouCoil(icoil)%cmt(0:NS,n) * n*n
+     	    		dyadDof(0:NS,n+3*NC+2) = -1*FouCoil(icoil)%smt(0:NS,n) * n*n
+     	    		dzadDof(0:NS,n+4*NC+3) = -1*FouCoil(icoil)%cmt(0:NS,n) * n*n
+     	    		dzadDof(0:NS,n+5*NC+3) = -1*FouCoil(icoil)%smt(0:NS,n) * n*n
+     		enddo
+  	case(coil_type_spline) 
+	  		dxtdDof(0:NS,0:ND)      =    Splines(icoil)%db_dt(0:NS,0:ND)
+	  		dytdDof(0:NS,0:ND)      =    Splines(icoil)%db_dt(0:NS,0:ND)
+	  		dztdDof(0:NS,0:ND)      =    Splines(icoil)%db_dt(0:NS,0:ND)
+			
+     	    		dxadDof(0:NS,0:ND)       =    Splines(icoil)%db_dt_2(0:NS,0:ND)
+     	    		dyadDof(0:NS,0:ND)       =    Splines(icoil)%db_dt_2(0:NS,0:ND)
+     	    		dzadDof(0:NS,0:ND)       =    Splines(icoil)%db_dt_2(0:NS,0:ND)
+  	case default 
+		FATAL( CurvDeriv1, .true. , invalid coil_type option )	
+  end select
+  
   derivs = zero
   d1L = zero
   call lenDeriv0( icoil, coil(icoil)%L )
   leng = coil(icoil)%L
   call lenDeriv1( icoil, d1L(1:1,1:ND), ND )
-
+ 
   if ( case_curv .eq. 1 ) then
      curv_alpha = 0.0
      curv_sigma = 1.0
@@ -264,11 +289,12 @@ subroutine CurvDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a co
      rtxrax = yt*za - zt*ya
      rtxray = zt*xa - xt*za
      rtxraz = xt*ya - yt*xa
-     f1 = sqrt( (xt*ya-xa*yt)**2 + (xt*za-xa*zt)**2 + (yt*za-ya*zt)**2 )
-     f2 = (xt**2+yt**2+zt**2)**1.5
+     f1 = sqrt( (xt*ya-xa*yt)**2 + (xt*za-xa*zt)**2 + (yt*za-ya*zt)**2 );
+     f2 = (xt**2+yt**2+zt**2)**(1.5);
      curvHold = f1/f2
      penCurv = 0.0
      curv_deriv = 0.0
+     
      if ( curv_k1len .eq. 1 ) then
         k1_use = pi2/coil(icoil)%Lo
      else
@@ -299,9 +325,12 @@ subroutine CurvDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a co
      + ( rtxrax*(dytdDof(kseg,1:ND)*za - dztdDof(kseg,1:ND)*ya + yt*dzadDof(kseg,1:ND) - zt*dyadDof(kseg,1:ND)) &
      +   rtxray*(dztdDof(kseg,1:ND)*xa - dxtdDof(kseg,1:ND)*za + zt*dxadDof(kseg,1:ND) - xt*dzadDof(kseg,1:ND)) &
      +   rtxraz*(dxtdDof(kseg,1:ND)*ya - dytdDof(kseg,1:ND)*xa + xt*dyadDof(kseg,1:ND) - yt*dxadDof(kseg,1:ND)) )/(f1*f2) )*curv_deriv
+     
   enddo
   
-  derivs = pi2*derivs/(NS*leng)
+  if (coil(icoil)%type == 1)  derivs = pi2*derivs/(NS*leng)
+  if (coil(icoil)%type == coil_type_spline )derivs = derivs/(NS*leng)
+  !if( case_curv == 4 ) derivs = derivs/leng
 
   return
 

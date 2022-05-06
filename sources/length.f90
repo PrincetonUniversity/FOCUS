@@ -62,7 +62,7 @@ subroutine length(ideriv)
   use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, &
        coil, DoF, Ncoils, Nfixgeo, Ndof, ttlen, t1L, t2L, case_length, &
        ittlen, mttlen, LM_fvec, LM_fjac, weight_ttlen, length_delta, &
-       MPI_COMM_FOCUS
+       MPI_COMM_FOCUS,coil_type_spline
 
   use mpi
   implicit none
@@ -78,7 +78,7 @@ subroutine length(ideriv)
 
   if( ideriv >= 0 ) then
      do icoil = 1, Ncoils     !only care about unique coils;
-        if(coil(icoil)%type == 1) then  ! only for Fourier
+        if((coil(icoil)%type == 1) .OR. (coil(icoil)%type == coil_type_spline)) then
            !if( myid.ne.modulo(icoil-1,ncpu) ) cycle ! parallelization loop;
            call LenDeriv0(icoil, coil(icoil)%L)
            !RlBCAST( coil(icoil)%L, 1, modulo(icoil-1,ncpu) ) !broadcast each coil's length
@@ -125,7 +125,7 @@ subroutine length(ideriv)
            idof = idof +1
         endif
         if ( coil(icoil)%Lc /= 0 ) then !if geometry is free;
-           if(coil(icoil)%type .eq. 1) then ! only for Fourier
+           if((coil(icoil)%type .eq. 1) .OR. (coil(icoil)%type == coil_type_spline)) then ! only for Fourier
               ! calculate normalization
               if (case_length == 1) then
                  norm(icoil) = (coil(icoil)%L - coil(icoil)%Lo) / coil(icoil)%Lo**2  ! quadratic;
@@ -174,7 +174,7 @@ end subroutine length
 
 subroutine LenDeriv0(icoil, length)
 
-  use globals, only: dp, zero, coil, myid, ounit, Ncoils, MPI_COMM_FOCUS 
+  use globals, only: dp, zero, coil, myid, ounit, Ncoils, MPI_COMM_FOCUS,coil_type_spline
   use mpi
   implicit none
 

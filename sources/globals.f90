@@ -15,7 +15,9 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(10), parameter :: version='v0.15.00' ! version number
+
+  CHARACTER(10), parameter :: version='v0.16.00' ! version number
+
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -81,6 +83,7 @@ module globals
   ! surface related      
   INTEGER              :: IsSymmetric    =   0 
   INTEGER              :: case_surface   =   0
+  INTEGER,parameter    :: plasma_surf_boozer =   5
   CHARACTER(100)       :: input_surf     = 'plasma.boundary'  ! surface file       
   REAL                 :: knotsurf       =   0.200D-00
   REAL                 :: ellipticity    =   0.000D+00
@@ -100,12 +103,9 @@ module globals
   ! normalizations            
   INTEGER              :: IsNormalize    =   1
   INTEGER              :: IsNormWeight   =   1
-  REAL                 :: weight_inorm   =   1.000D+00
-  REAL                 :: weight_gnorm   =   1.000D+00
-  REAL                 :: weight_mnorm   =   1.000D+00
   ! Normal field error
-  REAL                 :: weight_bnorm   =   0.000D+00
   INTEGER              :: case_bnormal   =   0
+  REAL                 :: weight_bnorm   =   1.000D+00
   ! Bmn resonant harmonics
   REAL                 :: weight_bharm   =   0.000D+00
   INTEGER              :: bharm_jsurf    =   0
@@ -129,6 +129,18 @@ module globals
   REAL                 :: curv_k0        =   1.000D+01
   REAL                 :: curv_k1        =   0.000D+00
   INTEGER              :: curv_k1len     =   0
+  ! straight function
+  REAL                 :: weight_straight     =   0.000D+00
+  REAL                 :: coeff_disp_straight =   0.50D+00
+  INTEGER              :: case_straight       =   3 
+  INTEGER              :: penfun_str    =   1
+  REAL                 :: str_alpha     =   0.000D+00
+  REAL                 :: str_beta      =   2.000D+00
+  REAL                 :: str_gamma     =   2.000D+00
+  REAL                 :: str_sigma     =   0.000D+00
+  REAL                 :: str_k0        =   1.000D+01
+  REAL                 :: str_k1        =   0.000D+00
+  INTEGER              :: str_k1len     =   0
   ! coil torsion
   REAL                 :: weight_tors    =   0.000D+00
   INTEGER              :: case_tors      =   1
@@ -157,6 +169,12 @@ module globals
   REAL                 :: cssep_sigma    =   0.000D+00
   ! coil-coil separation
   REAL                 :: weight_ccsep   =   0.000D+00
+  REAL                 :: weight_inorm   =   1.000D+00
+  REAL                 :: weight_gnorm   =   1.000D+00
+  REAL                 :: weight_mnorm   =   1.000D+00
+  REAL                 :: origin_surface_x =   0.000D+00
+  REAL                 :: origin_surface_y  =   0.000D+00
+  REAL                 :: origin_surface_z  =   0.000D+00
   INTEGER              :: penfun_ccsep   =   1
   INTEGER              :: ccsep_skip     =   0
   REAL                 :: r_delta        =   1.000D-01
@@ -254,6 +272,20 @@ module globals
   curv_k0       ,&
   curv_k1       ,&
   curv_k1len    ,&
+  weight_straight, &
+  coeff_disp_straight, &
+  case_straight  , &
+  penfun_str     ,&
+  str_alpha    ,&
+  str_beta     ,&
+  str_gamma    ,&
+  str_sigma    ,&
+  str_k0       ,&
+  str_k1       ,&
+  str_k1len    ,&
+  origin_surface_x, &
+  origin_surface_y, &
+  origin_surface_z, &
   weight_tors   ,&
   case_tors     ,&
   penfun_tors   ,&
@@ -335,7 +367,7 @@ module globals
 !latex \subsection{surface and coils data}
   type toroidalsurface
      INTEGER              :: Nteta, Nzeta, Nfou=0, Nfp=0, NBnf=0
-     REAL   , allocatable :: Rbc(:), Zbs(:), Rbs(:), Zbc(:), Bnc(:), Bns(:)
+     REAL   , allocatable :: Rbc(:), Zbs(:), Rbs(:), Zbc(:), Bnc(:), Bns(:),Pmnc(:), Pmns(:)
      REAL   , allocatable :: xx(:,:), yy(:,:), zz(:,:), nx(:,:), ny(:,:), nz(:,:), &
                              xt(:,:), yt(:,:), zt(:,:), xp(:,:), yp(:,:), zp(:,:), &
                              ds(:,:), bn(:,:), pb(:,:), &
@@ -349,7 +381,7 @@ module globals
      REAL                 :: I=zero,  L=zero, Lo, maxcurv, ox, oy, oz, mt, mp, Bt, Bz, avgcurv, &
                                    minlambda, maxs
      REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), &
-                             xb(:), yb(:), zb(:), dl(:), dd(:)
+                             xb(:), yb(:), zb(:), dl(:), dd(:),curvature(:),straight(:)
      character(10)        :: name
   end type arbitrarycoil
 
@@ -357,6 +389,14 @@ module globals
      INTEGER              :: NF
      REAL   , allocatable :: xc(:), xs(:), yc(:), ys(:), zc(:), zs(:), cmt(:,:), smt(:,:)
   end type FourierCoil
+
+  type SplineCoil
+     INTEGER              :: NCP,NT,lwrk,ier
+     INTEGER,allocatable  :: iwrk(:)
+     REAL                 :: FP
+     REAL   , allocatable :: vect (:),basis_0(:,:),basis_1(:,:),basis_2(:,:),basis_3(:,:),Cpoints_fit(:),eval_points(:),wrk(:),weights(:), &
+                              Data_points(:),Cpoints(:),db_dt(:,:),db_dt_2(:,:)
+  end type SplineCoil
 
   type DegreeOfFreedom
      INTEGER              :: ND
@@ -367,6 +407,7 @@ module globals
   type(toroidalsurface), target, allocatable :: surf(:)
   type(FourierCoil)    , target, allocatable :: FouCoil(:)
   type(DegreeOfFreedom), target, allocatable :: DoF(:)
+  type(SplineCoil)    , allocatable :: Splines(:)
 
   INTEGER              :: Nfp = 1, symmetry = 0, surf_Nfp = 1
   INTEGER              :: plasma = 1, limiter = 1
@@ -384,8 +425,8 @@ module globals
 !latex \subsection{Optimization}
   ! General target functions;
   INTEGER              :: iout, Nouts, LM_iter, LM_mfvec
-  INTEGER              :: ibnorm = 0, ibharm = 0, itflux = 0, ittlen = 0, icssep = 0, icurv = 0, iccsep = 0, itors = 0, inissin = 0 ! starting number
-  INTEGER              :: mbnorm = 0, mbharm = 0, mtflux = 0, mttlen = 0, mcssep = 0, mcurv = 0, mccsep = 0, mtors = 0, mnissin = 0 ! numbers of targets
+  INTEGER              :: ibnorm = 0, ibharm = 0, itflux = 0, ittlen = 0, icssep = 0, icurv = 0, istr=0,  iccsep = 0, itors = 0, inissin = 0 ! starting number
+  INTEGER              :: mbnorm = 0, mbharm = 0, mtflux = 0, mttlen = 0, mcssep = 0, mcurv = 0, mstr=0,  mccsep = 0, mtors = 0, mnissin = 0 ! numbers of targets
   REAL                 :: chi, discretefactor, sumDE
   REAL   , allocatable :: t1E(:), t2E(:,:), evolution(:,:), coilspace(:,:), deriv(:,:)
   REAL   , allocatable :: LM_fvec(:), LM_fjac(:,:)
@@ -415,6 +456,8 @@ module globals
   ! nissin complexity
   REAL                 :: nissin
   REAL   , allocatable :: t1N(:), t2N(:,:)
+  REAL                 :: str
+  REAL   , allocatable :: t1Str(:), t2Str(:,:)
   ! Coil-surface spearation
   INTEGER              :: psurf = 1 ! the prevent surface label; default 1 is the plasma boundary
   REAL                 :: cssep
@@ -439,7 +482,7 @@ module globals
                         !coilsI stores the true currents, coil%I stores scaled current;?
   INTEGER, allocatable :: coilseg(:)
   character(LEN=20), allocatable :: coilname(:)
-
+  INTEGER,parameter    :: coil_type_spline = 5
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 !latex \subsection{Time counting}
@@ -449,7 +492,7 @@ module globals
 
 !latex \subsection{Miscellaneous}
   REAL                 :: tmpw_bnorm, tmpw_tflux ,tmpt_tflux, tmpw_ttlen, tmpw_specw, tmpw_ccsep, tmpw_bharm, & 
-                          tmpw_curv, tmpw_tors, tmpw_nissin
+                          tmpw_curv, tmpw_tors, tmpw_nissin, tmpw_str
   REAL                 :: overlap = 0.0
                           !tmp weight for saving to restart file
   REAL, allocatable    :: mincc(:,:), coil_importance(:)

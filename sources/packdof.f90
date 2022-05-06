@@ -25,7 +25,7 @@ SUBROUTINE packdof(lxdof)
   ! DATE: 2017/03/19
   !--------------------------------------------------------------------------------------------- 
   use globals, only : dp, zero, myid, ounit, MPI_COMM_FOCUS, &
-                    & case_coils, Ncoils, coil, DoF, Ndof, DoFnorm
+                    & case_coils, Ncoils, coil, DoF, Ndof, DoFnorm,coil_type_spline, Splines
   use mpi
   implicit none
 
@@ -78,7 +78,20 @@ SUBROUTINE packdof(lxdof)
            idof = idof + 1
         endif
      !---------------------------------------------------------------------------------------------
-     case default
+     case(coil_type_spline)
+
+        if(coil(icoil)%Ic /= 0) then 
+           lxdof(idof+1) = coil(icoil)%I
+           idof = idof + 1
+        endif
+
+        ND = DoF(icoil)%ND
+        if(coil(icoil)%Lc /= 0) then
+           lxdof(idof+1:idof+ND) = DoF(icoil)%xdof(1:ND)
+           idof = idof + ND
+        endif
+!------------------------------------------------------------- 
+   case default
         FATAL(packdof01, .true., not supported coil types)
      end select
 
@@ -102,7 +115,7 @@ SUBROUTINE unpacking(lxdof)
   ! DATE: 2017/04/03
   !--------------------------------------------------------------------------------------------- 
   use globals, only: dp, zero, myid, ounit, MPI_COMM_FOCUS, &
-       & case_coils, Ncoils, coil, DoF, Ndof, DoFnorm
+       & case_coils, Ncoils, coil, DoF, Ndof, DoFnorm,coil_type_spline, Splines
   use mpi
   implicit none
 
@@ -151,6 +164,20 @@ SUBROUTINE unpacking(lxdof)
            DoF(icoil)%xdof(1) = lxdof(idof+1) * dofnorm(idof+1)
            idof = idof + 1
         endif
+      !--------------------------------------------------------------------------------------------- 
+     case(coil_type_spline)
+
+        if(coil(icoil)%Ic /= 0) then
+           coil(icoil)%I = lxdof(idof+1) * dofnorm(idof+1)
+           idof = idof + 1
+        endif
+
+        ND = DoF(icoil)%ND
+        if(coil(icoil)%Lc /= 0) then
+           DoF(icoil)%xdof(1:ND) = lxdof(idof+1:idof+ND) * dofnorm(idof+1:idof+ND)
+           idof = idof + ND
+        endif
+
      !---------------------------------------------------------------------------------------------
      case default
         FATAL(unpacking01, .true., not supported coil types)
@@ -176,11 +203,11 @@ SUBROUTINE packcoil
   ! pack coil representation variables into DoF (only geometries without currents);
   ! DATE: 2017/03/25
   !--------------------------------------------------------------------------------------------- 
-  use globals, only: dp, zero, myid, ounit, case_coils, Ncoils, coil, FouCoil, DoF, MPI_COMM_FOCUS
+  use globals, only: dp, zero, myid, ounit, case_coils, Ncoils, coil, FouCoil, DoF, MPI_COMM_FOCUS,coil_type_spline, Splines
   use mpi
   implicit none
 
-  INTEGER  :: icoil, idof, NF, ierr, astat
+  INTEGER  :: icoil, idof, NF, ierr, astat,NCP
 
   FATAL( packcoil01, .not. allocated(coil)   , illegal )
   ! FATAL( packcoil, .not. allocated(FouCoil), illegal )
@@ -229,6 +256,18 @@ SUBROUTINE packcoil
            DoF(icoil)%xdof(idof+1) = coil(icoil)%Bz; idof = idof + 1
         endif
         FATAL( packcoil05 , idof .ne. DoF(icoil)%ND, counting error in packing )
+!--------------------------------------------------------------------------------------------- 
+     case(coil_type_spline)
+        ! get number of DoF for each coil and allocate arrays;
+        NCP = Splines(icoil)%NCP
+        DoF(icoil)%xdof = zero
+
+        !pack Spline coefficients;
+        idof = 0
+        if(coil(icoil)%Lc /= 0) then
+           DoF(icoil)%xdof(idof+1 : idof+NCP*3) = Splines(icoil)%Cpoints(0:3*NCP-1); idof = idof + NCP*3    
+        endif
+        FATAL( packcoil03 , idof .ne. DoF(icoil)%ND, counting error in packing )
      !---------------------------------------------------------------------------------------------
      case default
         FATAL(packcoil06, .true., not supported coil types)
@@ -245,11 +284,11 @@ SUBROUTINE unpackcoil
   ! pack coil representation variables into DoF (only geometries without currents);
   ! DATE: 2017/03/25
   !--------------------------------------------------------------------------------------------- 
-  use globals, only: dp, zero, myid, ounit, case_coils, Ncoils, coil, FouCoil, DoF, MPI_COMM_FOCUS
+  use globals, only: dp, zero, myid, ounit, case_coils, Ncoils, coil, FouCoil, DoF, MPI_COMM_FOCUS,coil_type_spline, Splines
   use mpi
   implicit none
 
-  INTEGER  :: icoil, idof, NF, ierr, astat
+  INTEGER  :: icoil, idof, NF, ierr, astat,NCP
 
   FATAL( unpackcoil01, .not. allocated(coil)   , illegal )
   ! FATAL( unpackcoil, .not. allocated(FouCoil), illegal )
@@ -297,6 +336,16 @@ SUBROUTINE unpackcoil
            coil(icoil)%Bz =  DoF(icoil)%xdof(idof+1) ; idof = idof + 1        
         endif      
         FATAL( unpackcoil05 , idof .ne. DoF(icoil)%ND, counting error in packing )
+!--------------------------------------------------------------------------------------------- 
+     case(coil_type_spline)
+        ! get number of DoF for each coil and allocate arrays;
+        NCP = Splines(icoil)%NCP
+        idof = 0
+        if (coil(icoil)%Lc /= 0) then
+           !unpack Spline coefficients;
+           Splines(icoil)%Cpoints(0:NCP*3-1) = DoF(icoil)%xdof(idof+1 : idof+3*NCP) ; idof = idof + 3*NCP 
+        endif
+        FATAL( unpackcoil03 , idof .ne. DoF(icoil)%ND, counting error in packing )
 
      !---------------------------------------------------------------------------------------------
      case default
