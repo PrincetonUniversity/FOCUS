@@ -91,7 +91,7 @@ SUBROUTINE surfsep(ideriv)
   discretefactor = (pi2/Nteta) * (pi2/Nzeta)
   lcssep = zero
   totalcoil = zero
-  
+
   if( ideriv >= 0 ) then
      ivec = 1
      do icoil = 1, Ncoils
@@ -177,7 +177,7 @@ SUBROUTINE surfsep(ideriv)
      do idof = 1, Ndof       
         t1S(idof) = sum(jac(1:Ncoils, idof)) * discretefactor /  (totalcoil + machprec)
      enddo
-     
+
   endif
 
   return
@@ -199,12 +199,11 @@ SUBROUTINE CSPotential0(icoil, iteta, jzeta, dcssep)
   INTEGER, intent(in)  :: icoil, iteta, jzeta
   REAL   , intent(out) :: dcssep
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  INTEGER              :: kseg, astat, ierr, j0, per0, l0, ss0, NS
+  INTEGER              :: kseg, astat, ierr, j0, per0, l0, ss0, NS, cond
   REAL                 :: dl, xt, yt, zt, xc, yc, zc, xs, ys, zs, dx, dy, dz, lr
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   FATAL( CSPotential0, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
-
   FATAL( CSPotential0, cssep_alpha .lt. 0.0, coil to surface alpha cannot be negative )
   FATAL( CSPotential0, cssep_beta .lt. 2.0, coil to surface beta cannot be less than 2 )
   FATAL( CSPotential0, cssep_sigma .lt. 0.0, coil to surface sigma cannot be negative )
@@ -217,7 +216,8 @@ SUBROUTINE CSPotential0(icoil, iteta, jzeta, dcssep)
      cssep_gamma = cssep_factor
   endif
  
-  dcssep = zero 
+  dcssep = zero
+  cond = 0
 
   xs = surf(psurf)%xx(iteta, jzeta); ys = surf(psurf)%yy(iteta, jzeta); zs = surf(psurf)%zz(iteta, jzeta)
 
@@ -251,6 +251,10 @@ SUBROUTINE CSPotential0(icoil, iteta, jzeta, dcssep)
      lr = dx*dx + dy*dy + dz*dz ! length**2 of r_vector
 
      if ( sqrt(lr) .lt. mincssep ) then
+        if( log10(cssep_alpha*(mincssep-sqrt(lr))) .gt. 308.0 / cssep_beta ) then
+           dcssep = HUGE(dcssep)
+           return
+        endif
         dcssep = dcssep + ( cssep_alpha*(mincssep-sqrt(lr)) )**cssep_beta*coil(icoil)%dd(kseg)*sqrt(dl)
      endif
      dcssep = dcssep + cssep_sigma*lr**(-0.5*cssep_gamma)*sqrt(dl)*coil(icoil)%dd(kseg)
@@ -262,7 +266,7 @@ SUBROUTINE CSPotential0(icoil, iteta, jzeta, dcssep)
 
   call lenDeriv0( icoil, coil(icoil)%L )
   dcssep = dcssep / coil(icoil)%L
-
+  
   return
 END SUBROUTINE CSPotential0
 
@@ -283,7 +287,7 @@ SUBROUTINE CSPotential1(icoil, iteta, jzeta, d1S, ND)
   REAL   , intent(out) :: d1S(1:1, 1:ND)
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   INTEGER              :: kseg, astat, ierr, j0, per0, l0, ss0
-  REAL                 :: q, xt, yt, zt, xa, ya, za, xc, yc, zc, xs, ys, zs
+  REAL                 :: xt, yt, zt, xa, ya, za, xc, yc, zc, xs, ys, zs
   REAL                 :: dl, dx, dy, dz, lr, pm, holdd
   REAL, dimension(1:1, 0:coil(icoil)%NS-1) :: dSx, dSy, dSz
   REAL, dimension(0:coil(icoil)%NS-1, 1:ND) :: DoFx, DoFy, DoFz
@@ -299,7 +303,6 @@ SUBROUTINE CSPotential1(icoil, iteta, jzeta, d1S, ND)
   endif
 
   d1S = zero
-  q = cssep_factor ! easy convention
   xs = surf(psurf)%xx(iteta, jzeta) ; ys = surf(psurf)%yy(iteta, jzeta) ; zs = surf(psurf)%zz(iteta, jzeta)
 
   d1L = zero

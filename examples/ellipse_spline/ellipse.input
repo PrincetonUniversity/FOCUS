@@ -31,7 +31,7 @@
  weight_ttlen   =        1.000D+01      ! weight for coil length error
  target_length  =        7.000D+00      ! target value (or for normalization) of the coils length, if zero, automatically set to initial actual length
  weight_specw   =        0.000D+00      ! weight for spectral condensation error
- weight_cssep   =        1.000D+00      ! weight for coil-surface separation constraint
+ weight_cssep   =        0.000D+00      ! weight for coil-surface separation constraint
  weight_inorm   =        1.000D+00	! weight for normalization of current. Larger weight makes the derivatives more important.
  weight_gnorm   =        1.000D+00	! weight for normalization of geometric coefficients. Larger weight makes the derivatives more important.
 
