@@ -78,12 +78,15 @@
 !latex               with radius of \inputvar{init\_radius} and a central infinitely long current. 
 !latex               Dipole magnetizations anc the central current are all set to  \inputvar{init\_current}.
 !latex    \ei
-!latex 
+!latex    \item \inputvar{coil\_type\_spline = 5} \\
+!latex    \textit{Specify integer assigned to cubic B-spline representation} \\
+!latex
 !latex  \item \inputvar{case\_coils = 1} \\
 !latex    \textit{Specify representation used for the initial coils, seen in \link{rdcoils}} \\
 !latex    \bi \vspace{-5mm}
 !latex    \item[0:] using piecewise linear representation; (not ready)
 !latex    \item[1:] using Fourier series representation;
+!latex    \item[coil_type_spline:] using cubic B-spline representation;
 !latex    \ei
 !latex 
 !latex  \item \inputvar{Ncoils = 0} \\
@@ -183,8 +186,14 @@
 !latex 
 !latex  \item \inputvar{weight\_Gnorm = 1.0} \\
 !latex    \textit{additional factor for normalizing geometric variables; the larger, the more optimized for
-!latex     coil shapes; seen in \link{rdcoils}} 
-!latex 
+!latex     coil shapes; seen in \link{rdcoils}}
+!latex
+!latex  \item \inputvar{origin_surface_x = 0} \\
+!latex    \textit{X coordinate of surface center used in computing straight cost function} 
+!latex  \item \inputvar{origin_surface_y = 0} \\
+!latex    \textit{Y coordinate of surface center used in computing straight cost function} 
+!latex  \item \inputvar{origin_surface_z = 0} \\
+!latex    \textit{Z coordinate of surface center used in computing straight cost function} 
 !latex  \par \begin{tikzpicture} \draw[dashed] (0,1) -- (10,1); \end{tikzpicture}
 !latex 
 !latex  \item \inputvar{case\_optimize = 1} \\
@@ -498,6 +507,10 @@ subroutine check_input
         write(ounit, 1000) 'case_surface', case_surface, 'Read axis information for expanding plasma boundary.'
         if (IsQuiet < 0)  write(ounit, '(8X,": knotsurf = " ES12.5 &
              &  " ; ellipticity = " ES12.5)') knotsurf, ellipticity
+     case (plasma_surf_boozer)
+        inquire( file=trim(input_surf), exist=exist )
+        FATAL( initial, .not.exist, plasma boundary file not provided )
+        write(ounit, 1000) 'case_surface', case_surface, 'Read Plasma boundary in Boozer coordinates.'             
      case default
         FATAL( initial, .true., selected surface type is not supported )
      end select
@@ -641,6 +654,21 @@ subroutine check_input
      case default
         FATAL( initial, .true., selected penfun_nissin is not supported )
      end select
+     
+     select case ( case_straight )
+     case ( 1 )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_straight', case_straight, 'Linear format of straight-out coil penalty.'
+     case ( 2 )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_straight', case_straight, 'Quadratic format of straight-out coil penalty.'
+     case ( 3 )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_straight', case_straight, 'Penalty function of straight-out coil.'
+     case ( 4 )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_straight', case_straight, 'Linear and Penalty function.'
+     case default
+        FATAL( initial, .true., selected case_stright is not supported )
+     end select
+
+
 
      FATAL( initial, weight_bnorm  < zero, illegal )
      FATAL( initial, weight_bharm  < zero, illegal )
@@ -708,6 +736,7 @@ subroutine check_input
  !tmpw_specw = weight_specw
   tmpw_ccsep = weight_ccsep
   tmpw_curv  = weight_curv
+  tmpw_str   = weight_straight
  !tmpw_cssep = weight_cssep
   tmpw_tors  = weight_tors
   tmpw_nissin   = weight_nissin

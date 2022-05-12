@@ -236,7 +236,7 @@ subroutine bpotential0(icoil, iteta, jzeta, tAx, tAy, tAz)
 ! Discretizing factor is includeed; coil(icoil)%dd(kseg) 
 !------------------------------------------------------------------------------------------------------   
   use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, MPI_COMM_FOCUS,  &
-                     zero, myid, ounit, plasma, Nfp, cosnfp, sinnfp, two, bsconstant
+                     zero, myid, ounit, plasma, Nfp, cosnfp, sinnfp, two, bsconstant,coil_type_spline
   use mpi
   implicit none
 
@@ -281,7 +281,7 @@ subroutine bpotential0(icoil, iteta, jzeta, tAx, tAy, tAz)
         zz =   surf(isurf)%zz(iteta,jzeta) * (-1)**is
         Ax = zero; Ay = zero; Az = zero
         select case (coil(icoil)%type)        
-        case(1)        
+        case(1,coil_type_spline)        
            ! Fourier coils
            do kseg = 0, coil(icoil)%NS-1
               dlx = xx - coil(icoil)%xx(kseg)
@@ -324,7 +324,7 @@ subroutine bpotential1(icoil, iteta, jzeta, tAx, tAy, tAz, ND)
 ! Discretizing factor is includeed; coil(icoil)%dd(kseg) 
 !------------------------------------------------------------------------------------------------------    
   use globals, only: dp, coil, DoF, surf, NFcoil, Ncoils, Nteta, Nzeta, &
-                     zero, myid, ounit, plasma, Nfp, cosnfp, sinnfp, MPI_COMM_FOCUS
+                     zero, myid, ounit, plasma, Nfp, cosnfp, sinnfp, MPI_COMM_FOCUS,coil_type_spline
   use mpi
   implicit none
 
@@ -373,7 +373,7 @@ subroutine bpotential1(icoil, iteta, jzeta, tAx, tAy, tAz, ND)
         zz =   surf(isurf)%zz(iteta,jzeta) * (-1)**is
         Ax = zero; Ay = zero; Az = zero
         select case (coil(icoil)%type)        
-        case(1)        
+        case(1,coil_type_spline)        
            ! Fourier coils
            do kseg = 0, NS-1
               dlx = xx - coil(icoil)%xx(kseg)
