@@ -303,6 +303,13 @@ subroutine CurvDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a co
   
   derivs = pi2*derivs/(NS*leng)
 
+  DALLOCATE(dxtdDoF)
+  DALLOCATE(dytdDoF)
+  DALLOCATE(dztdDoF)
+  DALLOCATE(dxadDoF)
+  DALLOCATE(dyadDoF)
+  DALLOCATE(dzadDoF)
+
   return
 
 end subroutine CurvDeriv1

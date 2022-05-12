@@ -9,12 +9,15 @@ SUBROUTINE diagnos
   use mpi
   implicit none
 
-  INTEGER           :: icoil, itmp, NF, idof, i, j, isurf, cs, ip, is, Npc, coilInd0, coilInd1, j0, per0, l0, ss0
+  INTEGER           :: icoil, itmp, NF, idof, i, j, isurf, cs, ip, is, Npc, coilInd0, coilInd1, j0, per0, l0, ss0, iseg, NS
   LOGICAL           :: lwbnorm, l_raw
   REAL              :: MaxCurv, AvgLength, MinCCdist, MinCPdist, tmp_dist, ReDot, ImDot, dum, AvgCurv, AvgTors, &
-                       MinLambda, MaxS, torsRet
+                       MinLambda, MaxS, torsRet, Bxhold, Byhold, Bzhold, xc, yc, zc, C
   REAL, parameter   :: infmax = 1.0E6
-  REAL, allocatable :: Atmp(:,:), Btmp(:,:)
+  REAL, allocatable :: Atmp(:,:), Btmp(:,:), absrp(:), deltax(:), deltay(:), deltaz(:), norm(:)
+  REAL, allocatable :: nx(:), ny(:), nz(:), npx(:), npy(:), npz(:), nhatpx(:), nhatpy(:), nhatpz(:), normt(:), normn(:), zeta(:), alpha(:), thatx(:), &
+     thaty(:), thatz(:), nhatx(:), nhaty(:), nhatz(:), bhatx(:), bhaty(:), bhatz(:), thatpx(:), thatpy(:), thatpz(:), &
+     nhatax(:), nhatay(:), nhataz(:), bhatax(:), bhatay(:), bhataz(:), alphac(:), alphas(:)
 
   isurf = plasma
   itmp = 0
@@ -307,7 +310,7 @@ SUBROUTINE diagnos
   endif
 
   !--------------------------------calculate the stochastic Bn error----------------------------
-  if ( Npert .ge. 1 ) then
+  if ( Npert .ge. 1 .and. allocated(surf(isurf)%bn) ) then
 
      call sbnormal( 0 )
 
@@ -316,7 +319,222 @@ SUBROUTINE diagnos
 
   endif
 
-  return ! Does this return mean coil importance never gets calculated? 
+  !--------------------------------calculate filamentary body force-----------------------------
+  
+  if ( filforce .eq. 1 ) then
+     ! Calculation can be parallelized 
+     do icoil = 1, Ncoils
+        ! Skip type .ne. 1 due to datalloc, same with finite-build below
+        if ( coil(icoil)%type .ne. 1 ) cycle
+        do iseg = 0, coil(icoil)%NS
+           do i = 1, Ncoils
+              call bfield0(i, coil(icoil)%xx(iseg), coil(icoil)%yy(iseg), coil(icoil)%zz(iseg), Bxhold, Byhold, Bzhold)
+              coil(icoil)%Bxx(iseg) = coil(icoil)%Bxx(iseg) + Bxhold
+              coil(icoil)%Byy(iseg) = coil(icoil)%Byy(iseg) + Byhold
+              coil(icoil)%Bzz(iseg) = coil(icoil)%Bzz(iseg) + Bzhold
+           enddo
+        enddo
+        coil(icoil)%Fx = coil(icoil)%I*(coil(icoil)%yt*coil(icoil)%Bzz-coil(icoil)%zt*coil(icoil)%Byy)
+        coil(icoil)%Fy = coil(icoil)%I*(coil(icoil)%zt*coil(icoil)%Bxx-coil(icoil)%xt*coil(icoil)%Bzz)
+        coil(icoil)%Fz = coil(icoil)%I*(coil(icoil)%xt*coil(icoil)%Byy-coil(icoil)%yt*coil(icoil)%Bxx)
+        coil(icoil)%Fx = coil(icoil)%Fx * coil(icoil)%dd
+        coil(icoil)%Fy = coil(icoil)%Fy * coil(icoil)%dd
+        coil(icoil)%Fz = coil(icoil)%Fz * coil(icoil)%dd
+     enddo
+     ! Include loop that calculates max force per unit length 
+     !if(myid .eq. 0) write(ounit, '(8X": Maximum Force per Unit Length"8X" :"ES23.15)') mfpul
+  endif
+
+  !--------------------------------Calculate Finite-Build Frame---------------------------------
+  if ( calcfb .eq. 1 ) then
+     do icoil = 1, Ncoils
+        NS = coil(icoil)%NS
+        SALLOCATE( absrp, (0:NS-1), 0.0 )
+        SALLOCATE( deltax, (0:NS), 0.0 )
+        SALLOCATE( deltay, (0:NS), 0.0 )
+        SALLOCATE( deltaz, (0:NS), 0.0 )
+        SALLOCATE( norm, (0:NS), 0.0 )
+        SALLOCATE( nx, (0:NS), 0.0 )
+        SALLOCATE( ny, (0:NS), 0.0 )
+        SALLOCATE( nz, (0:NS), 0.0 )
+        SALLOCATE( npx, (0:NS), 0.0 )
+        SALLOCATE( npy, (0:NS), 0.0 )
+        SALLOCATE( npz, (0:NS), 0.0 )
+        SALLOCATE( nhatpx, (0:NS), 0.0 )
+        SALLOCATE( nhatpy, (0:NS), 0.0 )
+        SALLOCATE( nhatpz, (0:NS), 0.0 )
+        SALLOCATE( normt, (0:NS), 0.0 )
+        SALLOCATE( normn, (0:NS), 0.0 )
+        SALLOCATE( zeta, (0:NS), 0.0 )
+        SALLOCATE( thatx, (0:NS), 0.0 )
+        SALLOCATE( thaty, (0:NS), 0.0 )
+        SALLOCATE( thatz, (0:NS), 0.0 )
+        SALLOCATE( nhatx, (0:NS), 0.0 )
+        SALLOCATE( nhaty, (0:NS), 0.0 )
+        SALLOCATE( nhatz, (0:NS), 0.0 )
+        SALLOCATE( bhatx, (0:NS), 0.0 )
+        SALLOCATE( bhaty, (0:NS), 0.0 )
+        SALLOCATE( bhatz, (0:NS), 0.0 )
+        SALLOCATE( thatpx, (0:NS), 0.0 )
+        SALLOCATE( thatpy, (0:NS), 0.0 )
+        SALLOCATE( thatpz, (0:NS), 0.0 )
+        SALLOCATE( nhatax, (0:NS), 0.0 )
+        SALLOCATE( nhatay, (0:NS), 0.0 )
+        SALLOCATE( nhataz, (0:NS), 0.0 )
+        SALLOCATE( bhatax, (0:NS), 0.0 )
+        SALLOCATE( bhatay, (0:NS), 0.0 )
+        SALLOCATE( bhataz, (0:NS), 0.0 )
+        
+        absrp(0:NS-1) = sqrt( (coil(icoil)%xt(0:NS-1))**2 + (coil(icoil)%yt(0:NS-1))**2 + (coil(icoil)%zt(0:NS-1))**2 )
+        xc = sum( coil(icoil)%xx(0:NS-1)*absrp(0:NS-1) ) / sum( absrp(0:NS-1) )
+        yc = sum( coil(icoil)%yy(0:NS-1)*absrp(0:NS-1) ) / sum( absrp(0:NS-1) )
+        zc = sum( coil(icoil)%zz(0:NS-1)*absrp(0:NS-1) ) / sum( absrp(0:NS-1) )
+        
+        deltax(0:NS) = coil(icoil)%xx(0:NS) - xc
+        deltay(0:NS) = coil(icoil)%yy(0:NS) - yc
+        deltaz(0:NS) = coil(icoil)%zz(0:NS) - zc
+        
+        coil(icoil)%nfbx(0:NS) = deltax(0:NS) - (deltax(0:NS)*coil(icoil)%xt(0:NS) + deltay(0:NS)*coil(icoil)%yt(0:NS) + deltaz(0:NS)*coil(icoil)%zt(0:NS)) &
+             * coil(icoil)%xt(0:NS) / ( coil(icoil)%xt(0:NS)**2.0 + coil(icoil)%yt(0:NS)**2.0 + coil(icoil)%zt(0:NS)**2.0 )
+        coil(icoil)%nfby(0:NS) = deltay(0:NS) - (deltax(0:NS)*coil(icoil)%xt(0:NS) + deltay(0:NS)*coil(icoil)%yt(0:NS) + deltaz(0:NS)*coil(icoil)%zt(0:NS)) &
+             * coil(icoil)%yt(0:NS) / ( coil(icoil)%xt(0:NS)**2.0 + coil(icoil)%yt(0:NS)**2.0 + coil(icoil)%zt(0:NS)**2.0 )
+        coil(icoil)%nfbz(0:NS) = deltaz(0:NS) - (deltax(0:NS)*coil(icoil)%xt(0:NS) + deltay(0:NS)*coil(icoil)%yt(0:NS) + deltaz(0:NS)*coil(icoil)%zt(0:NS)) &
+             * coil(icoil)%zt(0:NS) / ( coil(icoil)%xt(0:NS)**2.0 + coil(icoil)%yt(0:NS)**2.0 + coil(icoil)%zt(0:NS)**2.0 )
+
+        nx(0:NS) = coil(icoil)%nfbx(0:NS)
+        ny(0:NS) = coil(icoil)%nfby(0:NS)
+        nz(0:NS) = coil(icoil)%nfbz(0:NS)
+        normn(0:NS) = sqrt( nx(0:NS)**2.0 + ny(0:NS)**2.0 + nz(0:NS)**2.0 )
+
+        norm(0:NS) = sqrt( coil(icoil)%nfbx(0:NS)**2.0 + coil(icoil)%nfby(0:NS)**2.0 + coil(icoil)%nfbz(0:NS)**2.0 )
+        coil(icoil)%nfbx(0:NS) = coil(icoil)%nfbx(0:NS) / norm(0:NS)
+        coil(icoil)%nfby(0:NS) = coil(icoil)%nfby(0:NS) / norm(0:NS)
+        coil(icoil)%nfbz(0:NS) = coil(icoil)%nfbz(0:NS) / norm(0:NS)
+
+        nhatx(0:NS) = coil(icoil)%nfbx(0:NS)
+        nhaty(0:NS) = coil(icoil)%nfby(0:NS)
+        nhatz(0:NS) = coil(icoil)%nfbz(0:NS)
+
+        coil(icoil)%bfbx(0:NS) = coil(icoil)%yt(0:NS)*coil(icoil)%nfbz(0:NS) - coil(icoil)%zt(0:NS)*coil(icoil)%nfby(0:NS)
+        coil(icoil)%bfby(0:NS) = coil(icoil)%zt(0:NS)*coil(icoil)%nfbx(0:NS) - coil(icoil)%xt(0:NS)*coil(icoil)%nfbz(0:NS)
+        coil(icoil)%bfbz(0:NS) = coil(icoil)%xt(0:NS)*coil(icoil)%nfby(0:NS) - coil(icoil)%yt(0:NS)*coil(icoil)%nfbx(0:NS)
+        
+        norm(0:NS) = sqrt( coil(icoil)%bfbx(0:NS)**2.0 + coil(icoil)%bfby(0:NS)**2.0 + coil(icoil)%bfbz(0:NS)**2.0 )
+        coil(icoil)%bfbx(0:NS) = coil(icoil)%bfbx(0:NS) / norm(0:NS)
+        coil(icoil)%bfby(0:NS) = coil(icoil)%bfby(0:NS) / norm(0:NS)
+        coil(icoil)%bfbz(0:NS) = coil(icoil)%bfbz(0:NS) / norm(0:NS)
+        
+        bhatx(0:NS) = coil(icoil)%bfbx(0:NS)
+        bhaty(0:NS) = coil(icoil)%bfby(0:NS)
+        bhatz(0:NS) = coil(icoil)%bfbz(0:NS)
+
+        normt(0:NS) = sqrt( coil(icoil)%xt(0:NS)**2.0 + coil(icoil)%yt(0:NS)**2.0 + coil(icoil)%zt(0:NS)**2.0 )
+        
+        thatx(0:NS) = coil(icoil)%xt(0:NS) / normt(0:NS)
+        thaty(0:NS) = coil(icoil)%yt(0:NS) / normt(0:NS)
+        thatz(0:NS) = coil(icoil)%zt(0:NS) / normt(0:NS)
+        
+        thatpx(0:NS) = coil(icoil)%xa(0:NS)/normt(0:NS) - ( coil(icoil)%xt(0:NS)*coil(icoil)%xa(0:NS) + coil(icoil)%yt(0:NS)*coil(icoil)%ya(0:NS) &
+                     + coil(icoil)%zt(0:NS)*coil(icoil)%za(0:NS) )*coil(icoil)%xt(0:NS)/(normt(0:NS)**3.0)
+        
+        thatpy(0:NS) = coil(icoil)%ya(0:NS)/normt(0:NS) - ( coil(icoil)%xt(0:NS)*coil(icoil)%xa(0:NS) + coil(icoil)%yt(0:NS)*coil(icoil)%ya(0:NS) &
+                     + coil(icoil)%zt(0:NS)*coil(icoil)%za(0:NS) )*coil(icoil)%yt(0:NS)/(normt(0:NS)**3.0)
+        
+        thatpz(0:NS) = coil(icoil)%za(0:NS)/normt(0:NS) - ( coil(icoil)%xt(0:NS)*coil(icoil)%xa(0:NS) + coil(icoil)%yt(0:NS)*coil(icoil)%ya(0:NS) &
+                     + coil(icoil)%zt(0:NS)*coil(icoil)%za(0:NS) )*coil(icoil)%zt(0:NS)/(normt(0:NS)**3.0)
+        
+        npx(0:NS) = coil(icoil)%xt(0:NS) - ( coil(icoil)%xt(0:NS)*thatx(0:NS) + coil(icoil)%yt(0:NS)*thaty(0:NS) + &
+                    coil(icoil)%zt(0:NS)*thatz(0:NS) )*thatx(0:NS) - ( deltax(0:NS)*thatpx(0:NS) + deltay(0:NS)*thatpy(0:NS) + &
+                    deltaz(0:NS)*thatpz(0:NS) )*thatx(0:NS) - ( deltax(0:NS)*thatx(0:NS) + deltay(0:NS)*thaty(0:NS) + deltaz(0:NS)*thatz(0:NS) )*thatpx(0:NS)
+        npy(0:NS) = coil(icoil)%yt(0:NS) - ( coil(icoil)%xt(0:NS)*thatx(0:NS) + coil(icoil)%yt(0:NS)*thaty(0:NS) + &
+                    coil(icoil)%zt(0:NS)*thatz(0:NS) )*thaty(0:NS) - ( deltax(0:NS)*thatpx(0:NS) + deltay(0:NS)*thatpy(0:NS) + &
+                    deltaz(0:NS)*thatpz(0:NS) )*thaty(0:NS) - ( deltax(0:NS)*thatx(0:NS) + deltay(0:NS)*thaty(0:NS) + deltaz(0:NS)*thatz(0:NS) )*thatpy(0:NS)
+        npz(0:NS) = coil(icoil)%zt(0:NS) - ( coil(icoil)%xt(0:NS)*thatx(0:NS) + coil(icoil)%yt(0:NS)*thaty(0:NS) + &
+                    coil(icoil)%zt(0:NS)*thatz(0:NS) )*thatz(0:NS) - ( deltax(0:NS)*thatpx(0:NS) + deltay(0:NS)*thatpy(0:NS) + &
+                    deltaz(0:NS)*thatpz(0:NS) )*thatz(0:NS) - ( deltax(0:NS)*thatx(0:NS) + deltay(0:NS)*thaty(0:NS) + deltaz(0:NS)*thatz(0:NS) )*thatpz(0:NS)
+        
+        nhatpx(0:NS) = npx(0:NS)/normn(0:NS) - ( nx(0:NS)*npx(0:NS) + ny(0:NS)*npy(0:NS) + nz(0:NS)*npz(0:NS) )*nx(0:NS)/(normn(0:NS)**3.0)
+        nhatpy(0:NS) = npy(0:NS)/normn(0:NS) - ( nx(0:NS)*npx(0:NS) + ny(0:NS)*npy(0:NS) + nz(0:NS)*npz(0:NS) )*ny(0:NS)/(normn(0:NS)**3.0)
+        nhatpz(0:NS) = npz(0:NS)/normn(0:NS) - ( nx(0:NS)*npx(0:NS) + ny(0:NS)*npy(0:NS) + nz(0:NS)*npz(0:NS) )*nz(0:NS)/(normn(0:NS)**3.0)
+        
+        C = sum( nhatpx(0:NS-1)*bhatx(0:NS-1) + nhatpy(0:NS-1)*bhaty(0:NS-1) + nhatpz(0:NS-1)*bhatz(0:NS-1) ) / sum( normt(0:NS-1) )
+        
+        SALLOCATE( alphac, (0:Nalpha), 0.0 )
+        SALLOCATE( alphas, (0:Nalpha), 0.0 )
+        
+        do i = 0, NS
+           zeta(i) = real(i)*pi2/real(NS)
+        enddo
+        do i = 1, Nalpha
+           alphac(i) = -2.0*sum( sin(real(i)*zeta(0:NS-1))*( nhatpx(0:NS-1)*bhatx(0:NS-1) + nhatpy(0:NS-1)*bhaty(0:NS-1) + nhatpz(0:NS-1)*bhatz(0:NS-1) - &
+                       C*normt(0:NS-1) ) )/(real(NS)*real(i))
+           alphas(i) =  2.0*sum( cos(real(i)*zeta(0:NS-1))*( nhatpx(0:NS-1)*bhatx(0:NS-1) + nhatpy(0:NS-1)*bhaty(0:NS-1) + nhatpz(0:NS-1)*bhatz(0:NS-1) - &
+                       C*normt(0:NS-1) ) )/(real(NS)*real(i))
+        enddo
+        
+        SALLOCATE( alpha, (0:NS), 0.0 )
+        do i = 1, Nalpha
+           alpha(0:NS) = alpha(0:NS) + alphac(i)*cos(real(i)*zeta) + alphas(i)*sin(real(i)*zeta)
+        enddo
+       
+        nhatax(0:NS) = -1.0*sin(alpha(0:NS))*bhatx(0:NS) + cos(alpha(0:NS))*nhatx(0:NS)
+        nhatay(0:NS) = -1.0*sin(alpha(0:NS))*bhaty(0:NS) + cos(alpha(0:NS))*nhaty(0:NS)
+        nhataz(0:NS) = -1.0*sin(alpha(0:NS))*bhatz(0:NS) + cos(alpha(0:NS))*nhatz(0:NS)
+
+        bhatax(0:NS) =      sin(alpha(0:NS))*nhatx(0:NS) + cos(alpha(0:NS))*bhatx(0:NS)
+        bhatay(0:NS) =      sin(alpha(0:NS))*nhaty(0:NS) + cos(alpha(0:NS))*bhaty(0:NS)
+        bhataz(0:NS) =      sin(alpha(0:NS))*nhatz(0:NS) + cos(alpha(0:NS))*bhatz(0:NS)
+        
+        coil(icoil)%nfbx(0:NS) = nhatax(0:NS)
+        coil(icoil)%nfby(0:NS) = nhatay(0:NS)
+        coil(icoil)%nfbz(0:NS) = nhataz(0:NS)
+        
+        coil(icoil)%bfbx(0:NS) = bhatax(0:NS)
+        coil(icoil)%bfby(0:NS) = bhatay(0:NS)
+        coil(icoil)%bfbz(0:NS) = bhataz(0:NS)
+
+        DALLOCATE(absrp)
+        DALLOCATE(deltax)
+        DALLOCATE(deltay)
+        DALLOCATE(deltaz)
+        DALLOCATE(norm)
+        DALLOCATE(nx)
+        DALLOCATE(ny)
+        DALLOCATE(nz)
+        DALLOCATE(npx)
+        DALLOCATE(npy)
+        DALLOCATE(npz)
+        DALLOCATE(nhatpx)
+        DALLOCATE(nhatpy)
+        DALLOCATE(nhatpz)
+        DALLOCATE(normt)
+        DALLOCATE(normn)
+        DALLOCATE(zeta)
+        DALLOCATE(thatx)
+        DALLOCATE(thaty)
+        DALLOCATE(thatz)
+        DALLOCATE(nhatx)
+        DALLOCATE(nhaty)
+        DALLOCATE(nhatz)
+        DALLOCATE(bhatx)
+        DALLOCATE(bhaty)
+        DALLOCATE(bhatz)
+        DALLOCATE(thatpx)
+        DALLOCATE(thatpy)
+        DALLOCATE(thatpz)
+        DALLOCATE(nhatax)
+        DALLOCATE(nhatay)
+        DALLOCATE(nhataz)
+        DALLOCATE(bhatax)
+        DALLOCATE(bhatay)
+        DALLOCATE(bhataz)
+        DALLOCATE(alphac)
+        DALLOCATE(alphas)
+        DALLOCATE(alpha)
+     enddo ! Loop over coils
+  endif
+
+  return ! Should below be deleted?
 
   !--------------------------------calculate coil importance------------------------------------  
   if (.not. allocated(coil_importance)) then

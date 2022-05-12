@@ -27,7 +27,7 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
 ! Biot-Savart constant and currents are not included for later simplication. 
 ! Be careful if coils have different resolutions.
 !------------------------------------------------------------------------------------------------------   
-  use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, cosnfp, sinnfp, &
+  use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, cosnfp, sinnfp, machprec, &
                      zero, myid, ounit, Nfp, pi2, half, two, one, bsconstant, MPI_COMM_FOCUS
   use mpi
   implicit none
@@ -89,6 +89,7 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
               dlx = xx - coil(icoil)%xx(kseg)
               dly = yy - coil(icoil)%yy(kseg)
               dlz = zz - coil(icoil)%zz(kseg)
+              if ( dlx**2+dly**2+dlz**2 .lt. machprec ) cycle
               rm3 = (sqrt(dlx**2 + dly**2 + dlz**2))**(-3)
               ltx = coil(icoil)%xt(kseg)
               lty = coil(icoil)%yt(kseg)

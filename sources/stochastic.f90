@@ -10,70 +10,82 @@
 subroutine sbnormal(ideriv)
   use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, &
        coil, DoF, Ncoils, Nfixgeo, Ndof, bnorm, t1B, t1Bavg, Npert, sdelta, Nmax, &
-       bnormavg, bnormmax, MPI_COMM_FOCUS
+       bnormavg, bnormmax, surf, plasma, DoF, MPI_COMM_FOCUS
 
   use mpi
   implicit none
   INTEGER, INTENT(in) :: ideriv
-
-  INTEGER             :: astat, ierr, icoil, j, idof, ND, ivec, nxx(1:Ncoils,1:Npert), nxxhold, &
-                         nyy(1:Ncoils,1:Npert), nyyhold, nzz(1:Ncoils,1:Npert), nzzhold
-  REAL                :: d1L(1:Ndof), bnormhold, &
-                         pertxx(0:coil(1)%NS-1), pertxt(0:coil(1)%NS-1), psx(1:Ncoils,1:Npert), &
-                         pertyy(0:coil(1)%NS-1), pertyt(0:coil(1)%NS-1), psy(1:Ncoils,1:Npert), &
-                         pertzz(0:coil(1)%NS-1), pertzt(0:coil(1)%NS-1), psz(1:Ncoils,1:Npert)
-  REAL, allocatable   :: t1Bhold(:), xxhold(:,:), xthold(:,:), yyhold(:,:), ythold(:,:), &
-                         zzhold(:,:), zthold(:,:), g(:,:), gp(:,:)
+  INTEGER             :: astat, ierr, icoil, j, idof, ivec, NSmax, NDmax, jj, NS
+  REAL, allocatable   :: xxhold(:,:), xthold(:,:), yyhold(:,:), ythold(:,:), &
+                         zzhold(:,:), zthold(:,:), g(:,:), gp(:,:), dgddof(:,:,:), &
+                         d1L(:,:), xofhold(:,:,:), yofhold(:,:,:), zofhold(:,:,:)
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  
+ 
+  NSmax = zero
+  NDmax = zero 
   do icoil = 1, Ncoils
-     psx(icoil,1:Npert) = coil(icoil)%psx(1:Npert)
-     psy(icoil,1:Npert) = coil(icoil)%psy(1:Npert)
-     psz(icoil,1:Npert) = coil(icoil)%psz(1:Npert)
-     nxx(icoil,1:Npert) = coil(icoil)%nxx(1:Npert)
-     nyy(icoil,1:Npert) = coil(icoil)%nyy(1:Npert)
-     nzz(icoil,1:Npert) = coil(icoil)%nzz(1:Npert)
+     if ( coil(icoil)%NS .gt. NSmax ) NSmax = coil(icoil)%NS
+     if ( DoF(icoil)%ND .gt. NDmax ) NDmax = DoF(icoil)%ND
   enddo
 
-  if ( ideriv .eq. 0 ) then
-     call bnormal( 0 )
-  else
-     call bnormal( 1 )
-  endif
-  bnormhold = bnorm
-  t1Bhold = t1B
+  call bnormal( ideriv )
+
   bnormmax = zero
   bnormavg = zero
-  t1Bavg = zero
+  if ( ideriv .eq. 1 ) t1Bavg = zero
 
-  SALLOCATE(xxhold, ( 1:Ncoils , 0:coil(1)%NS-1) , zero)
-  SALLOCATE(xthold, ( 1:Ncoils , 0:coil(1)%NS-1) , zero)
-  SALLOCATE(yyhold, ( 1:Ncoils , 0:coil(1)%NS-1) , zero)
-  SALLOCATE(ythold, ( 1:Ncoils , 0:coil(1)%NS-1) , zero)
-  SALLOCATE(zzhold, ( 1:Ncoils , 0:coil(1)%NS-1) , zero)
-  SALLOCATE(zthold, ( 1:Ncoils , 0:coil(1)%NS-1) , zero)
+  SALLOCATE(xxhold, ( 1:Ncoils , 0:NSmax) , zero)
+  SALLOCATE(xthold, ( 1:Ncoils , 0:NSmax) , zero)
+  SALLOCATE(yyhold, ( 1:Ncoils , 0:NSmax) , zero)
+  SALLOCATE(ythold, ( 1:Ncoils , 0:NSmax) , zero)
+  SALLOCATE(zzhold, ( 1:Ncoils , 0:NSmax) , zero)
+  SALLOCATE(zthold, ( 1:Ncoils , 0:NSmax) , zero)
+  SALLOCATE(xofhold, ( 1:Ncoils, 0:NSmax-1, 1:NDmax), zero)
+  SALLOCATE(yofhold, ( 1:Ncoils, 0:NSmax-1, 1:NDmax), zero)
+  SALLOCATE(zofhold, ( 1:Ncoils, 0:NSmax-1, 1:NDmax), zero)
   do icoil = 1, Ncoils
-     if( coil(icoil)%NS .ne. coil(1)%NS ) then
-        if (myid .eq. 0) write(ounit, '(8X"WARNING: Stochastic needs NS constant")')
-     endif
-     xxhold(icoil,0:coil(1)%NS-1) = coil(icoil)%xx(0:coil(1)%NS-1)
-     xthold(icoil,0:coil(1)%NS-1) = coil(icoil)%xt(0:coil(1)%NS-1)
-     yyhold(icoil,0:coil(1)%NS-1) = coil(icoil)%yy(0:coil(1)%NS-1)
-     ythold(icoil,0:coil(1)%NS-1) = coil(icoil)%yt(0:coil(1)%NS-1)
-     zzhold(icoil,0:coil(1)%NS-1) = coil(icoil)%zz(0:coil(1)%NS-1)
-     zthold(icoil,0:coil(1)%NS-1) = coil(icoil)%zt(0:coil(1)%NS-1)
+     xxhold(icoil,0:coil(icoil)%NS) = coil(icoil)%xx(0:coil(icoil)%NS)
+     xthold(icoil,0:coil(icoil)%NS) = coil(icoil)%xt(0:coil(icoil)%NS)
+     yyhold(icoil,0:coil(icoil)%NS) = coil(icoil)%yy(0:coil(icoil)%NS)
+     ythold(icoil,0:coil(icoil)%NS) = coil(icoil)%yt(0:coil(icoil)%NS)
+     zzhold(icoil,0:coil(icoil)%NS) = coil(icoil)%zz(0:coil(icoil)%NS)
+     zthold(icoil,0:coil(icoil)%NS) = coil(icoil)%zt(0:coil(icoil)%NS)
+     xofhold(icoil,0:coil(icoil)%NS-1,1:DoF(icoil)%ND) = DoF(icoil)%xof(0:coil(icoil)%NS-1,1:DoF(icoil)%ND)
+     yofhold(icoil,0:coil(icoil)%NS-1,1:DoF(icoil)%ND) = DoF(icoil)%yof(0:coil(icoil)%NS-1,1:DoF(icoil)%ND)
+     zofhold(icoil,0:coil(icoil)%NS-1,1:DoF(icoil)%ND) = DoF(icoil)%zof(0:coil(icoil)%NS-1,1:DoF(icoil)%ND)
   enddo
 
-  SALLOCATE(g, ( 1:Ncoils , 0:coil(1)%NS-1) , zero)
-  SALLOCATE(gp, ( 1:Ncoils , 0:coil(1)%NS-1) , zero)
+  SALLOCATE(g,  ( 1:Ncoils , 0:NSmax) , zero)
+  SALLOCATE(gp, ( 1:Ncoils , 0:NSmax) , zero)
+  SALLOCATE(dgddof, ( 1:Ncoils, 0:NSmax, 1:NDmax ) , zero)
+  SALLOCATE(d1L, (1:1,1:NDmax), zero) 
   do icoil = 1, Ncoils
      call lenDeriv0( icoil, coil(icoil)%L )
-     do j = 1, coil(icoil)%NS-1
-        g(icoil,j) = sqrt( coil(icoil)%xt(j-1)**2 + coil(icoil)%yt(j-1)**2 + coil(icoil)%zt(j-1)**2 ) + g(icoil,j-1)
+     call lenDeriv1( icoil, d1L(1:1,1:DoF(icoil)%ND), DoF(icoil)%ND )
+     do j = 1, coil(icoil)%NS
+        g(icoil,j) = sqrt( coil(icoil)%xt(j-1)**2 + coil(icoil)%yt(j-1)**2 + coil(icoil)%zt(j-1)**2 )
+        g(icoil,j) = g(icoil,j) + sqrt( coil(icoil)%xt(j)**2 + coil(icoil)%yt(j)**2 + coil(icoil)%zt(j)**2 )
+        g(icoil,j) = 0.5*g(icoil,j) + g(icoil,j-1)
+        
+        dgddof(icoil, j, 1:DoF(icoil)%ND) = ( coil(icoil)%xt(j-1)*DoF(icoil)%xtof(j-1,1:DoF(icoil)%ND) + &
+             coil(icoil)%yt(j-1)*DoF(icoil)%ytof(j-1,1:DoF(icoil)%ND) + coil(icoil)%zt(j-1)*DoF(icoil)%ztof(j-1,1:DoF(icoil)%ND) ) / &
+             sqrt( coil(icoil)%xt(j-1)**2 + coil(icoil)%yt(j-1)**2 + coil(icoil)%zt(j-1)**2 )
+        
+        dgddof(icoil, j, 1:DoF(icoil)%ND) = dgddof(icoil, j, 1:DoF(icoil)%ND) - &
+             d1L(1,1:DoF(icoil)%ND)*sqrt( coil(icoil)%xt(j-1)**2 + coil(icoil)%yt(j-1)**2 + coil(icoil)%zt(j-1)**2 )/coil(icoil)%L
+
+        dgddof(icoil, j, 1:DoF(icoil)%ND) = dgddof(icoil, j, 1:DoF(icoil)%ND) + ( coil(icoil)%xt(j)*DoF(icoil)%xtof(j,1:DoF(icoil)%ND) + &
+             coil(icoil)%yt(j)*DoF(icoil)%ytof(j,1:DoF(icoil)%ND) + coil(icoil)%zt(j)*DoF(icoil)%ztof(j,1:DoF(icoil)%ND) ) / sqrt( coil(icoil)%xt(j)**2 + coil(icoil)%yt(j)**2 + coil(icoil)%zt(j)**2 )
+        
+        dgddof(icoil, j, 1:DoF(icoil)%ND) = dgddof(icoil, j, 1:DoF(icoil)%ND) - &
+             d1L(1,1:DoF(icoil)%ND)*sqrt( coil(icoil)%xt(j)**2 + coil(icoil)%yt(j)**2 + coil(icoil)%zt(j)**2 )/coil(icoil)%L
+        
+        dgddof(icoil, j, 1:DoF(icoil)%ND) = 0.5*dgddof(icoil, j, 1:DoF(icoil)%ND) + dgddof(icoil, j-1, 1:DoF(icoil)%ND)
      enddo
-     g(icoil,0:coil(1)%NS-1) = pi2*g(icoil,0:coil(1)%NS-1)/(coil(icoil)%NS*coil(icoil)%L)
-     gp(icoil,0:coil(1)%NS-1) = sqrt( coil(icoil)%xt(0:coil(1)%NS-1)**2 + coil(icoil)%yt(0:coil(1)%NS-1)**2 + coil(icoil)%zt(0:coil(1)%NS-1)**2 )/coil(icoil)%L
+     g(icoil, 0:coil(icoil)%NS) = g(icoil, 0:coil(icoil)%NS)*pi2 / (coil(icoil)%L*real(coil(icoil)%NS))
+     gp(icoil,0:coil(icoil)%NS) = sqrt( coil(icoil)%xt(0:coil(icoil)%NS)**2 + coil(icoil)%yt(0:coil(icoil)%NS)**2 + coil(icoil)%zt(0:coil(icoil)%NS)**2 )/coil(icoil)%L
+     dgddof(icoil, 0:coil(icoil)%NS, 1:DoF(icoil)%ND) = dgddof(icoil, 0:coil(icoil)%NS, 1:DoF(icoil)%ND)*pi2 / (coil(icoil)%L*real(coil(icoil)%NS))
   enddo
 
   sdelta = sdelta/sqrt(3.0)
@@ -81,58 +93,51 @@ subroutine sbnormal(ideriv)
   do j = 1, Npert
      do icoil = 1, Ncoils
         if( coil(icoil)%type .ne. 1 ) cycle
-        !pertxx(0:coil(1)%NS-1) = sdelta*cos(pi2*nxx(icoil,j)*g(icoil,0:coil(1)%NS-1) + psx(icoil,j))
-        !pertxt(0:coil(1)%NS-1) = -1.0*pi2*nxx(icoil,j)*sdelta*sin(pi2*nxx(icoil,j)*g(icoil,0:coil(1)%NS-1) + psx(icoil,j))*gp(icoil,0:coil(1)%NS-1)
-        !coil(icoil)%xx(0:coil(1)%NS-1) = xxhold(icoil,0:coil(1)%NS-1)
-        !coil(icoil)%xt(0:coil(1)%NS-1) = xthold(icoil,0:coil(1)%NS-1)
-        !coil(icoil)%xx(0:coil(1)%NS-1) = coil(icoil)%xx(0:coil(1)%NS-1) + pertxx(0:coil(1)%NS-1)
-        !coil(icoil)%xt(0:coil(1)%NS-1) = coil(icoil)%xt(0:coil(1)%NS-1) + pertxt(0:coil(1)%NS-1)
-        coil(icoil)%xx(0:coil(1)%NS-1) = xxhold(icoil,0:coil(1)%NS-1) + sdelta*cos(pi2*nxx(icoil,j)*g(icoil,0:coil(1)%NS-1) + psx(icoil,j))
-        coil(icoil)%xt(0:coil(1)%NS-1) = xthold(icoil,0:coil(1)%NS-1) - pi2*nxx(icoil,j)*sdelta*sin(pi2*nxx(icoil,j)*g(icoil,0:coil(1)%NS-1) + psx(icoil,j))*gp(icoil,0:coil(1)%NS-1)
+        NS = coil(icoil)%NS
+        coil(icoil)%xx(0:NS) = xxhold(icoil,0:NS) + sdelta*cos(pi2*real(coil(icoil)%nxx(j))*g(icoil,0:NS) + coil(icoil)%psx(j))
+        coil(icoil)%xt(0:NS) = xthold(icoil,0:NS) - pi2*real(coil(icoil)%nxx(j))*sdelta*sin(pi2*real(coil(icoil)%nxx(j))*g(icoil,0:NS) + &
+                                                    coil(icoil)%psx(j))*gp(icoil,0:NS)
 
-        !pertyy(0:coil(1)%NS-1) = sdelta*cos(pi2*nyy(icoil,j)*g(icoil,0:coil(1)%NS-1) + psy(icoil,j))
-        !pertyt(0:coil(1)%NS-1) = -1.0*pi2*nyy(icoil,j)*sdelta*sin(pi2*nyy(icoil,j)*g(icoil,0:coil(1)%NS-1) + psy(icoil,j))*gp(icoil,0:coil(1)%NS-1)
-        !coil(icoil)%yy(0:coil(1)%NS-1) = yyhold(icoil,0:coil(1)%NS-1)
-        !coil(icoil)%yt(0:coil(1)%NS-1) = ythold(icoil,0:coil(1)%NS-1)
-        !coil(icoil)%yy(0:coil(1)%NS-1) = coil(icoil)%yy(0:coil(1)%NS-1) + pertyy(0:coil(1)%NS-1)
-        !coil(icoil)%yt(0:coil(1)%NS-1) = coil(icoil)%yt(0:coil(1)%NS-1) + pertyt(0:coil(1)%NS-1)
-        coil(icoil)%yy(0:coil(1)%NS-1) = yyhold(icoil,0:coil(1)%NS-1) + sdelta*cos(pi2*nyy(icoil,j)*g(icoil,0:coil(1)%NS-1) + psy(icoil,j))
-        coil(icoil)%yt(0:coil(1)%NS-1) = ythold(icoil,0:coil(1)%NS-1) - pi2*nyy(icoil,j)*sdelta*sin(pi2*nyy(icoil,j)*g(icoil,0:coil(1)%NS-1) + psy(icoil,j))*gp(icoil,0:coil(1)%NS-1)
+        coil(icoil)%yy(0:NS) = yyhold(icoil,0:NS) + sdelta*cos(pi2*real(coil(icoil)%nyy(j))*g(icoil,0:NS) + coil(icoil)%psy(j))
+        coil(icoil)%yt(0:NS) = ythold(icoil,0:NS) - pi2*real(coil(icoil)%nyy(j))*sdelta*sin(pi2*real(coil(icoil)%nyy(j))*g(icoil,0:NS) + &
+                                                    coil(icoil)%psy(j))*gp(icoil,0:NS)
         
-        !pertzz(0:coil(1)%NS-1) = sdelta*cos(pi2*nzz(icoil,j)*g(icoil,0:coil(1)%NS-1) + psz(icoil,j))
-        !pertzt(0:coil(1)%NS-1) = -1.0*pi2*nzz(icoil,j)*sdelta*sin(pi2*nzz(icoil,j)*g(icoil,0:coil(1)%NS-1) + psz(icoil,j))*gp(icoil,0:coil(1)%NS-1)
-        !coil(icoil)%zz(0:coil(1)%NS-1) = zzhold(icoil,0:coil(1)%NS-1)
-        !coil(icoil)%zt(0:coil(1)%NS-1) = zthold(icoil,0:coil(1)%NS-1)
-        !coil(icoil)%zz(0:coil(1)%NS-1) = coil(icoil)%zz(0:coil(1)%NS-1) + pertzz(0:coil(1)%NS-1)
-        !coil(icoil)%zt(0:coil(1)%NS-1) = coil(icoil)%zt(0:coil(1)%NS-1) + pertzt(0:coil(1)%NS-1)
-        coil(icoil)%zz(0:coil(1)%NS-1) = zzhold(icoil,0:coil(1)%NS-1) + sdelta*cos(pi2*nzz(icoil,j)*g(icoil,0:coil(1)%NS-1) + psz(icoil,j))
-        coil(icoil)%zt(0:coil(1)%NS-1) = zthold(icoil,0:coil(1)%NS-1) - pi2*nzz(icoil,j)*sdelta*sin(pi2*nzz(icoil,j)*g(icoil,0:coil(1)%NS-1) + psz(icoil,j))*gp(icoil,0:coil(1)%NS-1)
+        coil(icoil)%zz(0:NS) = zzhold(icoil,0:NS) + sdelta*cos(pi2*real(coil(icoil)%nzz(j))*g(icoil,0:NS) + coil(icoil)%psz(j))
+        coil(icoil)%zt(0:NS) = zthold(icoil,0:NS) - pi2*real(coil(icoil)%nzz(j))*sdelta*sin(pi2*real(coil(icoil)%nzz(j))*g(icoil,0:NS) + &
+                                                    coil(icoil)%psz(j))*gp(icoil,0:NS)
+
+        do jj = 1,DoF(icoil)%ND
+           DoF(icoil)%xof(0:NS-1,jj) = xofhold(icoil,0:NS-1,jj) - & ! dx/ddof
+                pi2*real(coil(icoil)%nxx(j))*sdelta*sin(pi2*real(coil(icoil)%nxx(j))*g(icoil,0:NS-1) + coil(icoil)%psx(j))*dgddof(icoil,0:NS-1,jj)
+           DoF(icoil)%yof(0:NS-1,jj) = yofhold(icoil,0:NS-1,jj) - &
+                pi2*real(coil(icoil)%nyy(j))*sdelta*sin(pi2*real(coil(icoil)%nyy(j))*g(icoil,0:NS-1) + coil(icoil)%psy(j))*dgddof(icoil,0:NS-1,jj)
+           DoF(icoil)%zof(0:NS-1,jj) = zofhold(icoil,0:NS-1,jj) - &
+                pi2*real(coil(icoil)%nzz(j))*sdelta*sin(pi2*real(coil(icoil)%nzz(j))*g(icoil,0:NS-1) + coil(icoil)%psz(j))*dgddof(icoil,0:NS-1,jj)
+        enddo
      enddo
-     !call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
-     if ( ideriv .eq. 0 ) then
-        call bnormal( 0 )
-     else
-        call bnormal( 1 )
-        t1Bavg = t1Bavg + t1B
-     endif
-     if ( bnormmax .le. bnorm ) bnormmax = bnorm
+     call bnormal(ideriv)
+     ! Could save every evalutation
      bnormavg = bnormavg + bnorm
+     if ( ideriv .eq. 1 ) t1Bavg(1:Ndof) = t1Bavg(1:Ndof) + t1B(1:Ndof)
+     if ( bnormmax .le. bnorm ) bnormmax = bnorm
   enddo
 
   sdelta = sdelta*sqrt(3.0)
   bnormavg = bnormavg / real(Npert)
   if ( ideriv .eq. 1 ) t1Bavg = t1Bavg / real(Npert)
-  bnorm = bnormhold
-  if ( ideriv .eq. 1 ) t1B = t1Bhold
 
   do icoil = 1, Ncoils
-     coil(icoil)%xx(0:coil(1)%NS-1) = xxhold(icoil,0:coil(1)%NS-1)
-     coil(icoil)%xt(0:coil(1)%NS-1) = xthold(icoil,0:coil(1)%NS-1)
-     coil(icoil)%yy(0:coil(1)%NS-1) = yyhold(icoil,0:coil(1)%NS-1)
-     coil(icoil)%yt(0:coil(1)%NS-1) = ythold(icoil,0:coil(1)%NS-1)
-     coil(icoil)%zz(0:coil(1)%NS-1) = zzhold(icoil,0:coil(1)%NS-1)
-     coil(icoil)%zt(0:coil(1)%NS-1) = zthold(icoil,0:coil(1)%NS-1)
+     coil(icoil)%xx(0:coil(icoil)%NS) = xxhold(icoil,0:coil(icoil)%NS)
+     coil(icoil)%xt(0:coil(icoil)%NS) = xthold(icoil,0:coil(icoil)%NS)
+     coil(icoil)%yy(0:coil(icoil)%NS) = yyhold(icoil,0:coil(icoil)%NS)
+     coil(icoil)%yt(0:coil(icoil)%NS) = ythold(icoil,0:coil(icoil)%NS)
+     coil(icoil)%zz(0:coil(icoil)%NS) = zzhold(icoil,0:coil(icoil)%NS)
+     coil(icoil)%zt(0:coil(icoil)%NS) = zthold(icoil,0:coil(icoil)%NS)
+     DoF(icoil)%xof(0:coil(icoil)%NS-1,1:DoF(icoil)%ND) = xofhold(icoil,0:coil(icoil)%NS-1,1:DoF(icoil)%ND)
+     DoF(icoil)%yof(0:coil(icoil)%NS-1,1:DoF(icoil)%ND) = yofhold(icoil,0:coil(icoil)%NS-1,1:DoF(icoil)%ND)
+     DoF(icoil)%zof(0:coil(icoil)%NS-1,1:DoF(icoil)%ND) = zofhold(icoil,0:coil(icoil)%NS-1,1:DoF(icoil)%ND)
   enddo
+  call bnormal(ideriv)
 
   DALLOCATE(xxhold)
   DALLOCATE(xthold)
@@ -142,6 +147,11 @@ subroutine sbnormal(ideriv)
   DALLOCATE(zthold)
   DALLOCATE(g)
   DALLOCATE(gp)
+  DALLOCATE(dgddof)
+  DALLOCATE(d1L)
+  DALLOCATE(xofhold)
+  DALLOCATE(yofhold)
+  DALLOCATE(zofhold)
 
   return
 end subroutine sbnormal
@@ -151,7 +161,7 @@ end subroutine sbnormal
 subroutine perturbation(ideriv)
  
   use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, &
-  coil, DoF, Ncoils, Nfixgeo, Ndof, bnorm, Npert, sdelta, Nmax, MPI_COMM_FOCUS
+  coil, DoF, Ncoils, Nfixgeo, Ndof, bnorm, Npert, Nmax, MPI_COMM_FOCUS
   
   use mpi
  
@@ -162,20 +172,21 @@ subroutine perturbation(ideriv)
  
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
  
-  ! Stochastic variables set here, not neccessarily parameterization independent
+  ! Stochastic variables set here
   do icoil = 1, Ncoils
      SALLOCATE( coil(icoil)%psx, (1:Npert), zero )
      SALLOCATE( coil(icoil)%psy, (1:Npert), zero )
      SALLOCATE( coil(icoil)%psz, (1:Npert), zero )
-     SALLOCATE( coil(icoil)%nxx, (1:Npert), zero )
-     SALLOCATE( coil(icoil)%nyy, (1:Npert), zero )
-     SALLOCATE( coil(icoil)%nzz, (1:Npert), zero )
-     do j = 1, Npert
-        if (myid .eq. 0) then
+     SALLOCATE( coil(icoil)%nxx, (1:Npert), 0 )
+     SALLOCATE( coil(icoil)%nyy, (1:Npert), 0 )
+     SALLOCATE( coil(icoil)%nzz, (1:Npert), 0 )
+     if (myid .eq. 0) then
+        do j = 1, Npert
            call random_number(arb)
+           !arb = rand(0)                ! Used for deterministic debugging 
            coil(icoil)%psx(j) = pi2*arb
            call random_number(arb)
-           coil(icoil)%nxx(j) = FLOOR(real(Nmax)*arb) + 1 ! Should give int between 1 and 3
+           coil(icoil)%nxx(j) = FLOOR(real(Nmax)*arb) + 1 ! Gives int between 1 and 3
            call random_number(arb)
            coil(icoil)%psy(j) = pi2*arb
            call random_number(arb)
@@ -184,16 +195,14 @@ subroutine perturbation(ideriv)
            coil(icoil)%psz(j) = pi2*arb
            call random_number(arb)
            coil(icoil)%nzz(j) = FLOOR(real(Nmax)*arb) + 1
-        endif
-        call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
-        RlBCAST( coil(icoil)%psx(j), 1, 0 )
-        IlBCAST( coil(icoil)%nxx(j), 1, 0 )
-        RlBCAST( coil(icoil)%psy(j), 1, 0 )
-        IlBCAST( coil(icoil)%nyy(j), 1, 0 )
-        RlBCAST( coil(icoil)%psz(j), 1, 0 )
-        IlBCAST( coil(icoil)%nzz(j), 1, 0 )
-        call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
-     enddo
+        enddo
+     endif
+     RlBCAST( coil(icoil)%psx, Npert, 0 )
+     IlBCAST( coil(icoil)%nxx, Npert, 0 )
+     RlBCAST( coil(icoil)%psy, Npert, 0 )
+     IlBCAST( coil(icoil)%nyy, Npert, 0 )
+     RlBCAST( coil(icoil)%psz, Npert, 0 )
+     IlBCAST( coil(icoil)%nzz, Npert, 0 )
   enddo
-
+  
 end subroutine perturbation

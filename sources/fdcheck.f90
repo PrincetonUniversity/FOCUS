@@ -21,7 +21,7 @@ SUBROUTINE fdcheck( ideriv )
 !------------------------------------------------------------------------------------------------------
 
   use globals, only: dp, zero, half, machprec, sqrtmachprec, ncpu, myid, ounit, MPI_COMM_FOCUS, &
-                     coil, xdof, Ndof, t1E, t2E, chi, LM_maxiter, LM_fvec, LM_fjac
+                     coil, xdof, Ndof, t1E, t2E, chi, LM_maxiter, LM_fvec, LM_fjac, psmall
                      
   use mpi
   implicit none
@@ -32,7 +32,7 @@ SUBROUTINE fdcheck( ideriv )
   INTEGER              :: astat, ierr, idof, ivec, imax
   REAL                 :: tmp_xdof(1:Ndof), fd, negvalue, posvalue, diff, rdiff
   REAL                 :: start, finissinh, maxdiff, maxrdiff, small
-  REAL, parameter      :: psmall=1.0E-4
+  !REAL, parameter      :: psmall=1.0E-6!1.0E-4
   !--------------------------------------------------------------------------------------------
 
   maxdiff = zero ; maxrdiff = zero ; imax = 0

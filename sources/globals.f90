@@ -106,7 +106,6 @@ module globals
   ! Normal field error
   REAL                 :: weight_bnorm   =   0.000D+00
   INTEGER              :: case_bnormal   =   0
-  REAL                 :: weight_sbnorm  =   0.000D+00
   ! Bmn resonant harmonics
   REAL                 :: weight_bharm   =   0.000D+00
   INTEGER              :: bharm_jsurf    =   0
@@ -165,11 +164,13 @@ module globals
   REAL                 :: ccsep_beta     =   2.000D+00
   REAL                 :: weight_specw   =   0.000D+00
   ! bnrom stochastic
+  REAL                 :: weight_sbnorm  =   0.000D+00
   INTEGER              :: Npert          =   10
   INTEGER              :: Nmax           =   3
   REAL                 :: sdelta         =   1.000D-02
   ! optimize controls
   INTEGER              :: case_optimize  =   0
+  REAL                 :: psmall         =   1.000D-04
   REAL                 :: exit_tol       =   1.000D-04
   ! differential flow
   INTEGER              :: DF_maxiter     =   0
@@ -201,7 +202,10 @@ module globals
   INTEGER              :: save_coils     =   0 
   INTEGER              :: save_harmonics =   0
   INTEGER              :: save_filaments =   0
-  INTEGER              :: update_plasma  =   0    
+  INTEGER              :: update_plasma  =   0
+  INTEGER              :: filforce       =   0
+  INTEGER              :: calcfb         =   0
+  INTEGER              :: Nalpha         =   100
   ! poincare plots
   REAL                 :: pp_phi         =  0.000D+00
   REAL                 :: pp_raxis       =  0.000D+00       
@@ -242,7 +246,6 @@ module globals
   weight_mnorm  ,&
   weight_bnorm  ,&
   case_bnormal  ,&
-  weight_sbnorm ,& 
   weight_bharm  ,&
   bharm_jsurf   ,&
   input_harm    ,&
@@ -292,10 +295,12 @@ module globals
   ccsep_alpha   ,&
   ccsep_beta    ,&
   weight_specw  ,&
+  weight_sbnorm ,&
   Npert         ,&
   Nmax          ,&
   sdelta        ,&
   case_optimize ,&
+  psmall        ,&
   exit_tol      ,&
   DF_maxiter    ,&
   DF_xtol       ,&
@@ -322,6 +327,9 @@ module globals
   save_harmonics,&
   save_filaments,&
   update_plasma ,&
+  filforce      ,&
+  calcfb        ,&
+  Nalpha        ,&
   pp_phi        ,&
   pp_raxis      ,&
   pp_zaxis      ,&
@@ -361,7 +369,9 @@ module globals
                                    minlambda, maxs
      REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), &
                              xb(:), yb(:), zb(:), dl(:), dd(:), &
-                             nxx(:), nyy(:), nzz(:), psx(:), psy(:), psz(:)
+                             psx(:), psy(:), psz(:), Bxx(:), Byy(:), Bzz(:), Fx(:), Fy(:), Fz(:), &
+                             nfbx(:), nfby(:), nfbz(:), bfbx(:), bfby(:), bfbz(:)
+     INTEGER, allocatable :: nxx(:), nyy(:), nzz(:)
      character(10)        :: name
   end type arbitrarycoil
 
@@ -372,7 +382,7 @@ module globals
 
   type DegreeOfFreedom
      INTEGER              :: ND
-     REAL   , allocatable :: xdof(:), xof(:,:), yof(:,:), zof(:,:)
+     REAL   , allocatable :: xdof(:), xof(:,:), yof(:,:), zof(:,:), xtof(:,:), ytof(:,:), ztof(:,:)
   end type DegreeOfFreedom
   
   type(arbitrarycoil)  , target, allocatable :: coil(:)  

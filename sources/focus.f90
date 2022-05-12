@@ -128,6 +128,8 @@ PROGRAM focus
 
   end select
 
+  call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
+
   call saving ! save all the outputs
 
   call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
