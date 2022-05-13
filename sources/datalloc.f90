@@ -13,7 +13,7 @@ subroutine AllocData(type)
 
   INTEGER, intent(in) :: type
 
-  INTEGER             :: icoil, idof, ND, NF,NCP, icur, imag, isurf, NS, mm, iseg,i,iter_cp
+  INTEGER             :: icoil, idof, ND, NF, NCP, icur, imag, isurf, NS, mm, iseg, i, iter_cp, n
   REAL                :: xtmp, mtmp, tt
 
   isurf = plasma
@@ -71,7 +71,7 @@ subroutine AllocData(type)
            DoF(icoil)%zof(0:NS-1, 4*NF+3:5*NF+3) = FouCoil(icoil)%cmt(0:NS-1, 0:NF)  !z/zc
            DoF(icoil)%zof(0:NS-1, 5*NF+4:6*NF+3) = FouCoil(icoil)%smt(0:NS-1, 1:NF)  !z/zs
 
-           do n = 1,NF
+           do n = 1, NF
               DoF(icoil)%xtof(0:NS,n+1)      = -1.0*FouCoil(icoil)%smt(0:NS,n) * real(n)  !xt/xc
               DoF(icoil)%xtof(0:NS,n+NF+1)   =      FouCoil(icoil)%cmt(0:NS,n) * real(n)  !xt/xs
               DoF(icoil)%ytof(0:NS,n+2*NF+2) = -1.0*FouCoil(icoil)%smt(0:NS,n) * real(n)  !yt/yc

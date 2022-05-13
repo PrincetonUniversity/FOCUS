@@ -3,8 +3,8 @@
 ############################################################################################################
 
  ALLFILES= globals initial saving diagnos stochastic surface rdsurf rdknot rdcoils packdof bfield \
-           fdcheck datalloc solvers descent congrad lmalg \
-	         bmnharm bnormal torflux length surfsep nissin torsion coilsep curvature \
+           fdcheck datalloc solvers descent congrad lmalg straight_out splines rdbooz \
+	   bmnharm bnormal torflux length surfsep nissin torsion coilsep curvature \
            specinp poinplot boozer wtmgrid focus 
            
  HFILES= $(ALLFILES:=.f90)   # raw source files
