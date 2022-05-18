@@ -108,6 +108,9 @@ subroutine solvers
      endif
   endif
 
+  ! Call stochastic construction if neccessary
+  if ( weight_sbnorm .gt. 0.0 .or. Npert .gt. 0 ) call perturbation(0)
+
   if (abs(case_optimize) >= 1) call AllocData(1)
   if (abs(case_optimize) >= 2) call AllocData(2)
 
