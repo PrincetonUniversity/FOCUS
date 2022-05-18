@@ -95,12 +95,13 @@ SUBROUTINE fdcheck( ideriv )
          imax = idof
          maxdiff = diff
          maxrdiff = rdiff
-      end if
+      endif
   enddo
 
   if (myid.eq.0) write(ounit, '(8X": Max. difference: ", ES12.5, "; relative diff: ", ES12.5, "; at i="I6," .")') maxdiff, maxrdiff, imax
-  ! return errorcode 1 
-  if (maxrdiff > psmall) call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
+  if (maxrdiff > psmall) then
+     if (myid.eq.0) write(ounit, *) "WARNING: Gradient may be inaccurate"
+  endif
 
   ! L-M format
   if (LM_maxiter > 0) then
