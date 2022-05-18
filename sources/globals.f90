@@ -16,7 +16,7 @@ module globals
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 
-  CHARACTER(10), parameter :: version='v0.16.00' ! version number
+  CHARACTER(10), parameter :: version='v0.17.00' ! version number
 
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -181,8 +181,14 @@ module globals
   REAL                 :: ccsep_alpha    =   1.000D+01
   REAL                 :: ccsep_beta     =   2.000D+00
   REAL                 :: weight_specw   =   0.000D+00
+  ! bnrom stochastic
+  REAL                 :: weight_sbnorm  =   0.000D+00   ! Stochastic bnormal weight
+  INTEGER              :: Npert          =   10          ! Number of coil perturbations
+  INTEGER              :: Nmax           =   3           ! Max frequency of perturbations
+  REAL                 :: sdelta         =   1.000D-02   ! Perturbation magnitude
   ! optimize controls
   INTEGER              :: case_optimize  =   0
+  REAL                 :: fdiff_delta         =   1.000D-04
   REAL                 :: exit_tol       =   1.000D-04
   ! differential flow
   INTEGER              :: DF_maxiter     =   0
@@ -214,7 +220,10 @@ module globals
   INTEGER              :: save_coils     =   0 
   INTEGER              :: save_harmonics =   0
   INTEGER              :: save_filaments =   0
-  INTEGER              :: update_plasma  =   0    
+  INTEGER              :: update_plasma  =   0
+  INTEGER              :: filforce       =   0   ! Calculate filament body forces
+  INTEGER              :: calcfb         =   0   ! Calculate coil finite-build
+  INTEGER              :: Nalpha         =   100 ! Finite-build resolution
   ! poincare plots
   REAL                 :: pp_phi         =  0.000D+00
   REAL                 :: pp_raxis       =  0.000D+00       
@@ -229,7 +238,9 @@ module globals
                                                          
   namelist / focusin / &
   IsQuiet       ,&
+  lim_out       ,&
   IsSymmetric   ,&
+  lim_out       ,&
   case_surface  ,&
   input_surf    ,&
   knotsurf      ,&
@@ -316,7 +327,12 @@ module globals
   ccsep_alpha   ,&
   ccsep_beta    ,&
   weight_specw  ,&
+  weight_sbnorm ,&
+  Npert         ,&
+  Nmax          ,&
+  sdelta        ,&
   case_optimize ,&
+  fdiff_delta        ,&
   exit_tol      ,&
   DF_maxiter    ,&
   DF_xtol       ,&
@@ -343,6 +359,9 @@ module globals
   save_harmonics,&
   save_filaments,&
   update_plasma ,&
+  filforce      ,&
+  calcfb        ,&
+  Nalpha        ,&
   pp_phi        ,&
   pp_raxis      ,&
   pp_zaxis      ,&
@@ -381,7 +400,10 @@ module globals
      REAL                 :: I=zero,  L=zero, Lo, maxcurv, ox, oy, oz, mt, mp, Bt, Bz, avgcurv, &
                                    minlambda, maxs
      REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), &
-                             xb(:), yb(:), zb(:), dl(:), dd(:),curvature(:),straight(:)
+                             xb(:), yb(:), zb(:), dl(:), dd(:), &
+                             psx(:), psy(:), psz(:), Bxx(:), Byy(:), Bzz(:), Fx(:), Fy(:), Fz(:), &
+                             nfbx(:), nfby(:), nfbz(:), bfbx(:), bfby(:), bfbz(:), curvature(:), straight(:)
+     INTEGER, allocatable :: nxx(:), nyy(:), nzz(:)
      character(10)        :: name
   end type arbitrarycoil
 
@@ -400,7 +422,7 @@ module globals
 
   type DegreeOfFreedom
      INTEGER              :: ND
-     REAL   , allocatable :: xdof(:), xof(:,:), yof(:,:), zof(:,:)
+     REAL   , allocatable :: xdof(:), xof(:,:), yof(:,:), zof(:,:), xtof(:,:), ytof(:,:), ztof(:,:)
   end type DegreeOfFreedom
   
   type(arbitrarycoil)  , target, allocatable :: coil(:)  
@@ -468,6 +490,9 @@ module globals
   ! Spectral condensation;
   REAL                 :: specw
   REAL   , allocatable :: t1P(:), t2P(:,:)
+  ! stochastic bnorm
+  REAL                 :: bnormavg, bnormmax
+  REAL   , allocatable :: t1Bavg(:)!, t2N(:,:)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

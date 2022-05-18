@@ -332,6 +332,13 @@ subroutine CurvDeriv1(icoil, derivs, ND, NC) !Calculate all derivatives for a co
   if (coil(icoil)%type == coil_type_spline )derivs = derivs/(NS*leng)
   !if( case_curv == 4 ) derivs = derivs/leng
 
+  DALLOCATE(dxtdDoF)
+  DALLOCATE(dytdDoF)
+  DALLOCATE(dztdDoF)
+  DALLOCATE(dxadDoF)
+  DALLOCATE(dyadDoF)
+  DALLOCATE(dzadDoF)
+
   return
 
 end subroutine CurvDeriv1

@@ -21,7 +21,7 @@ subroutine bnormal( ideriv )
 !------------------------------------------------------------------------------------------------------   
   use globals, only: dp, zero, half, one, pi2, sqrtmachprec, bsconstant, ncpu, myid, ounit, &
        coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, plasma, &
-       bnorm, t1B, t2B, bn, Ndof, Cdof, weight_bharm, case_bnormal, &
+       bnorm, t1B, bn, Ndof, Cdof, weight_bharm, case_bnormal, &
        weight_bnorm, ibnorm, mbnorm, ibharm, mbharm, LM_fvec, LM_fjac, &
        bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn, MPI_COMM_FOCUS
   use bnorm_mod
@@ -31,16 +31,17 @@ subroutine bnormal( ideriv )
 
   INTEGER, INTENT(in)                   :: ideriv
   !--------------------------------------------------------------------------------------------
-  INTEGER                               :: astat, ierr
+  INTEGER                               :: astat, ierr, request
   INTEGER                               :: icoil, iteta, jzeta, idof, ND, NumGrid, isurf
   !--------------------------initialize and allocate arrays-------------------------------------
   isurf = plasma 
   NumGrid = Nteta*Nzeta
   ! reset to zero;
-  bnorm = zero 
+  bnorm = zero
   surf(isurf)%Bx = zero; surf(isurf)%By = zero; surf(isurf)%Bz = zero; surf(isurf)%Bn = zero     
   dBx = zero; dBy = zero; dBz = zero; Bm = zero
   bn = zero
+  call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
   !-------------------------------calculate Bn-------------------------------------------------- 
   if( ideriv >= 0 ) then
      do jzeta = 0, Nzeta - 1
@@ -78,6 +79,7 @@ subroutine bnormal( ideriv )
      call MPI_ALLREDUCE( MPI_IN_PLACE, surf(isurf)%Bz, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
      call MPI_ALLREDUCE( MPI_IN_PLACE, surf(isurf)%Bn, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
      call MPI_ALLREDUCE( MPI_IN_PLACE, bnorm, 1  , MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+     call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
      bnorm = bnorm * half * discretefactor
      bn = surf(isurf)%Bn +  surf(isurf)%pb  ! bn is B.n from coils
      ! bn = surf(isurf)%Bx * surf(isurf)%nx + surf(isurf)%By * surf(isurf)%ny + surf(isurf)%Bz * surf(isurf)%nz
@@ -198,6 +200,6 @@ subroutine bnormal( ideriv )
      endif
   endif
   !--------------------------------------------------------------------------------------------
-  call MPI_barrier( MPI_COMM_FOCUS, ierr )
+  call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
   return
 end subroutine bnormal

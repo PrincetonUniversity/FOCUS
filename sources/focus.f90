@@ -37,7 +37,8 @@ PROGRAM focus
 
   use globals, only: dp, ncpu, myid, ounit, ierr, astat, eunit, case_surface, case_coils, case_optimize, &
        case_postproc, xdof, time_initialize, time_optimize, time_postproc, &
-       version, MPI_COMM_FOCUS,plasma_surf_boozer
+       version, MPI_COMM_FOCUS, plasma_surf_boozer
+
   use mpi  !to enable gfortran mpi_wtime bugs; 07/20/2017
   implicit none
 
@@ -119,6 +120,8 @@ PROGRAM focus
  !case( 4 ) ; call saving  ; call diagnos ; call resonant ! resonant harmonics analysis; for future; 
 
   end select
+
+  call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
 
   call saving ! save all the outputs
 
