@@ -42,7 +42,6 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
   INTEGER              :: ierr, astat, kseg, ip, is, cs, Npc, NS
   REAL                 :: dlx, dly, dlz, rm3, ltx, lty, ltz, rr, r2, m_dot_r, &
                           mx, my, mz, xx, yy, zz, Bx, By, Bz
-  !REAL, allocatable    :: rm3v(:), Bxv(:), Byv(:), Bzv(:)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -53,14 +52,6 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
   dlx = zero ; dly = zero ; dlz = zero
   ltx = zero ; lty = zero ; ltz = zero
  
-  !NS = coil(icoil)%NS 
-  !SALLOCATE( dlxv , (1:NS), zero )
-  !SALLOCATE( dlyv , (1:NS), zero )
-  !SALLOCATE( dlzv , (1:NS), zero )
-  !SALLOCATE( rm3v , (1:NS), zero )
-  !SALLOCATE( Bxv ,  (1:NS), zero )
-  !SALLOCATE( Byv ,  (1:NS), zero )
-  !SALLOCATE( Bzv ,  (1:NS), zero )
   ! check if the coil is stellarator symmetric
   select case (coil(icoil)%symm) 
   case ( 0 )
@@ -103,15 +94,6 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
            By = By * coil(icoil)%I * bsconstant
            Bz = Bz * coil(icoil)%I * bsconstant
 
-           ! Vectorized implementation only faster if NS <= 128 for UW HPC
-           !rm3v(1:NS) = ((xx-coil(icoil)%xx(1:NS))**2.0+(yy-coil(icoil)%yy(1:NS))**2.0+(zz-coil(icoil)%zz(1:NS))**2.0)**(-1.5)
-           !Bxv(1:NS) = ((zz-coil(icoil)%zz(1:NS))*coil(icoil)%yt(1:NS)-(yy-coil(icoil)%yy(1:NS))*coil(icoil)%zt(1:NS))*rm3v(1:NS)
-           !Bx = Bx + sum(Bxv) * coil(icoil)%I * bsconstant * pi2 / real(NS)
-           !Byv(1:NS) = ((xx-coil(icoil)%xx(1:NS))*coil(icoil)%zt(1:NS)-(zz-coil(icoil)%zz(1:NS))*coil(icoil)%xt(1:NS))*rm3v(1:NS)
-           !By = By + sum(Byv) * coil(icoil)%I * bsconstant * pi2 / real(NS)
-           !Bzv(1:NS) = ((yy-coil(icoil)%yy(1:NS))*coil(icoil)%xt(1:NS)-(xx-coil(icoil)%xx(1:NS))*coil(icoil)%yt(1:NS))*rm3v(1:NS)
-           !Bz = Bz + sum(Bzv) * coil(icoil)%I * bsconstant * pi2 / real(NS)
-
         ! magnetic dipoles
         case(2)
            ! Biot-Savart law
@@ -149,14 +131,6 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
         tBz = tBz +  Bz
      enddo
   enddo
-  
-  !DALLOCATE( dlxv )
-  !DALLOCATE( dlyv )
-  !DALLOCATE( dlzv )
-  !DALLOCATE( rm3v )
-  !DALLOCATE( Bxv )
-  !DALLOCATE( Byv )
-  !DALLOCATE( Bzv )
 
   return
 
