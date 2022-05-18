@@ -182,10 +182,10 @@ module globals
   REAL                 :: ccsep_beta     =   2.000D+00
   REAL                 :: weight_specw   =   0.000D+00
   ! bnrom stochastic
-  REAL                 :: weight_sbnorm  =   0.000D+00
-  INTEGER              :: Npert          =   10
-  INTEGER              :: Nmax           =   3
-  REAL                 :: sdelta         =   1.000D-02
+  REAL                 :: weight_sbnorm  =   0.000D+00   ! Stochastic bnormal weight
+  INTEGER              :: Npert          =   10          ! Number of coil perturbations
+  INTEGER              :: Nmax           =   3           ! Max frequency of perturbations
+  REAL                 :: sdelta         =   1.000D-02   ! Perturbation magnitude
   ! optimize controls
   INTEGER              :: case_optimize  =   0
   REAL                 :: psmall         =   1.000D-04
@@ -221,9 +221,9 @@ module globals
   INTEGER              :: save_harmonics =   0
   INTEGER              :: save_filaments =   0
   INTEGER              :: update_plasma  =   0
-  INTEGER              :: filforce       =   0
-  INTEGER              :: calcfb         =   0
-  INTEGER              :: Nalpha         =   100
+  INTEGER              :: filforce       =   0   ! Calculate filament body forces
+  INTEGER              :: calcfb         =   0   ! Calculate coil finite-build
+  INTEGER              :: Nalpha         =   100 ! Finite-build resolution
   ! poincare plots
   REAL                 :: pp_phi         =  0.000D+00
   REAL                 :: pp_raxis       =  0.000D+00       
