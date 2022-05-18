@@ -734,7 +734,7 @@ subroutine normweight
   
   endif
 
-1000 format(8X,": "A12" is normalized to " ES12.5)
+1000 format(8X,": "A15" is normalized to " ES12.5)
 
   call packdof(xdof)
 
