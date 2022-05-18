@@ -21,7 +21,7 @@ SUBROUTINE fdcheck( ideriv )
 !------------------------------------------------------------------------------------------------------
 
   use globals, only: dp, zero, half, machprec, sqrtmachprec, ncpu, myid, ounit, MPI_COMM_FOCUS, &
-                     coil, xdof, Ndof, t1E, t2E, chi, LM_maxiter, LM_fvec, LM_fjac, psmall
+                     coil, xdof, Ndof, t1E, t2E, chi, LM_maxiter, LM_fvec, LM_fjac, fdiff_delta
                      
   use mpi
   implicit none
@@ -32,7 +32,7 @@ SUBROUTINE fdcheck( ideriv )
   INTEGER              :: astat, ierr, idof, ivec, imax
   REAL                 :: tmp_xdof(1:Ndof), fd, negvalue, posvalue, diff, rdiff
   REAL                 :: start, finissinh, maxdiff, maxrdiff, small
-  !REAL, parameter      :: psmall=1.0E-6!1.0E-4
+  !REAL, parameter      :: fdiff_delta=1.0E-6!1.0E-4
   !--------------------------------------------------------------------------------------------
 
   maxdiff = zero ; maxrdiff = zero ; imax = 0
@@ -46,7 +46,7 @@ SUBROUTINE fdcheck( ideriv )
   case( -1 )
   if (myid == 0) then 
      write(ounit,'("fdcheck : Checking the first derivatives using finite-difference method.")')
-     write(ounit,'(8X": Relative perturbation magnitude: delta = "ES12.5)') psmall
+     write(ounit,'(8X": Relative perturbation magnitude: delta = "ES12.5)') fdiff_delta
   end if
 
   call cpu_time(start)
@@ -59,8 +59,8 @@ SUBROUTINE fdcheck( ideriv )
 
   do idof = 1, Ndof
      ! perturbation will be relative.
-     small = xdof(idof) * psmall
-     if (small < machprec) small = psmall
+     small = xdof(idof) * fdiff_delta
+     if (small < machprec) small = fdiff_delta
      !backward pertubation;
      tmp_xdof = xdof
      tmp_xdof(idof) = tmp_xdof(idof) - half * small
@@ -87,7 +87,7 @@ SUBROUTINE fdcheck( ideriv )
 
      if( myid.eq.0 ) then 
          write(ounit,'("fdcheck : ", I4, "/", I4, 5(" ; "ES15.7))') idof, Ndof, small, t1E(idof), fd, diff, rdiff
-         if (rdiff >= psmall) write(ounit, *) "----------suspicious unmatching-----------------------"
+         if (rdiff >= fdiff_delta) write(ounit, *) "----------suspicious unmatching-----------------------"
       endif
       
       ! get the maximum difference
@@ -99,7 +99,7 @@ SUBROUTINE fdcheck( ideriv )
   enddo
 
   if (myid.eq.0) write(ounit, '(8X": Max. difference: ", ES12.5, "; relative diff: ", ES12.5, "; at i="I6," .")') maxdiff, maxrdiff, imax
-  if (maxrdiff > psmall) then
+  if (maxrdiff > fdiff_delta) then
      if (myid.eq.0) write(ounit, *) "WARNING: Gradient may be inaccurate"
   endif
 
@@ -137,7 +137,7 @@ SUBROUTINE fdcheck( ideriv )
 
         if( myid.eq.0 ) then 
            write(ounit,'("fdcheck : ", I6, "/", I6, 4(" ; "ES23.15))') idof, Ndof, LM_fjac(ivec, idof), fd, diff, rdiff
-           if (diff >= psmall**2) write(ounit, *) "----------suspicious unmatching-----------------------"
+           if (diff >= fdiff_delta**2) write(ounit, *) "----------suspicious unmatching-----------------------"
         endif
 
      enddo

@@ -16,7 +16,7 @@ module globals
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 
-  CHARACTER(10), parameter :: version='v0.16.00' ! version number
+  CHARACTER(10), parameter :: version='v0.17.00' ! version number
 
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -188,7 +188,7 @@ module globals
   REAL                 :: sdelta         =   1.000D-02   ! Perturbation magnitude
   ! optimize controls
   INTEGER              :: case_optimize  =   0
-  REAL                 :: psmall         =   1.000D-04
+  REAL                 :: fdiff_delta         =   1.000D-04
   REAL                 :: exit_tol       =   1.000D-04
   ! differential flow
   INTEGER              :: DF_maxiter     =   0
@@ -332,7 +332,7 @@ module globals
   Nmax          ,&
   sdelta        ,&
   case_optimize ,&
-  psmall        ,&
+  fdiff_delta        ,&
   exit_tol      ,&
   DF_maxiter    ,&
   DF_xtol       ,&
