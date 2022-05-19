@@ -10,9 +10,9 @@ SUBROUTINE stable
   allocate(gsurf(1:1))
 
   ! read the stable field lines
-  inquire( file=trim(input_stable), exist=exist)
-  FATAL( stable, .not.exist, input_stable does not exist )
-  call rdstable( input_stable, 1 )
+!  inquire( file=trim(input_stable), exist=exist)
+!  FATAL( stable, .not.exist, input_stable does not exist )
+!  call rdstable( input_stable, 1 )
 
   RETURN
 END SUBROUTINE stable

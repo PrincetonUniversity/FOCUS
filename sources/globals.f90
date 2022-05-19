@@ -113,7 +113,11 @@ module globals
   INTEGER              :: ghost_use      =   0
   INTEGER              :: rcflux_use     =   1
   INTEGER              :: period_Nseg    =   128
-  REAL                 :: rcflux_pre     =   1.000D+00
+  REAL                 :: orpfl          =   1.000D+00
+  REAL                 :: ozpfl          =   0.000D+00
+  REAL                 :: xrpfl          =   1.000D+00
+  REAL                 :: xzpfl          =   0.000D+00
+!  REAL                 :: rcflux_pre     =   1.000D+00
   REAL                 :: weight_tflux   =   0.000D+00
   REAL                 :: target_tflux   =   0.000D+00
   REAL                 :: weight_ttlen   =   0.000D+00
@@ -249,7 +253,11 @@ module globals
                         ghost_use      , &
                         rcflux_use     , &
                         period_Nseg    , &
-                        rcflux_pre     , &
+                        orpfl          , &
+                        ozpfl          , &
+                        xrpfl          , &
+                        xzpfl          , &
+!                        rcflux_pre     , &
                         weight_tflux   , &
                         target_tflux   , &
                         weight_ttlen   , &

@@ -12,13 +12,14 @@
 ! not parallelized; communications may take more time;
 subroutine ghost(index)
   use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, &
-       coil, Ncoils, Nfixgeo, resbn_m, gsurf, MPI_COMM_FOCUS
+       coil, Ncoils, Nfixgeo, resbn_m, gsurf, pp_nsteps, pp_maxiter, pp_xtol, pp_phi, &
+       orpfl, ozpfl, xrpfl, xzpfl, MPI_COMM_FOCUS
   
   use mpi
   implicit none
   INTEGER, INTENT(in) :: index
 
-  INTEGER             :: astat, ierr
+  INTEGER             :: astat, ierr, dummy
 
   ! Set hold variables if first call of iteration
   !if ( gsurf(index)%iter_track .eq. iter ) then
@@ -33,19 +34,35 @@ subroutine ghost(index)
   !endif
 
   ! Reset variables to be initial 
-  gsurf(index)%xdof_stable(1:gsurf(index)%Ndof_stable) = gsurf(index)%xdof_stable_hold(1:gsurf(index)%Ndof_stable)
-  call unpacking_stable(gsurf(index)%xdof_stable,index)
+!  gsurf(index)%xdof_stable(1:gsurf(index)%Ndof_stable) = gsurf(index)%xdof_stable_hold(1:gsurf(index)%Ndof_stable)
+!  call unpacking_stable(gsurf(index)%xdof_stable,index)
 
   ! Calculate f and g functions for o and x
-  call calcfg(index)
+!  call calcfg(index)
 
   ! Calculate derivatives of f and g
-  call calcfg_deriv(index)
+!  call calcfg_deriv(index)
 
   ! Optimize F = of^2 + xf^2 + og^2 + xg^2 functional
-  call congrad_stable(index)
+!  call congrad_stable(index)
 
   ! Construct ghost surface
+
+  ! New approach for finding periodic field lines
+  ! Can update at every iteration
+
+  gsurf(1)%ox(1) = orpfl*cos(pp_phi)
+  gsurf(1)%oy(1) = orpfl*sin(pp_phi)
+  gsurf(1)%oz(1) = ozpfl
+
+  gsurf(1)%xx(1) = xrpfl*cos(pp_phi)
+  gsurf(1)%xy(1) = xrpfl*sin(pp_phi)
+  gsurf(1)%xz(1) = xzpfl
+
+  dummy = pp_nsteps
+  pp_nsteps = gsurf(1)%Nseg_stable - 1
+  call find_pfl(pp_maxiter, pp_xtol)
+  pp_nsteps = dummy
 
   return
 
@@ -1357,3 +1374,198 @@ subroutine calcbsup(index,ox,oy,oz,obsups,obsupzeta,obsuptheta)
   return
 
 end subroutine calcbsup
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+! This subroutine solves for periodic field lines
+
+subroutine find_pfl(MAXFEV, XTOL)
+  use globals, only : dp, myid, ounit, zero, pp_phi, pp_nsteps, resbn_m, pp_xtol, gsurf, sqrtmachprec, pi2, resbn_m
+  use mpi
+  IMPLICIT NONE
+
+!  REAL, INTENT(INOUT)  :: RZ(2)
+  REAL, INTENT(IN)     :: XTOL
+  INTEGER, INTENT(IN)  :: MAXFEV
+  INTEGER, parameter   :: n=2 ! Change this so can copy or maybe same
+  INTEGER              :: ml,mu,mode,nprint,info,nfev,ldfjac,lr,ifail,i,iwork(5)
+  REAL                 :: epsfcn,factor,RZ(2),rz_end(n),phi_init,phi_stop,work(100+21*n),x(n),phi
+  REAL                 :: fvec(n),diag(n),qtf(n),wa1(n),wa2(n),wa3(n),wa4(n),relerr,abserr
+  REAL, allocatable    :: fjac(:,:),r(:)
+  external             :: pfl_fcn, BRpZ
+
+  LR = N*(N+1)/2
+  LDFJAC = N
+  ml = n-1
+  mu = n-1
+  epsfcn = 1.0E-4
+  mode = 1
+  factor = 100.0
+  nprint = -1
+  allocate(fjac(ldfjac,n)) ! Need deallocation?
+  allocate(r(lr))
+
+  ifail = 1
+  relerr = pp_xtol
+  abserr = sqrtmachprec
+  rz_end = x
+  phi_stop = pp_phi ! Should be zero
+
+  RZ(1) = sqrt( gsurf(1)%ox(1)**2 + gsurf(1)%oy(1)**2 )
+  RZ(2) = gsurf(1)%oz(1)
+
+  call hybrd(pfl_fcn,n,RZ,fvec,xtol,maxfev,ml,mu,epsfcn,diag,mode,factor,nprint,info,nfev,fjac,ldfjac,r,lr,qtf,wa1,wa2,wa3,wa4)
+
+  do i = 1, pp_nsteps
+     ifail = 1
+     phi_init = phi_stop
+     phi_stop = phi_init + pi2*resbn_m/pp_nsteps
+     call ode( BRpZ, n, rz_end, phi_init, phi_stop, relerr, abserr, ifail, work, iwork )
+     phi = resbn_m*pi2*i/pp_nsteps
+     gsurf(1)%ox(i+1) = RZ(1)*cos(phi)
+     gsurf(1)%oy(i+1) = RZ(1)*sin(phi)
+     gsurf(1)%oz(i+1) = RZ(2)
+  enddo
+  
+  if ( sqrt( (gsurf(1)%ox(pp_nsteps+1)-gsurf(1)%ox(1))**2 + (gsurf(1)%oy(pp_nsteps+1)-gsurf(1)%oy(1))**2 + (gsurf(1)%oz(pp_nsteps+1)-gsurf(1)%oz(1))**2 ) .gt. .0001  ) then
+     if (myid == 0) write(ounit, *) "Check periodic field line solution"
+  endif
+
+  gsurf(1)%ox(pp_nsteps+1) = gsurf(1)%ox(1)
+  gsurf(1)%oy(pp_nsteps+1) = gsurf(1)%oy(1)
+  gsurf(1)%oz(pp_nsteps+1) = gsurf(1)%oz(1)
+
+  do i = 2, pp_nsteps
+     gsurf(1)%oxdot(i) = pp_nsteps*(gsurf(1)%oxdot(i+1) - gsurf(1)%oxdot(i-1))/(2.0*pi2*resbn_m)
+     gsurf(1)%oydot(i) = pp_nsteps*(gsurf(1)%oydot(i+1) - gsurf(1)%oydot(i-1))/(2.0*pi2*resbn_m)
+     gsurf(1)%ozdot(i) = pp_nsteps*(gsurf(1)%ozdot(i+1) - gsurf(1)%ozdot(i-1))/(2.0*pi2*resbn_m)
+  enddo
+
+  gsurf(1)%oxdot(1) = pp_nsteps*(gsurf(1)%oxdot(2) - gsurf(1)%oxdot(pp_nsteps))/(2.0*pi2*resbn_m)
+  gsurf(1)%oydot(1) = pp_nsteps*(gsurf(1)%oydot(2) - gsurf(1)%oydot(pp_nsteps))/(2.0*pi2*resbn_m)
+  gsurf(1)%ozdot(1) = pp_nsteps*(gsurf(1)%ozdot(2) - gsurf(1)%ozdot(pp_nsteps))/(2.0*pi2*resbn_m)
+  gsurf(1)%oxdot(pp_nsteps+1) = gsurf(1)%oxdot(1)
+  gsurf(1)%oydot(pp_nsteps+1) = gsurf(1)%oydot(1)
+  gsurf(1)%ozdot(pp_nsteps+1) = gsurf(1)%ozdot(1)
+  
+  ! Update derivatives with field at point
+  
+  ! Solve for x points
+
+  ifail = 1
+  relerr = pp_xtol
+  abserr = sqrtmachprec
+  rz_end = x
+  phi_stop = pp_phi ! Should be zero
+
+  RZ(1) = sqrt( gsurf(1)%xx(1)**2 + gsurf(1)%xy(1)**2 )
+  RZ(2) = gsurf(1)%xz(1)
+
+  call hybrd(pfl_fcn,n,RZ,fvec,xtol,maxfev,ml,mu,epsfcn,diag,mode,factor,nprint,info,nfev,fjac,ldfjac,r,lr,qtf,wa1,wa2,wa3,wa4)
+  
+  do i = 1, pp_nsteps
+     ifail = 1
+     phi_init = phi_stop
+     phi_stop = phi_init + pi2*resbn_m/pp_nsteps
+     call ode( BRpZ, n, rz_end, phi_init, phi_stop, relerr, abserr, ifail, work, iwork )
+     phi = resbn_m*pi2*i/pp_nsteps
+     gsurf(1)%xx(i+1) = RZ(1)*cos(phi)
+     gsurf(1)%xy(i+1) = RZ(1)*sin(phi)
+     gsurf(1)%xz(i+1) = RZ(2)
+  enddo
+
+  if ( sqrt( (gsurf(1)%xx(pp_nsteps+1)-gsurf(1)%xx(1))**2 + (gsurf(1)%xy(pp_nsteps+1)-gsurf(1)%xy(1))**2 + (gsurf(1)%xz(pp_nsteps+1)-gsurf(1)%xz(1))**2 ) .gt. .0001  ) then
+     if (myid == 0) write(ounit, *) "Check periodic field line solution"
+  endif
+
+  gsurf(1)%xx(pp_nsteps+1) = gsurf(1)%xx(1)
+  gsurf(1)%xy(pp_nsteps+1) = gsurf(1)%xy(1)
+  gsurf(1)%xz(pp_nsteps+1) = gsurf(1)%xz(1)
+
+  do i = 2, pp_nsteps
+     gsurf(1)%xxdot(i) = pp_nsteps*(gsurf(1)%xxdot(i+1) - gsurf(1)%xxdot(i-1))/(2.0*pi2*resbn_m)
+     gsurf(1)%xydot(i) = pp_nsteps*(gsurf(1)%xydot(i+1) - gsurf(1)%xydot(i-1))/(2.0*pi2*resbn_m)
+     gsurf(1)%xzdot(i) = pp_nsteps*(gsurf(1)%xzdot(i+1) - gsurf(1)%xzdot(i-1))/(2.0*pi2*resbn_m)
+  enddo
+
+  gsurf(1)%xxdot(1) = pp_nsteps*(gsurf(1)%xxdot(2) - gsurf(1)%xxdot(pp_nsteps))/(2.0*pi2*resbn_m)
+  gsurf(1)%xydot(1) = pp_nsteps*(gsurf(1)%xydot(2) - gsurf(1)%xydot(pp_nsteps))/(2.0*pi2*resbn_m)
+  gsurf(1)%xzdot(1) = pp_nsteps*(gsurf(1)%xzdot(2) - gsurf(1)%xzdot(pp_nsteps))/(2.0*pi2*resbn_m)
+  gsurf(1)%xxdot(pp_nsteps+1) = gsurf(1)%xxdot(1)
+  gsurf(1)%xydot(pp_nsteps+1) = gsurf(1)%xydot(1)
+  gsurf(1)%xzdot(pp_nsteps+1) = gsurf(1)%xzdot(1)
+
+!  if (myid == 0) then
+!     write(ounit,'("find_pfl: Finding pfl at phi = "ES12.5" with (R,Z) = ( "ES12.5,","ES12.5" ).")') pp_phi, RZ(1), RZ(2)
+!     select case (info)
+!     case (0)
+!        write(ounit,'("find_pfl: info=0, improper input parameters.")')
+!     case (1)
+!        write(ounit,'("find_pfl: info=1, relative error between two consecutive iterates is at most xtol.")')
+!     case (2)
+!        write(ounit,'("find_pfl: info=2, number of calls to fcn has reached or exceeded maxfev.")')
+!     case (3)
+!        write(ounit,'("find_pfl: info=3, xtol is too small.")')
+!     case (4)
+!        write(ounit,'("find_pfl: info=4, iteration is not making good progress, jacobian.")')
+!     case (5)
+!        write(ounit,'("find_pfl: info=5, iteration is not making good progress, function.")')
+!     case default
+!        write(ounit,'("find_pfl: info="I2", something wrong with the pfl finding subroutine.")') info
+!     end select
+!  endif
+
+  return
+
+end subroutine find_pfl
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+subroutine pfl_fcn(n,x,fvec,iflag)
+  use globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, surf, &
+                      pp_xtol, plasma, pp_nsteps, resbn_m, MPI_COMM_FOCUS
+  use mpi
+  IMPLICIT NONE
+
+  INTEGER  :: n, iflag
+  REAL     :: x(n), fvec(n)
+  INTEGER  :: iwork(5), ierr, ifail, i
+  REAL     :: rz_end(n), phi_init, phi_stop, relerr, abserr, work(100+21*n)
+  EXTERNAL :: BRpZ
+
+  ifail = 1
+  relerr = pp_xtol
+  abserr = sqrtmachprec
+  rz_end = x
+  phi_stop = pp_phi ! Should be zero
+
+  do i = 1, pp_nsteps
+     ifail = 1
+     phi_init = phi_stop
+     phi_stop = phi_init + pi2*resbn_m/pp_nsteps
+     call ode( BRpZ, n, rz_end, phi_init, phi_stop, relerr, abserr, ifail, work, iwork )
+  enddo
+
+  if ( ifail /= 2 ) then
+     if ( myid==0 ) then
+        write ( ounit, '(A,I3)' ) 'pfl_fcn: ODE solver ERROR; returned IFAIL = ', ifail
+        select case ( ifail )
+        case ( 3 )
+           write(ounit, '("pfl_fcn: DF_xtol or abserr too small.")')
+        case ( 4 )
+           write(ounit, '("pfl_fcn: tau not reached after 500 steps.")')
+        case ( 5 )
+           write(ounit, '("pfl_fcn: tau not reached because equation to be stiff.")')
+        case ( 6 )
+           write(ounit, '("pfl_fcn: INVALID input parameters.")')
+        end select
+     endif
+     iflag = -1
+     call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
+  endif
+
+  fvec = rz_end - x
+
+  return
+
+end subroutine pfl_fcn
