@@ -117,6 +117,7 @@ module globals
   REAL                 :: ozpfl          =   0.000D+00
   REAL                 :: xrpfl          =   1.000D+00
   REAL                 :: xzpfl          =   0.000D+00
+  REAL                 :: pfl_xtol       =   1.000D-08
 !  REAL                 :: rcflux_pre     =   1.000D+00
   REAL                 :: weight_tflux   =   0.000D+00
   REAL                 :: target_tflux   =   0.000D+00
@@ -257,6 +258,7 @@ module globals
                         ozpfl          , &
                         xrpfl          , &
                         xzpfl          , &
+                        pfl_xtol       , &
 !                        rcflux_pre     , &
                         weight_tflux   , &
                         target_tflux   , &

@@ -304,9 +304,14 @@ SUBROUTINE diagnos
      do icoil = 1, Ncoils
         normdpsidr = normdpsidr + pi2*sum(absdpsidr(icoil,1:NS-1))/(NS-1)
      enddo
-     island_tol = 1.0E-3/(normdpsidr*8.0)
+     island_tol = 1.0E-2/(normdpsidr*8.0)
      !island_tol = deltapsi/(normdpsidr*8.0) ! Factor of 8 comes from SS, change later
-     if(myid .eq. 0) write(ounit, '(8X": Coil tolerance from island is: "ES12.5"mm")') island_tol/1000.0
+     if(myid .eq. 0) write(ounit, '(8X": Coil tolerance from island is: "ES12.5"mm")') island_tol*1000.0
+
+     ! It is assumed that the pfl do not need to be calculated before this
+     if (myid .eq. 0) write(ounit,'(8X": Finding start of o pfl at (x,y,z) = ("ES16.9,","ES16.9","ES16.9").")') gsurf(1)%ox(1), gsurf(1)%oy(1), gsurf(1)%oz(1)
+     if (myid .eq. 0) write(ounit,'(8X": Finding start of x pfl at (x,y,z) = ("ES16.9,","ES16.9","ES16.9").")') gsurf(1)%xx(1), gsurf(1)%xy(1), gsurf(1)%xz(1)
+
   endif
 
   !--------------------------------calculate the average Bn error-------------------------------
