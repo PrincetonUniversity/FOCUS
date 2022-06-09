@@ -67,11 +67,23 @@ subroutine ghost(index, suc)
   CALL MPI_COMM_SPLIT(MPI_COMM_FOCUS, color, myid, MPI_COMM_MYWORLD, ierr)
   CALL MPI_COMM_RANK(MPI_COMM_MYWORLD, myworkid, ierr)
   CALL MPI_COMM_SIZE(MPI_COMM_MYWORLD, nworker, ierr)
+
+  ! Check to see how many processors there are, says all processors 
+!  if(myid .eq. 0) write(ounit, '(8X": Numer of workers "I3)') nworker
+
+!  nworker = ncpu
   
   call find_pfl(pp_maxiter, pp_xtol, suc)
 
   call MPI_BARRIER(MPI_COMM_MYWORLD, ierr)
+
+!  call MPI_BARRIER(MPI_COMM_FOCUS, ierr)
+
   call MPI_COMM_FREE(MPI_COMM_MYWORLD, ierr)
+
+  ! Check to see if data is distributed, outputs same value  
+!  if(myid .eq. 0) write(ounit, '(8X": Value on processor 1 "ES23.15)') gsurf(1)%ox(1)
+!  if(myid .eq. 1) write(ounit, '(8X": Value on processor 2 "ES23.15)') gsurf(1)%ox(1)
 
   pp_nsteps = dummy
 
@@ -1391,7 +1403,8 @@ end subroutine calcbsup
 ! This subroutine solves for periodic field lines
 
 subroutine find_pfl(MAXFEV, XTOL, suc)
-  use globals, only : dp, myid, ounit, zero, pp_phi, pp_nsteps, resbn_m, pp_xtol, gsurf, sqrtmachprec, pi2, resbn_m, pfl_xtol, Ncoils
+  use globals, only : dp, myid, ounit, zero, pp_phi, pp_nsteps, resbn_m, pp_xtol, gsurf, sqrtmachprec, &
+                      pi2, resbn_m, pfl_xtol, Ncoils, ghost_failreturn, orpfl, ozpfl, xrpfl, xzpfl
   use mpi
   IMPLICIT NONE
 
@@ -1402,9 +1415,9 @@ subroutine find_pfl(MAXFEV, XTOL, suc)
   INTEGER              :: ml,mu,mode,nprint,info,nfev,ldfjac,lr,ifail,i,iwork(5),j
   REAL                 :: epsfcn,factor,RZ(2),rz_end(n),phi_init,phi_stop,work(100+21*n),x(n),phi
   REAL                 :: fvec(n),diag(n),qtf(n),wa1(n),wa2(n),wa3(n),wa4(n),relerr,abserr
-  REAL                 :: Bxhold, Byhold, Bzhold, Bx, By, Bz
+  REAL                 :: Bxhold, Byhold, Bzhold, Bx, By, Bz, Bphi
   REAL, allocatable    :: fjac(:,:),r(:)
-  external             :: pfl_fcn, BRpZ
+  external             :: pfl_fcn, pfl_fcnx, BRpZ
 
   LR = N*(N+1)/2
   LDFJAC = N
@@ -1430,10 +1443,48 @@ subroutine find_pfl(MAXFEV, XTOL, suc)
   RZ(2) = gsurf(1)%oz(1)
 
   call hybrd(pfl_fcn,n,RZ,fvec,pfl_xtol,maxfev,ml,mu,epsfcn,diag,mode,factor,nprint,info,nfev,fjac,ldfjac,r,lr,qtf,wa1,wa2,wa3,wa4)
-  if ( info .ne. 1 ) then
+  
+  if (myid == 0) then
+     !write(ounit,'("find_pfl: Finding O pfl at phi = "ES12.5" with (R,Z) = ( "ES12.5,","ES12.5" ).")') pp_phi, RZ(1), RZ(2)
+     select case (info)
+     case (0)
+        write(ounit,'("find_pfl: info=0, improper input parameters.")')
+     case (1)
+        !write(ounit,'("find_pfl: info=1, relative error between two consecutive iterates is at most xtol.")')
+     case (2)
+        write(ounit,'("find_pfl: info=2, number of calls to fcn has reached or exceeded maxfev.")')
+     case (3)
+        write(ounit,'("find_pfl: info=3, xtol is too small.")')
+     case (4)
+        write(ounit,'("find_pfl: info=4, iteration is not making good progress, jacobian.")')
+     case (5)
+        write(ounit,'("find_pfl: info=5, iteration is not making good progress, function.")')
+     case default
+        write(ounit,'("find_pfl: info="I2", something wrong with the pfl finding subroutine.")') info
+     end select
+  endif
+
+  if ( info .ne. 1 .and. ghost_failreturn .eq. 1 ) then
+     gsurf(1)%ox = 0.0
+     gsurf(1)%oy = 0.0
+     gsurf(1)%oz = 0.0
+     gsurf(1)%xx = 0.0
+     gsurf(1)%xy = 0.0
+     gsurf(1)%xz = 0.0
+     gsurf(1)%oxdot = 0.0
+     gsurf(1)%oydot = 0.0
+     gsurf(1)%ozdot = 0.0
+     gsurf(1)%xxdot = 0.0
+     gsurf(1)%xydot = 0.0
+     gsurf(1)%xzdot = 0.0
      suc = 0
      return
-  endif  
+  endif
+  if ( info .ne. 1 ) then
+     !suc = 0
+     RZ(1) = orpfl
+     RZ(2) = ozpfl
+  endif 
 
   gsurf(1)%ox(1) = RZ(1)*cos(phi_stop)
   gsurf(1)%oy(1) = RZ(1)*sin(phi_stop)
@@ -1472,13 +1523,20 @@ subroutine find_pfl(MAXFEV, XTOL, suc)
         By = By + Byhold
         Bz = Bz + Bzhold
      enddo
-     gsurf(1)%oxdot(i) = Bx
-     gsurf(1)%oydot(i) = By
-     gsurf(1)%ozdot(i) = Bz
+     phi = real(resbn_m)*pi2*real(i-1)/real(pp_nsteps)
+     Bphi = (-1.0*Bx*sin(phi) + By*cos(phi))/sqrt( gsurf(1)%ox(i)**2.0 + gsurf(1)%oy(i)**2.0 )
+     gsurf(1)%oxdot(i) = Bx/Bphi
+     gsurf(1)%oydot(i) = By/Bphi
+     gsurf(1)%ozdot(i) = Bz/Bphi
   enddo
   gsurf(1)%oxdot(pp_nsteps+1) = gsurf(1)%oxdot(1)
   gsurf(1)%oydot(pp_nsteps+1) = gsurf(1)%oydot(1)
   gsurf(1)%ozdot(pp_nsteps+1) = gsurf(1)%ozdot(1)
+
+  ! Make end point tangent to other point
+!  gsurf(1)%oxdot(pp_nsteps) = (gsurf(1)%ox(pp_nsteps+1) - gsurf(1)%ox(pp_nsteps))/(real(resbn_m)*pi2/real(pp_nsteps))
+!  gsurf(1)%oydot(pp_nsteps) = (gsurf(1)%oy(pp_nsteps+1) - gsurf(1)%oy(pp_nsteps))/(real(resbn_m)*pi2/real(pp_nsteps))
+!  gsurf(1)%ozdot(pp_nsteps) = (gsurf(1)%oz(pp_nsteps+1) - gsurf(1)%oz(pp_nsteps))/(real(resbn_m)*pi2/real(pp_nsteps))
 
 !  do i = 2, pp_nsteps
 !     gsurf(1)%oxdot(i) = pp_nsteps*(gsurf(1)%ox(i+1) - gsurf(1)%ox(i-1))/(2.0*pi2*resbn_m)
@@ -1493,8 +1551,19 @@ subroutine find_pfl(MAXFEV, XTOL, suc)
 !  gsurf(1)%oydot(pp_nsteps+1) = gsurf(1)%oydot(1)
 !  gsurf(1)%ozdot(pp_nsteps+1) = gsurf(1)%ozdot(1)
 
+  ifail = 1
+  relerr = pp_xtol
+  abserr = sqrtmachprec
+  rz_end = x
+  phi_stop = pp_phi
+
+  RZ(1) = sqrt( gsurf(1)%xx(1)**2 + gsurf(1)%xy(1)**2 )
+  RZ(2) = gsurf(1)%xz(1)
+
+  call hybrd(pfl_fcnx,n,RZ,fvec,pfl_xtol,maxfev,ml,mu,epsfcn,diag,mode,factor,nprint,info,nfev,fjac,ldfjac,r,lr,qtf,wa1,wa2,wa3,wa4)
+
   if (myid == 0) then
-     !write(ounit,'("find_pfl: Finding pfl at phi = "ES12.5" with (R,Z) = ( "ES12.5,","ES12.5" ).")') pp_phi, RZ(1), RZ(2)
+     !write(ounit,'("find_pfl: Finding X pfl at phi = "ES12.5" with (R,Z) = ( "ES12.5,","ES12.5" ).")') pp_phi, RZ(1), RZ(2)
      select case (info)
      case (0)
         write(ounit,'("find_pfl: info=0, improper input parameters.")')
@@ -1512,20 +1581,27 @@ subroutine find_pfl(MAXFEV, XTOL, suc)
         write(ounit,'("find_pfl: info="I2", something wrong with the pfl finding subroutine.")') info
      end select
   endif
-  
-  ifail = 1
-  relerr = pp_xtol
-  abserr = sqrtmachprec
-  rz_end = x
-  phi_stop = pp_phi
 
-  RZ(1) = sqrt( gsurf(1)%xx(1)**2 + gsurf(1)%xy(1)**2 )
-  RZ(2) = gsurf(1)%xz(1)
-
-  call hybrd(pfl_fcn,n,RZ,fvec,pfl_xtol,maxfev,ml,mu,epsfcn,diag,mode,factor,nprint,info,nfev,fjac,ldfjac,r,lr,qtf,wa1,wa2,wa3,wa4)
-  if ( info .ne. 1 ) then
+  if ( info .ne. 1 .and. ghost_failreturn .eq. 1 ) then
+     gsurf(1)%ox = 0.0
+     gsurf(1)%oy = 0.0
+     gsurf(1)%oz = 0.0
+     gsurf(1)%xx = 0.0
+     gsurf(1)%xy = 0.0
+     gsurf(1)%xz = 0.0
+     gsurf(1)%oxdot = 0.0
+     gsurf(1)%oydot = 0.0
+     gsurf(1)%ozdot = 0.0
+     gsurf(1)%xxdot = 0.0
+     gsurf(1)%xydot = 0.0
+     gsurf(1)%xzdot = 0.0
      suc = 0
      return
+  endif
+  if ( info .ne. 1 ) then
+     !suc = 0
+     RZ(1) = xrpfl
+     RZ(2) = xzpfl
   endif
 
   gsurf(1)%xx(1) = RZ(1)*cos(phi_stop)
@@ -1565,13 +1641,20 @@ subroutine find_pfl(MAXFEV, XTOL, suc)
         By = By + Byhold
         Bz = Bz + Bzhold
      enddo
-     gsurf(1)%xxdot(i) = Bx
-     gsurf(1)%xydot(i) = By
-     gsurf(1)%xzdot(i) = Bz
+     phi = real(resbn_m)*pi2*real(i-1)/real(pp_nsteps)
+     Bphi = (-1.0*Bx*sin(phi) + By*cos(phi)) / sqrt( gsurf(1)%xx(i)**2.0 + gsurf(1)%xy(i)**2.0 )
+     gsurf(1)%xxdot(i) = Bx/Bphi
+     gsurf(1)%xydot(i) = By/Bphi
+     gsurf(1)%xzdot(i) = Bz/Bphi
   enddo
   gsurf(1)%xxdot(pp_nsteps+1) = gsurf(1)%xxdot(1)
   gsurf(1)%xydot(pp_nsteps+1) = gsurf(1)%xydot(1)
   gsurf(1)%xzdot(pp_nsteps+1) = gsurf(1)%xzdot(1)
+
+  ! Make end point tangent to other point
+!  gsurf(1)%xxdot(pp_nsteps) = (gsurf(1)%xx(pp_nsteps+1) - gsurf(1)%xx(pp_nsteps))/(real(resbn_m)*pi2/real(pp_nsteps))
+!  gsurf(1)%xydot(pp_nsteps) = (gsurf(1)%xy(pp_nsteps+1) - gsurf(1)%xy(pp_nsteps))/(real(resbn_m)*pi2/real(pp_nsteps))
+!  gsurf(1)%xzdot(pp_nsteps) = (gsurf(1)%xz(pp_nsteps+1) - gsurf(1)%xz(pp_nsteps))/(real(resbn_m)*pi2/real(pp_nsteps))
 
 !  do i = 2, pp_nsteps
 !     gsurf(1)%xxdot(i) = pp_nsteps*(gsurf(1)%xx(i+1) - gsurf(1)%xx(i-1))/(2.0*pi2*resbn_m)
@@ -1586,26 +1669,6 @@ subroutine find_pfl(MAXFEV, XTOL, suc)
 !  gsurf(1)%xydot(pp_nsteps+1) = gsurf(1)%xydot(1)
 !  gsurf(1)%xzdot(pp_nsteps+1) = gsurf(1)%xzdot(1)
 
-  if (myid == 0) then
-     !write(ounit,'("find_pfl: Finding pfl at phi = "ES12.5" with (R,Z) = ( "ES12.5,","ES12.5" ).")') pp_phi, RZ(1), RZ(2)
-     select case (info)
-     case (0)
-        write(ounit,'("find_pfl: info=0, improper input parameters.")')
-     case (1)
-        !write(ounit,'("find_pfl: info=1, relative error between two consecutive iterates is at most xtol.")')
-     case (2)
-        write(ounit,'("find_pfl: info=2, number of calls to fcn has reached or exceeded maxfev.")')
-     case (3)
-        write(ounit,'("find_pfl: info=3, xtol is too small.")')
-     case (4)
-        write(ounit,'("find_pfl: info=4, iteration is not making good progress, jacobian.")')
-     case (5)
-        write(ounit,'("find_pfl: info=5, iteration is not making good progress, function.")')
-     case default
-        write(ounit,'("find_pfl: info="I2", something wrong with the pfl finding subroutine.")') info
-     end select
-  endif
-
   return
 
 end subroutine find_pfl
@@ -1614,7 +1677,7 @@ end subroutine find_pfl
 
 subroutine pfl_fcn(n,x,fvec,iflag)
   use globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, surf, &
-                      pp_xtol, plasma, pp_nsteps, resbn_m, orpfl, ozpfl, MPI_COMM_FOCUS
+                      pp_xtol, plasma, pp_nsteps, resbn_m, orpfl, ozpfl, ghost_failreturn, gsurf, MPI_COMM_FOCUS, MPI_COMM_MYWORLD
   use mpi
   IMPLICIT NONE
 
@@ -1651,14 +1714,13 @@ subroutine pfl_fcn(n,x,fvec,iflag)
            write(ounit, '("pfl_fcn: INVALID input parameters.")')
         end select
      endif
-     iflag = -1
-     return
      if (myid == 0) write(ounit,'("pfl_fcn: R location of failed pfl solve "ES23.15)') rz_end(1)
      if (myid == 0) write(ounit,'("pfl_fcn: Z location of failed pfl solve "ES23.15)') rz_end(2)
-     rz_end(1) = x(1) - orpfl ! Temporary fix
-     rz_end(2) = x(2) - ozpfl
+     fvec(1) = orpfl - x(1)
+     fvec(2) = ozpfl - x(2)
      ifail = 2
      iflag = 1
+     return
   endif
 
   fvec = rz_end - x
@@ -1666,3 +1728,124 @@ subroutine pfl_fcn(n,x,fvec,iflag)
   return
 
 end subroutine pfl_fcn
+
+subroutine pfl_fcnx(n,x,fvec,iflag)
+  use globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, surf, &
+  pp_xtol, plasma, pp_nsteps, resbn_m, xrpfl, xzpfl, ghost_failreturn, gsurf, MPI_COMM_FOCUS, MPI_COMM_MYWORLD
+  use mpi
+  IMPLICIT NONE
+  INTEGER  :: n, iflag
+  REAL     :: x(n), fvec(n)
+  INTEGER  :: iwork(5), ierr, ifail, i
+  REAL     :: rz_end(n), phi_init, phi_stop, relerr, abserr, work(100+21*n)
+  EXTERNAL :: BRpZ
+  ifail = 1
+  relerr = pp_xtol
+  abserr = sqrtmachprec
+  rz_end = x
+  phi_stop = pp_phi
+  do i = 1, pp_nsteps
+     ifail = 1
+     phi_init = phi_stop
+     phi_stop = phi_init + pi2*real(resbn_m)/real(pp_nsteps)
+     call ode( BRpZ, n, rz_end, phi_init, phi_stop, relerr, abserr, ifail, work, iwork )
+  enddo
+  if ( ifail /= 2 ) then
+     if ( myid==0 ) then
+        write ( ounit, '(A,I3)' ) 'pfl_fcn: ODE solver ERROR; returned IFAIL = ', ifail
+        select case ( ifail )
+        case ( 3 )
+           write(ounit, '("pfl_fcn: DF_xtol or abserr too small.")')
+        case ( 4 )
+           write(ounit, '("pfl_fcn: tau not reached after 500 steps.")')
+        case ( 5 )
+           write(ounit, '("pfl_fcn: tau not reached because equation to be stiff.")')
+        case ( 6 )
+           write(ounit, '("pfl_fcn: INVALID input parameters.")')
+        end select
+     endif
+     if (myid == 0) write(ounit,'("pfl_fcn: R location of failed pfl solve "ES23.15)') rz_end(1)
+     if (myid == 0) write(ounit,'("pfl_fcn: Z location of failed pfl solve "ES23.15)') rz_end(2)
+     fvec(1) = xrpfl - x(1)
+     fvec(2) = xzpfl - x(2)
+     ifail = 2
+     iflag = 1
+     return
+  endif
+  fvec = rz_end - x
+  return
+end subroutine pfl_fcnx
+
+! Not used for now
+SUBROUTINE BRpZ_pfl( t, xxx, dx )
+  !----------------------
+  ! dR/dphi = BR / Bphi
+  ! dZ/dphi = BZ / Bphi
+  !----------------------
+  use globals, only : dp, zero, ounit, myid, ierr, myworkid, nworker, coil, cosnfp, sinnfp, &
+                      Nfp, pi2, half, two, one, bsconstant, Ncoils, MPI_COMM_FOCUS, MPI_COMM_MYWORLD
+  USE MPI
+  implicit none
+  !---------------------------------------------------------------------------------------------
+  INTEGER, parameter   :: n=2
+  INTEGER              :: Npc, cs, ip, is, kseg, icoil
+  REAL, INTENT( IN)    :: t, xxx(n)
+  REAL, INTENT(OUT)    :: dx(n)
+  REAL                 :: RR, BR, BP, dlx, dly, dlz, ltx, lty, ltz, rm3, x, y, z, &
+                          xx, yy, zz, tBx, tBy, tBz, Bx, By, Bz
+  !---------------------------------------------------------------------------------------------
+  RR = xxx(1); z = xxx(2) 
+  x = RR*cos(t); y = RR*sin(t) 
+  
+  do icoil = 1, Ncoils ! Make sure coil is the correct type 
+     Npc = 1 ; cs = 0 ; ip = 1
+     dlx = zero ; dly = zero ; dlz = zero
+     ltx = zero ; lty = zero ; ltz = zero
+     tBx = zero ; tBy = zero ; tBz = zero
+     select case (coil(icoil)%symm)
+     case ( 0 )
+        cs  = 0
+        Npc = 1
+     case ( 1 )
+        cs  = 0
+        Npc = Nfp
+     case ( 2 )
+        cs  = 1
+        Npc = Nfp
+     end select
+     do ip = 1, Npc
+        do is = 0, cs
+           xx = ( x*cosnfp(ip) + y*sinnfp(ip) )
+           yy = (-x*sinnfp(ip) + y*cosnfp(ip) ) * (-1)**is
+           zz =  z * (-1)**is
+           Bx = zero; By = zero; Bz = zero
+           do kseg = 0, coil(icoil)%NS-1
+              if ( myworkid /= modulo( (icoil-1)*coil(icoil)%NS + kseg , nworker) ) cycle
+              dlx = xx - coil(icoil)%xx(kseg)
+              dly = yy - coil(icoil)%yy(kseg)
+              dlz = zz - coil(icoil)%zz(kseg)
+              rm3 = (sqrt(dlx**2 + dly**2 + dlz**2))**(-3)
+              ltx = coil(icoil)%xt(kseg)
+              lty = coil(icoil)%yt(kseg)
+              ltz = coil(icoil)%zt(kseg)
+              tBx = tBx + ( dlz*lty - dly*ltz ) * rm3 * coil(icoil)%dd(kseg)
+              tBy = tBy + ( dlx*ltz - dlz*ltx ) * rm3 * coil(icoil)%dd(kseg)
+              tBz = tBz + ( dly*ltx - dlx*lty ) * rm3 * coil(icoil)%dd(kseg)
+           enddo
+        enddo
+     enddo
+     Bx = Bx + tBx * coil(icoil)%I * bsconstant
+     By = By + tBy * coil(icoil)%I * bsconstant
+     Bz = Bz + tBz * coil(icoil)%I * bsconstant
+  enddo
+  
+  call MPI_ALLREDUCE(MPI_IN_PLACE, Bx, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MYWORLD, ierr )
+  call MPI_ALLREDUCE(MPI_IN_PLACE, By, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MYWORLD, ierr )
+  call MPI_ALLREDUCE(MPI_IN_PLACE, Bz, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MYWORLD, ierr )
+
+  BR =     Bx*cos(t) + By*sin(t)
+  BP = ( - Bx*sin(t) + By*cos(t) ) / RR
+  dx(1) = BR/BP
+  dx(2) = Bz/BP
+  return
+END SUBROUTINE BRpZ_pfl

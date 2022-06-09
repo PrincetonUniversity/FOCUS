@@ -158,13 +158,6 @@ subroutine rdstable(filename, index)
   SALLOCATE( gsurf(index)%xbsupzeta, (1:Nseg_stable), 0.0 )
   SALLOCATE( gsurf(index)%xbsuptheta, (1:Nseg_stable), 0.0 )
 
-
-  ! do this once for now
-  !if (ghost_use .eq. 1) then
-  !   call ghost(1)
-  !endif
-  gsurf(index)%donee = 0
-
   do i = 1,gsurf(index)%Nseg_stable
      gsurf(index)%zeta(i) = (i-1)*pi2*resbn_m/(Nseg_stable-1)
   enddo

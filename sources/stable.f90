@@ -1,6 +1,6 @@
 ! This is the overall function to handle stable field lines
 SUBROUTINE stable
-  use globals, only : dp, myid, ounit, input_stable, gsurf, MPI_COMM_FOCUS, period_Nseg, resbn_m
+  use globals, only : dp, myid, ounit, input_stable, gsurf, MPI_COMM_FOCUS, period_Nseg, resbn_m, ghost_call
   use mpi
   implicit none
 
@@ -29,7 +29,7 @@ SUBROUTINE stable
   SALLOCATE( gsurf(index)%xxdot, (1:Nseg_stable), 0.0 )
   SALLOCATE( gsurf(index)%xydot, (1:Nseg_stable), 0.0 )
   SALLOCATE( gsurf(index)%xzdot, (1:Nseg_stable), 0.0 )
-  gsurf(1)%donee = 0
+  ghost_call = 1
 
   RETURN
 END SUBROUTINE stable

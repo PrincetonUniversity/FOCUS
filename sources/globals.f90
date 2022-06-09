@@ -111,14 +111,17 @@ module globals
   INTEGER              :: resbn_m        =   1
   INTEGER              :: resbn_n        =   1
   INTEGER              :: ghost_use      =   0
+  INTEGER              :: ghost_call     =   1
+  INTEGER              :: ghost_once     =   0
+  INTEGER              :: ghost_failreturn = 0
   INTEGER              :: rcflux_use     =   1
   INTEGER              :: period_Nseg    =   128
+  INTEGER              :: pfl_mult       =   1
   REAL                 :: orpfl          =   1.000D+00
   REAL                 :: ozpfl          =   0.000D+00
   REAL                 :: xrpfl          =   1.000D+00
   REAL                 :: xzpfl          =   0.000D+00
   REAL                 :: pfl_xtol       =   1.000D-08
-!  REAL                 :: rcflux_pre     =   1.000D+00
   REAL                 :: weight_tflux   =   0.000D+00
   REAL                 :: target_tflux   =   0.000D+00
   REAL                 :: weight_ttlen   =   0.000D+00
@@ -252,14 +255,17 @@ module globals
                         resbn_m        , &
                         resbn_n        , &
                         ghost_use      , &
+                        ghost_call     , &
+                        ghost_once     , &
+                        ghost_failreturn, &
                         rcflux_use     , &
                         period_Nseg    , &
+                        pfl_mult       , &
                         orpfl          , &
                         ozpfl          , &
                         xrpfl          , &
                         xzpfl          , &
                         pfl_xtol       , &
-!                        rcflux_pre     , &
                         weight_tflux   , &
                         target_tflux   , &
                         weight_ttlen   , &
@@ -385,7 +391,7 @@ module globals
   end type DegreeOfFreedom
 
   type ghostsurface
-     INTEGER              :: NF_stable, NF_axis, Nseg_stable, donee, Ndof_stable, iter_track
+     INTEGER              :: NF_stable, NF_axis, Nseg_stable, Ndof_stable, iter_track
      INTEGER, allocatable :: on(:), xn(:), axisn(:)
      REAL   , allocatable :: osnc(:), osns(:), othetanc(:), othetans(:), xsnc(:), xsns(:), &
                              xthetanc(:), xthetans(:), axisrnc(:), axiszns(:), os(:), xs(:), &

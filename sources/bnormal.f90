@@ -39,7 +39,7 @@ subroutine bnormal( ideriv )
        weight_bnorm, ibnorm, mbnorm, ibharm, mbharm, LM_fvec, LM_fjac, &
        bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn, &
        weight_resbn, target_resbn, resbn, resbn_m, resbn_n, t1R, b1s, b1c, resbn_bnc, resbn_bns, &
-       gsurf, ghost_use, rcflux_use, machprec, MPI_COMM_FOCUS
+       gsurf, ghost_use, ghost_call, ghost_once, rcflux_use, pfl_mult, machprec, MPI_COMM_FOCUS
   use bnorm_mod
   use bharm_mod
   use mpi
@@ -48,10 +48,16 @@ subroutine bnormal( ideriv )
   INTEGER, INTENT(in)                   :: ideriv
   !--------------------------------------------------------------------------------------------
   INTEGER                               :: astat, ierr, suc
-  INTEGER                               :: icoil, iteta, jzeta, idof, ND, NumGrid, isurf
+  INTEGER                               :: icoil, iteta, jzeta, j, idof, ND, NumGrid, isurf
   REAL                                  :: arg, teta, zeta, bnc, bns, shift, rcflux, psmall, &
-                                           small, negvalue, posvalue, tmp_xdof(1:Ndof), norm
+                                           small, negvalue, posvalue, tmp_xdof(1:Ndof)
   REAL, allocatable                     :: cosarg(:,:), sinarg(:,:)
+  REAL                                  :: ox((gsurf(1)%Nseg_stable-1)*pfl_mult), oy((gsurf(1)%Nseg_stable-1)*pfl_mult), &
+                                           oz((gsurf(1)%Nseg_stable-1)*pfl_mult), oxdot((gsurf(1)%Nseg_stable-1)*pfl_mult), &
+                                           oydot((gsurf(1)%Nseg_stable-1)*pfl_mult), ozdot((gsurf(1)%Nseg_stable-1)*pfl_mult), &
+                                           xx((gsurf(1)%Nseg_stable-1)*pfl_mult), xy((gsurf(1)%Nseg_stable-1)*pfl_mult), &
+                                           xz((gsurf(1)%Nseg_stable-1)*pfl_mult), xxdot((gsurf(1)%Nseg_stable-1)*pfl_mult), &
+                                           xydot((gsurf(1)%Nseg_stable-1)*pfl_mult), xzdot((gsurf(1)%Nseg_stable-1)*pfl_mult)
   !--------------------------initialize and allocate arrays-------------------------------------
   isurf = plasma 
   NumGrid = Nteta*Nzeta
@@ -67,16 +73,36 @@ subroutine bnormal( ideriv )
       FATAL( bnormal, resbn_n .le. 0, wrong toroidal mode number)
       resbn = zero ; bnc = zero ;  bns = zero
       shift = half
-      ! do after rdstable for now
-      if (ghost_use .eq. 1 .and. gsurf(1)%donee .eq. 0) then
-      !if (ghost_use .eq. 1) then ! Fix this
-         gsurf(1)%donee = 1
+      if (ghost_use .eq. 1 .and. ghost_call .eq. 1) then
          call ghost(1, suc)
          if ( suc .eq. 0 ) then
-            resbn = 1000.0
-            !FATAL( bnormal, ideriv .eq. 1, Could not find pfl)
+            resbn = 1.0
+         endif
+         if ( ghost_once .eq. 1 ) then
+            ghost_call = 0
          endif
       endif
+      !if( rcflux_use .eq. 0 ) then
+      !   call rcflux(ideriv)
+      !endif
+      ! Interpolation of pfl
+      do jzeta = 1, gsurf(1)%Nseg_stable-1
+         do j = 1, pfl_mult
+            ox( ( jzeta - 1 ) * pfl_mult + j ) = gsurf(1)%ox(jzeta)*real(pfl_mult+1-j)/real(pfl_mult) + gsurf(1)%ox(jzeta+1)*real(j-1)/real(pfl_mult) 
+            oy( ( jzeta - 1 ) * pfl_mult + j ) = gsurf(1)%oy(jzeta)*real(pfl_mult+1-j)/real(pfl_mult) + gsurf(1)%oy(jzeta+1)*real(j-1)/real(pfl_mult) 
+            oz( ( jzeta - 1 ) * pfl_mult + j ) = gsurf(1)%oz(jzeta)*real(pfl_mult+1-j)/real(pfl_mult) + gsurf(1)%oz(jzeta+1)*real(j-1)/real(pfl_mult) 
+            xx( ( jzeta - 1 ) * pfl_mult + j ) = gsurf(1)%xx(jzeta)*real(pfl_mult+1-j)/real(pfl_mult) + gsurf(1)%xx(jzeta+1)*real(j-1)/real(pfl_mult) 
+            xy( ( jzeta - 1 ) * pfl_mult + j ) = gsurf(1)%xy(jzeta)*real(pfl_mult+1-j)/real(pfl_mult) + gsurf(1)%xy(jzeta+1)*real(j-1)/real(pfl_mult) 
+            xz( ( jzeta - 1 ) * pfl_mult + j ) = gsurf(1)%xz(jzeta)*real(pfl_mult+1-j)/real(pfl_mult) + gsurf(1)%xz(jzeta+1)*real(j-1)/real(pfl_mult) 
+            oxdot( ( jzeta - 1 ) * pfl_mult + j ) = gsurf(1)%oxdot(jzeta)*real(pfl_mult+1-j)/real(pfl_mult) + gsurf(1)%oxdot(jzeta+1)*real(j-1)/real(pfl_mult) 
+            oydot( ( jzeta - 1 ) * pfl_mult + j ) = gsurf(1)%oydot(jzeta)*real(pfl_mult+1-j)/real(pfl_mult) + gsurf(1)%oydot(jzeta+1)*real(j-1)/real(pfl_mult) 
+            ozdot( ( jzeta - 1 ) * pfl_mult + j ) = gsurf(1)%ozdot(jzeta)*real(pfl_mult+1-j)/real(pfl_mult) + gsurf(1)%ozdot(jzeta+1)*real(j-1)/real(pfl_mult) 
+            xxdot( ( jzeta - 1 ) * pfl_mult + j ) = gsurf(1)%xxdot(jzeta)*real(pfl_mult+1-j)/real(pfl_mult) + gsurf(1)%xxdot(jzeta+1)*real(j-1)/real(pfl_mult) 
+            xydot( ( jzeta - 1 ) * pfl_mult + j ) = gsurf(1)%xydot(jzeta)*real(pfl_mult+1-j)/real(pfl_mult) + gsurf(1)%xydot(jzeta+1)*real(j-1)/real(pfl_mult) 
+            xzdot( ( jzeta - 1 ) * pfl_mult + j ) = gsurf(1)%xzdot(jzeta)*real(pfl_mult+1-j)/real(pfl_mult) + gsurf(1)%xzdot(jzeta+1)*real(j-1)/real(pfl_mult) 
+         enddo
+      enddo
+
       if (.not. allocated(cosarg) ) then
          SALLOCATE( cosarg, (0:Nteta-1, 0:Nzeta-1), zero )
          SALLOCATE( sinarg, (0:Nteta-1, 0:Nzeta-1), zero )
@@ -163,27 +189,35 @@ subroutine bnormal( ideriv )
             ! At some point change objective function to be squared instead of abs 
             ! if(myid==0) write(ounit, '("Resonant Bmn spectrum = "ES23.15)'), sqrt(bnc*bnc + bns*bns)
          else
+            if ( suc .eq. 1 ) then ! No indent
             rcflux = 0.0
-            do jzeta = 1, gsurf(1)%Nseg_stable-1
+            !do jzeta = 1, gsurf(1)%Nseg_stable-1
+            do jzeta = 1, (gsurf(1)%Nseg_stable-1)*pfl_mult
                if( myid.ne.modulo(jzeta,ncpu) ) cycle ! parallelization loop;
                do icoil = 1, Ncoils
-                  call afield0(icoil, gsurf(1)%ox(jzeta), gsurf(1)%oy(jzeta), gsurf(1)%oz(jzeta), dAx(0,0), dAy(0,0), dAz(0,0) )
-                  norm = sqrt( gsurf(1)%oxdot(jzeta)**2 + gsurf(1)%oydot(jzeta)**2 + gsurf(1)%ozdot(jzeta)**2 )
-                  rcflux = rcflux + dAx(0,0)*gsurf(1)%oxdot(jzeta)/norm
-                  rcflux = rcflux + dAy(0,0)*gsurf(1)%oydot(jzeta)/norm
-                  rcflux = rcflux + dAz(0,0)*gsurf(1)%ozdot(jzeta)/norm
-                  call afield0(icoil, gsurf(1)%xx(jzeta), gsurf(1)%xy(jzeta), gsurf(1)%xz(jzeta), dAx(0,0), dAy(0,0), dAz(0,0) )
-                  norm = sqrt( gsurf(1)%xxdot(jzeta)**2 + gsurf(1)%xydot(jzeta)**2 + gsurf(1)%xzdot(jzeta)**2 )
-                  rcflux = rcflux - dAx(0,0)*gsurf(1)%xxdot(jzeta)/norm
-                  rcflux = rcflux - dAy(0,0)*gsurf(1)%xydot(jzeta)/norm
-                  rcflux = rcflux - dAz(0,0)*gsurf(1)%xzdot(jzeta)/norm
+                  !call afield0(icoil, gsurf(1)%ox(jzeta), gsurf(1)%oy(jzeta), gsurf(1)%oz(jzeta), dAx(0,0), dAy(0,0), dAz(0,0) )
+                  !rcflux = rcflux + dAx(0,0)*gsurf(1)%oxdot(jzeta)
+                  !rcflux = rcflux + dAy(0,0)*gsurf(1)%oydot(jzeta)
+                  !rcflux = rcflux + dAz(0,0)*gsurf(1)%ozdot(jzeta)
+                  !call afield0(icoil, gsurf(1)%xx(jzeta), gsurf(1)%xy(jzeta), gsurf(1)%xz(jzeta), dAx(0,0), dAy(0,0), dAz(0,0) )
+                  !rcflux = rcflux - dAx(0,0)*gsurf(1)%xxdot(jzeta)
+                  !rcflux = rcflux - dAy(0,0)*gsurf(1)%xydot(jzeta)
+                  !rcflux = rcflux - dAz(0,0)*gsurf(1)%xzdot(jzeta)
+                  call afield0(icoil, ox(jzeta), oy(jzeta), oz(jzeta), dAx(0,0), dAy(0,0), dAz(0,0) )
+                  rcflux = rcflux + dAx(0,0)*oxdot(jzeta)
+                  rcflux = rcflux + dAy(0,0)*oydot(jzeta)
+                  rcflux = rcflux + dAz(0,0)*ozdot(jzeta)
+                  call afield0(icoil, xx(jzeta), xy(jzeta), xz(jzeta), dAx(0,0), dAy(0,0), dAz(0,0) )
+                  rcflux = rcflux - dAx(0,0)*xxdot(jzeta)
+                  rcflux = rcflux - dAy(0,0)*xydot(jzeta)
+                  rcflux = rcflux - dAz(0,0)*xzdot(jzeta)
                enddo
             enddo
             call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
             call MPI_ALLREDUCE( MPI_IN_PLACE, rcflux, 1  , MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
-            rcflux = rcflux*pi2*resbn_m/(gsurf(1)%Nseg_stable-1)
-            if ( suc .eq. 1 ) then
-               resbn = rcflux**2
+            !rcflux = rcflux*pi2*resbn_m/(gsurf(1)%Nseg_stable-1)
+            rcflux = rcflux*pi2*resbn_m/((gsurf(1)%Nseg_stable-1)*pfl_mult)
+            resbn = rcflux**2
             endif
             ! Include negative for maximizing islands
          endif
@@ -283,35 +317,48 @@ subroutine bnormal( ideriv )
             t1R = sign(1.0_dp, sqrt(bnc*bnc+bns*bns)-target_resbn) * (bnc*bnc + bns*bns)**(-0.5)*(bnc * b1c + bns * b1s)
             call MPI_ALLREDUCE( MPI_IN_PLACE, t1R, Ndof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
          else
-            do jzeta = 1, gsurf(1)%Nseg_stable-1
+            !do jzeta = 1, gsurf(1)%Nseg_stable-1
+            do jzeta = 1, (gsurf(1)%Nseg_stable-1)*pfl_mult
                if( myid.ne.modulo(jzeta,ncpu) ) cycle ! parallelization loop;
                idof = 0
                do icoil = 1, Ncoils
                   ND = DoF(icoil)%ND
                   if ( coil(icoil)%Ic /= 0 ) then
-                     call afield0(icoil, gsurf(1)%ox(jzeta), gsurf(1)%oy(jzeta), gsurf(1)%oz(jzeta), dAx(0,0), dAy(0,0), dAz(0,0) )
-                     norm = sqrt( gsurf(1)%oxdot(jzeta)**2 + gsurf(1)%oydot(jzeta)**2 + gsurf(1)%ozdot(jzeta)**2 )
-                     t1R(idof+1) = t1R(idof+1) + dAx(0,0)*gsurf(1)%oxdot(jzeta) / (coil(icoil)%I*norm)
-                     t1R(idof+1) = t1R(idof+1) + dAy(0,0)*gsurf(1)%oydot(jzeta) / (coil(icoil)%I*norm)
-                     t1R(idof+1) = t1R(idof+1) + dAz(0,0)*gsurf(1)%ozdot(jzeta) / (coil(icoil)%I*norm)
-                     call afield0(icoil, gsurf(1)%xx(jzeta), gsurf(1)%xy(jzeta), gsurf(1)%xz(jzeta), dAx(0,0), dAy(0,0), dAz(0,0) )
-                     norm = sqrt( gsurf(1)%xxdot(jzeta)**2 + gsurf(1)%xydot(jzeta)**2 + gsurf(1)%xzdot(jzeta)**2 )
-                     t1R(idof+1) = t1R(idof+1) - dAx(0,0)*gsurf(1)%xxdot(jzeta) / (coil(icoil)%I*norm)
-                     t1R(idof+1) = t1R(idof+1) - dAy(0,0)*gsurf(1)%xydot(jzeta) / (coil(icoil)%I*norm)
-                     t1R(idof+1) = t1R(idof+1) - dAz(0,0)*gsurf(1)%xzdot(jzeta) / (coil(icoil)%I*norm)
+                     !call afield0(icoil, gsurf(1)%ox(jzeta), gsurf(1)%oy(jzeta), gsurf(1)%oz(jzeta), dAx(0,0), dAy(0,0), dAz(0,0) )
+                     !t1R(idof+1) = t1R(idof+1) + dAx(0,0)*gsurf(1)%oxdot(jzeta) / coil(icoil)%I
+                     !t1R(idof+1) = t1R(idof+1) + dAy(0,0)*gsurf(1)%oydot(jzeta) / coil(icoil)%I
+                     !t1R(idof+1) = t1R(idof+1) + dAz(0,0)*gsurf(1)%ozdot(jzeta) / coil(icoil)%I
+                     !call afield0(icoil, gsurf(1)%xx(jzeta), gsurf(1)%xy(jzeta), gsurf(1)%xz(jzeta), dAx(0,0), dAy(0,0), dAz(0,0) )
+                     !t1R(idof+1) = t1R(idof+1) - dAx(0,0)*gsurf(1)%xxdot(jzeta) / coil(icoil)%I
+                     !t1R(idof+1) = t1R(idof+1) - dAy(0,0)*gsurf(1)%xydot(jzeta) / coil(icoil)%I
+                     !t1R(idof+1) = t1R(idof+1) - dAz(0,0)*gsurf(1)%xzdot(jzeta) / coil(icoil)%I
+                     call afield0(icoil, ox(jzeta), oy(jzeta), oz(jzeta), dAx(0,0), dAy(0,0), dAz(0,0) )
+                     t1R(idof+1) = t1R(idof+1) + dAx(0,0)*oxdot(jzeta) / coil(icoil)%I
+                     t1R(idof+1) = t1R(idof+1) + dAy(0,0)*oydot(jzeta) / coil(icoil)%I
+                     t1R(idof+1) = t1R(idof+1) + dAz(0,0)*ozdot(jzeta) / coil(icoil)%I
+                     call afield0(icoil, xx(jzeta), xy(jzeta), xz(jzeta), dAx(0,0), dAy(0,0), dAz(0,0) )
+                     t1R(idof+1) = t1R(idof+1) - dAx(0,0)*xxdot(jzeta) / coil(icoil)%I
+                     t1R(idof+1) = t1R(idof+1) - dAy(0,0)*xydot(jzeta) / coil(icoil)%I
+                     t1R(idof+1) = t1R(idof+1) - dAz(0,0)*xzdot(jzeta) / coil(icoil)%I
                      idof = idof + 1
                   endif
                   if ( coil(icoil)%Lc /= 0 ) then
-                     call afield1(icoil, gsurf(1)%ox(jzeta), gsurf(1)%oy(jzeta), gsurf(1)%oz(jzeta), dAx(1:ND,0), dAy(1:ND,0), dAz(1:ND,0), ND )
-                     norm = sqrt( gsurf(1)%oxdot(jzeta)**2 + gsurf(1)%oydot(jzeta)**2 + gsurf(1)%ozdot(jzeta)**2 )
-                     t1R(idof+1:idof+ND) = t1R(idof+1:idof+ND) + dAx(1:ND,0)*gsurf(1)%oxdot(jzeta)/norm
-                     t1R(idof+1:idof+ND) = t1R(idof+1:idof+ND) + dAy(1:ND,0)*gsurf(1)%oydot(jzeta)/norm
-                     t1R(idof+1:idof+ND) = t1R(idof+1:idof+ND) + dAz(1:ND,0)*gsurf(1)%ozdot(jzeta)/norm
-                     call afield1(icoil, gsurf(1)%xx(jzeta), gsurf(1)%xy(jzeta), gsurf(1)%xz(jzeta), dAx(1:ND,0), dAy(1:ND,0), dAz(1:ND,0), ND )
-                     norm = sqrt( gsurf(1)%xxdot(jzeta)**2 + gsurf(1)%xydot(jzeta)**2 + gsurf(1)%xzdot(jzeta)**2 )
-                     t1R(idof+1:idof+ND) = t1R(idof+1:idof+ND) - dAx(1:ND,0)*gsurf(1)%xxdot(jzeta)/norm
-                     t1R(idof+1:idof+ND) = t1R(idof+1:idof+ND) - dAy(1:ND,0)*gsurf(1)%xydot(jzeta)/norm
-                     t1R(idof+1:idof+ND) = t1R(idof+1:idof+ND) - dAz(1:ND,0)*gsurf(1)%xzdot(jzeta)/norm
+                     !call afield1(icoil, gsurf(1)%ox(jzeta), gsurf(1)%oy(jzeta), gsurf(1)%oz(jzeta), dAx(1:ND,0), dAy(1:ND,0), dAz(1:ND,0), ND )
+                     !t1R(idof+1:idof+ND) = t1R(idof+1:idof+ND) + dAx(1:ND,0)*gsurf(1)%oxdot(jzeta)
+                     !t1R(idof+1:idof+ND) = t1R(idof+1:idof+ND) + dAy(1:ND,0)*gsurf(1)%oydot(jzeta)
+                     !t1R(idof+1:idof+ND) = t1R(idof+1:idof+ND) + dAz(1:ND,0)*gsurf(1)%ozdot(jzeta)
+                     !call afield1(icoil, gsurf(1)%xx(jzeta), gsurf(1)%xy(jzeta), gsurf(1)%xz(jzeta), dAx(1:ND,0), dAy(1:ND,0), dAz(1:ND,0), ND )
+                     !t1R(idof+1:idof+ND) = t1R(idof+1:idof+ND) - dAx(1:ND,0)*gsurf(1)%xxdot(jzeta)
+                     !t1R(idof+1:idof+ND) = t1R(idof+1:idof+ND) - dAy(1:ND,0)*gsurf(1)%xydot(jzeta)
+                     !t1R(idof+1:idof+ND) = t1R(idof+1:idof+ND) - dAz(1:ND,0)*gsurf(1)%xzdot(jzeta)
+                     call afield1(icoil, ox(jzeta), oy(jzeta), oz(jzeta), dAx(1:ND,0), dAy(1:ND,0), dAz(1:ND,0), ND )
+                     t1R(idof+1:idof+ND) = t1R(idof+1:idof+ND) + dAx(1:ND,0)*oxdot(jzeta)
+                     t1R(idof+1:idof+ND) = t1R(idof+1:idof+ND) + dAy(1:ND,0)*oydot(jzeta)
+                     t1R(idof+1:idof+ND) = t1R(idof+1:idof+ND) + dAz(1:ND,0)*ozdot(jzeta)
+                     call afield1(icoil, xx(jzeta), xy(jzeta), xz(jzeta), dAx(1:ND,0), dAy(1:ND,0), dAz(1:ND,0), ND )
+                     t1R(idof+1:idof+ND) = t1R(idof+1:idof+ND) - dAx(1:ND,0)*xxdot(jzeta)
+                     t1R(idof+1:idof+ND) = t1R(idof+1:idof+ND) - dAy(1:ND,0)*xydot(jzeta)
+                     t1R(idof+1:idof+ND) = t1R(idof+1:idof+ND) - dAz(1:ND,0)*xzdot(jzeta)
                      idof = idof + ND
                   endif
                enddo
@@ -319,7 +366,8 @@ subroutine bnormal( ideriv )
             enddo
             call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
             call MPI_ALLREDUCE( MPI_IN_PLACE, t1R, Ndof  , MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
-            t1R(1:Ndof) = t1R(1:Ndof)*pi2*resbn_m/(gsurf(1)%Nseg_stable-1)
+            !t1R(1:Ndof) = t1R(1:Ndof)*pi2*resbn_m/(gsurf(1)%Nseg_stable-1)
+            t1R(1:Ndof) = t1R(1:Ndof)*pi2*resbn_m/((gsurf(1)%Nseg_stable-1)*pfl_mult)
             t1R(1:Ndof) = 2*rcflux*t1R(1:Ndof)
          endif
      endif
