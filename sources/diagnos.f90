@@ -317,7 +317,8 @@ SUBROUTINE diagnos
 
   !--------------------------------calculate the stochastic Bn error----------------------------
   if ( Npert .ge. 1 .and. allocated(surf(isurf)%bn) ) then
-
+     
+     if (case_optimize .eq. 0) call perturbation(0)
      call sbnormal( 0 )
 
      if(myid .eq. 0) write(ounit, '(8X": Maximum field error after perturbations: "ES23.15)') bnormmax
