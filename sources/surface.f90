@@ -1,7 +1,7 @@
 ! This is the overall function to handle surfaces
 SUBROUTINE surface
   use globals, only : dp, myid, ounit, machprec, surf, plasma, limiter, input_surf, limiter_surf, &
-       psurf, weight_cssep, MPI_COMM_FOCUS
+       psurf, weight_cssep, MPI_COMM_FOCUS,plasma_surf_boozer,case_surface
   use mpi
   implicit none
 
@@ -13,6 +13,7 @@ SUBROUTINE surface
   if ( weight_cssep > machprec ) then     
      plasma = 1
      limiter = 2
+     if ( limiter_surf .eq. input_surf ) limiter = plasma ! use the plasma surface as limiter surface
   else ! use the plasma surface as limiter
      plasma = 1
      limiter = 1
@@ -23,10 +24,17 @@ SUBROUTINE surface
   ! read the plasma surface  
   inquire( file=trim(input_surf), exist=exist)
   FATAL( surface, .not.exist, input_surf does not exist )
-  call fousurf( input_surf, plasma )
+
+  if (case_surface == plasma_surf_boozer)   call rdbooz( input_surf, plasma )
+  if (case_surface .ne. plasma_surf_boozer)   call fousurf( input_surf, plasma )
 
   ! read the limiter surface
-  if (limiter /= plasma) then
+  if (limiter /= plasma .and. case_surface == plasma_surf_boozer) then
+     inquire( file=trim(limiter_surf), exist=exist)  
+     FATAL( surface, .not.exist, limiter_surf does not exist )
+     FATAL( surface, limiter <= plasma, something goes wrong the surface indexing )
+     call rdbooz( limiter_surf, limiter )
+  elseif (limiter /= plasma .and. case_surface .ne. plasma_surf_boozer) then
      inquire( file=trim(limiter_surf), exist=exist)  
      FATAL( surface, .not.exist, limiter_surf does not exist )
      FATAL( surface, limiter <= plasma, something goes wrong the surface indexing )

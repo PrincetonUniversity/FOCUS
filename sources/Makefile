@@ -2,9 +2,12 @@
 
 ############################################################################################################
 
- ALLFILES= globals afield rcfluxsens stochastic stable rdstable ghost nissin torsion coilsep curvature initial rdsurf rdknot rdboozer rdcoils \
-	   packdof bfield bmnharm bnormal rcflux fdcheck torflux length surfsep datalloc solvers descent congrad \
-	   lmalg saving diagnos specinp poinplot boozer wtmgrid surface focus 
+ ALLFILES= globals rcfluxsens initial saving diagnos stochastic stable rdstable ghost \
+           rcflux surface rdsurf rdknot rdcoils rdboozer packdof afield bfield \
+           fdcheck datalloc solvers descent congrad lmalg straight_out splines rdbooz \
+	   bmnharm bnormal torflux length surfsep nissin torsion coilsep curvature \
+           specinp poinplot boozer wtmgrid focus 
+           
  HFILES= $(ALLFILES:=.f90)   # raw source files
  FFILES= $(ALLFILES:=_m.F90) # Fortran 90 files 
  PFILES= $(ALLFILES:=.pdf)   # documentations
@@ -114,7 +117,7 @@ lmder1.o : lmder1.f
 hybrj.o: hybrj.f
 	$(FC) -c $(RFLAGS) -o $@ $<
 
-cg_descent.o : cg_descent.f
+cg_descent.o : cg_descent.f globals_r.o 
 	$(FC) -c $(RFLAGS) -o $@ $<
 
 #cg_descent_stable.o : cg_descent_stable.f

@@ -11,10 +11,10 @@ More directions are referred to the official website.
 
 # Compilation
 To compile, use `make all`. Right now, I have only implemented `GCC` compiler. 
+Once compiled, you can test it by `make test`.
 
 # Examples
 A simple example can be found in ../examples/rotating_ellipse/test.py.
-You can test it by `make test`.
 
 # Usage
 More documentation will be available in the future.

@@ -103,8 +103,8 @@ SUBROUTINE wolfe( x0, p, alpha, iflag )
 
   use globals, only: dp, zero, sqrtmachprec, ounit, myid, Ndof, CG_wolfe_c1, CG_wolfe_c2
 
+  use mpi
   implicit none
-  include "mpif.h"
 
   REAL   , INTENT( in)     :: x0(1:Ndof), p(1:Ndof)
   INTEGER, INTENT(out)     :: iflag
@@ -190,8 +190,8 @@ REAL FUNCTION zoom( x0, p, alo, ahi )
 
   use globals, only : dp, zero, ounit, myid, Ndof, CG_wolfe_c1, CG_wolfe_c2, MPI_COMM_FOCUS
 
+  use mpi
   implicit none
-  include "mpif.h"
 
   REAL, INTENT(   in)     :: x0(1:Ndof), p(1:Ndof)
   REAL, INTENT(inout)     :: alo, ahi
@@ -250,8 +250,8 @@ END FUNCTION zoom
 
 SUBROUTINE getdf(lxdof, f, g)
   use globals, only: dp, myid, ounit, ierr, Ndof, chi, t1E, MPI_COMM_FOCUS
+  use mpi
   implicit none
-  include "mpif.h"
 
   REAL, INTENT(in ) :: lxdof(1:Ndof)
   REAL, INTENT(out) :: f, g(1:Ndof)
@@ -322,8 +322,8 @@ END SUBROUTINE congrad
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-
 SUBROUTINE myvalue(f, x, n)
   use globals, only: dp, myid, ounit, ierr, chi, MPI_COMM_FOCUS
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER, INTENT(in) :: n
   REAL, INTENT(in)    :: x(n) 
@@ -339,8 +339,8 @@ END SUBROUTINE myvalue
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 SUBROUTINE mygrad(g, x, n)
   use globals, only: dp, myid, ounit, ierr, t1E, MPI_COMM_FOCUS
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER, INTENT(in) :: n
   REAL, INTENT(in)    :: x(n)

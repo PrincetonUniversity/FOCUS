@@ -209,7 +209,7 @@
 
 subroutine lmalg
 use globals, only: dp, sqrtmachprec, zero, myid, ounit, Ncoils, Ndof, t1E, iout, xdof, &
-     tstart, tfinish, NBmn, Nzeta, Nteta, tstart, tfinish, MPI_COMM_FOCUS, &
+     tstart, tfinish, NBmn, Nzeta, Nteta, MPI_COMM_FOCUS, &
      LM_maxiter, LM_xtol, LM_ftol, LM_iter, LM_factor, LM_mfvec, LM_output
   use mpi
   implicit none

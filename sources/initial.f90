@@ -78,12 +78,15 @@
 !latex               with radius of \inputvar{init\_radius} and a central infinitely long current. 
 !latex               Dipole magnetizations anc the central current are all set to  \inputvar{init\_current}.
 !latex    \ei
-!latex 
+!latex    \item \inputvar{coil\_type\_spline = 5} \\
+!latex    \textit{Specify integer assigned to cubic B-spline representation} \\
+!latex
 !latex  \item \inputvar{case\_coils = 1} \\
 !latex    \textit{Specify representation used for the initial coils, seen in \link{rdcoils}} \\
 !latex    \bi \vspace{-5mm}
 !latex    \item[0:] using piecewise linear representation; (not ready)
 !latex    \item[1:] using Fourier series representation;
+!latex    \item[coil_type_spline:] using cubic B-spline representation;
 !latex    \ei
 !latex 
 !latex  \item \inputvar{Ncoils = 0} \\
@@ -183,8 +186,14 @@
 !latex 
 !latex  \item \inputvar{weight\_Gnorm = 1.0} \\
 !latex    \textit{additional factor for normalizing geometric variables; the larger, the more optimized for
-!latex     coil shapes; seen in \link{rdcoils}} 
-!latex 
+!latex     coil shapes; seen in \link{rdcoils}}
+!latex
+!latex  \item \inputvar{origin_surface_x = 0} \\
+!latex    \textit{X coordinate of surface center used in computing straight cost function} 
+!latex  \item \inputvar{origin_surface_y = 0} \\
+!latex    \textit{Y coordinate of surface center used in computing straight cost function} 
+!latex  \item \inputvar{origin_surface_z = 0} \\
+!latex    \textit{Z coordinate of surface center used in computing straight cost function} 
 !latex  \par \begin{tikzpicture} \draw[dashed] (0,1) -- (10,1); \end{tikzpicture}
 !latex 
 !latex  \item \inputvar{case\_optimize = 1} \\
@@ -431,7 +440,7 @@ subroutine check_input
         FATAL( initial, NFcoil <= 0    , no enough harmonics )
         FATAL( initial, Nseg   <= 0    , no enough segments  )
         FATAL( initial, target_length < zero, illegal )        
-        FATAL( initial, k0            < zero, illegal )
+        FATAL( initial, curv_k0            < zero, illegal )
         write(ounit, '("        : Read initial coils    from : ", A, A)') trim(input_coils), '(MAKEGRID format)'
      case( 0 )
         if (trim(input_coils) == 'none') input_coils = trim(ext)//".focus"
@@ -445,14 +454,14 @@ subroutine check_input
         FATAL( initial, NFcoil <= 0    , no enough harmonics )
         FATAL( initial, Nseg   <= 0    , no enough segments  )
         FATAL( initial, target_length < zero, illegal )
-        FATAL( initial, k0            < zero, illegal )
+        FATAL( initial, curv_k0            < zero, illegal )
         if (IsQuiet < 1) write(ounit, 1000) 'case_init', case_init, 'Initialize circular coils.'
      case( 2 )
         FATAL( initial, Ncoils < 1, should provide the No. of coils)
         FATAL( initial, init_current == zero, invalid coil current)
         FATAL( initial, init_radius < zero, invalid coil radius)
         FATAL( initial, target_length < zero, illegal )
-        FATAL( initial, k0            < zero, illegal )
+        FATAL( initial, curv_k0            < zero, illegal )
         if (IsQuiet < 1) write(ounit, 1000) 'case_init', case_init, 'Initialize magnetic dipoles.'
      case default
         FATAL( initial, .true., selected case_init is not supported )
@@ -471,17 +480,17 @@ subroutine check_input
         FATAL( initial, .true., IsQuiet /= integer unspported option)
      end select
      
-1000 format(8X, ": ", A15, " = ", I6, " ; ", A)        
+1000 format(8X, ": ", A15, " = ", I2, " ; ", A)        
 
      select case (IsSymmetric)
      case (0)
-        if (IsQuiet < 0) write(ounit, 1000) 'IsSymmetric', IsSymmetric, & 
+        if (IsQuiet < 1) write(ounit, 1000) 'IsSymmetric', IsSymmetric, & 
              &  'No stellarator symmetry or periodicity enforced.'
      case (1)
-        if (IsQuiet < 0) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
+        if (IsQuiet < 1) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
              &  'Periodicity is enforced.'
      case (2)
-        if (IsQuiet < 0) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
+        if (IsQuiet < 1) write(ounit, 1000) 'IsSymmetric', IsSymmetric, &
              &  'Periodicity and stellarator symmetry are both enforced.'
      case default
         FATAL( initial, .true., IsSymmetric /= 0 or 2 unspported option)
@@ -499,10 +508,10 @@ subroutine check_input
         write(ounit, 1000) 'case_surface', case_surface, 'Read axis information for expanding plasma boundary.'
         if (IsQuiet < 0)  write(ounit, '(8X,": knotsurf = " ES12.5 &
              &  " ; ellipticity = " ES12.5)') knotsurf, ellipticity
-     case (2)
+     case (plasma_surf_boozer) ! case (2)
         inquire( file=trim(input_surf), exist=exist )
         FATAL( initial, .not.exist, plasma boundary file not provided )
-        write(ounit, 1000) 'case_surface', case_surface, 'Read rational surface in boozer coordinates.'
+        write(ounit, 1000) 'case_surface', case_surface, 'Read Plasma boundary in Boozer coordinates.' ! or rational surface
      case default
         FATAL( initial, .true., selected surface type is not supported )
      end select
@@ -638,14 +647,29 @@ subroutine check_input
      !   FATAL( initial, .true., selected case_tors is not supported )
      !end select
 
-     select case ( penfun_nis )
+     select case ( penfun_nissin )
      case ( 1 )
-        if (IsQuiet < 1) write(ounit, 1000) 'penfun_nis', penfun_nis, 'Hyperbolic penalty function.'
+        if (IsQuiet < 1) write(ounit, 1000) 'penfun_nissin', penfun_nissin, 'Hyperbolic penalty function.'
      case ( 2 )
-        if (IsQuiet < 1) write(ounit, 1000) 'penfun_nis', penfun_nis, 'Polynomial penalty function.'
+        if (IsQuiet < 1) write(ounit, 1000) 'penfun_nissin', penfun_nissin, 'Polynomial penalty function.'
      case default
-        FATAL( initial, .true., selected penfun_nis is not supported )
+        FATAL( initial, .true., selected penfun_nissin is not supported )
      end select
+     
+     select case ( case_straight )
+     case ( 1 )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_straight', case_straight, 'Linear format of straight-out coil penalty.'
+     case ( 2 )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_straight', case_straight, 'Quadratic format of straight-out coil penalty.'
+     case ( 3 )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_straight', case_straight, 'Penalty function of straight-out coil.'
+     case ( 4 )
+        if (IsQuiet < 1) write(ounit, 1000) 'case_straight', case_straight, 'Linear and Penalty function.'
+     case default
+        FATAL( initial, .true., selected case_stright is not supported )
+     end select
+
+
 
      FATAL( initial, weight_bnorm  < zero, illegal )
      FATAL( initial, weight_bharm  < zero, illegal )
@@ -657,7 +681,8 @@ subroutine check_input
      FATAL( initial, weight_cssep  < zero, illegal )
      FATAL( initial, weight_curv   < zero, illegal )
      FATAL( initial, weight_tors   < zero, illegal )
-     FATAL( initial, weight_nis    < zero, illegal )
+     FATAL( initial, weight_nissin    < zero, illegal )
+     FATAL( initial, weight_sbnorm    < zero, illegal )
 
      if (weight_resbn > machprec) then
         write(ounit, '("Res. Bn : resbn_m = ", I2," , resbn_n = ", I2)') resbn_m, resbn_n
@@ -721,9 +746,10 @@ subroutine check_input
  !tmpw_specw = weight_specw
   tmpw_ccsep = weight_ccsep
   tmpw_curv  = weight_curv
+  tmpw_str   = weight_straight
  !tmpw_cssep = weight_cssep
   tmpw_tors  = weight_tors
-  tmpw_nis   = weight_nis
+  tmpw_nissin   = weight_nissin
 
   call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
 
@@ -735,6 +761,7 @@ end subroutine check_input
 
 SUBROUTINE write_focus_namelist
   use globals
+  use mgrid_mod
   use mpi
   implicit none
 
@@ -747,6 +774,7 @@ SUBROUTINE write_focus_namelist
      write(ounit, *) 'Writing an template input file in ', trim(example)
      open(wunit, file=trim(example), status='unknown', action='write')
      write(wunit, focusin)
+     write(wunit, mgrid)
      close(wunit)
   endif
 

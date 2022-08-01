@@ -15,7 +15,9 @@ module globals
   
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  CHARACTER(10), parameter :: version='v0.13.11' ! version number
+
+  CHARACTER(10), parameter :: version='v0.17.00' ! version number
+
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -77,15 +79,17 @@ module globals
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
 !latex \subsection{Input namelist: \type{focusin}}
-  INTEGER              :: IsQuiet        =  -1        
+  INTEGER              :: IsQuiet        =   0
+  INTEGER              :: lim_out        =   1
+  ! surface related      
   INTEGER              :: IsSymmetric    =   0 
-        
-  INTEGER              :: case_surface   =   0         
+  INTEGER              :: case_surface   =   0
+  INTEGER,parameter    :: plasma_surf_boozer =   5
   REAL                 :: knotsurf       =   0.200D-00
   REAL                 :: ellipticity    =   0.000D+00
   INTEGER              :: Nteta          =   64           
   INTEGER              :: Nzeta          =   64  
-
+  ! coil related
   INTEGER              :: case_init      =   0
   INTEGER              :: case_coils     =   1
   INTEGER              :: Ncoils         =   0
@@ -95,17 +99,16 @@ module globals
   INTEGER              :: IsVaryGeometry =   1         
   INTEGER              :: NFcoil         =   4         
   INTEGER              :: Nseg           =   128 
-              
+  ! normalizations            
   INTEGER              :: IsNormalize    =   1
   INTEGER              :: IsNormWeight   =   1
+  ! Normal field error
   INTEGER              :: case_bnormal   =   0
-  INTEGER              :: case_length    =   1
-  INTEGER              :: case_curv      =   4 
-  REAL                 :: curv_alpha     =   0.000D+00
-  REAL                 :: k0             =   1.000D+01
   REAL                 :: weight_bnorm   =   1.000D+00
-  INTEGER              :: bharm_jsurf    =   0
+  ! Bmn harmonics
   REAL                 :: weight_bharm   =   0.000D+00
+  INTEGER              :: bharm_jsurf    =   0
+  ! Resonant Bn
   REAL                 :: weight_resbn   =   0.000D+00
   REAL                 :: target_resbn   =   0.000D+00
   INTEGER              :: resbn_m        =   1
@@ -124,82 +127,113 @@ module globals
   REAL                 :: pfl_xtol       =   1.000D-08
   REAL                 :: rcflux_target  =   0.000D+00
   INTEGER              :: pfldim         =   1
+  ! toroidal flux
   REAL                 :: weight_tflux   =   0.000D+00
   REAL                 :: target_tflux   =   0.000D+00
+  ! coil length
   REAL                 :: weight_ttlen   =   0.000D+00
+  INTEGER              :: case_length    =   1
   REAL                 :: target_length  =   0.000D+00
   REAL                 :: length_delta   =   0.000D+00
-  REAL                 :: weight_cssep   =   0.000D+00
-  REAL                 :: cssep_factor   =   4.000D+00 
-  REAL                 :: weight_specw   =   0.000D+00
-  REAL                 :: weight_ccsep   =   0.000D+00
-  REAL                 :: weight_tors    =   0.000D+00
-  REAL                 :: weight_nis     =   0.000D+00
-  REAL                 :: r_delta        =   1.000D-01
-  REAL                 :: ccsep_alpha    =   1.000D+01
-  REAL                 :: weight_inorm   =   1.000D+00
-  REAL                 :: weight_gnorm   =   1.000D+00
-  REAL                 :: weight_mnorm   =   1.000D+00
+  ! coil curvature
   REAL                 :: weight_curv    =   0.000D+00
-  INTEGER              :: penfun_ccsep   =   1
-  REAL                 :: ccsep_beta     =   2.000D+00
-  INTEGER              :: ccsep_skip     =   0
+  INTEGER              :: case_curv      =   4 
   INTEGER              :: penfun_curv    =   1
-  REAL                 :: k1             =   0.000D+00
+  REAL                 :: curv_alpha     =   0.000D+00
   REAL                 :: curv_beta      =   2.000D+00
   REAL                 :: curv_gamma     =   2.000D+00
   REAL                 :: curv_sigma     =   0.000D+00
-  INTEGER              :: k1_len         =   0
+  REAL                 :: curv_k0        =   1.000D+01
+  REAL                 :: curv_k1        =   0.000D+00
+  INTEGER              :: curv_k1len     =   0
+  ! straight function
+  REAL                 :: weight_straight     =   0.000D+00
+  REAL                 :: coeff_disp_straight =   0.50D+00
+  INTEGER              :: case_straight       =   3 
+  INTEGER              :: penfun_str    =   1
+  REAL                 :: str_alpha     =   0.000D+00
+  REAL                 :: str_beta      =   2.000D+00
+  REAL                 :: str_gamma     =   2.000D+00
+  REAL                 :: str_sigma     =   0.000D+00
+  REAL                 :: str_k0        =   1.000D+01
+  REAL                 :: str_k1        =   0.000D+00
+  INTEGER              :: str_k1len     =   0
+  ! coil torsion
+  REAL                 :: weight_tors    =   0.000D+00
   INTEGER              :: case_tors      =   1
-  INTEGER              :: case_tau       =   1
   INTEGER              :: penfun_tors    =   1
+  REAL                 :: tors0          =   0.000D+00
   REAL                 :: tors_alpha     =   1.000D+00
   REAL                 :: tors_beta      =   2.000D+00
   REAL                 :: tors_gamma     =   1.000D+00
-  REAL                 :: tors0          =   0.000D+00
-  REAL                 :: nis_alpha      =   1.000D+00
-  REAL                 :: nis_beta       =   2.000D+00
-  REAL                 :: nis0           =   0.000D+00
-  REAL                 :: nis_gamma      =   2.000D+00
-  REAL                 :: nis_sigma      =   0.000D+00
-  INTEGER              :: penfun_nis     =   1
-  INTEGER              :: Npert          =   0
-  INTEGER              :: Nmax           =   3
-  REAL                 :: sdelta         =   1.000D-02
-  REAL                 :: weight_sbnorm  =   0.000D+00
-
+  ! coil nissin complexity
+  REAL                 :: weight_nissin  =   0.000D+00
+  INTEGER              :: penfun_nissin  =   1
+  REAL                 :: nissin0        =   0.000D+00
+  REAL                 :: nissin_alpha   =   1.000D+00
+  REAL                 :: nissin_beta    =   2.000D+00
+  REAL                 :: nissin_gamma   =   2.000D+00
+  REAL                 :: nissin_sigma   =   0.000D+00
+  ! coil-surface separation
+  REAL                 :: weight_cssep   =   0.000D+00
+  REAL                 :: cssep_factor   =   4.000D+00 
+  INTEGER              :: case_cssep     =   1
+  REAL                 :: mincssep       =   7.000D-01
+  REAL                 :: cssep_alpha    =   1.000D+00
+  REAL                 :: cssep_beta     =   2.000D+00
+  REAL                 :: cssep_gamma    =   2.000D+00
+  REAL                 :: cssep_sigma    =   0.000D+00
+  ! coil-coil separation
+  REAL                 :: weight_ccsep   =   0.000D+00
+  REAL                 :: weight_inorm   =   1.000D+00
+  REAL                 :: weight_gnorm   =   1.000D+00
+  REAL                 :: weight_mnorm   =   1.000D+00
+  REAL                 :: origin_surface_x =   0.000D+00
+  REAL                 :: origin_surface_y  =   0.000D+00
+  REAL                 :: origin_surface_z  =   0.000D+00
+  INTEGER              :: penfun_ccsep   =   1
+  INTEGER              :: ccsep_skip     =   0
+  REAL                 :: r_delta        =   1.000D-01
+  REAL                 :: ccsep_alpha    =   1.000D+01
+  REAL                 :: ccsep_beta     =   2.000D+00
+  REAL                 :: weight_specw   =   0.000D+00
+  ! bnrom stochastic
+  REAL                 :: weight_sbnorm  =   0.000D+00   ! Stochastic bnormal weight
+  INTEGER              :: Npert          =   0           ! Number of coil perturbations
+  INTEGER              :: Nmax           =   3           ! Max frequency of perturbations
+  REAL                 :: sdelta         =   1.000D-02   ! Perturbation magnitude
+  ! optimize controls
   INTEGER              :: case_optimize  =   0
+  REAL                 :: fdiff_delta    =   1.000D-04
   REAL                 :: exit_tol       =   1.000D-04
-  REAL                 :: psmall         =   1.000D-04
   INTEGER              :: output_use     =   1
-
+  ! differential flow
   INTEGER              :: DF_maxiter     =   0
   REAL                 :: DF_xtol        =   1.000D-08     
   REAL                 :: DF_tausta      =   0.000D+00
   REAL                 :: DF_tauend      =   1.000D+00               
- 
+  ! conjugate gradient
   INTEGER              :: CG_maxiter     =   0
   REAL                 :: CG_xtol        =   1.000D-08
   REAL                 :: CG_wolfe_c1    =   0.1
   REAL                 :: CG_wolfe_c2    =   0.9
-
   INTEGER              :: CG_maxiter_s   =   10
   REAL                 :: CG_xtol_s      =   1.000D-08
-
+  ! levenberg-marquardt
   INTEGER              :: LM_maxiter     =   0
   REAL                 :: LM_xtol        =   1.000D-08
   REAL                 :: LM_ftol        =   1.000D-08
   REAL                 :: LM_factor      =   1.000D+02
-
+  ! not used
   INTEGER              :: HN_maxiter     =   0
   REAL                 :: HN_xtol        =   1.000D-08
   REAL                 :: HN_factor      =   100.0
-
+  ! not used
   INTEGER              :: TN_maxiter     =   0
   REAL                 :: TN_xtol        =   1.000D-08
   INTEGER              :: TN_reorder     =   0
   REAL                 :: TN_cr          =   0.1
-
+  ! post-processing
   INTEGER              :: case_postproc  =   1
   INTEGER              :: save_freq      =   1
   INTEGER              :: save_coils     =   0 
@@ -207,7 +241,10 @@ module globals
   INTEGER              :: save_filaments =   0
   INTEGER              :: update_plasma  =   0   
   INTEGER              :: save_stable    =   0 
-
+  INTEGER              :: filforce       =   0   ! Calculate filament body forces
+  INTEGER              :: calcfb         =   0   ! Calculate coil finite-build
+  INTEGER              :: Nalpha         =   100 ! Finite-build resolution
+  ! poincare plots
   REAL                 :: pp_phi         =  0.000D+00
   REAL                 :: pp_raxis       =  0.000D+00       
   REAL                 :: pp_zaxis       =  0.000D+00
@@ -225,141 +262,164 @@ module globals
   CHARACTER(100)   :: input_harm     = 'target.harmonics' ! input target harmonics file
   CHARACTER(100)   :: limiter_surf   = 'none'             ! limiter surface
                                                          
-  namelist / focusin /  IsQuiet        , &
-                        IsSymmetric    , &
-                        input_surf     , &
-                        limiter_surf   , &
-                        input_harm     , &
-                        input_coils    , &
-                        input_stable   , & 
-                        case_surface   , &
-                        knotsurf       , &
-                        ellipticity    , & 
-                        Nteta          , &
-                        Nzeta          , & 
-                        case_init      , &
-                        case_coils     , &  
-                        Ncoils         , &
-                        init_current   , & 
-                        init_radius    , & 
-                        IsVaryCurrent  , & 
-                        IsVaryGeometry , & 
-                        NFcoil         , &
-                        Nseg           , &
-                        IsNormalize    , &
-                        IsNormWeight   , &
-                        case_bnormal   , &
-                        case_length    , &
-                        case_curv      , &
-                        curv_alpha     , &
-                        k0             , &
-                        weight_bnorm   , &
-                        bharm_jsurf    , &
-                        weight_bharm   , &
-                        weight_resbn   , &
-                        target_resbn   , &
-                        resbn_m        , &
-                        resbn_n        , &
-                        ghost_use      , &
-                        ghost_call     , &
-                        ghost_once     , &
-                        ghost_failreturn, &
-                        rcflux_use     , &
-                        period_Nseg    , &
-                        pfl_mult       , &
-                        orpfl          , &
-                        ozpfl          , &
-                        xrpfl          , &
-                        xzpfl          , &
-                        pfl_xtol       , &
-                        rcflux_target  , &
-                        pfldim         , &
-                        weight_tflux   , &
-                        target_tflux   , &
-                        weight_ttlen   , &
-                        target_length  , &
-                        length_delta   , &
-                        weight_cssep   , &
-                        cssep_factor   , &
-                        weight_specw   , &
-                        weight_ccsep   , &
-                        weight_tors    , &
-                        weight_nis     , &
-                        r_delta        , &
-                        ccsep_alpha    , &
-                        penfun_curv    , &
-                        k1             , &
-                        curv_beta      , &
-                        curv_gamma     , &
-                        curv_sigma     , &
-                        k1_len         , &
-                        case_tors      , &
-                        case_tau       , &
-                        penfun_tors    , &
-                        tors_alpha     , &
-                        tors_beta      , &
-                        tors_gamma     , &
-                        tors0          , &
-                        nis_alpha      , &
-                        nis_beta       , &
-                        nis0           , &
-                        nis_gamma      , &
-                        nis_sigma      , &
-                        penfun_nis     , &
-                        Npert          , &
-                        Nmax           , &
-                        sdelta         , &
-                        weight_sbnorm  , &
-                        weight_inorm   , &
-                        weight_gnorm   , &
-                        weight_mnorm   , &
-                        weight_curv    , &
-                        penfun_ccsep   , &
-                        ccsep_beta     , &
-                        ccsep_skip     , &
-                        case_optimize  , &
-                        exit_tol       , &
-                        psmall         , &
-                        output_use     , &
-                        DF_maxiter     , & 
-                        DF_xtol        , & 
-                        DF_tausta      , &  
-                        DF_tauend      , &       
-                        CG_maxiter     , & 
-                        CG_xtol        , & 
-                        CG_wolfe_c1    , &
-                        CG_wolfe_c2    , &
-                        CG_maxiter_s   , &
-                        CG_xtol_s      , &
-                        LM_maxiter     , &
-                        LM_xtol        , &
-                        LM_ftol        , & 
-                        LM_factor      , & 
-                        HN_maxiter     , &  
-                        HN_xtol        , & 
-                        HN_factor      , & 
-                        TN_maxiter     , &
-                        TN_reorder     , &
-                        TN_xtol        , &
-                        TN_cr          , &  
-                        case_postproc  , & 
-                        save_freq      , & 
-                        save_coils     , &
-                        save_harmonics , &
-                        save_filaments , &
-                        update_plasma  , &
-                        save_stable    , &
-                        pp_phi         , &
-                        pp_raxis       , &
-                        pp_zaxis       , &
-                        pp_rmax        , &
-                        pp_zmax        , &
-                        pp_ns          , &
-                        pp_maxiter     , &
-                        pp_nsteps      , &
-                        pp_nfp         , &
-                        pp_xtol        
-
+  namelist / focusin / &
+  IsQuiet       ,&
+  lim_out       ,&
+  IsSymmetric   ,&
+  lim_out       ,&
+  case_surface  ,&
+  input_surf    ,&
+  knotsurf      ,&
+  ellipticity   ,&
+  Nteta         ,&
+  Nzeta         ,&
+  case_init     ,&
+  case_coils    ,&
+  input_coils   ,&
+  Ncoils        ,&
+  init_current  ,&
+  init_radius   ,&
+  IsVaryCurrent ,&
+  IsVaryGeometry,&
+  NFcoil        ,&
+  Nseg          ,&
+  IsNormalize   ,&
+  IsNormWeight  ,&
+  weight_inorm  ,&
+  weight_gnorm  ,&
+  weight_mnorm  ,&
+  weight_bnorm  ,&
+  case_bnormal  ,&
+  weight_resbn  ,&
+  target_resbn  ,&
+  resbn_m       ,&
+  resbn_n       ,&
+  ghost_use     ,&
+  ghost_call    ,&
+  ghost_once    ,&
+  ghost_failreturn,&
+  rcflux_use    ,&
+  period_Nseg   ,&
+  pfl_mult      ,&
+  orpfl         ,&
+  ozpfl         ,&
+  xrpfl         ,&
+  xzpfl         ,&
+  pfl_xtol      ,&
+  rcflux_target ,&
+  pfldim        ,&
+  weight_bharm  ,&
+  bharm_jsurf   ,&
+  input_harm    ,&
+  weight_tflux  ,&
+  target_tflux  ,&
+  weight_ttlen  ,&
+  case_length   ,&
+  target_length ,&
+  length_delta  ,&
+  weight_curv   ,&
+  case_curv     ,&
+  penfun_curv   ,&
+  curv_alpha    ,&
+  curv_beta     ,&
+  curv_gamma    ,&
+  curv_sigma    ,&
+  curv_k0       ,&
+  curv_k1       ,&
+  curv_k1len    ,&
+  weight_straight, &
+  coeff_disp_straight,&
+  case_straight  , &
+  penfun_str     ,&
+  str_alpha    ,&
+  str_beta     ,&
+  str_gamma    ,&
+  str_sigma    ,&
+  str_k0       ,&
+  str_k1       ,&
+  str_k1len    ,&
+  origin_surface_x,&
+  origin_surface_y,&
+  origin_surface_z,&
+  weight_tors   ,&
+  case_tors     ,&
+  penfun_tors   ,&
+  tors0         ,&
+  tors_alpha    ,&
+  tors_beta     ,&
+  tors_gamma    ,&
+  weight_nissin ,&
+  penfun_nissin ,&
+  nissin0       ,&
+  nissin_alpha  ,&
+  nissin_beta   ,&
+  nissin_gamma  ,&
+  nissin_sigma  ,&
+  weight_cssep  ,&
+  cssep_factor  ,&
+  limiter_surf  ,&
+  case_cssep    ,&
+  mincssep      ,&
+  cssep_alpha   ,&
+  cssep_beta    ,&
+  cssep_gamma   ,&
+  cssep_sigma   ,&
+  weight_ccsep  ,&
+  penfun_ccsep  ,&
+  ccsep_skip    ,&
+  r_delta       ,&
+  ccsep_alpha   ,&
+  ccsep_beta    ,&
+  weight_specw  ,&
+  weight_sbnorm ,&
+  Npert         ,&
+  Nmax          ,&
+  sdelta        ,&
+  case_optimize ,&
+  fdiff_delta   ,&
+  exit_tol      ,&
+  DF_maxiter    ,&
+  DF_xtol       ,&
+  DF_tausta     ,&
+  DF_tauend     ,&
+  CG_maxiter    ,&
+  CG_xtol       ,&
+  CG_wolfe_c1   ,&
+  CG_wolfe_c2   ,&
+  CG_maxiter_s  ,&
+  CG_xtol_s     ,&
+  output_use    ,&
+  LM_maxiter    ,&
+  LM_xtol       ,&
+  LM_ftol       ,&
+  LM_factor     ,&
+  HN_maxiter    ,&
+  HN_xtol       ,&
+  HN_factor     ,&
+  TN_maxiter    ,&
+  TN_xtol       ,&
+  TN_reorder    ,&
+  TN_cr         ,&
+  case_postproc ,&
+  save_freq     ,&
+  save_coils    ,&
+  save_harmonics,&
+  save_filaments,&
+  save_stable   ,&
+  update_plasma ,&
+  filforce      ,&
+  calcfb        ,&
+  Nalpha        ,&
+  pp_phi        ,&
+  pp_raxis      ,&
+  pp_zaxis      ,&
+  pp_rmax       ,&
+  pp_zmax       ,&
+  pp_ns         ,&
+  pp_maxiter    ,&
+  pp_nsteps     ,&
+  pp_nfp        ,&
+  pp_xtol                            
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
@@ -388,8 +448,9 @@ module globals
      REAL                 :: I=zero,  L=zero, Lo, maxcurv, ox, oy, oz, mt, mp, Bt, Bz, avgcurv, &
                                    minlambda, maxs
      REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), &
-                             xb(:), yb(:), zb(:), dl(:), dd(:), psx(:), psy(:), psz(:), &
-                             dpsidx(:), dpsidy(:), dpsidz(:)
+                             xb(:), yb(:), zb(:), dl(:), dd(:), dpsidx(:), dpsidy(:), dpsidz(:), &
+                             psx(:), psy(:), psz(:), Bxx(:), Byy(:), Bzz(:), Fx(:), Fy(:), Fz(:), &
+                             nfbx(:), nfby(:), nfbz(:), bfbx(:), bfby(:), bfbz(:), curvature(:), straight(:)
      INTEGER, allocatable :: nxx(:), nyy(:), nzz(:)
      character(10)        :: name
   end type arbitrarycoil
@@ -398,6 +459,14 @@ module globals
      INTEGER              :: NF
      REAL   , allocatable :: xc(:), xs(:), yc(:), ys(:), zc(:), zs(:), cmt(:,:), smt(:,:)
   end type FourierCoil
+
+  type SplineCoil
+     INTEGER              :: NCP,NT,lwrk,ier
+     INTEGER,allocatable  :: iwrk(:)
+     REAL                 :: FP
+     REAL   , allocatable :: vect (:),basis_0(:,:),basis_1(:,:),basis_2(:,:),basis_3(:,:),Cpoints_fit(:),eval_points(:),wrk(:),weights(:), &
+                              Data_points(:),Cpoints(:),db_dt(:,:),db_dt_2(:,:)
+  end type SplineCoil
 
   type DegreeOfFreedom
      INTEGER              :: ND
@@ -424,6 +493,7 @@ module globals
   type(FourierCoil)    , target, allocatable :: FouCoil(:)
   type(DegreeOfFreedom), target, allocatable :: DoF(:)
   type(ghostsurface)   , target, allocatable :: gsurf(:)
+  type(SplineCoil)     ,         allocatable :: Splines(:)
 
   INTEGER              :: Nfp = 1, symmetry = 0, surf_Nfp = 1
 !  INTEGER              :: symmetry = 0, surf_Nfp = 1
@@ -442,8 +512,8 @@ module globals
 !latex \subsection{Optimization}
   ! General target functions;
   INTEGER              :: iout, Nouts, LM_iter, LM_mfvec
-  INTEGER              :: ibnorm = 0, ibharm = 0, itflux = 0, ittlen = 0, icssep = 0, icurv = 0, iccsep = 0, itors = 0, inis = 0 ! starting number
-  INTEGER              :: mbnorm = 0, mbharm = 0, mtflux = 0, mttlen = 0, mcssep = 0, mcurv = 0, mccsep = 0, mtors = 0, mnis = 0 ! numbers of targets
+  INTEGER              :: ibnorm = 0, ibharm = 0, itflux = 0, ittlen = 0, icssep = 0, icurv = 0, istr=0,  iccsep = 0, itors = 0, inissin = 0 ! starting number
+  INTEGER              :: mbnorm = 0, mbharm = 0, mtflux = 0, mttlen = 0, mcssep = 0, mcurv = 0, mstr=0,  mccsep = 0, mtors = 0, mnissin = 0 ! numbers of targets
   REAL                 :: chi, discretefactor, sumDE
   REAL   , allocatable :: t1E(:), t2E(:,:), evolution(:,:), coilspace(:,:), deriv(:,:)
   REAL   , allocatable :: LM_fvec(:), LM_fjac(:,:)
@@ -473,9 +543,11 @@ module globals
   ! Average Torsion 
   REAL                 :: tors
   REAL   , allocatable :: t1T(:), t2T(:,:)
-  ! Nissin complexity
-  REAL                 :: nis
+  ! nissin complexity
+  REAL                 :: nissin
   REAL   , allocatable :: t1N(:), t2N(:,:)
+  REAL                 :: str
+  REAL   , allocatable :: t1Str(:), t2Str(:,:)
   ! Coil-surface spearation
   INTEGER              :: psurf = 1 ! the prevent surface label; default 1 is the plasma boundary
   REAL                 :: cssep
@@ -488,7 +560,7 @@ module globals
   REAL   , allocatable :: t1P(:), t2P(:,:)
   ! Stochastic bnorm
   REAL                 :: bnormavg, bnormmax
-  !REAL   , allocatable :: t1Bavg(:)
+  REAL   , allocatable :: t1Bavg(:)
   ! Stochastic rcflux
   REAL                 :: resbnavg, abspsimax
   REAL, allocatable    :: stochpsi(:), stochpsipred(:)
@@ -507,7 +579,7 @@ module globals
                         !coilsI stores the true currents, coil%I stores scaled current;?
   INTEGER, allocatable :: coilseg(:)
   character(LEN=20), allocatable :: coilname(:)
-
+  INTEGER,parameter    :: coil_type_spline = 5
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 !latex \subsection{Time counting}
@@ -517,7 +589,7 @@ module globals
 
 !latex \subsection{Miscellaneous}
   REAL                 :: tmpw_bnorm, tmpw_tflux ,tmpt_tflux, tmpw_ttlen, tmpw_specw, tmpw_ccsep, tmpw_bharm, & 
-                          tmpw_curv, tmpw_tors, tmpw_nis
+                          tmpw_curv, tmpw_tors, tmpw_nissin, tmpw_str
   REAL                 :: overlap = 0.0
                           !tmp weight for saving to restart file
   REAL, allocatable    :: mincc(:,:), coil_importance(:)
@@ -535,3 +607,40 @@ module globals
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 end module globals
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+module bnorm_mod
+  ! contains some common variables used in subroutine bnormal
+  ! allocating once and re-using them will save allocation time
+  use globals, only : dp
+  implicit none
+
+  ! 0-order
+  REAL, allocatable :: dBx(:,:), dBy(:,:), dBz(:,:), Bm(:,:)
+  ! 1st-order
+  REAL, allocatable :: dBn(:), dBm(:), d1B(:,:,:)
+
+end module bnorm_mod
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+module bharm_mod
+  ! contains some common variables used in subroutine bnormal
+  ! allocating once and re-using them will save allocation time
+  use globals, only : dp
+  implicit none
+
+  ! 0-order
+  ! none for now; in future, others should be moved to here. 03/30/2019
+  ! 1st-order
+  REAL, allocatable :: dBc(:), dBs(:)
+
+end module bharm_mod
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+module mgrid_mod
+  use globals, only : dp, zero, pi2
+  INTEGER :: NR = 101, NZ=101, NP=72, MFP=0
+  REAL    :: Rmin=zero, Rmax=zero, Zmin=zero, Zmax=zero, Pmin=zero, Pmax=pi2
+  namelist / mgrid / Rmin, Rmax, Zmin, Zmax, Pmin, Pmax, NR, NZ, NP
+end module mgrid_mod

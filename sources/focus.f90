@@ -37,7 +37,7 @@ PROGRAM focus
 
   use globals, only: dp, ncpu, myid, ounit, ierr, astat, eunit, case_surface, case_coils, case_optimize, &
        case_postproc, xdof, time_initialize, time_optimize, time_postproc, &
-       version, sqrtmachprec, ghost_use, weight_resbn, MPI_COMM_FOCUS
+       version, sqrtmachprec, ghost_use, weight_resbn, plasma_surf_boozer, MPI_COMM_FOCUS
   use mpi  !to enable gfortran mpi_wtime bugs; 07/20/2017
   implicit none
 
@@ -57,7 +57,7 @@ PROGRAM focus
   
   select case( case_surface )
 
-  case( 0 ) ; call surface   ! general format (VMEC-like) plasma boundary;
+  case( 0,plasma_surf_boozer ) ; call surface   ! general format (VMEC-like) plasma boundary;
   case( 1 ) ; call rdknot    ! knototran-like plasma boundary;
   case( 2 ) ; call rdbooz    ! surface in Boozer coordinates
  !case( 2 ) ; call readwout  ! read vmec output for plasma boundary and Boozer coordinates; for future;
@@ -122,6 +122,8 @@ PROGRAM focus
  !case( 4 ) ; call saving  ; call diagnos ; call resonant ! resonant harmonics analysis; for future; 
 
   end select
+
+  call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
 
   call saving ! save all the outputs
 

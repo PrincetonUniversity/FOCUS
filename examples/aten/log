@@ -1,123 +1,145 @@
- ---------------------  FOCUS v0.13.11  ------------------------------
-focus   : Begin execution with ncpu =  160
+ ---------------------  FOCUS v0.14.06  ------------------------------
+focus   : Begin execution with ncpu =   32
 initial : machine_prec   =  2.22045E-16 ; sqrtmachprec   =  1.49012E-08
  -----------INPUT NAMELIST------------------------------------
-initial : Read namelist focusin from : wista.input
+initial : Read namelist focusin from : aten.input
         : Read plasma boundary  from : plasma.boundary
-        : Read initial coils    from : wista.focus(Parameters only)
-        :         IsQuiet =     -1 ; Output detailed information.
-        :     IsSymmetric =      2 ; Periodicity and stellarator symmetry are both enforced.
-        :    case_surface =      0 ; Read VMEC-like Fourier harmonics for plasma boundary.
-        :      case_coils =      1 ; Using Fourier series as the basic representation.
-        :   case_optimize =      1 ; Gradient-based optimizations will be performed.
+        : Read initial coils    from : aten.focus(Parameters only)
+        :         IsQuiet =  0 ; Output essential information.
+        :     IsSymmetric =  2 ; Periodicity and stellarator symmetry are both enforced.
+        :    case_surface =  0 ; Read VMEC-like Fourier harmonics for plasma boundary.
+        :   case_optimize =  1 ; Gradient-based optimizations will be performed.
                           : Nonlinear Conjugate Gradient method will be used, maxiter=    50
-                          : CG_wolfe_c1 =  1.00000E-04 ; CG_wolfe_c2 =  9.00000E-01 ; CG_xtol =  1.00000E-10
-        :     IsNormalize =      0 ; No normalization on coil parameters.
-        :    IsNormWeight =      0 ; No normalization on weights for constraints.
-        :    case_bnormal =      1 ; Bn normalized to |B|.
-        :     bharm_jsurf =      1 ; No normalization on Bn harmonics.
-        :     case_length =      3 ; Modified quadratic length penalty.
-        :      penfun_nis =      2 ; Polynomial penalty function.
-        :   case_postproc =      1 ; Coil evaluations will be performed.
-outputs : HDF5 outputs           are saved in : focus_wista.h5
-outputs : Optimizated coils      are saved in : wista.focus ; wista.coils
+        :     IsNormalize =  0 ; No normalization on coil parameters.
+        :    IsNormWeight =  0 ; No normalization on weights for constraints.
+        :    case_bnormal =  1 ; Bn normalized to |B|.
+        :     bharm_jsurf =  1 ; No normalization on Bn harmonics.
+        :     case_length =  3 ; Modified quadratic length penalty.
+        :   penfun_nissin =  2 ; Polynomial penalty function.
+        :   case_postproc =  1 ; Coil evaluations will be performed.
+outputs : HDF5 outputs           are saved in : focus_aten.h5
+outputs : Optimizated coils      are saved in : aten.focus ; aten.coils
  -----------Reading surface-----------------------------------
-surface : The surface plasma.boundary will be discretized in    128 X    256 elements.
+surface : The surface plasma.boundary will be discretized in    128 X    128 elements.
         : Nfou =     18 ; Nfp =      4 ; NBnf =      0 ;
         : Enclosed total surface volume = 3.55940E+00 m^3 ; area = 3.26876E+01 m^2.
         : The theta angle used is counter-clockwise.
  -----------INITIALIZE COILS----------------------------------
-rdcoils : identified      6 unique coils in wista.focus
+rdcoils : identified      6 unique coils in aten.focus ;
         :   6 fixed currents ;   0 fixed geometries.
-        : coils will be discretized in    384 segments
-focus   : Initialization took  1.13727E-01 S.
+focus   : Initialization took  1.64676E-02 S.
  -----------OPTIMIZATIONS-------------------------------------
 solvers : Total number of DOF is   1170
-        : Initial weights are:        bnorm,       bharm,       tflux,       ttlen,       cssep,        curv,       ccsep,        tors,         nis,
-        :                       1.00000E+03, 0.00000E+00, 0.00000E+00, 1.00000E+00, 0.00000E+00, 1.00000E+00, 1.00000E+00, 0.00000E+00, 1.00000E+00,
-        : target_tflux =  0.00000E+00 ; target_length =  2.40000E+00 ; k0 =  1.00000E+01 ; r_delta =  1.00000E-01  ; cssep_factor =  4.00000E+00
- -----------COIL DIAGNOSTICS----------------------------------
-diagnos :      Bnormal ; Bmn harmonic ;    tor. flux ;  coil length ;     c-s sep. ;    curvature ;     c-c sep. ;      torsion ;       nissin ; 
-        :  1.49925E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  2.74074E-02 ;  2.07687E+04 ;  0.00000E+00 ;  5.52325E-04 ; 
+        : Initial weights are:
+        : weight_bnorm =  1.00000E+00; case_bnormal = 1
+        : weight_ttlen    =  1.00000E+00; case_length  = 3
+        :   target_length =  2.40000E+00; length_delta =  1.00000E-01
+        : weight_curv  =  1.00000E+00;  case_curv = 4; penfun_curv = 1
+        :   curv_alpha =  3.00000E-02; curv_beta  =  2.00000E+00
+        :   curv_gamma =  1.00000E+00; curv_sigma =  0.00000E+00
+        :   curv_k0    =  1.00000E+01; curv_k1    =  0.00000E+00; curv_k1len = 0
+        : weight_nissin  =  1.00000E+00;  penfun_nissin = 2; nissin0 =  0.00000E+00
+        :   nissin_alpha =  1.00000E-06; nissin_beta    =  2.00000E+00
+        :   nissin_gamma =  2.00000E+00; nissin_sigma   =  0.00000E+00
+        : weight_ccsep  =  1.00000E+00; penfun_ccsep = 1ccsep_skip = 1
+        :   ccsep_alpha =  1.50000E+02; ccsep_beta   =  2.00000E+00; r_delta =  1.00000E-01
+ ------------- Initial status ------------------------
+diagnos : Individual cost function values:
+        :              Bnormal =  1.49924939E-06
+        :       B_mn harmonics =  0.00000000E+00
+        :        Toroidal flux =  0.00000000E+00
+        :          Coil length =  0.00000000E+00
+        :       Coil curvature =  1.59971968E-10
+        :         Coil torsion =  0.00000000E+00
+        :    Nissin complexity =  1.64614368E-09
+        : Coil-coil separation =  5.64199862E-05
+        : Coil-surf separation =  0.00000000E+00
         : Average length of the coils is         :  5.412609128491643E+00
         : Maximum curvature of all the coils is  :  1.069926194856268E+01 ; at coil   5
-        : Average curvature of the coils is      :  3.060004471358976E+00
-        : Average torsion of the coils is        :  6.515470822212554E+00
-        : Maximum c of the coils is              :  7.012121153807732E+01
-        : The minimum coil-coil distance is      :  8.437023880951233E-02 ; at coils  6 ,  6
-        : The minimum coil-plasma distance is    :  1.881840786272969E-01 ; at coil   6
-        : Ave. relative absolute Bn error |Bn|/B :  6.41806E-04; max(|Bn|)= 1.00127E-02
-        : Surface area normalized Bn error int(|Bn|/B*ds)/A :   5.118454472459201E-04
- ------------- Initial status ------------------------
-output  :   iout :         mark ;          chi ;      dE_norm ;      Bnormal ; Bmn harmonic ;    tor. flux ;  coil length ;     c-s sep. ;    curvature ;     c-c sep. ;      torsion ;       nissin ; 
-output  :      1 :  0.00000E+00 ;  2.07687E+04 ;  3.74654E+08 ;  1.49925E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  2.74074E-02 ;  2.07687E+04 ;  0.00000E+00 ;  5.52325E-04 ; 
- ------------- Nonlinear Conjugate Gradient (CG) -----
-output  :      2 :  9.82235E+01 ;  7.64269E+03 ;  1.37835E+08 ;  1.48569E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  2.75656E-02 ;  7.64265E+03 ;  0.00000E+00 ;  1.56030E-02 ; 
-output  :      3 :  1.05054E+02 ;  2.67660E+03 ;  4.82559E+07 ;  1.47167E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  2.79493E-02 ;  2.67649E+03 ;  0.00000E+00 ;  8.49358E-02 ; 
-output  :      4 :  1.11961E+02 ;  9.61352E+02 ;  1.73206E+07 ;  1.45817E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  2.86763E-02 ;  9.61105E+02 ;  0.00000E+00 ;  2.16807E-01 ; 
-output  :      5 :  1.18869E+02 ;  3.45870E+02 ;  6.21170E+06 ;  1.44488E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  2.99704E-02 ;  3.45266E+02 ;  0.00000E+00 ;  5.72776E-01 ; 
-output  :      6 :  1.26326E+02 ;  1.25802E+02 ;  2.22193E+06 ;  1.43182E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  3.21720E-02 ;  1.24371E+02 ;  0.00000E+00 ;  1.39739E+00 ; 
-output  :      7 :  1.33321E+02 ;  4.79448E+01 ;  7.90136E+05 ;  1.41906E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  3.57862E-02 ;  4.52251E+01 ;  0.00000E+00 ;  2.68256E+00 ; 
-output  :      8 :  1.40150E+02 ;  2.11175E+01 ;  2.85690E+05 ;  1.40675E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  4.14256E-02 ;  1.68935E+01 ;  0.00000E+00 ;  4.18116E+00 ; 
-output  :      9 :  1.47000E+02 ;  1.16481E+01 ;  1.28559E+05 ;  1.39468E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  4.96780E-02 ;  6.49264E+00 ;  0.00000E+00 ;  5.10436E+00 ; 
-output  :     10 :  1.53800E+02 ;  6.53546E+00 ;  7.32934E+04 ;  1.38080E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  6.14626E-02 ;  2.29183E+00 ;  0.00000E+00 ;  4.18079E+00 ; 
-output  :     11 :  1.61596E+02 ;  3.49862E+00 ;  7.89756E+04 ;  1.36793E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  6.17414E-02 ;  1.02222E+00 ;  0.00000E+00 ;  2.41329E+00 ; 
-output  :     12 :  1.68417E+02 ;  1.59784E+00 ;  3.20506E+04 ;  1.36301E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  5.23127E-02 ;  7.72116E-01 ;  0.00000E+00 ;  7.72053E-01 ; 
-output  :     13 :  1.75316E+02 ;  8.92128E-01 ;  2.04359E+04 ;  1.35832E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  4.42330E-02 ;  6.07766E-01 ;  0.00000E+00 ;  2.38771E-01 ; 
-output  :     14 :  1.82217E+02 ;  7.38649E-01 ;  1.39179E+04 ;  1.35625E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  4.25181E-02 ;  5.45705E-01 ;  0.00000E+00 ;  1.49070E-01 ; 
-output  :     15 :  1.90032E+02 ;  5.99991E-01 ;  1.58636E+04 ;  1.35204E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  4.30774E-02 ;  4.28405E-01 ;  0.00000E+00 ;  1.27156E-01 ; 
-output  :     16 :  1.96878E+02 ;  4.34641E-01 ;  7.40524E+03 ;  1.34836E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  4.93507E-02 ;  3.21568E-01 ;  0.00000E+00 ;  6.23738E-02 ; 
-output  :     17 :  2.03819E+02 ;  3.04406E-01 ;  4.19360E+03 ;  1.34161E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  6.46648E-02 ;  1.79317E-01 ;  0.00000E+00 ;  5.90819E-02 ; 
-output  :     18 :  2.10744E+02 ;  2.31580E-01 ;  5.57099E+03 ;  1.33392E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  7.32651E-02 ;  9.26969E-02 ;  0.00000E+00 ;  6.42840E-02 ; 
-output  :     19 :  2.18055E+02 ;  1.66668E-01 ;  2.91066E+03 ;  1.32889E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  6.68164E-02 ;  6.13777E-02 ;  0.00000E+00 ;  3.71453E-02 ; 
-output  :     20 :  2.24997E+02 ;  1.26551E-01 ;  5.60115E+03 ;  1.32204E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  5.34128E-02 ;  3.14289E-02 ;  0.00000E+00 ;  4.03871E-02 ; 
-output  :     21 :  2.31935E+02 ;  9.56110E-02 ;  2.36164E+03 ;  1.31860E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  4.82854E-02 ;  2.12756E-02 ;  0.00000E+00 ;  2.47314E-02 ; 
-output  :     22 :  2.45571E+02 ;  9.04846E-02 ;  2.12753E+03 ;  1.31798E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  4.73720E-02 ;  1.97035E-02 ;  0.00000E+00 ;  2.20911E-02 ; 
-output  :     23 :  2.59964E+02 ;  8.62281E-02 ;  1.82132E+03 ;  1.31758E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  4.67380E-02 ;  1.87146E-02 ;  0.00000E+00 ;  1.94579E-02 ; 
-output  :     24 :  2.66779E+02 ;  8.44160E-02 ;  5.40316E+03 ;  1.31660E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  4.50595E-02 ;  1.64051E-02 ;  0.00000E+00 ;  2.16347E-02 ; 
-output  :     25 :  2.73618E+02 ;  7.61919E-02 ;  1.26759E+03 ;  1.31663E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  4.57845E-02 ;  1.64815E-02 ;  0.00000E+00 ;  1.26093E-02 ; 
-output  :     26 :  2.80516E+02 ;  7.49129E-02 ;  1.10978E+03 ;  1.31665E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  4.60178E-02 ;  1.64752E-02 ;  0.00000E+00 ;  1.11032E-02 ; 
-output  :     27 :  2.87349E+02 ;  6.97748E-02 ;  1.07180E+03 ;  1.31683E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  4.61745E-02 ;  1.61495E-02 ;  0.00000E+00 ;  6.13385E-03 ; 
-output  :     28 :  2.94290E+02 ;  6.44415E-02 ;  9.55605E+02 ;  1.31689E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  4.55119E-02 ;  1.51511E-02 ;  0.00000E+00 ;  2.46155E-03 ; 
-output  :     29 :  3.01206E+02 ;  6.24419E-02 ;  1.05794E+03 ;  1.31688E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  4.45431E-02 ;  1.45670E-02 ;  0.00000E+00 ;  2.01496E-03 ; 
-output  :     30 :  3.15774E+02 ;  6.18034E-02 ;  1.07277E+03 ;  1.31687E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  4.41545E-02 ;  1.43512E-02 ;  0.00000E+00 ;  1.98085E-03 ; 
-output  :     31 :  3.31352E+02 ;  6.13852E-02 ;  8.47609E+02 ;  1.31686E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  4.38788E-02 ;  1.42010E-02 ;  0.00000E+00 ;  1.98853E-03 ; 
-output  :     32 :  3.39122E+02 ;  6.11824E-02 ;  8.60199E+02 ;  1.31685E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  4.36594E-02 ;  1.40908E-02 ;  0.00000E+00 ;  2.11535E-03 ; 
-output  :     33 :  3.46456E+02 ;  6.05516E-02 ;  1.15240E+03 ;  1.31679E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  4.30843E-02 ;  1.37969E-02 ;  0.00000E+00 ;  2.35351E-03 ; 
-output  :     34 :  3.60242E+02 ;  5.88928E-02 ;  1.08696E+03 ;  1.31669E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  4.22687E-02 ;  1.33332E-02 ;  0.00000E+00 ;  1.97414E-03 ; 
-output  :     35 :  3.67232E+02 ;  5.65401E-02 ;  1.59295E+03 ;  1.31648E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  4.07438E-02 ;  1.24154E-02 ;  0.00000E+00 ;  2.06448E-03 ; 
-output  :     36 :  3.94436E+02 ;  5.51094E-02 ;  1.45471E+03 ;  1.31638E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  4.00738E-02 ;  1.20375E-02 ;  0.00000E+00 ;  1.68177E-03 ; 
-output  :     37 :  4.08072E+02 ;  5.37506E-02 ;  9.51535E+02 ;  1.31630E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  3.95687E-02 ;  1.17664E-02 ;  0.00000E+00 ;  1.09923E-03 ; 
-output  :     38 :  4.22582E+02 ;  5.31594E-02 ;  7.16100E+02 ;  1.31626E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  3.92986E-02 ;  1.16252E-02 ;  0.00000E+00 ;  9.19422E-04 ; 
-output  :     39 :  4.29547E+02 ;  5.28957E-02 ;  1.36643E+03 ;  1.31622E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  3.90151E-02 ;  1.14763E-02 ;  0.00000E+00 ;  1.08815E-03 ; 
-output  :     40 :  4.36402E+02 ;  5.25219E-02 ;  6.78500E+02 ;  1.31618E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  3.87132E-02 ;  1.13093E-02 ;  0.00000E+00 ;  1.18318E-03 ; 
-output  :     41 :  4.43353E+02 ;  5.23191E-02 ;  1.17471E+03 ;  1.31602E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  3.77703E-02 ;  1.07505E-02 ;  0.00000E+00 ;  2.48238E-03 ; 
-output  :     42 :  4.50174E+02 ;  5.11894E-02 ;  4.19295E+02 ;  1.31605E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  3.78510E-02 ;  1.07494E-02 ;  0.00000E+00 ;  1.27296E-03 ; 
-output  :     43 :  4.57100E+02 ;  5.07533E-02 ;  7.20672E+02 ;  1.31614E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  3.76884E-02 ;  1.07849E-02 ;  0.00000E+00 ;  9.63932E-04 ; 
-output  :     44 :  4.64549E+02 ;  5.02344E-02 ;  2.57127E+02 ;  1.31616E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  3.75127E-02 ;  1.07599E-02 ;  0.00000E+00 ;  6.45680E-04 ; 
-output  :     45 :  4.78199E+02 ;  5.00175E-02 ;  3.50948E+02 ;  1.31616E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  3.73288E-02 ;  1.07130E-02 ;  0.00000E+00 ;  6.59538E-04 ; 
-output  :     46 :  4.85048E+02 ;  4.98412E-02 ;  6.14288E+02 ;  1.31615E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  3.71134E-02 ;  1.06306E-02 ;  0.00000E+00 ;  7.81011E-04 ; 
-output  :     47 :  4.92583E+02 ;  4.85106E-02 ;  3.73000E+02 ;  1.31605E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  3.64289E-02 ;  1.03323E-02 ;  0.00000E+00 ;  4.33347E-04 ; 
-output  :     48 :  5.12727E+02 ;  4.77152E-02 ;  3.79761E+02 ;  1.31597E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  3.58629E-02 ;  1.00959E-02 ;  0.00000E+00 ;  4.40370E-04 ; 
-output  :     49 :  5.19884E+02 ;  4.76168E-02 ;  6.11797E+02 ;  1.31595E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  3.57140E-02 ;  1.00362E-02 ;  0.00000E+00 ;  5.50641E-04 ; 
-output  :     50 :  5.33557E+02 ;  4.67411E-02 ;  1.83037E+03 ;  1.31581E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  3.49500E-02 ;  9.76949E-03 ;  0.00000E+00 ;  7.05778E-04 ; 
-output  :     51 :  5.54785E+02 ;  4.56385E-02 ;  4.77866E+03 ;  1.31546E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  3.30517E-02 ;  9.08065E-03 ;  0.00000E+00 ;  2.19066E-03 ; 
+        : Average curvature of the coils is      :  3.060004471358978E+00
+        : Average torsion of the coils is        :  6.515470822161993E+00
+        : Maximum c of the coils is              :  7.012121153807736E+01
+        : The minimum coil-coil distance is      :  8.437023880951249E-02 ; at coils  6 ,  6
+        : The minimum coil-plasma distance is    :  1.881952922138809E-01 ; at coil   6
+        : Ave. relative absolute Bn error |Bn|/B :  6.41790E-04; max(|Bn|)= 1.00052E-02
+        : Surface area normalized Bn error int(|Bn|/B*ds)/A :   5.118374840827271E-04
+ ------------- Iterations ------------------------
+output  :   iout :            mark ;  total function ;    ||gradient|| ;         Bnormal ;
+output  :      1 :  0.00000000E+00 ;  5.79210417E-05 ;  2.39966764E-01 ;  1.49924939E-06 ;
+output  :      2 :  1.48729557E+02 ;  1.85402651E-05 ;  8.38272060E-02 ;  1.43611403E-06 ;
+output  :      3 :  1.70049873E+02 ;  5.92618928E-06 ;  2.71747642E-02 ;  1.37978517E-06 ;
+output  :      4 :  1.91372104E+02 ;  2.49251285E-06 ;  8.89581736E-03 ;  1.33291374E-06 ;
+output  :      5 :  2.12708826E+02 ;  1.55998081E-06 ;  2.98971242E-03 ;  1.28879546E-06 ;
+output  :      6 :  2.34036775E+02 ;  1.28493576E-06 ;  1.25961746E-03 ;  1.23384184E-06 ;
+output  :      7 :  2.55379986E+02 ;  1.11954229E-06 ;  8.54782098E-04 ;  1.11384066E-06 ;
+output  :      8 :  2.76706681E+02 ;  7.34465326E-07 ;  3.59727375E-04 ;  7.25417945E-07 ;
+output  :      9 :  2.98034050E+02 ;  6.44961323E-07 ;  2.82077132E-04 ;  6.34119583E-07 ;
+output  :     10 :  3.19361595E+02 ;  5.77080787E-07 ;  2.12291984E-04 ;  5.70323649E-07 ;
+output  :     11 :  3.41488708E+02 ;  5.35608714E-07 ;  1.57379316E-04 ;  5.31908344E-07 ;
+output  :     12 :  3.62818325E+02 ;  5.11143512E-07 ;  1.38213745E-04 ;  5.08470530E-07 ;
+output  :     13 :  3.84147691E+02 ;  4.88699563E-07 ;  1.31722086E-04 ;  4.86374780E-07 ;
+output  :     14 :  4.05483719E+02 ;  4.74986212E-07 ;  8.84126293E-05 ;  4.72634692E-07 ;
+output  :     15 :  4.26817053E+02 ;  4.64965626E-07 ;  7.91553253E-05 ;  4.62540952E-07 ;
+output  :     16 :  4.48155507E+02 ;  4.54744127E-07 ;  8.00730891E-05 ;  4.52202349E-07 ;
+output  :     17 :  4.69491160E+02 ;  4.47335128E-07 ;  7.24508744E-05 ;  4.44665100E-07 ;
+output  :     18 :  4.90831138E+02 ;  4.41101269E-07 ;  6.97714794E-05 ;  4.38326900E-07 ;
+output  :     19 :  5.12168444E+02 ;  4.36398485E-07 ;  7.10775589E-05 ;  4.33554753E-07 ;
+output  :     20 :  5.33493969E+02 ;  4.32104075E-07 ;  6.61072647E-05 ;  4.27182277E-07 ;
+output  :     21 :  5.55616729E+02 ;  4.29170484E-07 ;  4.02270991E-05 ;  4.25810339E-07 ;
+output  :     22 :  5.76957029E+02 ;  4.27381849E-07 ;  3.55437506E-05 ;  4.24510752E-07 ;
+output  :     23 :  5.98286629E+02 ;  4.25251307E-07 ;  4.20382822E-05 ;  4.22663938E-07 ;
+output  :     24 :  6.19620618E+02 ;  4.23483891E-07 ;  4.00437461E-05 ;  4.21026938E-07 ;
+output  :     25 :  6.40977964E+02 ;  4.20975113E-07 ;  3.91146222E-05 ;  4.18606788E-07 ;
+output  :     26 :  6.62314192E+02 ;  4.19148518E-07 ;  4.54641260E-05 ;  4.16716209E-07 ;
+output  :     27 :  6.83647932E+02 ;  4.16561518E-07 ;  4.60387233E-05 ;  4.13762518E-07 ;
+output  :     28 :  7.04993090E+02 ;  4.14787460E-07 ;  3.77863839E-05 ;  4.11484092E-07 ;
+output  :     29 :  7.26339144E+02 ;  4.12244439E-07 ;  4.79399565E-05 ;  4.08696167E-07 ;
+output  :     30 :  7.47668813E+02 ;  4.09773672E-07 ;  4.84322072E-05 ;  4.06344384E-07 ;
+output  :     31 :  7.69821752E+02 ;  4.06202485E-07 ;  5.21196707E-05 ;  4.03121637E-07 ;
+output  :     32 :  7.91157279E+02 ;  4.02405737E-07 ;  6.05331762E-05 ;  3.99033097E-07 ;
+output  :     33 :  8.12491515E+02 ;  3.97843569E-07 ;  4.69932628E-05 ;  3.93541787E-07 ;
+output  :     34 :  8.33823762E+02 ;  3.95509794E-07 ;  4.77728885E-05 ;  3.90636155E-07 ;
+output  :     35 :  8.55155066E+02 ;  3.93120930E-07 ;  4.31048239E-05 ;  3.87519132E-07 ;
+output  :     36 :  8.76481741E+02 ;  3.91160834E-07 ;  4.37363428E-05 ;  3.85614397E-07 ;
+output  :     37 :  8.97810639E+02 ;  3.88965686E-07 ;  3.86370174E-05 ;  3.84025983E-07 ;
+output  :     38 :  9.19140497E+02 ;  3.86687551E-07 ;  4.02797371E-05 ;  3.82156345E-07 ;
+output  :     39 :  9.40475079E+02 ;  3.84173752E-07 ;  4.33695134E-05 ;  3.79951547E-07 ;
+output  :     40 :  9.61806558E+02 ;  3.80563551E-07 ;  5.46678466E-05 ;  3.76638952E-07 ;
+output  :     41 :  9.84043105E+02 ;  3.77553103E-07 ;  5.09384372E-05 ;  3.73370846E-07 ;
+output  :     42 :  1.00538301E+03 ;  3.74949413E-07 ;  4.75962854E-05 ;  3.70011907E-07 ;
+output  :     43 :  1.02671477E+03 ;  3.72369503E-07 ;  4.94578162E-05 ;  3.66907459E-07 ;
+output  :     44 :  1.06931177E+03 ;  3.72035083E-07 ;  4.79543654E-05 ;  3.66518380E-07 ;
+output  :     45 :  1.09063886E+03 ;  3.70919902E-07 ;  5.02079365E-05 ;  3.65460793E-07 ;
+output  :     46 :  1.11196990E+03 ;  3.69755676E-07 ;  3.87691384E-05 ;  3.65109163E-07 ;
+output  :     47 :  1.13329246E+03 ;  3.67690221E-07 ;  4.12899792E-05 ;  3.64063242E-07 ;
+output  :     48 :  1.15461425E+03 ;  3.65975463E-07 ;  3.22074267E-05 ;  3.62779560E-07 ;
+output  :     49 :  1.17594316E+03 ;  3.64588091E-07 ;  3.09530426E-05 ;  3.61501098E-07 ;
+output  :     50 :  1.19726658E+03 ;  3.63561809E-07 ;  2.99737056E-05 ;  3.60396078E-07 ;
+output  :     51 :  1.21954773E+03 ;  3.62411597E-07 ;  2.72110228E-05 ;  3.58981371E-07 ;
 congrad : status=2: total iterations exceeded maxit.
 congrad : Computation using conjugate gradient finished.
-        : CG takes   5.554829107560000E+02 seconds;
-focus   : Optimization took      9 M     22 S.
+        : CG takes   1.219548467731103E+03 seconds;
+focus   : Optimization took     20 M     40 S.
  -----------POST-PROCESSING-----------------------------------
- -----------COIL DIAGNOSTICS----------------------------------
-diagnos :      Bnormal ; Bmn harmonic ;    tor. flux ;  coil length ;     c-s sep. ;    curvature ;     c-c sep. ;      torsion ;       nissin ; 
-        :  1.31546E-06 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  0.00000E+00 ;  3.30517E-02 ;  9.08065E-03 ;  0.00000E+00 ;  2.19066E-03 ; 
-        : Average length of the coils is         :  5.412388823989782E+00
-        : Maximum curvature of all the coils is  :  1.073423182794150E+01 ; at coil   6
-        : Average curvature of the coils is      :  3.058834424408814E+00
-        : Average torsion of the coils is        :  3.038744782426647E+00
-        : Maximum c of the coils is              :  7.051298625056975E+01
-        : The minimum coil-coil distance is      :  9.355781849129585E-02 ; at coils  6 ,  6
-        : The minimum coil-plasma distance is    :  1.885229120539340E-01 ; at coil   6
-        : Ave. relative absolute Bn error |Bn|/B :  6.17276E-04; max(|Bn|)= 9.11349E-03
-        : Surface area normalized Bn error int(|Bn|/B*ds)/A :   4.989367742637110E-04
-focus   : Post-processing took  5.27371E-01 S.
+diagnos : Individual cost function values:
+        :              Bnormal =  3.58981371E-07
+        :       B_mn harmonics =  0.00000000E+00
+        :        Toroidal flux =  0.00000000E+00
+        :          Coil length =  0.00000000E+00
+        :       Coil curvature =  4.84679007E-10
+        :         Coil torsion =  0.00000000E+00
+        :    Nissin complexity =  2.29478276E-09
+        : Coil-coil separation =  6.50764162E-10
+        : Coil-surf separation =  0.00000000E+00
+        : Average length of the coils is         :  5.439192886283009E+00
+        : Maximum curvature of all the coils is  :  1.105439826300745E+01 ; at coil   5
+        : Average curvature of the coils is      :  3.187758076197925E+00
+        : Average torsion of the coils is        :  3.528838888702456E+00
+        : Maximum c of the coils is              :  2.124279096157455E+02
+        : The minimum coil-coil distance is      :  9.898556935659038E-02 ; at coils  6 ,  5
+        : The minimum coil-plasma distance is    :  1.883825455806551E-01 ; at coil   6
+        : Ave. relative absolute Bn error |Bn|/B :  3.62765E-04; max(|Bn|)= 3.49154E-03
+        : Surface area normalized Bn error int(|Bn|/B*ds)/A :   3.291596258605041E-04
+focus   : Post-processing took  9.98110E-01 S.
  -------------------------------------------------------------
+ 

@@ -9,7 +9,7 @@
 
 subroutine sbnormal(ideriv)
   use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, &
-       coil, DoF, Ncoils, Nfixgeo, Ndof, bnorm, t1B, resbn, Npert, sdelta, Nmax, &
+       coil, DoF, Ncoils, Nfixgeo, Ndof, bnorm, t1B, t1Bavg, resbn, Npert, sdelta, Nmax, &
        bnormavg, bnormmax, resbnavg, abspsimax, surf, plasma, DoF, weight_sbnorm, &
        rcflux_target, psi, stochpsi, stochpsipred, MPI_COMM_FOCUS
 
@@ -42,7 +42,7 @@ subroutine sbnormal(ideriv)
   abspsimax = zero
   resbnavg = zero
   failure = zero
-  !if ( ideriv .eq. 1 ) t1Bavg = zero
+  if ( ideriv .eq. 1 ) t1Bavg = zero
 
   SALLOCATE(xxhold, ( 1:Ncoils , 0:NSmax) , zero)
   SALLOCATE(xthold, ( 1:Ncoils , 0:NSmax) , zero)
@@ -93,6 +93,7 @@ subroutine sbnormal(ideriv)
   enddo
 
   sdelta = sdelta/sqrt(3.0)
+
   do j = 1, Npert
      do icoil = 1, Ncoils
         if( coil(icoil)%type .ne. 1 ) cycle
@@ -121,7 +122,7 @@ subroutine sbnormal(ideriv)
      endif
      bnormavg = bnormavg + bnorm
      if ( bnormmax .le. bnorm ) bnormmax = bnorm
-     !if ( ideriv .eq. 1 ) t1Bavg(1:Ndof) = t1Bavg(1:Ndof) + t1B(1:Ndof)
+     if ( ideriv .eq. 1 ) t1Bavg(1:Ndof) = t1Bavg(1:Ndof) + t1B(1:Ndof)
      
      call rcflux(ideriv) ! Solves for periodic field lines
      if ( resbn .ne. 1.0 ) then
@@ -149,7 +150,7 @@ subroutine sbnormal(ideriv)
   sdelta = sdelta*sqrt(3.0)
   bnormavg = bnormavg / real(Npert)
   if ( Npert-failure .ne. 0 ) resbnavg = resbnavg / real(Npert-failure)
-  !if ( ideriv .eq. 1 ) t1Bavg = t1Bavg / real(Npert)
+  if ( ideriv .eq. 1 ) t1Bavg = t1Bavg / real(Npert)
 
   do icoil = 1, Ncoils
      coil(icoil)%xx(0:coil(icoil)%NS) = xxhold(icoil,0:coil(icoil)%NS)

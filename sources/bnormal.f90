@@ -11,20 +11,6 @@
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-module bnorm_mod
-  ! contains some common variables used in subroutine bnormal
-  ! allocating once and re-using them will save allocation time
-  use globals, only : dp
-  implicit none
-
-  ! 0-order
-  REAL, allocatable :: dBx(:,:), dBy(:,:), dBz(:,:), Bm(:,:), dAx(:,:), dAy(:,:), dAz(:,:)
-  ! 1st-order
-  REAL, allocatable :: dBn(:), dBm(:), d1B(:,:,:)
-
-end module bnorm_mod
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
 subroutine bnormal( ideriv )
 !------------------------------------------------------------------------------------------------------ 
 ! DATE:  04/02/2017;
@@ -35,7 +21,7 @@ subroutine bnormal( ideriv )
 !------------------------------------------------------------------------------------------------------   
   use globals, only: dp, zero, half, one, pi2, sqrtmachprec, bsconstant, ncpu, myid, ounit, &
        coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, plasma, &
-       bnorm, t1B, t2B, bn, Ndof, Cdof, weight_bharm, case_bnormal, &
+       bnorm, t1B, bn, Ndof, Cdof, weight_bharm, case_bnormal, &
        weight_bnorm, ibnorm, mbnorm, ibharm, mbharm, LM_fvec, LM_fjac, &
        bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn, &
        weight_resbn, target_resbn, resbn, resbn_m, resbn_n, t1R, b1s, b1c, resbn_bnc, resbn_bns, &
@@ -47,7 +33,7 @@ subroutine bnormal( ideriv )
 
   INTEGER, INTENT(in)                   :: ideriv
   !--------------------------------------------------------------------------------------------
-  INTEGER                               :: astat, ierr!, suc
+  INTEGER                               :: astat, ierr, request !, suc
   INTEGER                               :: icoil, iteta, jzeta, j, idof, ND, NumGrid, isurf
   REAL                                  :: arg, teta, zeta, bnc, bns, shift, psmall, & !rcflux
                                            small, negvalue, posvalue, tmp_xdof(1:Ndof)
@@ -56,7 +42,7 @@ subroutine bnormal( ideriv )
   isurf = plasma 
   NumGrid = Nteta*Nzeta
   ! reset to zero;
-  bnorm = zero 
+  bnorm = zero
   surf(isurf)%Bx = zero; surf(isurf)%By = zero; surf(isurf)%Bz = zero; surf(isurf)%Bn = zero     
   dBx = zero; dBy = zero; dBz = zero; Bm = zero; dAx = zero; dAy = zero; dAz = zero
   bn = zero
@@ -130,6 +116,7 @@ subroutine bnormal( ideriv )
      call MPI_ALLREDUCE( MPI_IN_PLACE, surf(isurf)%Bz, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
      call MPI_ALLREDUCE( MPI_IN_PLACE, surf(isurf)%Bn, NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
      call MPI_ALLREDUCE( MPI_IN_PLACE, bnorm, 1  , MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+     call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
      bnorm = bnorm * half * discretefactor
      bn = surf(isurf)%Bn +  surf(isurf)%pb  ! bn is B.n from coils
      ! bn = surf(isurf)%Bx * surf(isurf)%nx + surf(isurf)%By * surf(isurf)%ny + surf(isurf)%Bz * surf(isurf)%nz
@@ -337,6 +324,6 @@ subroutine bnormal( ideriv )
      endif
   endif
   !--------------------------------------------------------------------------------------------
-  call MPI_barrier( MPI_COMM_FOCUS, ierr )
+  call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
   return
 end subroutine bnormal

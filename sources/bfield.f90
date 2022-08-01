@@ -27,8 +27,9 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
 ! Biot-Savart constant and currents are not included for later simplication. 
 ! Be careful if coils have different resolutions.
 !------------------------------------------------------------------------------------------------------   
-  use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, cosnfp, sinnfp, &
-                     zero, myid, ounit, Nfp, pi2, half, two, one, bsconstant, MPI_COMM_FOCUS
+
+  use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, cosnfp, sinnfp, machprec, &
+                     zero, myid, ounit, Nfp, pi2, half, two, one, bsconstant, MPI_COMM_FOCUS,coil_type_spline
   use mpi
   implicit none
 
@@ -38,9 +39,9 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  INTEGER              :: ierr, astat, kseg, ip, is, cs, Npc
+  INTEGER              :: ierr, astat, kseg, ip, is, cs, Npc, NS
   REAL                 :: dlx, dly, dlz, rm3, ltx, lty, ltz, rr, r2, m_dot_r, &
-       &                  mx, my, mz, xx, yy, zz, Bx, By, Bz
+                          mx, my, mz, xx, yy, zz, Bx, By, Bz
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -50,6 +51,7 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
   tBx = zero ; tBy = zero ; tBz = zero
   dlx = zero ; dly = zero ; dlz = zero
   ltx = zero ; lty = zero ; ltz = zero
+ 
   ! check if the coil is stellarator symmetric
   select case (coil(icoil)%symm) 
   case ( 0 )
@@ -72,12 +74,14 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
         Bx = zero; By = zero; Bz = zero
         select case (coil(icoil)%type)
         ! Fourier coils
-        case(1)
+        case(1,coil_type_spline)
            ! Biot-Savart law
+
            do kseg = 0, coil(icoil)%NS-1
               dlx = xx - coil(icoil)%xx(kseg)
               dly = yy - coil(icoil)%yy(kseg)
               dlz = zz - coil(icoil)%zz(kseg)
+              if ( dlx**2+dly**2+dlz**2 .lt. machprec ) cycle
               rm3 = (sqrt(dlx**2 + dly**2 + dlz**2))**(-3)
               ltx = coil(icoil)%xt(kseg)
               lty = coil(icoil)%yt(kseg)
@@ -89,6 +93,7 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
            Bx = Bx * coil(icoil)%I * bsconstant
            By = By * coil(icoil)%I * bsconstant
            Bz = Bz * coil(icoil)%I * bsconstant
+
         ! magnetic dipoles
         case(2)
            ! Biot-Savart law
@@ -141,7 +146,7 @@ subroutine bfield1(icoil, x, y, z, tBx, tBy, tBz, ND)
 ! Discretizing factor is includeed; coil(icoil)%dd(kseg)
 !------------------------------------------------------------------------------------------------------   
   use globals, only: dp, coil, DoF, surf, NFcoil, Ncoils, Nteta, Nzeta, &
-                     zero, myid, ounit, Nfp, one, bsconstant, cosnfp, sinnfp, MPI_COMM_FOCUS
+                     zero, myid, ounit, Nfp, one, bsconstant, cosnfp, sinnfp, MPI_COMM_FOCUS,coil_type_spline
   use mpi
   implicit none
 
@@ -190,7 +195,7 @@ subroutine bfield1(icoil, x, y, z, tBx, tBy, tBz, ND)
         Bx = zero; By = zero; Bz = zero
 
         select case (coil(icoil)%type)
-        case(1)
+        case(1,coil_type_spline)
            ! Fourier coils
            NS = coil(icoil)%NS
            do kseg = 0, NS-1

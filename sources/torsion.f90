@@ -21,8 +21,8 @@ subroutine torsion(ideriv)
        mtors, itors, LM_fvec, LM_fjac, tors_alpha, tors_beta, tors_gamma, case_tors, &
        penfun_tors, tors0
 
+  use mpi
   implicit none
-  include "mpif.h"
   INTEGER, INTENT(in) :: ideriv
 
   INTEGER             :: astat, ierr, icoil, idof, ND, NF, ivec
@@ -112,10 +112,10 @@ end subroutine torsion
 subroutine TorsDeriv0(icoil,torsRet)
 
   use globals, only: dp, zero, pi2, ncpu, astat, ierr, myid, ounit, coil, NFcoil, Nseg, Ncoils, &
-          case_tau, MPI_COMM_FOCUS
+          MPI_COMM_FOCUS
 
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER, intent(in)  :: icoil
   REAL   , intent(out) :: torsRet
@@ -167,8 +167,6 @@ subroutine TorsDeriv0(icoil,torsRet)
   lambdaunitx(0:NS) = lambdax(0:NS) / lambdanorm(0:NS)
   lambdaunity(0:NS) = lambday(0:NS) / lambdanorm(0:NS)
   lambdaunitz(0:NS) = lambdaz(0:NS) / lambdanorm(0:NS)
- 
-  ! Put in conditional for case_tau
 
   torss(0:NS) = ( lambdaunitx(0:NS)*xb(0:NS) + lambdaunity(0:NS)*yb(0:NS) + lambdaunitz(0:NS)*zb(0:NS) ) / lambdanorm(0:NS)
   
@@ -208,10 +206,10 @@ end subroutine TorsDeriv0
 subroutine TorsDeriv1(icoil, derivs, ND, NF) !Calculate all derivatives for a coil
 
   use globals, only: dp, zero, pi2, coil, DoF, myid, ounit, Ncoils, &
-          case_tau, case_tors, tors_alpha, tors_beta, tors_gamma, tors0, &
+          case_tors, tors_alpha, tors_beta, tors_gamma, tors0, &
           penfun_tors, FouCoil, MPI_COMM_FOCUS
+  use mpi
   implicit none
-  include "mpif.h"
 
   INTEGER, intent(in)  :: icoil, ND , NF
   REAL   , intent(out) :: derivs(1:1, 1:ND)
