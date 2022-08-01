@@ -771,7 +771,7 @@ subroutine output (mark)
   use globals, only: dp, zero, ounit, myid, ierr, astat, iout, Nouts, Ncoils, save_freq, Tdof, &
        coil, coilspace, FouCoil, chi, t1E, bnorm, bnormavg, bharm, tflux, ttlen, cssep, specw, ccsep, &
        evolution, xdof, DoF, exit_tol, exit_signal, sumDE, curv, tors, nissin, resbn, MPI_COMM_FOCUS, IsQuiet, &
-       weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_curv, weight_ccsep, &
+       weight_bnorm, weight_resbn, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_curv, weight_ccsep, &
        weight_tors, weight_nissin, weight_sbnorm, lim_out, weight_straight, str, coil_type_spline, Splines
 
   use mpi

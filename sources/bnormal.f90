@@ -35,7 +35,7 @@ subroutine bnormal( ideriv )
   !--------------------------------------------------------------------------------------------
   INTEGER                               :: astat, ierr, request !, suc
   INTEGER                               :: icoil, iteta, jzeta, j, idof, ND, NumGrid, isurf
-  REAL                                  :: arg, teta, zeta, bnc, bns, shift, psmall, & !rcflux
+  REAL                                  :: arg, teta, zeta, bnc, bns, shift, & !rcflux
                                            small, negvalue, posvalue, tmp_xdof(1:Ndof)
   REAL, allocatable                     :: cosarg(:,:), sinarg(:,:)
   !--------------------------initialize and allocate arrays-------------------------------------

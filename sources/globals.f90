@@ -617,7 +617,7 @@ module bnorm_mod
   implicit none
 
   ! 0-order
-  REAL, allocatable :: dBx(:,:), dBy(:,:), dBz(:,:), Bm(:,:)
+  REAL, allocatable :: dBx(:,:), dBy(:,:), dBz(:,:), Bm(:,:), dAx(:,:), dAy(:,:), dAz(:,:)
   ! 1st-order
   REAL, allocatable :: dBn(:), dBm(:), d1B(:,:,:)
 

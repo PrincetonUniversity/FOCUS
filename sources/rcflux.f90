@@ -17,7 +17,7 @@ subroutine rcflux( ideriv )
   !--------------------------------------------------------------------------------------------
   INTEGER                               :: astat, ierr, suc
   INTEGER                               :: icoil, iteta, jzeta, idof, ND, NumGrid, isurf
-  REAL                                  :: arg, teta, zeta, shift, psmall, &
+  REAL                                  :: arg, teta, zeta, shift, &
                                            small, negvalue, posvalue
   !--------------------------initialize and allocate arrays-------------------------------------
   dAx = zero; dAy = zero; dAz = zero

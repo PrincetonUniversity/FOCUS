@@ -25,7 +25,7 @@ subroutine saving
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  INTEGER            :: ii, jj, icoil, NF, ip, is, cs, Npc, Nseg_stable, index, NSmax, NCP
+  INTEGER            :: ii, jj, icoil, NF, ip, is, cs, Npc, Nseg_stable, index, NCP
 
   ! the following are used by the macros HWRITEXX below; do not alter/remove;
   INTEGER            :: hdfier, rank

@@ -4,7 +4,7 @@
 
  ALLFILES= globals rcfluxsens initial saving diagnos stochastic stable rdstable ghost \
            rcflux surface rdsurf rdknot rdcoils rdboozer packdof afield bfield \
-           fdcheck datalloc solvers descent congrad lmalg straight_out splines rdbooz \
+           fdcheck datalloc solvers descent congrad lmalg straight_out splines \
 	   bmnharm bnormal torflux length surfsep nissin torsion coilsep curvature \
            specinp poinplot boozer wtmgrid focus 
            
