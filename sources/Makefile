@@ -2,8 +2,8 @@
 
 ############################################################################################################
 
- ALLFILES= globals afield stable rdstable ghost nissin torsion coilsep curvature initial rdsurf rdknot rdboozer rdcoils \
-	   packdof bfield bmnharm bnormal fdcheck torflux length surfsep datalloc solvers descent congrad \
+ ALLFILES= globals afield rcfluxsens stochastic stable rdstable ghost nissin torsion coilsep curvature initial rdsurf rdknot rdboozer rdcoils \
+	   packdof bfield bmnharm bnormal rcflux fdcheck torflux length surfsep datalloc solvers descent congrad \
 	   lmalg saving diagnos specinp poinplot boozer wtmgrid surface focus 
  HFILES= $(ALLFILES:=.f90)   # raw source files
  FFILES= $(ALLFILES:=_m.F90) # Fortran 90 files 

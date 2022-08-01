@@ -9,7 +9,7 @@ SUBROUTINE diagnos
        Nteta, Nzeta, bnorm, resbn, bharm, tflux, ttlen, specw, ccsep, coilspace, FouCoil, iout, Tdof, case_length, &
        cssep, Bmnc, Bmns, tBmnc, tBmns, weight_bharm, coil_importance, Nfp, weight_bnorm, overlap, plasma, &
        cosnfp, sinnfp, symmetry, discretefactor, MPI_COMM_FOCUS, surf_Nfp, curv, case_curv, tors, nis, &
-       weight_nis, weight_resbn, gsurf, resbn_m, pi2, rcflux_use
+       weight_nis, weight_resbn, gsurf, resbn_m, pi2, rcflux_use, bnormmax, bnormavg, abspsimax, resbnavg, Npert
   use mpi
   implicit none
 
@@ -30,6 +30,7 @@ SUBROUTINE diagnos
 
   !--------------------------------cost functions-------------------------------------------------------  
   if (case_optimize == 0) call AllocData(0) ! if not allocate data;
+  if (case_optimize == 0) call perturbation(0) 
   call costfun(0)
 
   if (myid == 0) write(ounit, '("diagnos : "10(A12," ; "))') , &
@@ -304,7 +305,7 @@ SUBROUTINE diagnos
      do icoil = 1, Ncoils
         normdpsidr = normdpsidr + pi2*sum(absdpsidr(icoil,1:NS-1))/(NS-1)
      enddo
-     island_tol = 1.0E-2/(normdpsidr*8.0)
+     island_tol = 1.0E-1/(normdpsidr*8.0)
      !island_tol = deltapsi/(normdpsidr*8.0) ! Factor of 8 comes from SS, change later
      if(myid .eq. 0) write(ounit, '(8X": Coil tolerance from island is: "ES12.5"mm")') island_tol*1000.0
 
@@ -325,6 +326,16 @@ SUBROUTINE diagnos
              sum(abs(surf(plasma)%bn)/sqrt(surf(plasma)%Bx**2+surf(plasma)%By**2+surf(plasma)%Bz**2) &
              *surf(plasma)%ds)*discretefactor/(surf(plasma)%area/(surf_Nfp*2**symmetry))
      endif
+  endif
+
+  !--------------------------------calculate the stochastic Bn error----------------------------
+  !--------------------------------calculate the stochastic rcflux error------------------------ 
+  if ( Npert .ge. 1 .and. allocated(surf(isurf)%bn) ) then
+     call sbnormal( 0 )
+     if(myid .eq. 0) write(ounit, '(8X": Maximum field error after perturbations: "ES23.15)') bnormmax
+     if(myid .eq. 0) write(ounit, '(8X": Average field error after perturbations: "ES23.15)') bnormavg
+     if(myid .eq. 0) write(ounit, '(8X": Maximum magnitude of helical flux after perturbations: "ES23.15)') abspsimax
+     if(myid .eq. 0) write(ounit, '(8X": Average helical flux squared after perturbations: "ES23.15)') resbnavg
   endif
 
   return

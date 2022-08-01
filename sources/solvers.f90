@@ -39,7 +39,7 @@ subroutine solvers
        case_optimize, DF_maxiter, LM_maxiter, CG_maxiter, HN_maxiter, TN_maxiter, coil, DoF, &
        weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_ccsep, &
        target_tflux, target_length, cssep_factor, MPI_COMM_FOCUS, k0, weight_curv, r_delta, &
-       weight_tors, weight_nis, weight_resbn
+       weight_tors, weight_nis, weight_resbn, Npert
   implicit none
   include "mpif.h"
 
@@ -60,6 +60,10 @@ subroutine solvers
      write(ounit, '(8X,": target_tflux = "ES12.5" ; target_length = "ES12.5" ; k0 = "ES12.5" ; r_delta = "ES12.5"  ; cssep_factor = "ES12.5)') &
           target_tflux, target_length, k0, r_delta, cssep_factor
   endif
+
+  ! Call stochastic construction if neccessary
+  !if ( weight_sbnorm .gt. 0.0 .or. Npert .gt. 0 ) call perturbation(0)
+  if ( Npert .gt. 0 ) call perturbation(0)
 
   if (abs(case_optimize) >= 1) call AllocData(1)
   if (abs(case_optimize) >= 2) call AllocData(2)

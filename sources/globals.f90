@@ -122,6 +122,8 @@ module globals
   REAL                 :: xrpfl          =   1.000D+00
   REAL                 :: xzpfl          =   0.000D+00
   REAL                 :: pfl_xtol       =   1.000D-08
+  REAL                 :: rcflux_target  =   0.000D+00
+  INTEGER              :: pfldim         =   1
   REAL                 :: weight_tflux   =   0.000D+00
   REAL                 :: target_tflux   =   0.000D+00
   REAL                 :: weight_ttlen   =   0.000D+00
@@ -161,6 +163,10 @@ module globals
   REAL                 :: nis_gamma      =   2.000D+00
   REAL                 :: nis_sigma      =   0.000D+00
   INTEGER              :: penfun_nis     =   1
+  INTEGER              :: Npert          =   0
+  INTEGER              :: Nmax           =   3
+  REAL                 :: sdelta         =   1.000D-02
+  REAL                 :: weight_sbnorm  =   0.000D+00
 
   INTEGER              :: case_optimize  =   0
   REAL                 :: exit_tol       =   1.000D-04
@@ -266,6 +272,8 @@ module globals
                         xrpfl          , &
                         xzpfl          , &
                         pfl_xtol       , &
+                        rcflux_target  , &
+                        pfldim         , &
                         weight_tflux   , &
                         target_tflux   , &
                         weight_ttlen   , &
@@ -298,6 +306,10 @@ module globals
                         nis_gamma      , &
                         nis_sigma      , &
                         penfun_nis     , &
+                        Npert          , &
+                        Nmax           , &
+                        sdelta         , &
+                        weight_sbnorm  , &
                         weight_inorm   , &
                         weight_gnorm   , &
                         weight_mnorm   , &
@@ -376,7 +388,9 @@ module globals
      REAL                 :: I=zero,  L=zero, Lo, maxcurv, ox, oy, oz, mt, mp, Bt, Bz, avgcurv, &
                                    minlambda, maxs
      REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), &
-                             xb(:), yb(:), zb(:), dl(:), dd(:)
+                             xb(:), yb(:), zb(:), dl(:), dd(:), psx(:), psy(:), psz(:), &
+                             dpsidx(:), dpsidy(:), dpsidz(:)
+     INTEGER, allocatable :: nxx(:), nyy(:), nzz(:)
      character(10)        :: name
   end type arbitrarycoil
 
@@ -387,7 +401,7 @@ module globals
 
   type DegreeOfFreedom
      INTEGER              :: ND
-     REAL   , allocatable :: xdof(:), xof(:,:), yof(:,:), zof(:,:)
+     REAL   , allocatable :: xdof(:), xof(:,:), yof(:,:), zof(:,:), xtof(:,:), ytof(:,:), ztof(:,:)
   end type DegreeOfFreedom
 
   type ghostsurface
@@ -438,7 +452,7 @@ module globals
   REAL                 :: bnorm
   REAL   , allocatable :: t1B(:), t2B(:,:), bn(:,:)
   ! Bn resonant harmoics in Boozer coordinates
-  REAL                 :: resbn, resbn_bnc, resbn_bns
+  REAL                 :: resbn, resbn_bnc, resbn_bns, psi
   REAL   , allocatable :: t1R(:), b1s(:), b1c(:)
   ! Bn resonant harmoics;
   INTEGER              :: NBmn
@@ -472,6 +486,13 @@ module globals
   ! Spectral condensation;
   REAL                 :: specw
   REAL   , allocatable :: t1P(:), t2P(:,:)
+  ! Stochastic bnorm
+  REAL                 :: bnormavg, bnormmax
+  !REAL   , allocatable :: t1Bavg(:)
+  ! Stochastic rcflux
+  REAL                 :: resbnavg, abspsimax
+  REAL, allocatable    :: stochpsi(:), stochpsipred(:)
+  !REAL   , allocatable :: t1Bavg(:)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

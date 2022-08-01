@@ -431,7 +431,7 @@ subroutine calcfg_deriv(index)
   INTEGER, INTENT(in)  :: index
   
   INTEGER              :: astat, ierr, idof, NF_stable, Nseg_stable, i, j
-  REAL                 :: tmp_xdof(1:gsurf(index)%Ndof_stable), fd, negvalue, posvalue
+  !REAL                 :: tmp_xdof(1:gsurf(index)%Ndof_stable), fd, negvalue, posvalue
   REAL                 :: start, finish, small, q
   REAL, ALLOCATABLE    :: zeta(:), gradobsupsx(:), gradobsupsy(:), gradobsupsz(:), gradobsupzetax(:), &
   gradobsupzetay(:), gradobsupzetaz(:), gradobsupthetax(:), gradobsupthetay(:), gradobsupthetaz(:), &
@@ -1404,20 +1404,20 @@ end subroutine calcbsup
 
 subroutine find_pfl(MAXFEV, XTOL, suc)
   use globals, only : dp, myid, ounit, zero, pp_phi, pp_nsteps, resbn_m, pp_xtol, gsurf, sqrtmachprec, &
-                      pi2, resbn_m, pfl_xtol, Ncoils, ghost_failreturn, orpfl, ozpfl, xrpfl, xzpfl
+                      pi2, resbn_m, pfl_xtol, Ncoils, ghost_failreturn, orpfl, ozpfl, xrpfl, xzpfl, pfldim
   use mpi
   IMPLICIT NONE
 
   REAL, INTENT(IN)     :: XTOL
   INTEGER, INTENT(IN)  :: MAXFEV
   INTEGER, INTENT(OUT) :: suc
-  INTEGER, parameter   :: n=2
+  INTEGER, parameter   :: n=2, nn=1
   INTEGER              :: ml,mu,mode,nprint,info,nfev,ldfjac,lr,ifail,i,iwork(5),j
-  REAL                 :: epsfcn,factor,RZ(2),rz_end(n),phi_init,phi_stop,work(100+21*n),x(n),phi
+  REAL                 :: epsfcn,factor,RZ(2),RZ1(1),rz_end(n),phi_init,phi_stop,work(100+21*n),x(n),phi
   REAL                 :: fvec(n),diag(n),qtf(n),wa1(n),wa2(n),wa3(n),wa4(n),relerr,abserr
   REAL                 :: Bxhold, Byhold, Bzhold, Bx, By, Bz, Bphi
   REAL, allocatable    :: fjac(:,:),r(:)
-  external             :: pfl_fcn, pfl_fcnx, BRpZ
+  external             :: pfl_fcn, pfl_fcnx, BRpZ, pfl_fcnx1dim, pfl_fcn1dim
 
   LR = N*(N+1)/2
   LDFJAC = N
@@ -1442,9 +1442,16 @@ subroutine find_pfl(MAXFEV, XTOL, suc)
   RZ(1) = sqrt( gsurf(1)%ox(1)**2 + gsurf(1)%oy(1)**2 )
   RZ(2) = gsurf(1)%oz(1)
 
-  call hybrd(pfl_fcn,n,RZ,fvec,pfl_xtol,maxfev,ml,mu,epsfcn,diag,mode,factor,nprint,info,nfev,fjac,ldfjac,r,lr,qtf,wa1,wa2,wa3,wa4)
-  
-  if (myid == 0) then
+  if ( pfldim .eq. 1 ) then
+     RZ1(1) = RZ(1)
+     call hybrd(pfl_fcn1dim,nn,RZ1,fvec,pfl_xtol,maxfev,ml,mu,epsfcn,diag,mode,factor,nprint,info,nfev,fjac,ldfjac,r,lr,qtf,wa1,wa2,wa3,wa4)
+     RZ(1) = RZ1(1)
+     RZ(2) = 0.0
+  else
+     call hybrd(pfl_fcn,n,RZ,fvec,pfl_xtol,maxfev,ml,mu,epsfcn,diag,mode,factor,nprint,info,nfev,fjac,ldfjac,r,lr,qtf,wa1,wa2,wa3,wa4)
+  endif
+
+  if (myid == 0 .and. ghost_failreturn .eq. 0) then
      !write(ounit,'("find_pfl: Finding O pfl at phi = "ES12.5" with (R,Z) = ( "ES12.5,","ES12.5" ).")') pp_phi, RZ(1), RZ(2)
      select case (info)
      case (0)
@@ -1481,9 +1488,9 @@ subroutine find_pfl(MAXFEV, XTOL, suc)
      return
   endif
   if ( info .ne. 1 ) then
-     !suc = 0
      RZ(1) = orpfl
      RZ(2) = ozpfl
+     if ( pfldim .eq. 1 ) RZ(2) = 0.0
   endif 
 
   gsurf(1)%ox(1) = RZ(1)*cos(phi_stop)
@@ -1507,6 +1514,9 @@ subroutine find_pfl(MAXFEV, XTOL, suc)
   
   if (myid == 0) write(ounit,'("find_pfl: Distance between o pfl ends "ES23.15)') sqrt( (gsurf(1)%ox(pp_nsteps+1)-gsurf(1)%ox(1))**2 + &
        (gsurf(1)%oy(pp_nsteps+1)-gsurf(1)%oy(1))**2 + (gsurf(1)%oz(pp_nsteps+1)-gsurf(1)%oz(1))**2 )
+
+  if ( sqrt( (gsurf(1)%ox(pp_nsteps+1)-gsurf(1)%ox(1))**2 + (gsurf(1)%oy(pp_nsteps+1)-gsurf(1)%oy(1))**2 + &
+     (gsurf(1)%oz(pp_nsteps+1)-gsurf(1)%oz(1))**2 ) .gt. 10.0**(-6.0) ) suc = 0
   
   gsurf(1)%ox(pp_nsteps+1) = gsurf(1)%ox(1)
   gsurf(1)%oy(pp_nsteps+1) = gsurf(1)%oy(1)
@@ -1533,24 +1543,6 @@ subroutine find_pfl(MAXFEV, XTOL, suc)
   gsurf(1)%oydot(pp_nsteps+1) = gsurf(1)%oydot(1)
   gsurf(1)%ozdot(pp_nsteps+1) = gsurf(1)%ozdot(1)
 
-  ! Make end point tangent to other point
-!  gsurf(1)%oxdot(pp_nsteps) = (gsurf(1)%ox(pp_nsteps+1) - gsurf(1)%ox(pp_nsteps))/(real(resbn_m)*pi2/real(pp_nsteps))
-!  gsurf(1)%oydot(pp_nsteps) = (gsurf(1)%oy(pp_nsteps+1) - gsurf(1)%oy(pp_nsteps))/(real(resbn_m)*pi2/real(pp_nsteps))
-!  gsurf(1)%ozdot(pp_nsteps) = (gsurf(1)%oz(pp_nsteps+1) - gsurf(1)%oz(pp_nsteps))/(real(resbn_m)*pi2/real(pp_nsteps))
-
-!  do i = 2, pp_nsteps
-!     gsurf(1)%oxdot(i) = pp_nsteps*(gsurf(1)%ox(i+1) - gsurf(1)%ox(i-1))/(2.0*pi2*resbn_m)
-!     gsurf(1)%oydot(i) = pp_nsteps*(gsurf(1)%oy(i+1) - gsurf(1)%oy(i-1))/(2.0*pi2*resbn_m)
-!     gsurf(1)%ozdot(i) = pp_nsteps*(gsurf(1)%oz(i+1) - gsurf(1)%oz(i-1))/(2.0*pi2*resbn_m)
-!  enddo
-
-!  gsurf(1)%oxdot(1) = pp_nsteps*(gsurf(1)%ox(2) - gsurf(1)%ox(pp_nsteps))/(2.0*pi2*resbn_m)
-!  gsurf(1)%oydot(1) = pp_nsteps*(gsurf(1)%oy(2) - gsurf(1)%oy(pp_nsteps))/(2.0*pi2*resbn_m)
-!  gsurf(1)%ozdot(1) = pp_nsteps*(gsurf(1)%oz(2) - gsurf(1)%oz(pp_nsteps))/(2.0*pi2*resbn_m)
-!  gsurf(1)%oxdot(pp_nsteps+1) = gsurf(1)%oxdot(1)
-!  gsurf(1)%oydot(pp_nsteps+1) = gsurf(1)%oydot(1)
-!  gsurf(1)%ozdot(pp_nsteps+1) = gsurf(1)%ozdot(1)
-
   ifail = 1
   relerr = pp_xtol
   abserr = sqrtmachprec
@@ -1560,9 +1552,16 @@ subroutine find_pfl(MAXFEV, XTOL, suc)
   RZ(1) = sqrt( gsurf(1)%xx(1)**2 + gsurf(1)%xy(1)**2 )
   RZ(2) = gsurf(1)%xz(1)
 
-  call hybrd(pfl_fcnx,n,RZ,fvec,pfl_xtol,maxfev,ml,mu,epsfcn,diag,mode,factor,nprint,info,nfev,fjac,ldfjac,r,lr,qtf,wa1,wa2,wa3,wa4)
+  if ( pfldim .eq. 1 ) then
+     RZ1(1) = RZ(1)
+     call hybrd(pfl_fcnx1dim,nn,RZ1,fvec,pfl_xtol,maxfev,ml,mu,epsfcn,diag,mode,factor,nprint,info,nfev,fjac,ldfjac,r,lr,qtf,wa1,wa2,wa3,wa4)
+     RZ(1) = RZ1(1)
+     RZ(2) = 0.0
+  else
+     call hybrd(pfl_fcnx,n,RZ,fvec,pfl_xtol,maxfev,ml,mu,epsfcn,diag,mode,factor,nprint,info,nfev,fjac,ldfjac,r,lr,qtf,wa1,wa2,wa3,wa4)
+  endif
 
-  if (myid == 0) then
+  if (myid == 0 .and. ghost_failreturn .eq. 0) then
      !write(ounit,'("find_pfl: Finding X pfl at phi = "ES12.5" with (R,Z) = ( "ES12.5,","ES12.5" ).")') pp_phi, RZ(1), RZ(2)
      select case (info)
      case (0)
@@ -1599,9 +1598,9 @@ subroutine find_pfl(MAXFEV, XTOL, suc)
      return
   endif
   if ( info .ne. 1 ) then
-     !suc = 0
      RZ(1) = xrpfl
      RZ(2) = xzpfl
+     if ( pfldim .eq. 1 ) RZ(2) = 0.0
   endif
 
   gsurf(1)%xx(1) = RZ(1)*cos(phi_stop)
@@ -1625,6 +1624,9 @@ subroutine find_pfl(MAXFEV, XTOL, suc)
 
   if (myid == 0) write(ounit,'("find_pfl: Distance between x pfl ends "ES23.15)') sqrt( (gsurf(1)%xx(pp_nsteps+1)-gsurf(1)%xx(1))**2 + &
        (gsurf(1)%xy(pp_nsteps+1)-gsurf(1)%xy(1))**2 + (gsurf(1)%xz(pp_nsteps+1)-gsurf(1)%xz(1))**2 )
+
+  if ( sqrt( (gsurf(1)%xx(pp_nsteps+1)-gsurf(1)%xx(1))**2 + (gsurf(1)%xy(pp_nsteps+1)-gsurf(1)%xy(1))**2 + & 
+     (gsurf(1)%xz(pp_nsteps+1)-gsurf(1)%xz(1))**2 ) .gt. 10.0**(-6.0) ) suc = 0
 
   gsurf(1)%xx(pp_nsteps+1) = gsurf(1)%xx(1)
   gsurf(1)%xy(pp_nsteps+1) = gsurf(1)%xy(1)
@@ -1651,24 +1653,6 @@ subroutine find_pfl(MAXFEV, XTOL, suc)
   gsurf(1)%xydot(pp_nsteps+1) = gsurf(1)%xydot(1)
   gsurf(1)%xzdot(pp_nsteps+1) = gsurf(1)%xzdot(1)
 
-  ! Make end point tangent to other point
-!  gsurf(1)%xxdot(pp_nsteps) = (gsurf(1)%xx(pp_nsteps+1) - gsurf(1)%xx(pp_nsteps))/(real(resbn_m)*pi2/real(pp_nsteps))
-!  gsurf(1)%xydot(pp_nsteps) = (gsurf(1)%xy(pp_nsteps+1) - gsurf(1)%xy(pp_nsteps))/(real(resbn_m)*pi2/real(pp_nsteps))
-!  gsurf(1)%xzdot(pp_nsteps) = (gsurf(1)%xz(pp_nsteps+1) - gsurf(1)%xz(pp_nsteps))/(real(resbn_m)*pi2/real(pp_nsteps))
-
-!  do i = 2, pp_nsteps
-!     gsurf(1)%xxdot(i) = pp_nsteps*(gsurf(1)%xx(i+1) - gsurf(1)%xx(i-1))/(2.0*pi2*resbn_m)
-!     gsurf(1)%xydot(i) = pp_nsteps*(gsurf(1)%xy(i+1) - gsurf(1)%xy(i-1))/(2.0*pi2*resbn_m)
-!     gsurf(1)%xzdot(i) = pp_nsteps*(gsurf(1)%xz(i+1) - gsurf(1)%xz(i-1))/(2.0*pi2*resbn_m)
-!  enddo
-
-!  gsurf(1)%xxdot(1) = pp_nsteps*(gsurf(1)%xx(2) - gsurf(1)%xx(pp_nsteps))/(2.0*pi2*resbn_m)
-!  gsurf(1)%xydot(1) = pp_nsteps*(gsurf(1)%xy(2) - gsurf(1)%xy(pp_nsteps))/(2.0*pi2*resbn_m)
-!  gsurf(1)%xzdot(1) = pp_nsteps*(gsurf(1)%xz(2) - gsurf(1)%xz(pp_nsteps))/(2.0*pi2*resbn_m)
-!  gsurf(1)%xxdot(pp_nsteps+1) = gsurf(1)%xxdot(1)
-!  gsurf(1)%xydot(pp_nsteps+1) = gsurf(1)%xydot(1)
-!  gsurf(1)%xzdot(pp_nsteps+1) = gsurf(1)%xzdot(1)
-
   return
 
 end subroutine find_pfl
@@ -1677,7 +1661,7 @@ end subroutine find_pfl
 
 subroutine pfl_fcn(n,x,fvec,iflag)
   use globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, surf, &
-                      pp_xtol, plasma, pp_nsteps, resbn_m, orpfl, ozpfl, ghost_failreturn, gsurf, MPI_COMM_FOCUS, MPI_COMM_MYWORLD
+  pp_xtol, plasma, pp_nsteps, resbn_m, orpfl, ozpfl, ghost_failreturn, gsurf, MPI_COMM_FOCUS, MPI_COMM_MYWORLD
   use mpi
   IMPLICIT NONE
 
@@ -1701,6 +1685,12 @@ subroutine pfl_fcn(n,x,fvec,iflag)
   enddo
 
   if ( ifail /= 2 ) then
+     if ( ghost_failreturn .eq. 1 ) then
+        fvec(1) = orpfl - x(1)
+        fvec(2) = ozpfl - x(2)
+        iflag = -1
+        return
+     endif
      if ( myid==0 ) then
         write ( ounit, '(A,I3)' ) 'pfl_fcn: ODE solver ERROR; returned IFAIL = ', ifail
         select case ( ifail )
@@ -1729,6 +1719,8 @@ subroutine pfl_fcn(n,x,fvec,iflag)
 
 end subroutine pfl_fcn
 
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
 subroutine pfl_fcnx(n,x,fvec,iflag)
   use globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, surf, &
   pp_xtol, plasma, pp_nsteps, resbn_m, xrpfl, xzpfl, ghost_failreturn, gsurf, MPI_COMM_FOCUS, MPI_COMM_MYWORLD
@@ -1751,6 +1743,12 @@ subroutine pfl_fcnx(n,x,fvec,iflag)
      call ode( BRpZ, n, rz_end, phi_init, phi_stop, relerr, abserr, ifail, work, iwork )
   enddo
   if ( ifail /= 2 ) then
+     if ( ghost_failreturn .eq. 1 ) then
+        fvec(1) = xrpfl - x(1)
+        fvec(2) = xzpfl - x(2)
+        iflag = -1
+        return
+     endif
      if ( myid==0 ) then
         write ( ounit, '(A,I3)' ) 'pfl_fcn: ODE solver ERROR; returned IFAIL = ', ifail
         select case ( ifail )
@@ -1776,7 +1774,125 @@ subroutine pfl_fcnx(n,x,fvec,iflag)
   return
 end subroutine pfl_fcnx
 
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+subroutine pfl_fcn1dim(n,x,fvec,iflag)
+  use globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, surf, &
+  pp_xtol, plasma, pp_nsteps, resbn_m, orpfl, ozpfl, ghost_failreturn, gsurf, pfldim, MPI_COMM_FOCUS, MPI_COMM_MYWORLD
+  use mpi
+  IMPLICIT NONE
+  INTEGER  :: n, iflag, nn
+  REAL     :: x(n), fvec(n)
+  INTEGER  :: iwork(5), ierr, ifail, i
+  REAL     :: rz_end(2), phi_init, phi_stop, relerr, abserr, work(100+21*2) !work(100+21*n)
+  EXTERNAL :: BRpZ
+  ifail = 1
+  relerr = pp_xtol
+  abserr = sqrtmachprec
+  rz_end(1) = x(1)
+  rz_end(2) = 0.0
+  phi_stop = pp_phi
+  nn = 2
+  do i = 1, pp_nsteps
+     ifail = 1
+     phi_init = phi_stop
+     phi_stop = phi_init + pi2*real(resbn_m)/real(pp_nsteps)
+     call ode( BRpZ, nn, rz_end, phi_init, phi_stop, relerr, abserr, ifail, work, iwork )
+  enddo
+  if ( ifail /= 2 ) then
+     if ( ghost_failreturn .eq. 1 ) then
+        fvec(1) = 10.0*abs( orpfl - x(1) )
+        iflag = -1
+        return
+     endif
+     if ( myid==0 ) then
+        write ( ounit, '(A,I3)' ) 'pfl_fcn: ODE solver ERROR; returned IFAIL = ', ifail
+        select case ( ifail )
+        case ( 3 )
+           write(ounit, '("pfl_fcn: DF_xtol or abserr too small.")')
+        case ( 4 )
+           write(ounit, '("pfl_fcn: tau not reached after 500 steps.")')
+        case ( 5 )
+           write(ounit, '("pfl_fcn: tau not reached because equation to be stiff.")')
+        case ( 6 )
+           write(ounit, '("pfl_fcn: INVALID input parameters.")')
+        end select
+     endif
+     if (myid == 0) write(ounit,'("pfl_fcn: R location of failed pfl solve "ES23.15)') rz_end(1)
+     if (myid == 0) write(ounit,'("pfl_fcn: Z location of failed pfl solve "ES23.15)') rz_end(2)
+     fvec(1) = 10.0*abs( orpfl - x(1) )
+     ifail = 2
+     !iflag = 1
+     iflag = -1
+     return
+  endif
+  fvec(1) = sqrt( (rz_end(1) - x(1))**2.0 + rz_end(2)**2.0 )
+  return
+end subroutine pfl_fcn1dim
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+subroutine pfl_fcnx1dim(n,x,fvec,iflag)
+  use globals, only : dp, myid, IsQuiet, ounit, zero, pi2, sqrtmachprec, pp_phi, surf, &
+  pp_xtol, plasma, pp_nsteps, resbn_m, xrpfl, xzpfl, ghost_failreturn, gsurf, pfldim, MPI_COMM_FOCUS, MPI_COMM_MYWORLD
+  use mpi
+  IMPLICIT NONE
+  INTEGER  :: n, iflag, nn
+  REAL     :: x(n), fvec(n)
+  INTEGER  :: iwork(5), ierr, ifail, i
+  REAL     :: rz_end(2), phi_init, phi_stop, relerr, abserr, work(100+21*2) !work(100+21*n)
+  EXTERNAL :: BRpZ
+  ifail = 1
+  relerr = pp_xtol
+  abserr = sqrtmachprec
+  rz_end(1) = x(1)
+  rz_end(2) = 0.0
+  phi_stop = pp_phi
+  nn = 2
+  do i = 1, pp_nsteps
+     ifail = 1
+     phi_init = phi_stop
+     phi_stop = phi_init + pi2*real(resbn_m)/real(pp_nsteps)
+     call ode( BRpZ, nn, rz_end, phi_init, phi_stop, relerr, abserr, ifail, work, iwork )
+  enddo
+  if ( ifail /= 2 ) then
+     if ( ghost_failreturn .eq. 1 ) then
+        fvec(1) = 10.0*abs( xrpfl - x(1) )
+        iflag = -1
+        return
+     endif
+     if ( myid==0 ) then
+        write ( ounit, '(A,I3)' ) 'pfl_fcn: ODE solver ERROR; returned IFAIL = ', ifail
+        select case ( ifail )
+        case ( 3 )
+           write(ounit, '("pfl_fcn: DF_xtol or abserr too small.")')
+        case ( 4 )
+           write(ounit, '("pfl_fcn: tau not reached after 500 steps.")')
+        case ( 5 )
+           write(ounit, '("pfl_fcn: tau not reached because equation to be stiff.")')
+        case ( 6 )
+           write(ounit, '("pfl_fcn: INVALID input parameters.")')
+        end select
+     endif
+     if (myid == 0) write(ounit,'("pfl_fcn: R location of failed pfl solve "ES23.15)') rz_end(1)
+     if (myid == 0) write(ounit,'("pfl_fcn: Z location of failed pfl solve "ES23.15)') rz_end(2)
+     fvec(1) = 10.0*abs( xrpfl - x(1) )
+     ifail = 2
+     !iflag = 1
+     iflag = -1
+     return
+  endif
+  fvec(1) = sqrt( (rz_end(1) - x(1))**2.0 + rz_end(2)**2.0 )
+  return
+end subroutine pfl_fcnx1dim
+
+!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+
+
+
 ! Not used for now
+! Implemented for better parallelization
 SUBROUTINE BRpZ_pfl( t, xxx, dx )
   !----------------------
   ! dR/dphi = BR / Bphi
@@ -1847,5 +1963,7 @@ SUBROUTINE BRpZ_pfl( t, xxx, dx )
   BP = ( - Bx*sin(t) + By*cos(t) ) / RR
   dx(1) = BR/BP
   dx(2) = Bz/BP
+
   return
+
 END SUBROUTINE BRpZ_pfl

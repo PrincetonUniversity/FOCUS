@@ -26,7 +26,7 @@ subroutine saving
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 
-  INTEGER            :: ii, jj, icoil, NF, ip, is, cs, Npc, Nseg_stable, index
+  INTEGER            :: ii, jj, icoil, NF, ip, is, cs, Npc, Nseg_stable, index, NSmax
 
   ! the following are used by the macros HWRITEXX below; do not alter/remove;
   INTEGER            :: hdfier, rank
@@ -34,6 +34,7 @@ subroutine saving
   integer(hsize_t)   :: onedims(1:1), twodims(1:2), threedims(1:3) ! warning: the string "INTEGER" is a macro;
   INTEGER            :: imn
   REAL               :: tvolume
+  REAL, allocatable  :: tempvar(:,:)
 
   CHARACTER          :: srestart*6
 
@@ -205,8 +206,8 @@ subroutine saving
      HWRITERV( Ncoils           , coil_importance ,  coil_importance             )
   endif
 
-  Nseg_stable = gsurf(1)%Nseg_stable
   if (weight_resbn > sqrtmachprec .and. ghost_use .eq. 1 ) then
+     Nseg_stable = gsurf(1)%Nseg_stable
      HWRITEIV( 1                , Nseg_stable   , Nseg_stable                    )
 !     HWRITERV( Nseg_stable      , zeta          , gsurf(1)%zeta(1:Nseg_stable)   )
 !     HWRITERV( Nseg_stable      , os            , gsurf(1)%os(1:Nseg_stable)     )
@@ -240,10 +241,37 @@ subroutine saving
 !     HWRITERV( Nseg_stable      , xbsupzeta , gsurf(1)%xbsupzeta(1:Nseg_stable)  )
 !     HWRITERV( Nseg_stable      , xbsuptheta, gsurf(1)%xbsuptheta(1:Nseg_stable) )
 !     HWRITERV( 1                , F             , gsurf(1)%F                     )
-     HWRITERA( Ncoils,coil(1)%NS, dpsidx, gsurf(1)%dpsidx(1:Ncoils,1:coil(1)%NS) )
-     HWRITERA( Ncoils,coil(1)%NS, dpsidy, gsurf(1)%dpsidy(1:Ncoils,1:coil(1)%NS) )
-     HWRITERA( Ncoils,coil(1)%NS, dpsidz, gsurf(1)%dpsidz(1:Ncoils,1:coil(1)%NS) )
+!     HWRITERA( Ncoils,coil(1)%NS, dpsidx, gsurf(1)%dpsidx(1:Ncoils,1:coil(1)%NS) )
+!     HWRITERA( Ncoils,coil(1)%NS, dpsidy, gsurf(1)%dpsidy(1:Ncoils,1:coil(1)%NS) )
+!     HWRITERA( Ncoils,coil(1)%NS, dpsidz, gsurf(1)%dpsidz(1:Ncoils,1:coil(1)%NS) )
   endif
+
+  if ( Npert .gt. 0 ) then
+     HWRITERV( Npert, stochpsi,     stochpsi(1:Npert) )
+     HWRITERV( Npert, stochpsipred, stochpsipred(1:Npert) )
+  endif
+
+  NSmax = 0
+  do icoil = 1, Ncoils
+     if(coil(icoil)%NS .gt. NSmax) NSmax = coil(icoil)%NS
+  enddo
+  SALLOCATE(tempvar, (1:Ncoils, 0:NSmax) , 0.0)
+  
+  do icoil = 1, Ncoils
+     tempvar(icoil,0:coil(icoil)%NS) = coil(icoil)%dpsidx(0:coil(icoil)%NS)
+  enddo
+  HWRITERA( Ncoils, NSmax+1, dpsidx  , tempvar(1:Ncoils,0:NSmax) )
+  tempvar(1:Ncoils,0:NSmax) = 0.0
+  do icoil = 1, Ncoils
+     tempvar(icoil,0:coil(icoil)%NS) = coil(icoil)%dpsidy(0:coil(icoil)%NS)
+  enddo
+  HWRITERA( Ncoils, NSmax+1, dpsidy  , tempvar(1:Ncoils,0:NSmax) )
+  tempvar(1:Ncoils,0:NSmax) = 0.0
+  do icoil = 1, Ncoils
+     tempvar(icoil,0:coil(icoil)%NS) = coil(icoil)%dpsidz(0:coil(icoil)%NS)
+  enddo
+  HWRITERA( Ncoils, NSmax+1, dpsidz  , tempvar(1:Ncoils,0:NSmax) )
+  tempvar(1:Ncoils,0:NSmax) = 0.0
 
   if (allocated(LM_fvec)) then
      HWRITEIV( 1                ,   ibnorm        ,   ibnorm                     )
@@ -285,6 +313,8 @@ subroutine saving
   HWRITERV( 1                ,  time_initialize,   time_initialize               )
   HWRITERV( 1                ,  time_optimize  ,   time_optimize                 )
   HWRITERV( 1                ,  time_postproc  ,   time_postproc                 )
+
+  DALLOCATE(tempvar)
 
   call h5fclose_f( file_id, hdfier ) ! terminate access;
   FATAL( restart, hdfier.ne.0, error calling h5fclose_f )
