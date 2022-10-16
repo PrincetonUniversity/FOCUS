@@ -478,7 +478,8 @@ module globals
                              xb(:), yb(:), zb(:), dl(:), dd(:), dpsidx(:), dpsidy(:), dpsidz(:), &
                              psx(:), psy(:), psz(:), Bxx(:), Byy(:), Bzz(:), Fx(:), Fy(:), Fz(:), &
                              nfbx(:), nfby(:), nfbz(:), bfbx(:), bfby(:), bfbz(:), curvature(:), straight(:), &
-                             alpha(:), alphap(:), alphapp(:), alphadof(:,:), pertx(:,:), perty(:,:), pertz(:,:)
+                             alpha(:), alphap(:), alphapp(:), alphadof(:,:), pertx(:,:), perty(:,:), pertz(:,:), &
+                             pertxp(:,:), pertyp(:,:), pertzp(:,:)
      INTEGER, allocatable :: nxx(:), nyy(:), nzz(:)
      character(10)        :: name
   end type arbitrarycoil

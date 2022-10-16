@@ -134,7 +134,8 @@ end subroutine dpsi0
 
 subroutine dpsi1(icoil, derivs, ND)
 
-  use globals, only: dp, zero, coil, gsurf, myid, ounit, Ncoils, resbn_m, pi2, DoF, bsconstant, MPI_COMM_FOCUS
+  use globals, only: dp, zero, coil, gsurf, myid, ounit, Ncoils, resbn_m, pi2, DoF, bsconstant, &
+                     dpsi_linear, Npert, MPI_COMM_FOCUS
   implicit none
   include "mpif.h"
 
@@ -142,9 +143,10 @@ subroutine dpsi1(icoil, derivs, ND)
   REAL   , intent(out) :: derivs(1:1, 1:ND)
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   INTEGER              :: i, j, k, NS, astat, ierr
+  REAL                 :: dpsilin
   REAL, dimension(1:1, 0:coil(icoil)%NS-1) :: dLLx, dLy, dLz
   REAL, dimension(0:coil(icoil)%NS) :: xx, yy, zz, xt, yt, zt, xa, ya, za, absdr
-  REAL, dimension(0:coil(icoil)%NS,1:3) :: dpsidr, dpsidrp, dr, rp, term1, term2, term3, term4
+  REAL, dimension(0:coil(icoil)%NS,1:3) :: dpsidr, dpsidrp, dr, rp, term1, term2, term3
   REAL, dimension(0:coil(icoil)%NS,1:3,1:3) :: drdpsidr, drpdpsidr, drpdpsidrp
   REAL, dimension(1:3,1:gsurf(1)%Nseg_stable-1) :: dlo, dlx
 
@@ -234,32 +236,58 @@ subroutine dpsi1(icoil, derivs, ND)
   drpdpsidrp(0:NS,1:3,1:3) = coil(icoil)%I*bsconstant*pi2*real(resbn_m)*drpdpsidrp(0:NS,1:3,1:3) / real(gsurf(1)%Nseg_stable-1)
 
   do j = 1, 3
-     !term1(0:NS,j) = drdpsidr(0:NS,j,1)*dpsidr(0:NS,1) + drdpsidr(0:NS,j,2)*dpsidr(0:NS,2) + drdpsidr(0:NS,j,3)*dpsidr(0:NS,3)
-     !term2(0:NS,j) = (dpsidr(0:NS,1)*dpsidrp(0:NS,1)+dpsidr(0:NS,2)*dpsidrp(0:NS,2)+dpsidr(0:NS,3)*dpsidrp(0:NS,3))* &
-     !                (drpdpsidr(0:NS,j,1)*dpsidr(0:NS,1)+drpdpsidr(0:NS,j,2)*dpsidr(0:NS,2)+drpdpsidr(0:NS,j,3)*dpsidr(0:NS,3)) &
-     !                / (dpsidr(0:NS,1)*dpsidr(0:NS,1)+dpsidr(0:NS,2)*dpsidr(0:NS,2)+dpsidr(0:NS,3)*dpsidr(0:NS,3))
-     !term3(0:NS,j) = -1.0*( drpdpsidrp(0:NS,j,1)*dpsidr(0:NS,1) + drpdpsidrp(0:NS,j,2)*dpsidr(0:NS,2) + drpdpsidrp(0:NS,j,3)*dpsidr(0:NS,3) )
-     !term4(0:NS,j) = -1.0*( drpdpsidr(0:NS,j,1)*dpsidrp(0:NS,1) + drpdpsidr(0:NS,j,2)*dpsidrp(0:NS,2) + drpdpsidr(0:NS,j,3)*dpsidrp(0:NS,3) )
-
      term1(0:NS,j) = drdpsidr(0:NS,j,1)*dpsidr(0:NS,1) + drdpsidr(0:NS,j,2)*dpsidr(0:NS,2) + drdpsidr(0:NS,j,3)*dpsidr(0:NS,3)
      term2(0:NS,j) = -1.0*( drpdpsidrp(0:NS,j,1)*dpsidr(0:NS,1) + drpdpsidrp(0:NS,j,2)*dpsidr(0:NS,2) + drpdpsidrp(0:NS,j,3)*dpsidr(0:NS,3) )
      term3(0:NS,j) = -1.0*( drpdpsidr(0:NS,j,1)*dpsidrp(0:NS,1) + drpdpsidr(0:NS,j,2)*dpsidrp(0:NS,2) + drpdpsidr(0:NS,j,3)*dpsidrp(0:NS,3) )
   enddo
   
-!  do j = 1, 3
-!     term1(0:NS,j) = term1(0:NS,j) / sqrt(dpsidr(0:NS,1)*dpsidr(0:NS,1)+dpsidr(0:NS,2)*dpsidr(0:NS,2)+dpsidr(0:NS,3)*dpsidr(0:NS,3))
-!     term2(0:NS,j) = term2(0:NS,j) / sqrt(dpsidr(0:NS,1)*dpsidr(0:NS,1)+dpsidr(0:NS,2)*dpsidr(0:NS,2)+dpsidr(0:NS,3)*dpsidr(0:NS,3)) 
-!     term3(0:NS,j) = term3(0:NS,j) / sqrt(dpsidr(0:NS,1)*dpsidr(0:NS,1)+dpsidr(0:NS,2)*dpsidr(0:NS,2)+dpsidr(0:NS,3)*dpsidr(0:NS,3))
-!     term4(0:NS,j) = term4(0:NS,j) / sqrt(dpsidr(0:NS,1)*dpsidr(0:NS,1)+dpsidr(0:NS,2)*dpsidr(0:NS,2)+dpsidr(0:NS,3)*dpsidr(0:NS,3))
-!  enddo
-  
-  dLLx(1,0:NS-1) = term1(0:NS-1,1) + term2(0:NS-1,1) + term3(0:NS-1,1)! + term4(0:NS-1,1)
-  dLy(1,0:NS-1)  = term1(0:NS-1,2) + term2(0:NS-1,2) + term3(0:NS-1,2)! + term4(0:NS-1,2)
-  dLz(1,0:NS-1)  = term1(0:NS-1,3) + term2(0:NS-1,3) + term3(0:NS-1,3)! + term4(0:NS-1,3)
-  derivs(1:1, 1:ND) = matmul(dLLx, DoF(icoil)%xof) + matmul(dLy, DoF(icoil)%yof) + matmul(dLz, DoF(icoil)%zof)
-  derivs(1:1, 1:ND) = pi2 * derivs(1:1, 1:ND) / real(NS)
+  dLLx(1,0:NS-1) = term1(0:NS-1,1) + term2(0:NS-1,1) + term3(0:NS-1,1)
+  dLy(1,0:NS-1)  = term1(0:NS-1,2) + term2(0:NS-1,2) + term3(0:NS-1,2)
+  dLz(1,0:NS-1)  = term1(0:NS-1,3) + term2(0:NS-1,3) + term3(0:NS-1,3)
+  if ( dpsi_linear .eq. 0 ) then
+     derivs(1:1, 1:ND) = matmul(dLLx, DoF(icoil)%xof) + matmul(dLy, DoF(icoil)%yof) + matmul(dLz, DoF(icoil)%zof)
+     derivs(1:1, 1:ND) = pi2 * derivs(1:1, 1:ND) / real(NS)
+  else
+     derivs(1:1, 1:ND) = 0.0
+     do k = 1, Npert
+        dpsilin = pi2*sum( coil(icoil)%dpsidx(1:NS)*coil(icoil)%pertx(1:NS,k) + coil(icoil)%dpsidy(1:NS)*coil(icoil)%perty(1:NS,k) + &
+             coil(icoil)%dpsidz(1:NS)*coil(icoil)%pertz(1:NS,k) ) / real(NS)
+        dLLx(1,0:NS-1) = 2.0*dpsilin*( (drdpsidr(0:NS-1,1,1)-drpdpsidrp(0:NS-1,1,1))*coil(icoil)%pertx(0:NS-1,k) + &
+             (drdpsidr(0:NS-1,1,2)-drpdpsidrp(0:NS-1,1,2))*coil(icoil)%perty(0:NS-1,k) + (drdpsidr(0:NS-1,1,3)-drpdpsidrp(0:NS-1,1,3))*coil(icoil)%pertz(0:NS-1,k) - &
+             drpdpsidr(0:NS-1,1,1)*coil(icoil)%pertxp(0:NS-1,k) - drpdpsidr(0:NS-1,1,2)*coil(icoil)%pertyp(0:NS-1,k) - drpdpsidr(0:NS-1,1,3)*coil(icoil)%pertzp(0:NS-1,k) )
+        dLy(1,0:NS-1)  = 2.0*dpsilin*( (drdpsidr(0:NS-1,2,1)-drpdpsidrp(0:NS-1,2,1))*coil(icoil)%pertx(0:NS-1,k) + &
+             (drdpsidr(0:NS-1,2,2)-drpdpsidrp(0:NS-1,2,2))*coil(icoil)%perty(0:NS-1,k) + (drdpsidr(0:NS-1,2,3)-drpdpsidrp(0:NS-1,2,3))*coil(icoil)%pertz(0:NS-1,k) - &
+             drpdpsidr(0:NS-1,2,1)*coil(icoil)%pertxp(0:NS-1,k) - drpdpsidr(0:NS-1,2,2)*coil(icoil)%pertyp(0:NS-1,k) - drpdpsidr(0:NS-1,2,3)*coil(icoil)%pertzp(0:NS-1,k) )
+        dLz(1,0:NS-1)  = 2.0*dpsilin*( (drdpsidr(0:NS-1,3,1)-drpdpsidrp(0:NS-1,3,1))*coil(icoil)%pertx(0:NS-1,k) + &
+             (drdpsidr(0:NS-1,3,2)-drpdpsidrp(0:NS-1,3,2))*coil(icoil)%perty(0:NS-1,k) + (drdpsidr(0:NS-1,3,3)-drpdpsidrp(0:NS-1,3,3))*coil(icoil)%pertz(0:NS-1,k) - &
+             drpdpsidr(0:NS-1,3,1)*coil(icoil)%pertxp(0:NS-1,k) - drpdpsidr(0:NS-1,3,2)*coil(icoil)%pertyp(0:NS-1,k) - drpdpsidr(0:NS-1,3,3)*coil(icoil)%pertzp(0:NS-1,k) )
+        derivs(1:1, 1:ND) = derivs(1:1, 1:ND) + pi2*(matmul(dLLx, DoF(icoil)%xof)+matmul(dLy,DoF(icoil)%yof)+matmul(dLz,DoF(icoil)%zof))/real(NS)
+     enddo
+     derivs(1:1, 1:ND) = derivs(1:1, 1:ND) / real(Npert)
+  endif
 
   return
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 end subroutine dpsi1
 

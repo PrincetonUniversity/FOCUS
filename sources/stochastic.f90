@@ -221,7 +221,7 @@ subroutine perturbation(ideriv)
   INTEGER, INTENT(in) :: ideriv
   INTEGER             :: astat, ierr, icoil, i, j, NS
   REAL                :: arb, freq
-  REAL, allocatable   :: g(:)
+  REAL, allocatable   :: g(:), gp(:)
  
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
  
@@ -263,6 +263,9 @@ subroutine perturbation(ideriv)
      SALLOCATE( coil(icoil)%pertx, (0:NS,1:Npert), 0.0 )
      SALLOCATE( coil(icoil)%perty, (0:NS,1:Npert), 0.0 )
      SALLOCATE( coil(icoil)%pertz, (0:NS,1:Npert), 0.0 )
+     SALLOCATE( coil(icoil)%pertxp, (0:NS,1:Npert), 0.0 )
+     SALLOCATE( coil(icoil)%pertyp, (0:NS,1:Npert), 0.0 )
+     SALLOCATE( coil(icoil)%pertzp, (0:NS,1:Npert), 0.0 )
     
      if ( coil(icoil)%type .eq. 1 ) then
         freq = 1.0
@@ -273,6 +276,7 @@ subroutine perturbation(ideriv)
      endif
      sdelta = sdelta/sqrt(3.0)
      SALLOCATE( g, (0:NS), 0.0 )
+     SALLOCATE( gp, (0:NS), 0.0 )
      do i = 1, NS
         g(i) = sqrt( coil(icoil)%xt(i-1)**2 + coil(icoil)%yt(i-1)**2 + coil(icoil)%zt(i-1)**2 )
         g(i) = g(i) + sqrt( coil(icoil)%xt(i)**2 + coil(icoil)%yt(i)**2 + coil(icoil)%zt(i)**2 )
@@ -280,14 +284,36 @@ subroutine perturbation(ideriv)
      enddo
      call lenDeriv0( icoil, coil(icoil)%L )
      g(0:NS) = g(0:NS)*pi2 / ( coil(icoil)%L*real(NS) )
+     gp(0:NS) = sqrt( coil(icoil)%xt(0:NS)**2 + coil(icoil)%yt(0:NS)**2 + coil(icoil)%zt(0:NS)**2 ) / ( coil(icoil)%L )
      do j = 1, Npert
         coil(icoil)%pertx(0:NS,j) = sdelta*cos( freq*pi2*real(coil(icoil)%nxx(j))*g(0:NS) + coil(icoil)%psx(j) )
         coil(icoil)%perty(0:NS,j) = sdelta*cos( freq*pi2*real(coil(icoil)%nyy(j))*g(0:NS) + coil(icoil)%psy(j) )
         coil(icoil)%pertz(0:NS,j) = sdelta*cos( freq*pi2*real(coil(icoil)%nzz(j))*g(0:NS) + coil(icoil)%psz(j) )
+        coil(icoil)%pertxp(0:NS,j) = -1.0*sdelta*sin(freq*pi2*real(coil(icoil)%nxx(j))*g(0:NS)+coil(icoil)%psx(j))*freq*pi2*real(coil(icoil)%nxx(j))*gp(0:NS)
+        coil(icoil)%pertyp(0:NS,j) = -1.0*sdelta*sin(freq*pi2*real(coil(icoil)%nyy(j))*g(0:NS)+coil(icoil)%psy(j))*freq*pi2*real(coil(icoil)%nyy(j))*gp(0:NS)
+        coil(icoil)%pertzp(0:NS,j) = -1.0*sdelta*sin(freq*pi2*real(coil(icoil)%nzz(j))*g(0:NS)+coil(icoil)%psz(j))*freq*pi2*real(coil(icoil)%nzz(j))*gp(0:NS)
      enddo
      DALLOCATE( g )
+     DALLOCATE( gp )
      sdelta = sdelta*sqrt(3.0)
 
   enddo
   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 end subroutine perturbation
