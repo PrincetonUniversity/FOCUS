@@ -9,9 +9,9 @@
 
 subroutine sbnormal(ideriv)
   use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, &
-       coil, DoF, Ncoils, Nfixgeo, Ndof, bnorm, t1B, t1Bavg, resbn, Npert, sdelta, Nmax, &
-       bnormavg, bnormmax, resbnavg, abspsimax, surf, plasma, DoF, weight_sbnorm, &
-       rcflux_target, psi, stochpsi, stochpsipred, MPI_COMM_FOCUS
+       coil, DoF, Ncoils, Nfixgeo, Ndof, bnorm, t1B, t1R, t1Bavg, t1Ravg, resbn, Npert, sdelta, Nmax, &
+       bnormavg, bnormmax, resbnavg, abspsimax, surf, plasma, DoF, weight_sbnorm, weight_sresbn, &
+       rcflux_target, psi, stochpsi, stochpsipred, case_optimize, CG_maxiter, stoch_done, MPI_COMM_FOCUS
 
   use mpi
   implicit none
@@ -23,7 +23,12 @@ subroutine sbnormal(ideriv)
                          d1L(:,:), xofhold(:,:,:), yofhold(:,:,:), zofhold(:,:,:)
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
- 
+
+  if( stoch_done .eq. 1) return
+  if( case_optimize .eq. 0 .or. CG_maxiter .eq. 0 ) then
+     stoch_done = 1
+  endif
+  
   NSmax = zero
   NDmax = zero 
   do icoil = 1, Ncoils
@@ -33,8 +38,12 @@ subroutine sbnormal(ideriv)
 
   if ( weight_sbnorm .ne. 0.0 ) then
      call bnormal( ideriv )
+     if ( ideriv .eq. 1 ) t1Bavg = zero
   endif
-  call rcflux( ideriv )
+  if ( weight_sresbn .ne. 0.0 ) then
+     call rcflux( ideriv )
+     if ( ideriv .eq. 1 ) t1Ravg = zero
+  endif
   psi0 = psi
 
   bnormmax = zero
@@ -42,7 +51,6 @@ subroutine sbnormal(ideriv)
   abspsimax = zero
   resbnavg = zero
   failure = zero
-  if ( ideriv .eq. 1 ) t1Bavg = zero
 
   SALLOCATE(xxhold, ( 1:Ncoils , 0:NSmax) , zero)
   SALLOCATE(xthold, ( 1:Ncoils , 0:NSmax) , zero)
@@ -98,6 +106,7 @@ subroutine sbnormal(ideriv)
      do icoil = 1, Ncoils
         if( coil(icoil)%type .ne. 1 ) cycle
         NS = coil(icoil)%NS
+        ! Use global pertx ...
         coil(icoil)%xx(0:NS) = xxhold(icoil,0:NS) + sdelta*cos(pi2*real(coil(icoil)%nxx(j))*g(icoil,0:NS) + coil(icoil)%psx(j))
         coil(icoil)%xt(0:NS) = xthold(icoil,0:NS) - pi2*real(coil(icoil)%nxx(j))*sdelta*sin(pi2*real(coil(icoil)%nxx(j))*g(icoil,0:NS) + &
                                                     coil(icoil)%psx(j))*gp(icoil,0:NS)
@@ -119,39 +128,50 @@ subroutine sbnormal(ideriv)
      
      if ( weight_sbnorm .ne. 0.0 ) then
         call bnormal(ideriv)
+        bnormavg = bnormavg + bnorm
+        if ( bnormmax .le. bnorm ) bnormmax = bnorm
+        if ( ideriv .eq. 1 ) t1Bavg(1:Ndof) = t1Bavg(1:Ndof) + t1B(1:Ndof)
      endif
-     bnormavg = bnormavg + bnorm
-     if ( bnormmax .le. bnorm ) bnormmax = bnorm
-     if ( ideriv .eq. 1 ) t1Bavg(1:Ndof) = t1Bavg(1:Ndof) + t1B(1:Ndof)
      
-     call rcflux(ideriv) ! Solves for periodic field lines
-     if ( resbn .ne. 1.0 ) then
-        psipred = psi0
-        do icoil = 1, Ncoils
-           NS = coil(icoil)%NS
-           call dpsi0(icoil,dummy)
-           ! Use coil symmetry instead of 8
-           psipred = psipred + 8.0*sum(coil(icoil)%dpsidx(1:NS)*sdelta*cos(pi2*real(coil(icoil)%nxx(j))*g(icoil,1:NS)+coil(icoil)%psx(j)) + &
-                                   coil(icoil)%dpsidy(1:NS)*sdelta*cos(pi2*real(coil(icoil)%nyy(j))*g(icoil,1:NS)+coil(icoil)%psy(j)) + &
-                                   coil(icoil)%dpsidz(1:NS)*sdelta*cos(pi2*real(coil(icoil)%nzz(j))*g(icoil,1:NS)+coil(icoil)%psz(j)))
-        enddo
-        resbnavg = resbnavg + (psi-rcflux_target)**2.0
-        ! change from abs to stoch
-        stochpsi(j) = psi
-        stochpsipred(j) = psipred
-        if ( abspsimax .le. abs(psi) ) abspsimax = abs(psi)
-     else
-        failure = failure + 1
-        stochpsi(j) = HUGE(psi)
-        stochpsipred(j) = HUGE(psi)
+     if ( weight_sresbn .ne. 0.0 ) then
+        call rcflux(ideriv)
+        if ( resbn .ne. 1.0 ) then
+           psipred = psi0
+           do icoil = 1, Ncoils
+              NS = coil(icoil)%NS
+              call dpsi0(icoil,dummy)
+              ! Use coil symmetry instead of 8
+              psipred = psipred + 8.0*sum(coil(icoil)%dpsidx(1:NS)*sdelta*cos(pi2*real(coil(icoil)%nxx(j))*g(icoil,1:NS)+coil(icoil)%psx(j)) + &
+                                      coil(icoil)%dpsidy(1:NS)*sdelta*cos(pi2*real(coil(icoil)%nyy(j))*g(icoil,1:NS)+coil(icoil)%psy(j)) + &
+                                      coil(icoil)%dpsidz(1:NS)*sdelta*cos(pi2*real(coil(icoil)%nzz(j))*g(icoil,1:NS)+coil(icoil)%psz(j)))
+           enddo
+           resbnavg = resbnavg + (psi-rcflux_target)**2.0
+           if ( ideriv .eq. 1 ) t1Ravg(1:Ndof) = t1Ravg(1:Ndof) + t1R(1:Ndof)
+           stochpsi(j) = psi
+           stochpsipred(j) = psipred
+           if ( abspsimax .le. abs(psi) ) abspsimax = abs(psi)
+        else
+           failure = failure + 1
+           stochpsi(j) = HUGE(psi)
+           stochpsipred(j) = HUGE(psi)
+        endif
      endif
   enddo
 
   sdelta = sdelta*sqrt(3.0)
-  bnormavg = bnormavg / real(Npert)
-  if ( Npert-failure .ne. 0 ) resbnavg = resbnavg / real(Npert-failure)
-  if ( ideriv .eq. 1 ) t1Bavg = t1Bavg / real(Npert)
 
+  if ( weight_sbnorm .ne. 0.0 ) then
+     bnormavg = bnormavg / real(Npert)
+     if ( ideriv .eq. 1 ) t1Bavg = t1Bavg / real(Npert)
+  endif  
+
+  if ( weight_sresbn .ne. 0.0 ) then
+     if ( Npert-failure .ne. 0 ) then
+        resbnavg = resbnavg / real(Npert-failure)
+        if ( ideriv .eq. 1 ) t1Ravg = t1Ravg / real(Npert-failure)
+     endif
+  endif
+     
   do icoil = 1, Ncoils
      coil(icoil)%xx(0:coil(icoil)%NS) = xxhold(icoil,0:coil(icoil)%NS)
      coil(icoil)%xt(0:coil(icoil)%NS) = xthold(icoil,0:coil(icoil)%NS)
@@ -166,7 +186,9 @@ subroutine sbnormal(ideriv)
   if ( weight_sbnorm .ne. 0.0 ) then
      call bnormal(ideriv)
   endif
-  call rcflux(ideriv)
+  if ( weight_sresbn .ne. 0.0 ) then
+     call rcflux(ideriv)
+  endif
 
   DALLOCATE(xxhold)
   DALLOCATE(xthold)
@@ -190,14 +212,16 @@ end subroutine sbnormal
 subroutine perturbation(ideriv)
  
   use globals, only: dp, zero, half, pi2, machprec, ncpu, myid, ounit, &
-  coil, DoF, Ncoils, Nfixgeo, Ndof, bnorm, Npert, Nmax, stochpsi, stochpsipred, MPI_COMM_FOCUS
+  coil, DoF, Ncoils, Nfixgeo, Ndof, bnorm, Npert, Nmax, stochpsi, stochpsipred, &
+  sdelta, Nturns, Npancakes, coil_type_multi, MPI_COMM_FOCUS
   
   use mpi
  
   implicit none
   INTEGER, INTENT(in) :: ideriv
-  INTEGER             :: astat, ierr, icoil, j
-  REAL                :: arb
+  INTEGER             :: astat, ierr, icoil, i, j, NS
+  REAL                :: arb, freq
+  REAL, allocatable   :: g(:)
  
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
  
@@ -234,6 +258,36 @@ subroutine perturbation(ideriv)
      IlBCAST( coil(icoil)%nyy, Npert, 0 )
      RlBCAST( coil(icoil)%psz, Npert, 0 )
      IlBCAST( coil(icoil)%nzz, Npert, 0 )
+     
+     NS = coil(icoil)%NS
+     SALLOCATE( coil(icoil)%pertx, (0:NS,1:Npert), 0.0 )
+     SALLOCATE( coil(icoil)%perty, (0:NS,1:Npert), 0.0 )
+     SALLOCATE( coil(icoil)%pertz, (0:NS,1:Npert), 0.0 )
+    
+     if ( coil(icoil)%type .eq. 1 ) then
+        freq = 1.0
+     else if ( coil(icoil)%type .eq. coil_type_multi ) then
+        freq = real(Nturns*Npancakes)
+     else
+        cycle
+     endif
+     sdelta = sdelta/sqrt(3.0)
+     SALLOCATE( g, (0:NS), 0.0 )
+     do i = 1, NS
+        g(i) = sqrt( coil(icoil)%xt(i-1)**2 + coil(icoil)%yt(i-1)**2 + coil(icoil)%zt(i-1)**2 )
+        g(i) = g(i) + sqrt( coil(icoil)%xt(i)**2 + coil(icoil)%yt(i)**2 + coil(icoil)%zt(i)**2 )
+        g(i) = 0.5*g(i) + g(i-1)
+     enddo
+     call lenDeriv0( icoil, coil(icoil)%L )
+     g(0:NS) = g(0:NS)*pi2 / ( coil(icoil)%L*real(NS) )
+     do j = 1, Npert
+        coil(icoil)%pertx(0:NS,j) = sdelta*cos( freq*pi2*real(coil(icoil)%nxx(j))*g(0:NS) + coil(icoil)%psx(j) )
+        coil(icoil)%perty(0:NS,j) = sdelta*cos( freq*pi2*real(coil(icoil)%nyy(j))*g(0:NS) + coil(icoil)%psy(j) )
+        coil(icoil)%pertz(0:NS,j) = sdelta*cos( freq*pi2*real(coil(icoil)%nzz(j))*g(0:NS) + coil(icoil)%psz(j) )
+     enddo
+     DALLOCATE( g )
+     sdelta = sdelta*sqrt(3.0)
+
   enddo
   
 end subroutine perturbation

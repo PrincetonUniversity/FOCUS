@@ -25,7 +25,7 @@ SUBROUTINE packdof(lxdof)
   ! DATE: 2017/03/19
   !--------------------------------------------------------------------------------------------- 
   use globals, only : dp, zero, myid, ounit, MPI_COMM_FOCUS, &
-                    & case_coils, Ncoils, coil, DoF, Ndof, DoFnorm,coil_type_spline, Splines
+                    & case_coils, Ncoils, coil, DoF, Ndof, DoFnorm, coil_type_multi, coil_type_spline, Splines
   use mpi
   implicit none
 
@@ -78,6 +78,20 @@ SUBROUTINE packdof(lxdof)
            idof = idof + 1
         endif
      !---------------------------------------------------------------------------------------------
+     case(coil_type_multi)
+        if(coil(icoil)%Ic /= 0) then
+           lxdof(idof+1) = coil(icoil)%I
+           idof = idof + 1
+        endif
+        ND = DoF(icoil)%ND
+        if(coil(icoil)%Lc /= 0) then
+           lxdof(idof+1:idof+ND) = DoF(icoil)%xdof(1:ND)
+           idof = idof + ND
+        endif
+        
+        ! Add in alpha series
+        
+     !---------------------------------------------------------------------------------------------
      case(coil_type_spline)
 
         if(coil(icoil)%Ic /= 0) then 
@@ -115,7 +129,7 @@ SUBROUTINE unpacking(lxdof)
   ! DATE: 2017/04/03
   !--------------------------------------------------------------------------------------------- 
   use globals, only: dp, zero, myid, ounit, MPI_COMM_FOCUS, &
-       & case_coils, Ncoils, coil, DoF, Ndof, DoFnorm,coil_type_spline, Splines
+       case_coils, Ncoils, coil, DoF, Ndof, DoFnorm, coil_type_multi, coil_type_spline, Splines
   use mpi
   implicit none
 
@@ -130,18 +144,15 @@ SUBROUTINE unpacking(lxdof)
      select case (coil(icoil)%type)
      !--------------------------------------------------------------------------------------------- 
      case(1)
-
         if(coil(icoil)%Ic /= 0) then
            coil(icoil)%I = lxdof(idof+1) * dofnorm(idof+1)
            idof = idof + 1
         endif
-
         ND = DoF(icoil)%ND
         if(coil(icoil)%Lc /= 0) then
            DoF(icoil)%xdof(1:ND) = lxdof(idof+1:idof+ND) * dofnorm(idof+1:idof+ND)
            idof = idof + ND
         endif
-
      !--------------------------------------------------------------------------------------------- 
      case(2) 
         if(coil(icoil)%Ic /= 0) then 
@@ -159,25 +170,35 @@ SUBROUTINE unpacking(lxdof)
            coil(icoil)%I = lxdof(idof+1) * dofnorm(idof+1)
            idof = idof + 1
         endif
-
         if(coil(icoil)%Lc /= 0) then
            DoF(icoil)%xdof(1) = lxdof(idof+1) * dofnorm(idof+1)
            idof = idof + 1
         endif
-      !--------------------------------------------------------------------------------------------- 
-     case(coil_type_spline)
-
+     !---------------------------------------------------------------------------------------------
+     case(coil_type_multi)
         if(coil(icoil)%Ic /= 0) then
            coil(icoil)%I = lxdof(idof+1) * dofnorm(idof+1)
            idof = idof + 1
         endif
-
         ND = DoF(icoil)%ND
         if(coil(icoil)%Lc /= 0) then
            DoF(icoil)%xdof(1:ND) = lxdof(idof+1:idof+ND) * dofnorm(idof+1:idof+ND)
            idof = idof + ND
         endif
-
+        
+        ! Add in alpha
+        
+     !--------------------------------------------------------------------------------------------- 
+     case(coil_type_spline)
+        if(coil(icoil)%Ic /= 0) then
+           coil(icoil)%I = lxdof(idof+1) * dofnorm(idof+1)
+           idof = idof + 1
+        endif
+        ND = DoF(icoil)%ND
+        if(coil(icoil)%Lc /= 0) then
+           DoF(icoil)%xdof(1:ND) = lxdof(idof+1:idof+ND) * dofnorm(idof+1:idof+ND)
+           idof = idof + ND
+        endif
      !---------------------------------------------------------------------------------------------
      case default
         FATAL(unpacking01, .true., not supported coil types)
@@ -203,7 +224,8 @@ SUBROUTINE packcoil
   ! pack coil representation variables into DoF (only geometries without currents);
   ! DATE: 2017/03/25
   !--------------------------------------------------------------------------------------------- 
-  use globals, only: dp, zero, myid, ounit, case_coils, Ncoils, coil, FouCoil, DoF, MPI_COMM_FOCUS,coil_type_spline, Splines
+  use globals, only: dp, zero, myid, ounit, case_coils, Ncoils, coil, FouCoil, DoF, coil_type_multi, &
+                     coil_type_spline, Splines, MPI_COMM_FOCUS
   use mpi
   implicit none
 
@@ -256,7 +278,24 @@ SUBROUTINE packcoil
            DoF(icoil)%xdof(idof+1) = coil(icoil)%Bz; idof = idof + 1
         endif
         FATAL( packcoil05 , idof .ne. DoF(icoil)%ND, counting error in packing )
-!--------------------------------------------------------------------------------------------- 
+     !---------------------------------------------------------------------------------------------
+     case(coil_type_multi)
+        NF = FouCoil(icoil)%NF
+        DoF(icoil)%xdof = zero
+        idof = 0
+        
+        ! Fix equations
+        
+        if(coil(icoil)%Lc /= 0) then
+           DoF(icoil)%xdof(idof+1 : idof+NF+1) = FouCoil(icoil)%xc(0:NF); idof = idof + NF + 1
+           DoF(icoil)%xdof(idof+1 : idof+NF  ) = FouCoil(icoil)%xs(1:NF); idof = idof + NF
+           DoF(icoil)%xdof(idof+1 : idof+NF+1) = FouCoil(icoil)%yc(0:NF); idof = idof + NF + 1
+           DoF(icoil)%xdof(idof+1 : idof+NF  ) = FouCoil(icoil)%ys(1:NF); idof = idof + NF
+           DoF(icoil)%xdof(idof+1 : idof+NF+1) = FouCoil(icoil)%zc(0:NF); idof = idof + NF + 1
+           DoF(icoil)%xdof(idof+1 : idof+NF  ) = FouCoil(icoil)%zs(1:NF); idof = idof + NF
+        endif
+        FATAL( packcoil03 , idof .ne. DoF(icoil)%ND, counting error in packing )
+     !--------------------------------------------------------------------------------------------- 
      case(coil_type_spline)
         ! get number of DoF for each coil and allocate arrays;
         NCP = Splines(icoil)%NCP
@@ -284,7 +323,8 @@ SUBROUTINE unpackcoil
   ! pack coil representation variables into DoF (only geometries without currents);
   ! DATE: 2017/03/25
   !--------------------------------------------------------------------------------------------- 
-  use globals, only: dp, zero, myid, ounit, case_coils, Ncoils, coil, FouCoil, DoF, MPI_COMM_FOCUS,coil_type_spline, Splines
+  use globals, only: dp, zero, myid, ounit, case_coils, Ncoils, coil, FouCoil, DoF, coil_type_multi, &
+                     coil_type_spline, Splines, MPI_COMM_FOCUS
   use mpi
   implicit none
 
@@ -336,7 +376,23 @@ SUBROUTINE unpackcoil
            coil(icoil)%Bz =  DoF(icoil)%xdof(idof+1) ; idof = idof + 1        
         endif      
         FATAL( unpackcoil05 , idof .ne. DoF(icoil)%ND, counting error in packing )
-!--------------------------------------------------------------------------------------------- 
+     !---------------------------------------------------------------------------------------------
+     case(coil_type_multi)
+        NF = FouCoil(icoil)%NF
+        idof = 0
+        
+        ! Add in alpha series
+        
+        if (coil(icoil)%Lc /= 0) then
+           FouCoil(icoil)%xc(0:NF) = DoF(icoil)%xdof(idof+1 : idof+NF+1) ; idof = idof + NF + 1
+           FouCoil(icoil)%xs(1:NF) = DoF(icoil)%xdof(idof+1 : idof+NF  ) ; idof = idof + NF
+           FouCoil(icoil)%yc(0:NF) = DoF(icoil)%xdof(idof+1 : idof+NF+1) ; idof = idof + NF + 1
+           FouCoil(icoil)%ys(1:NF) = DoF(icoil)%xdof(idof+1 : idof+NF  ) ; idof = idof + NF
+           FouCoil(icoil)%zc(0:NF) = DoF(icoil)%xdof(idof+1 : idof+NF+1) ; idof = idof + NF + 1
+           FouCoil(icoil)%zs(1:NF) = DoF(icoil)%xdof(idof+1 : idof+NF  ) ; idof = idof + NF
+        endif
+        FATAL( unpackcoil03 , idof .ne. DoF(icoil)%ND, counting error in packing )
+     !--------------------------------------------------------------------------------------------- 
      case(coil_type_spline)
         ! get number of DoF for each coil and allocate arrays;
         NCP = Splines(icoil)%NCP

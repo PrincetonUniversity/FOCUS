@@ -30,7 +30,7 @@ SUBROUTINE diagnos
 
   !--------------------------------cost functions-------------------------------------------------------  
   if (case_optimize == 0) call AllocData(0) ! if not allocate data;
-  if (case_optimize == 0) call perturbation(0) 
+  if (case_optimize == 0 .and. Npert .gt. 0 .and. .not. allocated(coil(1)%psx) ) call perturbation(0) 
   call costfun(0)
 
   if (myid == 0) then
@@ -46,7 +46,9 @@ SUBROUTINE diagnos
       write(ounit, 100) "Coil-coil separation", ccsep
       write(ounit, 100) "Coil-surf separation", cssep
       write(ounit, 100) "Stochastic Bnormal", bnormavg
+      write(ounit, 100) "Stochastic Res. Bn", resbnavg
       write(ounit, 100) "Straight-out", str
+      write(ounit, 100) "Island sensitivity", dpsidr
   endif 
 
 100  format (8X, ": ", A20, " = ", ES15.8) 
@@ -58,7 +60,7 @@ SUBROUTINE diagnos
         coilspace(iout, idof+1 ) = coil(icoil)%I ;  idof = idof + 1
 
         select case (coil(icoil)%type)
-        case (1)
+        case (1,coil_type_multi)
            NF = FouCoil(icoil)%NF
            coilspace(iout, idof+1:idof+NF+1) = FouCoil(icoil)%xc(0:NF) ; idof = idof + NF +1
            coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%xs(1:NF) ; idof = idof + NF
@@ -66,7 +68,7 @@ SUBROUTINE diagnos
            coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%ys(1:NF) ; idof = idof + NF
            coilspace(iout, idof+1:idof+NF+1) = FouCoil(icoil)%zc(0:NF) ; idof = idof + NF +1
            coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%zs(1:NF) ; idof = idof + NF
-	case (coil_type_spline)
+        case (coil_type_spline)
            NCP = Splines(icoil)%NCP
            coilspace(iout, idof+1:idof+NCP*3) = Splines(icoil)%Cpoints(0:3*NCP-1) ; idof = idof + 3*NCP 
 !!$     case default
@@ -80,7 +82,7 @@ SUBROUTINE diagnos
   if ( (case_length == 1) .and. (sum(coil(1:Ncoils)%Lo) < sqrtmachprec) ) coil(1:Ncoils)%Lo = one
   call length(0)
   do icoil = 1, Ncoils
-     if(coil(icoil)%type .ne. 1 .AND. (coil(icoil)%type .ne. coil_type_spline)) cycle ! only for Fourier
+     if(coil(icoil)%type .ne. 1 .and. coil(icoil)%type .ne. coil_type_spline) cycle ! .and. coil(icoil)%type .ne. coil_type_multi) cycle
      AvgLength = AvgLength + coil(icoil)%L
   enddo
   AvgLength = AvgLength / Ncoils
@@ -89,7 +91,7 @@ SUBROUTINE diagnos
   !-------------------------------coil maximum curvature----------------------------------------------------  
   MaxCurv = zero
   do icoil = 1, Ncoils
-     if(coil(icoil)%type .ne. 1 .AND. (coil(icoil)%type .ne. coil_type_spline)) cycle ! only for Fourier
+     if(coil(icoil)%type .ne. 1 .and. coil(icoil)%type .ne. coil_type_spline) cycle ! .and. coil(icoil)%type .ne. coil_type_multi) cycle
      call CurvDeriv0(icoil,dum) !dummy return
      if (coil(icoil)%maxcurv .ge. MaxCurv) then
         MaxCurv = coil(icoil)%maxcurv
@@ -106,7 +108,7 @@ SUBROUTINE diagnos
   !-------------------------------average coil curvature-------------------------------------------------------
   AvgCurv = zero
   do icoil = 1, Ncoils
-     if(coil(icoil)%type .ne. 1 .AND. (coil(icoil)%type .ne. coil_type_spline)) exit ! only for Fourier
+     if(coil(icoil)%type .ne. 1 .and. coil(icoil)%type .ne. coil_type_spline) cycle ! .and. coil(icoil)%type .ne. coil_type_multi) cycle
      call avgcurvature(icoil)
      AvgCurv = AvgCurv + coil(icoil)%avgcurv
 #ifdef DEBUG
@@ -120,7 +122,7 @@ SUBROUTINE diagnos
   !-------------------------------average coil torsion-----------------------------------------------------
   AvgTors = zero
   do icoil = 1, Ncoils
-     if(coil(icoil)%type .ne. 1) exit ! only for Fourier 
+     if(coil(icoil)%type .ne. 1) cycle ! only for Fourier 
      call TorsDeriv0(icoil,torsRet,dum) !dummy return
      AvgTors = AvgTors + abs(torsRet) 
 #ifdef DEBUG
@@ -156,7 +158,7 @@ SUBROUTINE diagnos
   coilInd0 = 0
   coilInd1 = 1
   do icoil = 1, Ncoils
-     if(coil(icoil)%type .ne. 1 .AND. (coil(icoil)%type .ne. coil_type_spline)) cycle
+     if(coil(icoil)%type .ne. 1 .and. coil(icoil)%type .ne. coil_type_spline) cycle ! .and. coil(icoil)%type .ne. coil_type_multi) cycle
      if(Ncoils .eq. 1) exit ! if only one coil
      ! Data for the first coil
      SALLOCATE(Atmp, (1:3,0:coil(icoil)%NS-1), zero)
@@ -197,7 +199,7 @@ SUBROUTINE diagnos
      endif
      do itmp = 1, Ncoils
         ! skip self and non-Fourier coils
-        if (itmp == icoil .or. ((coil(icoil)%type .ne. 1) .AND. (coil(icoil)%type .ne. coil_type_spline))) cycle
+        if (itmp == icoil .or. ((coil(icoil)%type .ne. 1) .and. coil(icoil)%type .ne. coil_type_spline)) cycle ! .and. coil(icoil)%type .ne. coil_type_multi) cycle
         SALLOCATE(Btmp, (1:3,0:coil(itmp)%NS-1), zero)
         ! check if the coil is stellarator symmetric
         !select case (coil(icoil)%symm)
@@ -244,7 +246,7 @@ SUBROUTINE diagnos
   minCPdist = infmax
   do icoil = 1, Ncoils
 
-     if(coil(icoil)%type .ne. 1  .AND. (coil(icoil)%type .ne. coil_type_spline)) cycle
+     if(coil(icoil)%type .ne. 1  .and. coil(icoil)%type .ne. coil_type_spline) cycle ! .and. coil(icoil)%type .ne. coil_type_multi) cycle
 
      SALLOCATE(Atmp, (1:3,0:coil(icoil)%NS-1), zero)
      SALLOCATE(Btmp, (1:3,1:(Nteta*Nzeta)), zero)
@@ -306,8 +308,11 @@ SUBROUTINE diagnos
   endif
 
   !--------------------------------island width tolerance---------------------------------------  
-  if (weight_resbn > sqrtmachprec .and. rcflux_use .eq. 1) then
-     SALLOCATE( gsurf(1)%dpsidx, (1:Ncoils,1:coil(1)%NS) , 0.0)
+  if ( ( weight_resbn > sqrtmachprec .or. weight_sresbn > sqrtmachprec ) .and. rcflux_use .eq. 1) then
+     
+     ! Replace this computation
+     
+     SALLOCATE( gsurf(1)%dpsidx, (1:Ncoils,1:coil(1)%NS) , 0.0) ! Need to change where this is allocated
      SALLOCATE( gsurf(1)%dpsidy, (1:Ncoils,1:coil(1)%NS) , 0.0)
      SALLOCATE( gsurf(1)%dpsidz, (1:Ncoils,1:coil(1)%NS) , 0.0)
      do icoil = 1, Ncoils
@@ -363,7 +368,7 @@ SUBROUTINE diagnos
   endif
 
   !--------------------------------calculate the stochastic Bn errors---------------------------
-  if ( Npert .ge. 1 .and. allocated(surf(isurf)%bn) ) then
+  if ( Npert .gt. 0 .and. allocated(surf(isurf)%bn) ) then
 
      call sbnormal( 0 )
      

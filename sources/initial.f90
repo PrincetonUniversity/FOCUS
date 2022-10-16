@@ -683,6 +683,7 @@ subroutine check_input
      FATAL( initial, weight_tors   < zero, illegal )
      FATAL( initial, weight_nissin    < zero, illegal )
      FATAL( initial, weight_sbnorm    < zero, illegal )
+     FATAL( initial, weight_sresbn    < zero, illegal )
 
      if (weight_resbn > machprec) then
         write(ounit, '("Res. Bn : resbn_m = ", I2," , resbn_n = ", I2)') resbn_m, resbn_n

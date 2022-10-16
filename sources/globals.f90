@@ -127,6 +127,9 @@ module globals
   REAL                 :: pfl_xtol       =   1.000D-08
   REAL                 :: rcflux_target  =   0.000D+00
   INTEGER              :: pfldim         =   1
+  ! Island sensitivity
+  REAL                 :: weight_dpsidr  =   0.000D+00
+  INTEGER              :: dpsi_linear    =   1
   ! toroidal flux
   REAL                 :: weight_tflux   =   0.000D+00
   REAL                 :: target_tflux   =   0.000D+00
@@ -199,9 +202,22 @@ module globals
   REAL                 :: weight_specw   =   0.000D+00
   ! bnrom stochastic
   REAL                 :: weight_sbnorm  =   0.000D+00   ! Stochastic bnormal weight
+  ! resbn stochastic
+  REAL                 :: weight_sresbn  =   0.000D+00   ! Stochastic bnormal weight
   INTEGER              :: Npert          =   0           ! Number of coil perturbations
   INTEGER              :: Nmax           =   3           ! Max frequency of perturbations
   REAL                 :: sdelta         =   1.000D-02   ! Perturbation magnitude
+  ! Multi-filament
+  INTEGER              :: Nturns         =   4
+  INTEGER              :: Npancakes      =   2
+  INTEGER              :: AlphaPert      =   0
+  INTEGER              :: Alphafd        =   1
+  INTEGER              :: Nalpha         =   1000
+!  INTEGER              :: NalphaOpt      =   10
+  INTEGER              :: ResMult        =   10          ! This will be added in later
+  REAL                 :: Nturn_space    =   1.000D-02
+  REAL                 :: Npancake_space =   1.000D-02
+  REAL                 :: trans_length   =   1.000D-01
   ! optimize controls
   INTEGER              :: case_optimize  =   0
   REAL                 :: fdiff_delta    =   1.000D-04
@@ -243,7 +259,6 @@ module globals
   INTEGER              :: save_stable    =   0 
   INTEGER              :: filforce       =   0   ! Calculate filament body forces
   INTEGER              :: calcfb         =   0   ! Calculate coil finite-build
-  INTEGER              :: Nalpha         =   100 ! Finite-build resolution
   ! poincare plots
   REAL                 :: pp_phi         =  0.000D+00
   REAL                 :: pp_raxis       =  0.000D+00       
@@ -308,6 +323,8 @@ module globals
   pfl_xtol      ,&
   rcflux_target ,&
   pfldim        ,&
+  weight_dpsidr ,&
+  dpsi_linear   ,&
   weight_bharm  ,&
   bharm_jsurf   ,&
   input_harm    ,&
@@ -372,9 +389,20 @@ module globals
   ccsep_beta    ,&
   weight_specw  ,&
   weight_sbnorm ,&
+  weight_sresbn ,&
   Npert         ,&
   Nmax          ,&
   sdelta        ,&
+  Nturns        ,&
+  Npancakes     ,&
+  AlphaPert     ,&
+  Alphafd       ,&
+  Nalpha        ,&
+!  NalphaOpt     ,&
+  ResMult       ,&
+  Nturn_space   ,&
+  Npancake_space,&
+  trans_length  ,&
   case_optimize ,&
   fdiff_delta   ,&
   exit_tol      ,&
@@ -409,7 +437,6 @@ module globals
   update_plasma ,&
   filforce      ,&
   calcfb        ,&
-  Nalpha        ,&
   pp_phi        ,&
   pp_raxis      ,&
   pp_zaxis      ,&
@@ -450,7 +477,8 @@ module globals
      REAL   , allocatable :: xx(:), yy(:), zz(:), xt(:), yt(:), zt(:), xa(:), ya(:), za(:), &
                              xb(:), yb(:), zb(:), dl(:), dd(:), dpsidx(:), dpsidy(:), dpsidz(:), &
                              psx(:), psy(:), psz(:), Bxx(:), Byy(:), Bzz(:), Fx(:), Fy(:), Fz(:), &
-                             nfbx(:), nfby(:), nfbz(:), bfbx(:), bfby(:), bfbz(:), curvature(:), straight(:)
+                             nfbx(:), nfby(:), nfbz(:), bfbx(:), bfby(:), bfbz(:), curvature(:), straight(:), &
+                             alpha(:), alphap(:), alphapp(:), alphadof(:,:), pertx(:,:), perty(:,:), pertz(:,:)
      INTEGER, allocatable :: nxx(:), nyy(:), nzz(:)
      character(10)        :: name
   end type arbitrarycoil
@@ -561,10 +589,15 @@ module globals
   ! Stochastic bnorm
   REAL                 :: bnormavg, bnormmax
   REAL   , allocatable :: t1Bavg(:)
-  ! Stochastic rcflux
+  INTEGER              :: stoch_done = 0
+  ! Stochastic resbn
   REAL                 :: resbnavg, abspsimax
   REAL, allocatable    :: stochpsi(:), stochpsipred(:)
-  !REAL   , allocatable :: t1Bavg(:)
+  REAL   , allocatable :: t1Ravg(:)
+  ! Island sensitivity
+  REAL                 :: dpsidr
+  INTEGER              :: pflsuc
+  REAL   , allocatable :: t1Z(:)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -580,6 +613,7 @@ module globals
   INTEGER, allocatable :: coilseg(:)
   character(LEN=20), allocatable :: coilname(:)
   INTEGER,parameter    :: coil_type_spline = 5
+  INTEGER,parameter    :: coil_type_multi = 4
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 !latex \subsection{Time counting}

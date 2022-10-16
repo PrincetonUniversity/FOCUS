@@ -424,7 +424,7 @@ end subroutine calcfg
 
 subroutine calcfg_deriv(index)
   use globals, only: dp, zero, half, machprec, sqrtmachprec, ncpu, myid, ounit, MPI_COMM_FOCUS, &
-                               resbn_m, pi2, psmall, gsurf
+                               resbn_m, pi2, fdiff_delta, gsurf
   use mpi
   implicit none
 
@@ -461,8 +461,8 @@ subroutine calcfg_deriv(index)
 
   !do idof = 1, gsurf(index)%Ndof_stable
   !   ! perturbation will be relative.
-  !   small = gsurf(index)%xdof_stable(idof) * psmall
-  !   if (abs(small)<machprec) small = psmall
+  !   small = gsurf(index)%xdof_stable(idof) * fdiff_delta
+  !   if (abs(small)<machprec) small = fdiff_delta
   !   !backward pertubation;
   !   tmp_xdof = gsurf(index)%xdof_stable
   !   tmp_xdof(idof) = tmp_xdof(idof) - half * small
@@ -538,13 +538,13 @@ subroutine calcfg_deriv(index)
   SALLOCATE( xzsmall, (1:Nseg_stable), 0.0 )
 
   ! Functions to take FD for gradient of contravariant field 
-  oxsmall(1:Nseg_stable) = gsurf(index)%ox(1:Nseg_stable) * psmall
-  oysmall(1:Nseg_stable) = gsurf(index)%oy(1:Nseg_stable) * psmall
-  ozsmall(1:Nseg_stable) = gsurf(index)%oz(1:Nseg_stable) * psmall
+  oxsmall(1:Nseg_stable) = gsurf(index)%ox(1:Nseg_stable) * fdiff_delta
+  oysmall(1:Nseg_stable) = gsurf(index)%oy(1:Nseg_stable) * fdiff_delta
+  ozsmall(1:Nseg_stable) = gsurf(index)%oz(1:Nseg_stable) * fdiff_delta
   do j = 1, Nseg_stable
-     if (abs(oxsmall(j))<machprec) oxsmall(j) = psmall
-     if (abs(oysmall(j))<machprec) oysmall(j) = psmall
-     if (abs(ozsmall(j))<machprec) ozsmall(j) = psmall
+     if (abs(oxsmall(j))<machprec) oxsmall(j) = fdiff_delta
+     if (abs(oysmall(j))<machprec) oysmall(j) = fdiff_delta
+     if (abs(ozsmall(j))<machprec) ozsmall(j) = fdiff_delta
   enddo
 
   oxneg(1:Nseg_stable) = gsurf(index)%ox(1:Nseg_stable) - half*oxsmall(1:Nseg_stable)
@@ -574,13 +574,13 @@ subroutine calcfg_deriv(index)
 
   ! Everything for x
 
-  xxsmall(1:Nseg_stable) = gsurf(index)%xx(1:Nseg_stable) * psmall
-  xysmall(1:Nseg_stable) = gsurf(index)%xy(1:Nseg_stable) * psmall
-  xzsmall(1:Nseg_stable) = gsurf(index)%xz(1:Nseg_stable) * psmall
+  xxsmall(1:Nseg_stable) = gsurf(index)%xx(1:Nseg_stable) * fdiff_delta
+  xysmall(1:Nseg_stable) = gsurf(index)%xy(1:Nseg_stable) * fdiff_delta
+  xzsmall(1:Nseg_stable) = gsurf(index)%xz(1:Nseg_stable) * fdiff_delta
   do j = 1, Nseg_stable
-     if (abs(xxsmall(j))<machprec) xxsmall(j) = psmall
-     if (abs(xysmall(j))<machprec) xysmall(j) = psmall
-     if (abs(xzsmall(j))<machprec) xzsmall(j) = psmall
+     if (abs(xxsmall(j))<machprec) xxsmall(j) = fdiff_delta
+     if (abs(xysmall(j))<machprec) xysmall(j) = fdiff_delta
+     if (abs(xzsmall(j))<machprec) xzsmall(j) = fdiff_delta
   enddo
 
   xxneg(1:Nseg_stable) = gsurf(index)%xx(1:Nseg_stable) - half*xxsmall(1:Nseg_stable)
@@ -1652,6 +1652,9 @@ subroutine find_pfl(MAXFEV, XTOL, suc)
   gsurf(1)%xxdot(pp_nsteps+1) = gsurf(1)%xxdot(1)
   gsurf(1)%xydot(pp_nsteps+1) = gsurf(1)%xydot(1)
   gsurf(1)%xzdot(pp_nsteps+1) = gsurf(1)%xzdot(1)
+
+  if ( sqrt( (gsurf(1)%ox(1) - gsurf(1)%xx(1))**2 + (gsurf(1)%oy(1)-gsurf(1)%xy(1))**2 + &
+     (gsurf(1)%oz(1)-gsurf(1)%xz(1))**2 ) .lt. 10.0**(-6.0) ) suc = 0
 
   return
 

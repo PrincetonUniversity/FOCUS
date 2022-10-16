@@ -218,9 +218,10 @@ subroutine rdcoils
            read( runit,*)
            read( runit,*)
            read( runit,*) coil(icoil)%type, coil(icoil)%symm, coil(icoil)%name
-           FATAL( rdcoils04, (coil(icoil)%type < 1 .or. coil(icoil)%type > 3) .and. (coil(icoil)%type .NE. coil_type_spline), illegal )
+           FATAL( rdcoils04, (coil(icoil)%type < 1 .or. coil(icoil)%type > 3) .and. &
+               (coil(icoil)%type .ne. coil_type_spline) .and. (coil(icoil)%type .ne. coil_type_multi) , illegal )
            FATAL( rdcoils05, coil(icoil)%symm < 0 .or. coil(icoil)%symm > 2, illegal )
-           if(coil(icoil)%type == 1) then  ! Fourier representation
+           if(coil(icoil)%type == 1 .or. coil(icoil)%type == coil_type_multi) then  ! Fourier representation (and temporarily also for multi)
               read( runit,*)
               read( runit,*) coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, &
                    & coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo
@@ -264,22 +265,22 @@ subroutine rdcoils
               FATAL( rdcoils10, coil(icoil)%Lo < zero                     , illegal )
               read( runit,*)
               read( runit,*) Splines(icoil)%NCP
-	      Splines(icoil)%NT = Splines(icoil)%NCP + 4
+              Splines(icoil)%NT = Splines(icoil)%NCP + 4
               FATAL( rdcoils12, Splines(icoil)%NCP  < 0                    , illegal )
               FATAL( rdcoils12_2, Splines(icoil)%NT  < 0                     , illegal )
               FATAL( rdcoils12_3, Splines(icoil)%NT .NE. Splines(icoil)%NCP +4, illegal )
-	      FATAL( rdcoils12_4, Splines(icoil)%NT < 10, illegal )
+              FATAL( rdcoils12_4, Splines(icoil)%NT < 10, illegal )
               SALLOCATE( Splines(icoil)%vect, (0:Splines(icoil)%NT-1), zero )
               SALLOCATE( Splines(icoil)%eval_points, (0:coil(icoil)%NS-1), zero )
               SALLOCATE( Splines(icoil)%Cpoints, (0:Splines(icoil)%NCP * 3 - 1 ), zero )
               read( runit,*)
               read( runit,*) Splines(icoil)%vect(0:Splines(icoil)%NT-1)
-	      Splines(icoil)%vect(Splines(icoil)%NT-3) = 1.0 + Splines(icoil)%vect(4) - Splines(icoil)%vect(3)
-	      Splines(icoil)%vect(Splines(icoil)%NT-2) = 1.0 + Splines(icoil)%vect(5) - Splines(icoil)%vect(3)
-	      Splines(icoil)%vect(Splines(icoil)%NT-1) = 1.0 + Splines(icoil)%vect(6) - Splines(icoil)%vect(3)
-	      Splines(icoil)%vect(0) =  Splines(icoil)%vect(Splines(icoil)%NT-7) - Splines(icoil)%vect(Splines(icoil)%NT-4)
-	      Splines(icoil)%vect(1) =  Splines(icoil)%vect(Splines(icoil)%NT-6) - Splines(icoil)%vect(Splines(icoil)%NT-4)
-	      Splines(icoil)%vect(2) =  Splines(icoil)%vect(Splines(icoil)%NT-5) - Splines(icoil)%vect(Splines(icoil)%NT-4)	
+              Splines(icoil)%vect(Splines(icoil)%NT-3) = 1.0 + Splines(icoil)%vect(4) - Splines(icoil)%vect(3)
+              Splines(icoil)%vect(Splines(icoil)%NT-2) = 1.0 + Splines(icoil)%vect(5) - Splines(icoil)%vect(3)
+              Splines(icoil)%vect(Splines(icoil)%NT-1) = 1.0 + Splines(icoil)%vect(6) - Splines(icoil)%vect(3)
+              Splines(icoil)%vect(0) =  Splines(icoil)%vect(Splines(icoil)%NT-7) - Splines(icoil)%vect(Splines(icoil)%NT-4)
+              Splines(icoil)%vect(1) =  Splines(icoil)%vect(Splines(icoil)%NT-6) - Splines(icoil)%vect(Splines(icoil)%NT-4)
+              Splines(icoil)%vect(2) =  Splines(icoil)%vect(Splines(icoil)%NT-5) - Splines(icoil)%vect(Splines(icoil)%NT-4)
               read( runit,*)
               read( runit,*) Splines(icoil)%Cpoints(0:Splines(icoil)%NCP-1)
               read( runit,*) Splines(icoil)%Cpoints(Splines(icoil)%NCP:Splines(icoil)%NCP*2-1)
@@ -296,7 +297,7 @@ subroutine rdcoils
         IlBCAST( coil(icoil)%type        , 1        ,  0 )
         IlBCAST( coil(icoil)%symm        , 1        ,  0 )
         ClBCAST( coil(icoil)%name        , 10       ,  0 )
-        if(coil(icoil)%type == 1) then  ! Fourier representation
+        if(coil(icoil)%type == 1 .or. coil(icoil)%type == coil_type_multi) then  ! Fourier representation
            IlBCAST( coil(icoil)%NS           , 1        ,  0 )
            RlBCAST( coil(icoil)%I            , 1        ,  0 )
            IlBCAST( coil(icoil)%Ic           , 1        ,  0 )
@@ -505,6 +506,9 @@ subroutine rdcoils
   totalcurrent = zero
   do icoil = 1, Ncoils
      totalcurrent = totalcurrent + coil(icoil)%I
+
+     ! Need to handle currents for multi-filaments
+
   enddo
   if(myid == 0 .and. IsQuiet <= 0) then
      write(ounit,'("        : "i3" fixed currents ; "i3" fixed geometries.")') &
@@ -538,14 +542,25 @@ subroutine discoil(ifirst)
 ! if ifirst = 1, it will update all the coils; otherwise, only update free coils;
 ! date: 20170314
 !---------------------------------------------------------------------------------------------
-  use globals, only: dp, zero, pi2, myid, ounit, coil, FouCoil, Ncoils, DoF, MPI_COMM_FOCUS,Splines,coil_type_spline
+  !use globals, only: dp, zero, pi2, myid, ounit, coil, FouCoil, Ncoils, DoF, coil_type_multi, &
+  !                   Splines, coil_type_spline, MPI_COMM_FOCUS
+  use globals
   use mpi
   implicit none
 
   INTEGER, intent(in) :: ifirst
-
-  INTEGER          :: icoil, iseg, mm, NS, NCP, NF, ierr, astat, ip
-  REAL             :: tt
+  
+  INTEGER             :: icoil, iseg, mm, NS, NCP, NF, ND, ip, i, j, k
+  
+  REAL                :: tt, C, leng, htrans, freq, xc, yc, zc
+  REAL, allocatable   :: zeta(:), sinterms(:), costerms(:), rc(:,:), rcp(:,:), rcpp(:,:), rcppp(:,:), rcdof(:,:,:), rcpdof(:,:,:), rcppdof(:,:,:), &
+                         xcdof(:), ycdof(:), zcdof(:), delta(:,:), deltadof(:,:,:), &
+                         n(:,:), ndoff(:,:,:), np(:,:), npp(:,:), npdof(:,:,:), nhatp(:,:), nhatpp(:,:), normt(:), normtp(:), normtpp(:), normn(:), normtdof(:,:), normtpdof(:,:), normndof(:,:), &
+                         that(:,:), nhat(:,:), bhat(:,:), thatdof(:,:,:), nhatdof(:,:,:), nhatpdof(:,:,:), bhatdof(:,:,:), bhatp(:,:), bhatpp(:,:), &
+                         thatp(:,:), thatpp(:,:), nhata(:,:), bhata(:,:), nhatap(:,:), bhatap(:,:), nhatapp(:,:), bhatapp(:,:), nhatadof(:,:,:), bhatadof(:,:,:), &
+                         alphac(:), alphas(:), alphacdof(:,:), alphasdof(:,:), Cdoff(:), g(:), w(:), h(:), gp(:), wp(:), hp(:), gpp(:), wpp(:), hpp(:), &
+                         gdof(:,:), wdof(:,:), hdof(:,:), lengdof(:), &
+                         nhatpfd(:,:), nhatpdoffd(:,:,:)
   !-------------------------------------------------------------------------------------------
   do icoil = 1, Ncoils
      ! first time or if Lc/=0, then need discretize;
@@ -604,6 +619,556 @@ subroutine discoil(ifirst)
 
         case(3)
 
+        case( coil_type_multi )
+           NS = coil(icoil)%NS
+           NF = FouCoil(icoil)%NF
+           ND = 3 + 6*NF
+           SALLOCATE( zeta, (0:NS), 0.0 )
+           SALLOCATE( sinterms, (0:NS), 0.0 )
+           SALLOCATE( costerms, (0:NS), 0.0 )
+           SALLOCATE( rc, (0:NS,1:3), 0.0 )
+           SALLOCATE( rcp, (0:NS,1:3), 0.0 )
+           SALLOCATE( rcpp, (0:NS,1:3), 0.0 )
+           SALLOCATE( rcppp, (0:NS,1:3), 0.0 )
+           SALLOCATE( rcdof, (0:NS,1:3,1:ND), 0.0 )
+           SALLOCATE( rcpdof, (0:NS,1:3,1:ND), 0.0 )
+           SALLOCATE( rcppdof, (0:NS,1:3,1:ND), 0.0 )
+           SALLOCATE( xcdof, (1:ND), 0.0 )
+           SALLOCATE( ycdof, (1:ND), 0.0 )
+           SALLOCATE( zcdof, (1:ND), 0.0 )
+           SALLOCATE( delta, (0:NS,1:3), 0.0 )
+           SALLOCATE( deltadof, (0:NS,1:3,1:ND), 0.0 )
+           SALLOCATE( n, (0:NS,1:3), 0.0 )
+           SALLOCATE( np, (0:NS,1:3), 0.0 )
+           SALLOCATE( npp, (0:NS,1:3), 0.0 )
+           SALLOCATE( ndoff, (0:NS,1:3,1:ND), 0.0 )
+           SALLOCATE( npdof, (0:NS,1:3,1:ND), 0.0 )
+           SALLOCATE( nhatp, (0:NS,1:3), 0.0 )
+           SALLOCATE( nhatpp, (0:NS,1:3), 0.0 )
+           SALLOCATE( nhatpdof, (0:NS,1:3,1:ND), 0.0 )
+           SALLOCATE( normt, (0:NS), 0.0 )
+           SALLOCATE( normtp, (0:NS), 0.0 )
+           SALLOCATE( normtpp, (0:NS), 0.0 )
+           SALLOCATE( normn, (0:NS), 0.0 )
+           SALLOCATE( normtdof, (0:NS,1:ND), 0.0 )
+           SALLOCATE( normtpdof, (0:NS,1:ND), 0.0 )
+           SALLOCATE( normndof, (0:NS,1:ND), 0.0 )
+           SALLOCATE( that, (0:NS,1:3), 0.0 )
+           SALLOCATE( nhat, (0:NS,1:3), 0.0 )
+           SALLOCATE( bhat, (0:NS,1:3), 0.0 )
+           SALLOCATE( bhatp, (0:NS,1:3), 0.0 )
+           SALLOCATE( bhatpp, (0:NS,1:3), 0.0 )
+           SALLOCATE( thatp, (0:NS,1:3), 0.0 )
+           SALLOCATE( thatpp, (0:NS,1:3), 0.0 )
+           SALLOCATE( thatdof, (0:NS,1:3,1:ND), 0.0 )
+           SALLOCATE( nhatdof, (0:NS,1:3,1:ND), 0.0 )
+           SALLOCATE( bhatdof, (0:NS,1:3,1:ND), 0.0 )
+           SALLOCATE( nhata, (0:NS,1:3), 0.0 )
+           SALLOCATE( bhata, (0:NS,1:3), 0.0 )
+           SALLOCATE( nhatadof, (0:NS,1:3,1:ND), 0.0 )
+           SALLOCATE( bhatadof, (0:NS,1:3,1:ND), 0.0 )
+           SALLOCATE( nhatap, (0:NS,1:3), 0.0 )
+           SALLOCATE( bhatap, (0:NS,1:3), 0.0 )
+           SALLOCATE( nhatapp, (0:NS,1:3), 0.0 )
+           SALLOCATE( bhatapp, (0:NS,1:3), 0.0 )
+           SALLOCATE( alphac, (0:Nalpha), 0.0 )
+           SALLOCATE( alphas, (0:Nalpha), 0.0 )
+           SALLOCATE( alphacdof, (0:Nalpha,1:ND), 0.0 )
+           SALLOCATE( alphasdof, (0:Nalpha,1:ND), 0.0 )
+           SALLOCATE( Cdoff, (1:ND), 0.0 )
+           SALLOCATE( g, (0:NS), 0.0 )
+           SALLOCATE( w, (0:NS), 0.0 )
+           SALLOCATE( h, (0:NS), 0.0 )
+           SALLOCATE( gp, (0:NS), 0.0 )
+           SALLOCATE( wp, (0:NS), 0.0 )
+           SALLOCATE( hp, (0:NS), 0.0 )
+           SALLOCATE( gpp, (0:NS), 0.0 )
+           SALLOCATE( wpp, (0:NS), 0.0 )
+           SALLOCATE( hpp, (0:NS), 0.0 )
+           SALLOCATE( gdof, (0:NS,1:ND), 0.0 )
+           SALLOCATE( wdof, (0:NS,1:ND), 0.0 )
+           SALLOCATE( hdof, (0:NS,1:ND), 0.0 )
+           SALLOCATE( lengdof, (1:ND), 0.0 )
+           SALLOCATE( nhatpfd, (0:NS,1:3), 0.0 )
+           SALLOCATE( nhatpdoffd, (0:NS,1:3,1:ND), 0.0 )
+
+           ! Add in zeta_0 phase shift later 
+           do i = 0, NS
+              zeta(i) = real(i)*pi2/real(NS)
+           enddo
+           mm = 0
+           rc(0:NS,1) = Foucoil(icoil)%xc(mm)
+           rc(0:NS,2) = Foucoil(icoil)%yc(mm)
+           rc(0:NS,3) = Foucoil(icoil)%zc(mm)
+           rcdof(0:NS,1,1) = 1.0
+           rcdof(0:NS,2,2+2*NF) = 1.0
+           rcdof(0:NS,3,3+4*NF) = 1.0
+           do mm = 1, NF
+              freq = real(mm*Nturns*Npancakes)
+              costerms(0:NS) = cos(mm*Nturns*Npancakes*zeta(0:NS))
+              sinterms(0:NS) = sin(mm*Nturns*Npancakes*zeta(0:NS))
+              rc(0:NS,1)    = rc(0:NS,1)    +                Foucoil(icoil)%xc(mm)*costerms(0:NS) +                Foucoil(icoil)%xs(mm)*sinterms(0:NS)
+              rc(0:NS,2)    = rc(0:NS,2)    +                Foucoil(icoil)%yc(mm)*costerms(0:NS) +                Foucoil(icoil)%ys(mm)*sinterms(0:NS)
+              rc(0:NS,3)    = rc(0:NS,3)    +                Foucoil(icoil)%zc(mm)*costerms(0:NS) +                Foucoil(icoil)%zs(mm)*sinterms(0:NS)
+              rcp(0:NS,1)   = rcp(0:NS,1)   -           freq*Foucoil(icoil)%xc(mm)*sinterms(0:NS) +           freq*Foucoil(icoil)%xs(mm)*costerms(0:NS)
+              rcp(0:NS,2)   = rcp(0:NS,2)   -           freq*Foucoil(icoil)%yc(mm)*sinterms(0:NS) +           freq*Foucoil(icoil)%ys(mm)*costerms(0:NS)
+              rcp(0:NS,3)   = rcp(0:NS,3)   -           freq*Foucoil(icoil)%zc(mm)*sinterms(0:NS) +           freq*Foucoil(icoil)%zs(mm)*costerms(0:NS)
+              rcpp(0:NS,1)  = rcpp(0:NS,1)  -      freq*freq*Foucoil(icoil)%xc(mm)*costerms(0:NS) -      freq*freq*Foucoil(icoil)%xs(mm)*sinterms(0:NS)
+              rcpp(0:NS,2)  = rcpp(0:NS,2)  -      freq*freq*Foucoil(icoil)%yc(mm)*costerms(0:NS) -      freq*freq*Foucoil(icoil)%ys(mm)*sinterms(0:NS)
+              rcpp(0:NS,3)  = rcpp(0:NS,3)  -      freq*freq*Foucoil(icoil)%zc(mm)*costerms(0:NS) -      freq*freq*Foucoil(icoil)%zs(mm)*sinterms(0:NS)
+              rcppp(0:NS,1) = rcppp(0:NS,1) + freq*freq*freq*Foucoil(icoil)%xc(mm)*sinterms(0:NS) - freq*freq*freq*Foucoil(icoil)%xs(mm)*costerms(0:NS)
+              rcppp(0:NS,2) = rcppp(0:NS,2) + freq*freq*freq*Foucoil(icoil)%yc(mm)*sinterms(0:NS) - freq*freq*freq*Foucoil(icoil)%ys(mm)*costerms(0:NS)
+              rcppp(0:NS,3) = rcppp(0:NS,3) + freq*freq*freq*Foucoil(icoil)%zc(mm)*sinterms(0:NS) - freq*freq*freq*Foucoil(icoil)%zs(mm)*costerms(0:NS)
+              
+              rcdof(0:NS,1,1+     mm) = costerms(0:NS)
+              rcdof(0:NS,1,1+  NF+mm) = sinterms(0:NS)
+              rcdof(0:NS,2,2+2*NF+mm) = costerms(0:NS)
+              rcdof(0:NS,2,2+3*NF+mm) = sinterms(0:NS)
+              rcdof(0:NS,3,3+4*NF+mm) = costerms(0:NS)
+              rcdof(0:NS,3,3+5*NF+mm) = sinterms(0:NS)
+              rcpdof(0:NS,1,1+     mm) = -1.0*sinterms(0:NS)*freq
+              rcpdof(0:NS,1,1+  NF+mm) =      costerms(0:NS)*freq
+              rcpdof(0:NS,2,2+2*NF+mm) = -1.0*sinterms(0:NS)*freq
+              rcpdof(0:NS,2,2+3*NF+mm) =      costerms(0:NS)*freq
+              rcpdof(0:NS,3,3+4*NF+mm) = -1.0*sinterms(0:NS)*freq
+              rcpdof(0:NS,3,3+5*NF+mm) =      costerms(0:NS)*freq
+              rcppdof(0:NS,1,1+     mm) = -1.0*costerms(0:NS)*freq*freq
+              rcppdof(0:NS,1,1+  NF+mm) = -1.0*sinterms(0:NS)*freq*freq
+              rcppdof(0:NS,2,2+2*NF+mm) = -1.0*costerms(0:NS)*freq*freq
+              rcppdof(0:NS,2,2+3*NF+mm) = -1.0*sinterms(0:NS)*freq*freq
+              rcppdof(0:NS,3,3+4*NF+mm) = -1.0*costerms(0:NS)*freq*freq
+              rcppdof(0:NS,3,3+5*NF+mm) = -1.0*sinterms(0:NS)*freq*freq
+           enddo
+           normt(0:NS) = sqrt( rcp(0:NS,1)**2.0 + rcp(0:NS,2)**2.0 + rcp(0:NS,3)**2.0 )
+           normtp(0:NS) = normt(0:NS)**-1.0*(rcp(0:NS,1)*rcpp(0:NS,1) + rcp(0:NS,2)*rcpp(0:NS,2) + rcp(0:NS,3)*rcpp(0:NS,3))
+           normtpp(0:NS) = normt(0:NS)**-1.0*(rcpp(0:NS,1)*rcpp(0:NS,1)+rcpp(0:NS,2)*rcpp(0:NS,2)+rcpp(0:NS,3)*rcpp(0:NS,3)+rcp(0:NS,1)*rcppp(0:NS,1)+rcp(0:NS,2)*rcppp(0:NS,2)+rcp(0:NS,3)*rcppp(0:NS,3)) - &
+                normt(0:NS)**-3.0*(rcp(0:NS,1)*rcpp(0:NS,1) + rcp(0:NS,2)*rcpp(0:NS,2) + rcp(0:NS,3)*rcpp(0:NS,3))**2.0
+           do k = 1, ND
+              if( myid.ne.modulo(k-1,ncpu) ) cycle
+              normtdof(0:NS,k) = normt(0:NS)**-1.0*( rcp(0:NS,1)*rcpdof(0:NS,1,k) + rcp(0:NS,2)*rcpdof(0:NS,2,k) + rcp(0:NS,3)*rcpdof(0:NS,3,k) )
+              normtpdof(0:NS,k) = -1.0*normt(0:NS)**-2.0*normtdof(0:NS,k)*(rcp(0:NS,1)*rcpp(0:NS,1) + rcp(0:NS,2)*rcpp(0:NS,2) + rcp(0:NS,3)*rcpp(0:NS,3)) + &
+                   normt(0:NS)**-1.0*(rcpdof(0:NS,1,k)*rcpp(0:NS,1)+rcpdof(0:NS,2,k)*rcpp(0:NS,2)+rcpdof(0:NS,3,k)*rcpp(0:NS,3)+&
+                   rcp(0:NS,1)*rcppdof(0:NS,1,k)+rcp(0:NS,2)*rcppdof(0:NS,2,k)+rcp(0:NS,3)*rcppdof(0:NS,3,k))
+           enddo
+           do j = 1, 3
+              that(0:NS,j) = rcp(0:NS,j) / normt(0:NS)
+              do k = 1, ND
+                 if( myid.ne.modulo(k-1,ncpu) ) cycle
+                 thatdof(0:NS,j,k) = rcpdof(0:NS,j,k) / normt(0:NS) - normtdof(0:NS,k)*rcp(0:NS,j) / normt(0:NS)**2.0
+              enddo
+           enddo
+           xc = sum( rc(0:NS-1,1)*normt(0:NS-1) ) / sum( normt(0:NS-1) )
+           yc = sum( rc(0:NS-1,2)*normt(0:NS-1) ) / sum( normt(0:NS-1) )
+           zc = sum( rc(0:NS-1,3)*normt(0:NS-1) ) / sum( normt(0:NS-1) )
+           do k = 1, ND
+              if( myid.ne.modulo(k-1,ncpu) ) cycle
+              xcdof(k) = sum( rcdof(0:NS-1,1,k)*normt(0:NS-1) + rc(0:NS-1,1)*normtdof(0:NS-1,k) ) / sum( normt(0:NS-1) ) - &
+                         sum( normtdof(0:NS-1,k) )*sum( rc(0:NS-1,1)*normt(0:NS-1) ) / sum( normt(0:NS-1) )**2.0
+              ycdof(k) = sum( rcdof(0:NS-1,2,k)*normt(0:NS-1) + rc(0:NS-1,2)*normtdof(0:NS-1,k) ) / sum( normt(0:NS-1) ) - &
+                         sum( normtdof(0:NS-1,k) )*sum( rc(0:NS-1,2)*normt(0:NS-1) ) / sum( normt(0:NS-1) )**2.0
+              zcdof(k) = sum( rcdof(0:NS-1,3,k)*normt(0:NS-1) + rc(0:NS-1,3)*normtdof(0:NS-1,k) ) / sum( normt(0:NS-1) ) - &
+                         sum( normtdof(0:NS-1,k) )*sum( rc(0:NS-1,3)*normt(0:NS-1) ) / sum( normt(0:NS-1) )**2.0
+           enddo
+           delta(0:NS,1) = rc(0:NS,1) - xc
+           delta(0:NS,2) = rc(0:NS,2) - yc
+           delta(0:NS,3) = rc(0:NS,3) - zc
+           do k = 1, ND
+              if( myid.ne.modulo(k-1,ncpu) ) cycle
+              deltadof(0:NS,1,k) = rcdof(0:NS,1,k) - xcdof(k)
+              deltadof(0:NS,2,k) = rcdof(0:NS,2,k) - ycdof(k)
+              deltadof(0:NS,3,k) = rcdof(0:NS,3,k) - zcdof(k)
+           enddo
+           do j = 1, 3
+              n(0:NS,j) = delta(0:NS,j) - (delta(0:NS,1)*rcp(0:NS,1) + delta(0:NS,2)*rcp(0:NS,2) + delta(0:NS,3)*rcp(0:NS,3)) * rcp(0:NS,j) * normt(0:NS)**-2.0
+              do k = 1, ND
+                 if( myid.ne.modulo(k-1,ncpu) ) cycle
+                 ndoff(0:NS,j,k) = deltadof(0:NS,j,k) - (deltadof(0:NS,1,k)*rcp(0:NS,1)+deltadof(0:NS,2,k)*rcp(0:NS,2)+deltadof(0:NS,3,k)*rcp(0:NS,3)+&
+                      delta(0:NS,1)*rcpdof(0:NS,1,k)+delta(0:NS,2)*rcpdof(0:NS,2,k)+delta(0:NS,3)*rcpdof(0:NS,3,k))*rcp(0:NS,j)/(rcp(0:NS,1)**2.0+rcp(0:NS,2)**2.0+rcp(0:NS,3)**2.0) - &
+                      (delta(0:NS,1)*rcp(0:NS,1)+delta(0:NS,2)*rcp(0:NS,2)+delta(0:NS,3)*rcp(0:NS,3))*rcpdof(0:NS,j,k)/(rcp(0:NS,1)**2.0+rcp(0:NS,2)**2.0+rcp(0:NS,3)**2.0) + &
+                      2.0*(rcp(0:NS,1)*rcpdof(0:NS,1,k)+rcp(0:NS,2)*rcpdof(0:NS,2,k)+rcp(0:NS,3)*rcpdof(0:NS,3,k))*&
+                      (delta(0:NS,1)*rcp(0:NS,1)+delta(0:NS,2)*rcp(0:NS,2)+delta(0:NS,3)*rcp(0:NS,3))*rcp(0:NS,j)/(rcp(0:NS,1)**2.0+rcp(0:NS,2)**2.0+rcp(0:NS,3)**2.0)**2.0
+              enddo
+           enddo
+           normn(0:NS) = sqrt( n(0:NS,1)**2.0 + n(0:NS,2)**2.0 + n(0:NS,3)**2.0 )
+           do k = 1, ND
+              if( myid.ne.modulo(k-1,ncpu) ) cycle
+              normndof(0:NS,k) = ( n(0:NS,1)**2.0 + n(0:NS,2)**2.0 + n(0:NS,3)**2.0 )**-0.5*( n(0:NS,1)*ndoff(0:NS,1,k) + n(0:NS,2)*ndoff(0:NS,2,k) + n(0:NS,3)*ndoff(0:NS,3,k) )
+           enddo
+           do j = 1, 3
+              nhat(0:NS,j) = n(0:NS,j) / normn(0:NS)
+              do k = 1, ND
+                 if( myid.ne.modulo(k-1,ncpu) ) cycle
+                 nhatdof(0:NS,j,k) = ndoff(0:NS,j,k) / normn(0:NS) - n(0:NS,j)*normndof(0:NS,k) / normn(0:NS)**2.0
+              enddo
+           enddo
+           bhat(0:NS,1) = that(0:NS,2)*nhat(0:NS,3) - that(0:NS,3)*nhat(0:NS,2)
+           bhat(0:NS,2) = that(0:NS,3)*nhat(0:NS,1) - that(0:NS,1)*nhat(0:NS,3)
+           bhat(0:NS,3) = that(0:NS,1)*nhat(0:NS,2) - that(0:NS,2)*nhat(0:NS,1)
+           do k = 1, ND
+              if( myid.ne.modulo(k-1,ncpu) ) cycle
+              bhatdof(0:NS,1,k) = thatdof(0:NS,2,k)*nhat(0:NS,3) - thatdof(0:NS,3,k)*nhat(0:NS,2) + that(0:NS,2)*nhatdof(0:NS,3,k) - that(0:NS,3)*nhatdof(0:NS,2,k)
+              bhatdof(0:NS,2,k) = thatdof(0:NS,3,k)*nhat(0:NS,1) - thatdof(0:NS,1,k)*nhat(0:NS,3) + that(0:NS,3)*nhatdof(0:NS,1,k) - that(0:NS,1)*nhatdof(0:NS,3,k)
+              bhatdof(0:NS,3,k) = thatdof(0:NS,1,k)*nhat(0:NS,2) - thatdof(0:NS,2,k)*nhat(0:NS,1) + that(0:NS,1)*nhatdof(0:NS,2,k) - that(0:NS,2)*nhatdof(0:NS,1,k)
+           enddo
+           do j = 1, 3
+              thatp(0:NS,j) = rcpp(0:NS,j)/normt(0:NS) - ( rcp(0:NS,1)*rcpp(0:NS,1) + rcp(0:NS,2)*rcpp(0:NS,2) + rcp(0:NS,3)*rcpp(0:NS,3) )*rcp(0:NS,j) / normt(0:NS)**3.0
+              thatpp(0:NS,j) = rcppp(0:NS,j)/normt(0:NS) - 2.0*( rcp(0:NS,1)*rcpp(0:NS,1) + rcp(0:NS,2)*rcpp(0:NS,2) + rcp(0:NS,3)*rcpp(0:NS,3) )*rcpp(0:NS,j) / normt(0:NS)**3.0 - &
+                   (rcpp(0:NS,1)*rcpp(0:NS,1)+rcpp(0:NS,2)*rcpp(0:NS,2)+rcpp(0:NS,3)*rcpp(0:NS,3)+rcp(0:NS,1)*rcppp(0:NS,1)+rcp(0:NS,2)*rcppp(0:NS,2)+rcp(0:NS,3)*rcppp(0:NS,3))*rcp(0:NS,j) / normt(0:NS)**3.0 + &
+                   3.0*( rcp(0:NS,1)*rcpp(0:NS,1) + rcp(0:NS,2)*rcpp(0:NS,2) + rcp(0:NS,3)*rcpp(0:NS,3) )*rcp(0:NS,j) / normt(0:NS)**4.0 * normtp(0:NS)
+           enddo
+           do j = 1, 3
+              np(0:NS,j) = rcp(0:NS,j) - ( normt(0:NS)**2.0+delta(0:NS,1)*rcpp(0:NS,1)+delta(0:NS,2)*rcpp(0:NS,2)+delta(0:NS,3)*rcpp(0:NS,3) )*rcp(0:NS,j)*normt(0:NS)**-2.0 + &
+                   ( delta(0:NS,1)*rcp(0:NS,1)+delta(0:NS,2)*rcp(0:NS,2)+delta(0:NS,3)*rcp(0:NS,3) )*( rcp(0:NS,j)*normt(0:NS)**-3.0*2.0*normtp(0:NS)-rcpp(0:NS,j)*normt(0:NS)**-2.0 )
+              npp(0:NS,j) = rcpp(0:NS,j) - ( 2.0*normt(0:NS)*normtp(0:NS) + rcp(0:NS,1)*rcpp(0:NS,1)+rcp(0:NS,2)*rcpp(0:NS,2)+rcp(0:NS,3)*rcpp(0:NS,3) + &
+                   delta(0:NS,1)*rcppp(0:NS,1)+delta(0:NS,2)*rcppp(0:NS,2)+delta(0:NS,3)*rcppp(0:NS,3) )*rcp(0:NS,j)*normt(0:NS)**-2.0 + &
+                   2.0*( normt(0:NS)**2.0+delta(0:NS,1)*rcpp(0:NS,1)+delta(0:NS,2)*rcpp(0:NS,2)+delta(0:NS,3)*rcpp(0:NS,3) )*( rcp(0:NS,j)*normt(0:NS)**-3.0*2.0*normtp(0:NS)-rcpp(0:NS,j)*normt(0:NS)**-2.0 ) + &
+                   ( delta(0:NS,1)*rcp(0:NS,1)+delta(0:NS,2)*rcp(0:NS,2)+delta(0:NS,3)*rcp(0:NS,3) )*( rcpp(0:NS,j)*normt(0:NS)**-3.0*2.0*normtp(0:NS) - &
+                   3.0*rcp(0:NS,j)*normt(0:NS)**-4.0*2.0*normtp(0:NS)**2.0 + rcp(0:NS,j)*normt(0:NS)**-3.0*2.0*normtpp(0:NS) - &
+                   rcppp(0:NS,j)*normt(0:NS)**-2.0 + 2.0*rcpp(0:NS,j)*normt(0:NS)**-3.0*normtp(0:NS) )
+              do k = 1, ND
+                 if( myid.ne.modulo(k-1,ncpu) ) cycle
+                 npdof(0:NS,j,k) = rcpdof(0:NS,j,k) - ( 2.0*normt(0:NS)*normtdof(0:NS,k)+deltadof(0:NS,1,k)*rcpp(0:NS,1)+deltadof(0:NS,2,k)*rcpp(0:NS,2)+deltadof(0:NS,3,k)*rcpp(0:NS,3)+&
+                      delta(0:NS,1)*rcppdof(0:NS,1,k)+delta(0:NS,2)*rcppdof(0:NS,2,k)+delta(0:NS,3)*rcppdof(0:NS,3,k) )*rcp(0:NS,j)*normt(0:NS)**-2.0 + &
+                      ( normt(0:NS)**2.0+delta(0:NS,1)*rcpp(0:NS,1)+delta(0:NS,2)*rcpp(0:NS,2)+delta(0:NS,3)*rcpp(0:NS,3) )*&
+                      ( 2.0*rcp(0:NS,j)*normt(0:NS)**-3.0*normtdof(0:NS,k)-rcpdof(0:NS,j,k)*normt(0:NS)**-2.0 ) + &
+                      ( deltadof(0:NS,1,k)*rcp(0:NS,1)+deltadof(0:NS,2,k)*rcp(0:NS,2)+deltadof(0:NS,3,k)*rcp(0:NS,3)+delta(0:NS,1)*rcpdof(0:NS,1,k)+&
+                      delta(0:NS,2)*rcpdof(0:NS,2,k)+delta(0:NS,3)*rcpdof(0:NS,3,k) )*( rcp(0:NS,j)*normt(0:NS)**-3.0*2.0*normtp(0:NS)-rcpp(0:NS,j)*normt(0:NS)**-2.0 ) + &
+                      ( delta(0:NS,1)*rcp(0:NS,1)+delta(0:NS,2)*rcp(0:NS,2)+delta(0:NS,3)*rcp(0:NS,3) )*( rcpdof(0:NS,j,k)*normt(0:NS)**-3.0*2.0*normtp(0:NS)-&
+                      3.0*rcp(0:NS,j)*normt(0:NS)**-4.0*normtdof(0:NS,k)*2.0*normtp(0:NS)+rcp(0:NS,j)*normt(0:NS)**-3.0*2.0*normtpdof(0:NS,k)-&
+                      rcppdof(0:NS,j,k)*normt(0:NS)**-2.0+2.0*rcpp(0:NS,j)*normt(0:NS)**-3.0*normtdof(0:NS,k) )
+              enddo
+           enddo
+           do j = 1, 3
+              nhatp(0:NS,j) = np(0:NS,j)/normn(0:NS) - ( n(0:NS,1)*np(0:NS,1) + n(0:NS,2)*np(0:NS,2) + n(0:NS,3)*np(0:NS,3) )*n(0:NS,j) / normn(0:NS)**3.0
+              nhatpp(0:NS,j) = npp(0:NS,j)/normn(0:NS) - 2.0*( n(0:NS,1)*np(0:NS,1) + n(0:NS,2)*np(0:NS,2) + n(0:NS,3)*np(0:NS,3) )*np(0:NS,j) / normn(0:NS)**3.0 - &
+                   ( np(0:NS,1)*np(0:NS,1) + np(0:NS,2)*np(0:NS,2) + np(0:NS,3)*np(0:NS,3) + n(0:NS,1)*npp(0:NS,1) + n(0:NS,2)*npp(0:NS,2) + n(0:NS,3)*npp(0:NS,3) )*n(0:NS,j) / normn(0:NS)**3.0 + &
+                   3.0*( n(0:NS,1)*np(0:NS,1) + n(0:NS,2)*np(0:NS,2) + n(0:NS,3)*np(0:NS,3) )*n(0:NS,j) / normn(0:NS)**5.0 * ( n(0:NS,1)*np(0:NS,1) + n(0:NS,2)*np(0:NS,2) + n(0:NS,3)*np(0:NS,3) )
+              do k = 1, ND
+                 if( myid.ne.modulo(k-1,ncpu) ) cycle
+                 nhatpdof(0:NS,j,k) = npdof(0:NS,j,k)/normn(0:NS) - np(0:NS,j)*normn(0:NS)**-2.0*normndof(0:NS,k) - &
+                      (ndoff(0:NS,1,k)*np(0:NS,1)+ndoff(0:NS,2,k)*np(0:NS,2)+ndoff(0:NS,3,k)*np(0:NS,3)+n(0:NS,1)*npdof(0:NS,1,k)+n(0:NS,2)*npdof(0:NS,2,k)+n(0:NS,3)*npdof(0:NS,3,k))*n(0:NS,j)/normn(0:NS)**3.0 - &
+                      ( n(0:NS,1)*np(0:NS,1) + n(0:NS,2)*np(0:NS,2) + n(0:NS,3)*np(0:NS,3) )*( ndoff(0:NS,j,k) / normn(0:NS)**3.0 - 3.0*n(0:NS,j)*normn(0:NS)**-4.0*normndof(0:NS,k) )
+              enddo
+           enddo
+           bhatp(0:NS,1) = thatp(0:NS,2)*nhat(0:NS,3) - thatp(0:NS,3)*nhat(0:NS,2) + that(0:NS,2)*nhatp(0:NS,3) - that(0:NS,3)*nhatp(0:NS,2)
+           bhatp(0:NS,2) = thatp(0:NS,3)*nhat(0:NS,1) - thatp(0:NS,1)*nhat(0:NS,3) + that(0:NS,3)*nhatp(0:NS,1) - that(0:NS,1)*nhatp(0:NS,3)
+           bhatp(0:NS,3) = thatp(0:NS,1)*nhat(0:NS,2) - thatp(0:NS,2)*nhat(0:NS,1) + that(0:NS,1)*nhatp(0:NS,2) - that(0:NS,2)*nhatp(0:NS,1)
+           bhatpp(0:NS,1) = thatpp(0:NS,2)*nhat(0:NS,3) - thatpp(0:NS,3)*nhat(0:NS,2) + thatp(0:NS,2)*nhatp(0:NS,3) - thatp(0:NS,3)*nhatp(0:NS,2) + &
+                thatp(0:NS,2)*nhatp(0:NS,3) - thatp(0:NS,3)*nhatp(0:NS,2) + that(0:NS,2)*nhatpp(0:NS,3) - that(0:NS,3)*nhatpp(0:NS,2)
+           bhatpp(0:NS,2) = thatpp(0:NS,3)*nhat(0:NS,1) - thatpp(0:NS,1)*nhat(0:NS,3) + thatp(0:NS,3)*nhatp(0:NS,1) - thatp(0:NS,1)*nhatp(0:NS,3) + &
+                thatp(0:NS,3)*nhatp(0:NS,1) - thatp(0:NS,1)*nhatp(0:NS,3) + that(0:NS,3)*nhatpp(0:NS,1) - that(0:NS,1)*nhatpp(0:NS,3)
+           bhatpp(0:NS,3) = thatpp(0:NS,1)*nhat(0:NS,2) - thatpp(0:NS,2)*nhat(0:NS,1) + thatp(0:NS,1)*nhatp(0:NS,2) - thatp(0:NS,2)*nhatp(0:NS,1) + &
+                thatp(0:NS,1)*nhatp(0:NS,2) - thatp(0:NS,2)*nhatp(0:NS,1) + that(0:NS,1)*nhatpp(0:NS,2) - that(0:NS,2)*nhatpp(0:NS,1)
+           if( ifirst .eq. 1 .or. AlphaPert .eq. 1 ) then
+              
+              ! Improve robustness
+              ! Add in increased NS
+              !do i = 1, NS-1
+              !   nhatpfd(i,1:3) = real(NS) * ( nhat(i+1,1:3) - nhat(i-1,1:3) ) / ( 2.0*pi2 )
+              !enddo
+              !nhatpfd(0,1:3) = real(NS) * ( nhat(1,1:3) - nhat(NS-1,1:3) ) / ( 2.0*pi2 )
+              !nhatpfd(NS,1:3) = nhatpfd(0,1:3)
+              !do k = 1, ND
+              !   if( myid.ne.modulo(k-1,ncpu) ) cycle
+              !   do i = 1, NS-1
+              !      nhatpdoffd(i,1:3,k) = real(NS) * ( nhatdof(i+1,1:3,k) - nhatdof(i-1,1:3,k) ) / ( 2.0*pi2 )
+              !   enddo
+              !   nhatpdoffd(0,1:3,k) = real(NS) * ( nhatdof(1,1:3,k) - nhatdof(NS-1,1:3,k) ) / ( 2.0*pi2 )
+              !   nhatpdoffd(NS,1:3,k) = nhatpdoffd(0,1:3,k)
+              !enddo
+              !if ( Alphafd .eq. 1 ) then
+              !   nhatp(0:NS,1:3) = nhatpfd(0:NS,1:3)
+              !   do k = 1, ND
+              !      if( myid.ne.modulo(k-1,ncpu) ) cycle
+              !      nhatpdof(0:NS,1:3,k) = nhatpdoffd(0:NS,1:3,k)
+              !   enddo
+              !endif
+
+              C = sum(nhatp(0:NS-1,1)*bhat(0:NS-1,1)+nhatp(0:NS-1,2)*bhat(0:NS-1,2)+nhatp(0:NS-1,3)*bhat(0:NS-1,3))/(sum(normt(0:NS-1)))
+              do k = 1, ND
+                 if( myid.ne.modulo(k-1,ncpu) ) cycle
+                 Cdoff(k) = sum(nhatpdof(0:NS-1,1,k)*bhat(0:NS-1,1)+nhatpdof(0:NS-1,2,k)*bhat(0:NS-1,2)+nhatpdof(0:NS-1,3,k)*bhat(0:NS-1,3)+&
+                      nhatp(0:NS-1,1)*bhatdof(0:NS-1,1,k)+nhatp(0:NS-1,2)*bhatdof(0:NS-1,2,k)+nhatp(0:NS-1,3)*bhatdof(0:NS-1,3,k))/(sum(normt(0:NS-1))) - &
+                      sum(nhatp(0:NS-1,1)*bhat(0:NS-1,1)+nhatp(0:NS-1,2)*bhat(0:NS-1,2)+nhatp(0:NS-1,3)*bhat(0:NS-1,3))*(sum(normt(0:NS-1)))**-2.0*(sum(normtdof(0:NS-1,k)))
+              enddo
+
+              do i = 1, Nalpha
+                 alphac(i) = -2.0*sum(sin(Nturns*Npancakes*real(i)*zeta(0:NS-1))*(nhatp(0:NS-1,1)*bhat(0:NS-1,1)+&
+                      nhatp(0:NS-1,2)*bhat(0:NS-1,2)+nhatp(0:NS-1,3)*bhat(0:NS-1,3)-C*normt(0:NS-1)))/(Nturns*Npancakes*real(NS)*real(i))
+                 alphas(i) =  2.0*sum(cos(Nturns*Npancakes*real(i)*zeta(0:NS-1))*(nhatp(0:NS-1,1)*bhat(0:NS-1,1)+&
+                      nhatp(0:NS-1,2)*bhat(0:NS-1,2)+nhatp(0:NS-1,3)*bhat(0:NS-1,3)-C*normt(0:NS-1)))/(Nturns*Npancakes*real(NS)*real(i))
+                 do k = 1, ND
+                    if( myid.ne.modulo(k-1,ncpu) ) cycle
+                    alphacdof(i,k) = -2.0*sum(sin(Nturns*Npancakes*real(i)*zeta(0:NS-1))*(nhatpdof(0:NS-1,1,k)*bhat(0:NS-1,1)+nhatpdof(0:NS-1,2,k)*bhat(0:NS-1,2)+nhatpdof(0:NS-1,3,k)*bhat(0:NS-1,3)+&
+                         nhatp(0:NS-1,1)*bhatdof(0:NS-1,1,k)+nhatp(0:NS-1,2)*bhatdof(0:NS-1,2,k)+nhatp(0:NS-1,3)*bhatdof(0:NS-1,3,k)-&
+                         Cdoff(k)*normt(0:NS-1)-C*normtdof(0:NS-1,k)))/(Nturns*Npancakes*real(NS)*real(i))
+                    alphasdof(i,k) =  2.0*sum(cos(Nturns*Npancakes*real(i)*zeta(0:NS-1))*(nhatpdof(0:NS-1,1,k)*bhat(0:NS-1,1)+nhatpdof(0:NS-1,2,k)*bhat(0:NS-1,2)+nhatpdof(0:NS-1,3,k)*bhat(0:NS-1,3)+&
+                         nhatp(0:NS-1,1)*bhatdof(0:NS-1,1,k)+nhatp(0:NS-1,2)*bhatdof(0:NS-1,2,k)+nhatp(0:NS-1,3)*bhatdof(0:NS-1,3,k)-&
+                         Cdoff(k)*normt(0:NS-1)-C*normtdof(0:NS-1,k)))/(Nturns*Npancakes*real(NS)*real(i))
+                 enddo
+              enddo
+              coil(icoil)%alpha(0:NS) = 0.0
+              coil(icoil)%alphap(0:NS) = 0.0
+              coil(icoil)%alphapp(0:NS) = 0.0
+              coil(icoil)%alphadof(0:NS,1:ND) = 0.0
+              do i = 1, Nalpha
+                 coil(icoil)%alpha(0:NS) = coil(icoil)%alpha(0:NS) + alphac(i)*cos(Nturns*Npancakes*real(i)*zeta(0:NS)) + alphas(i)*sin(Nturns*Npancakes*real(i)*zeta(0:NS))
+                 coil(icoil)%alphap(0:NS) = coil(icoil)%alphap(0:NS) - alphac(i)*Nturns*Npancakes*real(i)*sin(Nturns*Npancakes*real(i)*zeta(0:NS)) + &
+                      alphas(i)*Nturns*Npancakes*real(i)*cos(Nturns*Npancakes*real(i)*zeta(0:NS))
+                 coil(icoil)%alphapp(0:NS) = coil(icoil)%alphapp(0:NS) - alphac(i)*(Nturns*Npancakes*real(i))**2.0*cos(Nturns*Npancakes*real(i)*zeta(0:NS)) - &
+                      alphas(i)*(Nturns*Npancakes*real(i))**2.0*sin(Nturns*Npancakes*real(i)*zeta(0:NS))
+                 do k = 1, ND
+                    if( myid.ne.modulo(k-1,ncpu) ) cycle
+                    coil(icoil)%alphadof(0:NS,k) = coil(icoil)%alphadof(0:NS,k) + alphacdof(i,k)*cos(Nturns*Npancakes*real(i)*zeta(0:NS)) + alphasdof(i,k)*sin(Nturns*Npancakes*real(i)*zeta(0:NS))
+                 enddo
+              enddo
+           endif
+           do j = 1, 3
+              nhata(0:NS,j) = -1.0*sin(coil(icoil)%alpha(0:NS))*bhat(0:NS,j) + cos(coil(icoil)%alpha(0:NS))*nhat(0:NS,j)
+              bhata(0:NS,j) =      sin(coil(icoil)%alpha(0:NS))*nhat(0:NS,j) + cos(coil(icoil)%alpha(0:NS))*bhat(0:NS,j)
+              nhatap(0:NS,j) = -1.0*cos(coil(icoil)%alpha(0:NS))*coil(icoil)%alphap(0:NS)*bhat(0:NS,j) - sin(coil(icoil)%alpha(0:NS))*coil(icoil)%alphap(0:NS)*nhat(0:NS,j) - &
+                              sin(coil(icoil)%alpha(0:NS))*bhatp(0:NS,j) + cos(coil(icoil)%alpha(0:NS))*nhatp(0:NS,j)
+              bhatap(0:NS,j) =      cos(coil(icoil)%alpha(0:NS))*coil(icoil)%alphap(0:NS)*nhat(0:NS,j) - sin(coil(icoil)%alpha(0:NS))*coil(icoil)%alphap(0:NS)*bhat(0:NS,j) + &
+                              sin(coil(icoil)%alpha(0:NS))*nhatp(0:NS,j) + cos(coil(icoil)%alpha(0:NS))*bhatp(0:NS,j)
+              nhatapp(0:NS,j) = sin(coil(icoil)%alpha(0:NS))*coil(icoil)%alphap(0:NS)**2.0*bhat(0:NS,j) - cos(coil(icoil)%alpha(0:NS))*coil(icoil)%alphap(0:NS)**2.0*nhat(0:NS,j) - &
+                   cos(coil(icoil)%alpha(0:NS))*coil(icoil)%alphapp(0:NS)*bhat(0:NS,j) - sin(coil(icoil)%alpha(0:NS))*coil(icoil)%alphapp(0:NS)*nhat(0:NS,j) - &
+                   cos(coil(icoil)%alpha(0:NS))*coil(icoil)%alphap(0:NS)*bhatp(0:NS,j) - sin(coil(icoil)%alpha(0:NS))*coil(icoil)%alphap(0:NS)*nhatp(0:NS,j) - &
+                   cos(coil(icoil)%alpha(0:NS))*coil(icoil)%alphap(0:NS)*bhatp(0:NS,j) - sin(coil(icoil)%alpha(0:NS))*bhatpp(0:NS,j) - &
+                   sin(coil(icoil)%alpha(0:NS))*coil(icoil)%alphap(0:NS)*nhatp(0:NS,j) + cos(coil(icoil)%alpha(0:NS))*nhatpp(0:NS,j)
+              bhatapp(0:NS,j) = -1.0*sin(coil(icoil)%alpha(0:NS))*coil(icoil)%alphap(0:NS)**2.0*nhat(0:NS,j) - cos(coil(icoil)%alpha(0:NS))*coil(icoil)%alphap(0:NS)**2.0*bhat(0:NS,j) + &
+                   cos(coil(icoil)%alpha(0:NS))*coil(icoil)%alphapp(0:NS)*nhat(0:NS,j) - sin(coil(icoil)%alpha(0:NS))*coil(icoil)%alphapp(0:NS)*bhat(0:NS,j) + &
+                   cos(coil(icoil)%alpha(0:NS))*coil(icoil)%alphap(0:NS)*nhatp(0:NS,j) - sin(coil(icoil)%alpha(0:NS))*coil(icoil)%alphap(0:NS)*bhatp(0:NS,j) + &
+                   cos(coil(icoil)%alpha(0:NS))*coil(icoil)%alphap(0:NS)*nhatp(0:NS,j) + sin(coil(icoil)%alpha(0:NS))*nhatpp(0:NS,j) - &
+                   sin(coil(icoil)%alpha(0:NS))*coil(icoil)%alphap(0:NS)*bhatp(0:NS,j) + cos(coil(icoil)%alpha(0:NS))*bhatpp(0:NS,j)
+              do k = 1, ND
+                 if( myid.ne.modulo(k-1,ncpu) ) cycle
+                 if ( AlphaPert .eq. 0 ) then
+                    nhatadof(0:NS,j,k) = -1.0*sin(coil(icoil)%alpha(0:NS))*bhatdof(0:NS,j,k) + cos(coil(icoil)%alpha(0:NS))*nhatdof(0:NS,j,k)
+                    bhatadof(0:NS,j,k) =      sin(coil(icoil)%alpha(0:NS))*nhatdof(0:NS,j,k) + cos(coil(icoil)%alpha(0:NS))*bhatdof(0:NS,j,k)
+                 else
+                    nhatadof(0:NS,j,k) = -1.0*sin(coil(icoil)%alpha(0:NS))*bhatdof(0:NS,j,k) + cos(coil(icoil)%alpha(0:NS))*nhatdof(0:NS,j,k) - &
+                         cos(coil(icoil)%alpha(0:NS))*coil(icoil)%alphadof(0:NS,k)*bhat(0:NS,j) - sin(coil(icoil)%alpha(0:NS))*coil(icoil)%alphadof(0:NS,k)*nhat(0:NS,j)
+                    bhatadof(0:NS,j,k) =      sin(coil(icoil)%alpha(0:NS))*nhatdof(0:NS,j,k) + cos(coil(icoil)%alpha(0:NS))*bhatdof(0:NS,j,k) + &
+                         cos(coil(icoil)%alpha(0:NS))*coil(icoil)%alphadof(0:NS,k)*nhat(0:NS,j) - sin(coil(icoil)%alpha(0:NS))*coil(icoil)%alphadof(0:NS,k)*bhat(0:NS,j)
+                 endif
+              enddo
+           enddo
+           
+           FATAL( discoil , Npancakes .ne. 2, Npancakes for double pancake for now )
+           leng = pi2 * sum( normt(0:NS-1) ) / real(NS)
+           do j = 1, ND
+              lengdof(j) = pi2 * sum( normtdof(0:NS-1,j) ) / real(NS)
+           enddo
+           htrans = Nturn_space*real(Nturns)/leng
+           FATAL( discoil , htrans .ge. leng/2.0, Turn transition too long )
+           do i = 1, NS
+              g(i) = g(i-1) + pi2*0.5*(normt(i-1)+normt(i))/real(NS)
+              do k = 1, ND
+                 if( myid.ne.modulo(k-1,ncpu) ) cycle
+                 gdof(i,k) = gdof(i-1,k) + pi2*0.5*(normtdof(i-1,k)+normtdof(i,k))/real(NS)
+              enddo
+           enddo
+           gp(0:NS) = normt(0:NS)
+           gpp(0:NS) = normtp(0:NS)
+           trans_length = 0.5*trans_length
+           do i = 0, NS
+              if( g(i) .le. trans_length ) then
+                 w(i) = -0.5*Npancake_space*sin(pi2*g(i)/(4.0*trans_length))
+                 wp(i) = -0.5*Npancake_space*cos(pi2*g(i)/(4.0*trans_length))*pi2*gp(i)/(4.0*trans_length)
+                 wpp(i) = 0.5*Npancake_space*sin(pi2*g(i)/(4.0*trans_length))*pi2*gp(i)/(4.0*trans_length)*pi2*gp(i)/(4.0*trans_length) - &
+                      0.5*Npancake_space*cos(pi2*g(i)/(4.0*trans_length))*pi2*gpp(i)/(4.0*trans_length)
+                 do k = 1, ND
+                    if( myid.ne.modulo(k-1,ncpu) ) cycle
+                    wdof(i,k) = -0.5*Npancake_space*cos(pi2*g(i)/(4.0*trans_length))*pi2*gdof(i,k)/(4.0*trans_length)
+                 enddo
+              endif
+              if( g(i) .gt. trans_length .and. g(i) .lt. leng/2.0 - trans_length ) then
+                 w(i) = -0.5*Npancake_space
+                 wp(i) = 0.0
+                 wpp(i) = 0.0
+                 do k = 1, ND
+                    if( myid.ne.modulo(k-1,ncpu) ) cycle
+                    wdof(i,k) = 0.0
+                 enddo
+              endif
+              if( g(i) .ge. leng/2.0 - trans_length .and. g(i) .le. leng/2.0 + trans_length ) then
+                 w(i) = -0.5*Npancake_space*sin(pi2*(leng/2.0-g(i))/(4.0*trans_length))
+                 wp(i) = 0.5*Npancake_space*cos(pi2*(leng/2.0-g(i))/(4.0*trans_length))*pi2*gp(i)/(4.0*trans_length)
+                 wpp(i) = 0.5*Npancake_space*sin(pi2*(leng/2.0-g(i))/(4.0*trans_length))*pi2*gp(i)/(4.0*trans_length)*pi2*gp(i)/(4.0*trans_length) + &
+                      0.5*Npancake_space*cos(pi2*(leng/2.0-g(i))/(4.0*trans_length))*pi2*gpp(i)/(4.0*trans_length)
+                 do k = 1, ND
+                    if( myid.ne.modulo(k-1,ncpu) ) cycle
+                    wdof(i,k) = -0.5*Npancake_space*cos(pi2*(leng/2.0-g(i))/(4.0*trans_length))*pi2*(lengdof(k)/2.0-gdof(i,k))/(4.0*trans_length)
+                 enddo
+              endif
+              if( g(i) .gt. leng/2.0 + trans_length .and. g(i) .lt. leng - trans_length ) then
+                 w(i) = 0.5*Npancake_space
+                 wp(i) = 0.0
+                 wpp(i) = 0.0
+                 do k = 1, ND
+                    if( myid.ne.modulo(k-1,ncpu) ) cycle
+                    wdof(i,k) = 0.0
+                 enddo
+              endif
+              if( g(i) .ge. leng - trans_length ) then
+                 w(i) = 0.5*Npancake_space*sin(pi2*(leng-g(i))/(4.0*trans_length))
+                 wp(i) = -0.5*Npancake_space*cos(pi2*(leng-g(i))/(4.0*trans_length))*pi2*gp(i)/(4.0*trans_length)
+                 wpp(i) = -0.5*Npancake_space*sin(pi2*(leng-g(i))/(4.0*trans_length))*pi2*gp(i)/(4.0*trans_length)*pi2*gp(i)/(4.0*trans_length) - &
+                      0.5*Npancake_space*cos(pi2*(leng-g(i))/(4.0*trans_length))*pi2*gpp(i)/(4.0*trans_length)
+                 do k = 1, ND
+                    if( myid.ne.modulo(k-1,ncpu) ) cycle
+                    wdof(i,k) = 0.5*Npancake_space*cos(pi2*(leng-g(i))/(4.0*trans_length))*pi2*(lengdof(k)-gdof(i,k))/(4.0*trans_length)
+                 enddo
+              endif
+              if( g(i) .le. htrans ) then
+                 h(i) = 0.5*Nturn_space*real(Nturns) - g(i)**2.0 - (Nturn_space*real(Nturns)/leng)**2.0
+                 hp(i) = -2.0*g(i)*gp(i)
+                 hpp(i) = -2.0*gp(i)**2.0 - 2.0*g(i)*gpp(i)
+                 do k = 1, ND
+                    if( myid.ne.modulo(k-1,ncpu) ) cycle
+                    hdof(i,k) =  -2.0*g(i)*gdof(i,k) + 2.0*(Nturn_space*real(Nturns))**2.0*leng**-3.0*lengdof(k)
+                 enddo
+              endif
+              if( g(i) .gt. htrans .and. g(i) .lt. leng/2.0 - htrans ) then
+                 h(i) = 0.5*Nturn_space*real(Nturns) - 2.0*Nturn_space*real(Nturns)*g(i)/leng
+                 hp(i) = -2.0*Nturn_space*real(Nturns)*gp(i)/leng
+                 hpp(i) = -2.0*Nturn_space*real(Nturns)*gpp(i)/leng
+                 do k = 1, ND
+                    if( myid.ne.modulo(k-1,ncpu) ) cycle
+                    hdof(i,k) = -2.0*Nturn_space*real(Nturns)*(gdof(i,k)/leng - g(i)*lengdof(k)/leng**2.0)
+                 enddo
+              endif
+              if( g(i) .ge. leng/2.0 - htrans .and. g(i) .le. leng/2.0 + htrans ) then
+                 h(i) = -0.5*Nturn_space*real(Nturns) + (leng/2.0-g(i))**2.0 + (Nturn_space*real(Nturns)/leng)**2.0
+                 hp(i) = -2.0*(leng/2.0-g(i))*gp(i)
+                 hpp(i) = 2.0*gp(i)**2.0 - 2.0*(leng/2.0-g(i))*gpp(i)
+                 do k = 1, ND
+                    if( myid.ne.modulo(k-1,ncpu) ) cycle
+                    hdof(i,k) = 2.0*(leng/2.0-g(i))*(lengdof(k)/2.0-gdof(i,k)) - 2.0*(Nturn_space*real(Nturns))**2.0*(leng)**-3.0*lengdof(k)
+                 enddo
+              endif
+              if( g(i) .gt. leng/2.0 + htrans .and. g(i) .lt. leng - htrans ) then
+                 h(i) = 0.5*Nturn_space*real(Nturns) - 2.0*Nturn_space*real(Nturns)*(leng-g(i))/leng
+                 hp(i) = 2.0*Nturn_space*real(Nturns)*gp(i)/leng
+                 hpp(i) = 2.0*Nturn_space*real(Nturns)*gpp(i)/leng
+                 do k = 1, ND
+                    if( myid.ne.modulo(k-1,ncpu) ) cycle
+                    hdof(i,k) = -2.0*Nturn_space*real(Nturns)*(-1.0*gdof(i,k)/leng+g(i)*lengdof(k)*leng**-2.0)
+                 enddo
+              endif
+              if( g(i) .ge. leng - htrans ) then
+                 h(i) = 0.5*Nturn_space*real(Nturns) - (leng-g(i))**2.0 - (Nturn_space*real(Nturns)/leng)**2.0
+                 hp(i) = 2.0*(leng-g(i))*gp(i)
+                 hpp(i) = -2.0*gp(i)**2.0 + 2.0*(leng-g(i))*gpp(i)
+                 do k = 1, ND
+                    if( myid.ne.modulo(k-1,ncpu) ) cycle
+                    hdof(i,k) = -2.0*(leng-g(i))*(lengdof(k)-gdof(i,k)) + 2.0*(Nturn_space*real(Nturns))**2.0*(leng)**-3.0*lengdof(k)
+                 enddo
+              endif
+           enddo
+           trans_length = 2.0*trans_length
+
+           coil(icoil)%xx(0:NS) = rc(0:NS,1) + h(0:NS)*nhata(0:NS,1) + w(0:NS)*bhata(0:NS,1)
+           coil(icoil)%yy(0:NS) = rc(0:NS,2) + h(0:NS)*nhata(0:NS,2) + w(0:NS)*bhata(0:NS,2)
+           coil(icoil)%zz(0:NS) = rc(0:NS,3) + h(0:NS)*nhata(0:NS,3) + w(0:NS)*bhata(0:NS,3)
+           coil(icoil)%xt(0:NS) = rcp(0:NS,1) + hp(0:NS)*nhata(0:NS,1) + wp(0:NS)*bhata(0:NS,1) + h(0:NS)*nhatap(0:NS,1) + w(0:NS)*bhatap(0:NS,1)
+           coil(icoil)%yt(0:NS) = rcp(0:NS,2) + hp(0:NS)*nhata(0:NS,2) + wp(0:NS)*bhata(0:NS,2) + h(0:NS)*nhatap(0:NS,2) + w(0:NS)*bhatap(0:NS,2)
+           coil(icoil)%zt(0:NS) = rcp(0:NS,3) + hp(0:NS)*nhata(0:NS,3) + wp(0:NS)*bhata(0:NS,3) + h(0:NS)*nhatap(0:NS,3) + w(0:NS)*bhatap(0:NS,3)
+
+           coil(icoil)%xa(0:NS) = rcpp(0:NS,1) + hpp(0:NS)*nhata(0:NS,1) + wpp(0:NS)*bhata(0:NS,1) + 2.0*hp(0:NS)*nhatap(0:NS,1) + 2.0*wp(0:NS)*bhatap(0:NS,1) + &
+                h(0:NS)*nhatapp(0:NS,1) + w(0:NS)*bhatapp(0:NS,1)
+           coil(icoil)%ya(0:NS) = rcpp(0:NS,2) + hpp(0:NS)*nhata(0:NS,2) + wpp(0:NS)*bhata(0:NS,2) + 2.0*hp(0:NS)*nhatap(0:NS,2) + 2.0*wp(0:NS)*bhatap(0:NS,2) + &
+                h(0:NS)*nhatapp(0:NS,2) + w(0:NS)*bhatapp(0:NS,2)
+           coil(icoil)%za(0:NS) = rcpp(0:NS,3) + hpp(0:NS)*nhata(0:NS,3) + wpp(0:NS)*bhata(0:NS,3) + 2.0*hp(0:NS)*nhatap(0:NS,3) + 2.0*wp(0:NS)*bhatap(0:NS,3) + &
+                h(0:NS)*nhatapp(0:NS,3) + w(0:NS)*bhatapp(0:NS,3)
+           
+           DoF(icoil)%xof(0:NS-1,1:ND) = 0.0
+           DoF(icoil)%yof(0:NS-1,1:ND) = 0.0
+           DoF(icoil)%zof(0:NS-1,1:ND) = 0.0
+           do k = 1, ND
+              if( myid.ne.modulo(k-1,ncpu) ) cycle
+              DoF(icoil)%xof(0:NS-1,k) = rcdof(0:NS-1,1,k) + hdof(0:NS-1,k)*nhata(0:NS-1,1) + wdof(0:NS-1,k)*bhata(0:NS-1,1) + &
+                                            h(0:NS-1)*nhatadof(0:NS-1,1,k) + w(0:NS-1)*bhatadof(0:NS-1,1,k)
+              DoF(icoil)%yof(0:NS-1,k) = rcdof(0:NS-1,2,k) + hdof(0:NS-1,k)*nhata(0:NS-1,2) + wdof(0:NS-1,k)*bhata(0:NS-1,2) + &
+                                            h(0:NS-1)*nhatadof(0:NS-1,2,k) + w(0:NS-1)*bhatadof(0:NS-1,2,k)
+              DoF(icoil)%zof(0:NS-1,k) = rcdof(0:NS-1,3,k) + hdof(0:NS-1,k)*nhata(0:NS-1,3) + wdof(0:NS-1,k)*bhata(0:NS-1,3) + &
+                                            h(0:NS-1)*nhatadof(0:NS-1,3,k) + w(0:NS-1)*bhatadof(0:NS-1,3,k)
+           enddo
+           call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
+           call MPI_ALLREDUCE( MPI_IN_PLACE, DoF(icoil)%xof, NS*ND, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+           call MPI_ALLREDUCE( MPI_IN_PLACE, DoF(icoil)%yof, NS*ND, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+           call MPI_ALLREDUCE( MPI_IN_PLACE, DoF(icoil)%zof, NS*ND, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+           call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
+           
+           DALLOCATE( zeta )
+           DALLOCATE( costerms )
+           DALLOCATE( sinterms )
+           DALLOCATE( rc )
+           DALLOCATE( rcp )
+           DALLOCATE( rcpp )
+           DALLOCATE( rcppp )
+           DALLOCATE( rcdof )
+           DALLOCATE( rcpdof )
+           DALLOCATE( rcppdof )
+           DALLOCATE( xcdof )
+           DALLOCATE( ycdof )
+           DALLOCATE( zcdof )
+           DALLOCATE( delta )
+           DALLOCATE( deltadof )
+           DALLOCATE( n )
+           DALLOCATE( np )
+           DALLOCATE( npp )
+           DALLOCATE( ndoff )
+           DALLOCATE( npdof )
+           DALLOCATE( nhatp )
+           DALLOCATE( nhatpp )
+           DALLOCATE( normt )
+           DALLOCATE( normtp )
+           DALLOCATE( normtpp )
+           DALLOCATE( normn )
+           DALLOCATE( normtdof )
+           DALLOCATE( normtpdof )
+           DALLOCATE( normndof )
+           DALLOCATE( that )
+           DALLOCATE( nhat )
+           DALLOCATE( bhat )
+           DALLOCATE( bhatp )
+           DALLOCATE( bhatpp )
+           DALLOCATE( thatp )
+           DALLOCATE( thatpp )
+           DALLOCATE( thatdof )
+           DALLOCATE( nhatdof )
+           DALLOCATE( nhatpdof )
+           DALLOCATE( bhatdof )
+           DALLOCATE( nhata )
+           DALLOCATE( bhata )
+           DALLOCATE( nhatap )
+           DALLOCATE( bhatap )
+           DALLOCATE( nhatapp )
+           DALLOCATE( bhatapp )
+           DALLOCATE( nhatadof )
+           DALLOCATE( bhatadof )
+           DALLOCATE( alphac )
+           DALLOCATE( alphas )
+           DALLOCATE( alphacdof )
+           DALLOCATE( alphasdof )
+           DALLOCATE( Cdoff )
+           DALLOCATE( g )
+           DALLOCATE( w )
+           DALLOCATE( h )
+           DALLOCATE( gp )
+           DALLOCATE( wp )
+           DALLOCATE( hp )
+           DALLOCATE( gpp )
+           DALLOCATE( wpp )
+           DALLOCATE( hpp )
+           DALLOCATE( gdof )
+           DALLOCATE( wdof )
+           DALLOCATE( hdof )
+           DALLOCATE( lengdof )
+           DALLOCATE( nhatpfd )
+           DALLOCATE( nhatpdoffd )
+
         case( coil_type_spline )
            ! reset to zero for all the coils;
            coil(icoil)%xx = zero
@@ -618,40 +1183,40 @@ subroutine discoil(ifirst)
            NS = coil(icoil)%NS
            NCP = Splines(icoil)%NCP  ! allias variable for simplicity;
 
-	   !-------------------------enforce periodicity----------------------------------------------
-	   Splines(icoil)%Cpoints(NCP-3) = Splines(icoil)%Cpoints(0)
-	   Splines(icoil)%Cpoints(2*NCP-3) = Splines(icoil)%Cpoints(NCP) 
-	   Splines(icoil)%Cpoints(3*NCP-3) = Splines(icoil)%Cpoints(2*NCP)  
+           !-------------------------enforce periodicity----------------------------------------------
+           Splines(icoil)%Cpoints(NCP-3) = Splines(icoil)%Cpoints(0)
+           Splines(icoil)%Cpoints(2*NCP-3) = Splines(icoil)%Cpoints(NCP) 
+           Splines(icoil)%Cpoints(3*NCP-3) = Splines(icoil)%Cpoints(2*NCP)  
 
-	   Splines(icoil)%Cpoints(NCP-2) = Splines(icoil)%Cpoints(1)
-	   Splines(icoil)%Cpoints(2*NCP-2) = Splines(icoil)%Cpoints(NCP+1) 
-	   Splines(icoil)%Cpoints(3*NCP-2) = Splines(icoil)%Cpoints(2*NCP+1)  
+           Splines(icoil)%Cpoints(NCP-2) = Splines(icoil)%Cpoints(1)
+           Splines(icoil)%Cpoints(2*NCP-2) = Splines(icoil)%Cpoints(NCP+1) 
+           Splines(icoil)%Cpoints(3*NCP-2) = Splines(icoil)%Cpoints(2*NCP+1)  
 
-	   Splines(icoil)%Cpoints(NCP-1) = Splines(icoil)%Cpoints(2)
-	   Splines(icoil)%Cpoints(2*NCP-1) = Splines(icoil)%Cpoints(NCP+2) 
-	   Splines(icoil)%Cpoints(3*NCP-1) = Splines(icoil)%Cpoints(2*NCP+2)  
+           Splines(icoil)%Cpoints(NCP-1) = Splines(icoil)%Cpoints(2)
+           Splines(icoil)%Cpoints(2*NCP-1) = Splines(icoil)%Cpoints(NCP+2) 
+           Splines(icoil)%Cpoints(3*NCP-1) = Splines(icoil)%Cpoints(2*NCP+2)  
            !-------------------------calculate coil data-------------------------------------------------  
            do iseg=0,NS-1
-                    coil(icoil)%xx(iseg) = SUM (Splines(icoil)%Cpoints(0:NCP-1)*Splines(icoil)%basis_3(iseg,0:NCP-1))
-                    coil(icoil)%yy(iseg) = SUM (Splines(icoil)%Cpoints(NCP:2*NCP-1)*Splines(icoil)%basis_3(iseg,0:NCP-1))
-                    coil(icoil)%zz(iseg) = SUM (Splines(icoil)%Cpoints(2*NCP:3*NCP-1)*Splines(icoil)%basis_3(iseg,0:NCP-1))
-                    coil(icoil)%xt(iseg) = SUM (Splines(icoil)%Cpoints(0:NCP-1)*Splines(icoil)%db_dt(iseg,0:NCP-1))
-                    coil(icoil)%yt(iseg) = SUM (Splines(icoil)%Cpoints(NCP:2*NCP-1)*Splines(icoil)%db_dt(iseg,0:NCP-1))
-                    coil(icoil)%zt(iseg) = SUM (Splines(icoil)%Cpoints(2*NCP:3*NCP-1)*Splines(icoil)%db_dt(iseg,0:NCP-1))
-                    coil(icoil)%xa(iseg) = SUM (Splines(icoil)%Cpoints(0:NCP-1)*Splines(icoil)%db_dt_2(iseg,0:NCP-1))
-                    coil(icoil)%ya(iseg) = SUM (Splines(icoil)%Cpoints(NCP:2*NCP-1)*Splines(icoil)%db_dt_2(iseg,0:NCP-1))
-                    coil(icoil)%za(iseg) = SUM (Splines(icoil)%Cpoints(2*NCP:3*NCP-1)*Splines(icoil)%db_dt_2(iseg,0:NCP-1))
-	  enddo	
+                    coil(icoil)%xx(iseg) = sum(Splines(icoil)%Cpoints(0:NCP-1)*Splines(icoil)%basis_3(iseg,0:NCP-1))
+                    coil(icoil)%yy(iseg) = sum(Splines(icoil)%Cpoints(NCP:2*NCP-1)*Splines(icoil)%basis_3(iseg,0:NCP-1))
+                    coil(icoil)%zz(iseg) = sum(Splines(icoil)%Cpoints(2*NCP:3*NCP-1)*Splines(icoil)%basis_3(iseg,0:NCP-1))
+                    coil(icoil)%xt(iseg) = sum(Splines(icoil)%Cpoints(0:NCP-1)*Splines(icoil)%db_dt(iseg,0:NCP-1))
+                    coil(icoil)%yt(iseg) = sum(Splines(icoil)%Cpoints(NCP:2*NCP-1)*Splines(icoil)%db_dt(iseg,0:NCP-1))
+                    coil(icoil)%zt(iseg) = sum(Splines(icoil)%Cpoints(2*NCP:3*NCP-1)*Splines(icoil)%db_dt(iseg,0:NCP-1))
+                    coil(icoil)%xa(iseg) = sum(Splines(icoil)%Cpoints(0:NCP-1)*Splines(icoil)%db_dt_2(iseg,0:NCP-1))
+                    coil(icoil)%ya(iseg) = sum(Splines(icoil)%Cpoints(NCP:2*NCP-1)*Splines(icoil)%db_dt_2(iseg,0:NCP-1))
+                    coil(icoil)%za(iseg) = sum(Splines(icoil)%Cpoints(2*NCP:3*NCP-1)*Splines(icoil)%db_dt_2(iseg,0:NCP-1))
+          enddo
 
-	  coil(icoil)%xx(NS) = coil(icoil)%xx(0)
- 	  coil(icoil)%yy(NS) = coil(icoil)%yy(0)
-	  coil(icoil)%zz(NS) = coil(icoil)%zz(0)
-	  coil(icoil)%xt(NS) = coil(icoil)%xt(0)
-	  coil(icoil)%yt(NS) = coil(icoil)%yt(0)
-	  coil(icoil)%zt(NS) = coil(icoil)%zt(0)
-	  coil(icoil)%xa(NS) = coil(icoil)%xa(0)
-	  coil(icoil)%ya(NS) = coil(icoil)%ya(0)
-	  coil(icoil)%za(NS) = coil(icoil)%za(0)
+          coil(icoil)%xx(NS) = coil(icoil)%xx(0)
+          coil(icoil)%yy(NS) = coil(icoil)%yy(0)
+          coil(icoil)%zz(NS) = coil(icoil)%zz(0)
+          coil(icoil)%xt(NS) = coil(icoil)%xt(0)
+          coil(icoil)%yt(NS) = coil(icoil)%yt(0)
+          coil(icoil)%zt(NS) = coil(icoil)%zt(0)
+          coil(icoil)%xa(NS) = coil(icoil)%xa(0)
+          coil(icoil)%ya(NS) = coil(icoil)%ya(0)
+          coil(icoil)%za(NS) = coil(icoil)%za(0)
         case default
            FATAL(discoil, .true., not supported coil types)
         end select
@@ -664,6 +1229,8 @@ subroutine discoil(ifirst)
 end subroutine discoil
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+! I don't think this subroutine is used -Thomas
 
 SUBROUTINE discfou2
   !---------------------------------------------------------------------------------------------
@@ -728,6 +1295,8 @@ SUBROUTINE discfou2
 END SUBROUTINE discfou2
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+! I don't think this subroutine is used -Thomas
 
 subroutine fouriermatrix( xc, xs, xx, NF, ND, order )
   !---------------------------------------------------------------------------------------------
@@ -878,7 +1447,7 @@ SUBROUTINE readcoils(filename, maxnseg)
 
   return
 
-end SUBROUTINE READCOILS
+end SUBROUTINE readcoils
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 

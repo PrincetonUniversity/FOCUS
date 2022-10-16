@@ -46,7 +46,7 @@ subroutine saving
      deriv = zero
      if(allocated(t1E)) deriv(1:Ndof,0) = t1E(1:Ndof)
      if(allocated(t1B)) deriv(1:Ndof,1) = t1B(1:Ndof)
-     if(allocated(t1B)) deriv(1:Ndof,2) = t1R(1:Ndof)
+     if(allocated(t1R)) deriv(1:Ndof,2) = t1R(1:Ndof)
      if(allocated(t1F)) deriv(1:Ndof,3) = t1F(1:Ndof)
      if(allocated(t1L)) deriv(1:Ndof,4) = t1L(1:Ndof)
      if(allocated(t1S)) deriv(1:Ndof,5) = t1S(1:Ndof)
@@ -56,7 +56,9 @@ subroutine saving
      if(allocated(t1T)) deriv(1:Ndof,9) = t1T(1:Ndof)
      if(allocated(t1N)) deriv(1:Ndof,10) = t1N(1:Ndof)
      if(allocated(t1Bavg)) deriv(1:Ndof,11) = t1Bavg(1:Ndof)
-     if(allocated(t1Str)) deriv(1:Ndof,12)=t1Str(1:Ndof)
+     if(allocated(t1Ravg)) deriv(1:Ndof,12) = t1Ravg(1:Ndof)
+     if(allocated(t1Str)) deriv(1:Ndof,13)=t1Str(1:Ndof)
+     if(allocated(t1Z)) deriv(1:Ndof,14)=t1Z(1:Ndof)
   endif
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -99,6 +101,7 @@ subroutine saving
   HWRITEIV( 1                ,   curv_alpha    ,   curv_alpha                    )
   HWRITERV( 1                ,   weight_bnorm  ,   weight_bnorm                  )
   HWRITERV( 1                ,   weight_sbnorm ,   weight_sbnorm                 )
+  HWRITERV( 1                ,   weight_sresbn ,   weight_sresbn                 )
   HWRITERV( 1                ,   weight_bharm  ,   weight_bharm                  )
   HWRITERV( 1                ,   weight_resbn  ,   weight_resbn                  )
   HWRITERV( 1                ,   target_resbn  ,   target_resbn                  )
@@ -256,38 +259,38 @@ subroutine saving
   endif
   
   ! Save finite-build coil frame
-  if (calcfb .eq. 1) then
-    do icoil = 1, Ncoils
-       tempvar(icoil,0:coil(icoil)%NS) = coil(icoil)%nfbx(0:coil(icoil)%NS)
-    enddo
-    HWRITERA( Ncoils, NSmax+1, nfbx  , tempvar(1:Ncoils,0:NSmax) )
-    tempvar(1:Ncoils,0:NSmax) = 0.0
-    do icoil = 1, Ncoils
-       tempvar(icoil,0:coil(icoil)%NS) = coil(icoil)%nfby(0:coil(icoil)%NS)
-    enddo
-    HWRITERA( Ncoils, NSmax+1, nfby  , tempvar(1:Ncoils,0:NSmax) )
-    tempvar(1:Ncoils,0:NSmax) = 0.0
-    do icoil = 1, Ncoils
-       tempvar(icoil,0:coil(icoil)%NS) = coil(icoil)%nfbz(0:coil(icoil)%NS)
-    enddo
-    HWRITERA( Ncoils, NSmax+1, nfbz  , tempvar(1:Ncoils,0:NSmax) )
-    tempvar(1:Ncoils,0:NSmax) = 0.0
-    do icoil = 1, Ncoils
-       tempvar(icoil,0:coil(icoil)%NS) = coil(icoil)%bfbx(0:coil(icoil)%NS)
-    enddo
-    HWRITERA( Ncoils, NSmax+1, bfbx  , tempvar(1:Ncoils,0:NSmax) )
-    tempvar(1:Ncoils,0:NSmax) = 0.0
-    do icoil = 1, Ncoils
-       tempvar(icoil,0:coil(icoil)%NS) = coil(icoil)%bfby(0:coil(icoil)%NS)
-    enddo
-    HWRITERA( Ncoils, NSmax+1, bfby  , tempvar(1:Ncoils,0:NSmax) )
-    tempvar(1:Ncoils,0:NSmax) = 0.0
-    do icoil = 1, Ncoils
-       tempvar(icoil,0:coil(icoil)%NS) = coil(icoil)%bfbz(0:coil(icoil)%NS)
-    enddo
-    HWRITERA( Ncoils, NSmax+1, bfbz  , tempvar(1:Ncoils,0:NSmax) )
-    tempvar(1:Ncoils,0:NSmax) = 0.0
-  endif
+!  if (calcfb .eq. 1) then
+!    do icoil = 1, Ncoils
+!       tempvar(icoil,0:coil(icoil)%NS) = coil(icoil)%nfbx(0:coil(icoil)%NS)
+!    enddo
+!    HWRITERA( Ncoils, NSmax+1, nfbx  , tempvar(1:Ncoils,0:NSmax) )
+!    tempvar(1:Ncoils,0:NSmax) = 0.0
+!    do icoil = 1, Ncoils
+!       tempvar(icoil,0:coil(icoil)%NS) = coil(icoil)%nfby(0:coil(icoil)%NS)
+!    enddo
+!    HWRITERA( Ncoils, NSmax+1, nfby  , tempvar(1:Ncoils,0:NSmax) )
+!    tempvar(1:Ncoils,0:NSmax) = 0.0
+!    do icoil = 1, Ncoils
+!       tempvar(icoil,0:coil(icoil)%NS) = coil(icoil)%nfbz(0:coil(icoil)%NS)
+!    enddo
+!    HWRITERA( Ncoils, NSmax+1, nfbz  , tempvar(1:Ncoils,0:NSmax) )
+!    tempvar(1:Ncoils,0:NSmax) = 0.0
+!    do icoil = 1, Ncoils
+!       tempvar(icoil,0:coil(icoil)%NS) = coil(icoil)%bfbx(0:coil(icoil)%NS)
+!    enddo
+!    HWRITERA( Ncoils, NSmax+1, bfbx  , tempvar(1:Ncoils,0:NSmax) )
+!    tempvar(1:Ncoils,0:NSmax) = 0.0
+!    do icoil = 1, Ncoils
+!       tempvar(icoil,0:coil(icoil)%NS) = coil(icoil)%bfby(0:coil(icoil)%NS)
+!    enddo
+!    HWRITERA( Ncoils, NSmax+1, bfby  , tempvar(1:Ncoils,0:NSmax) )
+!    tempvar(1:Ncoils,0:NSmax) = 0.0
+!    do icoil = 1, Ncoils
+!       tempvar(icoil,0:coil(icoil)%NS) = coil(icoil)%bfbz(0:coil(icoil)%NS)
+!    enddo
+!    HWRITERA( Ncoils, NSmax+1, bfbz  , tempvar(1:Ncoils,0:NSmax) )
+!    tempvar(1:Ncoils,0:NSmax) = 0.0
+!  endif
   
   DALLOCATE(tempvar)
 
@@ -296,7 +299,7 @@ subroutine saving
   HWRITERV( 1                ,   Gnorm         ,   Gnorm                         )
   HWRITERV( 1                ,   Mnorm         ,   Mnorm                         )
   HWRITERV( 1                ,   overlap       ,   overlap                       )
-  HWRITERA( iout, 15         ,   evolution     ,   evolution(1:iout, 0:14)       )
+  HWRITERA( iout, 17         ,   evolution     ,   evolution(1:iout, 0:16)       )
   HWRITERA( iout, Tdof       ,   coilspace     ,   coilspace(1:iout, 1:Tdof)     )
 
   if (allocated(deriv)) then
@@ -318,7 +321,7 @@ subroutine saving
      HWRITERV( Ncoils           , coil_importance ,  coil_importance             )
   endif
 
-  if (weight_resbn > sqrtmachprec .and. ghost_use .eq. 1 ) then
+  if ( ( weight_resbn > sqrtmachprec .or. weight_sresbn > sqrtmachprec ) .and. ghost_use .eq. 1 ) then
      Nseg_stable = gsurf(1)%Nseg_stable
      HWRITEIV( 1                , Nseg_stable   , Nseg_stable                    )
 !     HWRITERV( Nseg_stable      , zeta          , gsurf(1)%zeta(1:Nseg_stable)   )
@@ -369,6 +372,7 @@ subroutine saving
   enddo
   SALLOCATE(tempvar, (1:Ncoils, 0:NSmax) , 0.0)
   
+  ! Put in check to see if allocated 
   do icoil = 1, Ncoils
      tempvar(icoil,0:coil(icoil)%NS) = coil(icoil)%dpsidx(0:coil(icoil)%NS)
   enddo
@@ -472,7 +476,21 @@ subroutine saving
            write(wunit, *) "# Ic     I    Lc  Bz  (Ic control I; Lc control Bz)"
            write(wunit,'(I3, ES23.15, I3, ES23.15)') coil(icoil)%Ic, coil(icoil)%I, &
                                                      coil(icoil)%Lc, coil(icoil)%Bz
-	case (coil_type_spline)
+        case (coil_type_multi)
+           write(wunit, '(4(A6, A15, 8X))') " #Nseg", "current",  "Ifree", "Length", "Lfree", "target_length"
+           write(wunit,'(2X, I4, ES23.15, 3X, I3, ES23.15, 3X, I3, ES23.15)') &
+                coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo
+           NF = FouCoil(icoil)%NF
+           write(wunit, *) "#NFcoil"
+           write(wunit, '(I3)') NF
+           write(wunit, *) "#Fourier harmonics for coils ( xc; xs; yc; ys; zc; zs) "
+           write(wunit, 1000) FouCoil(icoil)%xc(0:NF)
+           write(wunit, 1000) FouCoil(icoil)%xs(0:NF)
+           write(wunit, 1000) FouCoil(icoil)%yc(0:NF)
+           write(wunit, 1000) FouCoil(icoil)%ys(0:NF)
+           write(wunit, 1000) FouCoil(icoil)%zc(0:NF)
+           write(wunit, 1000) FouCoil(icoil)%zs(0:NF)
+        case (coil_type_spline)
            write(wunit, '(4(A6, A15, 8X))') " #Nseg", "current",  "Ifree", "Length", "Lfree", "target_length"!, "k0"
            !write(wunit,'(2X, I4, ES23.15, 3X, I3, ES23.15, 3X, I3, ES23.15, ES23.15)') &
                 !coil(icoil)%NS, coil(icoil)%I, coil(icoil)%Ic, coil(icoil)%L, coil(icoil)%Lc, coil(icoil)%Lo, coil(icoil)%k0
@@ -505,7 +523,7 @@ subroutine saving
      write(funit,'("mirror NIL")')
      do icoil = 1, Ncoils
         ! will only write x,y,z in cartesian coordinates
-        if ((coil(icoil)%type /= 1) .AND. (coil(icoil)%type /= coil_type_spline)) cycle
+        if (coil(icoil)%type /= 1 .and. coil(icoil)%type /= coil_type_multi .and. coil(icoil)%type /= coil_type_spline) cycle
         ! check if the coil is stellarator symmetric
         select case (coil(icoil)%symm) 
         case ( 0 )

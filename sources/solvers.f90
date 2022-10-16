@@ -50,9 +50,10 @@ subroutine solvers
      if (weight_bnorm > machprec) then
         write(ounit, '(8X,": weight_bnorm = ", ES12.5, "; case_bnormal = ", I1)') weight_bnorm, case_bnormal
      endif 
-
-     ! Put in resbn
-
+     ! resbn
+     if (weight_resbn > machprec) then
+        write(ounit, '(8X,": weight_resbn = ", ES12.5, "; target_tflux = ", ES12.5)') weight_resbn, target_resbn
+     endif
      ! Bmn harmonics
      if (weight_bharm > machprec) then 
         write(ounit, '(8X,": weight_bharm = ", ES12.5, "; bharm_jsurf = ", I1)') weight_bharm, bharm_jsurf
@@ -102,6 +103,10 @@ subroutine solvers
      ! stochastic bnorm
      if (weight_sbnorm > machprec) then
         write(ounit, '(8X,": weight_sbnorm = ", ES12.5, "; Npert = ", I10)') weight_sbnorm, Npert
+     endif
+     ! stochastic resbn
+     if (weight_sresbn > machprec) then
+        write(ounit, '(8X,": weight_sresbn = ", ES12.5, "; Npert = ", I10)') weight_sresbn, Npert
      endif 
      ! straight-out
      if (weight_straight > machprec) then 
@@ -109,10 +114,14 @@ subroutine solvers
         write(ounit, '(8X,":   str_alpha = ", ES12.5)') str_alpha
         write(ounit, '(8X,":   str_k0    = ", ES12.5)') str_k0
      endif
+     ! island sensitvity
+     if (weight_dpsidr > machprec) then
+        write(ounit, '(8X,": weight_bnorm = ", ES12.5)') weight_dpsidr
+     endif
   endif
 
   ! Call stochastic construction if neccessary
-  if ( weight_sbnorm .gt. 0.0 .or. Npert .gt. 0 ) call perturbation(0)
+  if ( weight_sbnorm .gt. 0.0 .or. weight_sresbn .gt. 0.0 .or. weight_dpsidr .gt. 0.0 .or. Npert .gt. 0 ) call perturbation(0)
 
   if (abs(case_optimize) >= 1) call AllocData(1)
   if (abs(case_optimize) >= 2) call AllocData(2)
@@ -135,9 +144,9 @@ subroutine solvers
   if (lim_out .eq. 0) then
      if (myid == 0) then
         if (IsQuiet < 0) then
-           write(ounit, '("output  : "A6" : "15(A12," ; "))') "iout", "mark", "chi", "dE_norm", &
+           write(ounit, '("output  : "A6" : "17(A12," ; "))') "iout", "mark", "chi", "dE_norm", &
                 "Bnormal", "Res. Bn", "Bmn harmonics", "tor. flux", "coil length", "c-s sep.", "curvature", &
-                "c-c sep.", "torsion", "nissin", "sBnormal", "straight"
+                "c-c sep.", "torsion", "nissin", "sBnormal", "sRes.Bn", "straight", "dpsidr"
         else
            write(ounit, '("output  : "A6" : "4(A15," ; "))') "iout", "mark", "total function", "||gradient||", "Bnormal"
         endif
@@ -178,8 +187,14 @@ subroutine solvers
         if ( weight_sbnorm .ne. 0.0 ) then
            write(ounit, '(A12," ; ")',advance="no") "sBnormal"
         endif
+        if ( weight_sresbn .ne. 0.0 ) then
+           write(ounit, '(A12," ; ")',advance="no") "sRes.Bn"
+        endif
         if ( weight_straight .ne. 0.0 ) then
             write(ounit, '(A12," ; ")',advance="no") "straight"
+        endif
+        if ( weight_dpsidr .ne. 0.0 ) then
+            write(ounit, '(A12," ; ")',advance="no") "dpsidr"
         endif
         write(*,*)
      endif
@@ -274,7 +289,9 @@ subroutine costfun(ideriv)
        nissin     , t1N, t2N, weight_nissin, &
        curv       , t1K, t2K, weight_curv, &
        str        , t1Str,t2Str,weight_straight, &
-       bnormavg   , t1Bavg, weight_sbnorm, MPI_COMM_FOCUS
+       bnormavg   , t1Bavg, weight_sbnorm, &
+       resbnavg   , t1Ravg, weight_sresbn, &
+       dpsidr     , t1Z, weight_dpsidr, MPI_COMM_FOCUS
 
   use mpi
   implicit none
@@ -300,6 +317,8 @@ subroutine costfun(ideriv)
   tors  = zero
   nissin   = zero
   bnormavg = zero
+  resbnavg = zero
+  dpsidr = zero
 
   if (IsQuiet <= -2) then
 
@@ -523,15 +542,29 @@ subroutine costfun(ideriv)
   endif
 
   ! stochastic bnorm
-  if (weight_sbnorm > 0.0_dp) then
+  ! stochastic resbn
+  if (weight_sbnorm > 0.0_dp .or. weight_sresbn > 0.0_dp) then
+     call sbnormal(ideriv)
+     if ( weight_sbnorm > 0.0_dp ) then
+        chi = chi + weight_sbnorm * bnormavg
+        if     ( ideriv == 1 ) then
+           t1E = t1E + weight_sbnorm * t1Bavg
+        endif
+     endif
+     if ( weight_sresbn > 0.0_dp ) then
+        chi = chi + weight_sresbn * resbnavg
+        if     ( ideriv == 1 ) then
+           t1E = t1E + weight_sresbn * t1Ravg
+        endif
+     endif
+  endif
   
-     call sbnormal(ideriv) 
-     chi = chi + weight_sbnorm * bnormavg
+  ! island sensitivity
+  if (weight_dpsidr > 0.0_dp) then
+     call rcfluxsens(ideriv)
+     chi = chi + weight_dpsidr * dpsidr
      if     ( ideriv == 1 ) then
-        t1E = t1E + weight_sbnorm * t1Bavg
-     !elseif ( ideriv == 2 ) then
-     !   t1E = t1E + weight_nissin * t1N
-     !   t2E = t2E + weight_nissin * t2N
+        t1E = t1E + weight_dpsidr * t1Z
      endif
   endif
 
@@ -577,10 +610,10 @@ end subroutine costfun
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine normweight
-  use globals, only: dp, zero, one, machprec, ounit, myid, xdof, bnorm, resbn, bharm, tflux, ttlen, cssep, specw, ccsep, &
-       weight_bnorm, weight_resbn, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_specw, weight_ccsep, &
+  use globals, only: dp, zero, one, machprec, ounit, myid, xdof, bnorm, resbn, bharm, tflux, ttlen, cssep, specw, ccsep, dpsidr, &
+       weight_bnorm, weight_resbn, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_specw, weight_ccsep, weight_dpsidr, &
        target_tflux, psi_avg, coil, Ncoils, case_length, Bmnc, Bmns, tBmnc, tBmns, weight_curv, curv, &
-       weight_tors, tors, weight_nissin, nissin, str, weight_straight, weight_sbnorm, bnormavg, MPI_COMM_FOCUS
+       weight_tors, tors, weight_nissin, nissin, str, weight_straight, weight_sbnorm, weight_sresbn, bnormavg, resbnavg, MPI_COMM_FOCUS
 
   use mpi
   implicit none
@@ -746,13 +779,28 @@ subroutine normweight
   endif
 
   !-!-!-!-!-!-!-!-!-!-sbnorm-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+  !-!-!-!-!-!-!-!-!-!-sresbn-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  if( weight_sbnorm >= 0.0_dp ) then
+  if( weight_sbnorm >= 0.0_dp .or. weight_sresbn >= 0.0_dp ) then
 
      call sbnormal(0)
      if (abs(bnormavg) > machprec) weight_sbnorm = weight_sbnorm / bnormavg
+     if (abs(resbnavg) > machprec) weight_sresbn = weight_sresbn / resbnavg
      if( myid == 0 ) write(ounit, 1000) "weight_sbnorm", weight_sbnorm
      if( myid .eq. 0 .and. weight_sbnorm < machprec) write(ounit, '("warning : weight_sbnorm < machine_precision, bnormavg will not be used.")')
+     if( myid == 0 ) write(ounit, 1000) "weight_sresbn", weight_sresbn
+     if( myid .eq. 0 .and. weight_sresbn < machprec) write(ounit, '("warning : weight_sresbn < machine_precision, resbnavg will not be used.")')
+  
+  endif
+
+  !-!-!-!-!-!-!-!-!-!-dpsidr-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+  
+  if( weight_dpsidr > 0) then
+
+     call rcfluxsens(0)
+     if (abs(dpsidr) > machprec) weight_dpsidr = weight_dpsidr / dpsidr
+     if( myid == 0 ) write(ounit, 1000) "weight_dpsidr", weight_dpsidr
+     if( myid .eq. 0 .and. weight_dpsidr < machprec) write(ounit, '("warning : weight_dpsidr < machine_precision, dpsidr will not be used.")')
   
   endif
 
@@ -769,10 +817,10 @@ end subroutine normweight
 subroutine output (mark)
 
   use globals, only: dp, zero, ounit, myid, ierr, astat, iout, Nouts, Ncoils, save_freq, Tdof, &
-       coil, coilspace, FouCoil, chi, t1E, bnorm, bnormavg, bharm, tflux, ttlen, cssep, specw, ccsep, &
+       coil, coilspace, FouCoil, chi, t1E, bnorm, bnormavg, resbnavg, bharm, tflux, ttlen, cssep, specw, ccsep, dpsidr, &
        evolution, xdof, DoF, exit_tol, exit_signal, sumDE, curv, tors, nissin, resbn, MPI_COMM_FOCUS, IsQuiet, &
-       weight_bnorm, weight_resbn, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_curv, weight_ccsep, &
-       weight_tors, weight_nissin, weight_sbnorm, lim_out, weight_straight, str, coil_type_spline, Splines
+       weight_bnorm, weight_resbn, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_curv, weight_ccsep, weight_dpsidr, &
+       weight_tors, weight_nissin, weight_sbnorm, weight_sresbn, lim_out, weight_straight, str, coil_type_multi, coil_type_spline, Splines
 
   use mpi
   implicit none
@@ -785,8 +833,8 @@ subroutine output (mark)
   if (lim_out .eq. 0) then
      if (myid == 0) then
         if (IsQuiet < 0) then
-           write(ounit, '("output  : "I6" : "15(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, resbn, bharm, &
-                   tflux, ttlen, cssep, curv, ccsep, tors, nissin, bnormavg, str
+           write(ounit, '("output  : "I6" : "17(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, resbn, bharm, &
+                   tflux, ttlen, cssep, curv, ccsep, tors, nissin, bnormavg, resbnavg, str, dpsidr
         else
            write(ounit, '("output  : "I6" : "4(ES15.8," ; "))') iout, mark, chi, sumdE, bnorm
         endif
@@ -827,8 +875,14 @@ subroutine output (mark)
         if ( weight_sbnorm .ne. 0.0 ) then
            write(ounit, '(ES12.5," ; ")',advance="no") bnormavg
         endif
+        if ( weight_sresbn .ne. 0.0 ) then
+           write(ounit, '(ES12.5," ; ")',advance="no") resbnavg
+        endif
         if ( weight_straight .ne. 0.0 ) then
             write(ounit, '(ES12.5," ; ")',advance="no") str
+        endif
+        if ( weight_dpsidr .ne. 0.0 ) then
+           write(ounit, '(ES12.5," ; ")',advance="no") dpsidr
         endif
         write(*,*)
      endif
@@ -847,10 +901,12 @@ subroutine output (mark)
      evolution(iout,8) = cssep
      evolution(iout,9) = curv
      evolution(iout,10) = ccsep
-     evolution(iout,11)= tors
-     evolution(iout,12)= nissin
-     evolution(iout,13)= bnormavg
-     evolution(iout,14) = str
+     evolution(iout,11) = tors
+     evolution(iout,12) = nissin
+     evolution(iout,13) = bnormavg
+     evolution(iout,14) = resbnavg
+     evolution(iout,15) = str
+     evolution(iout,16) = dpsidr
   endif
 
   ! exit the optimization if no obvious changes in past 5 outputs; 07/20/2017
@@ -875,6 +931,14 @@ subroutine output (mark)
            coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%zs(1:NF) ; idof = idof + NF
 !!$        case default
 !!$           FATAL(output, .true., not supported coil types)
+        case (coil_type_multi)
+           NF = FouCoil(icoil)%NF
+           coilspace(iout, idof+1:idof+NF+1) = FouCoil(icoil)%xc(0:NF) ; idof = idof + NF +1
+           coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%xs(1:NF) ; idof = idof + NF
+           coilspace(iout, idof+1:idof+NF+1) = FouCoil(icoil)%yc(0:NF) ; idof = idof + NF +1
+           coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%ys(1:NF) ; idof = idof + NF
+           coilspace(iout, idof+1:idof+NF+1) = FouCoil(icoil)%zc(0:NF) ; idof = idof + NF +1
+           coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%zs(1:NF) ; idof = idof + NF
         case (coil_type_spline)
            NCP = Splines(icoil)%NCP
            coilspace(iout, idof+1:idof+3*NCP) = Splines(icoil)%Cpoints(0:3*NCP-1) ; idof = idof + 3*NCP

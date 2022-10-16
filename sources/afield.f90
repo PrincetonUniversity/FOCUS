@@ -8,7 +8,8 @@
 subroutine afield0(icoil, x, y, z, tAx, tAy, tAz)
 
   use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, cosnfp, sinnfp, &
-                     zero, myid, ounit, Nfp, pi2, half, two, one, bsconstant, MPI_COMM_FOCUS
+                     zero, myid, ounit, Nfp, pi2, half, two, one, bsconstant, &
+                     coil_type_multi, coil_type_spline, MPI_COMM_FOCUS
   use mpi
   implicit none
 
@@ -52,7 +53,7 @@ subroutine afield0(icoil, x, y, z, tAx, tAy, tAz)
         Ax = zero; Ay = zero; Az = zero
         select case (coil(icoil)%type)
         ! Fourier coils
-        case(1)
+        case(1,coil_type_multi,coil_type_spline)
            ! Biot-Savart law
            do kseg = 0, coil(icoil)%NS-1
               dlx = xx - coil(icoil)%xx(kseg)                                   ! r-r_c
@@ -95,7 +96,8 @@ end subroutine afield0
 subroutine afield1(icoil, x, y, z, tAx, tAy, tAz, ND)
 
   use globals, only: dp, coil, DoF, surf, NFcoil, Ncoils, Nteta, Nzeta, &
-                     zero, myid, ounit, Nfp, one, bsconstant, cosnfp, sinnfp, MPI_COMM_FOCUS
+                     zero, myid, ounit, Nfp, one, bsconstant, cosnfp, sinnfp, &
+                     coil_type_multi, coil_type_spline, MPI_COMM_FOCUS
   use mpi
   implicit none
 
@@ -145,7 +147,7 @@ subroutine afield1(icoil, x, y, z, tAx, tAy, tAz, ND)
 
         select case (coil(icoil)%type)
         ! Fourier coils
-        case(1)
+        case(1,coil_type_multi,coil_type_spline)
            NS = coil(icoil)%NS
            do kseg = 0, NS-1
               dlx = xx - coil(icoil)%xx(kseg)                                              ! r-r_c
@@ -202,7 +204,8 @@ end subroutine afield1
 subroutine deltaafield(icoil, x, y, z, dAxx, dAxy, dAxz, dAyx, dAyy, dAyz, dAzx, dAzy, dAzz)
 
   use globals, only: dp, coil, DoF, surf, NFcoil, Ncoils, Nteta, Nzeta, &
-                     zero, myid, ounit, Nfp, one, bsconstant, cosnfp, sinnfp, MPI_COMM_FOCUS
+                     zero, myid, ounit, Nfp, one, bsconstant, cosnfp, sinnfp, coil_type_multi, &
+                     coil_type_spline, MPI_COMM_FOCUS
   use mpi
   implicit none
 
@@ -229,7 +232,7 @@ subroutine deltaafield(icoil, x, y, z, dAxx, dAxy, dAxz, dAyx, dAyy, dAyz, dAzx,
 
   select case (coil(icoil)%type)
   ! Fourier coils
-  case(1)
+  case(1,coil_type_multi,coil_type_spline)
      NS = coil(icoil)%NS
      ! Should be vectorized
      do kseg = 1, NS
@@ -241,7 +244,8 @@ subroutine deltaafield(icoil, x, y, z, dAxx, dAxy, dAxz, dAyx, dAyy, dAyz, dAzx,
         ltx = coil(icoil)%xt(kseg)                                                   ! r_c'
         lty = coil(icoil)%yt(kseg)
         ltz = coil(icoil)%zt(kseg)
-        dots = -1.0*dlx*ltx + -1.0*dly*lty + -1.0*dlz*ltz                            ! (r_c-r) dot r_c'
+        !dots = -1.0*dlx*ltx + -1.0*dly*lty + -1.0*dlz*ltz                            ! (r_c-r) dot r_c'
+        dots = dlx*ltx + dly*lty + dlz*ltz
 
         dAxx(kseg) = coil(icoil)%I*bsconstant*( rm3*dlx*ltx + rm3*dots ) !Ax/x
         dAxy(kseg) = coil(icoil)%I*bsconstant*( rm3*dly*ltx )            !Ax/y

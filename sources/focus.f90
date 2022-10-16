@@ -37,7 +37,7 @@ PROGRAM focus
 
   use globals, only: dp, ncpu, myid, ounit, ierr, astat, eunit, case_surface, case_coils, case_optimize, &
        case_postproc, xdof, time_initialize, time_optimize, time_postproc, &
-       version, sqrtmachprec, ghost_use, weight_resbn, plasma_surf_boozer, MPI_COMM_FOCUS
+       version, sqrtmachprec, ghost_use, weight_resbn, weight_sresbn, weight_dpsidr, plasma_surf_boozer, MPI_COMM_FOCUS
   use mpi  !to enable gfortran mpi_wtime bugs; 07/20/2017
   implicit none
 
@@ -64,7 +64,8 @@ PROGRAM focus
 
   end select
 
-  if (weight_resbn > sqrtmachprec .and. ghost_use .eq. 1) call stable
+  if ( ( weight_resbn > sqrtmachprec .or. weight_sresbn > sqrtmachprec .or. &
+       weight_dpsidr > sqrtmachprec ) .and. ghost_use .eq. 1) call stable
     
   select case( case_coils )
 

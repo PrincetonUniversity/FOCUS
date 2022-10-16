@@ -24,7 +24,7 @@ subroutine bnormal( ideriv )
        bnorm, t1B, bn, Ndof, Cdof, weight_bharm, case_bnormal, &
        weight_bnorm, ibnorm, mbnorm, ibharm, mbharm, LM_fvec, LM_fjac, &
        bharm, t1H, Bmnc, Bmns, wBmn, tBmnc, tBmns, Bmnim, Bmnin, NBmn, &
-       weight_resbn, target_resbn, resbn, resbn_m, resbn_n, t1R, b1s, b1c, resbn_bnc, resbn_bns, &
+       weight_resbn, weight_sresbn, target_resbn, resbn, resbn_m, resbn_n, t1R, b1s, b1c, resbn_bnc, resbn_bns, &
        gsurf, ghost_use, ghost_call, ghost_once, rcflux_use, machprec, MPI_COMM_FOCUS
   use bnorm_mod
   use bharm_mod
@@ -48,7 +48,7 @@ subroutine bnormal( ideriv )
   bn = zero
   !suc = 1
   ! resonant Bn
-  if (weight_resbn .gt. sqrtmachprec) then
+  if ( weight_resbn .gt. sqrtmachprec .or. weight_sresbn .gt. sqrtmachprec ) then
       FATAL( bnormal, resbn_m .le. 0, wrong poloidal mode number)
       FATAL( bnormal, resbn_n .le. 0, wrong toroidal mode number)
       resbn = zero ; bnc = zero ;  bns = zero
@@ -140,7 +140,7 @@ subroutine bnormal( ideriv )
         end select           
      endif
      ! resonant Bn
-     if (weight_resbn .gt. sqrtmachprec) then ! resonant Bn perturbation
+     if (weight_resbn .gt. sqrtmachprec .or. weight_sresbn .gt. sqrtmachprec ) then ! resonant Bn perturbation
          if( rcflux_use .eq. 0 ) then
             bnc = sum(surf(1)%Bn * cosarg) * discretefactor
             bns = sum(surf(1)%Bn * sinarg) * discretefactor
@@ -187,7 +187,7 @@ subroutine bnormal( ideriv )
      ! reset data
      t1B = zero ; d1B = zero
      dBn = zero ; dBm = zero
-     if (weight_resbn .gt. sqrtmachprec) then
+     if (weight_resbn .gt. sqrtmachprec .or. weight_sresbn .gt. sqrtmachprec ) then
          if ( rcflux_use .ne. 1 ) then
             t1R = zero
          endif
@@ -248,7 +248,7 @@ subroutine bnormal( ideriv )
            case default
               FATAL( bnorm, .true., case_bnormal can only be 0/1 )
            end select
-           if (weight_resbn .gt. sqrtmachprec) then  ! resonant Bn error
+           if (weight_resbn .gt. sqrtmachprec .or. weight_sresbn .gt. sqrtmachprec) then  ! resonant Bn error
                b1c = b1c + dBn(1:Ndof) * cosarg(iteta, jzeta)
                b1s = b1s + dBn(1:Ndof) * sinarg(iteta, jzeta)
            endif 
@@ -259,7 +259,7 @@ subroutine bnormal( ideriv )
      call MPI_ALLREDUCE( MPI_IN_PLACE, t1B, Ndof        , MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
      call MPI_ALLREDUCE( MPI_IN_PLACE, d1B, Ndof*NumGrid, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
      t1B = t1B * discretefactor
-     if (weight_resbn .gt. sqrtmachprec) then
+     if (weight_resbn .gt. sqrtmachprec .or. weight_sresbn .gt. sqrtmachprec) then
          if( rcflux_use .eq. 0 ) then
             b1c = b1c * discretefactor
             b1s = b1s * discretefactor

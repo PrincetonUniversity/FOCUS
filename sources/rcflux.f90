@@ -5,9 +5,9 @@
 subroutine rcflux( ideriv )
   use globals, only: dp, zero, half, one, pi2, sqrtmachprec, bsconstant, ncpu, myid, ounit, &
        coil, DoF, surf, Ncoils, Nteta, Nzeta, discretefactor, plasma, &
-       bnorm, t1B, t2B, bn, Ndof, Cdof, weight_bharm, case_bnormal, &
-       weight_bnorm, ibnorm, mbnorm, ibharm, mbharm, LM_fvec, LM_fjac, &
-       weight_resbn, target_resbn, resbn, resbn_m, resbn_n, t1R, b1s, b1c, resbn_bnc, resbn_bns, &
+       bnorm, t1B, t2B, bn, Ndof, Cdof, case_bnormal, pflsuc, &
+       ibnorm, mbnorm, ibharm, mbharm, LM_fvec, LM_fjac, &
+       weight_resbn, weight_sresbn, target_resbn, resbn, resbn_m, resbn_n, t1R, b1s, b1c, resbn_bnc, resbn_bns, &
        gsurf, ghost_use, ghost_call, ghost_once, machprec, rcflux_target, psi, MPI_COMM_FOCUS
   use bnorm_mod
   use mpi
@@ -15,20 +15,20 @@ subroutine rcflux( ideriv )
 
   INTEGER, INTENT(in)                   :: ideriv
   !--------------------------------------------------------------------------------------------
-  INTEGER                               :: astat, ierr, suc
+  INTEGER                               :: astat, ierr
   INTEGER                               :: icoil, iteta, jzeta, idof, ND, NumGrid, isurf
   REAL                                  :: arg, teta, zeta, shift, &
                                            small, negvalue, posvalue
   !--------------------------initialize and allocate arrays-------------------------------------
   dAx = zero; dAy = zero; dAz = zero
-  suc = 1
-  if (weight_resbn .gt. sqrtmachprec) then
+  pflsuc = 1
+  if (weight_resbn .gt. sqrtmachprec .or. weight_sresbn .gt. sqrtmachprec) then
       FATAL( rcflux, resbn_m .le. 0, wrong poloidal mode number)
       FATAL( rcflux, resbn_n .le. 0, wrong toroidal mode number)
       resbn = zero
       if (ghost_use .eq. 1 .and. ghost_call .eq. 1) then
-         call ghost(1, suc)
-         if ( suc .eq. 0 ) then
+         call ghost(1, pflsuc)
+         if ( pflsuc .eq. 0 ) then
             ! Improve, change in stochastic
             resbn = 1.0
             return
@@ -40,8 +40,8 @@ subroutine rcflux( ideriv )
   endif
   !-------------------------------calculate Bn-------------------------------------------------- 
   if( ideriv >= 0 ) then
-     if (weight_resbn .gt. sqrtmachprec) then ! resonant Bn perturbation
-         if ( suc .eq. 1 ) then ! No indent
+     if (weight_resbn .gt. sqrtmachprec .or. weight_sresbn .gt. sqrtmachprec) then ! resonant Bn perturbation
+         if ( pflsuc .eq. 1 ) then ! No indent
          psi = 0.0
          do jzeta = 1, gsurf(1)%Nseg_stable-1
             if( myid.ne.modulo(jzeta,ncpu) ) cycle ! parallelization loop;
@@ -66,7 +66,7 @@ subroutine rcflux( ideriv )
 
   !-------------------------------calculate Bn/x------------------------------------------------
   if ( ideriv >= 1 ) then
-     if (weight_resbn .gt. sqrtmachprec) then
+     if (weight_resbn .gt. sqrtmachprec .or. weight_sresbn .gt. sqrtmachprec) then
         t1R = zero
         do jzeta = 1, gsurf(1)%Nseg_stable-1
            if( myid.ne.modulo(jzeta,ncpu) ) cycle ! parallelization loop;
