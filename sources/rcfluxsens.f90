@@ -85,7 +85,8 @@ end subroutine rcfluxsens
 
 subroutine dpsi0(icoil, absdpsi)
 
-  use globals, only: dp, zero, coil, gsurf, myid, ounit, Ncoils, resbn_m, pi2, Npert, dpsi_linear, MPI_COMM_FOCUS 
+  use globals, only: dp, zero, coil, gsurf, myid, ounit, Ncoils, resbn_m, pi2, Npert, dpsi_linear, ncpu, &
+                     bsconstant, MPI_COMM_FOCUS 
   implicit none
   include "mpif.h"
 
@@ -94,6 +95,10 @@ subroutine dpsi0(icoil, absdpsi)
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   INTEGER              :: i, NS, astat, ierr, k
   REAL, dimension(1:coil(icoil)%NS) :: dAxx, dAxy, dAxz, dAyx, dAyy, dAyz, dAzx, dAzy, dAzz
+  REAL, dimension(0:coil(icoil)%NS) :: xx, yy, zz, term, quadterm, absdr
+  REAL, dimension(0:coil(icoil)%NS,Npert) :: linterm
+  REAL, dimension(0:coil(icoil)%NS,1:3) :: pert, pertp, dr, rp
+  REAL, dimension(1:3,1:gsurf(1)%Nseg_stable-1) :: dl
 
   FATAL( dpsi0, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
   
@@ -116,15 +121,56 @@ subroutine dpsi0(icoil, absdpsi)
   coil(icoil)%dpsidz(1:NS) = pi2*real(resbn_m)*coil(icoil)%dpsidz(1:NS)/real(gsurf(1)%Nseg_stable-1)
   if ( dpsi_linear .eq. 0 ) then
     absdpsi = 0.5*pi2*sum( coil(icoil)%dpsidx(1:NS)**2 + coil(icoil)%dpsidy(1:NS)**2 + coil(icoil)%dpsidz(1:NS)**2 )/real(NS)
+    return
   else
     absdpsi = 0.0
-    ! Can be parallelized
     do k = 1, Npert
-       absdpsi = absdpsi + ( pi2*sum( coil(icoil)%dpsidx(1:NS)*coil(icoil)%pertx(1:NS,k) + coil(icoil)%dpsidy(1:NS)*coil(icoil)%perty(1:NS,k) + &
-            coil(icoil)%dpsidz(1:NS)*coil(icoil)%pertz(1:NS,k) ) / real(NS) )**2.0
+       if( myid.ne.modulo(k-1,ncpu) ) cycle
+       linterm(0:NS,k) = coil(icoil)%dpsidx(0:NS)*coil(icoil)%pertx(0:NS,k) + coil(icoil)%dpsidy(0:NS)*coil(icoil)%perty(0:NS,k) + coil(icoil)%dpsidz(0:NS)*coil(icoil)%pertz(0:NS,k)
+       absdpsi = absdpsi + ( pi2*sum( linterm(1:NS,k) ) / real(NS) )**2.0
     enddo
+    call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
+    call MPI_ALLREDUCE( MPI_IN_PLACE, absdpsi, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+    call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
     absdpsi = absdpsi / real(Npert)
+    if ( dpsi_linear .eq. 1 ) return
   endif
+
+  xx(0:NS) = coil(icoil)%xx(0:NS)
+  yy(0:NS) = coil(icoil)%yy(0:NS)
+  zz(0:NS) = coil(icoil)%zz(0:NS)
+  rp(0:NS,1) = coil(icoil)%xt(0:NS)
+  rp(0:NS,2) = coil(icoil)%yt(0:NS)
+  rp(0:NS,3) = coil(icoil)%zt(0:NS)
+  dl(1,1:gsurf(1)%Nseg_stable-1) = gsurf(1)%oxdot(1:gsurf(1)%Nseg_stable-1) - gsurf(1)%xxdot(1:gsurf(1)%Nseg_stable-1)
+  dl(2,1:gsurf(1)%Nseg_stable-1) = gsurf(1)%oydot(1:gsurf(1)%Nseg_stable-1) - gsurf(1)%xydot(1:gsurf(1)%Nseg_stable-1)
+  dl(3,1:gsurf(1)%Nseg_stable-1) = gsurf(1)%ozdot(1:gsurf(1)%Nseg_stable-1) - gsurf(1)%xzdot(1:gsurf(1)%Nseg_stable-1)
+  absdpsi = 0.0
+  do k = 1, Npert
+     if( myid.ne.modulo(k-1,ncpu) ) cycle
+     pert(0:NS,1) = coil(icoil)%pertx(0:NS,k)
+     pert(0:NS,2) = coil(icoil)%perty(0:NS,k)
+     pert(0:NS,3) = coil(icoil)%pertz(0:NS,k)
+     pertp(0:NS,1) = coil(icoil)%pertxp(0:NS,k)
+     pertp(0:NS,2) = coil(icoil)%pertyp(0:NS,k)
+     pertp(0:NS,3) = coil(icoil)%pertzp(0:NS,k)
+     quadterm(0:NS) = 0.0
+     do i = 1, gsurf(1)%Nseg_stable-1
+        dr(0:NS,1) = gsurf(1)%ox(i) - xx(0:NS)
+        dr(0:NS,2) = gsurf(1)%oy(i) - yy(0:NS)
+        dr(0:NS,3) = gsurf(1)%oz(i) - zz(0:NS)
+        absdr(0:NS) = sqrt( ( gsurf(1)%ox(i) - xx(0:NS) )**2.0 + ( gsurf(1)%oy(i) - yy(0:NS) )**2.0 + ( gsurf(1)%oz(i) - zz(0:NS) )**2.0 )
+        quadterm(0:NS) = quadterm(0:NS) + ( -0.5*(pert(0:NS,1)*pert(0:NS,1)+pert(0:NS,2)*pert(0:NS,2)+pert(0:NS,3)*pert(0:NS,3))*(rp(0:NS,1)*dl(1,i)+rp(0:NS,2)*dl(2,i)+rp(0:NS,3)*dl(3,i)) + &
+             1.5*(pert(0:NS,1)*dr(0:NS,1)+pert(0:NS,2)*dr(0:NS,2)+pert(0:NS,3)*dr(0:NS,3))**2.0*(rp(0:NS,1)*dl(1,i)+rp(0:NS,2)*dl(2,i)+rp(0:NS,3)*dl(3,i))/absdr(0:NS)**2.0 + &
+             (pert(0:NS,1)*dr(0:NS,1)+pert(0:NS,2)*dr(0:NS,2)+pert(0:NS,3)*dr(0:NS,3))*(pertp(0:NS,1)*dl(1,i)+pertp(0:NS,2)*dl(2,i)+pertp(0:NS,3)*dl(3,i)) ) / absdr(0:NS)**3.0
+     enddo
+     quadterm(0:NS) = coil(icoil)%I*bsconstant*pi2*real(resbn_m)*quadterm(0:NS) / (real(gsurf(1)%Nseg_stable-1))
+     absdpsi = absdpsi + (pi2*sum(quadterm(1:NS)+linterm(1:NS,k))/real(NS))**2.0
+  enddo
+  call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
+  call MPI_ALLREDUCE( MPI_IN_PLACE, absdpsi, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+  call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
+  absdpsi = absdpsi / real(Npert)
   
   return
 
@@ -135,7 +181,7 @@ end subroutine dpsi0
 subroutine dpsi1(icoil, derivs, ND)
 
   use globals, only: dp, zero, coil, gsurf, myid, ounit, Ncoils, resbn_m, pi2, DoF, bsconstant, &
-                     dpsi_linear, Npert, MPI_COMM_FOCUS
+                     dpsi_linear, Npert, ncpu, MPI_COMM_FOCUS
   implicit none
   include "mpif.h"
 
@@ -145,10 +191,12 @@ subroutine dpsi1(icoil, derivs, ND)
   INTEGER              :: i, j, k, NS, astat, ierr
   REAL                 :: dpsilin
   REAL, dimension(1:1, 0:coil(icoil)%NS-1) :: dLLx, dLy, dLz
-  REAL, dimension(0:coil(icoil)%NS) :: xx, yy, zz, xt, yt, zt, xa, ya, za, absdr
-  REAL, dimension(0:coil(icoil)%NS,1:3) :: dpsidr, dpsidrp, dr, rp, term1, term2, term3
+  REAL, dimension(0:coil(icoil)%NS) :: xx, yy, zz, xt, yt, zt, xa, ya, za, absdr, quadterm, dotdotdot
+  REAL, dimension(0:coil(icoil)%NS,Npert) :: linterm
+  REAL, dimension(0:coil(icoil)%NS,1:3) :: dpsidr, dpsidrp, dr, rp, term1, term2, term3, pert, pertp
+  REAL, dimension(0:coil(icoil)%NS-1,1:3) :: drquad, drpquad, drpquadp
   REAL, dimension(0:coil(icoil)%NS,1:3,1:3) :: drdpsidr, drpdpsidr, drpdpsidrp
-  REAL, dimension(1:3,1:gsurf(1)%Nseg_stable-1) :: dlo, dlx
+  REAL, dimension(1:3,1:gsurf(1)%Nseg_stable-1) :: dlo, dlx, dl
 
   FATAL( dpsi1, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
   NS = coil(icoil)%NS
@@ -247,9 +295,12 @@ subroutine dpsi1(icoil, derivs, ND)
   if ( dpsi_linear .eq. 0 ) then
      derivs(1:1, 1:ND) = matmul(dLLx, DoF(icoil)%xof) + matmul(dLy, DoF(icoil)%yof) + matmul(dLz, DoF(icoil)%zof)
      derivs(1:1, 1:ND) = pi2 * derivs(1:1, 1:ND) / real(NS)
+     return
   else
      derivs(1:1, 1:ND) = 0.0
      do k = 1, Npert
+        if( myid.ne.modulo(k-1,ncpu) ) cycle
+        linterm(0:NS,k) = coil(icoil)%dpsidx(0:NS)*coil(icoil)%pertx(0:NS,k) + coil(icoil)%dpsidy(0:NS)*coil(icoil)%perty(0:NS,k) + coil(icoil)%dpsidz(0:NS)*coil(icoil)%pertz(0:NS,k)
         dpsilin = pi2*sum( coil(icoil)%dpsidx(1:NS)*coil(icoil)%pertx(1:NS,k) + coil(icoil)%dpsidy(1:NS)*coil(icoil)%perty(1:NS,k) + &
              coil(icoil)%dpsidz(1:NS)*coil(icoil)%pertz(1:NS,k) ) / real(NS)
         dLLx(1,0:NS-1) = 2.0*dpsilin*( (drdpsidr(0:NS-1,1,1)-drpdpsidrp(0:NS-1,1,1))*coil(icoil)%pertx(0:NS-1,k) + &
@@ -263,31 +314,106 @@ subroutine dpsi1(icoil, derivs, ND)
              drpdpsidr(0:NS-1,3,1)*coil(icoil)%pertxp(0:NS-1,k) - drpdpsidr(0:NS-1,3,2)*coil(icoil)%pertyp(0:NS-1,k) - drpdpsidr(0:NS-1,3,3)*coil(icoil)%pertzp(0:NS-1,k) )
         derivs(1:1, 1:ND) = derivs(1:1, 1:ND) + pi2*(matmul(dLLx, DoF(icoil)%xof)+matmul(dLy,DoF(icoil)%yof)+matmul(dLz,DoF(icoil)%zof))/real(NS)
      enddo
+     call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
+     call MPI_ALLREDUCE( MPI_IN_PLACE, derivs, ND, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+     call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
      derivs(1:1, 1:ND) = derivs(1:1, 1:ND) / real(Npert)
+     if ( dpsi_linear .eq. 1 ) return
   endif
+  
+  dl(1,1:gsurf(1)%Nseg_stable-1) = gsurf(1)%oxdot(1:gsurf(1)%Nseg_stable-1) - gsurf(1)%xxdot(1:gsurf(1)%Nseg_stable-1)
+  dl(2,1:gsurf(1)%Nseg_stable-1) = gsurf(1)%oydot(1:gsurf(1)%Nseg_stable-1) - gsurf(1)%xydot(1:gsurf(1)%Nseg_stable-1)
+  dl(3,1:gsurf(1)%Nseg_stable-1) = gsurf(1)%ozdot(1:gsurf(1)%Nseg_stable-1) - gsurf(1)%xzdot(1:gsurf(1)%Nseg_stable-1)
+  derivs(1:1, 1:ND) = 0.0
+  do k = 1, Npert
+     if( myid.ne.modulo(k-1,ncpu) ) cycle
+     pert(0:NS,1) = coil(icoil)%pertx(0:NS,k)
+     pert(0:NS,2) = coil(icoil)%perty(0:NS,k)
+     pert(0:NS,3) = coil(icoil)%pertz(0:NS,k)
+     pertp(0:NS,1) = coil(icoil)%pertxp(0:NS,k)
+     pertp(0:NS,2) = coil(icoil)%pertyp(0:NS,k)
+     pertp(0:NS,3) = coil(icoil)%pertzp(0:NS,k)
+     quadterm(0:NS) = 0.0
+     dLLx(1,0:NS-1) = 0.0
+     dLy(1,0:NS-1)  = 0.0
+     dLz(1,0:NS-1)  = 0.0
+     do i = 1, gsurf(1)%Nseg_stable-1
+        dr(0:NS,1) = gsurf(1)%ox(i) - xx(0:NS)
+        dr(0:NS,2) = gsurf(1)%oy(i) - yy(0:NS)
+        dr(0:NS,3) = gsurf(1)%oz(i) - zz(0:NS)
+        absdr(0:NS) = sqrt( ( gsurf(1)%ox(i) - xx(0:NS) )**2.0 + ( gsurf(1)%oy(i) - yy(0:NS) )**2.0 + ( gsurf(1)%oz(i) - zz(0:NS) )**2.0 )
+        dotdotdot(0:NS) = -0.5*(pert(0:NS,1)*pert(0:NS,1)+pert(0:NS,2)*pert(0:NS,2)+pert(0:NS,3)*pert(0:NS,3))*(rp(0:NS,1)*dl(1,i)+rp(0:NS,2)*dl(2,i)+rp(0:NS,3)*dl(3,i)) + &
+             1.5*(pert(0:NS,1)*dr(0:NS,1)+pert(0:NS,2)*dr(0:NS,2)+pert(0:NS,3)*dr(0:NS,3))**2.0*(rp(0:NS,1)*dl(1,i)+rp(0:NS,2)*dl(2,i)+rp(0:NS,3)*dl(3,i))/absdr(0:NS)**2.0 + &
+             (pert(0:NS,1)*dr(0:NS,1)+pert(0:NS,2)*dr(0:NS,2)+pert(0:NS,3)*dr(0:NS,3))*(pertp(0:NS,1)*dl(1,i)+pertp(0:NS,2)*dl(2,i)+pertp(0:NS,3)*dl(3,i))
+        quadterm(0:NS) = quadterm(0:NS) + dotdotdot(0:NS) / absdr(0:NS)**3.0
+        drquad(0:NS-1,1) = 3.0*absdr(0:NS-1)**-4.0*(pert(0:NS-1,1)*dr(0:NS-1,1)+pert(0:NS-1,2)*dr(0:NS-1,2)+pert(0:NS-1,3)*dr(0:NS-1,3))**2.0*&
+             (rp(0:NS-1,1)*dl(1,i)+rp(0:NS-1,2)*dl(2,i)+rp(0:NS-1,3)*dl(3,i))*dr(0:NS-1,1) - 3.0*absdr(0:NS-1)**-2.0*(pert(0:NS-1,1)*dr(0:NS-1,1)+pert(0:NS-1,2)*dr(0:NS-1,2)+pert(0:NS-1,3)*dr(0:NS-1,3))*&
+             (rp(0:NS-1,1)*dl(1,i)+rp(0:NS-1,2)*dl(2,i)+rp(0:NS-1,3)*dl(3,i))*pert(0:NS-1,1) - (pertp(0:NS-1,1)*dl(1,i)+pertp(0:NS-1,2)*dl(2,i)+pertp(0:NS-1,3)*dl(3,i))*pert(0:NS-1,1)
+        drquad(0:NS-1,2) = 3.0*absdr(0:NS-1)**-4.0*(pert(0:NS-1,1)*dr(0:NS-1,1)+pert(0:NS-1,2)*dr(0:NS-1,2)+pert(0:NS-1,3)*dr(0:NS-1,3))**2.0*&
+             (rp(0:NS-1,1)*dl(1,i)+rp(0:NS-1,2)*dl(2,i)+rp(0:NS-1,3)*dl(3,i))*dr(0:NS-1,2) - 3.0*absdr(0:NS-1)**-2.0*(pert(0:NS-1,1)*dr(0:NS-1,1)+pert(0:NS-1,2)*dr(0:NS-1,2)+pert(0:NS-1,3)*dr(0:NS-1,3))*&
+             (rp(0:NS-1,1)*dl(1,i)+rp(0:NS-1,2)*dl(2,i)+rp(0:NS-1,3)*dl(3,i))*pert(0:NS-1,2) - (pertp(0:NS-1,1)*dl(1,i)+pertp(0:NS-1,2)*dl(2,i)+pertp(0:NS-1,3)*dl(3,i))*pert(0:NS-1,2)
+        drquad(0:NS-1,3) = 3.0*absdr(0:NS-1)**-4.0*(pert(0:NS-1,1)*dr(0:NS-1,1)+pert(0:NS-1,2)*dr(0:NS-1,2)+pert(0:NS-1,3)*dr(0:NS-1,3))**2.0*&
+             (rp(0:NS-1,1)*dl(1,i)+rp(0:NS-1,2)*dl(2,i)+rp(0:NS-1,3)*dl(3,i))*dr(0:NS-1,3) - 3.0*absdr(0:NS-1)**-2.0*(pert(0:NS-1,1)*dr(0:NS-1,1)+pert(0:NS-1,2)*dr(0:NS-1,2)+pert(0:NS-1,3)*dr(0:NS-1,3))*&
+             (rp(0:NS-1,1)*dl(1,i)+rp(0:NS-1,2)*dl(2,i)+rp(0:NS-1,3)*dl(3,i))*pert(0:NS-1,3) - (pertp(0:NS-1,1)*dl(1,i)+pertp(0:NS-1,2)*dl(2,i)+pertp(0:NS-1,3)*dl(3,i))*pert(0:NS-1,3)
+        drpquad(0:NS-1,1) = -0.5*(pert(0:NS-1,1)*pert(0:NS-1,1)+pert(0:NS-1,2)*pert(0:NS-1,2)+pert(0:NS-1,3)*pert(0:NS-1,3))*dl(1,i) + 1.5*absdr(0:NS-1)**-2.0*&
+             (pert(0:NS-1,1)*dr(0:NS-1,1)+pert(0:NS-1,2)*dr(0:NS-1,2)+pert(0:NS-1,3)*dr(0:NS-1,3))**2.0*dl(1,i)
+        drpquad(0:NS-1,2) = -0.5*(pert(0:NS-1,1)*pert(0:NS-1,1)+pert(0:NS-1,2)*pert(0:NS-1,2)+pert(0:NS-1,3)*pert(0:NS-1,3))*dl(2,i) + 1.5*absdr(0:NS-1)**-2.0*&
+             (pert(0:NS-1,1)*dr(0:NS-1,1)+pert(0:NS-1,2)*dr(0:NS-1,2)+pert(0:NS-1,3)*dr(0:NS-1,3))**2.0*dl(2,i)
+        drpquad(0:NS-1,3) = -0.5*(pert(0:NS-1,1)*pert(0:NS-1,1)+pert(0:NS-1,2)*pert(0:NS-1,2)+pert(0:NS-1,3)*pert(0:NS-1,3))*dl(3,i) + 1.5*absdr(0:NS-1)**-2.0*&
+             (pert(0:NS-1,1)*dr(0:NS-1,1)+pert(0:NS-1,2)*dr(0:NS-1,2)+pert(0:NS-1,3)*dr(0:NS-1,3))**2.0*dl(3,i)
+        drpquadp(0:NS-1,1) = -1.0*(pert(0:NS-1,1)*pertp(0:NS-1,1)+pert(0:NS-1,2)*pertp(0:NS-1,2)+pert(0:NS-1,3)*pertp(0:NS-1,3))*dl(1,i) + 3.0*absdr(0:NS-1)**-4.0*&
+             (dr(0:NS-1,1)*rp(0:NS-1,1)+dr(0:NS-1,2)*rp(0:NS-1,2)+dr(0:NS-1,3)*rp(0:NS-1,3))*(pert(0:NS-1,1)*dr(0:NS-1,1)+pert(0:NS-1,2)*dr(0:NS-1,2)+pert(0:NS-1,3)*dr(0:NS-1,3))**2.0*dl(1,i) + &
+             3.0*absdr(0:NS-1)**-2.0*(pert(0:NS-1,1)*dr(0:NS-1,1)+pert(0:NS-1,2)*dr(0:NS-1,2)+pert(0:NS-1,3)*dr(0:NS-1,3))*&
+             (pertp(0:NS-1,1)*dr(0:NS-1,1)+pertp(0:NS-1,2)*dr(0:NS-1,2)+pertp(0:NS-1,3)*dr(0:NS-1,3)-pert(0:NS-1,1)*rp(0:NS-1,1)-pert(0:NS-1,2)*rp(0:NS-1,2)-pert(0:NS-1,3)*rp(0:NS-1,3))*dl(1,i)
+        drpquadp(0:NS-1,2) = -1.0*(pert(0:NS-1,1)*pertp(0:NS-1,1)+pert(0:NS-1,2)*pertp(0:NS-1,2)+pert(0:NS-1,3)*pertp(0:NS-1,3))*dl(2,i) + 3.0*absdr(0:NS-1)**-4.0*&
+             (dr(0:NS-1,1)*rp(0:NS-1,1)+dr(0:NS-1,2)*rp(0:NS-1,2)+dr(0:NS-1,3)*rp(0:NS-1,3))*(pert(0:NS-1,1)*dr(0:NS-1,1)+pert(0:NS-1,2)*dr(0:NS-1,2)+pert(0:NS-1,3)*dr(0:NS-1,3))**2.0*dl(2,i) + &
+             3.0*absdr(0:NS-1)**-2.0*(pert(0:NS-1,1)*dr(0:NS-1,1)+pert(0:NS-1,2)*dr(0:NS-1,2)+pert(0:NS-1,3)*dr(0:NS-1,3))*&
+             (pertp(0:NS-1,1)*dr(0:NS-1,1)+pertp(0:NS-1,2)*dr(0:NS-1,2)+pertp(0:NS-1,3)*dr(0:NS-1,3)-pert(0:NS-1,1)*rp(0:NS-1,1)-pert(0:NS-1,2)*rp(0:NS-1,2)-pert(0:NS-1,3)*rp(0:NS-1,3))*dl(2,i)
+        drpquadp(0:NS-1,3) = -1.0*(pert(0:NS-1,1)*pertp(0:NS-1,1)+pert(0:NS-1,2)*pertp(0:NS-1,2)+pert(0:NS-1,3)*pertp(0:NS-1,3))*dl(3,i) + 3.0*absdr(0:NS-1)**-4.0*&
+             (dr(0:NS-1,1)*rp(0:NS-1,1)+dr(0:NS-1,2)*rp(0:NS-1,2)+dr(0:NS-1,3)*rp(0:NS-1,3))*(pert(0:NS-1,1)*dr(0:NS-1,1)+pert(0:NS-1,2)*dr(0:NS-1,2)+pert(0:NS-1,3)*dr(0:NS-1,3))**2.0*dl(3,i) + &
+             3.0*absdr(0:NS-1)**-2.0*(pert(0:NS-1,1)*dr(0:NS-1,1)+pert(0:NS-1,2)*dr(0:NS-1,2)+pert(0:NS-1,3)*dr(0:NS-1,3))*&
+             (pertp(0:NS-1,1)*dr(0:NS-1,1)+pertp(0:NS-1,2)*dr(0:NS-1,2)+pertp(0:NS-1,3)*dr(0:NS-1,3)-pert(0:NS-1,1)*rp(0:NS-1,1)-pert(0:NS-1,2)*rp(0:NS-1,2)-pert(0:NS-1,3)*rp(0:NS-1,3))*dl(3,i)
+        ! Do fd
+        !do j = 1, NS-2
+        !   drpquadp(j,1) = real(NS)*(drpquad(j+1,1)-drpquad(j-1,1))/(2.0*pi2)
+        !   drpquadp(j,2) = real(NS)*(drpquad(j+1,2)-drpquad(j-1,2))/(2.0*pi2)
+        !   drpquadp(j,3) = real(NS)*(drpquad(j+1,3)-drpquad(j-1,3))/(2.0*pi2)
+        !enddo
+        !drpquadp(0,1) = real(NS)*(drpquad(1,1)-drpquad(0,1))/pi2
+        !drpquadp(0,2) = real(NS)*(drpquad(1,2)-drpquad(0,2))/pi2
+        !drpquadp(0,3) = real(NS)*(drpquad(1,3)-drpquad(0,3))/pi2
+        !drpquadp(NS-1,1) = real(NS)*(drpquad(NS-1,1)-drpquad(NS-2,1))/pi2
+        !drpquadp(NS-1,2) = real(NS)*(drpquad(NS-1,2)-drpquad(NS-2,2))/pi2
+        !drpquadp(NS-1,3) = real(NS)*(drpquad(NS-1,3)-drpquad(NS-2,3))/pi2
+
+        dLLx(1,0:NS-1) = dLLx(1,0:NS-1) + 3.0*absdr(0:NS-1)**-5.0*dr(0:NS-1,1)*dotdotdot(0:NS-1) + absdr(0:NS-1)**-3.0*drquad(0:NS-1,1) - &
+             3.0*absdr(0:NS-1)**-5.0*(dr(0:NS-1,1)*rp(0:NS-1,1)+dr(0:NS-1,2)*rp(0:NS-1,2)+dr(0:NS-1,3)*rp(0:NS-1,3))*drpquad(0:NS-1,1) - absdr(0:NS-1)**-3.0*drpquadp(0:NS-1,1)
+        dLy(1,0:NS-1)  = dLy(1,0:NS-1)  + 3.0*absdr(0:NS-1)**-5.0*dr(0:NS-1,2)*dotdotdot(0:NS-1) + absdr(0:NS-1)**-3.0*drquad(0:NS-1,2) - &
+             3.0*absdr(0:NS-1)**-5.0*(dr(0:NS-1,1)*rp(0:NS-1,1)+dr(0:NS-1,2)*rp(0:NS-1,2)+dr(0:NS-1,3)*rp(0:NS-1,3))*drpquad(0:NS-1,2) - absdr(0:NS-1)**-3.0*drpquadp(0:NS-1,2)
+        dLz(1,0:NS-1)  = dLz(1,0:NS-1)  + 3.0*absdr(0:NS-1)**-5.0*dr(0:NS-1,3)*dotdotdot(0:NS-1) + absdr(0:NS-1)**-3.0*drquad(0:NS-1,3) - &
+             3.0*absdr(0:NS-1)**-5.0*(dr(0:NS-1,1)*rp(0:NS-1,1)+dr(0:NS-1,2)*rp(0:NS-1,2)+dr(0:NS-1,3)*rp(0:NS-1,3))*drpquad(0:NS-1,3) - absdr(0:NS-1)**-3.0*drpquadp(0:NS-1,3)
+     enddo
+     quadterm(0:NS) = coil(icoil)%I*bsconstant*pi2*real(resbn_m)*quadterm(0:NS) / (real(gsurf(1)%Nseg_stable-1))
+     dLLx(1,0:NS-1) = coil(icoil)%I*bsconstant*pi2*real(resbn_m)*dLLx(1,0:NS-1) / (real(gsurf(1)%Nseg_stable-1))
+     dLy(1,0:NS-1)  = coil(icoil)%I*bsconstant*pi2*real(resbn_m)*dLy(1,0:NS-1)  / (real(gsurf(1)%Nseg_stable-1))
+     dLz(1,0:NS-1)  = coil(icoil)%I*bsconstant*pi2*real(resbn_m)*dLz(1,0:NS-1)  / (real(gsurf(1)%Nseg_stable-1))
+     dLLx(1,0:NS-1) = dLLx(1,0:NS-1) + (drdpsidr(0:NS-1,1,1)-drpdpsidrp(0:NS-1,1,1))*coil(icoil)%pertx(0:NS-1,k) + &
+          (drdpsidr(0:NS-1,1,2)-drpdpsidrp(0:NS-1,1,2))*coil(icoil)%perty(0:NS-1,k) + (drdpsidr(0:NS-1,1,3)-drpdpsidrp(0:NS-1,1,3))*coil(icoil)%pertz(0:NS-1,k) - &
+          drpdpsidr(0:NS-1,1,1)*coil(icoil)%pertxp(0:NS-1,k) - drpdpsidr(0:NS-1,1,2)*coil(icoil)%pertyp(0:NS-1,k) - drpdpsidr(0:NS-1,1,3)*coil(icoil)%pertzp(0:NS-1,k)
+     dLy(1,0:NS-1)  = dLy(1,0:NS-1) + (drdpsidr(0:NS-1,2,1)-drpdpsidrp(0:NS-1,2,1))*coil(icoil)%pertx(0:NS-1,k) + &
+          (drdpsidr(0:NS-1,2,2)-drpdpsidrp(0:NS-1,2,2))*coil(icoil)%perty(0:NS-1,k) + (drdpsidr(0:NS-1,2,3)-drpdpsidrp(0:NS-1,2,3))*coil(icoil)%pertz(0:NS-1,k) - &
+          drpdpsidr(0:NS-1,2,1)*coil(icoil)%pertxp(0:NS-1,k) - drpdpsidr(0:NS-1,2,2)*coil(icoil)%pertyp(0:NS-1,k) - drpdpsidr(0:NS-1,2,3)*coil(icoil)%pertzp(0:NS-1,k)
+     dLz(1,0:NS-1)  = dLz(1,0:NS-1) + (drdpsidr(0:NS-1,3,1)-drpdpsidrp(0:NS-1,3,1))*coil(icoil)%pertx(0:NS-1,k) + &
+          (drdpsidr(0:NS-1,3,2)-drpdpsidrp(0:NS-1,3,2))*coil(icoil)%perty(0:NS-1,k) + (drdpsidr(0:NS-1,3,3)-drpdpsidrp(0:NS-1,3,3))*coil(icoil)%pertz(0:NS-1,k) - &
+          drpdpsidr(0:NS-1,3,1)*coil(icoil)%pertxp(0:NS-1,k) - drpdpsidr(0:NS-1,3,2)*coil(icoil)%pertyp(0:NS-1,k) - drpdpsidr(0:NS-1,3,3)*coil(icoil)%pertzp(0:NS-1,k)
+     derivs(1:1, 1:ND) = derivs(1:1, 1:ND) + 2.0*(pi2*sum(quadterm(1:NS)+linterm(1:NS,k))/real(NS))*pi2*(matmul(dLLx, DoF(icoil)%xof)+matmul(dLy,DoF(icoil)%yof)+matmul(dLz,DoF(icoil)%zof))/real(NS)
+  enddo
+  call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
+  call MPI_ALLREDUCE( MPI_IN_PLACE, derivs, ND, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+  call MPI_BARRIER( MPI_COMM_FOCUS, ierr )
+  derivs(1:1, 1:ND) = derivs(1:1, 1:ND) / real(Npert)
 
   return
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 end subroutine dpsi1
 
