@@ -20,7 +20,7 @@ SUBROUTINE diagnos
                        thaty(:), thatz(:), nhatx(:), nhaty(:), nhatz(:), bhatx(:), bhaty(:), bhatz(:), thatpx(:), thatpy(:), thatpz(:), &
                        nhatax(:), nhatay(:), nhataz(:), bhatax(:), bhatay(:), bhataz(:), alphac(:), alphas(:)
   REAL, dimension(1:coil(1)%NS) :: dAxx, dAxy, dAxz, dAyx, dAyy, dAyz, dAzx, dAzy, dAzz
-  REAL, dimension(1:Ncoils,1:coil(1)%NS) :: absdpsidr
+  REAL, dimension(1:coil(1)%NS) :: absdpsidr
 
   isurf = plasma
   itmp = 0
@@ -308,41 +308,34 @@ SUBROUTINE diagnos
   endif
 
   !--------------------------------island width tolerance---------------------------------------  
-  if ( ( weight_resbn > sqrtmachprec .or. weight_sresbn > sqrtmachprec ) .and. rcflux_use .eq. 1) then
+  if ( ( weight_resbn > sqrtmachprec .or. weight_sresbn > sqrtmachprec .or. weight_dpsidr > sqrtmachprec ) .and. rcflux_use .eq. 1) then
      
      ! Replace this computation
      
-     SALLOCATE( gsurf(1)%dpsidx, (1:Ncoils,1:coil(1)%NS) , 0.0) ! Need to change where this is allocated
-     SALLOCATE( gsurf(1)%dpsidy, (1:Ncoils,1:coil(1)%NS) , 0.0)
-     SALLOCATE( gsurf(1)%dpsidz, (1:Ncoils,1:coil(1)%NS) , 0.0)
      do icoil = 1, Ncoils
         NS = coil(icoil)%NS
-        FATAL( diagnos, coil(1)%NS .ne. NS, coils with dif resolution breaks island tolerance calculation) 
+        FATAL( diagnos, coil(1)%NS .ne. NS, coils with dif resolution breaks island tolerance calculation)
+        coil(icoil)%dpsidx(1:NS) = 0.0
+        coil(icoil)%dpsidy(1:NS) = 0.0
+        coil(icoil)%dpsidz(1:NS) = 0.0
         do i = 1, gsurf(1)%Nseg_stable-1
            call deltaafield(icoil, gsurf(1)%ox(i), gsurf(1)%oy(i), gsurf(1)%oz(i), dAxx, dAxy, dAxz, dAyx, dAyy, dAyz, dAzx, dAzy, dAzz)
-           gsurf(1)%dpsidx(icoil,1:NS) = gsurf(1)%dpsidx(icoil,1:NS) + dAxx(1:NS)*gsurf(1)%oxdot(i) &
-                   + dAyx(1:NS)*gsurf(1)%oydot(i) + dAzx(1:NS)*gsurf(1)%ozdot(i)
-           gsurf(1)%dpsidy(icoil,1:NS) = gsurf(1)%dpsidy(icoil,1:NS) + dAxy(1:NS)*gsurf(1)%oxdot(i) &
-                   + dAyy(1:NS)*gsurf(1)%oydot(i) + dAzy(1:NS)*gsurf(1)%ozdot(i)
-           gsurf(1)%dpsidz(icoil,1:NS) = gsurf(1)%dpsidz(icoil,1:NS) + dAxz(1:NS)*gsurf(1)%oxdot(i) &
-                   + dAyz(1:NS)*gsurf(1)%oydot(i) + dAzz(1:NS)*gsurf(1)%ozdot(i)
+           coil(icoil)%dpsidx(1:NS) = coil(icoil)%dpsidx(1:NS) + dAxx(1:NS)*gsurf(1)%oxdot(i) + dAyx(1:NS)*gsurf(1)%oydot(i) + dAzx(1:NS)*gsurf(1)%ozdot(i)
+           coil(icoil)%dpsidy(1:NS) = coil(icoil)%dpsidy(1:NS) + dAxy(1:NS)*gsurf(1)%oxdot(i) + dAyy(1:NS)*gsurf(1)%oydot(i) + dAzy(1:NS)*gsurf(1)%ozdot(i)
+           coil(icoil)%dpsidz(1:NS) = coil(icoil)%dpsidz(1:NS) + dAxz(1:NS)*gsurf(1)%oxdot(i) + dAyz(1:NS)*gsurf(1)%oydot(i) + dAzz(1:NS)*gsurf(1)%ozdot(i)
            call deltaafield(icoil, gsurf(1)%xx(i), gsurf(1)%xy(i), gsurf(1)%xz(i), dAxx, dAxy, dAxz, dAyx, dAyy, dAyz, dAzx, dAzy, dAzz)
-           gsurf(1)%dpsidx(icoil,1:NS) = gsurf(1)%dpsidx(icoil,1:NS) - dAxx(1:NS)*gsurf(1)%xxdot(i) &
-                   - dAyx(1:NS)*gsurf(1)%xydot(i) - dAzx(1:NS)*gsurf(1)%xzdot(i)
-           gsurf(1)%dpsidy(icoil,1:NS) = gsurf(1)%dpsidy(icoil,1:NS) - dAxy(1:NS)*gsurf(1)%xxdot(i) &
-                   - dAyy(1:NS)*gsurf(1)%xydot(i) - dAzy(1:NS)*gsurf(1)%xzdot(i)
-           gsurf(1)%dpsidz(icoil,1:NS) = gsurf(1)%dpsidz(icoil,1:NS) - dAxz(1:NS)*gsurf(1)%xxdot(i) &
-                   - dAyz(1:NS)*gsurf(1)%xydot(i) - dAzz(1:NS)*gsurf(1)%xzdot(i)
+           coil(icoil)%dpsidx(1:NS) = coil(icoil)%dpsidx(1:NS) - dAxx(1:NS)*gsurf(1)%xxdot(i) - dAyx(1:NS)*gsurf(1)%xydot(i) - dAzx(1:NS)*gsurf(1)%xzdot(i)
+           coil(icoil)%dpsidy(1:NS) = coil(icoil)%dpsidy(1:NS) - dAxy(1:NS)*gsurf(1)%xxdot(i) - dAyy(1:NS)*gsurf(1)%xydot(i) - dAzy(1:NS)*gsurf(1)%xzdot(i)
+           coil(icoil)%dpsidz(1:NS) = coil(icoil)%dpsidz(1:NS) - dAxz(1:NS)*gsurf(1)%xxdot(i) - dAyz(1:NS)*gsurf(1)%xydot(i) - dAzz(1:NS)*gsurf(1)%xzdot(i)
         enddo
-        gsurf(1)%dpsidx(icoil,1:NS) = pi2*resbn_m*gsurf(1)%dpsidx(icoil,1:NS)/(gsurf(1)%Nseg_stable-1)
-        gsurf(1)%dpsidy(icoil,1:NS) = pi2*resbn_m*gsurf(1)%dpsidy(icoil,1:NS)/(gsurf(1)%Nseg_stable-1)
-        gsurf(1)%dpsidz(icoil,1:NS) = pi2*resbn_m*gsurf(1)%dpsidz(icoil,1:NS)/(gsurf(1)%Nseg_stable-1)
+        coil(icoil)%dpsidx(1:NS) = pi2*resbn_m*coil(icoil)%dpsidx(1:NS)/(gsurf(1)%Nseg_stable-1)
+        coil(icoil)%dpsidy(1:NS) = pi2*resbn_m*coil(icoil)%dpsidy(1:NS)/(gsurf(1)%Nseg_stable-1)
+        coil(icoil)%dpsidz(1:NS) = pi2*resbn_m*coil(icoil)%dpsidz(1:NS)/(gsurf(1)%Nseg_stable-1)
      enddo
-     absdpsidr(1:Ncoils,1:NS) = sqrt( gsurf(1)%dpsidx(1:Ncoils,1:NS)**2 + &
-             gsurf(1)%dpsidy(1:Ncoils,1:NS)**2 + gsurf(1)%dpsidz(1:Ncoils,1:NS)**2 )
      normdpsidr = 0.0
      do icoil = 1, Ncoils
-        normdpsidr = normdpsidr + pi2*sum(absdpsidr(icoil,1:NS-1))/(NS-1)
+        absdpsidr(1:NS) = sqrt( coil(icoil)%dpsidx(1:NS)**2 + coil(icoil)%dpsidy(1:NS)**2 + coil(icoil)%dpsidz(1:NS)**2 )
+        normdpsidr = normdpsidr + pi2*sum(absdpsidr(1:NS))/real(NS)
      enddo
      island_tol = 1.0E-1/(normdpsidr*8.0)
      !island_tol = deltapsi/(normdpsidr*8.0) ! Factor of 8 comes from SS, change later

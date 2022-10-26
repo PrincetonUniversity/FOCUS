@@ -113,12 +113,12 @@ module globals
   REAL                 :: target_resbn   =   0.000D+00
   INTEGER              :: resbn_m        =   1
   INTEGER              :: resbn_n        =   1
-  INTEGER              :: ghost_use      =   0
+  INTEGER              :: ghost_use      =   1
   INTEGER              :: ghost_call     =   1
   INTEGER              :: ghost_once     =   0
   INTEGER              :: ghost_failreturn = 0
   INTEGER              :: rcflux_use     =   1
-  INTEGER              :: period_Nseg    =   128
+  INTEGER              :: period_Nseg    =   1024
   INTEGER              :: pfl_mult       =   1
   REAL                 :: orpfl          =   1.000D+00
   REAL                 :: ozpfl          =   0.000D+00
