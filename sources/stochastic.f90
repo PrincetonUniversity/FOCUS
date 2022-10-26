@@ -298,22 +298,5 @@ subroutine perturbation(ideriv)
      sdelta = sdelta*sqrt(3.0)
 
   enddo
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 end subroutine perturbation
