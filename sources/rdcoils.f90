@@ -707,6 +707,9 @@ subroutine discoil(ifirst)
               freq = real(mm*Nturns*Npancakes)
               costerms(0:NS) = cos(mm*Nturns*Npancakes*zeta(0:NS))
               sinterms(0:NS) = sin(mm*Nturns*Npancakes*zeta(0:NS))
+
+              ! Make these variables global for use later
+
               rc(0:NS,1)    = rc(0:NS,1)    +                Foucoil(icoil)%xc(mm)*costerms(0:NS) +                Foucoil(icoil)%xs(mm)*sinterms(0:NS)
               rc(0:NS,2)    = rc(0:NS,2)    +                Foucoil(icoil)%yc(mm)*costerms(0:NS) +                Foucoil(icoil)%ys(mm)*sinterms(0:NS)
               rc(0:NS,3)    = rc(0:NS,3)    +                Foucoil(icoil)%zc(mm)*costerms(0:NS) +                Foucoil(icoil)%zs(mm)*sinterms(0:NS)

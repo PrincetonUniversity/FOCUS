@@ -142,8 +142,8 @@ subroutine sbnormal(ideriv)
               call dpsi0(icoil,dummy)
               ! Use coil symmetry instead of 8
               psipred = psipred + 8.0*sum(coil(icoil)%dpsidx(1:NS)*sdelta*cos(pi2*real(coil(icoil)%nxx(j))*g(icoil,1:NS)+coil(icoil)%psx(j)) + &
-                                      coil(icoil)%dpsidy(1:NS)*sdelta*cos(pi2*real(coil(icoil)%nyy(j))*g(icoil,1:NS)+coil(icoil)%psy(j)) + &
-                                      coil(icoil)%dpsidz(1:NS)*sdelta*cos(pi2*real(coil(icoil)%nzz(j))*g(icoil,1:NS)+coil(icoil)%psz(j)))
+                                          coil(icoil)%dpsidy(1:NS)*sdelta*cos(pi2*real(coil(icoil)%nyy(j))*g(icoil,1:NS)+coil(icoil)%psy(j)) + &
+                                          coil(icoil)%dpsidz(1:NS)*sdelta*cos(pi2*real(coil(icoil)%nzz(j))*g(icoil,1:NS)+coil(icoil)%psz(j)))
            enddo
            resbnavg = resbnavg + (psi-rcflux_target)**2.0
            if ( ideriv .eq. 1 ) t1Ravg(1:Ndof) = t1Ravg(1:Ndof) + t1R(1:Ndof)
@@ -237,11 +237,11 @@ subroutine perturbation(ideriv)
      SALLOCATE( coil(icoil)%nzz, (1:Npert), 0 )
      if (myid .eq. 0) then
         do j = 1, Npert
+           !arb = rand(0) ! Deterministic
            call random_number(arb)
-           !arb = rand(0)                ! Used for deterministic debugging 
            coil(icoil)%psx(j) = pi2*arb
            call random_number(arb)
-           coil(icoil)%nxx(j) = FLOOR(real(Nmax)*arb) + 1 ! Gives int between 1 and 3
+           coil(icoil)%nxx(j) = FLOOR(real(Nmax)*arb) + 1
            call random_number(arb)
            coil(icoil)%psy(j) = pi2*arb
            call random_number(arb)
@@ -270,7 +270,7 @@ subroutine perturbation(ideriv)
      if ( coil(icoil)%type .eq. 1 ) then
         freq = 1.0
      else if ( coil(icoil)%type .eq. coil_type_multi ) then
-        freq = real(Nturns*Npancakes)
+        freq = real(Nturns*Npancakes) ! Need to use derivative of single-filament
      else
         cycle
      endif
@@ -298,22 +298,5 @@ subroutine perturbation(ideriv)
      sdelta = sdelta*sqrt(3.0)
 
   enddo
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 end subroutine perturbation

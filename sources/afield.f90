@@ -239,7 +239,7 @@ subroutine deltaafield(icoil, x, y, z, dAxx, dAxy, dAxz, dAyx, dAyy, dAyz, dAzx,
         dlx = xx - coil(icoil)%xx(kseg)                                              ! r-r_c
         dly = yy - coil(icoil)%yy(kseg)
         dlz = zz - coil(icoil)%zz(kseg)
-        r2 = dlx**2 + dly**2 + dlz**2 
+        r2 = dlx**2 + dly**2 + dlz**2                                                ! !r_c-r|^2
         rm3 = one/(sqrt(r2)*r2)                                                      ! |r_c-r|^-1
         ltx = coil(icoil)%xt(kseg)                                                   ! r_c'
         lty = coil(icoil)%yt(kseg)
