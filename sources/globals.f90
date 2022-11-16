@@ -16,7 +16,7 @@ module globals
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 
-  CHARACTER(10), parameter :: version='v0.17.00' ! version number
+  CHARACTER(10), parameter :: version='v0.17.01' ! version number
 
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -183,7 +183,7 @@ module globals
   REAL                 :: weight_specw   =   0.000D+00
   ! bnrom stochastic
   REAL                 :: weight_sbnorm  =   0.000D+00   ! Stochastic bnormal weight
-  INTEGER              :: Npert          =   10          ! Number of coil perturbations
+  INTEGER              :: Npert          =   0          ! Number of coil perturbations
   INTEGER              :: Nmax           =   3           ! Max frequency of perturbations
   REAL                 :: sdelta         =   1.000D-02   ! Perturbation magnitude
   ! optimize controls
