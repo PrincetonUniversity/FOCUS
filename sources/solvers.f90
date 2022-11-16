@@ -495,7 +495,6 @@ subroutine costfun(ideriv)
   !if(myid==0) write(ounit, '("-------i=9, chi = "ES23.15)') chi
   ! nissin
   if (weight_nissin > 0.0_dp) then
-
      call nisscom(ideriv)
      chi = chi + weight_nissin * nissin
      if     ( ideriv == 1 ) then
@@ -725,7 +724,7 @@ subroutine normweight
 
   !-!-!-!-!-!-!-!-!-!-sbnorm-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  if( weight_sbnorm >= 0.0_dp ) then
+  if( weight_sbnorm > 0.0_dp ) then
 
      call sbnormal(0)
      if (abs(bnormavg) > machprec) weight_sbnorm = weight_sbnorm / bnormavg
@@ -853,7 +852,7 @@ subroutine output (mark)
            coilspace(iout, idof+1:idof+3*NCP) = Splines(icoil)%Cpoints(0:3*NCP-1) ; idof = idof + 3*NCP
         end select
      enddo
-!!$     FATAL( output , idof .ne. Tdof, counting error in restart )
+     FATAL( output , idof .ne. Tdof, counting error in restart )
   endif
 
   if(mod(iout,save_freq) .eq. 0) call saving
