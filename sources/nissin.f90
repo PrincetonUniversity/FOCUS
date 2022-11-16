@@ -71,7 +71,12 @@ subroutine nisscom(ideriv)
         endif
 
         if ( coil(icoil)%Lc /= 0 ) then !if geometry is free;
-           call nissinDeriv1( icoil, t1N(idof+1:idof+ND), ND, NF )
+           if (abs(nissin) .le. machprec) then
+              t1N(idof+1:idof+ND) = 0 ! avoid divided-by-zero-error
+           else 
+              call nissinDeriv1( icoil, t1N(idof+1:idof+ND), ND, NF )
+           endif
+           
            if (mnissin > 0) then ! L-M format of targets
               LM_fjac(inissin+ivec, idof+1:idof+ND) = weight_nissin * t1N(idof+1:idof+ND)
               ivec = ivec + 1
