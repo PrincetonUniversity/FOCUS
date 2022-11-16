@@ -174,43 +174,45 @@ subroutine saving
      HWRITERA( Nteta,Nzeta      ,   Bz            ,   surf(plasma)%Bz(0:Nteta-1,0:Nzeta-1) )
   endif
 
-  NSmax = 0
-  do icoil = 1, Ncoils
-     if(coil(icoil)%NS .gt. NSmax) NSmax = coil(icoil)%NS
-  enddo
-  SALLOCATE(tempvar, (1:Ncoils, 0:NSmax) , 0.0)
+  if (weight_sbnorm > 0) then
+      NSmax = 0
+      do icoil = 1, Ncoils
+         if(coil(icoil)%NS .gt. NSmax) NSmax = coil(icoil)%NS
+      enddo
+      SALLOCATE(tempvar, (1:Ncoils, 0:NSmax) , 0.0)
 
-  ! Save coil data
-  do icoil = 1, Ncoils
-     tempvar(icoil,0:coil(icoil)%NS) = coil(icoil)%xx(0:coil(icoil)%NS)
-  enddo
-  HWRITERA( Ncoils, NSmax+1, xx  , tempvar(1:Ncoils,0:NSmax) )
-  tempvar(1:Ncoils,0:NSmax) = 0.0
-  do icoil = 1, Ncoils
-     tempvar(icoil,0:coil(icoil)%NS) = coil(icoil)%yy(0:coil(icoil)%NS)
-  enddo
-  HWRITERA( Ncoils, NSmax+1, yy  , tempvar(1:Ncoils,0:NSmax) )
-  tempvar(1:Ncoils,0:NSmax) = 0.0
-  do icoil = 1, Ncoils
-     tempvar(icoil,0:coil(icoil)%NS) = coil(icoil)%zz(0:coil(icoil)%NS)
-  enddo
-  HWRITERA( Ncoils, NSmax+1, zz  , tempvar(1:Ncoils,0:NSmax) )
-  tempvar(1:Ncoils,0:NSmax) = 0.0
-  do icoil = 1, Ncoils
-     tempvar(icoil,0:coil(icoil)%NS) = coil(icoil)%xt(0:coil(icoil)%NS)
-  enddo
-  HWRITERA( Ncoils, NSmax+1, xt  , tempvar(1:Ncoils,0:NSmax) )
-  tempvar(1:Ncoils,0:NSmax) = 0.0
-  do icoil = 1, Ncoils
-     tempvar(icoil,0:coil(icoil)%NS) = coil(icoil)%yt(0:coil(icoil)%NS)
-  enddo
-  HWRITERA( Ncoils, NSmax+1, yt  , tempvar(1:Ncoils,0:NSmax) )
-  tempvar(1:Ncoils,0:NSmax) = 0.0
-  do icoil = 1, Ncoils
-     tempvar(icoil,0:coil(icoil)%NS) = coil(icoil)%zt(0:coil(icoil)%NS)
-  enddo
-  HWRITERA( Ncoils, NSmax+1, zt  , tempvar(1:Ncoils,0:NSmax) )
-  tempvar(1:Ncoils,0:NSmax) = 0.0
+      ! Save coil data
+      do icoil = 1, Ncoils
+         tempvar(icoil,0:coil(icoil)%NS) = coil(icoil)%xx(0:coil(icoil)%NS)
+      enddo
+      HWRITERA( Ncoils, NSmax+1, xx  , tempvar(1:Ncoils,0:NSmax) )
+      tempvar(1:Ncoils,0:NSmax) = 0.0
+      do icoil = 1, Ncoils
+         tempvar(icoil,0:coil(icoil)%NS) = coil(icoil)%yy(0:coil(icoil)%NS)
+      enddo
+      HWRITERA( Ncoils, NSmax+1, yy  , tempvar(1:Ncoils,0:NSmax) )
+      tempvar(1:Ncoils,0:NSmax) = 0.0
+      do icoil = 1, Ncoils
+         tempvar(icoil,0:coil(icoil)%NS) = coil(icoil)%zz(0:coil(icoil)%NS)
+      enddo
+      HWRITERA( Ncoils, NSmax+1, zz  , tempvar(1:Ncoils,0:NSmax) )
+      tempvar(1:Ncoils,0:NSmax) = 0.0
+      do icoil = 1, Ncoils
+         tempvar(icoil,0:coil(icoil)%NS) = coil(icoil)%xt(0:coil(icoil)%NS)
+      enddo
+      HWRITERA( Ncoils, NSmax+1, xt  , tempvar(1:Ncoils,0:NSmax) )
+      tempvar(1:Ncoils,0:NSmax) = 0.0
+      do icoil = 1, Ncoils
+         tempvar(icoil,0:coil(icoil)%NS) = coil(icoil)%yt(0:coil(icoil)%NS)
+      enddo
+      HWRITERA( Ncoils, NSmax+1, yt  , tempvar(1:Ncoils,0:NSmax) )
+      tempvar(1:Ncoils,0:NSmax) = 0.0
+      do icoil = 1, Ncoils
+         tempvar(icoil,0:coil(icoil)%NS) = coil(icoil)%zt(0:coil(icoil)%NS)
+      enddo
+      HWRITERA( Ncoils, NSmax+1, zt  , tempvar(1:Ncoils,0:NSmax) )
+      tempvar(1:Ncoils,0:NSmax) = 0.0
+  endif 
 
   ! Save filamentary body force loads
   if (filforce .eq. 1) then
@@ -278,9 +280,9 @@ subroutine saving
     enddo
     HWRITERA( Ncoils, NSmax+1, bfbz  , tempvar(1:Ncoils,0:NSmax) )
     tempvar(1:Ncoils,0:NSmax) = 0.0
+
+    DALLOCATE(tempvar)
   endif
-  
-  DALLOCATE(tempvar)
 
   HWRITEIV( 1                ,   iout          ,   iout                          )
   HWRITERV( 1                ,   Inorm         ,   Inorm                         )
@@ -288,7 +290,9 @@ subroutine saving
   HWRITERV( 1                ,   Mnorm         ,   Mnorm                         )
   HWRITERV( 1                ,   overlap       ,   overlap                       )
   HWRITERA( iout, 14         ,   evolution     ,   evolution(1:iout, 0:13)       )
-  HWRITERA( iout, Tdof       ,   coilspace     ,   coilspace(1:iout, 1:Tdof)     )
+  if (allocated(coilspace)) then
+     HWRITERA( iout, Tdof       ,   coilspace     ,   coilspace(1:iout, 1:Tdof)     )
+  endif
 
   if (allocated(deriv)) then
      HWRITERA( Ndof, 12      ,   deriv        ,    deriv(1:Ndof, 0:11)          )

@@ -195,7 +195,7 @@ subroutine AllocData(type)
         else if (coil(icoil)%type==coil_type_spline) then
            Tdof = Tdof + 1              + 3*(Splines(icoil)%NCP)
         else 
-           Tdof = Tdof + coil(icoil)%Ic + DoF(icoil)%ND
+           Tdof = Tdof + 1 + DoF(icoil)%ND
         end if
         if (DoF(icoil)%ND >= Cdof) Cdof = DoF(icoil)%ND ! find the largest ND for single coil;
 
@@ -209,7 +209,9 @@ subroutine AllocData(type)
      SALLOCATE(    xdof, (1:Ndof), zero ) ! dof vector;
      SALLOCATE( dofnorm, (1:Ndof), one ) ! dof normalized value vector;
      SALLOCATE( evolution, (1:Nouts+1, 0:13), zero ) !evolution array;
-     SALLOCATE( coilspace, (1:Nouts+1, 1:Tdof), zero ) ! all the coil parameters;
+     if (Tdof >= 1) then
+        SALLOCATE( coilspace, (1:Nouts+1, 1:Tdof), zero ) ! all the coil parameters;
+     endif 
      
      ! determine dofnorm
      if ( IsNormalize > 0 ) then 

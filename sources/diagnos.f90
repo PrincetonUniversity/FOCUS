@@ -63,14 +63,14 @@ SUBROUTINE diagnos
            coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%ys(1:NF) ; idof = idof + NF
            coilspace(iout, idof+1:idof+NF+1) = FouCoil(icoil)%zc(0:NF) ; idof = idof + NF +1
            coilspace(iout, idof+1:idof+NF  ) = FouCoil(icoil)%zs(1:NF) ; idof = idof + NF
-	case (coil_type_spline)
+	     case (coil_type_spline)
            NCP = Splines(icoil)%NCP
            coilspace(iout, idof+1:idof+NCP*3) = Splines(icoil)%Cpoints(0:3*NCP-1) ; idof = idof + 3*NCP 
 !!$     case default
 !!$           FATAL(descent, .true., not supported coil types)
         end select
      enddo
-!!$     FATAL( output , idof .ne. Tdof, counting error in restart )
+     FATAL( output , idof .ne. Tdof, counting error in restart )
   endif
   !-------------------------------average coil length-------------------------------------------------------  
   AvgLength = zero
@@ -317,7 +317,8 @@ SUBROUTINE diagnos
 
   !--------------------------------calculate the stochastic Bn error----------------------------
   if ( Npert .ge. 1 .and. allocated(surf(isurf)%bn) ) then
-
+     
+     if (case_optimize .eq. 0) call perturbation(0)
      call sbnormal( 0 )
 
      if(myid .eq. 0) write(ounit, '(8X": Maximum field error after perturbations: "ES23.15)') bnormmax

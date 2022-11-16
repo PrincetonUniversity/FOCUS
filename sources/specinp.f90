@@ -109,7 +109,7 @@ SUBROUTINE specinp
   do imn = 1, surf(isurf)%Nfou
      write(wunit,1010) surf(isurf)%bin(imn)/Nfp_raw, surf(isurf)%bim(imn), surf(isurf)%Rbc(imn), &
                        surf(isurf)%bin(imn)/Nfp_raw, surf(isurf)%bim(imn), surf(isurf)%Zbs(imn), &
-                       surf(isurf)%bin(imn/Nfp_raw), surf(isurf)%bim(imn), surf(isurf)%Rbs(imn), &
+                       surf(isurf)%bin(imn)/Nfp_raw, surf(isurf)%bim(imn), surf(isurf)%Rbs(imn), &
                        surf(isurf)%bin(imn)/Nfp_raw, surf(isurf)%bim(imn), surf(isurf)%Zbc(imn)  ! wall is read as plasma boundary
   enddo
   do imn = 1, Nbf
