@@ -668,11 +668,10 @@ subroutine check_input
         FATAL( initial, .true., selected case_stright is not supported )
      end select
 
-
-
      FATAL( initial, weight_bnorm  < zero, illegal )
      FATAL( initial, weight_bharm  < zero, illegal )
      FATAL( initial, weight_tflux  < zero, illegal )
+     FATAL( initial, weight_isum   < zero, illegal )
      FATAL( initial, weight_ttlen  < zero, illegal )
      FATAL( initial, weight_specw  < zero, illegal )
      FATAL( initial, weight_ccsep  < zero, illegal )

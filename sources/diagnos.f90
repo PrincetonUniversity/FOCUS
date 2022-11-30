@@ -36,6 +36,7 @@ SUBROUTINE diagnos
       write(ounit, 100) "Bnormal", bnorm
       write(ounit, 100) "B_mn harmonics", bharm
       write(ounit, 100) "Toroidal flux", tflux
+      write(ounit, 100) "Total current penalty", tflux
       write(ounit, 100) "Coil length", ttlen
       write(ounit, 100) "Coil curvature", curv
       write(ounit, 100) "Coil torsion", tors
