@@ -16,7 +16,7 @@ module globals
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 
-  CHARACTER(10), parameter :: version='v0.18.00' ! version number
+  CHARACTER(10), parameter :: version='v0.18.01' ! version number
 
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -238,6 +238,7 @@ module globals
   INTEGER              :: pp_nsteps      =  1
   INTEGER              :: pp_nfp         =  1
   REAL                 :: pp_xtol        =  1.000D-06
+  INTEGER              :: axis_npoints   = 360
                                                          
   namelist / focusin / &
   IsQuiet       ,&
@@ -337,7 +338,7 @@ module globals
   Nmax          ,&
   sdelta        ,&
   case_optimize ,&
-  fdiff_delta        ,&
+  fdiff_delta   ,&
   exit_tol      ,&
   DF_maxiter    ,&
   DF_xtol       ,&
@@ -376,7 +377,8 @@ module globals
   pp_maxiter    ,&
   pp_nsteps     ,&
   pp_nfp        ,&
-  pp_xtol                            
+  pp_xtol       ,&
+  axis_npoints                      
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
@@ -538,7 +540,7 @@ module globals
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
   
   ! fieldline tracing
-  REAL, ALLOCATABLE    :: XYZB(:,:,:), ppr(:,:), ppz(:,:), iota(:)
+  REAL, ALLOCATABLE    :: XYZB(:,:,:), ppr(:,:), ppz(:,:), iota(:), axis_phi(:), axis_r(:), axis_z(:)
   INTEGER              :: tor_num, total_num, booz_mpol, booz_ntor, booz_mn
   LOGICAL              :: lboozmn = .false.
   INTEGER, ALLOCATABLE :: bmim(:), bmin(:)

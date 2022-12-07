@@ -157,6 +157,7 @@ subroutine saving
   HWRITEIV( 1                ,   pp_ns         ,   pp_ns                         )
   HWRITEIV( 1                ,   pp_maxiter    ,   pp_maxiter                    )
   HWRITERV( 1                ,   pp_xtol       ,   pp_xtol                       )
+  HWRITEIV( 1                ,   axis_npoints  ,   axis_npoints                  )
 
   HWRITEIV( 1                ,   Nfp           ,   surf(plasma)%Nfp                     )
   HWRITERV( 1                ,   surf_vol      ,   surf(plasma)%vol                     )
@@ -346,6 +347,9 @@ subroutine saving
      HWRITERA( pp_ns, pp_maxiter+1,   ppr         ,  ppr(1:pp_ns, 0:pp_maxiter) )
      HWRITERA( pp_ns, pp_maxiter+1,   ppz         ,  ppz(1:pp_ns, 0:pp_maxiter) )
      HWRITERV( pp_ns              ,   iota        ,  iota(1:pp_ns)              )
+     HWRITERV( axis_npoints       ,   axis_phi    ,  axis_phi(1:axis_npoints)   )
+     HWRITERV( axis_npoints       ,   axis_r      ,  axis_r(1:axis_npoints)     )
+     HWRITERV( axis_npoints       ,   axis_z      ,  axis_z(1:axis_npoints)     )
   endif
 
   if (allocated(XYZB)) then
