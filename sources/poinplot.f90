@@ -145,7 +145,8 @@ END SUBROUTINE poinplot
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 SUBROUTINE find_axis(RZ, MAXFEV, XTOL)
-  USE globals, only : dp, myid, ounit, zero, pp_phi
+  USE globals, only : dp, myid, ounit, zero, pi2, sqrtmachprec, &
+                      pp_phi, pp_xtol, axis_phi, axis_r, axis_z, axis_npoints
   USE mpi
   IMPLICIT NONE
 
@@ -155,11 +156,13 @@ SUBROUTINE find_axis(RZ, MAXFEV, XTOL)
 
   INTEGER, parameter   :: n=2
   INTEGER              :: ml,mu,mode,nprint,info,nfev,ldfjac,lr
+  INTEGER              :: iwork(5), ierr, astat, ifail, i
   REAL     :: epsfcn,factor
   REAL     :: fvec(n),diag(n),qtf(n),wa1(n),wa2(n),wa3(n),wa4(n)
+  REAL     :: rz_end(n), phi_init, phi_stop, relerr, abserr, work(100+21*N)
   REAL, allocatable :: fjac(:,:),r(:)
-  external :: axis_fcn
- 
+  external :: axis_fcn, BRpZ
+
   LR = N*(N+1)/2
   LDFJAC = N
   ml = n-1
@@ -195,6 +198,22 @@ SUBROUTINE find_axis(RZ, MAXFEV, XTOL)
         write(ounit,'("findaxis: info="I2", something wrong with the axis finding subroutine.")') info
      end select
   endif
+ 
+  ! save axis data
+  SALLOCATE(axis_phi, (1:axis_npoints), zero)
+  SALLOCATE(axis_r  , (1:axis_npoints), zero)
+  SALLOCATE(axis_z  , (1:axis_npoints), zero)
+  relerr = pp_xtol
+  abserr = sqrtmachprec
+  rz_end = RZ
+  do i = 1, axis_npoints
+     axis_phi(i) = pp_phi + (i - 1) * pi2 / axis_npoints
+     axis_r(i) = rz_end(1) ; axis_z(i) = rz_end(2)
+     ifail = 1
+     phi_init = axis_phi(i)
+     phi_stop = phi_init + pi2 / axis_npoints
+     call ode( BRpZ, n, rz_end, phi_init, phi_stop, relerr, abserr, ifail, work, iwork )
+  enddo
 
   return
 
