@@ -208,7 +208,7 @@ subroutine AllocData(type)
 
      SALLOCATE(    xdof, (1:Ndof), zero ) ! dof vector;
      SALLOCATE( dofnorm, (1:Ndof), one ) ! dof normalized value vector;
-     SALLOCATE( evolution, (1:Nouts+1, 0:13), zero ) !evolution array;
+     SALLOCATE( evolution, (1:Nouts+1, 0:14), zero ) !evolution array;
      if (Tdof >= 1) then
         SALLOCATE( coilspace, (1:Nouts+1, 1:Tdof), zero ) ! all the coil parameters;
      endif 
@@ -360,6 +360,11 @@ subroutine AllocData(type)
         SALLOCATE( t1F,  (1:Ndof), zero )
      endif
 
+     ! isum needed;
+     if (weight_isum > sqrtmachprec) then
+        SALLOCATE( t1I,  (1:Ndof), zero )
+     endif
+
      ! ttlen needed;
      if (weight_ttlen > sqrtmachprec) then
         SALLOCATE( t1L,  (1:Ndof), zero )
@@ -420,6 +425,12 @@ subroutine AllocData(type)
            mtflux = Nzeta
            LM_mfvec = LM_mfvec + mtflux
         endif
+
+        if (weight_isum > sqrtmachprec) then
+           iisum = LM_mfvec
+           misum = 1 ! put together
+           LM_mfvec = LM_mfvec + misum
+        endif        
         
         if (weight_ttlen > sqrtmachprec) then
            ittlen = LM_mfvec

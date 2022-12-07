@@ -102,6 +102,8 @@ subroutine saving
   HWRITERV( 1                ,   weight_bharm  ,   weight_bharm                  )
   HWRITERV( 1                ,   weight_tflux  ,   weight_tflux                  )
   HWRITERV( 1                ,   target_tflux  ,   target_tflux                  )
+  HWRITERV( 1                ,   weight_isum   ,   weight_isum                   )
+  HWRITERV( 1                ,   target_isum   ,   target_isum                   )
   HWRITERV( 1                ,   weight_ttlen  ,   weight_ttlen                  )
   HWRITERV( 1                ,   target_length ,   target_length                 )
   HWRITERV( 1                ,   curv_k0       ,   curv_k0                       ) 
@@ -289,7 +291,7 @@ subroutine saving
   HWRITERV( 1                ,   Gnorm         ,   Gnorm                         )
   HWRITERV( 1                ,   Mnorm         ,   Mnorm                         )
   HWRITERV( 1                ,   overlap       ,   overlap                       )
-  HWRITERA( iout, 14         ,   evolution     ,   evolution(1:iout, 0:13)       )
+  HWRITERA( iout, 15         ,   evolution     ,   evolution(1:iout, 0:13)       )
   if (allocated(coilspace)) then
      HWRITERA( iout, Tdof       ,   coilspace     ,   coilspace(1:iout, 1:Tdof)     )
   endif
@@ -319,7 +321,9 @@ subroutine saving
      HWRITEIV( 1                ,   ibharm        ,   ibharm                     )
      HWRITEIV( 1                ,   mbharm        ,   mbharm                     )     
      HWRITEIV( 1                ,   itflux        ,   itflux                     )
-     HWRITEIV( 1                ,   mtflux        ,   mtflux                     )     
+     HWRITEIV( 1                ,   mtflux        ,   mtflux                     ) 
+     HWRITEIV( 1                ,   iisum         ,   iisum                      )
+     HWRITEIV( 1                ,   misum         ,   misum                      )          
      HWRITEIV( 1                ,   ittlen        ,   ittlen                     )
      HWRITEIV( 1                ,   mttlen        ,   mttlen                     )     
      HWRITEIV( 1                ,   icssep        ,   icssep                     )

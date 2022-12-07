@@ -58,6 +58,10 @@ subroutine solvers
      if (weight_tflux > machprec) then 
         write(ounit, '(8X,": weight_tflux = ", ES12.5, "; target_tflux = ", ES12.5)') weight_tflux, target_tflux
      endif      
+     ! total current
+     if (weight_isum > machprec) then 
+        write(ounit, '(8X,": weight_isum  = ", ES12.5, "; target_isum  = ", ES12.5, " Ampere")') weight_isum, target_isum
+     endif          
      ! coil length
      if (weight_ttlen > machprec) then 
         write(ounit, '(8X,": weight_ttlen    = ", ES12.5, "; case_length  = ", I1)') weight_ttlen, case_length
@@ -151,6 +155,9 @@ subroutine solvers
         if ( weight_tflux .ne. 0.0 ) then
            write(ounit, '(A12," ; ")',advance="no") "tor. flux"
         endif
+        if ( weight_isum .ne. 0.0 ) then
+           write(ounit, '(A12," ; ")',advance="no") "total current"
+        endif        
         if ( weight_ttlen .ne. 0.0 ) then
            write(ounit, '(A12," ; ")',advance="no") "coil length"
         endif
@@ -259,6 +266,7 @@ subroutine costfun(ideriv)
        bnorm      , t1B, t2B, weight_bnorm,  &
        bharm      , t1H, t2H, weight_bharm,  &
        tflux      , t1F, t2F, weight_tflux, target_tflux, psi_avg, &
+       isum       , t1I, target_isum, weight_isum, &
        ttlen      , t1L, t2L, weight_ttlen, case_length, &
        cssep      , t1S, t2S, weight_cssep, &
        specw      , t1P, t2P, weight_specw, &
@@ -267,7 +275,8 @@ subroutine costfun(ideriv)
        nissin     , t1N, t2N, weight_nissin, &
        curv       , t1K, t2K, weight_curv, &
        str        , t1Str,t2Str,weight_straight, &
-       bnormavg   , t1Bavg, weight_sbnorm, MPI_COMM_FOCUS
+       bnormavg   , t1Bavg, weight_sbnorm, & 
+       MPI_COMM_FOCUS
 
   use mpi
   implicit none
@@ -377,6 +386,19 @@ subroutine costfun(ideriv)
      elseif ( ideriv == 2 ) then
         t1E = t1E +  weight_tflux * t1F / target_tflux**2
         t2E = t2E +  weight_tflux * t2F / target_tflux**2
+     endif
+  endif
+
+  ! total current;
+  if (weight_isum > machprec) then
+
+     call current(ideriv)
+     chi = chi + weight_isum * isum ! normalization
+     if     ( ideriv == 1 ) then
+        t1E = t1E +  weight_isum * t1I 
+     elseif ( ideriv == 2 ) then
+        t1E = t1E +  weight_isum * t1I 
+      ! t2E = t2E +  weight_isum * t2I 
      endif
   endif
 
@@ -563,7 +585,8 @@ subroutine normweight
   use globals, only: dp, zero, one, machprec, ounit, myid, xdof, bnorm, bharm, tflux, ttlen, cssep, specw, ccsep, &
        weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_specw, weight_ccsep, &
        target_tflux, psi_avg, coil, Ncoils, case_length, Bmnc, Bmns, tBmnc, tBmns, weight_curv, curv, &
-       weight_tors, tors, weight_nissin, nissin, str, weight_straight, weight_sbnorm, bnormavg, MPI_COMM_FOCUS
+       weight_tors, tors, weight_nissin, nissin, str, weight_straight, weight_sbnorm, bnormavg, & 
+       isum, weight_isum, MPI_COMM_FOCUS
 
   use mpi
   implicit none
@@ -626,6 +649,16 @@ subroutine normweight
 
   endif
 
+  !-!-!-!-!-!-!-!-!-!-total current-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+  if( weight_isum >= machprec ) then
+
+     call current(0) 
+     if (abs(isum) > machprec) weight_isum = weight_isum / isum
+     if( myid == 0 ) write(ounit, 1000) "weight_isum", weight_isum
+     if( myid .eq. 0 .and. weight_isum < machprec) write(ounit, '("warning : weight_isum < machine_precision, total current constranit will not be used.")')
+
+  endif
 
   !-!-!-!-!-!-!-!-!-!-ttlen-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
@@ -654,7 +687,6 @@ subroutine normweight
      if (abs(curv) > machprec) weight_curv = weight_curv / curv
      if( myid == 0 ) write(ounit, 1000) "weight_curv", weight_curv
      if( myid .eq. 0 .and. weight_curv < machprec) write(ounit, '("warning : weight_curv < machine_precision, curvature will not be used.")')
-
 
   endif
   !-!-!-!-!-!-!-!-!-!-curv-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -749,7 +781,8 @@ subroutine output (mark)
        coil, coilspace, FouCoil, chi, t1E, bnorm, bnormavg, bharm, tflux, ttlen, cssep, specw, ccsep, &
        evolution, xdof, DoF, exit_tol, exit_signal, sumDE, curv, tors, nissin, MPI_COMM_FOCUS, IsQuiet, &
        weight_bnorm, weight_bharm, weight_tflux, weight_ttlen, weight_cssep, weight_curv, weight_ccsep, &
-       weight_tors, weight_nissin, weight_sbnorm, lim_out, weight_straight, str, coil_type_spline, Splines
+       weight_tors, weight_nissin, weight_sbnorm, lim_out, weight_straight, str, coil_type_spline, Splines, &
+       isum, weight_isum 
 
   use mpi
   implicit none
@@ -761,8 +794,8 @@ subroutine output (mark)
   if (lim_out .eq. 0) then
      if (myid == 0) then
         if (IsQuiet < 0) then
-           write(ounit, '("output  : "I6" : "14(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, bharm, &
-                   tflux, ttlen, cssep, curv, ccsep, tors, nissin, bnormavg, str
+           write(ounit, '("output  : "I6" : "15(ES12.5," ; "))') iout, mark, chi, sumdE, bnorm, bharm, &
+                   tflux, isum, ttlen, cssep, curv, ccsep, tors, nissin, bnormavg, str
         else
            write(ounit, '("output  : "I6" : "4(ES15.8," ; "))') iout, mark, chi, sumdE, bnorm
         endif
@@ -779,9 +812,12 @@ subroutine output (mark)
         if ( weight_tflux .ne. 0.0 ) then
            write(ounit, '(ES12.5," ; ")',advance="no") tflux
         endif
+        if ( weight_isum .ne. 0.0 ) then
+           write(ounit, '(ES12.5," ; ")',advance="no") isum
+        endif               
         if ( weight_ttlen .ne. 0.0 ) then
            write(ounit, '(ES12.5," ; ")',advance="no") ttlen
-        endif
+        endif 
         if ( weight_cssep .ne. 0.0 ) then
            write(ounit, '(ES12.5," ; ")',advance="no") cssep
         endif
@@ -815,14 +851,15 @@ subroutine output (mark)
      evolution(iout,3) = bnorm
      evolution(iout,4) = bharm
      evolution(iout,5) = tflux
-     evolution(iout,6) = ttlen
-     evolution(iout,7) = cssep
-     evolution(iout,8) = curv
-     evolution(iout,9) = ccsep
-     evolution(iout,10)= tors
-     evolution(iout,11)= nissin
-     evolution(iout,12)= bnormavg
-     evolution(iout,13) = str
+     evolution(iout,6) = isum
+     evolution(iout,7) = ttlen
+     evolution(iout,8) = cssep
+     evolution(iout,9) = curv
+     evolution(iout,10) = ccsep
+     evolution(iout,11)= tors
+     evolution(iout,12)= nissin
+     evolution(iout,13)= bnormavg
+     evolution(iout,14) = str
   endif
 
   ! exit the optimization if no obvious changes in past 5 outputs; 07/20/2017

@@ -16,7 +16,7 @@ module globals
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 
-  CHARACTER(10), parameter :: version='v0.17.01' ! version number
+  CHARACTER(10), parameter :: version='v0.18.00' ! version number
 
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -113,6 +113,9 @@ module globals
   ! toroidal flux
   REAL                 :: weight_tflux   =   0.000D+00
   REAL                 :: target_tflux   =   0.000D+00
+  ! total coil current
+  REAL                 :: weight_isum  =   0.000D+00
+  REAL                 :: target_isum  =   1.000D+06  
   ! coil length
   REAL                 :: weight_ttlen   =   0.000D+00
   INTEGER              :: case_length    =   1
@@ -269,6 +272,8 @@ module globals
   input_harm    ,&
   weight_tflux  ,&
   target_tflux  ,&
+  weight_isum   ,&
+  target_isum   ,&
   weight_ttlen  ,&
   case_length   ,&
   target_length ,&
@@ -447,8 +452,12 @@ module globals
 !latex \subsection{Optimization}
   ! General target functions;
   INTEGER              :: iout, Nouts, LM_iter, LM_mfvec
-  INTEGER              :: ibnorm = 0, ibharm = 0, itflux = 0, ittlen = 0, icssep = 0, icurv = 0, istr=0,  iccsep = 0, itors = 0, inissin = 0 ! starting number
-  INTEGER              :: mbnorm = 0, mbharm = 0, mtflux = 0, mttlen = 0, mcssep = 0, mcurv = 0, mstr=0,  mccsep = 0, mtors = 0, mnissin = 0 ! numbers of targets
+  INTEGER              :: ibnorm = 0, ibharm = 0, itflux = 0, iisum = 0, ittlen = 0, & 
+                        & icssep = 0, icurv = 0, istr=0,  iccsep = 0, itors = 0, &
+                        & inissin = 0 ! starting number
+  INTEGER              :: mbnorm = 0, mbharm = 0, mtflux = 0, misum = 0, mttlen = 0, &
+                        & mcssep = 0, mcurv = 0, mstr=0,  mccsep = 0, mtors = 0, &
+                        & mnissin = 0 ! numbers of targets
   REAL                 :: chi, discretefactor, sumDE
   REAL   , allocatable :: t1E(:), t2E(:,:), evolution(:,:), coilspace(:,:), deriv(:,:)
   REAL   , allocatable :: LM_fvec(:), LM_fjac(:,:)
@@ -466,6 +475,9 @@ module globals
   INTEGER              :: tflux_sign = -1 ! default theta : counter-clockwise
   REAL                 :: tflux, psi_avg
   REAL   , allocatable :: t1F(:), t2F(:,:)
+ ! total current
+  REAL                 :: isum
+  REAL   , allocatable :: t1I(:)
   ! Length constraint
   REAL                 :: ttlen
   REAL   , allocatable :: t1L(:), t2L(:,:)
