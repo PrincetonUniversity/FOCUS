@@ -53,17 +53,8 @@ subroutine bnormal( ideriv )
       FATAL( bnormal, resbn_n .le. 0, wrong toroidal mode number)
       resbn = zero ; bnc = zero ;  bns = zero
       shift = half
-      !if (ghost_use .eq. 1 .and. ghost_call .eq. 1) then
-      !   call ghost(1, suc)
-      !   if ( suc .eq. 0 ) then
-      !      resbn = 1.0
-      !   endif
-      !   if ( ghost_once .eq. 1 ) then
-      !      ghost_call = 0
-      !   endif
-      !endif
       if( rcflux_use .eq. 1 ) then
-         call rcflux(ideriv)
+         if ( weight_resbn .gt. sqrtmachprec ) call rcflux(ideriv)
       endif
       if (.not. allocated(cosarg) ) then
          SALLOCATE( cosarg, (0:Nteta-1, 0:Nzeta-1), zero )

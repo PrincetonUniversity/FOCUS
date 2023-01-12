@@ -1404,15 +1404,16 @@ end subroutine calcbsup
 
 subroutine find_pfl(MAXFEV, XTOL, suc)
   use globals, only : dp, myid, ounit, zero, pp_phi, pp_nsteps, resbn_m, pp_xtol, gsurf, sqrtmachprec, &
-                      pi2, resbn_m, pfl_xtol, Ncoils, ghost_failreturn, orpfl, ozpfl, xrpfl, xzpfl, pfldim
+                      pi2, resbn_m, pfl_xtol, Ncoils, ghost_failreturn, orpfl, ozpfl, xrpfl, xzpfl, pfldim, &
+                      ncpu, MPI_COMM_FOCUS
   use mpi
   IMPLICIT NONE
 
   REAL, INTENT(IN)     :: XTOL
-  INTEGER, INTENT(IN)  :: MAXFEV
+  INTEGER, INTENT(IN)  :: MAXFEV ! Can probably delete this
   INTEGER, INTENT(OUT) :: suc
   INTEGER, parameter   :: n=2, nn=1
-  INTEGER              :: ml,mu,mode,nprint,info,nfev,ldfjac,lr,ifail,i,iwork(5),j
+  INTEGER              :: ml,mu,mode,nprint,info,nfev,ldfjac,lr,ifail,i,iwork(5),j,ierr
   REAL                 :: epsfcn,factor,RZ(2),RZ1(1),rz_end(n),phi_init,phi_stop,work(100+21*n),x(n),phi
   REAL                 :: fvec(n),diag(n),qtf(n),wa1(n),wa2(n),wa3(n),wa4(n),relerr,abserr
   REAL                 :: Bxhold, Byhold, Bzhold, Bx, By, Bz, Bphi
@@ -1501,7 +1502,7 @@ subroutine find_pfl(MAXFEV, XTOL, suc)
   RZ(2) = gsurf(1)%oz(1)
   rz_end(1) = RZ(1)
   rz_end(2) = RZ(2)
-  do i = 1, pp_nsteps   
+  do i = 1, pp_nsteps
      ifail = 1
      phi_init = phi_stop
      phi_stop = phi_init + pi2*real(resbn_m)/real(pp_nsteps)
@@ -1522,8 +1523,11 @@ subroutine find_pfl(MAXFEV, XTOL, suc)
   gsurf(1)%oy(pp_nsteps+1) = gsurf(1)%oy(1)
   gsurf(1)%oz(pp_nsteps+1) = gsurf(1)%oz(1)
 
-  ! Can be parallelized
+  gsurf(1)%oxdot = 0.0
+  gsurf(1)%oydot = 0.0
+  gsurf(1)%ozdot = 0.0
   do i = 1, pp_nsteps
+     if( myid.ne.modulo(i-1,ncpu) ) cycle
      Bx = 0.0
      By = 0.0
      Bz = 0.0
@@ -1539,6 +1543,9 @@ subroutine find_pfl(MAXFEV, XTOL, suc)
      gsurf(1)%oydot(i) = By/Bphi
      gsurf(1)%ozdot(i) = Bz/Bphi
   enddo
+  call MPI_ALLREDUCE( MPI_IN_PLACE, gsurf(1)%oxdot, pp_nsteps+1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+  call MPI_ALLREDUCE( MPI_IN_PLACE, gsurf(1)%oydot, pp_nsteps+1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+  call MPI_ALLREDUCE( MPI_IN_PLACE, gsurf(1)%ozdot, pp_nsteps+1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
   gsurf(1)%oxdot(pp_nsteps+1) = gsurf(1)%oxdot(1)
   gsurf(1)%oydot(pp_nsteps+1) = gsurf(1)%oydot(1)
   gsurf(1)%ozdot(pp_nsteps+1) = gsurf(1)%ozdot(1)
@@ -1632,8 +1639,11 @@ subroutine find_pfl(MAXFEV, XTOL, suc)
   gsurf(1)%xy(pp_nsteps+1) = gsurf(1)%xy(1)
   gsurf(1)%xz(pp_nsteps+1) = gsurf(1)%xz(1)
 
-  ! Can be parallelized
+  gsurf(1)%xxdot = 0.0
+  gsurf(1)%xydot = 0.0
+  gsurf(1)%xzdot = 0.0
   do i = 1, pp_nsteps
+     if( myid.ne.modulo(i-1,ncpu) ) cycle
      Bx = 0.0
      By = 0.0
      Bz = 0.0
@@ -1649,6 +1659,9 @@ subroutine find_pfl(MAXFEV, XTOL, suc)
      gsurf(1)%xydot(i) = By/Bphi
      gsurf(1)%xzdot(i) = Bz/Bphi
   enddo
+  call MPI_ALLREDUCE( MPI_IN_PLACE, gsurf(1)%xxdot, pp_nsteps+1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+  call MPI_ALLREDUCE( MPI_IN_PLACE, gsurf(1)%xydot, pp_nsteps+1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
+  call MPI_ALLREDUCE( MPI_IN_PLACE, gsurf(1)%xzdot, pp_nsteps+1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_FOCUS, ierr )
   gsurf(1)%xxdot(pp_nsteps+1) = gsurf(1)%xxdot(1)
   gsurf(1)%xydot(pp_nsteps+1) = gsurf(1)%xydot(1)
   gsurf(1)%xzdot(pp_nsteps+1) = gsurf(1)%xzdot(1)
@@ -1888,85 +1901,3 @@ subroutine pfl_fcnx1dim(n,x,fvec,iflag)
   fvec(1) = sqrt( (rz_end(1) - x(1))**2.0 + rz_end(2)**2.0 )
   return
 end subroutine pfl_fcnx1dim
-
-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-
-
-
-
-! Not used for now
-! Implemented for better parallelization
-SUBROUTINE BRpZ_pfl( t, xxx, dx )
-  !----------------------
-  ! dR/dphi = BR / Bphi
-  ! dZ/dphi = BZ / Bphi
-  !----------------------
-  use globals, only : dp, zero, ounit, myid, ierr, myworkid, nworker, coil, cosnfp, sinnfp, &
-                      Nfp, pi2, half, two, one, bsconstant, Ncoils, MPI_COMM_FOCUS, MPI_COMM_MYWORLD
-  USE MPI
-  implicit none
-  !---------------------------------------------------------------------------------------------
-  INTEGER, parameter   :: n=2
-  INTEGER              :: Npc, cs, ip, is, kseg, icoil
-  REAL, INTENT( IN)    :: t, xxx(n)
-  REAL, INTENT(OUT)    :: dx(n)
-  REAL                 :: RR, BR, BP, dlx, dly, dlz, ltx, lty, ltz, rm3, x, y, z, &
-                          xx, yy, zz, tBx, tBy, tBz, Bx, By, Bz
-  !---------------------------------------------------------------------------------------------
-  RR = xxx(1); z = xxx(2) 
-  x = RR*cos(t); y = RR*sin(t) 
-  
-  do icoil = 1, Ncoils ! Make sure coil is the correct type 
-     Npc = 1 ; cs = 0 ; ip = 1
-     dlx = zero ; dly = zero ; dlz = zero
-     ltx = zero ; lty = zero ; ltz = zero
-     tBx = zero ; tBy = zero ; tBz = zero
-     select case (coil(icoil)%symm)
-     case ( 0 )
-        cs  = 0
-        Npc = 1
-     case ( 1 )
-        cs  = 0
-        Npc = Nfp
-     case ( 2 )
-        cs  = 1
-        Npc = Nfp
-     end select
-     do ip = 1, Npc
-        do is = 0, cs
-           xx = ( x*cosnfp(ip) + y*sinnfp(ip) )
-           yy = (-x*sinnfp(ip) + y*cosnfp(ip) ) * (-1)**is
-           zz =  z * (-1)**is
-           Bx = zero; By = zero; Bz = zero
-           do kseg = 0, coil(icoil)%NS-1
-              if ( myworkid /= modulo( (icoil-1)*coil(icoil)%NS + kseg , nworker) ) cycle
-              dlx = xx - coil(icoil)%xx(kseg)
-              dly = yy - coil(icoil)%yy(kseg)
-              dlz = zz - coil(icoil)%zz(kseg)
-              rm3 = (sqrt(dlx**2 + dly**2 + dlz**2))**(-3)
-              ltx = coil(icoil)%xt(kseg)
-              lty = coil(icoil)%yt(kseg)
-              ltz = coil(icoil)%zt(kseg)
-              tBx = tBx + ( dlz*lty - dly*ltz ) * rm3 * coil(icoil)%dd(kseg)
-              tBy = tBy + ( dlx*ltz - dlz*ltx ) * rm3 * coil(icoil)%dd(kseg)
-              tBz = tBz + ( dly*ltx - dlx*lty ) * rm3 * coil(icoil)%dd(kseg)
-           enddo
-        enddo
-     enddo
-     Bx = Bx + tBx * coil(icoil)%I * bsconstant
-     By = By + tBy * coil(icoil)%I * bsconstant
-     Bz = Bz + tBz * coil(icoil)%I * bsconstant
-  enddo
-  
-  call MPI_ALLREDUCE(MPI_IN_PLACE, Bx, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MYWORLD, ierr )
-  call MPI_ALLREDUCE(MPI_IN_PLACE, By, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MYWORLD, ierr )
-  call MPI_ALLREDUCE(MPI_IN_PLACE, Bz, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MYWORLD, ierr )
-
-  BR =     Bx*cos(t) + By*sin(t)
-  BP = ( - Bx*sin(t) + By*cos(t) ) / RR
-  dx(1) = BR/BP
-  dx(2) = Bz/BP
-
-  return
-
-END SUBROUTINE BRpZ_pfl

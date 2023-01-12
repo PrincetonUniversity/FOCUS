@@ -170,6 +170,7 @@ subroutine AllocData(type)
            !SALLOCATE( coil(icoil)%yb, (0:coil(icoil)%NS), zero )
            !SALLOCATE( coil(icoil)%zb, (0:coil(icoil)%NS), zero )
            !SALLOCATE( coil(icoil)%dl, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%absrcp, (0:coil(icoil)%NS), zero )
            SALLOCATE( coil(icoil)%dd, (0:coil(icoil)%NS), zero )
            coil(icoil)%dd = pi2 / real(NS)
            ! Type should be checked in diagnos
@@ -486,6 +487,7 @@ subroutine AllocData(type)
      ! stochastic resbn needed;
      if (weight_sresbn > 0.0_dp) then
         SALLOCATE( t1Ravg,  (1:Ndof), zero )
+        SALLOCATE( psidof,  (1:Ndof), zero )
      endif
 
      ! stochastic resbn needed;

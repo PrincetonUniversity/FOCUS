@@ -182,6 +182,7 @@ subroutine saving
      HWRITERA( Nteta,Nzeta      ,   Bz            ,   surf(plasma)%Bz(0:Nteta-1,0:Nzeta-1) )
      HWRITERV( 1                ,   chi2b         ,   bnorm                           )
      HWRITERV( 1                ,   resbn         ,   resbn                           )
+     HWRITERV( 1                ,   psi           ,   psi                             )
      HWRITERV( 1                ,   resbn_bnc     ,   resbn_bnc                       )
      HWRITERV( 1                ,   resbn_bns     ,   resbn_bns                       )
   endif
@@ -222,6 +223,11 @@ subroutine saving
      tempvar(icoil,0:coil(icoil)%NS) = coil(icoil)%zt(0:coil(icoil)%NS)
   enddo
   HWRITERA( Ncoils, NSmax+1, zt  , tempvar(1:Ncoils,0:NSmax) )
+  tempvar(1:Ncoils,0:NSmax) = 0.0
+  do icoil = 1, Ncoils
+     tempvar(icoil,1) = coil(icoil)%I
+  enddo
+  HWRITERV( Ncoils, I  , tempvar(1:Ncoils,1) )
   tempvar(1:Ncoils,0:NSmax) = 0.0
 
   ! Save filamentary body force loads

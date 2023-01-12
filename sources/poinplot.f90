@@ -45,7 +45,7 @@ SUBROUTINE poinplot
   
   RZ(1) = pp_raxis ; RZ(2) = pp_zaxis
   start = MPI_Wtime()
-  call find_axis(RZ, pp_maxiter, pp_xtol)
+  call find_axis(RZ, pp_maxiter, pp_xtol) ! Can probably delete pp_maxiter
   finish = MPI_Wtime()
   !print *, 'finding axis takes ', finish-start
   pp_raxis = RZ(1) ; pp_zaxis = RZ(2)
@@ -151,7 +151,7 @@ SUBROUTINE find_axis(RZ, MAXFEV, XTOL)
 
   REAL, INTENT(INOUT)  :: RZ(2)
   REAL, INTENT(IN   )  :: XTOL
-  INTEGER, INTENT(IN)  :: MAXFEV
+  INTEGER, INTENT(IN)  :: MAXFEV ! Can probably delete this
 
   INTEGER, parameter   :: n=2
   INTEGER              :: ml,mu,mode,nprint,info,nfev,ldfjac,lr

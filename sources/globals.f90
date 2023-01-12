@@ -119,7 +119,6 @@ module globals
   INTEGER              :: ghost_failreturn = 0
   INTEGER              :: rcflux_use     =   1
   INTEGER              :: period_Nseg    =   1024
-  INTEGER              :: pfl_mult       =   1
   REAL                 :: orpfl          =   1.000D+00
   REAL                 :: ozpfl          =   0.000D+00
   REAL                 :: xrpfl          =   1.000D+00
@@ -202,11 +201,14 @@ module globals
   REAL                 :: weight_specw   =   0.000D+00
   ! bnrom stochastic
   REAL                 :: weight_sbnorm  =   0.000D+00   ! Stochastic bnormal weight
+  INTEGER              :: stochdet       =   0
   ! resbn stochastic
   REAL                 :: weight_sresbn  =   0.000D+00   ! Stochastic bnormal weight
   INTEGER              :: Npert          =   0           ! Number of coil perturbations
   INTEGER              :: Nmax           =   3           ! Max frequency of perturbations
   REAL                 :: sdelta         =   1.000D-02   ! Perturbation magnitude
+  INTEGER              :: stoch_ghost    =   0
+  INTEGER              :: stoch_delta    =   0
   ! Multi-filament
   INTEGER              :: Nturns         =   4
   INTEGER              :: Npancakes      =   2
@@ -315,7 +317,6 @@ module globals
   ghost_failreturn,&
   rcflux_use    ,&
   period_Nseg   ,&
-  pfl_mult      ,&
   orpfl         ,&
   ozpfl         ,&
   xrpfl         ,&
@@ -389,10 +390,13 @@ module globals
   ccsep_beta    ,&
   weight_specw  ,&
   weight_sbnorm ,&
+  stochdet      ,&
   weight_sresbn ,&
   Npert         ,&
   Nmax          ,&
   sdelta        ,&
+  stoch_ghost   ,&
+  stoch_delta   ,&
   Nturns        ,&
   Npancakes     ,&
   AlphaPert     ,&
@@ -479,7 +483,7 @@ module globals
                              psx(:), psy(:), psz(:), Bxx(:), Byy(:), Bzz(:), Fx(:), Fy(:), Fz(:), &
                              nfbx(:), nfby(:), nfbz(:), bfbx(:), bfby(:), bfbz(:), curvature(:), straight(:), &
                              alpha(:), alphap(:), alphapp(:), alphadof(:,:), pertx(:,:), perty(:,:), pertz(:,:), &
-                             pertxp(:,:), pertyp(:,:), pertzp(:,:)
+                             pertxp(:,:), pertyp(:,:), pertzp(:,:), absrcp(:)
      INTEGER, allocatable :: nxx(:), nyy(:), nzz(:)
      character(10)        :: name
   end type arbitrarycoil
@@ -594,7 +598,7 @@ module globals
   ! Stochastic resbn
   REAL                 :: resbnavg, abspsimax
   REAL, allocatable    :: stochpsi(:), stochpsipred(:)
-  REAL   , allocatable :: t1Ravg(:)
+  REAL   , allocatable :: t1Ravg(:), psidof(:)
   ! Island sensitivity
   REAL                 :: dpsidr
   INTEGER              :: pflsuc

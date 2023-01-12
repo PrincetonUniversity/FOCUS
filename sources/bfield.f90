@@ -40,7 +40,7 @@ subroutine bfield0(icoil, x, y, z, tBx, tBy, tBz)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  INTEGER              :: ierr, astat, kseg, ip, is, cs, Npc, NS
+  INTEGER              :: ierr, astat, kseg, ip, is, cs, Npc
   REAL                 :: dlx, dly, dlz, rm3, ltx, lty, ltz, rr, r2, m_dot_r, &
                           mx, my, mz, xx, yy, zz, Bx, By, Bz
 
@@ -158,7 +158,7 @@ subroutine bfield1(icoil, x, y, z, tBx, tBy, tBz, ND)
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  INTEGER              :: ierr, astat, kseg, NS, ip, is, cs, Npc
+  INTEGER              :: ierr, astat, kseg, ip, is, cs, Npc
   REAL                 :: dlx, dly, dlz, r2, rm3, rm5, rm7, m_dot_r, ltx, lty, ltz, rxp, &
                           sinp, sint, cosp, cost, mx, my, mz, xx, yy, zz
   REAL, dimension(1:1, 1:ND) :: Bx, By, Bz
@@ -199,8 +199,7 @@ subroutine bfield1(icoil, x, y, z, tBx, tBy, tBz, ND)
         select case (coil(icoil)%type)
         case(1,coil_type_spline,coil_type_multi)
            ! Fourier coils
-           NS = coil(icoil)%NS
-           do kseg = 0, NS-1
+           do kseg = 0, coil(icoil)%NS-1
               dlx = xx - coil(icoil)%xx(kseg)
               dly = yy - coil(icoil)%yy(kseg)
               dlz = zz - coil(icoil)%zz(kseg)
@@ -293,38 +292,82 @@ end subroutine bfield1
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine coils_bfield(B,x,y,z)
-  use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, &
-       zero, myid, ounit, Nfp, bsconstant, one, two, ncpu, &
-       master, nworker, myworkid, MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS, MPI_COMM_FOCUS
+  use globals, only: dp, coil, surf, Ncoils, Nteta, Nzeta, zero, myid, ounit, Nfp, bsconstant, one, two, ncpu, &
+       sinnfp, cosnfp, master, nworker, myworkid, MPI_COMM_MASTERS, MPI_COMM_MYWORLD, MPI_COMM_WORKERS, MPI_COMM_FOCUS
   use mpi
   implicit none
 
-  REAL  , intent( in)     :: x, y, z
-  REAL  , intent(inout)   :: B(3)
-  !INTEGER, INTENT(in)     :: comm ! MPI communicator
+  REAL  , intent(in)     :: x, y, z
+  REAL  , intent(out)   :: B(3)
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  INTEGER              :: ierr, astat
-  REAL                 :: Bx, By, Bz
-  INTEGER              :: icoil
+  INTEGER              :: ierr, astat, icoil, kseg, ip, is, cs, Npc
+  REAL                 :: Bx, By, Bz, tBx, tBy, tBz, dlx, dly, dlz, rm3, xx, yy, zz
 
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
-  call MPI_BARRIER(MPI_COMM_MYWORLD, ierr ) ! wait all cpus;
+!  call MPI_BARRIER(MPI_COMM_MYWORLD, ierr ) ! wait all cpus;
 
-  B = zero
+!  B = zero
+!  do icoil = 1, Ncoils
+!     if ( myworkid /= modulo(icoil-1, nworker) ) cycle ! MPI
+!     ! Bx = zero; By = zero; Bz = zero
+!     call bfield0( icoil, x, y, z, Bx, By, Bz )
+!     B(1) = B(1) + Bx
+!     B(2) = B(2) + By
+!     B(3) = B(3) + Bz
+!  enddo
+
+!  call MPI_ALLREDUCE(MPI_IN_PLACE, B, 3, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MYWORLD, ierr )
+
+!  return
+
+  ! New parallelization
+  ! Check coil type
+  call MPI_BARRIER(MPI_COMM_MYWORLD, ierr )
+  tBx = zero ; tBy = zero ; tBz = zero
   do icoil = 1, Ncoils
-     if ( myworkid /= modulo(icoil-1, nworker) ) cycle ! MPI
-     ! Bx = zero; By = zero; Bz = zero
-     call bfield0( icoil, x, y, z, Bx, By, Bz )
-     B(1) = B(1) + Bx
-     B(2) = B(2) + By
-     B(3) = B(3) + Bz
+     Bx = zero ; By = zero ; Bz = zero
+     do kseg = 0, coil(icoil)%NS-1
+        if ( myworkid /= modulo(kseg-1, nworker) ) cycle
+        select case (coil(icoil)%symm)
+        case( 0 )
+           cs  = 0
+           Npc = 1
+        case( 1 )
+           cs  = 0
+           Npc = Nfp
+        case( 2 )
+           cs  = 1
+           Npc = Nfp
+        end select
+        do ip = 1, Npc
+           xx = ( x*cosnfp(ip) + y*sinnfp(ip) )
+           do is = 0, cs
+              yy = (-x*sinnfp(ip) + y*cosnfp(ip) )*(-1)**is
+              zz =  z*(-1)**is
+              dlx = xx - coil(icoil)%xx(kseg)
+              dly = yy - coil(icoil)%yy(kseg)
+              dlz = zz - coil(icoil)%zz(kseg)
+              rm3 = (sqrt(dlx**2 + dly**2 + dlz**2))**(-3)
+              Bx = Bx + (((dlz*coil(icoil)%yt(kseg)-dly*coil(icoil)%zt(kseg)))*(-1)**is*cosnfp(ip) - &
+                   (dlx*coil(icoil)%zt(kseg)-dlz*coil(icoil)%xt(kseg))*sinnfp(ip))*rm3*coil(icoil)%dd(kseg)
+              By = By + ((dlx*coil(icoil)%zt(kseg)-dlz*coil(icoil)%xt(kseg))*cosnfp(ip) + &
+                   ((dlz*coil(icoil)%yt(kseg)-dly*coil(icoil)%zt(kseg)))*(-1)**is*sinnfp(ip))*rm3*coil(icoil)%dd(kseg)
+              Bz = Bz + (dly*coil(icoil)%xt(kseg)-dlx*coil(icoil)%yt(kseg))*rm3*coil(icoil)%dd(kseg)
+           enddo
+        enddo
+     enddo
+     tBx = tBx + Bx*coil(icoil)%I*bsconstant
+     tBy = tBy + By*coil(icoil)%I*bsconstant
+     tBz = tBz + Bz*coil(icoil)%I*bsconstant
   enddo
-
+  B(1) = tBx
+  B(2) = tBy
+  B(3) = tBz
   call MPI_ALLREDUCE(MPI_IN_PLACE, B, 3, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MYWORLD, ierr )
-
+  
   return
 
 end subroutine coils_bfield

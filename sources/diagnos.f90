@@ -363,8 +363,6 @@ SUBROUTINE diagnos
   !--------------------------------calculate the stochastic Bn errors---------------------------
   if ( weight_sbnorm .gt. 0.0 .or. weight_sresbn .gt. 0.0 ) then
 
-     call sbnormal( 0 )
-     
      if ( weight_sbnorm .gt. 0.0 ) then
         if(myid .eq. 0) write(ounit, '(8X": Maximum field error after perturbations: "ES23.15)') bnormmax
         if(myid .eq. 0) write(ounit, '(8X": Average field error after perturbations: "ES23.15)') bnormavg
