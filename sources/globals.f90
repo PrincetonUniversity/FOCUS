@@ -244,7 +244,6 @@ module globals
   IsQuiet       ,&
   lim_out       ,&
   IsSymmetric   ,&
-  lim_out       ,&
   case_surface  ,&
   input_surf    ,&
   knotsurf      ,&
