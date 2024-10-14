@@ -44,5 +44,5 @@ variables:
         - cosign sign --key env://COSIGN_PRIVATE_KEY "$AWS_DOCKER_IMAGE@$DIGEST"
 
     only:
-        - master
+        - develop
         - tags
