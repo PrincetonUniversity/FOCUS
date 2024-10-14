@@ -20,8 +20,8 @@
 
 #### Default Intel+OpenMPI+HDF5###############
 # available env: /p/focus/modules/focus/basis
- CC=intel # if want to use gfortran; make CC=gfortran or other options
- FC=mpif90
+ CC?=intel # if want to use gfortran; make CC=gfortran or other options
+ FC?=mpif90
  PFLAGS= -D dposition # for pre-processing compiler flags, like -D dposition
  RFLAGS=-mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback  $(PFLAGS) #-vec_report0 #-ipo -xhost
  DFLAGS=-O0 -g -traceback $(PFLAGS) -check all -check bounds -check noarg_temp_created -check uninit \
@@ -32,7 +32,10 @@
 #### GFORTRAN+OpenMPI+HDF5###############
 # available env: /p/focus/modules/focus/gfortran
 ifeq ($(CC),gfortran)
- # PFLAGS+=-fallow-argument-mismatch # only used for GCC-10
+  GFORTRAN_VERSION := $(shell $(FC) -dumpversion)
+  ifeq "$(shell [ $(GFORTRAN_VERSION) -gt 9 ] && echo true)" "true"
+      PFLAGS += -fallow-argument-mismatch
+  endif
  RFLAGS=-O3 -w -ffree-line-length-none -ffast-math $(PFLAGS)
  DFLAGS=-Og $(PFLAGS) -w -ffree-line-length-none -Wextra -Wtarget-lifetime -fbacktrace -fbounds-check  \
      -ffpe-trap=zero -fcheck=all -finit-real=snan -DDEBUG
@@ -78,6 +81,14 @@ ifneq (,$(findstring raven,$(HOSTNAME)))
  RFLAGS+=-xCORE-AVX512 -qopt-zmm-usage=high
  LINKS=-L$(HDF5_HOME)/lib -lhdf5_fortran -lhdf5 -lpthread -lz -lm -Wl,-rpath -Wl,$(HDF5_HOME)/lib
 endif
+
+#### Docker###############
+ifneq (,$(findstring docker,$(HOSTNAME)))
+ LIBS=-I/usr/include/hdf5/openmpi
+ ARCH := $(shell uname -m)
+ LINKS=-L/usr/lib/$(ARCH)-linux-gnu/hdf5/openmpi -lhdf5 -lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran
+endif
+
 
 ############################################################################################################
 

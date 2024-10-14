@@ -1,0 +1,42 @@
+{
+    "version": 1,
+    "commands": [{
+        "name": "FOCUS",
+        "type": "one-off",
+        "entrypoint": [],
+        "cmd": [
+            "/app/bin/xfocus",
+            "${ext:input_ext}"
+        ],
+        "framework": "openmpi",
+        "inputs": [{
+            "name": "EXT.input",
+            "identifier": "input_ext",
+            "mount_point": "/data/EXT.input"
+        }, {
+            "name": "EXT.focus",
+            "identifier": "focus_ext",
+            "mount_point": "/data/EXT.focus",
+            "optional": true
+        }, {
+            "name": "plasma.boundary",
+            "identifier": "plasma_boundary",
+            "mount_point": "/data/",
+            "optional": true,
+            "preserve_original_filename": true
+        }],
+        "outputs": [{
+            "name": "EXT.focus",
+            "mount_point": "/data/EXT.focus",
+            "optional": false
+        }, {
+            "name": "EXT.coils",
+            "mount_point": "/data/EXT.coils",
+            "optional": false
+        }, {
+            "name": "focus_EXT.h5",
+            "mount_point": "/data/focus_EXT.h5",
+            "optional": false
+        }]
+    }]
+}
