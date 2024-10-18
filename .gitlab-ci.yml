@@ -1,6 +1,8 @@
 stages:
     - prepare
     - build
+    - post-build
+    - signing
     - cleanup
 
 include:
@@ -18,7 +20,7 @@ variables:
     variables:
         COSIGN_YES: "true"  # Used by Cosign to skip confirmation prompts for non-destructive operations
 
-    before_script:
+    before_script: &before_script
         - |
             if [ $(expr match "$CI_COMMIT_TAG" 'v[0-9]\+\.[0-9]\+\.[0-9]\+') -ne 0 ]; then
               TAG="${AWS_DOCKER_IMAGE}:${CI_COMMIT_TAG}"
@@ -39,7 +41,40 @@ variables:
             --cache-to mode=max,image-manifest=true,oci-mediatypes=true,type=registry,ref=$DOCKER_CACHE
             --cache-from type=registry,ref=$DOCKER_CACHE
             --platform "${arch_flags%,}" --pull --tag="$TAG-tmp" --push .
+
+    only:
+        - develop
+        - tags
+
+'flatten image':
+    image: "$KUBETOOLS_IMAGE"
+    stage: post-build
+    retry: 1
+    variables:
+        COSIGN_YES: "true"  # Used by Cosign to skip confirmation prompts for non-destructive operations
+
+    before_script:
+        *before_script
+
+    script:
         - crane flatten "$TAG-tmp" --tag="$TAG"
+
+    only:
+        - develop
+        - tags
+
+
+'sign image':
+    image: "$KUBETOOLS_IMAGE"
+    stage: signing
+    retry: 1
+    variables:
+        COSIGN_YES: "true"  # Used by Cosign to skip confirmation prompts for non-destructive operations
+
+    before_script:
+        *before_script
+
+    script:
         - DIGEST=$(crane digest $TAG)
         - cosign sign --key env://COSIGN_PRIVATE_KEY "$AWS_DOCKER_IMAGE@$DIGEST"
 

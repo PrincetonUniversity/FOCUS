@@ -5,10 +5,8 @@ SHELL [ "/bin/bash", "-o", "errexit", "-o", "nounset", "-o", "pipefail", "-c" ]
 # Setup the build environment with necessary build packages
 RUN <<EOT
   sed -i 's/main/main non-free/' /etc/apt/sources.list
-  install_packages git gfortran openmpi-bin libopenmpi-dev g++ libhdf5-openmpi-dev hdf5-tools
-
+  install_packages git gfortran openmpi-bin libopenmpi-dev g++ libhdf5-openmpi-dev hdf5-tools ca-certificates libhdf5-openmpi-fortran-102 ssh rsync zip
   /sbin/ldconfig
-
 EOT
 
 # Copy the app directory to the build
@@ -21,18 +19,13 @@ ARG FC="mpif90.openmpi"
 ARG CC="gfortran"
 
 # Build the code
-WORKDIR /app/sources
-RUN make clean
-RUN make
-
-# Clean up the directory
-#RUN find . -name *.o -exec rm {} \;
-
-#SHELL [ "/bin/bash", "-o", "errexit", "-o", "nounset", "-o", "pipefail", "-c" ]
-
 RUN <<EOT
-  install_packages ca-certificates openmpi-bin hdf5-tools libhdf5-openmpi-fortran-102 libhdf5-openmpi-dev ssh rsync zip
   mkdir -p /data
+
+  cd sources
+  make clean
+  make
+  find . -name *.o -exec rm {} \;
 EOT
 
 WORKDIR /data
