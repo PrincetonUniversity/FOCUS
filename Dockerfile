@@ -25,7 +25,9 @@ RUN <<EOT
   cd sources
   make clean
   make
-  find . -name *.o -exec rm {} \;
+  find . -name '*.F90' -exec rm {} \;
+  find . -name '*.mod' -exec rm {} \;
+  find . -name '*.o' -exec rm {} \;
 EOT
 
 WORKDIR /data
