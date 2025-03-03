@@ -6,7 +6,7 @@
         "entrypoint": [],
         "cmd": [
             "/app/bin/xfocus",
-            "${input_ext}"
+            "EXT"
         ],
         "framework": "openmpi",
         "inputs": [{
