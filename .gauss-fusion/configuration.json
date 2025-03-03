@@ -26,17 +26,8 @@
             "preserve_original_filename": true
         }],
         "outputs": [{
-            "name": "EXT.focus",
-            "mount_point": "/data/EXT.focus",
-            "optional": false
-        }, {
-            "name": "EXT.coils",
-            "mount_point": "/data/EXT.coils",
-            "optional": false
-        }, {
-            "name": "focus_EXT.h5",
-            "mount_point": "/data/focus_EXT.h5",
-            "optional": false
+            "name": "",
+            "mount_point": "/data/*"
         }]
     }]
 }
