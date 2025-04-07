@@ -109,7 +109,7 @@ SUBROUTINE surfsep(ideriv)
            endif
            do jzeta = 0, Nzeta - 1
               do iteta = 0, Nteta - 1           
-                 if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;                     
+                 if( myid.ne.modulo(jzeta*Nteta+iteta,ncpu) ) cycle ! parallelization loop;  
                  call CSPotential0(icoil, iteta, jzeta, dcssep)
                  coilsum = coilsum + dcssep*surf(psurf)%ds(iteta, jzeta)  ! local cssep
               enddo ! end do iteta
@@ -211,7 +211,7 @@ SUBROUTINE CSPotential0(icoil, iteta, jzeta, dcssep)
   FATAL( CSPotential0, mincssep .lt. 0.0, coil to surface separation cannot be negative )
 
   if( case_cssep .eq. 1 ) then
-     cssep_alpha = 0.0
+     cssep_alpha = 1.0E-12 ! Note can't set to zero otherwise error with log10 function below
      cssep_sigma = 1.0
      cssep_gamma = cssep_factor
   endif
@@ -297,7 +297,7 @@ SUBROUTINE CSPotential1(icoil, iteta, jzeta, d1S, ND)
   FATAL( CSPotential0, icoil .lt. 1 .or. icoil .gt. Ncoils, icoil not in right range )
 
   if( case_cssep .eq. 1 ) then
-     cssep_alpha = 0.0
+     cssep_alpha = 1.0E-12 ! Note can't set to zero otherwise error with log10 function below
      cssep_sigma = 1.0
      cssep_gamma = cssep_factor
   endif

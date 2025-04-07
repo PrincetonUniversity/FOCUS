@@ -675,43 +675,53 @@ subroutine discoil(ifirst)
            coil(icoil)%xa = zero
            coil(icoil)%ya = zero
            coil(icoil)%za = zero
+           coil(icoil)%xb = zero
+           coil(icoil)%yb = zero
+           coil(icoil)%zb = zero
+           coil(icoil)%dd = pi2 / coil(icoil)%NS
            NS = coil(icoil)%NS
            NCP = Splines(icoil)%NCP  ! allias variable for simplicity;
 
-	   !-------------------------enforce periodicity----------------------------------------------
-	   Splines(icoil)%Cpoints(NCP-3) = Splines(icoil)%Cpoints(0)
-	   Splines(icoil)%Cpoints(2*NCP-3) = Splines(icoil)%Cpoints(NCP) 
-	   Splines(icoil)%Cpoints(3*NCP-3) = Splines(icoil)%Cpoints(2*NCP)  
+           !-------------------------enforce periodicity----------------------------------------------
+           Splines(icoil)%Cpoints(NCP-3) = Splines(icoil)%Cpoints(0)
+           Splines(icoil)%Cpoints(2*NCP-3) = Splines(icoil)%Cpoints(NCP) 
+           Splines(icoil)%Cpoints(3*NCP-3) = Splines(icoil)%Cpoints(2*NCP)  
 
-	   Splines(icoil)%Cpoints(NCP-2) = Splines(icoil)%Cpoints(1)
-	   Splines(icoil)%Cpoints(2*NCP-2) = Splines(icoil)%Cpoints(NCP+1) 
-	   Splines(icoil)%Cpoints(3*NCP-2) = Splines(icoil)%Cpoints(2*NCP+1)  
+           Splines(icoil)%Cpoints(NCP-2) = Splines(icoil)%Cpoints(1)
+           Splines(icoil)%Cpoints(2*NCP-2) = Splines(icoil)%Cpoints(NCP+1) 
+           Splines(icoil)%Cpoints(3*NCP-2) = Splines(icoil)%Cpoints(2*NCP+1)  
 
-	   Splines(icoil)%Cpoints(NCP-1) = Splines(icoil)%Cpoints(2)
-	   Splines(icoil)%Cpoints(2*NCP-1) = Splines(icoil)%Cpoints(NCP+2) 
-	   Splines(icoil)%Cpoints(3*NCP-1) = Splines(icoil)%Cpoints(2*NCP+2)  
+           Splines(icoil)%Cpoints(NCP-1) = Splines(icoil)%Cpoints(2)
+           Splines(icoil)%Cpoints(2*NCP-1) = Splines(icoil)%Cpoints(NCP+2) 
+           Splines(icoil)%Cpoints(3*NCP-1) = Splines(icoil)%Cpoints(2*NCP+2)  
            !-------------------------calculate coil data-------------------------------------------------  
            do iseg=0,NS-1
-                    coil(icoil)%xx(iseg) = SUM (Splines(icoil)%Cpoints(0:NCP-1)*Splines(icoil)%basis_3(iseg,0:NCP-1))
-                    coil(icoil)%yy(iseg) = SUM (Splines(icoil)%Cpoints(NCP:2*NCP-1)*Splines(icoil)%basis_3(iseg,0:NCP-1))
-                    coil(icoil)%zz(iseg) = SUM (Splines(icoil)%Cpoints(2*NCP:3*NCP-1)*Splines(icoil)%basis_3(iseg,0:NCP-1))
-                    coil(icoil)%xt(iseg) = SUM (Splines(icoil)%Cpoints(0:NCP-1)*Splines(icoil)%db_dt(iseg,0:NCP-1))
-                    coil(icoil)%yt(iseg) = SUM (Splines(icoil)%Cpoints(NCP:2*NCP-1)*Splines(icoil)%db_dt(iseg,0:NCP-1))
-                    coil(icoil)%zt(iseg) = SUM (Splines(icoil)%Cpoints(2*NCP:3*NCP-1)*Splines(icoil)%db_dt(iseg,0:NCP-1))
-                    coil(icoil)%xa(iseg) = SUM (Splines(icoil)%Cpoints(0:NCP-1)*Splines(icoil)%db_dt_2(iseg,0:NCP-1))
-                    coil(icoil)%ya(iseg) = SUM (Splines(icoil)%Cpoints(NCP:2*NCP-1)*Splines(icoil)%db_dt_2(iseg,0:NCP-1))
-                    coil(icoil)%za(iseg) = SUM (Splines(icoil)%Cpoints(2*NCP:3*NCP-1)*Splines(icoil)%db_dt_2(iseg,0:NCP-1))
-	  enddo	
+              coil(icoil)%xx(iseg) = SUM (Splines(icoil)%Cpoints(0:NCP-1)*Splines(icoil)%basis_3(iseg,0:NCP-1))
+              coil(icoil)%yy(iseg) = SUM (Splines(icoil)%Cpoints(NCP:2*NCP-1)*Splines(icoil)%basis_3(iseg,0:NCP-1))
+              coil(icoil)%zz(iseg) = SUM (Splines(icoil)%Cpoints(2*NCP:3*NCP-1)*Splines(icoil)%basis_3(iseg,0:NCP-1))
+              coil(icoil)%xt(iseg) = SUM (Splines(icoil)%Cpoints(0:NCP-1)*Splines(icoil)%db_dt(iseg,0:NCP-1))
+              coil(icoil)%yt(iseg) = SUM (Splines(icoil)%Cpoints(NCP:2*NCP-1)*Splines(icoil)%db_dt(iseg,0:NCP-1))
+              coil(icoil)%zt(iseg) = SUM (Splines(icoil)%Cpoints(2*NCP:3*NCP-1)*Splines(icoil)%db_dt(iseg,0:NCP-1))
+              coil(icoil)%xa(iseg) = SUM (Splines(icoil)%Cpoints(0:NCP-1)*Splines(icoil)%db_dt_2(iseg,0:NCP-1))
+              coil(icoil)%ya(iseg) = SUM (Splines(icoil)%Cpoints(NCP:2*NCP-1)*Splines(icoil)%db_dt_2(iseg,0:NCP-1))
+              coil(icoil)%za(iseg) = SUM (Splines(icoil)%Cpoints(2*NCP:3*NCP-1)*Splines(icoil)%db_dt_2(iseg,0:NCP-1))
+              !coil(icoil)%xb(iseg) = SUM (Splines(icoil)%Cpoints(0:NCP-1)*Splines(icoil)%db_dt_2(iseg,0:NCP-1))
+              !coil(icoil)%yb(iseg) = SUM (Splines(icoil)%Cpoints(NCP:2*NCP-1)*Splines(icoil)%db_dt_2(iseg,0:NCP-1))
+              !coil(icoil)%zb(iseg) = SUM (Splines(icoil)%Cpoints(2*NCP:3*NCP-1)*Splines(icoil)%db_dt_2(iseg,0:NCP-1))
+	        enddo
 
-	  coil(icoil)%xx(NS) = coil(icoil)%xx(0)
- 	  coil(icoil)%yy(NS) = coil(icoil)%yy(0)
-	  coil(icoil)%zz(NS) = coil(icoil)%zz(0)
-	  coil(icoil)%xt(NS) = coil(icoil)%xt(0)
-	  coil(icoil)%yt(NS) = coil(icoil)%yt(0)
-	  coil(icoil)%zt(NS) = coil(icoil)%zt(0)
-	  coil(icoil)%xa(NS) = coil(icoil)%xa(0)
-	  coil(icoil)%ya(NS) = coil(icoil)%ya(0)
-	  coil(icoil)%za(NS) = coil(icoil)%za(0)
+           coil(icoil)%xx(NS) = coil(icoil)%xx(0)
+           coil(icoil)%yy(NS) = coil(icoil)%yy(0)
+           coil(icoil)%zz(NS) = coil(icoil)%zz(0)
+           coil(icoil)%xt(NS) = coil(icoil)%xt(0)
+           coil(icoil)%yt(NS) = coil(icoil)%yt(0)
+           coil(icoil)%zt(NS) = coil(icoil)%zt(0)
+           coil(icoil)%xa(NS) = coil(icoil)%xa(0)
+           coil(icoil)%ya(NS) = coil(icoil)%ya(0)
+           coil(icoil)%za(NS) = coil(icoil)%za(0)
+           coil(icoil)%xb(NS) = coil(icoil)%xb(0)
+           coil(icoil)%yb(NS) = coil(icoil)%yb(0)
+           coil(icoil)%zb(NS) = coil(icoil)%zb(0)
         case default
            FATAL(discoil, .true., not supported coil types)
         end select
