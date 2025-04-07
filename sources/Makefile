@@ -20,7 +20,7 @@
 
 #### Default Intel+OpenMPI+HDF5###############
 # available env: /p/focus/modules/focus/basis
- CC?=intel # if want to use gfortran; make CC=gfortran or other options
+ CC?=gfortran # if want to use gfortran; make CC=gfortran or other options
  FC?=mpif90
  PFLAGS= -D dposition # for pre-processing compiler flags, like -D dposition
  RFLAGS=-mcmodel=large -O3 -m64 -unroll0 -fno-alias -ip -traceback  $(PFLAGS) #-vec_report0 #-ipo -xhost
