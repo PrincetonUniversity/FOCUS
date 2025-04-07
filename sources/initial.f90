@@ -518,8 +518,23 @@ subroutine check_input
      FATAL( initial, Nteta   <=   0, illegal surface resolution )
      FATAL( initial, Nzeta   <=   0, illegal surface resolution )     
 
-     FATAL( initial, case_coils /= 1, only fourier representation is valid )
-     if (IsQuiet < 0) write(ounit, 1000) 'case_coils', case_coils, 'Using Fourier series as the basic representation.'
+     select case (case_coils)
+     case(0)
+        if (IsQuiet < 0) write(ounit, 1000) 'case_coils', case_coils, 'Using Piecewise Linear as the basic representation.'
+        FATAL( initial, .true., Piecewise linear not ready )
+     case(1)
+        if (IsQuiet < 0) write(ounit, 1000) 'case_coils', case_coils, 'Using Fourier series as the basic representation.'
+     case(2)
+        if (IsQuiet < 0) write(ounit, 1000) 'case_coils', case_coils, 'Using Dipole as the basic representation.'
+        FATAL( initial, .true., Dipole not ready )
+     case(3)
+        if (IsQuiet < 0) write(ounit, 1000) 'case_coils', case_coils, 'Using Background Coils as the basic representation.'
+        FATAL( initial, .true., Background coils not valid )
+     case(5)
+        if (IsQuiet < 0) write(ounit, 1000) 'case_coils', case_coils, 'Using Spline as the basic representation.'
+     case default
+        FATAL( initial, .true., selected coil type is not supported )
+     end select
 
      select case (case_optimize)
      case ( -2 )
