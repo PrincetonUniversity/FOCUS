@@ -250,8 +250,8 @@ use globals, only: dp, sqrtmachprec, zero, myid, ounit, Ncoils, Ndof, t1E, iout,
   SALLOCATE(wa, (1:lwa), zero)
   
   call packdof(x(1:Ndof)) ! initial xdof;
-  if (myid == 0) write(ounit, '("output  : "A6" : "8(A12," ; "))') "iout", "time (s)", "chi", "dE_norm", &
-       "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." 
+  !if (myid == 0) write(ounit, '("output  : "A6" : "8(A12," ; "))') "iout", "time (s)", "chi", "dE_norm", &
+  !     "Bnormal", "Bmn harmonics", "tor. flux", "coil length", "c-s sep." 
   !call lmder1(focus_fcn,m,Ndof,x,fvec,fjac,ldfjac,tol,info,ipvt,wa,lwa)
   call lmder(focus_fcn,m,n,x,fvec,fjac,ldfjac,ftol,xtol,gtol,maxfev, &
        wa(1),mode,factor,nprint,info,nfev,njev,ipvt,wa(n+1), &
