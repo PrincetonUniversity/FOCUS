@@ -678,7 +678,6 @@ subroutine discoil(ifirst)
            coil(icoil)%xb = zero
            coil(icoil)%yb = zero
            coil(icoil)%zb = zero
-           coil(icoil)%dd = pi2 / coil(icoil)%NS
            NS = coil(icoil)%NS
            NCP = Splines(icoil)%NCP  ! allias variable for simplicity;
 

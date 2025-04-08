@@ -181,8 +181,7 @@ subroutine AllocData(type)
            SALLOCATE( coil(icoil)%curvature, (0:coil(icoil)%NS), zero )
            SALLOCATE( coil(icoil)%straight, (0:coil(icoil)%NS), zero )
 
-           !coil(icoil)%dd = 1.0/(coil(icoil)%NS)
-           coil(icoil)%dd = pi2/(coil(icoil)%NS)
+           coil(icoil)%dd = 1.0/(coil(icoil)%NS)
 
 
         case default
