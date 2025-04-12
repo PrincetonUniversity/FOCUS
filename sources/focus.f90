@@ -56,14 +56,10 @@ PROGRAM focus
   ! check input namelist 
   call check_input
   
-  select case( case_surface )
+  ! read surface data
+  call surface
 
-  case( 0,plasma_surf_boozer ) ; call surface   ! general format (VMEC-like) plasma boundary;
-  case( 1 ) ; call rdknot    ! knototran-like plasma boundary;
- !case( 2 ) ; call readwout  ! read vmec output for plasma boundary and Boozer coordinates; for future;
-
-  end select
-    
+  ! read initial coils  
   select case( case_coils )
 
  !case( 0 )   ; call coilpwl ! piece-wise linear; for future;

@@ -2,7 +2,7 @@
 
 ############################################################################################################
 
- ALLFILES= globals initial saving diagnos stochastic surface rdsurf rdknot rdcoils packdof bfield \
+ ALLFILES= globals initial saving diagnos stochastic surface rdsurf rdknot rdhdf5 rdcoils packdof bfield \
            fdcheck datalloc solvers descent congrad lmalg straight_out splines rdbooz \
 	       bmnharm bnormal torflux current length surfsep nissin torsion coilsep curvature \
            specinp poinplot boozer wtmgrid focus 

@@ -343,3 +343,171 @@ m4_define(TMPOUT,{ !Temperarily output a message to help debugging
 m4_define(MPIOUT,{ !Temperarily output a message to help debugging
   write(ounit,*) "*** DEBUG : myid = ", myid, " ; $1 = ", $1
 })m4_dnl
+
+
+m4_define(HREADRA,{
+
+!macro expansion of hreadra (read 2D double data from hdf5 file)
+  ! open data
+  call h5dopen_f(file_id, "$1", dset_id, hdfier)
+  if( hdfier.ne.0 ) then
+    write(0,'("macros  :      fatal : error calling h5dopen_f opening dataset ;")')
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
+    stop "macros  : error calling h5dopen_f opening dataset ;"
+  endif
+  ! get info 
+  call h5dget_space_f(dset_id, dspace_id, hdfier)
+  call h5sget_simple_extent_dims_f(dspace_id, twodims, twodims, hdfier)
+  call h5screate_simple_f(2, twodims, mem_space_id, hdfier)
+  ! allocate and assign
+  if( allocated( $2 ) ) deallocate( $2 )
+  allocate($2(0:twodims(1)-1, 0:twodims(2)-1))
+  call h5dread_f(dset_id, H5T_NATIVE_DOUBLE, $2, twodims, hdfier, &
+                  mem_space_id=mem_space_id, &
+                  file_space_id=H5S_ALL_F, &
+                  xfer_prp=H5P_DEFAULT_F)
+  if( hdfier.ne.0 ) then
+    write(0,'("macros  :      fatal : error calling h5dread_f ;")')
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
+    stop "macros  : error calling h5dread_f;"
+  endif
+  ! close dataset
+  call h5sclose_f(mem_space_id, hdfier)
+  call h5sclose_f(dspace_id, hdfier)
+  call h5dclose_f(dset_id, hdfier)
+  if( hdfier.ne.0 ) then
+    write(0,'("macros  :      fatal : error calling h5dclose_f ;")')
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
+    stop "macros  : error calling h5dclose_f;"
+  endif   
+})m4_dnl 
+
+m4_define(HREADIV,{
+!macro expansion of hreadiv (read 1D integer data from hdf5 file)
+  ! open data
+  call h5dopen_f(file_id, "$1", dset_id, hdfier)
+  if( hdfier.ne.0 ) then
+    write(0,'("macros  :      fatal : error calling h5dopen_f opening dataset ;")')
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
+    stop "macros  : error calling h5dopen_f opening dataset ;"
+  endif
+  ! get info 
+  call h5dget_space_f(dset_id, dspace_id, hdfier)
+  call h5sget_simple_extent_dims_f(dspace_id, onedims, maxdims, hdfier)
+  call h5screate_simple_f(2, onedims, mem_space_id, hdfier)
+  ! allocate and assign
+  if( allocated( $2 ) ) deallocate( $2 )
+  allocate($2(onedims(1)))
+  call h5dread_f(dset_id, H5T_NATIVE_INTEGER, $2, onedims, hdfier, &
+                   mem_space_id=mem_space_id, &
+                   file_space_id=H5S_ALL_F, &
+                   xfer_prp=H5P_DEFAULT_F)
+  if( hdfier.ne.0 ) then
+    write(0,'("macros  :      fatal : error calling h5dread_f ;")')
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
+    stop "macros  : error calling h5dread_f;"
+  endif
+  ! close dataset
+  call h5sclose_f(dspace_id, hdfier)
+  call h5dclose_f(dset_id, hdfier)
+  if( hdfier.ne.0 ) then
+    write(0,'("macros  :      fatal : error calling h5dclose_f ;")')
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
+    stop "macros  : error calling h5dclose_f;"
+  endif   
+})m4_dnl 
+
+m4_define(HREADRV,{
+!macro expansion of hreadrv (read 1D double data from hdf5 file)
+  ! open data
+  call h5dopen_f(file_id, "$1", dset_id, hdfier)
+  if( hdfier.ne.0 ) then
+    write(0,'("macros  :      fatal : error calling h5dopen_f opening dataset ;")')
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
+    stop "macros  : error calling h5dopen_f opening dataset ;"
+  endif
+  ! get info 
+  call h5dget_space_f(dset_id, dspace_id, hdfier)
+  call h5sget_simple_extent_dims_f(dspace_id, onedims, maxdims, hdfier)
+  call h5screate_simple_f(2, onedims, mem_space_id, hdfier)
+  ! allocate and assign
+  if( allocated( $2 ) ) deallocate( $2 )
+  allocate($2(onedims(1)))
+  call h5dread_f(dset_id, H5T_NATIVE_DOUBLE, $2, onedims, hdfier, &
+                   mem_space_id=mem_space_id, &
+                   file_space_id=H5S_ALL_F, &
+                   xfer_prp=H5P_DEFAULT_F)
+  if( hdfier.ne.0 ) then
+    write(0,'("macros  :      fatal : error calling h5dread_f ;")')
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
+    stop "macros  : error calling h5dread_f;"
+  endif
+  ! close dataset
+  call h5sclose_f(dspace_id, hdfier)
+  call h5dclose_f(dset_id, hdfier)
+  if( hdfier.ne.0 ) then
+    write(0,'("macros  :      fatal : error calling h5dclose_f ;")')
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
+    stop "macros  : error calling h5dclose_f;"
+  endif   
+})m4_dnl 
+
+m4_define(HREADIS,{
+!macro expansion of hreadis (read scalar integer data from hdf5 file)
+  ! open data
+  call h5dopen_f(file_id, "$1", dset_id, hdfier)
+  if( hdfier.ne.0 ) then
+    write(0,'("macros  :      fatal : error calling h5dopen_f opening dataset ;")')
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
+    stop "macros  : error calling h5dopen_f opening dataset ;"
+  endif
+  ! get info 
+  call h5dget_space_f(dset_id, dspace_id, hdfier)
+  call h5sget_simple_extent_dims_f(dspace_id, onedims, maxdims, hdfier)
+  !call h5screate_simple_f(2, onedims, mem_space_id, hdfier)
+  ! assign
+  call h5dread_f(dset_id, H5T_NATIVE_INTEGER, $2, onedims, hdfier)
+  if( hdfier.ne.0 ) then
+    write(0,'("macros  :      fatal : error calling h5dread_f ;")')
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
+    stop "macros  : error calling h5dread_f;"
+  endif
+  ! close dataset
+  call h5sclose_f(dspace_id, hdfier)
+  call h5dclose_f(dset_id, hdfier)
+  if( hdfier.ne.0 ) then
+    write(0,'("macros  :      fatal : error calling h5dclose_f ;")')
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
+    stop "macros  : error calling h5dclose_f;"
+  endif   
+})m4_dnl 
+
+m4_define(HREADRS,{
+!macro expansion of hreadrs (read scalar double data from hdf5 file)
+  ! open data
+  call h5dopen_f(file_id, "$1", dset_id, hdfier)
+  if( hdfier.ne.0 ) then
+    write(0,'("macros  :      fatal : error calling h5dopen_f opening dataset ;")')
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
+    stop "macros  : error calling h5dopen_f opening dataset ;"
+  endif
+  ! get info 
+  call h5dget_space_f(dset_id, dspace_id, hdfier)
+  call h5sget_simple_extent_dims_f(dspace_id, onedims, maxdims, hdfier)
+  !call h5screate_simple_f(2, onedims, mem_space_id, hdfier)
+  ! assign
+  call h5dread_f(dset_id, H5T_NATIVE_DOUBLE, $2, onedims, hdfier)
+  if( hdfier.ne.0 ) then
+    write(0,'("macros  :      fatal : error calling h5dread_f ;")')
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
+    stop "macros  : error calling h5dread_f;"
+  endif
+  ! close dataset
+  call h5sclose_f(dspace_id, hdfier)
+  call h5dclose_f(dset_id, hdfier)
+  if( hdfier.ne.0 ) then
+    write(0,'("macros  :      fatal : error calling h5dclose_f ;")')
+    call MPI_ABORT( MPI_COMM_FOCUS, 1, ierr )
+    stop "macros  : error calling h5dclose_f;"
+  endif   
+})m4_dnl 

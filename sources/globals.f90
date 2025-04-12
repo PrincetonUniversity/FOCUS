@@ -16,7 +16,7 @@ module globals
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 
-  CHARACTER(10), parameter :: version='v0.18.01' ! version number
+  CHARACTER(10), parameter :: version='v0.19.00' ! version number
 
 
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
@@ -83,7 +83,10 @@ module globals
   ! surface related      
   INTEGER              :: IsSymmetric    =   0 
   INTEGER              :: case_surface   =   0
-  INTEGER,parameter    :: plasma_surf_boozer =   5
+  INTEGER,parameter    :: plasma_surf_fourier =   0
+  INTEGER,parameter    :: plasma_surf_knot    =   1    
+  INTEGER,parameter    :: plasma_surf_boozer  =   3
+  INTEGER,parameter    :: plasma_surf_hdf5    =   5
   CHARACTER(100)       :: input_surf     = 'plasma.boundary'  ! surface file       
   REAL                 :: knotsurf       =   0.200D-00
   REAL                 :: ellipticity    =   0.000D+00
@@ -244,7 +247,6 @@ module globals
   IsQuiet       ,&
   lim_out       ,&
   IsSymmetric   ,&
-  lim_out       ,&
   case_surface  ,&
   input_surf    ,&
   knotsurf      ,&

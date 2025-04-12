@@ -1,7 +1,8 @@
 ! This is the overall function to handle surfaces
 SUBROUTINE surface
   use globals, only : dp, myid, ounit, machprec, surf, plasma, limiter, input_surf, limiter_surf, &
-       psurf, weight_cssep, MPI_COMM_FOCUS,plasma_surf_boozer,case_surface
+       psurf, weight_cssep, MPI_COMM_FOCUS,plasma_surf_fourier, plasma_surf_knot, plasma_surf_boozer, &
+       plasma_surf_hdf5, case_surface
   use mpi
   implicit none
 
@@ -25,20 +26,23 @@ SUBROUTINE surface
   inquire( file=trim(input_surf), exist=exist)
   FATAL( surface, .not.exist, input_surf does not exist )
 
-  if (case_surface == plasma_surf_boozer)   call rdbooz( input_surf, plasma )
-  if (case_surface .ne. plasma_surf_boozer)   call fousurf( input_surf, plasma )
+  select case (case_surface)
+  case(plasma_surf_fourier);  call fousurf( input_surf, plasma )
+  case(plasma_surf_knot);     call rdknot
+  case(plasma_surf_boozer);   call rdbooz( input_surf, plasma )
+  case(plasma_surf_hdf5);     call rdhdf5( input_surf, plasma )
+  ! read wout option missed
+  end select 
 
   ! read the limiter surface
-  if (limiter /= plasma .and. case_surface == plasma_surf_boozer) then
-     inquire( file=trim(limiter_surf), exist=exist)  
-     FATAL( surface, .not.exist, limiter_surf does not exist )
-     FATAL( surface, limiter <= plasma, something goes wrong the surface indexing )
-     call rdbooz( limiter_surf, limiter )
-  elseif (limiter /= plasma .and. case_surface .ne. plasma_surf_boozer) then
-     inquire( file=trim(limiter_surf), exist=exist)  
-     FATAL( surface, .not.exist, limiter_surf does not exist )
-     FATAL( surface, limiter <= plasma, something goes wrong the surface indexing )
-     call fousurf( limiter_surf, limiter )
+  if (limiter /= plasma) then
+      FATAL( surface, limiter <= plasma, something goes wrong the surface indexing )
+      select case (case_surface)
+      case(plasma_surf_fourier);  call fousurf( input_surf, limiter )
+      case(plasma_surf_knot);     FATAL(surface, case_surface==plasma_surf_knot, limiter surface not supported in knot option)
+      case(plasma_surf_boozer);   call rdbooz( input_surf, limiter )
+      case(plasma_surf_hdf5);     call rdhdf5( input_surf, limiter )
+      end select   
   endif 
 
   RETURN

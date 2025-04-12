@@ -496,11 +496,11 @@ subroutine check_input
      end select
 
      select case (case_surface)
-     case (0)
+     case (plasma_surf_fourier)
         inquire( file=trim(input_surf), exist=exist )
         FATAL( initial, .not.exist, plasma boundary file not provided )
         write(ounit, 1000) 'case_surface', case_surface, 'Read VMEC-like Fourier harmonics for plasma boundary.'
-     case (1)
+     case (plasma_surf_knot)
         inquire( file=trim(input_surf), exist=exist )
         FATAL( initial, .not.exist, axis file not provided )
         FATAL( initial, knotsurf < zero, illegal minor radius)
@@ -510,7 +510,11 @@ subroutine check_input
      case (plasma_surf_boozer)
         inquire( file=trim(input_surf), exist=exist )
         FATAL( initial, .not.exist, plasma boundary file not provided )
-        write(ounit, 1000) 'case_surface', case_surface, 'Read Plasma boundary in Boozer coordinates.'             
+        write(ounit, 1000) 'case_surface', case_surface, 'Read Plasma boundary in Boozer coordinates.'   
+     case (plasma_surf_hdf5)
+        inquire( file=trim(input_surf), exist=exist )
+        FATAL( initial, .not.exist, plasma boundary file not provided )
+        write(ounit, 1000) 'case_surface', case_surface, 'Read Plasma boundary from the HDF5 file.'                  
      case default
         FATAL( initial, .true., selected surface type is not supported )
      end select
