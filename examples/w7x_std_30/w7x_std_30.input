@@ -25,7 +25,7 @@
  CASE_LENGTH     =           1,
  CASE_CURV       =           3,
  CURV_ALPHA      =   2.00000000000000     ,
- curv_K0         =  10.000000000000000E+000,
+ CURV_K0         =  10.000000000000000E+000,
  WEIGHT_BNORM    =   1.00000000000000     ,
  BHARM_JSURF     =           0,
  WEIGHT_BHARM    =  0.000000000000000E+000,

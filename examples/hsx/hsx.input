@@ -1,44 +1,44 @@
 &focusin
- IsQuiet        =        -1 
- IsSymmetric    =        2 
+ IsQuiet        =        -1
+ IsSymmetric    =        2
 
- case_surface   =        0         
+ case_surface   =        0
  knotsurf       =        0.200D-00
  ellipticity    =        0.000D+00
- Nteta          =      128           
- Nzeta          =      256   
+ Nteta          =      128
+ Nzeta          =      256
 
  case_init      =        0
  case_coils     =        1
  Ncoils         =        48
- init_current   =        1.000D+06        
+ init_current   =        1.000D+06
  init_radius    =        0.300D+00
- IsVaryCurrent  =        0         
- IsVaryGeometry =        1         
- NFcoil         =        16 
+ IsVaryCurrent  =        0
+ IsVaryGeometry =        1
+ NFcoil         =        16
  Nseg           =        384
 
  case_optimize  =        1
  IsNormalize    =        0
  IsNormWeight   =        0
  case_bnormal   =        1
- case_length    =        1 
+ case_length    =        1
  case_curv      =        3             ! Penalty function for curvature
- k0             =        1.000D+01     ! Maximum curvature constraint 
- curv_alpha     =        2.000D+00     ! Exponent for curvature constraint violations 
+ curv_k0        =        1.000D+01     ! Maximum curvature constraint
+ curv_alpha     =        2.000D+00     ! Exponent for curvature constraint violations
  weight_bnorm   =        1.000D+04
  weight_bharm   =        0.000D+00
  weight_tflux   =        0.000D-05
  target_tflux   =        -0.039418D+00
  weight_ttlen   =        1.000D+03
- target_length  =        2.400D+00 
+ target_length  =        2.400D+00
  weight_specw   =        0.000D+00
  weight_curv    =        5.000D+00
 
  DF_tausta      =        0.000D+00
  DF_tauend      =        1.000D-00
  DF_maxiter     =        0
- DF_xtol        =        1.000D-10                    
+ DF_xtol        =        1.000D-10
 
  CG_maxiter     =        200
  CG_xtol        =        1.000D-10
@@ -56,7 +56,7 @@
 
  case_postproc  =        1
  save_freq      =        1
- save_coils     =        1 
+ save_coils     =        1
  save_harmonics =        1
- save_filaments =        0              
+ save_filaments =        0
 /
