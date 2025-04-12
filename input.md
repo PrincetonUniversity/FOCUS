@@ -22,26 +22,37 @@ For instance, you want to run the code with a case name of "example".
   - *case_surface = 0* : **input_surf** (default: 'plasma.boundary')
   
     This is for general unknotted cases, like stellarator and tokamaks. It takes VMEC-like format. 
-    Detalis about the format can be seen in [rdsurf.pdf](https://princetonuniversity.github.io/FOCUS/rdsurf.pdf)
+    Details about the format can be seen in [rdsurf.pdf](https://princetonuniversity.github.io/FOCUS/rdsurf.pdf)
     Here is an example for the rotating ellipse case [plasma.boundary](misc/plasma.boundary)
+  - *case_surface = 3* : **input_surf** (default: 'plasma.boundary')
     
-    For more information about preparing FOCUS boundary from VMEC and BNORM, please view [here](notes/Coil_design_codes_benchmark.html).
+    This option supports reading a toroidal surface parameterized in Boozer coordinates.
+    The input surface file has additional columns for `Pmnc` and `Pmns`, which define the transformation of toroidal angle from Boozer coordinates to cylindrical coordinates.
+    An example input file can be found at [boozer_ns68_m7n6.boundary](https://github.com/PrincetonUniversity/FOCUS/blob/develop/examples/ciemat_islands/boozer_ns68_m7n6.boundary).
+    
+  - *case_surface = 5* : **input_surf** (default: 'plasma.boundary')
+    
+    This option supports reading surface data from an HDF5 file.
+    It can be used when the surface is not parameterized with Fourier series.
+    Detailed documentation can be found at [PR#92](https://github.com/PrincetonUniversity/FOCUS/pull/92/).
+    
+  For more information about preparing FOCUS boundary from VMEC and BNORM, please view [here](notes/Coil_design_codes_benchmark.html).
     
 * initial coils
 
-  FOCUS also requires the user to provide an initial guess for the coils. This is controled by *case_init*.
+  FOCUS also requires the user to provide an initial guess for the coils. This is controlled by *case_init*.
   
   - *case_init = -1* :  **input_coils** (default: 'coils.example') 
   
     Read the coils data from **coils.example** and fit the coils with Fourier coefficients. 
-    The format ofcoils.\* file can be seen in [VMECwiki](https://princetonuniversity.github.io/STELLOPT/MAKEGRID).
-	Here is an example for the rotating ellipse case [coils.ellipse](misc/ellipse.coils)
+    The format of `coils.*` file can be seen in [VMECwiki](https://princetonuniversity.github.io/STELLOPT/MAKEGRID).
+    Here is an example for the rotating ellipse case [coils.ellipse](misc/ellipse.coils)
     
   - *case_init =  0* : **input_coils** (default: 'example.focus')
   
     It contains the control labels for the coils and, depending on
-    the representation chosen, the Fourier harmonics or the coordinates of the splines control points. 
-	  Here is an example for the rotating ellipse case using Fourier representation [ellipse.focus](misc/ellipse.focus) and 
+    the representation chosen, the Fourier harmonics or the coordinates of the spline control points. 
+    Here is an example for the rotating ellipse case using Fourier representation [ellipse.focus](misc/ellipse.focus) and 
     an example using the spline representation [ellipse.focus](https://github.com/PrincetonUniversity/FOCUS/blob/develop/examples/ellipse_spline/ellipse.focus).
     
   - *case_init =  1*
@@ -53,8 +64,8 @@ For instance, you want to run the code with a case name of "example".
     Initialize *Ncoils-1* magnetic dipoles (r=*init_radius*, I=*init_current*) surrounding the plasma boundary plus one central current.
 
 If you want to optimize individual Bn spectrum (*weight_bharm>0* in the namelist), you may also need to provide an input file named by **input_harm** (default: 'target.harmonics').
-Detalis about the format can be seen in [bmnharm.pdf](bmnharm.pdf)
-Here is an example for the DIIID RMP coils case [target.harmonics](misc/target.harmonics)
+Details about the format can be seen in [bmnharm.pdf](bmnharm.pdf)
+Here is an example for the DIII-D RMP coils case [target.harmonics](misc/target.harmonics)
 
 &nbsp;
 
@@ -63,8 +74,8 @@ Here is an example for the DIIID RMP coils case [target.harmonics](misc/target.h
 There are multiple objective functions available in FOCUS.
 If the weight of each function is greater than 0, then it is turned on.
 The overall target function will be the weighted summation of each individual one.
-Here is a list of input variable related to objective functions that should be stored in `*.input`. 
-For more details of each function, users are suggested to check [subroutines](subroutines.md).
+Here is a list of input variables related to objective functions that should be stored in `*.input`. 
+For more details of each function, users are suggested to check [subroutines](subroutines.md) (not updated for a while).
 
 ```fortran
  ! Normal field error
@@ -154,7 +165,7 @@ Once you finish preparing the input files and successfully compile the code, mov
 ```
 mpirun -np 32 xfocus example
 ```
-You may need to allocate computating cores first, e.g. try `srun -n 32 -t 12:00:00 --mem 2Gb xfocus example` at PPPL, or use a *sbatch* command.
+You may need to allocate computing cores first, e.g. try `srun -n 32 -t 12:00:00 --mem 2Gb xfocus example` at PPPL, or use a *sbatch* command.
 
 The code should print some information on the screen (or in stdout file for *sbatch*).
 
