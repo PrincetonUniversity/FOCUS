@@ -161,6 +161,7 @@ subroutine saving
 
   HWRITEIV( 1                ,   Nfp           ,   surf(plasma)%Nfp                     )
   HWRITERV( 1                ,   surf_vol      ,   surf(plasma)%vol                     )
+  HWRITERV( 1                ,   disfac        ,   discretefactor                       )
   HWRITERA( Nteta,Nzeta      ,   xsurf         ,   surf(plasma)%xx(0:Nteta-1,0:Nzeta-1) )
   HWRITERA( Nteta,Nzeta      ,   ysurf         ,   surf(plasma)%yy(0:Nteta-1,0:Nzeta-1) )
   HWRITERA( Nteta,Nzeta      ,   zsurf         ,   surf(plasma)%zz(0:Nteta-1,0:Nzeta-1) )

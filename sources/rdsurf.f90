@@ -321,7 +321,7 @@ end subroutine fousurf
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
 subroutine surfcoord(index, theta, zeta, r, z)
-   use globals, only: dp, zero, surf
+   use globals, only: dp, zero, surf, case_surface, plasma_surf_fourier, pi2, symmetry, surf_Nfp, nteta, nzeta
    use mpi
    implicit none
 
@@ -329,18 +329,24 @@ subroutine surfcoord(index, theta, zeta, r, z)
    REAL, INTENT(in) :: theta, zeta
    REAL, INTENT(out) :: r, z
 
-   INTEGER           :: imn
+   INTEGER           :: imn, it, jz
    REAL              :: arg
    !-------------calculate r, z coodinates for theta, zeta------------------------------------------------
-   if (.not. allocated(surf(index)%bim)) STOP "please allocate surface data first!"
+   if (case_surface == plasma_surf_fourier) then
+      if (.not. allocated(surf(index)%bim)) STOP "please allocate surface data first!"
 
-   r = zero; z = zero
-   do imn = 1, surf(index)%Nfou
-      arg = surf(index)%bim(imn)*theta - surf(index)%bin(imn)*zeta
-      R = R + surf(index)%Rbc(imn)*cos(arg) + surf(index)%Rbs(imn)*sin(arg)
-      Z = Z + surf(index)%Zbc(imn)*cos(arg) + surf(index)%Zbs(imn)*sin(arg)
-   enddo
-
+      r = zero; z = zero
+      do imn = 1, surf(index)%Nfou
+         arg = surf(index)%bim(imn)*theta - surf(index)%bin(imn)*zeta
+         r = r + surf(index)%Rbc(imn)*cos(arg) + surf(index)%Rbs(imn)*sin(arg)
+         z = z + surf(index)%Zbc(imn)*cos(arg) + surf(index)%Zbs(imn)*sin(arg)
+      enddo
+   else
+      it = int(theta/pi2*Nteta)
+      jz = int(zeta/(pi2/(surf_Nfp*2**symmetry))*Nzeta)
+      r = SQRT(surf(index)%xx(it, jz)**2 + surf(index)%yy(it, jz)**2)
+      z = surf(index)%zz(it, jz)**2
+   endif
    return
 end subroutine surfcoord
 
