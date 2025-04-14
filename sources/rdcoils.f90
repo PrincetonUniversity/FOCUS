@@ -438,7 +438,7 @@ subroutine rdcoils
            if(coil(icoil)%Ic == 0) Nfixcur = Nfixcur + 1
            if(coil(icoil)%Lc == 0) Nfixgeo = Nfixgeo + 1
            ! Spline representation related;
-           Splines(icoil)%NCP = 13
+           Splines(icoil)%NCP = NFcoil+2
            Splines(icoil)%NT = Splines(icoil)%NCP + 4
            FATAL( rdcoils12, Splines(icoil)%NCP  < 0                    , illegal )
            FATAL( rdcoils12_2, Splines(icoil)%NT  < 0                     , illegal )
@@ -447,7 +447,9 @@ subroutine rdcoils
            SALLOCATE( Splines(icoil)%vect, (0:Splines(icoil)%NT-1), zero )
            SALLOCATE( Splines(icoil)%eval_points, (0:coil(icoil)%NS-1), zero )
            SALLOCATE( Splines(icoil)%Cpoints, (0:Splines(icoil)%NCP * 3 - 1 ), zero )
-           Splines(icoil)%vect(0:Splines(icoil)%NT-1) = (/-0.3,-0.2,-0.1,0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.1,1.2,1.3/)
+           DO jcoil = 1, NFcoil
+              Splines(icoil)%vect(jcoil+2) = DBLE(jcoil-1)/DBLE(NFcoil-1)
+           END DO
            Splines(icoil)%vect(Splines(icoil)%NT-3) = 1.0 + Splines(icoil)%vect(4) - Splines(icoil)%vect(3)
            Splines(icoil)%vect(Splines(icoil)%NT-2) = 1.0 + Splines(icoil)%vect(5) - Splines(icoil)%vect(3)
            Splines(icoil)%vect(Splines(icoil)%NT-1) = 1.0 + Splines(icoil)%vect(6) - Splines(icoil)%vect(3)
