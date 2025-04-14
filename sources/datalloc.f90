@@ -147,8 +147,8 @@ subroutine AllocData(type)
            SALLOCATE( Splines(icoil)%db_dt  , (0:NS-1, 0:NCP-1),   zero )
            SALLOCATE( Splines(icoil)%db_dt_2, (0:NS-1, 0:NCP-1),   zero )
 
-	   do i =0, coil(icoil)%NS-1
-                    Splines(icoil)%eval_points(i) = 1.0*(i)/(coil(icoil)%NS)
+	        do i =0, coil(icoil)%NS-1
+              Splines(icoil)%eval_points(i) = 1.0*(i)/(coil(icoil)%NS)
            enddo
 
            ! the derivatives of dx/dv 
@@ -156,8 +156,8 @@ subroutine AllocData(type)
            call eval_spline_basis(icoil)           !Compute spline basis and derivatives using analytic derivation
            call eval_spline_basis1(icoil)
            call eval_spline_basis2(icoil)
-	   !call check_eval_basis(icoil)    !Check derivatives of basis functions numerically	
-	   call enforce_spline_periodicity(icoil)  !Forces the derivates in respect to the first three control points to be equal to the last three   
+           !call check_eval_basis(icoil)    !Check derivatives of basis functions numerically	
+           call enforce_spline_periodicity(icoil)  !Forces the derivates in respect to the first three control points to be equal to the last three   
 
            DoF(icoil)%xof(0:coil(icoil)%NS-1,      1: NCP) = Splines(icoil)%basis_3(0:coil(icoil)%NS-1, 0:  NCP-1)  !x/xc
            DoF(icoil)%yof(0:coil(icoil)%NS-1, NCP+1:2*NCP) = Splines(icoil)%basis_3(0:coil(icoil)%NS-1, 0:  NCP-1)  !y/yc
@@ -173,12 +173,15 @@ subroutine AllocData(type)
            SALLOCATE( coil(icoil)%xa, (0:coil(icoil)%NS), zero )
            SALLOCATE( coil(icoil)%ya, (0:coil(icoil)%NS), zero )
            SALLOCATE( coil(icoil)%za, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%xb, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%yb, (0:coil(icoil)%NS), zero )
+           SALLOCATE( coil(icoil)%zb, (0:coil(icoil)%NS), zero )
            SALLOCATE( coil(icoil)%dl, (0:coil(icoil)%NS), zero )
            SALLOCATE( coil(icoil)%dd, (0:coil(icoil)%NS), zero )
            SALLOCATE( coil(icoil)%curvature, (0:coil(icoil)%NS), zero )
            SALLOCATE( coil(icoil)%straight, (0:coil(icoil)%NS), zero )
 
-	   coil(icoil)%dd = 1.0/(coil(icoil)%NS)
+           coil(icoil)%dd = 1.0/(coil(icoil)%NS)
 
 
         case default

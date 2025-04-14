@@ -64,6 +64,7 @@ PROGRAM focus
 
  !case( 0 )   ; call coilpwl ! piece-wise linear; for future;
   case( 1 )   ; call rdcoils
+  case( 5 )   ; call rdcoils
 
   end select
 

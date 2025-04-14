@@ -16,7 +16,7 @@
 !latex\]
 
 !latex	It also stores the basis functions of first and second order as they are used in the computation of the derivatives	
-!latex \item[2.] eva_spline_basis1 computes the first derivatives of the basis functions obtained analitically as
+!latex \item[2.] eva\_spline\_basis1 computes the first derivatives of the basis functions obtained analitically as
 
 !latex \begin{equation*}
 !latex \hspace{-4cm} \scalebox{0.6}{ $
@@ -28,7 +28,7 @@
 !latex }
 !latex \end{equation*}
 
-!latex \item[3.] eva_spline_basis2 computes the second derivatives of the basis functions obtained analitically as
+!latex \item[3.] eva\_spline\_basis2 computes the second derivatives of the basis functions obtained analitically as
 
 !latex \begin{equation*}
 !latex \hspace{-4cm} \scalebox{0.5}{ $
@@ -40,7 +40,7 @@
 !latex }
 !latex \end{equation*}
 
-!latex \item[4.] enforce_spline_periodicity ensures the periodicity of the spline by making sure the first three control points are used in place of the last three during optimization
+!latex \item[4.] enforce\_spline\_periodicity ensures the periodicity of the spline by making sure the first three control points are used in place of the last three during optimization
 
 SUBROUTINE eval_spline_basis(icoil)
 ! Compute the basis functions of order 0,1,2 and 3 for the values of t contained in eval_points and store the value in Splines
@@ -178,15 +178,15 @@ SUBROUTINE eval_spline_basis2(icoil)
             if(eval_points(ipos)>=vect(icp).AND.eval_points(ipos)<vect(icp+1)) then
                 Splines(icoil)%db_dt_2(ipos,icp) = &
                     2.0/(vect(icp+3)-vect(icp)) * (Splines(icoil)%basis_1(ipos,icp)/(vect(icp+2)-vect(icp))             + &
-	                (eval_points(ipos)-vect(icp))/((vect(icp+2)-vect(icp)) * (vect(icp+1)-vect(icp))))              + &
+                    (eval_points(ipos)-vect(icp))/((vect(icp+2)-vect(icp)) * (vect(icp+1)-vect(icp))))              + &
                     2.0*(eval_points(ipos)-vect(icp))/((vect(icp+3)-vect(icp)) * (vect(icp+1)-vect(icp))*(vect(icp+2)-vect(icp)))
-						
+
             else if(eval_points(ipos)>=vect(icp+1).AND.eval_points(ipos)<vect(icp+2)) then 
                 Splines(icoil)%db_dt_2(ipos,icp) = &
                     2.0/(vect(icp+3)-vect(icp  ))      *( Splines(icoil)%basis_1(ipos,icp  )/(vect(icp+2)-vect(icp  ))  - &
                         (eval_points(ipos)-vect(icp  ))/((vect(icp+2)-vect(icp  )) * (vect(icp+2)-vect(icp+1)))         - &
-		                                          Splines(icoil)%basis_1(ipos,icp+1) /( vect(icp+3)-vect(icp+1))+ & 
-		        (vect(icp+3)-eval_points(ipos))/((vect(icp+3)-vect(icp+1)) * (vect(icp+2)-vect(icp+1))))        - &
+                                                  Splines(icoil)%basis_1(ipos,icp+1) /( vect(icp+3)-vect(icp+1))+ & 
+                (vect(icp+3)-eval_points(ipos))/((vect(icp+3)-vect(icp+1)) * (vect(icp+2)-vect(icp+1))))        - &
                         (eval_points(ipos)-vect(icp  ))/((vect(icp+3)-vect(icp  )) * (vect(icp+2)-vect(icp+1)))         * &
                    (2.0/(vect(icp+2)-vect(icp))        + 2.0/( vect(icp+3)-vect(icp+1)))                                - &
                     2.0/(vect(icp+4)-vect(icp+1))      *( Splines(icoil)%basis_1(ipos,icp+1)/(vect(icp+3)-vect(icp+1))  + &
@@ -201,16 +201,16 @@ SUBROUTINE eval_spline_basis2(icoil)
                     2.0/(vect(icp+4)-vect(icp+1))      *( Splines(icoil)%basis_1(ipos,icp+1)/(vect(icp+3)-vect(icp+1))                  - &
                         (eval_points(ipos)-vect(icp+1))/((vect(icp+3)-vect(icp+1))*(vect(icp+3)-vect(icp+2)))                           - &
                                                           Splines(icoil)%basis_1(ipos,icp+2)/( vect(icp+4)-vect(icp+2))                 + &
-	                (vect(icp+4)-eval_points(ipos))/((vect(icp+4)-vect(icp+2))*(vect(icp+3)-vect(icp+2))))                          - &
+                    (vect(icp+4)-eval_points(ipos))/((vect(icp+4)-vect(icp+2))*(vect(icp+3)-vect(icp+2))))                          - &
                         (vect(icp+4)-eval_points(ipos))/((vect(icp+4)-vect(icp+1))*(vect(icp+3)-vect(icp+2)))                           * &
                    (2.0/(vect(icp+3)-vect(icp+1)) + 2.0/(vect(icp+4)-vect(icp+2)))
-						
+
                 else if(eval_points(ipos)>=vect(icp+3).AND.eval_points(ipos)<vect(icp+4)) then 
                     Splines(icoil)%db_dt_2(ipos,icp) =  &
                    -2.0/(vect(icp+4)-vect(icp+1))      *(-Splines(icoil)%basis_1(ipos,icp+2)/(vect(icp+4)-vect(icp+2))  - &
                         (vect(icp+4)-eval_points(ipos))/((vect(icp+4)-vect(icp+2))*(vect(icp+4)-vect(icp+3))))          + &
                     2.0*(vect(icp+4)-eval_points(ipos))/((vect(icp+4)-vect(icp+1))*(vect(icp+4)-vect(icp+2))*(vect(icp+4)-vect(icp+3)))
-						
+
                 endif
         enddo
     enddo

@@ -213,7 +213,7 @@ subroutine CurvDeriv1(icoil, derivs, ND, NC) !Calculate all derivatives for a co
   INTEGER, intent(in)  :: icoil, ND , NC  !NC is actually NCP for splines and NF for FouCoil
   REAL   , intent(out) :: derivs(1:1, 1:ND)
 !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
-  INTEGER              :: kseg, astat, ierr, doff, nff, NS, n
+  INTEGER              :: kseg, astat, ierr, doff, nff, NS, n, n1, n2
   REAL                 :: xt, yt, zt, xa, ya, za, f1, f2,ncc, nss, ncp, nsp, curvHold, penCurv,curvH,leng, hypc, hyps, curv_deriv, &
                           k1_use, rtxrax, rtxray, rtxraz
   REAL                 :: d1L(1:1, 1:ND)
@@ -235,30 +235,51 @@ subroutine CurvDeriv1(icoil, derivs, ND, NC) !Calculate all derivatives for a co
   select case (coil(icoil)%type)    
  	 case(1)
      		do n = 1,NC
-            	    	dxtdDof(0:NS,n+1)      = -1*FouCoil(icoil)%smt(0:NS,n) * n
-     		    	dxtdDof(0:NS,n+NC+1)   =    FouCoil(icoil)%cmt(0:NS,n) * n
-     	    		dytdDof(0:NS,n+2*NC+2) = -1*FouCoil(icoil)%smt(0:NS,n) * n
-     	    		dytdDof(0:NS,n+3*NC+2) =    FouCoil(icoil)%cmt(0:NS,n) * n
-     	    		dztdDof(0:NS,n+4*NC+3) = -1*FouCoil(icoil)%smt(0:NS,n) * n
-     	    		dztdDof(0:NS,n+5*NC+3) =    FouCoil(icoil)%cmt(0:NS,n) * n
+            dxtdDof(0:NS,n+1)      = -1*FouCoil(icoil)%smt(0:NS,n) * n
+            dxtdDof(0:NS,n+NC+1)   =    FouCoil(icoil)%cmt(0:NS,n) * n
+            dytdDof(0:NS,n+2*NC+2) = -1*FouCoil(icoil)%smt(0:NS,n) * n
+            dytdDof(0:NS,n+3*NC+2) =    FouCoil(icoil)%cmt(0:NS,n) * n
+            dztdDof(0:NS,n+4*NC+3) = -1*FouCoil(icoil)%smt(0:NS,n) * n
+            dztdDof(0:NS,n+5*NC+3) =    FouCoil(icoil)%cmt(0:NS,n) * n
 
-     	    		dxadDof(0:NS,n+1)      = -1*FouCoil(icoil)%cmt(0:NS,n) * n*n
-     	    		dxadDof(0:NS,n+NC+1)   = -1*FouCoil(icoil)%smt(0:NS,n) * n*n
-     	    		dyadDof(0:NS,n+2*NC+2) = -1*FouCoil(icoil)%cmt(0:NS,n) * n*n
-     	    		dyadDof(0:NS,n+3*NC+2) = -1*FouCoil(icoil)%smt(0:NS,n) * n*n
-     	    		dzadDof(0:NS,n+4*NC+3) = -1*FouCoil(icoil)%cmt(0:NS,n) * n*n
-     	    		dzadDof(0:NS,n+5*NC+3) = -1*FouCoil(icoil)%smt(0:NS,n) * n*n
+            dxadDof(0:NS,n+1)      = -1*FouCoil(icoil)%cmt(0:NS,n) * n*n
+            dxadDof(0:NS,n+NC+1)   = -1*FouCoil(icoil)%smt(0:NS,n) * n*n
+            dyadDof(0:NS,n+2*NC+2) = -1*FouCoil(icoil)%cmt(0:NS,n) * n*n
+            dyadDof(0:NS,n+3*NC+2) = -1*FouCoil(icoil)%smt(0:NS,n) * n*n
+            dzadDof(0:NS,n+4*NC+3) = -1*FouCoil(icoil)%cmt(0:NS,n) * n*n
+            dzadDof(0:NS,n+5*NC+3) = -1*FouCoil(icoil)%smt(0:NS,n) * n*n
      		enddo
   	case(coil_type_spline) 
-	  		dxtdDof(0:NS,0:ND)      =    Splines(icoil)%db_dt(0:NS,0:ND)
-	  		dytdDof(0:NS,0:ND)      =    Splines(icoil)%db_dt(0:NS,0:ND)
-	  		dztdDof(0:NS,0:ND)      =    Splines(icoil)%db_dt(0:NS,0:ND)
-			
-     	    		dxadDof(0:NS,0:ND)       =    Splines(icoil)%db_dt_2(0:NS,0:ND)
-     	    		dyadDof(0:NS,0:ND)       =    Splines(icoil)%db_dt_2(0:NS,0:ND)
-     	    		dzadDof(0:NS,0:ND)       =    Splines(icoil)%db_dt_2(0:NS,0:ND)
+      !dxtdDof(0:NS-1,0:ND)      =    Splines(icoil)%db_dt(0:NS-1,0:ND)
+      !dytdDof(0:NS-1,0:ND)      =    Splines(icoil)%db_dt(0:NS-1,0:ND)
+      !dztdDof(0:NS-1,0:ND)      =    Splines(icoil)%db_dt(0:NS-1,0:ND)
+
+      !dxadDof(0:NS-1,0:ND)       =    Splines(icoil)%db_dt_2(0:NS-1,0:ND)
+      !dyadDof(0:NS-1,0:ND)       =    Splines(icoil)%db_dt_2(0:NS-1,0:ND)
+      !dzadDof(0:NS-1,0:ND)       =    Splines(icoil)%db_dt_2(0:NS-1,0:ND)
+      n1 = 1; n2 = NC
+      dxtdDof(0:NS-1,n1:n2)      =    Splines(icoil)%db_dt(0:NS-1,0:NC-1)
+      dytdDof(0:NS-1,n1:n2)      =    Splines(icoil)%db_dt(0:NS-1,0:NC-1)
+      dztdDof(0:NS-1,n1:n2)      =    Splines(icoil)%db_dt(0:NS-1,0:NC-1)
+      dxadDof(0:NS-1,n1:n2)      =    Splines(icoil)%db_dt_2(0:NS-1,0:NC-1)
+      dyadDof(0:NS-1,n1:n2)      =    Splines(icoil)%db_dt_2(0:NS-1,0:NC-1)
+      dzadDof(0:NS-1,n1:n2)      =    Splines(icoil)%db_dt_2(0:NS-1,0:NC-1)
+      n1 = NC+1; n2 = 2*NC
+      dxtdDof(0:NS-1,n1:n2)      =    Splines(icoil)%db_dt(0:NS-1,0:NC-1)
+      dytdDof(0:NS-1,n1:n2)      =    Splines(icoil)%db_dt(0:NS-1,0:NC-1)
+      dztdDof(0:NS-1,n1:n2)      =    Splines(icoil)%db_dt(0:NS-1,0:NC-1)
+      dxadDof(0:NS-1,n1:n2)      =    Splines(icoil)%db_dt_2(0:NS-1,0:NC-1)
+      dyadDof(0:NS-1,n1:n2)      =    Splines(icoil)%db_dt_2(0:NS-1,0:NC-1)
+      dzadDof(0:NS-1,n1:n2)      =    Splines(icoil)%db_dt_2(0:NS-1,0:NC-1)
+      n1 = 2*NC+1; n2 = 3*NC
+      dxtdDof(0:NS-1,n1:n2)      =    Splines(icoil)%db_dt(0:NS-1,0:NC-1)
+      dytdDof(0:NS-1,n1:n2)      =    Splines(icoil)%db_dt(0:NS-1,0:NC-1)
+      dztdDof(0:NS-1,n1:n2)      =    Splines(icoil)%db_dt(0:NS-1,0:NC-1)
+      dxadDof(0:NS-1,n1:n2)      =    Splines(icoil)%db_dt_2(0:NS-1,0:NC-1)
+      dyadDof(0:NS-1,n1:n2)      =    Splines(icoil)%db_dt_2(0:NS-1,0:NC-1)
+      dzadDof(0:NS-1,n1:n2)      =    Splines(icoil)%db_dt_2(0:NS-1,0:NC-1)
   	case default 
-		FATAL( CurvDeriv1, .true. , invalid coil_type option )	
+      FATAL( CurvDeriv1, .true. , invalid coil_type option )
   end select
   
   derivs = zero

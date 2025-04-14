@@ -111,8 +111,8 @@ subroutine rdcoils
 
   LOGICAL   :: exist
   INTEGER   :: icoil, maxnseg, ifirst, NF, itmp, ip, icoef, total_coef, num_pm, num_bg, & 
-               num_per_array, num_tor, ipol, itor
-  REAL      :: Rmaj, zeta, totalcurrent, z0, r1, r2, z1, z2, rtmp, teta
+               num_per_array, num_tor, ipol, itor, jcoil
+  REAL      :: Rmaj, zeta, totalcurrent, z0, r1, r2, z1, z2, rtmp, teta, th
   !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
   Nfixcur = 0 ! fixed coil current number
@@ -370,6 +370,7 @@ subroutine rdcoils
      allocate( FouCoil(1:Ncoils) )
      allocate(    coil(1:Ncoils) )
      allocate(     DoF(1:Ncoils) )
+     allocate(  Splines(1:Ncoils) )
      ! screen outputs
      if (myid == 0)  then
         write(ounit, '(8X,": Initialize "I4" unique circular coils with r="ES12.5"m ; I="&
@@ -378,44 +379,105 @@ subroutine rdcoils
              " ; IsVaryGeometry = "I1)') NFcoil, IsVaryCurrent, IsVaryGeometry
      endif
      ! initializations
-     do icoil = 1, Ncoils
-        ! general coil parameters;
-        coil(icoil)%type = 1
-        coil(icoil)%symm = IsSymmetric ! follow the general setting
-        coil(icoil)%NS =  Nseg  
-        coil(icoil)%I  =  init_current
-        coil(icoil)%Ic =  IsVaryCurrent
-        coil(icoil)%L  =  pi2*init_radius
-        coil(icoil)%Lc =  IsVaryGeometry
-        coil(icoil)%Lo =  target_length
-        write(coil(icoil)%name,'("Mod_"I3.3)') icoil
-        FATAL( rdcoils, coil(icoil)%Ic < 0 .or. coil(icoil)%Ic > 1, illegal )
-        FATAL( rdcoils, coil(icoil)%Lc < 0 .or. coil(icoil)%Lc > 1, illegal )
-        FATAL( rdcoils, coil(icoil)%Lo < zero                     , illegal )
-        if(coil(icoil)%Ic == 0) Nfixcur = Nfixcur + 1
-        if(coil(icoil)%Lc == 0) Nfixgeo = Nfixgeo + 1
-        ! Fourier representation related;
-        FouCoil(icoil)%NF = NFcoil
-        SALLOCATE( FouCoil(icoil)%xc, (0:NFcoil), zero )
-        SALLOCATE( FouCoil(icoil)%xs, (0:NFcoil), zero )
-        SALLOCATE( FouCoil(icoil)%yc, (0:NFcoil), zero )
-        SALLOCATE( FouCoil(icoil)%ys, (0:NFcoil), zero )
-        SALLOCATE( FouCoil(icoil)%zc, (0:NFcoil), zero )
-        SALLOCATE( FouCoil(icoil)%zs, (0:NFcoil), zero )
-        ! get the geometry center
-        zeta = (icoil-1+half) * pi2 / (Ncoils*surf_Nfp*2**symmetry)  ! put a half for a shift;       
-        call surfcoord( plasma, zero, zeta, r1, z1)
-        call surfcoord( plasma,   pi, zeta, r2, z2)
-        Rmaj = half * (r1 + r2)
-        z0   = half * (z1 + z2)              
-        ! initilize with circular coils;
-        FouCoil(icoil)%xc(0:1) = (/ Rmaj * cos(zeta), init_radius * cos(zeta) /)
-        FouCoil(icoil)%xs(0:1) = (/ zero            , zero                    /)
-        FouCoil(icoil)%yc(0:1) = (/ Rmaj * sin(zeta), init_radius * sin(zeta) /)
-        FouCoil(icoil)%ys(0:1) = (/ zero            , zero                    /)
-        FouCoil(icoil)%zc(0:1) = (/ z0              , zero                    /)
-        Foucoil(icoil)%zs(0:1) = (/ zero            , init_radius             /)
-     enddo ! end of do icoil;
+     if (case_coils == 1) THEN
+        do icoil = 1, Ncoils
+           ! general coil parameters;
+           coil(icoil)%type = 1
+           coil(icoil)%symm = IsSymmetric ! follow the general setting
+           coil(icoil)%NS =  Nseg  
+           coil(icoil)%I  =  init_current
+           coil(icoil)%Ic =  IsVaryCurrent
+           coil(icoil)%L  =  pi2*init_radius
+           coil(icoil)%Lc =  IsVaryGeometry
+           coil(icoil)%Lo =  target_length
+           write(coil(icoil)%name,'("Mod_"I3.3)') icoil
+           FATAL( rdcoils, coil(icoil)%Ic < 0 .or. coil(icoil)%Ic > 1, illegal )
+           FATAL( rdcoils, coil(icoil)%Lc < 0 .or. coil(icoil)%Lc > 1, illegal )
+           FATAL( rdcoils, coil(icoil)%Lo < zero                     , illegal )
+           if(coil(icoil)%Ic == 0) Nfixcur = Nfixcur + 1
+           if(coil(icoil)%Lc == 0) Nfixgeo = Nfixgeo + 1
+           ! Fourier representation related;
+           FouCoil(icoil)%NF = NFcoil
+           SALLOCATE( FouCoil(icoil)%xc, (0:NFcoil), zero )
+           SALLOCATE( FouCoil(icoil)%xs, (0:NFcoil), zero )
+           SALLOCATE( FouCoil(icoil)%yc, (0:NFcoil), zero )
+           SALLOCATE( FouCoil(icoil)%ys, (0:NFcoil), zero )
+           SALLOCATE( FouCoil(icoil)%zc, (0:NFcoil), zero )
+           SALLOCATE( FouCoil(icoil)%zs, (0:NFcoil), zero )
+           ! get the geometry center
+           zeta = (icoil-1+half) * pi2 / (Ncoils*surf_Nfp*2**symmetry)  ! put a half for a shift;       
+           call surfcoord( plasma, zero, zeta, r1, z1)
+           call surfcoord( plasma,   pi, zeta, r2, z2)
+           Rmaj = half * (r1 + r2)
+           z0   = half * (z1 + z2)              
+           ! initilize with circular coils;
+           FouCoil(icoil)%xc(0:1) = (/ Rmaj * cos(zeta), init_radius * cos(zeta) /)
+           FouCoil(icoil)%xs(0:1) = (/ zero            , zero                    /)
+           FouCoil(icoil)%yc(0:1) = (/ Rmaj * sin(zeta), init_radius * sin(zeta) /)
+           FouCoil(icoil)%ys(0:1) = (/ zero            , zero                    /)
+           FouCoil(icoil)%zc(0:1) = (/ z0              , zero                    /)
+           Foucoil(icoil)%zs(0:1) = (/ zero            , init_radius             /)
+        enddo ! end of do icoil;
+     else if (case_coils == coil_type_spline) THEN
+        do icoil = 1, Ncoils
+           ! general coil parameters;
+           coil(icoil)%type = 5
+           coil(icoil)%symm = IsSymmetric ! follow the general setting
+           coil(icoil)%NS =  Nseg  
+           coil(icoil)%I  =  init_current
+           coil(icoil)%Ic =  IsVaryCurrent
+           coil(icoil)%L  =  pi2*init_radius
+           coil(icoil)%Lc =  IsVaryGeometry
+           coil(icoil)%Lo =  target_length
+           write(coil(icoil)%name,'("Mod_"I3.3)') icoil
+           FATAL( rdcoils06, coil(icoil)%NS < 0                        , illegal )
+           FATAL( rdcoils07, coil(icoil)%Ic < 0 .or. coil(icoil)%Ic > 1, illegal )
+           FATAL( rdcoils08, coil(icoil)%Lc < 0 .or. coil(icoil)%Lc > 1, illegal )
+           FATAL( rdcoils09, coil(icoil)%L  < zero                     , illegal )
+           FATAL( rdcoils10, coil(icoil)%Lo < zero                     , illegal )
+           if(coil(icoil)%Ic == 0) Nfixcur = Nfixcur + 1
+           if(coil(icoil)%Lc == 0) Nfixgeo = Nfixgeo + 1
+           ! Spline representation related;
+           Splines(icoil)%NCP = NFcoil+2
+           Splines(icoil)%NT = Splines(icoil)%NCP + 4
+           FATAL( rdcoils12, Splines(icoil)%NCP  < 0                    , illegal )
+           FATAL( rdcoils12_2, Splines(icoil)%NT  < 0                     , illegal )
+           FATAL( rdcoils12_3, Splines(icoil)%NT .NE. Splines(icoil)%NCP +4, illegal )
+           FATAL( rdcoils12_4, Splines(icoil)%NT < 10, illegal )
+           SALLOCATE( Splines(icoil)%vect, (0:Splines(icoil)%NT-1), zero )
+           SALLOCATE( Splines(icoil)%eval_points, (0:coil(icoil)%NS-1), zero )
+           SALLOCATE( Splines(icoil)%Cpoints, (0:Splines(icoil)%NCP * 3 - 1 ), zero )
+           DO jcoil = 1, NFcoil
+              Splines(icoil)%vect(jcoil+2) = DBLE(jcoil-1)/DBLE(NFcoil-1)
+           END DO
+           Splines(icoil)%vect(Splines(icoil)%NT-3) = 1.0 + Splines(icoil)%vect(4) - Splines(icoil)%vect(3)
+           Splines(icoil)%vect(Splines(icoil)%NT-2) = 1.0 + Splines(icoil)%vect(5) - Splines(icoil)%vect(3)
+           Splines(icoil)%vect(Splines(icoil)%NT-1) = 1.0 + Splines(icoil)%vect(6) - Splines(icoil)%vect(3)
+           Splines(icoil)%vect(0) =  Splines(icoil)%vect(Splines(icoil)%NT-7) - Splines(icoil)%vect(Splines(icoil)%NT-4)
+           Splines(icoil)%vect(1) =  Splines(icoil)%vect(Splines(icoil)%NT-6) - Splines(icoil)%vect(Splines(icoil)%NT-4)
+           Splines(icoil)%vect(2) =  Splines(icoil)%vect(Splines(icoil)%NT-5) - Splines(icoil)%vect(Splines(icoil)%NT-4)
+           ! get the geometry center
+           zeta = (icoil-1+half) * pi2 / (Ncoils*surf_Nfp*2**symmetry)  ! put a half for a shift;       
+           call surfcoord( plasma, zero, zeta, r1, z1)
+           call surfcoord( plasma,   pi, zeta, r2, z2)
+           Rmaj = half * (r1 + r2)
+           z0   = half * (z1 + z2)              
+           ! initilize with circular coils;
+           DO jcoil = 0, Splines(icoil)%NCP-1
+             ! read( runit,*)
+             ! read( runit,*) Splines(icoil)%Cpoints(0:Splines(icoil)%NCP-1)
+             ! read( runit,*) Splines(icoil)%Cpoints(Splines(icoil)%NCP:Splines(icoil)%NCP*2-1)
+             ! read( runit,*) Splines(icoil)%Cpoints(Splines(icoil)%NCP*2:Splines(icoil)%NCP*3-1)
+             th = Splines(icoil)%vect(jcoil+2)*pi2
+             Splines(icoil)%Cpoints(jcoil)                      = (Rmaj + init_radius*COS(th))*COS(zeta) ! X
+             Splines(icoil)%Cpoints(jcoil+Splines(icoil)%NCP)   = (Rmaj + init_radius*COS(th))*SIN(zeta) ! Y
+             Splines(icoil)%Cpoints(jcoil+Splines(icoil)%NCP*2) = z0 + init_radius*SIN(th) ! Z
+           ENDDO
+        enddo ! end of do icoil;
+     else
+        STOP " wrong coil type in rdcoils"
+        call MPI_ABORT(MPI_COMM_FOCUS, 1, ierr)
+     endif      
   !------------- permanent dipoles and background magnetic field ----------------------------------------
   case( 2 ) ! averagely positioned permanent dipoles ; will be removed;  2020/01/17
      allocate( coil(1:Ncoils) )
@@ -615,43 +677,52 @@ subroutine discoil(ifirst)
            coil(icoil)%xa = zero
            coil(icoil)%ya = zero
            coil(icoil)%za = zero
+           coil(icoil)%xb = zero
+           coil(icoil)%yb = zero
+           coil(icoil)%zb = zero
            NS = coil(icoil)%NS
            NCP = Splines(icoil)%NCP  ! allias variable for simplicity;
 
-	   !-------------------------enforce periodicity----------------------------------------------
-	   Splines(icoil)%Cpoints(NCP-3) = Splines(icoil)%Cpoints(0)
-	   Splines(icoil)%Cpoints(2*NCP-3) = Splines(icoil)%Cpoints(NCP) 
-	   Splines(icoil)%Cpoints(3*NCP-3) = Splines(icoil)%Cpoints(2*NCP)  
+           !-------------------------enforce periodicity----------------------------------------------
+           Splines(icoil)%Cpoints(NCP-3) = Splines(icoil)%Cpoints(0)
+           Splines(icoil)%Cpoints(2*NCP-3) = Splines(icoil)%Cpoints(NCP) 
+           Splines(icoil)%Cpoints(3*NCP-3) = Splines(icoil)%Cpoints(2*NCP)  
 
-	   Splines(icoil)%Cpoints(NCP-2) = Splines(icoil)%Cpoints(1)
-	   Splines(icoil)%Cpoints(2*NCP-2) = Splines(icoil)%Cpoints(NCP+1) 
-	   Splines(icoil)%Cpoints(3*NCP-2) = Splines(icoil)%Cpoints(2*NCP+1)  
+           Splines(icoil)%Cpoints(NCP-2) = Splines(icoil)%Cpoints(1)
+           Splines(icoil)%Cpoints(2*NCP-2) = Splines(icoil)%Cpoints(NCP+1) 
+           Splines(icoil)%Cpoints(3*NCP-2) = Splines(icoil)%Cpoints(2*NCP+1)  
 
-	   Splines(icoil)%Cpoints(NCP-1) = Splines(icoil)%Cpoints(2)
-	   Splines(icoil)%Cpoints(2*NCP-1) = Splines(icoil)%Cpoints(NCP+2) 
-	   Splines(icoil)%Cpoints(3*NCP-1) = Splines(icoil)%Cpoints(2*NCP+2)  
+           Splines(icoil)%Cpoints(NCP-1) = Splines(icoil)%Cpoints(2)
+           Splines(icoil)%Cpoints(2*NCP-1) = Splines(icoil)%Cpoints(NCP+2) 
+           Splines(icoil)%Cpoints(3*NCP-1) = Splines(icoil)%Cpoints(2*NCP+2)  
            !-------------------------calculate coil data-------------------------------------------------  
            do iseg=0,NS-1
-                    coil(icoil)%xx(iseg) = SUM (Splines(icoil)%Cpoints(0:NCP-1)*Splines(icoil)%basis_3(iseg,0:NCP-1))
-                    coil(icoil)%yy(iseg) = SUM (Splines(icoil)%Cpoints(NCP:2*NCP-1)*Splines(icoil)%basis_3(iseg,0:NCP-1))
-                    coil(icoil)%zz(iseg) = SUM (Splines(icoil)%Cpoints(2*NCP:3*NCP-1)*Splines(icoil)%basis_3(iseg,0:NCP-1))
-                    coil(icoil)%xt(iseg) = SUM (Splines(icoil)%Cpoints(0:NCP-1)*Splines(icoil)%db_dt(iseg,0:NCP-1))
-                    coil(icoil)%yt(iseg) = SUM (Splines(icoil)%Cpoints(NCP:2*NCP-1)*Splines(icoil)%db_dt(iseg,0:NCP-1))
-                    coil(icoil)%zt(iseg) = SUM (Splines(icoil)%Cpoints(2*NCP:3*NCP-1)*Splines(icoil)%db_dt(iseg,0:NCP-1))
-                    coil(icoil)%xa(iseg) = SUM (Splines(icoil)%Cpoints(0:NCP-1)*Splines(icoil)%db_dt_2(iseg,0:NCP-1))
-                    coil(icoil)%ya(iseg) = SUM (Splines(icoil)%Cpoints(NCP:2*NCP-1)*Splines(icoil)%db_dt_2(iseg,0:NCP-1))
-                    coil(icoil)%za(iseg) = SUM (Splines(icoil)%Cpoints(2*NCP:3*NCP-1)*Splines(icoil)%db_dt_2(iseg,0:NCP-1))
-	  enddo	
+              coil(icoil)%xx(iseg) = SUM (Splines(icoil)%Cpoints(0:NCP-1)*Splines(icoil)%basis_3(iseg,0:NCP-1))
+              coil(icoil)%yy(iseg) = SUM (Splines(icoil)%Cpoints(NCP:2*NCP-1)*Splines(icoil)%basis_3(iseg,0:NCP-1))
+              coil(icoil)%zz(iseg) = SUM (Splines(icoil)%Cpoints(2*NCP:3*NCP-1)*Splines(icoil)%basis_3(iseg,0:NCP-1))
+              coil(icoil)%xt(iseg) = SUM (Splines(icoil)%Cpoints(0:NCP-1)*Splines(icoil)%db_dt(iseg,0:NCP-1))
+              coil(icoil)%yt(iseg) = SUM (Splines(icoil)%Cpoints(NCP:2*NCP-1)*Splines(icoil)%db_dt(iseg,0:NCP-1))
+              coil(icoil)%zt(iseg) = SUM (Splines(icoil)%Cpoints(2*NCP:3*NCP-1)*Splines(icoil)%db_dt(iseg,0:NCP-1))
+              coil(icoil)%xa(iseg) = SUM (Splines(icoil)%Cpoints(0:NCP-1)*Splines(icoil)%db_dt_2(iseg,0:NCP-1))
+              coil(icoil)%ya(iseg) = SUM (Splines(icoil)%Cpoints(NCP:2*NCP-1)*Splines(icoil)%db_dt_2(iseg,0:NCP-1))
+              coil(icoil)%za(iseg) = SUM (Splines(icoil)%Cpoints(2*NCP:3*NCP-1)*Splines(icoil)%db_dt_2(iseg,0:NCP-1))
+              !coil(icoil)%xb(iseg) = SUM (Splines(icoil)%Cpoints(0:NCP-1)*Splines(icoil)%db_dt_2(iseg,0:NCP-1))
+              !coil(icoil)%yb(iseg) = SUM (Splines(icoil)%Cpoints(NCP:2*NCP-1)*Splines(icoil)%db_dt_2(iseg,0:NCP-1))
+              !coil(icoil)%zb(iseg) = SUM (Splines(icoil)%Cpoints(2*NCP:3*NCP-1)*Splines(icoil)%db_dt_2(iseg,0:NCP-1))
+	        enddo
 
-	  coil(icoil)%xx(NS) = coil(icoil)%xx(0)
- 	  coil(icoil)%yy(NS) = coil(icoil)%yy(0)
-	  coil(icoil)%zz(NS) = coil(icoil)%zz(0)
-	  coil(icoil)%xt(NS) = coil(icoil)%xt(0)
-	  coil(icoil)%yt(NS) = coil(icoil)%yt(0)
-	  coil(icoil)%zt(NS) = coil(icoil)%zt(0)
-	  coil(icoil)%xa(NS) = coil(icoil)%xa(0)
-	  coil(icoil)%ya(NS) = coil(icoil)%ya(0)
-	  coil(icoil)%za(NS) = coil(icoil)%za(0)
+           coil(icoil)%xx(NS) = coil(icoil)%xx(0)
+           coil(icoil)%yy(NS) = coil(icoil)%yy(0)
+           coil(icoil)%zz(NS) = coil(icoil)%zz(0)
+           coil(icoil)%xt(NS) = coil(icoil)%xt(0)
+           coil(icoil)%yt(NS) = coil(icoil)%yt(0)
+           coil(icoil)%zt(NS) = coil(icoil)%zt(0)
+           coil(icoil)%xa(NS) = coil(icoil)%xa(0)
+           coil(icoil)%ya(NS) = coil(icoil)%ya(0)
+           coil(icoil)%za(NS) = coil(icoil)%za(0)
+           coil(icoil)%xb(NS) = coil(icoil)%xb(0)
+           coil(icoil)%yb(NS) = coil(icoil)%yb(0)
+           coil(icoil)%zb(NS) = coil(icoil)%zb(0)
         case default
            FATAL(discoil, .true., not supported coil types)
         end select
