@@ -345,7 +345,7 @@ subroutine surfcoord(index, theta, zeta, r, z)
       it = int(theta/pi2*Nteta)
       jz = int(zeta/(pi2/(surf_Nfp*2**symmetry))*Nzeta)
       r = SQRT(surf(index)%xx(it, jz)**2 + surf(index)%yy(it, jz)**2)
-      z = surf(index)%zz(it, jz)**2
+      z = surf(index)%zz(it, jz)
    endif
    return
 end subroutine surfcoord
