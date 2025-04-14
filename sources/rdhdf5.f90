@@ -47,8 +47,6 @@ subroutine rdhdf5(filename, index)
         dims = SHAPE(surf(index)%xx)
         Nteta = dims(1)
         Nzeta = dims(2)
-        surf(index)%Nteta = Nteta
-        surf(index)%Nzeta = Nzeta
         if (IsQuiet <= 0) then
             write (ounit, '("surface : Nfp = " I06 " ; IsSymmetric = " I06)') surf(index)%Nfp, IsSymmetric
             write (ounit, '("surface : Surface resolution: Nteta = "I6", Nzeta = "I6" .")')  Nteta, Nzeta
@@ -57,6 +55,8 @@ subroutine rdhdf5(filename, index)
     endif
 
     ! other CPUs allocate data first
+    IlBCAST(Nteta, 1, 0)
+    IlBCAST(Nzeta, 1, 0)   
     if (myid /= 0) then 
         SALLOCATE(surf(index)%xx, (0:Nteta - 1, 0:Nzeta - 1), zero) !x coordinates;
         SALLOCATE(surf(index)%yy, (0:Nteta - 1, 0:Nzeta - 1), zero) !y coordinates
@@ -92,6 +92,8 @@ subroutine rdhdf5(filename, index)
     case (2)                    ! stellarator symmetry enforced;
         symmetry = 1
     end select
+    surf(index)%Nteta = Nteta
+    surf(index)%Nzeta = Nzeta*surf_Nfp*2**symmetry ! the total number from [0, 2pi]
     ! calculate the area and volumn
     surf(index)%area = SUM(surf(index)%ds) * discretefactor * surf_Nfp * 2**symmetry
     surf(index)%vol = SUM((surf(index)%xx*surf(index)%nx+ surf(index)%yy*surf(index)%ny &
