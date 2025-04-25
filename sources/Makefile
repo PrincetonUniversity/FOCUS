@@ -28,6 +28,14 @@
      -ftrapuv -init=snan,arrays -debug all -D DEBUG
  LIBS=-I$(HDF5_HOME)/include
  LINKS=-L$(HDF5_HOME)/lib -lhdf5_fortran -lhdf5 -lpthread -lz -lm
+ LS_FULLTIME=--full-time
+
+### OSX Test
+UNAME := $(shell uname -s)
+ifeq ($(UNAME),Darwin)
+  # macOS-specific settings
+  LS_FULLTIME=-T
+endif
 
 #### GFORTRAN+OpenMPI+HDF5###############
 # available env: /p/focus/modules/focus/gfortran
@@ -148,7 +156,7 @@ clean:
 
 $(PFILES): %.pdf: %.f90 head.tex end.tex
 #	@ls -lT $*.f90 | cut -c 35-55 > .$*.date
-	@ls --full-time $*.f90 | cut -c 32-50 > .$*.date
+	@ls $(LS_FULLTIME) $*.f90 | cut -c 32-50 > .$*.date
 	@awk -v file=$* -v date=.$*.date 'BEGIN{getline cdate < date ; FS="!latex" ; print "\\input{head} \\code{"file"}"} \
 	{if(NF>1) print $$2} \
 	END{print "\\vspace{1mm} \\hrule \\vspace{1mm} \\footnotesize $*.f90 last modified on "cdate";" ; print "\\input{end}"}' $*.f90 > $*.tex
