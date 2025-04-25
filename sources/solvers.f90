@@ -728,7 +728,7 @@ subroutine normweight
      call coilsep(0)
      if (abs(ccsep) > machprec) weight_ccsep = weight_ccsep / ccsep
      if( myid .eq. 0 ) write(ounit, 1000) "weight_ccsep", weight_ccsep
-     if( myid .eq. 0 .and. weight_curv < machprec) write(ounit, '("warning : weight_ccsep < machine_precision, ccsep will not be used.")')
+     if( myid .eq. 0 .and. weight_ccsep < machprec) write(ounit, '("warning : weight_ccsep < machine_precision, ccsep will not be used.")')
    
   endif
 
